@@ -104,6 +104,8 @@ namespace System.Tests.Types
         }
         */
 
+        // NOTE: commented out due to compiler issue on NativeAOT
+        /*
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
@@ -124,7 +126,10 @@ namespace System.Tests.Types
             Type paramType = p1.GetFunctionPointerParameterTypes()[0];
             Assert.False(IsModifiedType(paramType));
         }
+        */
 
+        // NOTE: commented out due to compiler issue on NativeAOT
+        /*
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
@@ -147,6 +152,7 @@ namespace System.Tests.Types
 
             Assert.Equal(typeof(OutAttribute).Project(), paramType.GetRequiredCustomModifiers()[0]);
         }
+        */
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
@@ -401,7 +407,8 @@ namespace System.Tests.Types
 
             public static void M_P0IntOut(out int i) { i = 42; }
             public static void M_P0FcnPtrOut(delegate*<out int, void> fp) { }
-            public static void M_ArrayOpenGenericFcnPtr<T>(T t, delegate*<out bool, void>[] fp) { }
+            // NOTE: commented out due to compiler issue on NativeAOT:
+            // public static void M_ArrayOpenGenericFcnPtr<T>(T t, delegate*<out bool, void>[] fp) { }
 
             public int InitProperty_Int { get; init; }
             public static delegate*<out int, void> Property_FcnPtr { get; set; }

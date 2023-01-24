@@ -12,11 +12,8 @@ namespace System.Reflection
         /// <summary>
         /// Create a root node.
         /// </summary>
-        public ModifiedGenericType(
-            Type genericType,
-            object rootFieldParameterOrProperty,
-            int rootSignatureParameterIndex)
-            : base(genericType, rootFieldParameterOrProperty, rootSignatureParameterIndex)
+        public ModifiedGenericType(Type genericType, int rootSignatureParameterIndex)
+            : base(genericType, rootSignatureParameterIndex)
         {
             Debug.Assert(genericType.IsGenericType);
             // To support modifiers on generic types, pass nestedSignatureIndex:0.

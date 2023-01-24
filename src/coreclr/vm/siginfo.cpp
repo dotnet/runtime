@@ -895,8 +895,8 @@ MetaSig::MoveToSignature(SigPointer start, INT32 index)
     uint32_t cbSigSize;
     start.GetSignature(&pSig, &cbSigSize);
 
-    // To support modifiers on generic types, create a MetaSigKind::sigGeneric as pass
-    // that instead of sigMember for generic types.
+    // To support modifiers on generic types, create a 'MetaSigKind::sigGeneric' and pass
+    // that instead of 'MetaSigKind::sigMember' for generic types.
     Init(pSig, cbSigSize, m_pModule, &typeContext, sigMember);
     return hr;
 }

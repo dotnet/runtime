@@ -11168,7 +11168,7 @@ namespace System.Reflection
         public static System.Reflection.FieldInfo GetFieldFromHandle(System.RuntimeFieldHandle handle) { throw null; }
         public static System.Reflection.FieldInfo GetFieldFromHandle(System.RuntimeFieldHandle handle, System.RuntimeTypeHandle declaringType) { throw null; }
         public override int GetHashCode() { throw null; }
-        public virtual Type GetModifiedFieldType() { throw null; }
+        public virtual System.Type GetModifiedFieldType() { throw null; }
         public virtual System.Type[] GetOptionalCustomModifiers() { throw null; }
         public virtual object? GetRawConstantValue() { throw null; }
         public virtual System.Type[] GetRequiredCustomModifiers() { throw null; }
@@ -11595,7 +11595,7 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(bool inherit) { throw null; }
         public virtual object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
         public virtual System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributesData() { throw null; }
-        public virtual Type GetModifiedParameterType() { throw null; }
+        public virtual System.Type GetModifiedParameterType() { throw null; }
         public virtual System.Type[] GetOptionalCustomModifiers() { throw null; }
         public object GetRealObject(System.Runtime.Serialization.StreamingContext context) { throw null; }
         public virtual System.Type[] GetRequiredCustomModifiers() { throw null; }
@@ -11671,7 +11671,7 @@ namespace System.Reflection
         public abstract System.Reflection.ParameterInfo[] GetIndexParameters();
         public virtual System.Type[] GetOptionalCustomModifiers() { throw null; }
         public virtual object? GetRawConstantValue() { throw null; }
-        public virtual Type GetModifiedPropertyType() { throw null; }
+        public virtual System.Type GetModifiedPropertyType() { throw null; }
         public virtual System.Type[] GetRequiredCustomModifiers() { throw null; }
         public System.Reflection.MethodInfo? GetSetMethod() { throw null; }
         public abstract System.Reflection.MethodInfo? GetSetMethod(bool nonPublic);

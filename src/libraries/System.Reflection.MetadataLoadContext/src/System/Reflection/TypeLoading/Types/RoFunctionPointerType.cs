@@ -63,10 +63,7 @@ namespace System.Reflection.TypeLoading
                 case SignatureCallingConvention.StdCall:
                 case SignatureCallingConvention.ThisCall:
                 case SignatureCallingConvention.FastCall:
-                    isUnmanaged = true;
-                    break;
                 case SignatureCallingConvention.Unmanaged:
-                    // There is no CallConvUnmanaged type.
                     isUnmanaged = true;
                     break;
             }

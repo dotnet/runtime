@@ -138,7 +138,6 @@
     <Compile Include="System\Reflection\TypeLoading\Types\RoModifiedGenericType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoModifiedStandaloneType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoModifiedType.cs" />
-    <Compile Include="System\Reflection\TypeLoading\Types\RoTypeDelegator.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoPinnedType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoPointerType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoStubType.cs" />
@@ -146,6 +145,7 @@
     <Compile Include="System\Reflection\TypeLoading\Types\RoType.GetInterface.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoType.ModifiedType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoType.TypeClassification.cs" />
+    <Compile Include="System\Reflection\TypeLoading\Types\RoTypeDelegator.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoWrappedType.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>

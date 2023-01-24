@@ -205,14 +205,10 @@ namespace System.Reflection
             return Signature.GetCustomModifiers(0, false);
         }
 
-        public override Type GetModifiedPropertyType()
-        {
-            return ModifiedType.Create(
-                PropertyType,
-                this,
-                Signature,
-                rootSignatureParameterIndex: 0);
-        }
+        public override Type GetModifiedPropertyType() => ModifiedType.Create(
+            PropertyType,
+            rootSignatureParameterIndex: 0,
+            Signature);
 
         internal object GetConstantValue(bool raw)
         {

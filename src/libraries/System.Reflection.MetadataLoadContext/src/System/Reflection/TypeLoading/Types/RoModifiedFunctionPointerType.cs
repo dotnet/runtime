@@ -8,7 +8,7 @@ using System.Reflection.TypeLoading;
 namespace System.Reflection
 {
     /// <summary>
-    /// A function pointer type that is modified and maintains its inner modified parameter types and return type.
+    /// A function pointer type that is modified and contains modified parameter and return types.
     /// </summary>
     internal sealed class RoModifiedFunctionPointerType : RoModifiedType
     {

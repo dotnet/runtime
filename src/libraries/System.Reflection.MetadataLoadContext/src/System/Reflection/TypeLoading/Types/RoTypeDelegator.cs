@@ -8,9 +8,8 @@ using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribu
 namespace System.Reflection.TypeLoading
 {
     // Similar to TypeDelegator, wraps an instance of a Type (in this case, RoType) and delegates calls to it.
-    // TypeDelegator cannot be used since it cannot derive from RoType.
-    // This is only used by function pointers which are based on method signatures which the MetadataReader
-    // instantiates with the "modified type" pattern of chained types to represent custom modifiers.
+    // TypeDelegator cannot be used since it does not derive from RoType, and RoType is required to be used
+    // with MetadataReader interfaces.
     internal abstract class RoTypeDelegator : RoType
     {
         private RoType _typeImpl;

@@ -1537,7 +1537,8 @@ namespace System
 
 
             /// <summary>
-            /// Generic cache for rare scenario specific data. It is used to cache either Enum names, Enum values, the Activator cache or a function pointer.
+            /// Generic cache for rare scenario specific data. It is used to cache either Enum names, Enum values,
+            /// the Activator cache or function pointer parameters.
             /// </summary>
             internal object? GenericCache
             {
@@ -3746,7 +3747,7 @@ namespace System
             }
 
             Type[] parameters = Cache.FunctionPointerReturnAndParameterTypes;
-            Debug.Assert(parameters.Length != 0);
+            Debug.Assert(parameters.Length > 0);
 
             if (parameters.Length == 1)
             {
@@ -3763,7 +3764,6 @@ namespace System
                 throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
             }
 
-            Debug.Assert(Cache.FunctionPointerReturnAndParameterTypes.Length != 0);
             return Cache.FunctionPointerReturnAndParameterTypes[0];
         }
         #endregion

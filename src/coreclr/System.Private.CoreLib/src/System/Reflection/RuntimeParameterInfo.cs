@@ -440,14 +440,11 @@ namespace System.Reflection
                 m_signature.GetCustomModifiers(PositionImpl + 1, false);
         }
 
-        public override Type GetModifiedParameterType()
-        {
-            return ModifiedType.Create(
+        public override Type GetModifiedParameterType() =>
+            ModifiedType.Create(
                 unmodifiedType: ParameterType,
-                this,
-                m_signature,
-                rootSignatureParameterIndex: PositionImpl + 1);
-        }
+                rootSignatureParameterIndex: PositionImpl + 1,
+                m_signature);
 
         #endregion
 

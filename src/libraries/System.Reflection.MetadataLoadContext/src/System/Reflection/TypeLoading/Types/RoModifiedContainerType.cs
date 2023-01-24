@@ -16,7 +16,6 @@ namespace System.Reflection
         public RoModifiedContainerType(RoType unmodifiedType) : base(unmodifiedType)
         {
             Debug.Assert(unmodifiedType.HasElementType);
-
             _elementModifiedType = Create(unmodifiedType.GetRoElementType()!);
         }
 

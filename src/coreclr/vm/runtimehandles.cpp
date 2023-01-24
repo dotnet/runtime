@@ -1869,6 +1869,7 @@ FCIMPL5(Object *, SignatureNative::GetCustomModifiers,
             argument = sig.GetArgProps();
         }
 
+        // Check if we need to move and\or switch to a function pointer signature.
         if (nestedSignatureIndex >= 0)
         {
             sig.MoveToSignature(argument, nestedSignatureIndex);

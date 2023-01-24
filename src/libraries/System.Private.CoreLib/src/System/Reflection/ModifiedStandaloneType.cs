@@ -8,11 +8,8 @@ namespace System.Reflection
         /// <summary>
         /// Create a root node.
         /// </summary>
-        public ModifiedStandaloneType(
-            Type delegatingType,
-            object rootFieldParameterOrProperty,
-            int rootSignatureParameterIndex)
-            : base(delegatingType, rootFieldParameterOrProperty, rootSignatureParameterIndex) { }
+        public ModifiedStandaloneType(Type delegatingType, int rootSignatureParameterIndex)
+            : base(delegatingType, rootSignatureParameterIndex) { }
 
         /// <summary>
         /// Create a child node.

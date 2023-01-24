@@ -10,7 +10,7 @@ namespace System.Reflection.Tests
     {
         // Given a runtime Type, load up the equivalent in the Test MetataLoadContext. This is for test-writing convenience so
         // that tests can write "typeof(TestClass).Project()" and get the benefits of compile-time typename checking and Intellisense.
-        // It supports sharing Reflection tests with different type providers such as the runtime.
+        // It supports sharing Reflection tests with different type providers such as the various runtimes.
         public static Type Project(this Type type)
         {
             if (type == null)

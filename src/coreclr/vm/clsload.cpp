@@ -958,7 +958,6 @@ void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(TypeKey *pKey,
 
 #endif
 
-
 TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
                                                     LoadTypesFlag fLoadTypes /*= LoadTypes*/,
                                                     ClassLoadLevel level /*=CLASS_LOADED*/,

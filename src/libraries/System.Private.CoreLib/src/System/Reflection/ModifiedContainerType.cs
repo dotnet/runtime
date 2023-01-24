@@ -15,10 +15,8 @@ namespace System.Reflection
         /// <summary>
         /// Create a root node.
         /// </summary>
-        public ModifiedContainerType(
-            Type containerType,
-            object rootFieldParameterOrProperty,
-            int rootSignatureParameterIndex) : base(containerType, rootFieldParameterOrProperty, rootSignatureParameterIndex)
+        public ModifiedContainerType(Type containerType, int rootSignatureParameterIndex)
+            : base(containerType, rootSignatureParameterIndex)
         {
             Debug.Assert(containerType.HasElementType);
             _elementModifiedType = Create(containerType.GetElementType()!, this, nestedSignatureIndex: -1, nestedSignatureParameterIndex: -1);

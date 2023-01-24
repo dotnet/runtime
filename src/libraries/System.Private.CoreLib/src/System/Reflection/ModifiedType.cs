@@ -12,10 +12,9 @@ namespace System.Reflection
     internal abstract partial class ModifiedType : TypeDelegator
     {
         private readonly ModifiedType? _root;
-        private object? _rootFieldParameterOrProperty;
 
         // These 3 fields, in order, determine the lookup hierarchy for custom modifiers.
-        // The native tree traveral must match the managed semantics in order to indexes to match up.
+        // The native tree traveral must match the managed semantics in order for indexes to match up.
         protected readonly int _rootSignatureParameterIndex;
         private readonly int _nestedSignatureIndex;
         private readonly int _nestedSignatureParameterIndex;
@@ -23,15 +22,39 @@ namespace System.Reflection
         /// <summary>
         /// Create a root node.
         /// </summary>
-        protected ModifiedType(
-            Type unmodifiedType,
-            object rootFieldParameterOrProperty,
-            int rootSignatureParameterIndex) : base(unmodifiedType)
+        protected ModifiedType(Type unmodifiedType, int rootSignatureParameterIndex, int nestedSignatureIndex = -1) : base(unmodifiedType)
         {
             _root = this;
-            _rootFieldParameterOrProperty = rootFieldParameterOrProperty;
             _rootSignatureParameterIndex = rootSignatureParameterIndex;
+            _nestedSignatureIndex = nestedSignatureIndex;
             _nestedSignatureParameterIndex = -1;
+        }
+
+        /// <summary>
+        /// Create a root node; called by a runtime-specific factory method.
+        /// </summary>
+        protected static ModifiedType Create(Type unmodifiedType, int rootSignatureParameterIndex)
+        {
+            ModifiedType modifiedType;
+
+            if (unmodifiedType.IsFunctionPointer)
+            {
+                modifiedType = new ModifiedFunctionPointerType(unmodifiedType, rootSignatureParameterIndex);
+            }
+            else if (unmodifiedType.HasElementType)
+            {
+                modifiedType = new ModifiedContainerType(unmodifiedType, rootSignatureParameterIndex);
+            }
+            else if (unmodifiedType.IsGenericType)
+            {
+                modifiedType = new ModifiedGenericType(unmodifiedType, rootSignatureParameterIndex);
+            }
+            else
+            {
+                modifiedType = new ModifiedStandaloneType(unmodifiedType, rootSignatureParameterIndex);
+            }
+
+            return modifiedType;
         }
 
         /// <summary>
@@ -118,53 +141,31 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            // No caching is performed; as is the case with FieldInfo.GetCustomModifiers etc.
+            // No caching is performed; as is the case with FieldInfo.GetCustomModifiers and friends.
             return GetCustomModifiers(required: true);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            // No caching is performed; as is the case with FieldInfo.GetCustomModifiers etc.
+            // No caching is performed; as is the case with FieldInfo.GetCustomModifiers and friends.
             return GetCustomModifiers(required: false);
         }
 
         private Type[] GetCustomModifiers(bool required)
         {
-            Type[] modifiers = EmptyTypes;
-
-            if (_nestedSignatureParameterIndex >= 0)
+            // Modifiers only exist on the root (field\parameter\property) or on signature types
+            // which currently are just function pointers.
+            if (ReferenceEquals(this, Root) || _nestedSignatureParameterIndex >= 0)
             {
-                modifiers = GetCustomModifiersFromSignature(required);
-            }
-            else if (ReferenceEquals(this, Root))
-            {
-                object? obj = _rootFieldParameterOrProperty;
-                Debug.Assert(obj is not null);
-
-                if (obj is FieldInfo fieldInfo)
-                {
-                    modifiers = required ? fieldInfo.GetRequiredCustomModifiers() : fieldInfo.GetOptionalCustomModifiers();
-                }
-                else if (obj is ParameterInfo parameterInfo)
-                {
-                    modifiers = required ? parameterInfo.GetRequiredCustomModifiers() : parameterInfo.GetOptionalCustomModifiers();
-                }
-                else if (obj is PropertyInfo propertyInfo)
-                {
-                    modifiers = required ? propertyInfo.GetRequiredCustomModifiers() : propertyInfo.GetOptionalCustomModifiers();
-                }
-                else
-                {
-                    Debug.Assert(false);
-                }
+                return GetCustomModifiersFromSignature(required);
             }
 
-            return modifiers;
+            return EmptyTypes;
         }
 
         // TypeDelegator doesn't forward these the way we want:
         public override Type UnderlyingSystemType => typeImpl; // We don't want to forward to typeImpl.UnderlyingSystemType.
-        public override bool IsGenericType => typeImpl.IsGenericType;
+        public override bool IsGenericType => typeImpl.IsGenericType; // Not forwarded.
         public override string ToString() => UnderlyingSystemType.ToString(); // Not forwarded.
         public override int GetHashCode() => UnderlyingSystemType.GetHashCode(); // Not forwarded.
         public override bool Equals(Type? other) // Not forwarded.

@@ -18,11 +18,8 @@ namespace System.Reflection
         /// <summary>
         /// Create a root node.
         /// </summary>
-        public ModifiedFunctionPointerType(
-            Type functionPointerType,
-            object rootFieldParameterOrProperty,
-            int rootSignatureParameterIndex)
-            : base(functionPointerType, rootFieldParameterOrProperty, rootSignatureParameterIndex)
+        public ModifiedFunctionPointerType(Type functionPointerType, int rootSignatureParameterIndex)
+            : base(functionPointerType, rootSignatureParameterIndex, nestedSignatureIndex: 0)
         {
             Debug.Assert(functionPointerType.IsFunctionPointer);
             _returnType = Create(functionPointerType.GetFunctionPointerReturnType(), this, nestedSignatureIndex: 0, nestedSignatureParameterIndex: 0);
@@ -37,7 +34,7 @@ namespace System.Reflection
             ModifiedType root,
             int nestedSignatureIndex,
             int nestedSignatureParameterIndex)
-            : base(functionPointerType, root, nestedSignatureIndex, nestedSignatureParameterIndex)
+            : base(functionPointerType, root, nestedSignatureIndex + 1, nestedSignatureParameterIndex)
         {
             Debug.Assert(functionPointerType.IsFunctionPointer);
             _returnType = Create(functionPointerType.GetFunctionPointerReturnType(), root, nestedSignatureIndex + 1, nestedSignatureParameterIndex: 0);

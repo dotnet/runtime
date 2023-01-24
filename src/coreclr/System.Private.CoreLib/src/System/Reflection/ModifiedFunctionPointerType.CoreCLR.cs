@@ -8,7 +8,7 @@ namespace System.Reflection
         private MdSigCallingConvention GetCallingConvention()
         {
             Signature? signature = GetSignature();
-            if (signature != null)
+            if (signature is not null)
             {
                 return (MdSigCallingConvention)signature.GetCallingConventionFromFunctionPointer(RootSignatureParameterIndex, NestedSignatureIndex);
             }
