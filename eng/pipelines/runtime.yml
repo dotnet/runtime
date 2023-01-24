@@ -455,19 +455,22 @@ extends:
           extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
           alwaysRun: ${{ variables.isRollingBuild }}
 
-      # BUILD ONLY - WASI/Wasm
-      - template: /eng/pipelines/common/templates/wasi-build-only.yml
-        parameters:
-          platforms:
-            - wasi_wasm
-          alwaysRun: ${{ variables.isRollingBuild }}
-
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
             - wasi_wasm
           extraBuildArgs: /p:EnableAggressiveTrimming=true
-          #shouldRunSmokeOnly: true
+          shouldRunSmokeOnly: true
+          alwaysRun: true
+          scenarios:
+            - normal
+
+      # run all wasi tests
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+          extraBuildArgs: /p:EnableAggressiveTrimming=true
           alwaysRun: true
           scenarios:
             - normal
