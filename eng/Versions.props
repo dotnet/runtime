@@ -239,14 +239,14 @@
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
     <!-- JIT Tools -->
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23066.1</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23066.1</runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23066.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23066.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23066.1</runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23066.1</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23066.1</runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23066.1</runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>
+     <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.23073.1</runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>
 
     <!-- BrowserDebugProxy libs -->
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
