@@ -51,6 +51,9 @@ namespace System.Data.SqlTypes
         {
         }
 
+        // Maintains legacy binary serialization behaviour
+        // see src/libraries/System.Runtime.Serialization.Formatters/tests/BinaryFormatterTestData.cs
+        // for test data
         private SqlGuid(SerializationInfo info, StreamingContext context)
         {
             byte[]? value = (byte[]?)info.GetValue("m_value", typeof(byte[]));
@@ -58,6 +61,11 @@ namespace System.Data.SqlTypes
                 _value = null;
             else
                 _value = new Guid(value);
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("m_value", ToByteArray(), typeof(byte[]));
         }
 
         // INullable
@@ -314,11 +322,6 @@ namespace System.Data.SqlTypes
         public static XmlQualifiedName GetXsdType(XmlSchemaSet schemaSet)
         {
             return new XmlQualifiedName("string", XmlSchema.Namespace);
-        }
-
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("m_value", ToByteArray(), typeof(byte[]));
         }
 
         public static readonly SqlGuid Null;
