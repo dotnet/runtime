@@ -103,7 +103,11 @@ namespace System.IO
             int tempPathByteCount = Encoding.UTF8.GetByteCount(tempPath);
             int totalByteCount = tempPathByteCount + fileTemplate.Length + 1;
 
+#if TARGET_BROWSER
+            Span<byte> path = new byte[totalByteCount];
+#else
             Span<byte> path = totalByteCount <= 256 ? stackalloc byte[256].Slice(0, totalByteCount) : new byte[totalByteCount];
+#endif
             int pos = Encoding.UTF8.GetBytes(tempPath, path);
             fileTemplate.CopyTo(path.Slice(pos));
             path[^1] = 0;
