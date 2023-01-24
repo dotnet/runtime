@@ -291,6 +291,29 @@ namespace System.Drawing
             }
         }
 
+        /// <summary>
+        /// Update the given LOGFONT with data from given graphics.
+        /// </summary>
+        /// <param name="logFont">A structure to populate with LOGFONT data.</param>
+        /// <param name="graphics">Graphics object which provide information about font.</param>
+        public unsafe void ToLogFont<T>(ref T logFont, Graphics graphics)
+            where T: unmanaged
+        {
+            ArgumentNullException.ThrowIfNull(logFont);
+
+            if (sizeof(T) != sizeof(Interop.User32.LOGFONT))
+            {
+                // If we don't actually have an object that is LOGFONT in size, trying to pass
+                // it to GDI+ is likely to cause an AV.
+                throw new ArgumentException(null, nameof(logFont));
+            }
+
+            fixed (T* pLogFont = &logFont)
+            {
+                *(Interop.User32.LOGFONT*)pLogFont = ToLogFontInternal(graphics);
+            }
+        }
+
         private unsafe Interop.User32.LOGFONT ToLogFontInternal(Graphics graphics)
         {
             ArgumentNullException.ThrowIfNull(graphics);
@@ -551,6 +574,20 @@ namespace System.Drawing
             }
         }
 
+        /// <summary>
+        /// Creates a <see cref="Font"/> from the given LOGFONT using the screen device context.
+        /// </summary>
+        /// <param name="logFont">A structure holding LOGFONT data.</param>
+        /// <returns>The newly created <see cref="Font"/>.</returns>
+        public static Font FromLogFont<T>(in T logFont)
+            where T: unmanaged
+        {
+            using (ScreenDC dc = ScreenDC.Create())
+            {
+                return FromLogFont<T>(in logFont, dc);
+            }
+        }
+
         internal static Font FromLogFont(ref Interop.User32.LOGFONT logFont)
         {
             using (ScreenDC dc = ScreenDC.Create())
@@ -617,6 +654,30 @@ namespace System.Drawing
         }
 
         /// <summary>
+        /// Creates a <see cref="Font"/> from the given LOGFONT using the given device context.
+        /// </summary>
+        /// <param name="logFont">A structure holding LOGFONT data.</param>
+        /// <param name="hdc">Handle to a device context (HDC).</param>
+        /// <returns>The newly created <see cref="Font"/>.</returns>
+        public static unsafe Font FromLogFont<T>(in T logFont, IntPtr hdc)
+            where T: unmanaged
+        {
+            ArgumentNullException.ThrowIfNull(logFont);
+
+            if (sizeof(T) != sizeof(Interop.User32.LOGFONT))
+            {
+                // If we don't actually have an object that is LOGFONT in size, trying to pass
+                // it to GDI+ is likely to cause an AV.
+                throw new ArgumentException(null, nameof(logFont));
+            }
+
+            fixed (T* pLogFont = &logFont)
+            {
+                return FromLogFontInternal(ref *(Interop.User32.LOGFONT*)pLogFont, hdc);
+            }
+        }
+
+        /// <summary>
         /// Creates a <see cref="Font"/> from the specified handle to a device context (HDC).
         /// </summary>
         /// <returns>The newly created <see cref="Font"/>.</returns>
@@ -678,6 +739,20 @@ namespace System.Drawing
             using (Graphics graphics = Graphics.FromHdcInternal(dc))
             {
                 ToLogFont(logFont, graphics);
+            }
+        }
+
+        /// <summary>
+        /// Update the given LOGFONT with data from the screen device context.
+        /// </summary>
+        /// <param name="logFont">A structure to populate with LOGFONT data.</param>
+        public void ToLogFont<T>(ref T logFont)
+            where T: unmanaged
+        {
+            using (ScreenDC dc = ScreenDC.Create())
+            using (Graphics graphics = Graphics.FromHdcInternal(dc))
+            {
+                ToLogFont<T>(ref logFont, graphics);
             }
         }
 
