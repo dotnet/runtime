@@ -2813,7 +2813,22 @@ metadata_foreach_custom_attr_from_index (MonoImage *image, guint32 idx, MonoAsse
 		if (!custom_attr_class_name_from_method_token (image, mtoken, &assembly_token, &nspace, &name))
 			continue;
 
-		stop_iterating = func (image, assembly_token, nspace, name, mtoken, user_data);
+		MonoCustomAttrEntry *attr = NULL;
+		if (!strcmp (name, "InlineArrayAttribute")) {
+			MonoError error;
+			MonoMethod *ctor = mono_get_method_checked (image, mtoken, NULL, NULL, &error);
+			if (!ctor) {
+				g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to: %s", image->name, mtoken, mono_error_get_message (&error));
+			} else {
+				attr = (MonoCustomAttrEntry *)g_malloc0 (sizeof (MonoCustomAttrEntry));
+				attr->ctor = ctor;
+				const char *data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
+				attr->data_size = mono_metadata_decode_value (data, &data);
+				attr->data = (guchar*)data;
+			}
+		}
+
+		stop_iterating = func (image, assembly_token, nspace, name, mtoken, attr, user_data);
 	}
 }
 
@@ -2845,8 +2860,6 @@ mono_class_metadata_foreach_custom_attr (MonoClass *klass, MonoAssemblyMetadataC
 		klass = mono_class_get_generic_class (klass)->container_class;
 
 	guint32 idx = custom_attrs_idx_from_class (klass);
-	MonoError error;
-	MonoCustomAttrInfo *info= mono_custom_attrs_from_index_checked(image, idx, TRUE, &error);
 
 	metadata_foreach_custom_attr_from_index (image, idx, func, user_data);
 }
