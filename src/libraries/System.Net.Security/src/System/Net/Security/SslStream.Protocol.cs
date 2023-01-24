@@ -546,8 +546,6 @@ namespace System.Net.Security
                     _sslAuthenticationOptions.EncryptionPolicy,
                     _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck);
 
-                //Console.WriteLine("Found cached credentials {0} ????? with {1}", cachedCredentialHandle, selectedCert != null);
-
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
                 // (instead of going anonymous as we do here).
@@ -591,7 +589,6 @@ namespace System.Net.Security
                         _sslAuthenticationOptions.CertificateContext ??= SslStreamCertificateContext.Create(selectedCert!);
                     }
 
-                    //Console.WriteLine("Creating new crentials with certificate {0} selected {1}", _sslAuthenticationOptions.CertificateContext?.Certificate != null, _selectedClientCertificate != null);
                     _credentialsHandle = AcquireCredentialsHandle(_sslAuthenticationOptions, newCredentialsRequested);
                     thumbPrint = guessedThumbPrint; // Delay until here in case something above threw.
                 }
@@ -859,11 +856,8 @@ namespace System.Net.Security
                                        ref result,
                                        _sslAuthenticationOptions);
 
-//                        Console.WriteLine("CLIENT FAILEFI WITH {0}", status.ErrorCode);
-//
                         if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                         {
-//                            Console.WriteLine("CLIENT FAILEFI WITH {0}", status.ErrorCode);
                             refreshCredentialNeeded = true;
                             cachedCreds = AcquireClientCredentials(ref thumbPrint, newCredentialsRequested: true);
 
@@ -874,7 +868,7 @@ namespace System.Net.Security
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        _sslAuthenticationOptions.TargetHost,
-                                       inputBuffer,
+                                       ReadOnlySpan<byte>.Empty,
                                        ref result,
                                        _sslAuthenticationOptions);
                         }
