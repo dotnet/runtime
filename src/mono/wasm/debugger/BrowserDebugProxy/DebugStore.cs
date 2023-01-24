@@ -837,6 +837,73 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ToString() => "TypeInfo('" + FullName + "')";
     }
 
+    /// <summary>
+    ///   Information we can extract directly from the assembly image using metadata readers
+    /// </summary>
+    internal sealed class MetadataDebugSummary
+    {
+        internal MetadataReader PdbMetadataReader { get; private init; }
+        internal bool IsPortableCodeView { get; private init; }
+        internal PdbChecksum[] PdbChecksums { get; private init; }
+
+        internal CodeViewDebugDirectoryData? CodeViewData { get; private init; }
+
+        private MetadataDebugSummary(MetadataReader pdbMetadataReader, bool isPortableCodeView, PdbChecksum[] pdbChecksums, CodeViewDebugDirectoryData? codeViewData)
+        {
+            PdbMetadataReader = pdbMetadataReader;
+            IsPortableCodeView = isPortableCodeView;
+            PdbChecksums = pdbChecksums;
+            CodeViewData = codeViewData;
+        }
+
+        internal static MetadataDebugSummary Create(MonoProxy monoProxy, SessionId sessionId, string name, IDebugMetadataProvider provider, byte[] pdb, CancellationToken token)
+        {
+            var entries = provider.ReadDebugDirectory();
+            CodeViewDebugDirectoryData? codeViewData = null;
+            bool isPortableCodeView = false;
+            List<PdbChecksum> pdbChecksums = new();
+            foreach (var entry in entries)
+            {
+                if (entry.Type == DebugDirectoryEntryType.CodeView)
+                {
+                    codeViewData = provider.ReadCodeViewDebugDirectoryData(entry);
+                    if (entry.IsPortableCodeView)
+                        isPortableCodeView = true;
+                }
+                if (entry.Type == DebugDirectoryEntryType.PdbChecksum)
+                {
+                    var checksum = provider.ReadPdbChecksumDebugDirectoryData(entry);
+                    pdbChecksums.Add(new PdbChecksum(checksum.AlgorithmName, checksum.Checksum.ToArray()));
+                }
+            }
+
+            MetadataReader pdbMetadataReader = null;
+            if (pdb != null)
+            {
+                var pdbStream = new MemoryStream(pdb);
+                try
+                {
+                    // MetadataReaderProvider.FromPortablePdbStream takes ownership of the stream
+                    pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
+                }
+                catch (BadImageFormatException)
+                {
+                    monoProxy.SendLog(sessionId, $"Warning: Unable to read debug information of: {name} (use DebugType=Portable/Embedded)", token);
+                }
+            }
+            else
+            {
+                var embeddedPdbEntry = entries.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
+                if (embeddedPdbEntry.DataSize != 0)
+                {
+                    pdbMetadataReader = provider.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry).GetMetadataReader();
+                }
+            }
+
+            return new MetadataDebugSummary(pdbMetadataReader, isPortableCodeView, pdbChecksums.ToArray(), codeViewData);
+        }
+    }
+
     internal sealed class AssemblyInfo
     {
         private static int next_id;
@@ -894,7 +961,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.id = Interlocked.Increment(ref next_id);
             this.logger = logger;
         }
-
         private static AssemblyInfo FromPEReader(MonoProxy monoProxy, SessionId sessionId, PEReader peReader, byte[] pdb, ILogger logger, CancellationToken token)
         {
 
@@ -902,69 +968,20 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var asmMetadataReader = PEReaderExtensions.GetMetadataReader(peReader);
             string name = ReadAssemblyName(asmMetadataReader);
-            ReadDebugEntries(monoProxy, sessionId, name, debugProvider, pdb, out var codeViewData, out var isPortableCodeView, out var pdbChecksums, out var pdbMetadataReader, token);
+            var summary = MetadataDebugSummary.Create(monoProxy, sessionId, name, debugProvider, pdb, token);
 
-            var assemblyInfo = new AssemblyInfo(peReader, name, asmMetadataReader, codeViewData, pdbChecksums.ToArray(), isPortableCodeView, pdbMetadataReader, logger);
+            var assemblyInfo = new AssemblyInfo(peReader, name, asmMetadataReader, summary.CodeViewData, summary.PdbChecksums, summary.IsPortableCodeView, summary.PdbMetadataReader, logger);
             return assemblyInfo;
         }
-
-        private static void ReadDebugEntries(MonoProxy monoProxy, SessionId sessionId, string name, IDebugMetadataProvider provider, byte[] pdb, out CodeViewDebugDirectoryData? codeViewData, out bool isPortableCodeView, out List<PdbChecksum> pdbChecksums, out MetadataReader pdbMetadataReader, CancellationToken token)
-        {
-            var entries = provider.ReadDebugDirectory();
-            codeViewData = null;
-            isPortableCodeView = false;
-            pdbChecksums = new();
-            foreach (var entry in entries)
-            {
-                if (entry.Type == DebugDirectoryEntryType.CodeView)
-                {
-                    codeViewData = provider.ReadCodeViewDebugDirectoryData(entry);
-                    if (entry.IsPortableCodeView)
-                        isPortableCodeView = true;
-                }
-                if (entry.Type == DebugDirectoryEntryType.PdbChecksum)
-                {
-                    var checksum = provider.ReadPdbChecksumDebugDirectoryData(entry);
-                    pdbChecksums.Add(new PdbChecksum(checksum.AlgorithmName, checksum.Checksum.ToArray()));
-                }
-            }
-
-            pdbMetadataReader = null;
-            if (pdb != null)
-            {
-                var pdbStream = new MemoryStream(pdb);
-                try
-                {
-                    // MetadataReaderProvider.FromPortablePdbStream takes ownership of the stream
-                    pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
-                }
-                catch (BadImageFormatException)
-                {
-                    monoProxy.SendLog(sessionId, $"Warning: Unable to read debug information of: {name} (use DebugType=Portable/Embedded)", token);
-                }
-            }
-            else
-            {
-                var embeddedPdbEntry = entries.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-                if (embeddedPdbEntry.DataSize != 0)
-                {
-                    pdbMetadataReader = provider.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry).GetMetadataReader();
-                }
-            }
-
-
-        }
-
         private static AssemblyInfo FromWebcilReader(MonoProxy monoProxy, SessionId sessionId, WebcilReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
         {
             var debugProvider = new WebcilDebugMetadataProvider(wcReader);
             var asmMetadataReader = wcReader.GetMetadataReader();
             string name = ReadAssemblyName(asmMetadataReader);
 
-            ReadDebugEntries(monoProxy, sessionId, name, debugProvider, pdb, out var codeViewData, out var isPortableCodeView, out var pdbChecksums, out var pdbMetadataReader, token);
+            var summary = MetadataDebugSummary.Create(monoProxy, sessionId, name, debugProvider, pdb, token);
 
-
-            var assemblyInfo = new AssemblyInfo(wcReader, name, asmMetadataReader, codeViewData, pdbChecksums.ToArray(), isPortableCodeView, pdbMetadataReader, logger);
+            var assemblyInfo = new AssemblyInfo(wcReader, name, asmMetadataReader, summary.CodeViewData, summary.PdbChecksums, summary.IsPortableCodeView, summary.PdbMetadataReader, logger);
             return assemblyInfo;
         }
 
