@@ -7882,13 +7882,24 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                 continue;
             }
 
-            if (varDsc->lvPromoted && (lvaGetDesc(varDsc->lvFieldLclStart)->lvParentLcl != varNum))
+#if FEATURE_IMPLICIT_BYREFS
+            if (varDsc->lvPromoted)
             {
-                // Local copy for implicit byref promotion that was undone. Do
-                // not introduce new references to it, all uses have been
-                // morphed to access the parameter.
-                continue;
+                LclVarDsc* firstField = lvaGetDesc(varDsc->lvFieldLclStart);
+                if (firstField->lvParentLcl != varNum)
+                {
+// Local copy for implicit byref promotion that was undone. Do
+// not introduce new references to it, all uses have been
+// morphed to access the parameter.
+#ifdef DEBUG
+                    LclVarDsc* param = lvaGetDesc(firstField->lvParentLcl);
+                    assert(param->lvIsImplicitByRef && !param->lvPromoted);
+                    assert(param->lvFieldLclStart == varNum);
+#endif
+                    continue;
+                }
             }
+#endif
 
             var_types lclType            = varDsc->TypeGet();
             bool      isUserLocal        = (varNum < info.compLocalsCount);
