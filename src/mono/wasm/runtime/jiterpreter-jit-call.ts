@@ -70,7 +70,13 @@ class TrampolineInfo {
     hasThisReference: boolean;
     hasReturnValue: boolean;
     noWrapper: boolean;
+    // The number of managed arguments (not including the this-reference or return val address)
     paramCount: number;
+    // The managed type of each argument, not including the this-reference
+    paramTypes: MonoType[];
+    // The interpreter stack offset of each argument, in bytes. Indexes are one-based if
+    //  the method has a this-reference (thisp is arg 0) and zero-based for static methods.
+    // The return value address is not in here either because it's always at a fixed location.
     argOffsets: number[];
     catchExceptions: boolean;
     target: number; // either cinfo->wrapper or cinfo->addr, depending
@@ -80,7 +86,6 @@ class TrampolineInfo {
     result: number;
     queue: NativePointer[] = [];
     signature: VoidPtr;
-    paramTypes: MonoType[];
     returnType: MonoType;
     wasmNativeReturnType: WasmValtype;
     wasmNativeSignature: WasmValtype[];
@@ -111,8 +116,10 @@ class TrampolineInfo {
         for (let i = 0; i < this.paramCount; i++)
             this.paramTypes[i] = <any>getU32(<any>ptr + (i * 4));
 
+        // See initialize_arg_offsets for where this array is built
+        const argOffsetCount = this.paramCount + (this.hasThisReference ? 1 : 0);
         this.argOffsets = new Array(this.paramCount);
-        for (let i = 0, c = this.paramCount + (this.hasThisReference ? 1 : 0); i < c; i++)
+        for (let i = 0; i < argOffsetCount; i++)
             this.argOffsets[i] = <any>getU32(<any>arg_offsets + (i * 4));
 
         this.target = this.noWrapper ? this.addr : this.wrapper;
@@ -692,7 +699,10 @@ function generate_wasm_body (
             mono_mb_emit_ldarg (mb, 0);
     */
     if (info.hasThisReference) {
-        append_ldloc(builder, 0, WasmOpcode.i32_load);
+        // The this-reference is always the first argument
+        // Note that currently info.argOffsets[0] will always be 0, but it's best to
+        //  read it from the array in case this behavior changes later.
+        append_ldloc(builder, info.argOffsets[0], WasmOpcode.i32_load);
         stack_index++;
     }
 
@@ -702,6 +712,8 @@ function generate_wasm_body (
 
     for (let i = 0; i < info.paramCount; i++) {
         // FIXME: STACK_ADD_BYTES does alignment, but we probably don't need to?
+        // Note that we add stack_index to the index, because argOffsets[0] is the
+        //  offset of the this-reference for non-static methods
         const svalOffset = info.argOffsets[stack_index + i];
         const argInfoOffset = getU32(<any>info.cinfo + offsetOfArgInfo) + i;
         const argInfo = getU8(argInfoOffset);
