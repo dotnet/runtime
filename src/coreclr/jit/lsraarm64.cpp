@@ -25,23 +25,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "sideeffects.h"
 #include "lower.h"
 
-regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPosition)
-{
-    regMaskTP result = candidates & m_AvailableRegs;
-
-    if (!refPosition->isFirstRefPositionOfConsecutiveRegisters())
-    {
-        return result;
-    }
-
-    // If refPosition->regCount != 0, we need to make sure we check for all the
-    // `regCount` available regs.
-
-    result &= (m_AvailableRegs >> (refPosition->regCount - 1));
-
-    return result;
-}
-
 //------------------------------------------------------------------------
 // getNextConsecutiveRefPosition: Get the next subsequent refPosition.
 //

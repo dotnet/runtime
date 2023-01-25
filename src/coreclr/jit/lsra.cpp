@@ -12008,11 +12008,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     reverseSelect = linearScan->doReverseSelect();
 #endif // DEBUG
 
-#if defined(TARGET_ARM64)
-    freeCandidates = linearScan->getFreeCandidates(candidates, refPosition);
-#else
     freeCandidates = linearScan->getFreeCandidates(candidates ARM_ARG(regType));
-#endif // TARGET_ARM
 
     // If no free candidates, then double check if refPosition is an actual ref.
     if (freeCandidates == RBM_NONE)
