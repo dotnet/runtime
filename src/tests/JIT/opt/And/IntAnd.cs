@@ -14,7 +14,7 @@ namespace CodeGenTests
             // X64: mov
             
             // X64-NOT: and
-            return i % UInt32.MaxValue;
+            return i & UInt32.MaxValue;
         }
 
         static int Main()
