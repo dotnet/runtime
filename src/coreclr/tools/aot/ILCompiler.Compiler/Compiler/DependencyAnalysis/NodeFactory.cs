@@ -255,6 +255,13 @@ namespace ILCompiler.DependencyAnalysis
 
             _methodEntrypoints = new MethodEntrypointHashtable(this);
 
+            _tentativeMethodEntrypoints = new NodeCache<MethodDesc, IMethodNode>((MethodDesc method) =>
+            {
+                IMethodNode entrypoint = MethodEntrypoint(method, unboxingStub: false);
+                return new TentativeMethodNode(entrypoint is TentativeMethodNode tentative ?
+                    tentative.RealBody : (IMethodBodyNode)entrypoint);
+            });
+
             _tentativeMethods = new NodeCache<MethodDesc, TentativeInstanceMethodNode>(method =>
             {
                 return new TentativeInstanceMethodNode((IMethodBodyNode)MethodEntrypoint(method));
@@ -282,14 +289,19 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeGVMEntriesNode(type);
             });
 
-            _reflectableMethods = new NodeCache<MethodDesc, ReflectableMethodNode>(method =>
+            _reflectedMethods = new NodeCache<MethodDesc, ReflectedMethodNode>(method =>
             {
-                return new ReflectableMethodNode(method);
+                return new ReflectedMethodNode(method);
             });
 
-            _reflectableFields = new NodeCache<FieldDesc, ReflectableFieldNode>(field =>
+            _reflectedFields = new NodeCache<FieldDesc, ReflectedFieldNode>(field =>
             {
-                return new ReflectableFieldNode(field);
+                return new ReflectedFieldNode(field);
+            });
+
+            _reflectedTypes = new NodeCache<TypeDesc, ReflectedTypeNode>(type =>
+            {
+                return new ReflectedTypeNode(type);
             });
 
             _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
@@ -364,6 +376,11 @@ namespace ILCompiler.DependencyAnalysis
             _dataflowAnalyzedMethods = new NodeCache<MethodILKey, DataflowAnalyzedMethodNode>((MethodILKey il) =>
             {
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
+            });
+
+            _dynamicDependencyAttributesOnEntities = new NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode>((TypeSystemEntity entity) =>
+            {
+                return new DynamicDependencyAttributesOnEntityNode(entity);
             });
 
             _embeddedTrimmingDescriptors = new NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode>((module) =>
@@ -687,6 +704,13 @@ namespace ILCompiler.DependencyAnalysis
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
         }
 
+        private NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode> _dynamicDependencyAttributesOnEntities;
+
+        public DynamicDependencyAttributesOnEntityNode DynamicDependencyAttributesOnEntity(TypeSystemEntity entity)
+        {
+            return _dynamicDependencyAttributesOnEntities.GetOrAdd(entity);
+        }
+
         private NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode> _embeddedTrimmingDescriptors;
 
         public EmbeddedTrimmingDescriptorNode EmbeddedTrimmingDescriptor(EcmaModule module)
@@ -844,6 +868,15 @@ namespace ILCompiler.DependencyAnalysis
             return _methodEntrypoints.GetOrCreateValue(method);
         }
 
+        protected NodeCache<MethodDesc, IMethodNode> _tentativeMethodEntrypoints;
+
+        public IMethodNode TentativeMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
+        {
+            // Didn't implement unboxing stubs for now. Would need to pass down the flag.
+            Debug.Assert(!unboxingStub);
+            return _tentativeMethodEntrypoints.GetOrAdd(method);
+        }
+
         private NodeCache<MethodDesc, TentativeInstanceMethodNode> _tentativeMethods;
         public IMethodNode MethodEntrypointOrTentativeMethod(MethodDesc method, bool unboxingStub = false)
         {
@@ -899,16 +932,22 @@ namespace ILCompiler.DependencyAnalysis
             return _gvmTableEntries.GetOrAdd(type);
         }
 
-        private NodeCache<MethodDesc, ReflectableMethodNode> _reflectableMethods;
-        public ReflectableMethodNode ReflectableMethod(MethodDesc method)
+        private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
+        public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
-            return _reflectableMethods.GetOrAdd(method);
+            return _reflectedMethods.GetOrAdd(method);
         }
 
-        private NodeCache<FieldDesc, ReflectableFieldNode> _reflectableFields;
-        public ReflectableFieldNode ReflectableField(FieldDesc field)
+        private NodeCache<FieldDesc, ReflectedFieldNode> _reflectedFields;
+        public ReflectedFieldNode ReflectedField(FieldDesc field)
         {
-            return _reflectableFields.GetOrAdd(field);
+            return _reflectedFields.GetOrAdd(field);
+        }
+
+        private NodeCache<TypeDesc, ReflectedTypeNode> _reflectedTypes;
+        public ReflectedTypeNode ReflectedType(TypeDesc type)
+        {
+            return _reflectedTypes.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;

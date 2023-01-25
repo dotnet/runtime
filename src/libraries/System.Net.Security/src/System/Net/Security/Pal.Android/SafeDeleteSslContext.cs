@@ -34,14 +34,19 @@ namespace System.Net
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
+        public SslStream.JavaProxy SslStreamProxy { get; }
+
         public SafeSslHandle SslContext => _sslContext;
 
         public SafeDeleteSslContext(SslAuthenticationOptions authOptions)
             : base(IntPtr.Zero)
         {
+            SslStreamProxy = authOptions.SslStreamProxy
+                ?? throw new ArgumentNullException(nameof(authOptions.SslStreamProxy));
+
             try
             {
-                _sslContext = CreateSslContext(authOptions);
+                _sslContext = CreateSslContext(SslStreamProxy, authOptions);
                 InitializeSslContext(_sslContext, authOptions);
             }
             catch (Exception ex)
@@ -58,8 +63,7 @@ namespace System.Net
         {
             if (disposing)
             {
-                SafeSslHandle sslContext = _sslContext;
-                if (sslContext != null)
+                if (_sslContext is SafeSslHandle sslContext)
                 {
                     _inputBuffer.Dispose();
                     _outputBuffer.Dispose();
@@ -145,11 +149,11 @@ namespace System.Net
             return limit;
         }
 
-        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions authOptions)
+        private static SafeSslHandle CreateSslContext(SslStream.JavaProxy sslStreamProxy, SslAuthenticationOptions authOptions)
         {
             if (authOptions.CertificateContext == null)
             {
-                return Interop.AndroidCrypto.SSLStreamCreate();
+                return Interop.AndroidCrypto.SSLStreamCreate(sslStreamProxy);
             }
 
             SslStreamCertificateContext context = authOptions.CertificateContext;
@@ -169,7 +173,7 @@ namespace System.Net
                 ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
             }
 
-            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(keyBytes, algorithm, ptrs);
+            return Interop.AndroidCrypto.SSLStreamCreateWithCertificates(sslStreamProxy, keyBytes, algorithm, ptrs);
         }
 
         private static AsymmetricAlgorithm GetPrivateKeyAlgorithm(X509Certificate2 cert, out PAL_KeyAlgorithm algorithm)

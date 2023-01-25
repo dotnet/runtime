@@ -61,9 +61,9 @@ done
 
 cmake_extra_defines=
 if [[ "$CROSSCOMPILE" == "1" ]]; then
-    platform="$(uname)"
+    platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
     # OSX doesn't use rootfs
-    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "Darwin" ]]; then
+    if ! [[ -n "$ROOTFS_DIR" || "$platform" == "darwin" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
     fi
@@ -73,7 +73,7 @@ if [[ "$CROSSCOMPILE" == "1" ]]; then
 
     cmake_extra_defines="$cmake_extra_defines -C $scriptroot/tryrun.cmake"
 
-    if [[ "$platform" == "Darwin" ]]; then
+    if [[ "$platform" == "darwin" ]]; then
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_SYSTEM_NAME=Darwin"
     else
         cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$scriptroot/../common/cross/toolchain.cmake"
@@ -94,7 +94,7 @@ if [[ "$scan_build" == "ON" && -n "$SCAN_BUILD_COMMAND" ]]; then
 fi
 
 if [[ "$host_arch" == "wasm" ]]; then
-    if [[ "$target_os" == "Browser" ]]; then
+    if [[ "$target_os" == "browser" ]]; then
         cmake_command="emcmake $cmake_command"
     elif [[ "$target_os" == "wasi" ]]; then
         true

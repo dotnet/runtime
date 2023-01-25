@@ -33,10 +33,8 @@ namespace System.Net.Http.Headers
         {
             HeaderUtilities.CheckValidToken(value, nameof(value));
 
-            if ((quality < 0) || (quality > 1))
-            {
-                throw new ArgumentOutOfRangeException(nameof(quality));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(quality);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, 1.0);
 
             _value = value;
             _quality = quality;
