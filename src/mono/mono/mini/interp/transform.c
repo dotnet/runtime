@@ -490,15 +490,16 @@ create_interp_local_explicit (TransformData *td, MonoType *type, int size)
 			td->locals_capacity = 2;
 		td->locals = (InterpLocal*) g_realloc (td->locals, td->locals_capacity * sizeof (InterpLocal));
 	}
-	td->locals [td->locals_size].type = type;
-	td->locals [td->locals_size].mt = mint_type (type);
-	td->locals [td->locals_size].flags = 0;
-	td->locals [td->locals_size].indirects = 0;
-	td->locals [td->locals_size].offset = -1;
-	td->locals [td->locals_size].size = size;
-	td->locals [td->locals_size].live_start = -1;
-	td->locals [td->locals_size].bb_index = -1;
-	td->locals [td->locals_size].def = NULL;
+	InterpLocal *local = &td->locals [td->locals_size];
+	local->type = type;
+	local->mt = mint_type (type);
+	local->flags = 0;
+	local->indirects = 0;
+	local->offset = -1;
+	local->size = size;
+	local->live_start = -1;
+	local->bb_index = -1;
+	local->def = NULL;
 	td->locals_size++;
 	return td->locals_size - 1;
 
@@ -543,12 +544,13 @@ static void
 push_type_explicit (TransformData *td, int type, MonoClass *k, int type_size)
 {
 	ensure_stack (td, 1);
-	td->sp->type = GINT_TO_UINT8 (type);
-	td->sp->klass = k;
-	td->sp->flags = 0;
-	td->sp->offset = get_tos_offset (td);
-	td->sp->size = ALIGN_TO (type_size, MINT_STACK_SLOT_SIZE);
-	create_interp_stack_local (td, td->sp, type_size);
+	StackInfo *sp = td->sp;
+	sp->type = GINT_TO_UINT8 (type);
+	sp->klass = k;
+	sp->flags = 0;
+	sp->offset = get_tos_offset (td);
+	sp->size = ALIGN_TO (type_size, MINT_STACK_SLOT_SIZE);
+	create_interp_stack_local (td, sp, type_size);
 	td->sp++;
 }
 
@@ -557,11 +559,12 @@ push_var (TransformData *td, int var_index)
 {
 	InterpLocal *var = &td->locals [var_index];
 	ensure_stack (td, 1);
-	td->sp->type = GINT_TO_UINT8 (stack_type [var->mt]);
-	td->sp->klass = mono_class_from_mono_type_internal (var->type);
-	td->sp->flags = 0;
-	td->sp->local = var_index;
-	td->sp->size = ALIGN_TO (var->size, MINT_STACK_SLOT_SIZE);
+	StackInfo *sp = td->sp;
+	sp->type = GINT_TO_UINT8 (stack_type [var->mt]);
+	sp->klass = mono_class_from_mono_type_internal (var->type);
+	sp->flags = 0;
+	sp->local = var_index;
+	sp->size = ALIGN_TO (var->size, MINT_STACK_SLOT_SIZE);
 	td->sp++;
 }
 
