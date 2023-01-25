@@ -294,6 +294,7 @@ namespace ObjectiveCMarshalAPI
         {
             // This function is called from the exception propagation callback.
             // It ensures that the thread was transitioned to preemptive mode.
+            GC.Collect();
         }
 
         private class IntException : Exception
