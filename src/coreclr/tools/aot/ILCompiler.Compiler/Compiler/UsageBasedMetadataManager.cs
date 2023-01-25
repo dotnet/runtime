@@ -1126,11 +1126,18 @@ namespace ILCompiler
                 Module = module;
                 RemovedAttributes = new HashSet<TypeDesc>();
 
-                PEMemoryBlock resourceDirectory = module.PEReader.GetSectionData(module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
+                ParseLinkAttributesXml(module, logger, featureSwitchValues, false);
+                ParseLinkAttributesXml(module, logger, featureSwitchValues, true);
+            }
 
-                foreach (var resourceHandle in module.MetadataReader.ManifestResources)
+            public void  ParseLinkAttributesXml(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues, bool isCorLib)
+            {
+                EcmaModule xmlModule = isCorLib ? (EcmaModule) module.Context.SystemModule : module;
+                PEMemoryBlock resourceDirectory = xmlModule.PEReader.GetSectionData(xmlModule.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
+
+                foreach (var resourceHandle in xmlModule.MetadataReader.ManifestResources)
                 {
-                    ManifestResource resource = module.MetadataReader.GetManifestResource(resourceHandle);
+                    ManifestResource resource = xmlModule.MetadataReader.GetManifestResource(resourceHandle);
 
                     // Don't try to process linked resources or resources in other assemblies
                     if (!resource.Implementation.IsNil)
@@ -1138,7 +1145,7 @@ namespace ILCompiler
                         continue;
                     }
 
-                    string resourceName = module.MetadataReader.GetString(resource.Name);
+                    string resourceName = xmlModule.MetadataReader.GetString(resource.Name);
                     if (resourceName == "ILLink.LinkAttributes.xml")
                     {
                         BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
@@ -1150,19 +1157,26 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        RemovedAttributes = LinkAttributesReader.GetRemovedAttributes(logger, module.Context, ms, resource, module, "resource " + resourceName + " in " + module.ToString(), featureSwitchValues);
+                        RemovedAttributes.UnionWith(LinkAttributesReader.GetRemovedAttributes(logger, xmlModule.Context, ms, resource, module, "resource " + resourceName + " in " + module.ToString(), featureSwitchValues));
                     }
                 }
             }
         }
 
-        private sealed class LinkAttributesReader : ProcessLinkerXmlBase
+        public static class PlatformAssemblies
+        {
+            public const string CoreLib = "System.Private.CoreLib";
+        }
+
+        internal sealed class LinkAttributesReader : ProcessLinkerXmlBase
         {
             private readonly HashSet<TypeDesc> _removedAttributes = new();
+            private readonly ModuleDesc _resource;
 
             public LinkAttributesReader(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
                 : base(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
             {
+                _resource = resourceAssembly;
             }
 
             private void ProcessAttribute(TypeDesc type, XPathNavigator nav)
@@ -1179,6 +1193,21 @@ namespace ILCompiler
                 var rdr = new LinkAttributesReader(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
                 rdr.ProcessXml(false);
                 return rdr._removedAttributes;
+            }
+
+            protected override AllowedAssemblies AllowedAssemblySelector
+            {
+                get
+                {
+                    if (_resource?.Assembly == null)
+                        return AllowedAssemblies.AllAssemblies;
+
+                    // Corelib XML may contain assembly wildcard to support compiler-injected attribute types
+                    if (_resource?.Assembly.GetName().Name == PlatformAssemblies.CoreLib)
+                        return AllowedAssemblies.AllAssemblies;
+
+                    return AllowedAssemblies.ContainingAssembly;
+                }
             }
 
             protected override void ProcessAssembly(ModuleDesc assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
