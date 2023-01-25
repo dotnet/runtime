@@ -917,8 +917,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     if ((oper == GT_SUB) && op2->OperIs(GT_LT) && op2->isContained())
     {
         assert(op1->OperIs(GT_GT));
-        assert(op1->gtGetOp1()->GetRegNum() == op2->gtGetOp1()->GetRegNum());
-        assert(op1->gtGetOp2()->GetRegNum() == op2->gtGetOp2()->GetRegNum());
+        assert(op1->gtGetOp1()->AsLclVar()->GetLclNum() == op2->gtGetOp1()->AsLclVar()->GetLclNum());
+        assert(op1->gtGetOp2()->AsLclVar()->GetLclNum() == op2->gtGetOp2()->AsLclVar()->GetLclNum());
 
         regNumber tmpReg = treeNode->GetSingleTempReg();
 
