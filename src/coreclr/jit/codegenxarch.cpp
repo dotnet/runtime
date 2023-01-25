@@ -920,7 +920,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         assert(op1->gtGetOp1()->GetRegNum() == op2->gtGetOp1()->GetRegNum());
         assert(op1->gtGetOp2()->GetRegNum() == op2->gtGetOp2()->GetRegNum());
 
-        regNumber tmpReg = op2->GetSingleTempReg();
+        regNumber tmpReg = treeNode->GetSingleTempReg();
 
         inst_SETCC(GenCondition::FromIntegralRelop(op2), op2->TypeGet(), tmpReg);
         GetEmitter()->emitIns_Mov(INS_movzx, EA_1BYTE, tmpReg, tmpReg, false);
