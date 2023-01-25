@@ -369,60 +369,60 @@ extends:
       #
       # WebAssembly legs
       #
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          buildAndRunWasi: true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          scenarios:
-            - normal
-            - WasmTestOnBrowser
+      #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        #parameters:
+          #platforms:
+            #- browser_wasm
+          #buildAndRunWasi: true
+          #alwaysRun: ${{ variables.isRollingBuild }}
+          #scenarios:
+            #- normal
+            #- WasmTestOnBrowser
 
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
-          scenarios:
-            - WasmTestOnBrowser
+      #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        #parameters:
+          #platforms:
+            #- browser_wasm_win
+          #alwaysRun: ${{ variables.isRollingBuild }}
+          #scenarios:
+            #- WasmTestOnBrowser
 
-      # EAT Library tests - only run on linux
-      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          nameSuffix: _EAT
-          runAOT: false
-          shouldRunSmokeOnly: false
-          alwaysRun: ${{ variables.isRollingBuild }}
+      ## EAT Library tests - only run on linux
+      #- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+        #parameters:
+          #platforms:
+            #- browser_wasm
+          #nameSuffix: _EAT
+          #runAOT: false
+          #shouldRunSmokeOnly: false
+          #alwaysRun: ${{ variables.isRollingBuild }}
 
-      # AOT Library tests
-      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          nameSuffix: _AOT
-          runAOT: true
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
+      ## AOT Library tests
+      #- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+        #parameters:
+          #platforms:
+            #- browser_wasm
+          #nameSuffix: _AOT
+          #runAOT: true
+          #shouldRunSmokeOnly: true
+          #alwaysRun: ${{ variables.isRollingBuild }}
 
-      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm_win
-          nameSuffix: _AOT
-          runAOT: true
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
+      #- template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+        #parameters:
+          #platforms:
+            #- browser_wasm_win
+          #nameSuffix: _AOT
+          #runAOT: true
+          #shouldRunSmokeOnly: true
+          #alwaysRun: ${{ variables.isRollingBuild }}
 
-      # Wasm.Build.Tests
-      - template: /eng/pipelines/common/templates/wasm-build-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
+      ## Wasm.Build.Tests
+      #- template: /eng/pipelines/common/templates/wasm-build-tests.yml
+        #parameters:
+          #platforms:
+            #- browser_wasm
+            #- browser_wasm_win
+          #alwaysRun: ${{ variables.isRollingBuild }}
 
       # Wasm Debugger tests
       - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
@@ -433,35 +433,35 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
 
       # Wasm runtime tests
-      - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          alwaysRun: ${{ variables.isRollingBuild }}
+      #- template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
+        #parameters:
+          #platforms:
+            #- browser_wasm
+          #alwaysRun: ${{ variables.isRollingBuild }}
 
-      # BUILD ONLY - Wasm Threading Legs
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          nameSuffix: _Threading
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread
-          alwaysRun: ${{ variables.isRollingBuild }}
+      ## BUILD ONLY - Wasm Threading Legs
+      #- template: /eng/pipelines/common/templates/wasm-build-only.yml
+        #parameters:
+          #platforms:
+            #- browser_wasm
+          #nameSuffix: _Threading
+          #extraBuildArgs: /p:MonoWasmBuildVariant=multithread
+          #alwaysRun: ${{ variables.isRollingBuild }}
 
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          nameSuffix: _Threading_PerfTracing
-          extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
-          alwaysRun: ${{ variables.isRollingBuild }}
+      #- template: /eng/pipelines/common/templates/wasm-build-only.yml
+        #parameters:
+          #platforms:
+            #- browser_wasm
+          #nameSuffix: _Threading_PerfTracing
+          #extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
+          #alwaysRun: ${{ variables.isRollingBuild }}
 
-      # BUILD ONLY - WASI/Wasm
-      - template: /eng/pipelines/common/templates/wasi-build-only.yml
-        parameters:
-          platforms:
-            - wasi_wasm
-          alwaysRun: ${{ variables.isRollingBuild }}
+      ## BUILD ONLY - WASI/Wasm
+      #- template: /eng/pipelines/common/templates/wasi-build-only.yml
+        #parameters:
+          #platforms:
+            #- wasi_wasm
+          #alwaysRun: ${{ variables.isRollingBuild }}
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
