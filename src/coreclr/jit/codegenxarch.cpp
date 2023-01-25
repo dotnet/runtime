@@ -1307,7 +1307,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     //         (signed < or >= where targetReg != REG_NA)
 
     GenTree*  op1     = tree->gtOp1;
-    GenTree*  op2     = tree->gtOp2;
     var_types op1Type = op1->TypeGet();
 
     if (varTypeIsFloating(op1Type))
