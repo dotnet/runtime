@@ -2,7 +2,11 @@
   <PropertyGroup>
     <!-- Disable analyzers in sourcebuild -->
     <RunAnalyzers Condition="'$(DotNetBuildFromSource)' == 'true'">false</RunAnalyzers>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RunAnalyzers)' != 'false'">
     <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup Condition="'$(RunAnalyzers)' != 'false'">
     <EditorConfigFiles Include="$(MSBuildThisFileDirectory)CodeAnalysis.src.globalconfig" />
