@@ -1001,7 +1001,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // We can skip emitting 'and reg0, -1` if we know that the upper 32bits of 'reg0' are zero'ed.
     if (compiler->opts.OptimizationEnabled())
     {
-        if ((oper == GT_AND) && !varTypeIsLong(treeNode) && op2->IsIntegralConst(-1) &&
+        if ((oper == GT_AND) && !treeNode->gtSetFlags() && !varTypeIsLong(treeNode) && op2->IsIntegralConst(-1) &&
             emit->AreUpper32BitsZero(targetReg))
         {
             genProduceReg(treeNode);
