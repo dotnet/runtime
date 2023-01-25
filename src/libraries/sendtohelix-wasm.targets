@@ -236,6 +236,7 @@
       <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(TestUsingWebcil)' == 'true'">$(WorkItemPrefix)Webcil-</WorkItemPrefix>
     </PropertyGroup>
 
     <ItemGroup>
@@ -260,7 +261,7 @@
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="NoWorkload-Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
+      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>

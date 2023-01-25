@@ -260,12 +260,9 @@ namespace System.Net.Security
             else
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
-                flags = Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
-
-                if (authOptions.CertificateContext?.Trust?._sendTrustInHandshake == true)
-                {
-                    flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
-                }
+                flags =
+                    Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD |
+                    Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
             }
 
             EncryptionPolicy policy = authOptions.EncryptionPolicy;

@@ -234,7 +234,7 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
         ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
         if (SUCCEEDED(pMethod->GetName(0, MAX_LONGPATH, nullptr, wszUnicodeName)))
         {
-            std::string methodName = FormatString("%S", wszUnicodeName.GetPtr());
+            std::string methodName = ConvertString(wszUnicodeName.GetPtr());
             WriteValue("method_name", methodName.c_str());
         }
     }

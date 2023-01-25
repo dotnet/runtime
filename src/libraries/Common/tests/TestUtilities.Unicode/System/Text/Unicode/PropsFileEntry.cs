@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Security.Policy;
 using System.Text.RegularExpressions;
@@ -31,7 +32,7 @@ namespace System.Text.Unicode
 
         public bool IsSingleCodePoint => (FirstCodePoint == LastCodePoint);
 
-        public static bool TryParseLine(string line, out PropsFileEntry value)
+        public static bool TryParseLine(string line, [NotNullWhen(true)] out PropsFileEntry? value)
         {
             Match match = _regex.Match(line);
 

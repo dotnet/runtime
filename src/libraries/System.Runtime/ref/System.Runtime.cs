@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Text;
+
 namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
@@ -5045,6 +5047,11 @@ namespace System
         public static System.String Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, object? arg0, object? arg1) { throw null; }
         public static System.String Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, object? arg0, object? arg1, object? arg2) { throw null; }
         public static System.String Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, params object?[] args) { throw null; }
+        public static System.String Format<TArg0>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0) { throw null; }
+        public static System.String Format<TArg0, TArg1>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1) { throw null; }
+        public static System.String Format<TArg0, TArg1, TArg2>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
+        public static System.String Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, params object?[] args) { throw null; }
+        public static System.String Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, System.ReadOnlySpan<object?> args) { throw null; }
         public System.CharEnumerator GetEnumerator() { throw null; }
         public override int GetHashCode() { throw null; }
         public static int GetHashCode(System.ReadOnlySpan<char> value) { throw null; }
@@ -13875,6 +13882,13 @@ namespace System.Text
         public static System.Range TrimStart(System.ReadOnlySpan<byte> value) { throw null; }
         public static System.Range TrimStart(System.ReadOnlySpan<char> value) { throw null; }
     }
+    public sealed class CompositeFormat
+    {
+        internal CompositeFormat() { }
+        public static System.Text.CompositeFormat Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.CompositeFormat? compositeFormat) { throw null; }
+        public string Format { get { throw null; } }
+    }
     public abstract partial class Decoder
     {
         protected Decoder() { }
@@ -14272,6 +14286,11 @@ namespace System.Text
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
+        public System.Text.StringBuilder AppendFormat<TArg0>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0) { throw null; }
+        public System.Text.StringBuilder AppendFormat<TArg0, TArg1>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1) { throw null; }
+        public System.Text.StringBuilder AppendFormat<TArg0, TArg1, TArg2>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, params object?[] args) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, System.ReadOnlySpan<object?> args) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params object?[] values) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params string?[] values) { throw null; }
         public System.Text.StringBuilder AppendJoin(string? separator, params object?[] values) { throw null; }

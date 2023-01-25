@@ -2,6 +2,10 @@
   <UsingTask TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 
+  <PropertyGroup>
+    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
+  </PropertyGroup>
+
   <Target Name="AndroidBuildApp" AfterTargets="$(AndroidBuildAppAfterThisTarget)" />
 
   <Target Name="_AndroidCoreBuild" BeforeTargets="AndroidBuildApp" DependsOnTargets="$(AndroidBuildAppDependsOn)" />
@@ -120,7 +124,10 @@
   </Target>
 
 
-  <Target Name="_AndroidGenerateAppBundle" DependsOnTargets="_AndroidGenerateRuntimeConfig">
+  <Target
+    Name="_AndroidGenerateAppBundle"
+    Condition="$(AndroidGenerateAppBundle) == 'true'"
+    DependsOnTargets="_AndroidGenerateRuntimeConfig">
 
     <PropertyGroup>
       <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>

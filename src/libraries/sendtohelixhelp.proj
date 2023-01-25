@@ -141,6 +141,7 @@
 
     <HelixCommandPrefixItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixCommandPrefixItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
+    <HelixCommandPrefixItem Condition="'$(TestUsingWebcil)' == 'true'" Include="TEST_USING_WEBCIL=true" />
   </ItemGroup>
 
   <PropertyGroup Condition="$(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic'))">
@@ -292,7 +293,7 @@
   <Target Name="PrintHelixQueues">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
     <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
-             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads)" />
+             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), TestUsingWebcil: $(TestUsingWebcil)" />
   </Target>
 
   <Target Name="PrintBuildTargetFramework">
