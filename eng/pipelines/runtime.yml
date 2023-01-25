@@ -466,7 +466,7 @@ extends:
           scenarios:
             - normal
 
-      # run all wasi tests
+      # run all wasi tests - FIXME: move to optional
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
