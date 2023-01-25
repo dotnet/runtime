@@ -378,6 +378,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
             });
 
+            _dataflowAnalyzedTypeDefinitions = new NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode>((TypeDesc type) =>
+            {
+                return new DataflowAnalyzedTypeDefinitionNode(type);
+            });
+
             _dynamicDependencyAttributesOnEntities = new NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode>((TypeSystemEntity entity) =>
             {
                 return new DynamicDependencyAttributesOnEntityNode(entity);
@@ -702,6 +707,13 @@ namespace ILCompiler.DependencyAnalysis
         public DataflowAnalyzedMethodNode DataflowAnalyzedMethod(MethodIL methodIL)
         {
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
+        }
+
+        private NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode> _dataflowAnalyzedTypeDefinitions;
+
+        public DataflowAnalyzedTypeDefinitionNode DataflowAnalyzedTypeDefinition(TypeDesc type)
+        {
+            return _dataflowAnalyzedTypeDefinitions.GetOrAdd(type);
         }
 
         private NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode> _dynamicDependencyAttributesOnEntities;
