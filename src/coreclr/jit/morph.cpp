@@ -7732,9 +7732,11 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                 LclVarDsc* firstField = lvaGetDesc(varDsc->lvFieldLclStart);
                 if (firstField->lvParentLcl != varNum)
                 {
-// Local copy for implicit byref promotion that was undone. Do
-// not introduce new references to it, all uses have been
-// morphed to access the parameter.
+                    // Local copy for implicit byref promotion that was undone. Do
+                    // not introduce new references to it, all uses have been
+                    // morphed to access the parameter.
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
 #ifdef DEBUG
                     LclVarDsc* param = lvaGetDesc(firstField->lvParentLcl);
                     assert(param->lvIsImplicitByRef && !param->lvPromoted);

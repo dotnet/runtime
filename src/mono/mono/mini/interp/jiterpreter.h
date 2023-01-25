@@ -21,7 +21,7 @@
 #define JITERPRETER_NOT_JITTED 1
 
 typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals);
-typedef void (*WasmJitCallThunk) (void *extra_arg, void *ret_sp, void *sp, gboolean *thrown);
+typedef void (*WasmJitCallThunk) (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
 typedef void (*WasmDoJitCall) (gpointer cb, gpointer arg, gboolean *out_thrown);
 
 // Parses a single jiterpreter runtime option. This is used both by driver.c and our typescript
@@ -63,8 +63,7 @@ mono_interp_tier_prepare_jiterpreter (
 //  or JitCallInfo
 extern void
 mono_interp_jit_wasm_jit_call_trampoline (
-	void *rmethod, void *cinfo, void *func,
-	gboolean has_this, int param_count,
+	MonoMethod *method, void *rmethod, void *cinfo,
 	guint32 *arg_offsets, gboolean catch_exceptions
 );
 
@@ -77,8 +76,9 @@ mono_interp_flush_jitcall_queue ();
 //  disabled or because the current runtime environment does not support it
 extern void
 mono_interp_invoke_wasm_jit_call_trampoline (
-	WasmJitCallThunk thunk, void *extra_arg,
-	void *ret_sp, void *sp, gboolean *thrown
+	WasmJitCallThunk thunk,
+	void *ret_sp, void *sp,
+	void *ftndesc, gboolean *thrown
 );
 
 extern void

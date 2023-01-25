@@ -2659,40 +2659,56 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	cinfo = (JitCallInfo*)rmethod->jit_call_info;
 
 #if JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES
-	// FIXME: thread safety
+	// The jiterpreter will compile a unique thunk for each do_jit_call call site if it is hot
+	//  enough to justify it. At that point we can invoke the thunk to efficiently do most of
+	//  the work that would normally be done by do_jit_call
 	if (mono_opt_jiterpreter_jit_call_enabled) {
+		// FIXME: Thread safety for the thunk pointer
 		WasmJitCallThunk thunk = cinfo->jiterp_thunk;
 		if (thunk) {
 			MonoFtnDesc ftndesc = {0};
-			void *extra_arg;
 			ftndesc.addr = cinfo->addr;
 			ftndesc.arg = cinfo->extra_arg;
-			extra_arg = cinfo->no_wrapper ? cinfo->extra_arg : &ftndesc;
 			interp_push_lmf (&ext, frame);
 			if (
 				mono_opt_jiterpreter_wasm_eh_enabled ||
 				(mono_aot_mode != MONO_AOT_MODE_LLVMONLY_INTERP)
 			) {
-				thunk (extra_arg, ret_sp, sp, &thrown);
+				// WASM EH is available or we are otherwise in a situation where we know
+				//  that the jiterpreter thunk was compiled with exception handling built-in
+				//  so we can just invoke it directly and errors will be handled
+				thunk (ret_sp, sp, &ftndesc, &thrown);
 			} else {
+				// Call a special JS function that will invoke the compiled jiterpreter thunk
+				//  and trap errors for us to set the thrown flag
 				mono_interp_invoke_wasm_jit_call_trampoline (
-					thunk, extra_arg, ret_sp, sp, &thrown
+					thunk, ret_sp, sp, &ftndesc, &thrown
 				);
 			}
 			interp_pop_lmf (&ext);
+
+			// We reuse do_jit_call's epilogue to do things like propagate thrown exceptions
+			//  and sign-extend return values instead of inlining that logic into every thunk
 			goto epilogue;
 		} else {
+			// FIXME: thread safety for the hit count
 			int count = cinfo->hit_count;
+			// If our hit count just reached the threshold, we request that a thunk be jitted
+			//  for this specific call site. It will go into a queue and wait until there
+			//  are enough jit calls waiting to be compiled into one WASM module
 			if (count == mono_opt_jiterpreter_jit_call_trampoline_hit_count) {
-				void *fn = cinfo->no_wrapper ? cinfo->addr : cinfo->wrapper;
 				mono_interp_jit_wasm_jit_call_trampoline (
-					rmethod, cinfo, fn, rmethod->hasthis, rmethod->param_count,
+					rmethod->method, rmethod, cinfo,
 					rmethod->arg_offsets, mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP
 				);
 			} else {
 				int excess = count - mono_opt_jiterpreter_jit_call_queue_flush_threshold;
 				if (excess <= 0)
 					cinfo->hit_count++;
+				// If our hit count just reached the flush threshold, that means that we
+				//  previously requested compilation for this call site and it didn't
+				//  happen yet. We will request a flush of the entire queue this one
+				//  time which will probably result in it being compiled
 				if (excess == 0)
 					mono_interp_flush_jitcall_queue ();
 			}
@@ -4213,6 +4229,7 @@ call:
 				reinit_frame (child_frame, frame, cmethod, locals + return_offset, locals + call_args_offset);
 				frame = child_frame;
 			}
+			g_assert (((gsize)frame->stack % MINT_STACK_ALIGNMENT) == 0);
 
 			MonoException *call_ex;
 			if (method_entry (context, frame,
@@ -4226,7 +4243,6 @@ call:
 			}
 
 			context->stack_pointer = (guchar*)frame->stack + cmethod->alloca_size;
-			g_assert_checked (((gsize)context->stack_pointer % MINT_STACK_ALIGNMENT) == 0);
 
 			if (G_UNLIKELY (context->stack_pointer >= context->stack_end)) {
 				context->stack_end = context->stack_real_end;
