@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
-using System.Numerics;
 
 namespace System.Collections.Frozen.Tests
 {
@@ -18,14 +17,19 @@ namespace System.Collections.Frozen.Tests
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
         protected override Type ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
-        protected override IDictionary<TKey, TValue> GenericIDictionaryFactory(int count)
+        protected override IDictionary<TKey, TValue> GenericIDictionaryFactory(int count) =>
+            GenericIDictionaryFactory(count, optimizeForReading: true);
+
+        protected virtual IDictionary<TKey, TValue> GenericIDictionaryFactory(int count, bool optimizeForReading)
         {
             var d = new Dictionary<TKey, TValue>();
             for (int i = 0; i < count; i++)
             {
                 d.Add(CreateTKey(i), CreateTValue(i));
             }
-            return d.ToFrozenDictionary(GetKeyIEqualityComparer());
+            return optimizeForReading ?
+                d.ToFrozenDictionary(GetKeyIEqualityComparer(), true) :
+                d.ToFrozenDictionary(GetKeyIEqualityComparer());
         }
 
         protected override IDictionary<TKey, TValue> GenericIDictionaryFactory() => Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary();
@@ -40,10 +44,11 @@ namespace System.Collections.Frozen.Tests
         protected override EnumerableOrder Order => EnumerableOrder.Unspecified;
 
         [Theory]
-        [InlineData(100_000)]
-        public void CreateVeryLargeDictionary_Success(int largeCount)
+        [InlineData(100_000, false)]
+        [InlineData(100_000, true)]
+        public void CreateVeryLargeDictionary_Success(int largeCount, bool optimizeForReading)
         {
-            GenericIDictionaryFactory(largeCount);
+            GenericIDictionaryFactory(largeCount, optimizeForReading);
         }
 
         [Fact]
@@ -69,12 +74,31 @@ namespace System.Collections.Frozen.Tests
             Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary());
             Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary());
 
-            foreach (IEqualityComparer<TKey> comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default, NonDefaultEqualityComparer<TKey>.Instance })
+            foreach (IEqualityComparer<TKey> comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default })
             {
                 Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary(comparer));
                 Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
                 Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
                 Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
+                foreach (bool optimizeForReading in new[] { false, true })
+                {
+                    Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary(comparer, optimizeForReading));
+                    Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
+                    Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
+                    Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
+                }
+            }
+
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
+            foreach (bool optimizeForReading in new[] { false, true })
+            {
+                Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, optimizeForReading));
+                Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, optimizeForReading));
+                Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, optimizeForReading));
+                Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, optimizeForReading));
             }
         }
 
@@ -120,28 +144,21 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public void FrozenDictionary_ToFrozenDictionary_Idempotent()
         {
-            foreach (IEqualityComparer<TKey> comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default, NonDefaultEqualityComparer<TKey>.Instance })
-            {
-                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary<TKey, TValue>.Empty.ToFrozenDictionary(comparer));
-            }
+            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary<TKey, TValue>.Empty.ToFrozenDictionary());
+            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary<TKey, TValue>.Empty.ToFrozenDictionary(null));
+            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary<TKey, TValue>.Empty.ToFrozenDictionary(null, false));
+            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary<TKey, TValue>.Empty.ToFrozenDictionary(null, true));
+            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary<TKey, TValue>.Empty.ToFrozenDictionary(EqualityComparer<TKey>.Default));
+            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary<TKey, TValue>.Empty.ToFrozenDictionary(EqualityComparer<TKey>.Default, false));
+            Assert.Same(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary<TKey, TValue>.Empty.ToFrozenDictionary(EqualityComparer<TKey>.Default, true));
+
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary<TKey, TValue>.Empty.ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary<TKey, TValue>.Empty.ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, false));
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, FrozenDictionary<TKey, TValue>.Empty.ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, true));
 
             FrozenDictionary<TKey, TValue> frozen = new Dictionary<TKey, TValue>() { { CreateTKey(0), CreateTValue(0) } }.ToFrozenDictionary();
             Assert.Same(frozen, frozen.ToFrozenDictionary());
             Assert.NotSame(frozen, frozen.ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
-        }
-
-        public static IEnumerable<object[]> LookupItems_AllItemsFoundAsExpected_MemberData()
-        {
-            foreach (int size in new[] { 1, 2, 10, 999, 1024 })
-            {
-                foreach (IEqualityComparer<TKey> comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default, NonDefaultEqualityComparer<TKey>.Instance })
-                {
-                    foreach (bool specifySameComparer in new[] { false, true })
-                    {
-                        yield return new object[] { size, comparer, specifySameComparer };
-                    }
-                }
-            }
         }
 
         [Fact]
@@ -173,9 +190,16 @@ namespace System.Collections.Frozen.Tests
             }
         }
 
+        public static IEnumerable<object[]> LookupItems_AllItemsFoundAsExpected_MemberData() =>
+            from size in new[] { 0, 1, 2, 10, 999, 1024 }
+            from comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default, NonDefaultEqualityComparer<TKey>.Instance }
+            from specifySameComparer in new[] { false, true }
+            from optimizeForReading in new[] { false, true }
+            select new object[] { size, comparer, specifySameComparer, optimizeForReading };
+
         [Theory]
         [MemberData(nameof(LookupItems_AllItemsFoundAsExpected_MemberData))]
-        public void LookupItems_AllItemsFoundAsExpected(int size, IEqualityComparer<TKey> comparer, bool specifySameComparer)
+        public void LookupItems_AllItemsFoundAsExpected(int size, IEqualityComparer<TKey> comparer, bool specifySameComparer, bool optimizeForReading)
         {
             Dictionary<TKey, TValue> original =
                 Enumerable.Range(0, size)
@@ -183,9 +207,13 @@ namespace System.Collections.Frozen.Tests
                 .ToDictionary(p => p.Key, p => p.Value, comparer);
             KeyValuePair<TKey, TValue>[] originalPairs = original.ToArray();
 
-            FrozenDictionary<TKey, TValue> frozen = specifySameComparer ?
-                original.ToFrozenDictionary(comparer) :
-                original.ToFrozenDictionary();
+            FrozenDictionary<TKey, TValue> frozen = (specifySameComparer, optimizeForReading) switch
+            {
+                (false, false) => original.ToFrozenDictionary(),
+                (false, true) => original.ToFrozenDictionary(null, true),
+                (true, false) => original.ToFrozenDictionary(comparer),
+                (true, true) => original.ToFrozenDictionary(comparer, true),
+            };
 
             // Make sure creating the frozen dictionary didn't alter the original
             Assert.Equal(originalPairs.Length, original.Count);
@@ -197,6 +225,10 @@ namespace System.Collections.Frozen.Tests
             Assert.All(originalPairs, p => Assert.True(frozen.ContainsKey(p.Key)));
             Assert.All(originalPairs, p => Assert.Equal(p.Value, frozen[p.Key]));
             Assert.All(originalPairs, p => Assert.Equal(p.Value, frozen.GetValueRefOrNullRef(p.Key)));
+            Assert.Equal(originalPairs.Length, frozen.Keys.Length);
+            Assert.Equal(originalPairs.Length, frozen.Values.Length);
+            Assert.Equal(new HashSet<TKey>(originalPairs.Select(p => p.Key)), new HashSet<TKey>(frozen.Keys));
+            Assert.Equal(new HashSet<TValue>(originalPairs.Select(p => p.Value)), new HashSet<TValue>(frozen.Values));
             if (specifySameComparer ||
                 comparer is null ||
                 comparer == EqualityComparer<TKey>.Default)
@@ -248,10 +280,15 @@ namespace System.Collections.Frozen.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void IReadOnlyDictionary_Generic_Keys_ContainsAllCorrectKeys(int count)
+        [InlineData(0, false)]
+        [InlineData(1, false)]
+        [InlineData(75, false)]
+        [InlineData(0, true)]
+        [InlineData(1, true)]
+        [InlineData(75, true)]
+        public void IReadOnlyDictionary_Generic_Keys_ContainsAllCorrectKeys(int count, bool optimizeForReading)
         {
-            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count, optimizeForReading);
             IEnumerable<TKey> expected = dictionary.Select((pair) => pair.Key);
 
             IReadOnlyDictionary<TKey, TValue> rod = (IReadOnlyDictionary<TKey, TValue>)dictionary;
@@ -260,10 +297,15 @@ namespace System.Collections.Frozen.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ValidCollectionSizes))]
-        public void IReadOnlyDictionary_Generic_Values_ContainsAllCorrectValues(int count)
+        [InlineData(0, false)]
+        [InlineData(1, false)]
+        [InlineData(75, false)]
+        [InlineData(0, true)]
+        [InlineData(1, true)]
+        [InlineData(75, true)]
+        public void IReadOnlyDictionary_Generic_Values_ContainsAllCorrectValues(int count, bool optimizeForReading)
         {
-            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
+            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count, optimizeForReading);
             IEnumerable<TValue> expected = dictionary.Select((pair) => pair.Value);
 
             IReadOnlyDictionary<TKey, TValue> rod = (IReadOnlyDictionary<TKey, TValue>)dictionary;
@@ -344,10 +386,11 @@ namespace System.Collections.Frozen.Tests
 
         [OuterLoop("Takes several seconds")]
         [Theory]
-        [InlineData(8_000_000)]
-        public void CreateHugeDictionary_Success(int largeCount)
+        [InlineData(8_000_000, false)]
+        [InlineData(8_000_000, true)]
+        public void CreateHugeDictionary_Success(int largeCount, bool optimizeForReading)
         {
-            GenericIDictionaryFactory(largeCount);
+            GenericIDictionaryFactory(largeCount, optimizeForReading);
         }
     }
 
@@ -510,110 +553,5 @@ namespace System.Collections.Frozen.Tests
                 }
             }
         }
-
-#if NET7_0_OR_GREATER
-        [Theory]
-        [InlineData(new int[] { 0 })]
-        [InlineData(new int[] { 0, 1 })]
-        [InlineData(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })]
-        [InlineData(new int[] { 0, 2, 4, 6, 8, 10 })]
-        public void FrozenIntDictionary_SanityCheck(int[] keys)
-        {
-            RunIntegerDictionaryTests<int>(keys);
-            RunIntegerDictionaryTests<uint>(keys.Select(x => (uint)x).ToArray());
-            RunIntegerDictionaryTests<long>(keys.Select(x => (long)x).ToArray());
-            RunIntegerDictionaryTests<ulong>(keys.Select(x => (ulong)x).ToArray());
-            RunIntegerDictionaryTests<short>(keys.Select(x => (short)x).ToArray());
-            RunIntegerDictionaryTests<ushort>(keys.Select(x => (ushort)x).ToArray());
-            RunIntegerDictionaryTests<byte>(keys.Select(x => (byte)x).ToArray());
-            RunIntegerDictionaryTests<sbyte>(keys.Select(x => (sbyte)x).ToArray());
-        }
-
-        private void RunIntegerDictionaryTests<T>(T[] keys)
-            where T : struct, IBinaryInteger<T>
-        {
-            string[] values = keys.Select(x => x.ToString()).ToArray();
-            var dict = new Dictionary<T, string>();
-            foreach (T key in keys)
-            {
-                dict[key] = key.ToString();
-            }
-
-            FrozenDictionary<T, string> d = new SmallIntegerFrozenDictionary<T, string>(keys, values);
-
-            Dictionary<T, string> hd = new();
-            foreach (KeyValuePair<T, string> pairs in d)
-            {
-                hd[pairs.Key] = pairs.Value;
-            }
-
-            Assert.Equal(values.Length, hd.Count);
-            Assert.Equal(values.Length, d.Count);
-
-            foreach (T k in hd.Keys)
-            {
-                Assert.Equal(hd.ContainsKey(k), d.ContainsKey(k));
-
-                if (hd.ContainsKey(k))
-                {
-                    Assert.Equal(hd[k], d[k]);
-                }
-                else
-                {
-                    Assert.Throws<KeyNotFoundException>(() => d[k]);
-                }
-            }
-        }
-#endif
-
-#if !NET7_0_OR_GREATER
-        [Theory]
-        [InlineData(new int[] { 0 })]
-        [InlineData(new int[] { 0, 1 })]
-        [InlineData(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })]
-        [InlineData(new int[] { 0, 2, 4, 6, 8, 10 })]
-        [InlineData(new int[] { -1, 0, 2, 4, 6, 8, 10 })]
-        public void FrozenInt32Dictionary_SanityCheck(int[] keys)
-        {
-            for (int i = 0; i < 2; i++)
-            {
-                string[] values = keys.Select(x => x.ToString()).ToArray();
-                var dict = new Dictionary<int, string>();
-                foreach (int key in keys)
-                {
-                    dict[key] = key.ToString();
-                }
-
-                FrozenDictionary<int, string> d = i switch
-                {
-                    0 => d = new SmallInt32FrozenDictionary<string>(keys, values),
-                    _ => d = new Int32FrozenDictionary<string>(dict),
-                };
-
-                Dictionary<int, string> hd = new();
-                foreach (KeyValuePair<int, string> pairs in d)
-                {
-                    hd[pairs.Key] = pairs.Value;
-                }
-
-                Assert.Equal(values.Length, hd.Count);
-                Assert.Equal(values.Length, d.Count);
-
-                for (int v = -1; v < 12; v++)
-                {
-                    Assert.Equal(hd.ContainsKey(v), d.ContainsKey(v));
-
-                    if (hd.ContainsKey(v))
-                    {
-                        Assert.Equal(hd[v], d[v]);
-                    }
-                    else
-                    {
-                        Assert.Throws<KeyNotFoundException>(() => d[v]);
-                    }
-                }
-            }
-        }
-#endif
     }
 }
