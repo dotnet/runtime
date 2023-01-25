@@ -124,7 +124,7 @@ namespace System.Text
                 arrayEncodingInfo[arrayEncodingInfoIdx++] = new EncodingInfo(
                     codePage,
                     webNames[webNameIndices[i]..webNameIndices[i + 1]],
-                    GetDisplayName(codePage, i)
+                    GetDisplayName(codePage)
                     );
             }
 
@@ -151,7 +151,7 @@ namespace System.Text
                     if (codePage != Encoding.CodePageUTF7 || LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
                     {
                         encodingInfoList[codePage] = new EncodingInfo(codePage, webNames[webNameIndices[i]..webNameIndices[i + 1]],
-                                                                                GetDisplayName(codePage, i));
+                                                                                GetDisplayName(codePage));
                     }
                 }
             }
@@ -229,19 +229,32 @@ namespace System.Text
             // All supported code pages have identical header names, and body names.
             string headerName = webName;
             string bodyName = webName;
-            string displayName = GetDisplayName(codePage, index);
+            string displayName = GetDisplayName(codePage);
             uint flags = Flags[index];
 
             return new CodePageDataItem(uiFamilyCodePage, webName, headerName, bodyName, displayName, flags);
         }
 
-        private static string GetDisplayName(int codePage, int englishNameIndex)
+        private static string GetDisplayName(int codePage)
         {
-            string? displayName = SR.GetResourceString("Globalization_cp_" + codePage.ToString());
-            if (string.IsNullOrEmpty(displayName))
-                displayName = EnglishNames[EnglishNameIndices[englishNameIndex]..EnglishNameIndices[englishNameIndex + 1]];
+            return codePage switch
+            {
+                1200 => SR.Globalization_cp_1200,
+                1201 => SR.Globalization_cp_1201,
+                12000 => SR.Globalization_cp_12000,
+                12001 => SR.Globalization_cp_12001,
+                20127 => SR.Globalization_cp_20127,
+                28591 => SR.Globalization_cp_28591,
+                65000 => SR.Globalization_cp_65000,
+                65001 => SR.Globalization_cp_65001,
+                _ => AssertFailAndEmptyString()
+            };
 
-            return displayName;
+            static string AssertFailAndEmptyString()
+            {
+                Debug.Fail("Unexpected code page");
+                return "";
+            }
         }
     }
 }
