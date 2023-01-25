@@ -132,8 +132,16 @@ bool ReplaceLdrStrWithPairInstr(
     instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 
 // Try to optimize a Ldr or Str with an alternative instruction.
-inline bool OptimizeLdrStr(
-    instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
+inline bool OptimizeLdrStr(instruction ins,
+                           emitAttr    reg1Attr,
+                           regNumber   reg1,
+                           regNumber   reg2,
+                           ssize_t     imm,
+                           emitAttr    size,
+                           insFormat   fmt,
+                           bool        localVar = false,
+                           int         varx     = 0,
+                           int         offs     = 0)
 {
     assert(ins == INS_ldr || ins == INS_str);
 
@@ -149,7 +157,9 @@ inline bool OptimizeLdrStr(
     }
 
     // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
-    if ((emitLastIns->idIns() == ins) && ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
+    // Don't do this if either instruction had a local variable.
+    if ((emitLastIns->idIns() == ins) && !localVar && !emitLastIns->idIsLclVar() &&
+        ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
     {
         return true;
     }
