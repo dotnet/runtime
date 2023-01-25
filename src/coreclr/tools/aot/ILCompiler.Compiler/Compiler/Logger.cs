@@ -183,6 +183,22 @@ namespace ILCompiler
                 if (IsSuppressedOnElement(id, warningOriginMember))
                     return true;
 
+                if (warningOriginMember is MethodDesc method)
+                {
+                    if (method.GetPropertyForAccessor() is { } property)
+                    {
+                        Debug.Assert(property.OwningType == method.OwningType);
+                        warningOriginMember = property;
+                        continue;
+                    }
+                    else if (method.GetEventForAccessor() is { } @event)
+                    {
+                        Debug.Assert(@event.OwningType == method.OwningType);
+                        warningOriginMember = @event;
+                        continue;
+                    }
+                }
+
                 warningOriginMember = warningOriginMember.GetOwningType();
             }
 
@@ -200,16 +216,33 @@ namespace ILCompiler
 
             IEnumerable<CustomAttributeValue<TypeDesc>> suppressions = null;
 
-            if (provider is TypeDesc type)
+            switch (provider)
             {
-                var ecmaType = type.GetTypeDefinition() as EcmaType;
-                suppressions = ecmaType?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
-            }
+                case TypeDesc type:
+                    {
+                        var ecmaType = type.GetTypeDefinition() as EcmaType;
+                        suppressions = ecmaType?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
+                    }
+                    break;
 
-            if (provider is MethodDesc method)
-            {
-                var ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
-                suppressions = ecmaMethod?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
+                case MethodDesc method:
+                    {
+                        var ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
+                        suppressions = ecmaMethod?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
+                    }
+                    break;
+
+                case PropertyPseudoDesc property:
+                    {
+                        suppressions = property.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
+                    }
+                    break;
+
+                case EventPseudoDesc @event:
+                    {
+                        suppressions = @event.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
+                    }
+                    break;
             }
 
             if (suppressions != null)

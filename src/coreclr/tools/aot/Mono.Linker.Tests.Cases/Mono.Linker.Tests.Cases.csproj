@@ -24,4 +24,8 @@
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Warnings\" />
+  </ItemGroup>
+
 </Project>
