@@ -708,6 +708,7 @@ namespace System.Runtime
                 {
                     Debug.Assert(pReversePInvokePropagationCallback != IntPtr.Zero, "Unwound to a reverse P/Invoke in the second pass. We should have a propagation handler.");
                     Debug.Assert(frameIter.SP == handlingFrameSP, "Encountered a different reverse P/Invoke frame in the second pass.");
+                    Debug.Assert(frameIter.PreviousTransitionFrame != IntPtr.Zero, "Should have a transition frame for reverse P/Invoke.");
                     // Found the native frame that called the reverse P/invoke.
                     // It is not possible to run managed second pass handlers on a native frame.
                     break;
@@ -731,7 +732,7 @@ namespace System.Runtime
             if (pReversePInvokePropagationCallback != IntPtr.Zero)
             {
                 InternalCalls.RhpCallPropagateExceptionCallback(
-                    pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo);
+                    pReversePInvokePropagationContext, pReversePInvokePropagationCallback, frameIter.RegisterSet, ref exInfo, frameIter.PreviousTransitionFrame);
                 // the helper should jump to propagation handler and not return
                 Debug.Assert(false, "unreachable");
                 FallbackFailFast(RhFailFastReason.InternalError, null);

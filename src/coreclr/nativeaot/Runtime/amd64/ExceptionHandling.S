@@ -539,12 +539,13 @@ NESTED_END RhpCallFilterFunclet, _TEXT
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // void* FASTCALL RhpCallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
-//                                    ExInfo* pExInfo)
+//                                    ExInfo* pExInfo, PInvokeTransitionFrame* pPreviousTransitionFrame)
 //
 // INPUT:  RDI:  callback context
 //         RSI:  callback
 //         RDX:  REGDISPLAY*
 //         RCX:  ExInfo*
+//         R8 :  pPreviousTransitionFrame
 //
 // OUTPUT:
 //
@@ -555,16 +556,17 @@ NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
         FUNCLET_CALL_PROLOGUE 6, 1
 
         locThread       = 0
-        // locResumeIp     = 8
-        locArg0         = 0x10
-        locArg1         = 0x18
-        locArg2         = 0x20
-        locArg3         = 0x28
+        locArg0         = 0x08
+        locArg1         = 0x10
+        locArg2         = 0x18
+        locArg3         = 0x20
+        locArg4         = 0x28
 
         mov     [rsp + locArg0], rdi                                // save arguments for later
         mov     [rsp + locArg1], rsi
         mov     [rsp + locArg2], rdx
         mov     [rsp + locArg3], rcx
+        mov     [rsp + locArg4], r8
 
         mov     rbx, rdx
         INLINE_GETTHREAD
@@ -661,6 +663,10 @@ LOCAL_LABEL(Propagate_ExInfoLoop):
 
 LOCAL_LABEL(Propagate_ExInfoLoopDone):
         mov     [rsi + OFFSETOF__Thread__m_pExInfoStackHead], rdi   // store the new head on the Thread
+
+        // Switch to preemptive mode.
+        mov     r8, [rsp + locArg4]
+        mov     [rsi + OFFSETOF__Thread__m_pTransitionFrame], r8
 
         // reset RSP and RDI and jump to the propagation callback
         mov     rdi, [rsp + locArg0]                                // rdi <- callback context

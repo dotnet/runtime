@@ -141,6 +141,7 @@ void StackFrameIterator::EnterInitialInvalidState(Thread * pThreadToWalk)
     m_ShouldSkipRegularGcReporting = false;
     m_pendingFuncletFramePointer = NULL;
     m_pNextExInfo = pThreadToWalk->GetCurExInfo();
+    m_pPreviousTransitionFrame = NULL;
     SetControlPC(0);
 }
 
@@ -172,6 +173,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     }
 
     m_dwFlags = dwFlags;
+    m_pPreviousTransitionFrame = pFrame;
 
     // We need to walk the ExInfo chain in parallel with the stackwalk so that we know when we cross over
     // exception throw points.  So we must find our initial point in the ExInfo chain here so that we can
@@ -1437,42 +1439,35 @@ UnwindOutOfCurrentManagedFrame:
     uint32_t unwindFlags = USFF_None;
     if ((m_dwFlags & SkipNativeFrames) != 0)
     {
-        unwindFlags |= USFF_UsePreviousTransitionFrame;
+        unwindFlags |= USFF_StopUnwindOnTransitionFrame;
     }
 
-    bool foundReversePInvoke;
-    PInvokeTransitionFrame* pPreviousTransitionFrame;
     FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, unwindFlags, &m_RegDisplay,
-                                                            &foundReversePInvoke, &pPreviousTransitionFrame));
+                                                            &m_pPreviousTransitionFrame));
 
-    if (foundReversePInvoke)
+    if (m_pPreviousTransitionFrame != NULL)
     {
-        ASSERT(pPreviousTransitionFrame != nullptr || (unwindFlags & USFF_UsePreviousTransitionFrame) == 0);
         m_dwFlags |= UnwoundReversePInvoke;
     }
 
     bool doingFuncletUnwind = GetCodeManager()->IsFunclet(&m_methodInfo);
 
-    if (pPreviousTransitionFrame != NULL)
+    if (m_pPreviousTransitionFrame != NULL && (m_dwFlags & SkipNativeFrames) != 0)
     {
         ASSERT(!doingFuncletUnwind);
-        ASSERT(foundReversePInvoke);
 
-        if (pPreviousTransitionFrame == TOP_OF_STACK_MARKER)
+        if (m_pPreviousTransitionFrame == TOP_OF_STACK_MARKER)
         {
             SetControlPC(0);
         }
         else
         {
-            // NOTE: If this is an EH stack walk, then reinitializing the iterator using the GC stack
-            // walk flags is incorrect.  That said, this is OK because the exception dispatcher will
-            // immediately trigger a failfast when it sees the UnwoundReversePInvoke flag.
             // NOTE: This can generate a conservative stack range if the recovered PInvoke callsite
             // resides in an assembly thunk and not in normal managed code.  In this case InternalInit
             // will unwind through the thunk and back to the nearest managed frame, and therefore may
             // see a conservative range reported by one of the thunks encountered during this "nested"
             // unwind.
-            InternalInit(m_pThread, pPreviousTransitionFrame, GcStackWalkFlags);
+            InternalInit(m_pThread, m_pPreviousTransitionFrame, GcStackWalkFlags);
             m_dwFlags |= UnwoundReversePInvoke;
             ASSERT(m_pInstance->IsManaged(m_ControlPC));
         }
@@ -1601,7 +1596,7 @@ UnwindOutOfCurrentManagedFrame:
         // from the iterator with the one and only exception being cases where a managed frame must
         // be skipped due to funclet collapsing.
 
-        ASSERT(m_pInstance->IsManaged(m_ControlPC) || (foundReversePInvoke && (m_dwFlags & SkipNativeFrames) == 0));
+        ASSERT(m_pInstance->IsManaged(m_ControlPC) || (m_pPreviousTransitionFrame != NULL && (m_dwFlags & SkipNativeFrames) == 0));
 
         if (collapsingTargetFrame != NULL)
         {

@@ -169,9 +169,9 @@ enum class AssociatedDataFlags : unsigned char
 enum UnwindStackFrameFlags
 {
     USFF_None = 0,
-    // If this is a reverse P/Invoke frame, return the P/Invoke transition frame rather than doing a
-    // normal unwind.
-    USFF_UsePreviousTransitionFrame = 1,
+    // If this is a reverse P/Invoke frame, do not continue the unwind
+    // after extracting the saved transition frame.
+    USFF_StopUnwindOnTransitionFrame = 1,
 };
 
 class ICodeManager
@@ -196,7 +196,6 @@ public:
     virtual bool UnwindStackFrame(MethodInfo *    pMethodInfo,
                                   uint32_t        flags,
                                   REGDISPLAY *    pRegisterSet,                     // in/out
-                                  bool * pFoundReversePInvoke,                      // out
                                   PInvokeTransitionFrame**      ppPreviousTransitionFrame) PURE_VIRTUAL   // out
 
     virtual uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,

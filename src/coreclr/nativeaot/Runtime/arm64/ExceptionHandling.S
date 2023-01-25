@@ -666,12 +666,13 @@ SetSuccess:
 
 //
 // void* FASTCALL RhpCallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
-//                                    ExInfo* pExInfo)
+//                                    ExInfo* pExInfo, PInvokeTransitionFrame* pPreviousTransitionFrame)
 //
 // INPUT:  X0:  callback context
 //         X1:  callback
 //         X2:  REGDISPLAY*
 //         X3:  ExInfo*
+//         X4:  pPreviousTransitionFrame
 //
 // OUTPUT:
 //
@@ -682,7 +683,8 @@ SetSuccess:
 #define rsp_offset_x1 0x18
 #define rsp_offset_x2 0x20
 #define rsp_offset_x3 0x28
-#define rsp_CallPropagationCallback_offset_thread 0x30
+#define rsp_offset_x4 0x30
+#define rsp_CallPropagationCallback_offset_thread 0x38
 
         // Using the NO_FP macro so that the debugger unwinds using SP.
         // This makes backtraces work even after using RESTORE_PRESERVED_REGISTERS.
@@ -690,7 +692,8 @@ SetSuccess:
         mov fp, sp
         stp x0, x1,   [sp, #rsp_offset_x0] // x0 to x3 are stored to restore them anytime
         stp x2, x3,   [sp, #rsp_offset_x2]
-        str xzr,      [sp, #rsp_CallPropagationCallback_offset_thread] // xzr makes space to store the thread obj
+        stp x4, xzr,  [sp, #rsp_offset_x4]
+        // str xzr,      [sp, #rsp_CallPropagationCallback_offset_thread] // xzr makes space to store the thread obj
 
         //
         // clear the DoNotTriggerGc flag, trashes x4-x6
@@ -754,6 +757,10 @@ Propagate_PopExInfoLoop:
 
 Propagate_DonePopping:
         str         x3, [x1, #OFFSETOF__Thread__m_pExInfoStackHead]     // store the new head on the Thread
+
+        // restore preemptive mode
+        ldr         x4, [sp, #rsp_offset_x4]                    // pPreviousTransitionFrame
+        str         x4, [x1, #OFFSETOF__Thread__m_pTransitionFrame]
 
         // reset SP and LR and jump to continuation address
         ldr         x0, [sp, #rsp_offset_x0]                    // callback context

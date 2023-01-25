@@ -220,6 +220,7 @@ protected:
                                         // space.  However, the implementation simpler by doing it this way.
     bool                m_ShouldSkipRegularGcReporting;
     PTR_VOID            m_OriginalControlPC;
+    PTR_PInvokeTransitionFrame m_pPreviousTransitionFrame;
 };
 
 #endif // __StackFrameIterator_h__

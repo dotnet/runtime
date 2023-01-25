@@ -11,6 +11,7 @@
 #include <exception>
 #include <platformdefines.h>
 
+using BeforeThrowNativeExceptionCallback = void(STDMETHODCALLTYPE *)(void);
 using BeginEndCallback = void(STDMETHODCALLTYPE *)(void);
 using IsReferencedCallback = int(STDMETHODCALLTYPE *)(void*);
 using EnteredFinalizationCallback = void(STDMETHODCALLTYPE *)(void*);
@@ -94,6 +95,15 @@ extern "C" DLL_EXPORT void GetExports(
     *enteredFinalizer = EnteredFinalizerCb;
 }
 
+static BeforeThrowNativeExceptionCallback s_beforeThrow;
+
+extern "C" DLL_EXPORT void SetImports(BeforeThrowNativeExceptionCallback beforeThrow)
+{
+    assert(beforeThrow != nullptr);
+
+    s_beforeThrow = beforeThrow;
+}
+
 using propagation_func_t = void(*)(void*);
 
 namespace
@@ -101,6 +111,7 @@ namespace
     [[noreturn]]
     void ThrowInt(void* cxt)
     {
+        s_beforeThrow();
         int val = (int)(size_t)cxt;
         throw val;
     }
@@ -108,6 +119,7 @@ namespace
     [[noreturn]]
     void ThrowException(void*)
     {
+        s_beforeThrow();
         throw std::exception{};
     }
 }

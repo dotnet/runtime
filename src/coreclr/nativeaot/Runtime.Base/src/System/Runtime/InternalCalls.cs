@@ -235,7 +235,7 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpCallPropagateExceptionCallback")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe IntPtr RhpCallPropagateExceptionCallback(
-            IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, ref EH.ExInfo exInfo);
+            IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, ref EH.ExInfo exInfo, IntPtr pPreviousTransitionFrame);
 #endif // FEATURE_OBJCMARSHAL
 
         [RuntimeImport(Redhawk.BaseName, "RhpFallbackFailFast")]

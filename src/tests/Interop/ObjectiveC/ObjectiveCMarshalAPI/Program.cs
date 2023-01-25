@@ -23,6 +23,10 @@ namespace ObjectiveCMarshalAPI
             out delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
 
         [DllImport(nameof(NativeObjCMarshalTests))]
+        public static extern unsafe void SetImports(
+            delegate* unmanaged<void> beforeThrowNativeExceptionCallback);
+
+        [DllImport(nameof(NativeObjCMarshalTests))]
         public static extern int CallAndCatch(IntPtr fptr, int a);
 
         [DllImport(nameof(NativeObjCMarshalTests))]
@@ -173,6 +177,9 @@ namespace ObjectiveCMarshalAPI
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization;
             NativeObjCMarshalTests.GetExports(out beginEndCallback, out isReferencedCallback, out trackedObjectEnteredFinalization);
 
+            delegate* unmanaged<void> beforeThrow = &BeforeThrowNativeException;
+            NativeObjCMarshalTests.SetImports(beforeThrow);
+
             ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization, OnUnhandledExceptionPropagationHandler);
         }
 
@@ -280,6 +287,13 @@ namespace ObjectiveCMarshalAPI
 
             // Validate the exception propagation logic.
             _Validate_ExceptionPropagation();
+        }
+
+        [UnmanagedCallersOnly]
+        private static void BeforeThrowNativeException()
+        {
+            // This function is called from the exception propagation callback.
+            // It ensures that the thread was transitioned to preemptive mode.
         }
 
         private class IntException : Exception

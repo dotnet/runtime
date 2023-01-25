@@ -280,7 +280,6 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
                                              uint32_t        flags,
                                              REGDISPLAY *    pRegisterSet,                 // in/out
-                                             bool * pFoundReversePInvoke,                  // out
                                              PInvokeTransitionFrame**      ppPreviousTransitionFrame)    // out
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
@@ -289,13 +288,10 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     uint8_t unwindBlockFlags = *p++;
 
-    *pFoundReversePInvoke = (unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0;
-
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
         p += sizeof(int32_t);
 
-    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0 &&
-         (flags & USFF_UsePreviousTransitionFrame) != 0)
+    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
         // Reverse PInvoke transition should be on the main function body only
         assert(pNativeMethodInfo->pMainLSDA == pNativeMethodInfo->pLSDA);
@@ -319,10 +315,16 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         }
 
         *ppPreviousTransitionFrame = *(PInvokeTransitionFrame**)(basePointer + slot);
-        return true;
-    }
 
-    *ppPreviousTransitionFrame = NULL;
+        if ((flags & USFF_StopUnwindOnTransitionFrame) != 0)
+        {
+            return true;
+        }
+    }
+    else
+    {
+        *ppPreviousTransitionFrame = NULL;
+    }
 
     if (!VirtualUnwind(pRegisterSet)) 
     {
