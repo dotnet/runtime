@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
+using SourceGenerators.Tests;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -350,7 +351,11 @@ partial class C
 }
 " + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(
+                origComp,
+                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(TestTargetFramework.Standard)),
+                out _,
+                new Microsoft.Interop.LibraryImportGenerator());
 
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
@@ -388,7 +393,11 @@ partial class C
 }
 " + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
+            Compilation newComp = TestUtils.RunGenerators(
+                origComp,
+                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(TestTargetFramework.Standard)),
+                out _,
+                new Microsoft.Interop.LibraryImportGenerator());
 
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 

@@ -1773,7 +1773,8 @@ namespace System.Text.RegularExpressions
                 SR.Format(SR.MakeException, pattern, currentPos, SR.Format(SR.UnrecognizedUnicodeProperty, capname)));
         }
 
-        public static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
+#if DEBUG || !SYSTEM_TEXT_REGULAREXPRESSIONS
+        private static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
 
         private static string[] PopulateCategoryIdToName()
         {
@@ -1948,5 +1949,6 @@ namespace System.Text.RegularExpressions
                 < 0 => $"\\P{{{CategoryIdToName[-(short)ch - 1]}}}",
                 _ => $"\\p{{{CategoryIdToName[ch - 1]}}}",
             };
+#endif
     }
 }

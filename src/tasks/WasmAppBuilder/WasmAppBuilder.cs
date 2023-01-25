@@ -48,6 +48,7 @@ public class WasmAppBuilder : Task
     public string? MainHTMLPath { get; set; }
     public bool IncludeThreadsWorker {get; set; }
     public int PThreadPoolSize {get; set; }
+    public bool UseWebcil { get; set; }
 
     // <summary>
     // Extra json elements to add to mono-config.json
@@ -187,9 +188,26 @@ public class WasmAppBuilder : Task
         var asmRootPath = Path.Combine(AppDir, config.AssemblyRootFolder);
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(asmRootPath);
+        if (UseWebcil)
+            Log.LogMessage (MessageImportance.Normal, "Converting assemblies to Webcil");
         foreach (var assembly in _assemblies)
         {
-            FileCopyChecked(assembly, Path.Combine(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
+            if (UseWebcil)
+            {
+                var tmpWebcil = Path.GetTempFileName();
+                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil, logger: Log);
+                webcilWriter.ConvertToWebcil();
+                var finalWebcil = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
+                if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+                    Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
+                else
+                    Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+                _fileWrites.Add(finalWebcil);
+            }
+            else
+            {
+                FileCopyChecked(assembly, Path.Combine(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
+            }
             if (DebugLevel != 0)
             {
                 var pdb = assembly;
@@ -234,7 +252,10 @@ public class WasmAppBuilder : Task
 
         foreach (var assembly in _assemblies)
         {
-            config.Assets.Add(new AssemblyEntry(Path.GetFileName(assembly)));
+            string assemblyPath = assembly;
+            if (UseWebcil)
+                assemblyPath = Path.ChangeExtension(assemblyPath, ".webcil");
+            config.Assets.Add(new AssemblyEntry(Path.GetFileName(assemblyPath)));
             if (DebugLevel != 0) {
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
@@ -261,8 +282,25 @@ public class WasmAppBuilder : Task
                 string name = Path.GetFileName(fullPath);
                 string directory = Path.Combine(AppDir, config.AssemblyRootFolder, culture);
                 Directory.CreateDirectory(directory);
-                FileCopyChecked(fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
-                config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
+                if (UseWebcil)
+                {
+                    var tmpWebcil = Path.GetTempFileName();
+                    var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: fullPath, outputPath: tmpWebcil, logger: Log);
+                    webcilWriter.ConvertToWebcil();
+                    var finalWebcil = Path.Combine(directory, Path.ChangeExtension(name, ".webcil"));
+                    if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+                        Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
+                    else
+                        Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+                    _fileWrites.Add(finalWebcil);
+                    config.Assets.Add(new SatelliteAssemblyEntry(Path.GetFileName(finalWebcil), culture));
+                }
+                else
+                {
+                    FileCopyChecked(fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
+                    config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
+                }
+
             }
         }
 

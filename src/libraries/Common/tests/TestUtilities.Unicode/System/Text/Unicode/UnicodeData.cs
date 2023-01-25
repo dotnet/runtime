@@ -27,7 +27,7 @@ namespace System.Text.Unicode
                 // generate on-demand
 
                 data = new CodePoint(codePoint, _lazyParsedData.Value);
-                data ??= Interlocked.CompareExchange(ref _codePointData[codePoint], data, null);
+                data ??= Interlocked.CompareExchange(ref _codePointData[codePoint]!, data, null)!;
             }
 
             return data;
