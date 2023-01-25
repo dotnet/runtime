@@ -35,6 +35,7 @@
                                         ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv')) and
                                         '$(Scenario)' == 'WasmTestOnBrowser'">true</InstallChromeForTests>
     <_XHarnessTestsTimeout>00:30:00</_XHarnessTestsTimeout>
+    <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>
   </PropertyGroup>
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
