@@ -471,7 +471,6 @@ extends:
         parameters:
           platforms:
             - wasi_wasm
-          nameSuffix: 'SmokeTests'
           extraBuildArgs: /p:EnableAggressiveTrimming=true
           alwaysRun: true
           scenarios:
