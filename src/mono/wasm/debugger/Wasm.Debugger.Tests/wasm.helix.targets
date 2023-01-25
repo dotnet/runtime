@@ -13,12 +13,13 @@
     <!-- remove the existing item -->
     <HelixWorkItem Remove="@(HelixWorkItem)" Condition="'%(HelixWorkItem.Identity)' == 'Wasm.Debugger.Tests'" />
 
-    <ReadLinesFromFile File="$(TestArchiveTestsDir)DebuggerTestSuite.tests.list">
-      <Output TaskParameter="Lines" ItemName="_DebuggerTestsClassName" />
-    </ReadLinesFromFile>
+    <!--<ReadLinesFromFile File="$(TestArchiveTestsDir)DebuggerTestSuite.tests.list">-->
+      <!--<Output TaskParameter="Lines" ItemName="_DebuggerTestsClassName" />-->
+    <!--</ReadLinesFromFile>-->
 
     <ItemGroup>
-      <_DebuggerTestsClassName Remove="@(_DebuggerTestsClassName)" Condition="'%(Identity)' != 'DebuggerTests.ExceptionTests'" />
+      <!--<_DebuggerTestsClassName Remove="@(_DebuggerTestsClassName)" Condition="'%(Identity)' != 'DebuggerTests.ExceptionTests'" />-->
+      <_DebuggerTestsClassName Include="DebuggerTests.ExceptionTests" />
     </ItemGroup>
 
     <ItemGroup>
