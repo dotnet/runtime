@@ -314,7 +314,7 @@ namespace System.Threading
             ThreadInt64PersistentCounter.Increment(threadLocalCompletionCountObject);
             _separated.lastDequeueTime = currentTimeMs;
 
-            if (ShouldAdjustMaxWorkersActive(currentTimeMs))
+            if (!HillClimbing.IsDisabled && ShouldAdjustMaxWorkersActive(currentTimeMs))
             {
                 AdjustMaxWorkersActive();
             }
@@ -403,11 +403,6 @@ namespace System.Threading
 
         private bool ShouldAdjustMaxWorkersActive(int currentTimeMs)
         {
-            if (HillClimbing.IsDisabled)
-            {
-                return false;
-            }
-
             // We need to subtract by prior time because Environment.TickCount can wrap around, making a comparison of absolute
             // times unreliable. Intervals are unsigned to avoid wrapping around on the subtract after enough time elapses, and
             // this also prevents the initial elapsed interval from being negative due to the prior and next times being
