@@ -3652,8 +3652,6 @@ public:
         return m_ssaNum.IsComposite();
     }
 
-    bool IsNeverNegative(Compiler* comp) const;
-
 #if DEBUGGABLE_GENTREE
     GenTreeLclVarCommon() : GenTreeUnOp()
     {
@@ -3795,6 +3793,8 @@ public:
 
     unsigned int GetFieldCount(Compiler* compiler) const;
     var_types GetFieldTypeByIndex(Compiler* compiler, unsigned idx);
+
+    bool IsNeverNegative(Compiler* comp) const;
 
     //-------------------------------------------------------------------
     // clearOtherRegFlags: clear GTF_* flags associated with gtOtherRegs

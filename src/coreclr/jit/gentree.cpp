@@ -24633,7 +24633,7 @@ ClassLayout* GenTreeLclVarCommon::GetLayout(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------
-// GenTreeLclVarCommon::IsNeverNegative: Gets true if the lcl var is never negative; otherwise false.
+// GenTreeLclVar::IsNeverNegative: Gets true if the lcl var is never negative; otherwise false.
 //
 // Arguments:
 //    comp - the compiler instance
@@ -24641,7 +24641,7 @@ ClassLayout* GenTreeLclVarCommon::GetLayout(Compiler* compiler) const
 // Return Value:
 //    true if the lcl var is never negative; otherwise false.
 //
-bool GenTreeLclVarCommon::IsNeverNegative(Compiler* comp) const
+bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
 {
     return comp->lvaGetDesc(GetLclNum())->IsNeverNegative();
 }
@@ -24740,9 +24740,9 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
         return AsIntConCommon()->IntegralValue() >= 0;
     }
 
-    if (IsLocal())
+    if (OperIs(GT_LCL_VAR))
     {
-        if (AsLclVarCommon()->IsNeverNegative(comp))
+        if (AsLclVar()->IsNeverNegative(comp))
         {
             // This is an early exit, it doesn't cover all cases
             return true;
