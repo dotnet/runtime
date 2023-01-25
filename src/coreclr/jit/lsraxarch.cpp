@@ -312,7 +312,8 @@ int LinearScan::BuildNode(GenTree* tree)
 
             if (tree->OperIs(GT_SUB) && tree->gtGetOp2()->OperIs(GT_LT) && tree->gtGetOp2()->isContained())
             {
-                buildInternalIntRegisterDefForNode(tree);
+                // Make sure this happens after BuildDef so it can re-use a register.
+                buildInternalIntRegisterDefForNode(tree->gtGetOp2());
             }
 
             break;

@@ -920,9 +920,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         assert(op1->gtGetOp1()->GetRegNum() == op2->gtGetOp1()->GetRegNum());
         assert(op1->gtGetOp2()->GetRegNum() == op2->gtGetOp2()->GetRegNum());
 
-        regNumber tmpReg = treeNode->GetSingleTempReg();
+        regNumber tmpReg = op2->GetSingleTempReg();
 
-        GetEmitter()->emitIns_R(INS_setl, EA_1BYTE, tmpReg);
+        inst_SETCC(GenCondition::FromIntegralRelop(op2), op2->TypeGet(), tmpReg);
         GetEmitter()->emitIns_Mov(INS_movzx, EA_1BYTE, tmpReg, tmpReg, false);
         GetEmitter()->emitIns_R_R(INS_sub, emitTypeSize(treeNode), targetReg, tmpReg);
 
@@ -1309,11 +1309,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     GenTree*  op1     = tree->gtOp1;
     GenTree*  op2     = tree->gtOp2;
     var_types op1Type = op1->TypeGet();
-
-    if (op2->OperIs(GT_LT) && op2->isContained())
-    {
-        assert(false);
-    }
 
     if (varTypeIsFloating(op1Type))
     {

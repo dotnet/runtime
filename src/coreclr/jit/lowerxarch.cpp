@@ -6067,6 +6067,20 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     bool     isSafeToContainOp1 = true;
     bool     isSafeToContainOp2 = true;
 
+    // Optimizes the following IL Example:
+    //     ldarg.0
+	//     ldarg.1
+	//     cgt
+	//     ldarg.0
+	//     ldarg.1
+	//     clt
+	//     sub
+    //
+    // Roughly Equivelant C#:
+    //     ((var1 > var2) ? 1 : 0) - ((var1 < var2) ? 1 : 0);
+    //
+    // IR version:
+    //     SUB(GT_GT(VAR1, VAR2), GT_LT(VAR1, VAR2))
     if (node->OperIs(GT_SUB) && op1->OperIs(GT_GT) && op2->OperIs(GT_LT) && op1->gtGetOp1()->OperIs(GT_LCL_VAR) &&
         op1->gtGetOp2()->OperIs(GT_LCL_VAR) && op2->gtGetOp1()->OperIs(GT_LCL_VAR) &&
         op2->gtGetOp2()->OperIs(GT_LCL_VAR) &&
