@@ -639,7 +639,6 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalFact(nameof(WebSocketsSupported))]
         public async Task SendReceive_Concurrent_Success_Base()
         {
-
             await CreateEchoServerAsync(async uri =>
             {
                 using ClientWebSocket cws = await GetConnectedWebSocket(uri, TimeOutMilliseconds, _output);

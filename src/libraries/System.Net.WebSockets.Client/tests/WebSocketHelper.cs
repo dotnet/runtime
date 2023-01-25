@@ -217,7 +217,7 @@ namespace System.Net.WebSockets.Client.Tests
                 await connection.DisposeAsync();
             });
 
-            await new Task[] { serverTask, clientFunc(server.Address) }.WhenAllOrAnyFailed(TimeOutMilliseconds * 2); ;
+            await new Task[] { serverTask, clientFunc(server.Address) }.WhenAllOrAnyFailed(TimeOutMilliseconds * 2);
         }
 
         private static bool InitWebSocketSupported()
