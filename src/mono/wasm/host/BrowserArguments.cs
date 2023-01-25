@@ -6,7 +6,6 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using Mono.Options;
-using System.Linq;
 
 namespace Microsoft.WebAssembly.AppHost;
 
