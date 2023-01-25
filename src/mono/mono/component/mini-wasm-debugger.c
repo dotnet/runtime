@@ -419,6 +419,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 		InvokeData invoke_data;
 		memset (&invoke_data, 0, sizeof (InvokeData));
 		invoke_data.endp = data + size;
+		invoke_data.flags = INVOKE_FLAG_DISABLE_BREAKPOINTS;
 		error = mono_do_invoke_method (tls, &buf, &invoke_data, data, &data);
 	}
 	else if (command_set == MDBGPROT_CMD_SET_VM && (command ==  MDBGPROT_CMD_GET_ASSEMBLY_BYTES))
