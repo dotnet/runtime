@@ -459,6 +459,7 @@ extends:
         parameters:
           platforms:
             - wasi_wasm
+          nameSuffix: '_Smoke'
           extraBuildArgs: /p:EnableAggressiveTrimming=true
           shouldRunSmokeOnly: true
           alwaysRun: true
