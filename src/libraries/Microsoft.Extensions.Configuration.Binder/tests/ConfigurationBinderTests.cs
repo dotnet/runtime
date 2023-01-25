@@ -812,7 +812,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var config = configurationBuilder.Build();
 
-            var options = config.Get<ComplexOptions>()!;
+            var options = config.Get<ComplexOptions>(o => o.ErrorOnUnknownConfiguration = true)!;
 
             Assert.Equal(2, options.ISetNoSetter.Count);
             Assert.Equal("Yo1", options.ISetNoSetter.ElementAt(0));

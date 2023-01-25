@@ -1813,7 +1813,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(new string[] { "Key" }, options.UnInstantiatedIReadOnlyDictionary.Keys);
             Assert.Equal(new string[] { "value" }, options.UnInstantiatedIReadOnlyDictionary.Values);
 
-            Assert.True(3 == options.InstantiatedISet.Count(), $"InstantiatedISet count is {options.InstantiatedISet.Count()} .. {options.InstantiatedISet.ElementAt(options.InstantiatedISet.Count() - 1)}");
+            Assert.True(3 == options.InstantiatedISet.Count(), $"InstantiatedISet count is {options.InstantiatedISet.Count()} .. {string.Join(", ", options.InstantiatedISet)} .. {options.IsSameInstantiatedISet()}");
             Assert.Equal(new string[] { "a", "b", "C" }, options.InstantiatedISet);
             Assert.True(options.IsSameInstantiatedISet());
 
