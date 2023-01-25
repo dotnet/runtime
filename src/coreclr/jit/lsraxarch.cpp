@@ -308,14 +308,15 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
-            BuildDef(tree);
 
             if (tree->OperIs(GT_SUB) && tree->gtGetOp2()->OperIs(GT_LT) && tree->gtGetOp2()->isContained())
             {
                 // Make sure this happens after BuildDef so it can re-use a register.
                 buildInternalIntRegisterDefForNode(tree->gtGetOp2());
+                buildInternalRegisterUses();
             }
 
+            BuildDef(tree);
             break;
         }
 
