@@ -21,7 +21,7 @@ namespace System.Buffers.Text
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
-            if (nextDigit == 0xFF)
+            if (nextDigit > 0x7F)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -36,7 +36,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = (byte)(parsedValue);
@@ -53,7 +53,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = (byte)(parsedValue);
@@ -65,7 +65,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = (byte)(parsedValue);
@@ -103,7 +103,7 @@ namespace System.Buffers.Text
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
-            if (nextDigit == 0xFF)
+            if (nextDigit > 0x7F)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -118,7 +118,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = (ushort)(parsedValue);
@@ -135,7 +135,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = (ushort)(parsedValue);
@@ -147,7 +147,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = (ushort)(parsedValue);
@@ -185,7 +185,7 @@ namespace System.Buffers.Text
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
-            if (nextDigit == 0xFF)
+            if (nextDigit > 0x7F)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -200,7 +200,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = parsedValue;
@@ -217,7 +217,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = parsedValue;
@@ -229,7 +229,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = parsedValue;
@@ -267,7 +267,7 @@ namespace System.Buffers.Text
             // Parse the first digit separately. If invalid here, we need to return false.
             nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
-            if (nextDigit == 0xFF)
+            if (nextDigit > 0x7F)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -282,7 +282,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = parsedValue;
@@ -299,7 +299,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = parsedValue;
@@ -311,7 +311,7 @@ namespace System.Buffers.Text
                 {
                     nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
-                    if (nextDigit == 0xFF)
+                    if (nextDigit > 0x7F)
                     {
                         bytesConsumed = index;
                         value = parsedValue;

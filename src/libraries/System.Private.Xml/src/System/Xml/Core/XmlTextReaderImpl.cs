@@ -7234,7 +7234,7 @@ namespace System.Xml
                     while (true)
                     {
                         int ch = HexConverter.FromChar(chars[pos]);
-                        if (ch == 0xFF)
+                        if (ch > 0x7F)
                             break;
                         val = checked(val * 16 + ch);
                         pos++;

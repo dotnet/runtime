@@ -273,7 +273,7 @@ namespace System.Reflection
         private byte ParseHexNybble(char c)
         {
             int value = HexConverter.FromChar(c);
-            if (value == 0xFF)
+            if (value > 0x7F)
             {
                 ThrowInvalidAssemblyName();
             }

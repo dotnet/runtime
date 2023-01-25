@@ -152,7 +152,7 @@ namespace System.Xml
                 char ch = chars[iChar];
 
                 int val = HexConverter.FromChar(ch);
-                if (val != 0xFF)
+                if (val <= 0x7F)
                 {
                     halfByte = (byte)val;
                 }

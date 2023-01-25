@@ -449,7 +449,7 @@ namespace System.Numerics
                         }
 
                         int hexValue = HexConverter.FromChar(digitChar);
-                        Debug.Assert(hexValue != 0xFF);
+                        Debug.Assert(hexValue <= 0x7F);
 
                         partialValue = (partialValue << 4) | (uint)hexValue;
                         partialDigitCount++;

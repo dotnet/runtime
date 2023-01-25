@@ -433,7 +433,7 @@ namespace System.Net
                             int h3 = HexConverter.FromChar(s[pos + 4]);
                             int h4 = HexConverter.FromChar(s[pos + 5]);
 
-                            if ((h1 | h2 | h3 | h4) != 0xFF)
+                            if ((h1 | h2 | h3 | h4) <= 0x7F)
                             {   // valid 4 hex chars
                                 ch = (char)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
                                 pos += 5;
@@ -448,7 +448,7 @@ namespace System.Net
                             int h1 = HexConverter.FromChar(s[pos + 1]);
                             int h2 = HexConverter.FromChar(s[pos + 2]);
 
-                            if ((h1 | h2) != 0xFF)
+                            if ((h1 | h2) <= 0x7F)
                             {     // valid 2 hex chars
                                 byte b = (byte)((h1 << 4) | h2);
                                 pos += 2;

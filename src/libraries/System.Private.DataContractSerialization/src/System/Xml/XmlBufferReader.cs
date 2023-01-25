@@ -731,7 +731,7 @@ namespace System.Xml
             {
                 byte ch = buffer[offset + i];
                 int digit = HexConverter.FromChar(ch);
-                if (digit == 0xFF)
+                if (digit > 0x7F)
                     XmlExceptionHelper.ThrowInvalidCharRef(_reader);
                 DiagnosticUtility.DebugAssert(digit >= 0 && digit < 16, "");
                 value = value * 16 + digit;

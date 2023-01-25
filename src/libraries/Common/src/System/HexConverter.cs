@@ -258,18 +258,18 @@ namespace System
 
                 // byteHi hasn't been shifted to the high half yet, so the only way the bitwise or produces this pattern
                 // is if either byteHi or byteLo was not a hex character.
-                if ((byteLo | byteHi) == 0xFF)
+                if ((byteLo | byteHi) > 0x7F)
                     break;
 
                 bytes[j++] = (byte)((byteHi << 4) | byteLo);
                 i += 2;
             }
 
-            if (byteLo == 0xFF)
+            if (byteLo > 0x7F)
                 i++;
 
             charsProcessed = i;
-            return (byteLo | byteHi) != 0xFF;
+            return (byteLo | byteHi) <= 0x7F;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -324,7 +324,7 @@ namespace System
                 return (long)(shift & mask) < 0 ? true : false;
             }
 
-            return FromChar(c) != 0xFF;
+            return FromChar(c) <= 0x7F;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

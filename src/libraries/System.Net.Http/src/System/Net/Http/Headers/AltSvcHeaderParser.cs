@@ -301,7 +301,7 @@ namespace System.Net.Http.Headers
         private static bool TryReadAlpnHexDigit(char ch, out int nibble)
         {
             int result = HexConverter.FromUpperChar(ch);
-            if (result == 0xFF)
+            if (result > 0x7F)
             {
                 nibble = 0;
                 return false;

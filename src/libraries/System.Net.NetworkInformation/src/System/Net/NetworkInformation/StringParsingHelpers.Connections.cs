@@ -388,7 +388,7 @@ namespace System.Net.NetworkInformation
         private static byte HexToByte(char val)
         {
             int result = HexConverter.FromChar(val);
-            if (result == 0xFF)
+            if (result > 0x7F)
             {
                 throw ExceptionHelper.CreateForParseFailure();
             }

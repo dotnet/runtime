@@ -1514,7 +1514,7 @@ namespace System
                     num = value[index];
 
                     uint numValue = (uint)HexConverter.FromChar(num);
-                    if (numValue == 0xFF)
+                    if (numValue > 0x7F)
                         goto HasTrailingChars;
                     index++;
                     answer = 16 * answer + numValue;
@@ -1849,7 +1849,7 @@ namespace System
                     num = value[index];
 
                     uint numValue = (uint)HexConverter.FromChar(num);
-                    if (numValue == 0xFF)
+                    if (numValue > 0x7F)
                         goto HasTrailingChars;
                     index++;
                     answer = 16 * answer + numValue;
@@ -2186,7 +2186,7 @@ namespace System
                     num = value[index];
 
                     uint numValue = (uint)HexConverter.FromChar(num);
-                    if (numValue == 0xFF)
+                    if (numValue > 0x7F)
                         goto HasTrailingChars;
                     index++;
                     answer = 16U * answer + numValue;

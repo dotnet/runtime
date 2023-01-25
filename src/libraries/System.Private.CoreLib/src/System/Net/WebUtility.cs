@@ -509,7 +509,7 @@ namespace System.Net
                     int h1 = HexConverter.FromChar(value[pos + 1]);
                     int h2 = HexConverter.FromChar(value[pos + 2]);
 
-                    if ((h1 | h2) != 0xFF)
+                    if ((h1 | h2) <= 0x7F)
                     {     // valid 2 hex chars
                         byte b = (byte)((h1 << 4) | h2);
                         pos += 2;
@@ -567,7 +567,7 @@ namespace System.Net
                     int h1 = HexConverter.FromChar(bytes[pos + 1]);
                     int h2 = HexConverter.FromChar(bytes[pos + 2]);
 
-                    if ((h1 | h2) != 0xFF)
+                    if ((h1 | h2) <= 0x7F)
                     {     // valid 2 hex chars
                         b = (byte)((h1 << 4) | h2);
                         i += 2;
