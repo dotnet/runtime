@@ -305,10 +305,18 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
+        {
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
             BuildDef(tree);
+
+            if (tree->OperIs(GT_SUB) && tree->gtGetOp2()->OperIs(GT_LT) && tree->gtGetOp2()->isContained())
+            {
+                buildInternalIntRegisterDefForNode(tree);
+            }
+
             break;
+        }
 
         case GT_BT:
             srcCount = BuildBinaryUses(tree->AsOp());

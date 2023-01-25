@@ -6067,6 +6067,16 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     bool     isSafeToContainOp1 = true;
     bool     isSafeToContainOp2 = true;
 
+    if (node->OperIs(GT_SUB) && op1->OperIs(GT_GT) && op2->OperIs(GT_LT) && op1->gtGetOp1()->OperIs(GT_LCL_VAR) &&
+        op1->gtGetOp2()->OperIs(GT_LCL_VAR) && op2->gtGetOp1()->OperIs(GT_LCL_VAR) &&
+        op2->gtGetOp2()->OperIs(GT_LCL_VAR) &&
+        (op1->gtGetOp1()->AsLclVar()->GetLclNum() == op2->gtGetOp1()->AsLclVar()->GetLclNum()) &&
+        (op1->gtGetOp2()->AsLclVar()->GetLclNum() == op2->gtGetOp2()->AsLclVar()->GetLclNum()))
+    {
+        MakeSrcContained(node, op2);
+        return;
+    }
+
     if (IsContainableImmed(node, op2))
     {
         directlyEncodable = true;

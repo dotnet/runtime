@@ -1639,6 +1639,11 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeMultiOpOperands(hwintrinsic);
         }
 #endif // FEATURE_HW_INTRINSICS
+        else if (tree->OperIs(GT_LT))
+        {
+            genConsumeRegs(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp2());
+        }
 #endif // TARGET_XARCH
         else if (tree->OperIs(GT_BITCAST, GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ, GT_BSWAP, GT_BSWAP16))
         {

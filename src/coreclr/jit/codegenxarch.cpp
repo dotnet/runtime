@@ -914,6 +914,22 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
 
+    if ((oper == GT_SUB) && op2->OperIs(GT_LT) && op2->isContained())
+    {
+        assert(op1->OperIs(GT_GT));
+        assert(op1->gtGetOp1()->GetRegNum() == op2->gtGetOp1()->GetRegNum());
+        assert(op1->gtGetOp2()->GetRegNum() == op2->gtGetOp2()->GetRegNum());
+
+        regNumber tmpReg = treeNode->GetSingleTempReg();
+
+        GetEmitter()->emitIns_R(INS_setl, EA_1BYTE, tmpReg);
+        GetEmitter()->emitIns_Mov(INS_movzx, EA_1BYTE, tmpReg, tmpReg, false);
+        GetEmitter()->emitIns_R_R(INS_sub, emitTypeSize(treeNode), targetReg, tmpReg);
+
+        genProduceReg(treeNode);
+        return;
+    }
+
     // Commutative operations can mark op1 as contained or reg-optional to generate "op reg, memop/immed"
     if (!op1->isUsedFromReg())
     {
@@ -1291,7 +1307,13 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     //         (signed < or >= where targetReg != REG_NA)
 
     GenTree*  op1     = tree->gtOp1;
+    GenTree*  op2     = tree->gtOp2;
     var_types op1Type = op1->TypeGet();
+
+    if (op2->OperIs(GT_LT) && op2->isContained())
+    {
+        assert(false);
+    }
 
     if (varTypeIsFloating(op1Type))
     {

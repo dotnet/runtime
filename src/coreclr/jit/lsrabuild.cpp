@@ -3202,6 +3202,8 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     {
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
+#ifdef TARGET_XARCH
+#endif // TARGET_XARCH
 #ifdef FEATURE_HW_INTRINSICS
     if (node->OperIsHWIntrinsic())
     {
@@ -3294,6 +3296,15 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
         return 0;
     }
 #endif
+#ifdef TARGET_XARCH
+    else if (node->OperIs(GT_LT))
+    {
+        assert(node->gtGetOp1()->OperIs(GT_LCL_VAR));
+        assert(node->gtGetOp2()->OperIs(GT_LCL_VAR));
+
+        return BuildBinaryUses(node->AsOp(), candidates);
+    }
+#endif // TARGET_XARCH
 #ifdef FEATURE_HW_INTRINSICS
     else if (node->OperIsHWIntrinsic())
     {
