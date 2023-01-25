@@ -42,7 +42,7 @@ struct _JitCallInfo {
 */
 
 const offsetOfAddr = 0,
-    offsetOfExtraArg = 4,
+    // offsetOfExtraArg = 4,
     offsetOfWrapper = 8,
     offsetOfSig = 12,
     offsetOfArgInfo = 16,
@@ -51,8 +51,7 @@ const offsetOfAddr = 0,
     JIT_ARG_BYVAL = 0;
 
 const maxJitQueueLength = 6,
-    maxSharedQueueLength = 12,
-    flushParamThreshold = 7;
+    maxSharedQueueLength = 12;
     // sizeOfStackval = 8;
 
 let trampBuilder : WasmBuilder;
@@ -60,7 +59,7 @@ let fnTable : WebAssembly.Table;
 let wasmEhSupported : boolean | undefined = undefined;
 let nextDisambiguateIndex = 0;
 const fnCache : Array<Function | undefined> = [];
-const targetCache : { [addrAndRgctx: string] : TrampolineInfo } = {};
+const targetCache : { [target: number] : TrampolineInfo } = {};
 const jitQueue : TrampolineInfo[] = [];
 
 class TrampolineInfo {
@@ -90,7 +89,6 @@ class TrampolineInfo {
     wasmNativeReturnType: WasmValtype;
     wasmNativeSignature: WasmValtype[];
     enableDirect: boolean;
-    rgctx: VoidPtr;
 
     constructor (
         method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
@@ -103,7 +101,6 @@ class TrampolineInfo {
         this.addr = getU32(<any>cinfo + offsetOfAddr);
         this.wrapper = getU32(<any>cinfo + offsetOfWrapper);
         this.signature = <any>getU32(<any>cinfo + offsetOfSig);
-        this.rgctx = <any>getU32(<any>cinfo + offsetOfExtraArg);
         this.noWrapper = getU8(<any>cinfo + offsetOfNoWrapper) !== 0;
         this.hasReturnValue = getI32(<any>cinfo + offsetOfRetMt) !== -1;
 
@@ -155,7 +152,7 @@ class TrampolineInfo {
 
         // FIXME: Without doing this we occasionally get name collisions while jitting.
         const disambiguate = nextDisambiguateIndex++;
-        this.name = `${this.enableDirect ? "jcd" : "jcw"}_${suffix}_${disambiguate.toString(16)}`;
+        this.name = `${this.enableDirect ? "jcp" : "jcw"}_${suffix}_${disambiguate.toString(16)}`;
     }
 }
 
@@ -173,13 +170,13 @@ function getWasmTableEntry (index: number) {
 }
 
 export function mono_interp_invoke_wasm_jit_call_trampoline (
-    thunkIndex: number, ret_sp: number, sp: number, thrown: NativePointer
+    thunkIndex: number, ret_sp: number, sp: number, ftndesc: number, thrown: NativePointer
 ) {
     // FIXME: It's impossible to get emscripten to export this for some reason
     // const thunk = <Function>Module.getWasmTableEntry(thunkIndex);
     const thunk = <Function>getWasmTableEntry(thunkIndex);
     try {
-        thunk(ret_sp, sp, thrown);
+        thunk(ret_sp, sp, ftndesc, thrown);
     } catch (exc) {
         setU32_unchecked(thrown, 1);
     }
@@ -194,7 +191,7 @@ export function mono_interp_jit_wasm_jit_call_trampoline (
     //  we want to immediately store its pointer into the cinfo, otherwise we add it to
     //  a queue inside the info object so that all the cinfos will get updated once a
     //  jit operation happens
-    const cacheKey = `addr=${getU32(<any>cinfo + offsetOfAddr)};rgctx=${getU32(<any>cinfo + offsetOfExtraArg)}`,
+    const cacheKey = getU32(<any>cinfo + offsetOfAddr),
         existing = targetCache[cacheKey];
     if (existing) {
         if (existing.result > 0)
@@ -222,9 +219,7 @@ export function mono_interp_jit_wasm_jit_call_trampoline (
     // we don't want the queue to get too long, both because jitting too many trampolines
     //  at once can hit the 4kb limit and because it makes it more likely that we will
     //  fail to jit them early enough
-    // HACK: we also want to flush the queue when we get a function with many parameters,
-    //  since it's going to generate a lot more code and push us closer to 4kb
-    if ((info.paramCount >= flushParamThreshold) || (jitQueue.length >= maxJitQueueLength))
+    if (jitQueue.length >= maxJitQueueLength)
         mono_interp_flush_jitcall_queue();
 }
 
@@ -354,10 +349,6 @@ export function mono_interp_flush_jitcall_queue () : void {
     let rejected = true, threw = false;
 
     const trampImports : Array<[string, string, Function | number]> = [
-        ["stackSave", "stackSave", Module.stackSave],
-        ["stackAlloc", "stackAlloc", Module.stackAlloc],
-        ["stackRestore", "stackRestore", Module.stackRestore],
-        ["trace_entry", "trace_entry", mono_jiterp_trace_wrapper_entry],
     ];
 
     try {
@@ -373,35 +364,14 @@ export function mono_interp_flush_jitcall_queue () : void {
             "trampoline", {
                 "ret_sp": WasmValtype.i32,
                 "sp": WasmValtype.i32,
+                "ftndesc": WasmValtype.i32,
                 "thrown": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "stackAlloc", {
-                "bytes": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "stackSave", {
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "stackRestore", {
-                "sp": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "trace_entry", {
-                "nameIndex": WasmValtype.i32,
-                "expected": WasmValtype.i32,
-                "actual": WasmValtype.i32,
             }, WasmValtype.void
         );
 
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
 
-            const actualParamCount = (info.hasThisReference ? 1 : 0) + (info.hasReturnValue ? 1 : 0) + info.paramCount;
             const sig : any = {};
 
             if (info.enableDirect) {
@@ -413,8 +383,12 @@ export function mono_interp_flush_jitcall_queue () : void {
 
                 sig["rgctx"] = WasmValtype.i32;
             } else {
+                const actualParamCount = (info.hasThisReference ? 1 : 0) +
+                    (info.hasReturnValue ? 1 : 0) + info.paramCount;
+
                 for (let j = 0; j < actualParamCount; j++)
                     sig[`arg${j}`] = WasmValtype.i32;
+
                 sig["ftndesc"] = WasmValtype.i32;
             }
 
@@ -544,6 +518,9 @@ export function mono_interp_flush_jitcall_queue () : void {
         // FIXME
         if (threw || (!rejected && ((trace >= 2) || dumpWrappers))) {
             console.log(`// MONO_WASM: ${jitQueue.length} jit call wrappers generated, blob follows //`);
+            for (let i = 0; i < jitQueue.length; i++)
+                console.log(`// #${i} === ${jitQueue[i].name} hasThis=${jitQueue[i].hasThisReference} hasRet=${jitQueue[i].hasReturnValue} wasmArgTypes=${jitQueue[i].wasmNativeSignature}`);
+
             let s = "", j = 0;
             try {
                 if (builder.inSection)
@@ -712,8 +689,6 @@ function generate_wasm_body (
 
     for (let i = 0; i < info.paramCount; i++) {
         // FIXME: STACK_ADD_BYTES does alignment, but we probably don't need to?
-        // Note that we add stack_index to the index, because argOffsets[0] is the
-        //  offset of the this-reference for non-static methods
         const svalOffset = info.argOffsets[stack_index + i];
         const argInfoOffset = getU32(<any>info.cinfo + offsetOfArgInfo) + i;
         const argInfo = getU8(argInfoOffset);
@@ -767,17 +742,16 @@ function generate_wasm_body (
     mono_mb_emit_byte (mb, CEE_LDIND_I);
     */
 
+    // We have to pass the ftndesc through from do_jit_call because the target function needs
+    //  a rgctx value, which is not constant for a given wrapper if the target function is shared
+    //  for multiple InterpMethods. We pass ftndesc instead of rgctx so that we can pass the
+    //  address to gsharedvt wrappers without having to do our own stackAlloc
+    builder.local("ftndesc");
     if (info.enableDirect || info.noWrapper) {
-        // TODO: Always use i32_const? This will not change across threads, it's constant
-        builder.ptr_const(info.rgctx);
-    } else {
-        // gsharedvt wrappers expect a MonoFtnDesc containing the actual call target + rgctx value,
-        //  so allocate a persistent one on the heap to use
-        const ftndesc = Module._malloc(8);
-        setU32_unchecked(<any>ftndesc + 0, info.addr);
-        setU32_unchecked(<any>ftndesc + 4, info.rgctx);
-        // TODO: Always use i32_const? This will not change across threads, it's constant
-        builder.ptr_const(ftndesc);
+        // Native calling convention wants an rgctx, not a ftndesc. The rgctx
+        //  lives at offset 4 in the ftndesc, after the call target
+        builder.appendU8(WasmOpcode.i32_load);
+        builder.appendMemarg(4, 0);
     }
 
     /*

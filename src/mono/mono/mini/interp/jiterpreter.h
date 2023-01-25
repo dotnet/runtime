@@ -21,7 +21,7 @@
 #define JITERPRETER_NOT_JITTED 1
 
 typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals);
-typedef void (*WasmJitCallThunk) (void *ret_sp, void *sp, gboolean *thrown);
+typedef void (*WasmJitCallThunk) (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
 typedef void (*WasmDoJitCall) (gpointer cb, gpointer arg, gboolean *out_thrown);
 
 // Parses a single jiterpreter runtime option. This is used both by driver.c and our typescript
@@ -78,7 +78,7 @@ extern void
 mono_interp_invoke_wasm_jit_call_trampoline (
 	WasmJitCallThunk thunk,
 	void *ret_sp, void *sp,
-	gboolean *thrown
+	void *ftndesc, gboolean *thrown
 );
 
 extern void

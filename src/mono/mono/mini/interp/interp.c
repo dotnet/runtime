@@ -2666,6 +2666,9 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 		// FIXME: Thread safety for the thunk pointer
 		WasmJitCallThunk thunk = cinfo->jiterp_thunk;
 		if (thunk) {
+			MonoFtnDesc ftndesc = {0};
+			ftndesc.addr = cinfo->addr;
+			ftndesc.arg = cinfo->extra_arg;
 			interp_push_lmf (&ext, frame);
 			if (
 				mono_opt_jiterpreter_wasm_eh_enabled ||
@@ -2674,12 +2677,12 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 				// WASM EH is available or we are otherwise in a situation where we know
 				//  that the jiterpreter thunk was compiled with exception handling built-in
 				//  so we can just invoke it directly and errors will be handled
-				thunk (ret_sp, sp, &thrown);
+				thunk (ret_sp, sp, &ftndesc, &thrown);
 			} else {
 				// Call a special JS function that will invoke the compiled jiterpreter thunk
 				//  and trap errors for us to set the thrown flag
 				mono_interp_invoke_wasm_jit_call_trampoline (
-					thunk, ret_sp, sp, &thrown
+					thunk, ret_sp, sp, &ftndesc, &thrown
 				);
 			}
 			interp_pop_lmf (&ext);
