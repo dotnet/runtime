@@ -115,6 +115,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_register_jit_call_thunk", "void", ["number", "number"]],
     [true, "mono_jiterp_type_get_raw_value_size", "number", ["number"]],
     [true, "mono_jiterp_update_jit_call_dispatcher", "void", ["number"]],
+    [true, "mono_jiterp_get_signature_has_this", "number", ["number"]],
     [true, "mono_jiterp_get_signature_return_type", "number", ["number"]],
     [true, "mono_jiterp_get_signature_param_count", "number", ["number"]],
     [true, "mono_jiterp_get_signature_params", "number", ["number"]],
@@ -253,6 +254,7 @@ export interface t_Cwraps {
     mono_jiterp_adjust_abort_count(opcode: number, delta: number): number;
     mono_jiterp_register_jit_call_thunk(cinfo: number, func: number): void;
     mono_jiterp_update_jit_call_dispatcher(fn: number): void;
+    mono_jiterp_get_signature_has_this(sig: VoidPtr): number;
     mono_jiterp_get_signature_return_type(sig: VoidPtr): MonoType;
     mono_jiterp_get_signature_param_count(sig: VoidPtr): number;
     mono_jiterp_get_signature_params(sig: VoidPtr): VoidPtr;

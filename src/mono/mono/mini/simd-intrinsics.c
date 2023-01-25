@@ -4406,7 +4406,8 @@ emit_wasm_supported_intrinsics (
 	}
 
 	if (feature == MONO_CPU_WASM_SIMD) {
-		if (!is_element_type_primitive (fsig->params [0]))
+		if (id != SN_Splat && !is_element_type_primitive (fsig->params [0]) ||
+		    id == SN_Splat && !MONO_TYPE_IS_VECTOR_PRIMITIVE(fsig->params [0]))
 			return NULL;
 
 		switch (id) {
