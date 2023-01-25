@@ -1566,7 +1566,7 @@ namespace System.Tests
         public static void LerpTest(float value1, float value2, float amount, float expectedResult)
         {
             AssertExtensions.Equal(+expectedResult, float.Lerp(+value1, +value2, amount), 0);
-            AssertExtensions.Equal(-expectedResult, float.Lerp(-value1, -value2, amount), 0);
+            AssertExtensions.Equal((expectedResult == 0.0f) ? expectedResult : -expectedResult, float.Lerp(-value1, -value2, amount), 0);
         }
     }
 }

@@ -2505,7 +2505,7 @@ namespace System.Runtime.InteropServices.Tests
         public static void LerpTest32(float value1, float value2, float amount, float expectedResult)
         {
             AssertExtensions.Equal(+expectedResult, (float)NFloat.Lerp(+value1, +value2, amount), 0);
-            AssertExtensions.Equal(-expectedResult, (float)NFloat.Lerp(-value1, -value2, amount), 0);
+            AssertExtensions.Equal((expectedResult == 0.0f) ? expectedResult : -expectedResult, (float)NFloat.Lerp(-value1, -value2, amount), 0);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
@@ -2543,7 +2543,7 @@ namespace System.Runtime.InteropServices.Tests
         public static void LerpTest64(double value1, double value2, double amount, double expectedResult)
         {
             AssertExtensions.Equal(+expectedResult, NFloat.Lerp((NFloat)(+value1), (NFloat)(+value2), (NFloat)(amount)), 0);
-            AssertExtensions.Equal(-expectedResult, NFloat.Lerp((NFloat)(-value1), (NFloat)(-value2), (NFloat)(amount)), 0);
+            AssertExtensions.Equal((expectedResult == 0.0) ? expectedResult : -expectedResult, NFloat.Lerp((NFloat)(-value1), (NFloat)(-value2), (NFloat)(amount)), 0);
         }
     }
 }

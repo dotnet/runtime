@@ -2116,7 +2116,7 @@ namespace System.Tests
         public static void LerpTest(Half value1, Half value2, Half amount, Half expectedResult)
         {
             AssertExtensions.Equal(+expectedResult, Half.Lerp(+value1, +value2, amount), Half.Zero);
-            AssertExtensions.Equal(-expectedResult, Half.Lerp(-value1, -value2, amount), Half.Zero);
+            AssertExtensions.Equal((expectedResult == Half.Zero) ? expectedResult : -expectedResult, Half.Lerp(-value1, -value2, amount), Half.Zero);
         }
     }
 }
