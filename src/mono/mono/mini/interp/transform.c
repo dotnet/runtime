@@ -586,16 +586,10 @@ push_var (TransformData *td, int var_index)
 	} while (0)
 
 static void
-set_type_and_local (TransformData *td, StackInfo *sp, MonoClass *klass, int type)
-{
-	SET_TYPE (sp, type, klass);
-	create_interp_stack_local (td, sp, MINT_STACK_SLOT_SIZE);
-}
-
-static void
 set_simple_type_and_local (TransformData *td, StackInfo *sp, int type)
 {
-	set_type_and_local (td, sp, NULL, type);
+	SET_SIMPLE_TYPE (sp, type);
+	create_interp_stack_local (td, sp, MINT_STACK_SLOT_SIZE);
 }
 
 static void
