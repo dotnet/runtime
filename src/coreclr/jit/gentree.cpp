@@ -13817,7 +13817,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 op = NewZeroExtendNode(tree->TypeGet(), op, TYP_USHORT);
                 goto DONE_FOLD;
             }
-            else if ((val == 0xFFFFFFFF && varTypeIsLong(tree)) || val == -1)
+            else if ((val == 0xFFFFFFFF) && varTypeIsLong(tree))
             {
                 op = NewZeroExtendNode(tree->TypeGet(), op, TYP_UINT);
                 goto DONE_FOLD;
