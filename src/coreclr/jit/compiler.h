@@ -4531,8 +4531,8 @@ public:
     // doubly linked lists during certain phases of the compilation.
     // - Local morph threads all locals to be used for early liveness and
     //   forward sub when optimizing. This is kept valid until after forward sub.
-    //   The first local is kept in Statement::GetRootNode()->gtNext and the last
-    //   local in Statement::GetRootNode()->gtPrev. fgSequenceLocals can be used
+    //   The first local is kept in Statement::GetTreeList() and the last
+    //   local in Statement::GetTreeListEnd(). fgSequenceLocals can be used
     //   to (re-)sequence a statement into this form, and
     //   Statement::LocalsTreeList for range-based iteration. The order must
     //   match tree order.
@@ -7502,7 +7502,7 @@ public:
     GenTree* optConstantAssertionProp(AssertionDsc*        curAssertion,
                                       GenTreeLclVarCommon* tree,
                                       Statement* stmt DEBUGARG(AssertionIndex index));
-    bool optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock* lclBlock, GenTree* value);
+    bool optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* value);
     bool optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions);
 
     // Assertion propagation functions.
