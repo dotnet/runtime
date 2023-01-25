@@ -29,7 +29,7 @@ regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPo
 {
     regMaskTP result = candidates & m_AvailableRegs;
 
-    if (!refPosition->needsConsecutive || (refPosition->regCount == 0))
+    if (!refPosition->isFirstRefPositionOfConsecutiveRegisters())
     {
         return result;
     }
@@ -74,7 +74,7 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regMaskTP firstRegAssigned)
 {
     assert(isSingleRegister(firstRegAssigned));
-    assert(firstRefPosition->needsConsecutive && firstRefPosition->regCount > 0);
+    assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
 
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
 

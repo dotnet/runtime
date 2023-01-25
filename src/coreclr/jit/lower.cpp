@@ -6661,11 +6661,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 #endif // FEATURE_SIMD && TARGET_64BIT
             if (varDsc->lvPromoted)
             {
-#ifdef TARGET_ARM64
-                assert(varDsc->lvDoNotEnregister || varDsc->lvIsMultiRegRet || node->AsLclVar()->IsMultiRegUse());
-#else
                 assert(varDsc->lvDoNotEnregister || varDsc->lvIsMultiRegRet);
-#endif // TARGET_ARM64
             }
         }
         break;

@@ -1200,7 +1200,7 @@ private:
 #endif // TARGET_ARM
         return result;
     }
-#endif
+#endif // !TARGET_ARM64
 
 #ifdef DEBUG
     class RegisterSelection;
@@ -2532,6 +2532,19 @@ public:
     {
         return (isFixedRefOfRegMask(genRegMask(regNum)));
     }
+
+#ifdef TARGET_ARM64
+    /// For consecutive registers, returns true if this RefPosition is
+    /// the first of the series.
+    FORCEINLINE bool isFirstRefPositionOfConsecutiveRegisters()
+    {
+        if (needsConsecutive)
+        {
+            return regCount != 0;
+        }
+        return false;
+    }
+#endif // TARGET_ARM64
 
 #ifdef DEBUG
     // operator= copies everything except 'rpNum', which must remain unique

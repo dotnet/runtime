@@ -2849,7 +2849,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
     refPosition->registerAssignment = foundRegBit;
 
 #ifdef TARGET_ARM64
-    if (refPosition->needsConsecutive && (refPosition->regCount != 0))
+    if (refPosition->isFirstRefPositionOfConsecutiveRegisters())
     {
         setNextConsecutiveRegisterAssignment(refPosition, foundRegBit);
     }
