@@ -3,6 +3,8 @@
   <PropertyGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- Build for NetCoreAppCurrent by default if no BuildTargetFramework is supplied or if not all configurations are built. -->
     <TargetFramework>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))-$(TargetOS)</TargetFramework>
+    <!-- Don't append the TargetOS when targeting .NET Framework which doesn't support RID platforms. -->
+    <TargetFramework Condition="$(BuildTargetFramework.StartsWith('net4'))">$(BuildTargetFramework)</TargetFramework>
     <!-- Filter ProjectReferences to build the best matching target framework only. -->
     <FilterTraversalProjectReferences Condition="'$(TestTrimming)' != 'true' and '$(RunNativeAotTestApps)' != 'true'">true</FilterTraversalProjectReferences>
   </PropertyGroup>
