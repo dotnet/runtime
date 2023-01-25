@@ -6,6 +6,7 @@ AOT?=false
 TARGET?=iossimulator
 DEPLOY_AND_RUN?=true
 APP_SANDBOX?=false
+STRIP_DEBUG_SYMBOLS?=false
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
 #If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
@@ -33,6 +34,7 @@ run: clean appbuilder
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:UseLLVM=$(USE_LLVM) \
 	/p:ForceAOT=$(AOT) \
+	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"'
@@ -44,6 +46,7 @@ run-sim: clean appbuilder
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:UseLLVM=$(USE_LLVM) \
 	/p:ForceAOT=$(AOT) \
+	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"'
