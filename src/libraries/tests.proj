@@ -665,13 +665,19 @@
     <Samples_BuildInParallel Condition="'$(OS)' != 'Windows_NT'">true</Samples_BuildInParallel>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunWasmSamples)' == 'true'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunWasmSamples)' == 'true' and '$(TargetOS)' == 'browser'">
     <ProjectReference Include="$(MonoProjectRoot)sample\wasm\**\*.Sample.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="$(Samples_BuildInParallel)" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\WebAssembly\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunWasmSamples)' == 'true' and '$(TargetOS)' == 'wasi'">
+    <ProjectReference Include="$(MonoProjectRoot)sample\wasi\**\*.Sample.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      BuildInParallel="$(Samples_BuildInParallel)" />
   </ItemGroup>
 
   <Target Name="GenerateMergedCoverageReport"
