@@ -346,7 +346,7 @@ mono_jiterp_localloc (gpointer *destination, gint32 len, InterpFrame *frame)
 	ThreadContext *context = mono_jiterp_get_context();
 	gpointer mem;
 	if (len > 0) {
-		mem = mono_jiterp_frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
+		mem = mono_jiterp_frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, sizeof (gint64)));
 
 		if (frame->imethod->init_locals)
 			memset (mem, 0, len);
@@ -954,6 +954,52 @@ mono_jiterp_get_hashcode (MonoObject ** ppObj)
 	MonoObject *obj = *ppObj;
 	g_assert (obj);
 	return mono_object_hash_internal (obj);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_signature_has_this (MonoMethodSignature *sig)
+{
+	return sig->hasthis;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoType *
+mono_jiterp_get_signature_return_type (MonoMethodSignature *sig)
+{
+	return sig->ret;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_signature_param_count (MonoMethodSignature *sig)
+{
+	return sig->param_count;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoType **
+mono_jiterp_get_signature_params (MonoMethodSignature *sig)
+{
+	return sig->params;
+}
+
+#define DUMMY_BYREF 0xFFFF
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_type_to_ldind (MonoType *type)
+{
+	if (!type)
+		return 0;
+	if (m_type_is_byref(type))
+		return DUMMY_BYREF;
+	return mono_type_to_ldind (type);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_type_to_stind (MonoType *type)
+{
+	if (!type)
+		return 0;
+	if (m_type_is_byref(type))
+		return 0;
+	return mono_type_to_stind (type);
 }
 
 // HACK: fix C4206

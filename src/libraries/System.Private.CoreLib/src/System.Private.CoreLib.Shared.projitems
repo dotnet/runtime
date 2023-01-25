@@ -1043,6 +1043,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SR.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\StackOverflowException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\StartupHookProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Comparison.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Manipulation.cs" />
@@ -1060,6 +1061,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Ascii.Utility.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIEncoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\CodePageDataItem.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\CompositeFormat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Decoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\DecoderExceptionFallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\DecoderFallback.cs" />
