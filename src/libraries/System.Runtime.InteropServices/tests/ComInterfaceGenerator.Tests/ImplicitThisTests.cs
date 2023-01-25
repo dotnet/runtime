@@ -60,7 +60,7 @@ namespace ComInterfaceGenerator.Tests
                 public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(Type type)
                 {
                     Assert.Equal(typeof(INativeObject), type);
-                    return new VirtualMethodTableInfo(_pointer, (void**)_pointer);
+                    return new VirtualMethodTableInfo(_pointer, *(void***)_pointer);
                 }
 
                 public void Dispose()
