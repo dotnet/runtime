@@ -4009,7 +4009,7 @@ struct GenTreeField : public GenTreeUnOp
     bool                 gtFldMayOverlap : 1;
 
 private:
-    bool gtFldIsNeverNegative : 1;
+    bool gtFldIsSpanLength : 1;
 
 public:
 #ifdef FEATURE_READYTORUN
@@ -4021,7 +4021,7 @@ public:
         , gtFldHnd(fldHnd)
         , gtFldOffset(offs)
         , gtFldMayOverlap(false)
-        , gtFldIsNeverNegative(false)
+        , gtFldIsSpanLength(false)
     {
 #ifdef FEATURE_READYTORUN
         gtFieldLookup.addr = nullptr;
@@ -4048,15 +4048,22 @@ public:
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
     }
 
-    bool IsNeverNegative() const
+    bool IsSpanLength() const
     {
+        // This is limited to span length today rather than a more general "IsNeverNegative"
+        // to help avoid confusion around propagating the value to promoted lcl vars.
+        //
+        // Extending this support more in the future will require additional work and
+        // considerations to help ensure it is correctly used since people may want
+        // or intend to use this as more of a "point in time" feature like GTF_IND_NONNULL
+
         assert(OperIs(GT_FIELD));
-        return gtFldIsNeverNegative;
+        return gtFldIsSpanLength;
     }
 
-    void SetIsNeverNegative(bool value)
+    void SetIsSpanLength(bool value)
     {
-        gtFldIsNeverNegative = value;
+        gtFldIsSpanLength = value;
     }
 
     bool IsInstance() const

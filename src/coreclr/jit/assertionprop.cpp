@@ -229,7 +229,7 @@ bool IntegralRange::Contains(int64_t value) const
 
         case GT_FIELD:
         {
-            if (node->AsField()->IsNeverNegative())
+            if (node->AsField()->IsSpanLength())
             {
                 return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
             }

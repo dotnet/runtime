@@ -8434,9 +8434,9 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
 #endif
 
-                if (tree->AsField()->IsNeverNegative())
+                if (tree->AsField()->IsSpanLength())
                 {
-                    copy->AsField()->SetIsNeverNegative(true);
+                    copy->AsField()->SetIsSpanLength(true);
                 }
             }
             else if (tree->OperIs(GT_ADD, GT_SUB))
@@ -8782,9 +8782,9 @@ GenTree* Compiler::gtCloneExpr(
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
 #endif
 
-                if (tree->AsField()->IsNeverNegative())
+                if (tree->AsField()->IsSpanLength())
                 {
-                    copy->AsField()->SetIsNeverNegative(true);
+                    copy->AsField()->SetIsSpanLength(true);
                 }
                 break;
 
@@ -24751,7 +24751,7 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
     }
     else if (OperIs(GT_FIELD))
     {
-        if (AsField()->IsNeverNegative())
+        if (AsField()->IsSpanLength())
         {
             // This is an early exit, it doesn't cover all cases
             return true;

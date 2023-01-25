@@ -1392,7 +1392,7 @@ private:
                 {
                     GenTreeFlags lclVarFlags = node->gtFlags & (GTF_NODE_MASK | GTF_DONT_CSE);
 
-                    if (node->OperIs(GT_FIELD) && node->AsField()->IsNeverNegative())
+                    if (node->OperIs(GT_FIELD) && node->AsField()->IsSpanLength())
                     {
                         m_compiler->lvaGetDesc(fieldLclNum)->SetIsNeverNegative(true);
                     }
