@@ -3709,8 +3709,14 @@ interp_newobj_slow_unopt (InterpFrame *frame, InterpMethod *cmethod, const guint
 
 	call_args_offset = ALIGN_TO (call_args_offset + ret_size, MINT_STACK_ALIGNMENT);
 	// We allocate space on the stack for return value and for this pointer, that is passed to ctor
-	if (param_size)
-		memmove (locals + call_args_offset + MINT_STACK_SLOT_SIZE, locals + start_call_args_offset, param_size);
+	if (param_size) {
+		int param_offset;
+		if (ip [5]) // Check if first arg is simd type, which requires realigning param area
+			param_offset = ALIGN_TO (call_args_offset + MINT_STACK_SLOT_SIZE, MINT_SIMD_ALIGNMENT);
+		else
+			param_offset = call_args_offset + MINT_STACK_SLOT_SIZE;
+		memmove (locals + param_offset, locals + start_call_args_offset, param_size);
+	}
 
 	if (is_vt) {
 		this_ptr = locals + start_call_args_offset;
@@ -5782,7 +5788,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				THROW_EX (exc, ip);
 			}
 			call_args_offset = offset;
-			ip += 5;
+			ip += 6;
 			goto call;
 		}
 		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {

@@ -490,16 +490,21 @@ create_interp_local_explicit (TransformData *td, MonoType *type, int size)
 			td->locals_capacity = 2;
 		td->locals = (InterpLocal*) g_realloc (td->locals, td->locals_capacity * sizeof (InterpLocal));
 	}
+	int mt = mint_type (type);
 	InterpLocal *local = &td->locals [td->locals_size];
+
 	local->type = type;
-	local->mt = mint_type (type);
+	local->mt = mt;
 	local->flags = 0;
+	if (mt == MINT_TYPE_VT && m_class_is_simd_type (mono_class_from_mono_type_internal (type)))
+		local->flags |= INTERP_LOCAL_FLAG_SIMD;
 	local->indirects = 0;
 	local->offset = -1;
 	local->size = size;
 	local->live_start = -1;
 	local->bb_index = -1;
 	local->def = NULL;
+
 	td->locals_size++;
 	return td->locals_size - 1;
 
@@ -521,11 +526,6 @@ create_interp_stack_local (TransformData *td, StackInfo *sp, int type_size)
 	int local = create_interp_local_explicit (td, get_type_from_stack (sp->type, sp->klass), type_size);
 
 	td->locals [local].flags |= INTERP_LOCAL_FLAG_EXECUTION_STACK;
-	if (!td->optimized) {
-		td->locals [local].stack_offset = sp->offset;
-		// Additional space that is allocated for the frame, when we don't run the var offset allocator
-		ENSURE_STACK_SIZE(td, sp->offset + sp->size);
-	}
 	sp->local = local;
 }
 
@@ -548,9 +548,16 @@ push_type_explicit (TransformData *td, int type, MonoClass *k, int type_size)
 	sp->type = GINT_TO_UINT8 (type);
 	sp->klass = k;
 	sp->flags = 0;
-	sp->offset = get_tos_offset (td);
 	sp->size = ALIGN_TO (type_size, MINT_STACK_SLOT_SIZE);
 	create_interp_stack_local (td, sp, type_size);
+	if (!td->optimized) {
+		sp->offset = get_tos_offset (td);
+		if (td->locals [sp->local].flags & INTERP_LOCAL_FLAG_SIMD)
+			sp->offset = ALIGN_TO (sp->offset, MINT_SIMD_ALIGNMENT);
+		td->locals [sp->local].stack_offset = sp->offset;
+		// Additional space that is allocated for the frame, when we don't run the var offset allocator
+		ENSURE_STACK_SIZE(td, sp->offset + sp->size);
+	}
 	td->sp++;
 }
 
@@ -593,6 +600,8 @@ set_simple_type_and_local (TransformData *td, StackInfo *sp, int type)
 {
 	SET_SIMPLE_TYPE (sp, type);
 	create_interp_stack_local (td, sp, MINT_STACK_SLOT_SIZE);
+	if (!td->optimized)
+		td->locals [sp->local].stack_offset = sp->offset;
 }
 
 static void
@@ -1461,6 +1470,9 @@ alloc_var_offset (TransformData *td, int local, gint32 *ptos)
 
 	offset = *ptos;
 	size = td->locals [local].size;
+
+	if (td->locals [local].flags & INTERP_LOCAL_FLAG_SIMD)
+		offset = ALIGN_TO (offset, MINT_SIMD_ALIGNMENT);
 
 	td->locals [local].offset = offset;
 
@@ -3521,7 +3533,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	td->sp -= num_args;
 	guint32 params_stack_size = get_stack_size (td->sp, num_args);
 	// Used only by unoptimized code
-	int param_offset = get_tos_offset (td);
+	int param_offset;
+	if (num_args)
+		param_offset = td->sp [0].offset;
+	else
+		param_offset = get_tos_offset (td);
 
 	int *call_args = create_call_args (td, num_args);
 
@@ -4138,19 +4154,26 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 			type = mono_method_signature_internal (td->method)->params [i - sig->hasthis];
 		int mt = mint_type (type);
 		td->locals [i].type = type;
-		td->locals [i].offset = offset;
 		td->locals [i].flags = INTERP_LOCAL_FLAG_GLOBAL;
 		td->locals [i].indirects = 0;
 		td->locals [i].mt = mt;
 		td->locals [i].def = NULL;
 		if (mt == MINT_TYPE_VT) {
 			size = mono_type_size (type, &align);
-			td->locals [i].size = size;
-			offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+			if (m_class_is_simd_type (klass)) // mono_type_size should report the alignment
+				align = MINT_SIMD_ALIGNMENT;
+			else
+				align = MINT_STACK_SLOT_SIZE;
+			g_assert (align <= MINT_STACK_ALIGNMENT);
 		} else {
-			td->locals [i].size = MINT_STACK_SLOT_SIZE; // not really
-			offset += MINT_STACK_SLOT_SIZE;
+			size = MINT_STACK_SLOT_SIZE; // not really
+			align = MINT_STACK_SLOT_SIZE;
 		}
+		td->locals [i].size = size;
+		offset = ALIGN_TO (offset, align);
+		td->locals [i].offset = offset;
+		offset += size;
 	}
 	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
 
@@ -4164,8 +4187,13 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 				return;
 			}
 		}
-		offset += align - 1;
-		offset &= ~(align - 1);
+		MonoClass *klass = mono_class_from_mono_type_internal (header->locals [i]);
+		if (m_class_is_simd_type (klass)) // mono_type_size should report the alignment
+			align = MINT_SIMD_ALIGNMENT;
+		else
+			align = MINT_STACK_SLOT_SIZE;
+		g_assert (align <= MINT_STACK_ALIGNMENT);
+		offset = ALIGN_TO (offset, align);
 		imethod->local_offsets [i] = offset;
 		td->locals [index].type = header->locals [i];
 		td->locals [index].offset = offset;
@@ -6026,6 +6054,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_ins (td, MINT_NEWOBJ_SLOW_UNOPT);
 				td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 				td->last_ins->data [1] = param_size;
+				if (csignature->param_count > 0) {
+					// Instruct opcode to also align params if necessary
+					if (td->locals [td->sp [0].local].flags & INTERP_LOCAL_FLAG_SIMD)
+						td->last_ins->data [3] = 1;
+				}
 
 				gboolean is_vt = m_class_is_valuetype (klass);
 				if (is_vt) {
