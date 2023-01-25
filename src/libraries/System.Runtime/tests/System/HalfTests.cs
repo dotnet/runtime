@@ -2115,8 +2115,8 @@ namespace System.Tests
         [MemberData(nameof(Lerp_TestData))]
         public static void LerpTest(Half value1, Half value2, Half amount, Half expectedResult)
         {
-            AssertExtensions.Equal(+expectedResult, Half.Lerp(+value1, +value2, amount), 0);
-            AssertExtensions.Equal(-expectedResult, Half.Lerp(-value1, -value2, amount), 0);
+            AssertExtensions.Equal(+expectedResult, Half.Lerp(+value1, +value2, amount), Half.Zero);
+            AssertExtensions.Equal(-expectedResult, Half.Lerp(-value1, -value2, amount), Half.Zero);
         }
     }
 }
