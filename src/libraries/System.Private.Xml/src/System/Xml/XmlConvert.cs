@@ -1712,13 +1712,12 @@ namespace System.Xml
         {
             ReadOnlySpan<char> valueSpan;
 
-            if (float.IsNegativeInfinity(value))
+            if (!float.IsFinite(value))
             {
-                valueSpan = "-INF";
-            }
-            else if (float.IsPositiveInfinity(value))
-            {
-                valueSpan = "INF";
+                if (float.IsNaN(value))
+                    valueSpan = "NaN";
+                else
+                    valueSpan = float.IsNegative(value) ? "-INF" : "INF";
             }
             else if (IsNegativeZero((double)value))
             {
@@ -1737,13 +1736,12 @@ namespace System.Xml
         {
             ReadOnlySpan<char> valueSpan;
 
-            if (double.IsNegativeInfinity(value))
+            if (!double.IsFinite(value))
             {
-                valueSpan = "-INF";
-            }
-            else if (double.IsPositiveInfinity(value))
-            {
-                valueSpan = "INF";
+                if (double.IsNaN(value))
+                    valueSpan = "NaN";
+                else
+                    valueSpan = double.IsNegative(value) ? "-INF" : "INF";
             }
             else if (IsNegativeZero(value))
             {
