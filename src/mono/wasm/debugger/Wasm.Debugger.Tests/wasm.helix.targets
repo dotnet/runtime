@@ -19,14 +19,17 @@
     <ItemGroup>
       <_Ids Include="1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;24;25;26;27;28;29;30" />
     </ItemGroup>
+    <PropertyGroup>
+       <_TestName>DebuggerTests.SteppingTests</_TestName>
+    </PropertyGroup>
 
     <ItemGroup>
-      <HelixWorkItem Include="%(_Ids.Identity)-DebuggerTests.SteppingTests">
+      <HelixWorkItem Include="%(_Ids.Identity)-$(_TestName)">
         <PayloadArchive>$(TestArchiveTestsDir)Wasm.Debugger.Tests.zip</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_DebuggerTestsWorkItemTimeout)</Timeout>
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;TEST_ARGS=--filter FullyQualifiedName~%(Identity)&quot;</PreCommands>
-        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;TEST_ARGS=--filter FullyQualifiedName~%(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;TEST_ARGS=--filter FullyQualifiedName~$(_TestName)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;TEST_ARGS=--filter FullyQualifiedName~$(_TestName)&quot;</PreCommands>
       </HelixWorkItem>
     </ItemGroup>
   </Target>
