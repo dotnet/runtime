@@ -14,5 +14,6 @@
     <type fullname="System.Collections.Generic.HashSet`1">
         <method signature="System.Void .ctor()" />
     </type>
+    <type fullname="System.Collections.Generic.ISet`1" preserve="methods" />
   </assembly>
 </linker>
