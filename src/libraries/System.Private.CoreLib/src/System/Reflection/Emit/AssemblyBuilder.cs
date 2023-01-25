@@ -9,7 +9,7 @@ namespace System.Reflection.Emit
 {
     public abstract partial class AssemblyBuilder : Assembly
     {
-        private protected AssemblyBuilder()
+        protected AssemblyBuilder()
         {
         }
 

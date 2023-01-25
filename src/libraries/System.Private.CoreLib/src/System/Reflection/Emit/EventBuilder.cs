@@ -5,7 +5,7 @@ namespace System.Reflection.Emit
 {
     public abstract class EventBuilder
     {
-        private protected EventBuilder()
+        protected EventBuilder()
         {
         }
 

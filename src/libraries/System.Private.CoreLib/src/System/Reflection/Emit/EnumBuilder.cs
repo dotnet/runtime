@@ -7,7 +7,7 @@ namespace System.Reflection.Emit
 {
     public abstract partial class EnumBuilder : TypeInfo
     {
-        private protected EnumBuilder()
+        protected EnumBuilder()
         {
         }
 

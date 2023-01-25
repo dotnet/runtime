@@ -221,7 +221,7 @@ namespace System.Reflection.Emit
             return GetTypeRef(new QCallModule(ref thisModule), typeName, new QCallModule(ref refedRuntimeModule), tkResolution);
         }
 
-        public override int GetMetadataToken(ConstructorInfo constructor)
+        public override int GetMethodMetadataToken(ConstructorInfo constructor)
         {
             // Helper to get constructor token.
             int tr;
@@ -358,15 +358,15 @@ namespace System.Reflection.Emit
             else if (!method.Module.Equals(this))
             {
                 // Use typeRef as parent because the method's declaringType lives in a different assembly
-                tkParent = GetMetadataToken(method.DeclaringType);
+                tkParent = GetTypeMetadataToken(method.DeclaringType);
             }
             else
             {
                 // Use methodDef as parent because the method lives in this assembly and its declaringType has no generic arguments
                 if (masmi != null)
-                    tkParent = GetMetadataToken(masmi);
+                    tkParent = GetMethodMetadataToken(masmi);
                 else
-                    tkParent = GetMetadataToken((method as ConstructorInfo)!);
+                    tkParent = GetMethodMetadataToken((method as ConstructorInfo)!);
             }
 
             return GetMemberRefFromSignature(tkParent, method.Name, sigBytes, sigLength);
@@ -881,7 +881,7 @@ namespace System.Reflection.Emit
         //   1. GetTypeToken
         //   2. ldtoken (see ILGenerator)
         // For all other occasions we should return the generic type instantiated on its formal parameters.
-        public int GetTypeTokenInternal(Type type, bool getGenericDefinition = false)
+        internal int GetTypeTokenInternal(Type type, bool getGenericDefinition = false)
         {
             lock (SyncRoot)
             {
@@ -889,7 +889,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override int GetMetadataToken(Type type)
+        public override int GetTypeMetadataToken(Type type)
         {
             return GetTypeTokenInternal(type, getGenericDefinition: true);
         }
@@ -943,7 +943,7 @@ namespace System.Reflection.Emit
             return GetTypeRefNested(type, refedModule);
         }
 
-        public override int GetMetadataToken(MethodInfo method)
+        public override int GetMethodMetadataToken(MethodInfo method)
         {
             lock (SyncRoot)
             {
@@ -978,7 +978,7 @@ namespace System.Reflection.Emit
                 }
 
                 // method is defined in a different module
-                tr = getGenericTypeDefinition ? GetMetadataToken(method.DeclaringType) : GetTypeTokenInternal(method.DeclaringType);
+                tr = getGenericTypeDefinition ? GetTypeMetadataToken(method.DeclaringType) : GetTypeTokenInternal(method.DeclaringType);
                 mr = GetMemberRef(method.DeclaringType.Module, tr, methodToken);
             }
             else if (method is MethodOnTypeBuilderInstantiation)
@@ -1017,7 +1017,7 @@ namespace System.Reflection.Emit
                 }
                 else if (method is RuntimeMethodInfo rtMeth)
                 {
-                    tr = getGenericTypeDefinition ? GetMetadataToken(declaringType) : GetTypeTokenInternal(declaringType);
+                    tr = getGenericTypeDefinition ? GetTypeMetadataToken(declaringType) : GetTypeTokenInternal(declaringType);
                     mr = GetMemberRefOfMethodInfo(tr, rtMeth);
                 }
                 else
@@ -1037,7 +1037,7 @@ namespace System.Reflection.Emit
                         optionalCustomModifiers[i] = parameters[i].GetOptionalCustomModifiers();
                     }
 
-                    tr = getGenericTypeDefinition ? GetMetadataToken(declaringType) : GetTypeTokenInternal(declaringType);
+                    tr = getGenericTypeDefinition ? GetTypeMetadataToken(declaringType) : GetTypeTokenInternal(declaringType);
 
                     SignatureHelper sigHelp;
 
@@ -1088,7 +1088,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    tk = GetMetadataToken(methodInfoUnbound);
+                    tk = GetMethodMetadataToken(methodInfoUnbound);
                 }
 
                 // For Ldtoken, Ldftn, and Ldvirtftn, we should emit the method def/ref token for a generic method definition.
@@ -1111,11 +1111,11 @@ namespace System.Reflection.Emit
                 {
                     if (methodInfo != null)
                     {
-                        tk = GetMetadataToken(methodInfo);
+                        tk = GetMethodMetadataToken(methodInfo);
                     }
                     else
                     {
-                        tk = GetMetadataToken((method as ConstructorInfo)!);
+                        tk = GetMethodMetadataToken((method as ConstructorInfo)!);
                     }
                 }
                 else
@@ -1169,7 +1169,7 @@ namespace System.Reflection.Emit
             return new SymbolMethod(this, token, arrayClass, methodName, callingConvention, returnType, parameterTypes);
         }
 
-        public override int GetMetadataToken(FieldInfo field)
+        public override int GetFieldMetadataToken(FieldInfo field)
         {
             lock (SyncRoot)
             {
@@ -1252,24 +1252,24 @@ namespace System.Reflection.Emit
             return mr;
         }
 
-        public override int GetMetadataToken(string str)
+        public override int GetStringMetadataToken(string stringConstant)
         {
-            ArgumentNullException.ThrowIfNull(str);
+            ArgumentNullException.ThrowIfNull(stringConstant);
 
             // Returns a token representing a String constant.  If the string
             // value has already been defined, the existing token will be returned.
             RuntimeModuleBuilder thisModule = this;
-            return GetStringConstant(new QCallModule(ref thisModule), str, str.Length);
+            return GetStringConstant(new QCallModule(ref thisModule), stringConstant, stringConstant.Length);
         }
 
-        public override int GetMetadataToken(SignatureHelper sigHelper)
+        public override int GetSignatureMetadataToken(SignatureHelper signature)
         {
-            ArgumentNullException.ThrowIfNull(sigHelper);
+            ArgumentNullException.ThrowIfNull(signature);
 
             // Define signature token given a signature helper. This will define a metadata
             // token for the signature described by SignatureHelper.
             // Get the signature in byte form.
-            byte[] sigBytes = sigHelper.InternalGetSignature(out int sigLength);
+            byte[] sigBytes = signature.InternalGetSignature(out int sigLength);
             RuntimeModuleBuilder thisModule = this;
             return RuntimeTypeBuilder.GetTokenFromSig(new QCallModule(ref thisModule), sigBytes, sigLength);
         }
@@ -1294,7 +1294,7 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.DefineCustomAttribute(
                 this,
                 1,                                          // This is hard coding the module token to 1
-                GetMetadataToken(con),
+                GetMethodMetadataToken(con),
                 binaryAttribute);
         }
 

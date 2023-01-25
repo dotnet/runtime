@@ -5,7 +5,7 @@ namespace System.Reflection.Emit
 {
     public abstract class FieldBuilder : FieldInfo
     {
-        private protected FieldBuilder()
+        protected FieldBuilder()
         {
         }
 

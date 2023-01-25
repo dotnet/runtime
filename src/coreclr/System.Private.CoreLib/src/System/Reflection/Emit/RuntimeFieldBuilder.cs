@@ -161,7 +161,7 @@ namespace System.Reflection.Emit
             m_typeBuilder.ThrowIfCreated();
 
             RuntimeTypeBuilder.DefineCustomAttribute(moduleBuilder,
-                m_fieldTok, moduleBuilder.GetMetadataToken(con), binaryAttribute);
+                m_fieldTok, moduleBuilder.GetMethodMetadataToken(con), binaryAttribute);
         }
 
         protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)

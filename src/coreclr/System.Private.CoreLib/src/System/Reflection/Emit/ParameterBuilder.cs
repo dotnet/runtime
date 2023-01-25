@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.DefineCustomAttribute(
                 _methodBuilder.GetModuleBuilder(),
                 _token,
-                ((RuntimeModuleBuilder)_methodBuilder.GetModule()).GetMetadataToken(con),
+                ((RuntimeModuleBuilder)_methodBuilder.GetModule()).GetMethodMetadataToken(con),
                 binaryAttribute);
         }
 

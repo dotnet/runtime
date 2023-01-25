@@ -87,7 +87,7 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.DefineCustomAttribute(
                 m_module,
                 m_evToken,
-                m_module.GetMetadataToken(con),
+                m_module.GetMethodMetadataToken(con),
                 binaryAttribute);
         }
 

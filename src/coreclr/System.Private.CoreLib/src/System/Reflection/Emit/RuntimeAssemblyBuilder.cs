@@ -288,7 +288,7 @@ namespace System.Reflection.Emit
                 RuntimeTypeBuilder.DefineCustomAttribute(
                     _manifestModuleBuilder,     // pass in the in-memory assembly module
                     AssemblyDefToken,
-                    _manifestModuleBuilder.GetMetadataToken(con),
+                    _manifestModuleBuilder.GetMethodMetadataToken(con),
                     binaryAttribute);
             }
         }

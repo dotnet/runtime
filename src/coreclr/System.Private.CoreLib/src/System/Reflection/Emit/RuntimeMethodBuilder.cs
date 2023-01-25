@@ -699,7 +699,7 @@ namespace System.Reflection.Emit
         {
             ThrowIfGeneric();
             RuntimeTypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
-                m_module.GetMetadataToken(con),
+                m_module.GetMethodMetadataToken(con),
                 binaryAttribute);
 
             if (IsKnownCA(con))

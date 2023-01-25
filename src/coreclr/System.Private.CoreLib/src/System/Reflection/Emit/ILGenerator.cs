@@ -570,7 +570,7 @@ namespace System.Reflection.Emit
             UpdateStackSize(OpCodes.Calli, stackchange);
 
             RecordTokenFixup();
-            PutInteger4(modBuilder.GetMetadataToken(sig));
+            PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
         }
 
         public virtual void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
@@ -613,7 +613,7 @@ namespace System.Reflection.Emit
             EnsureCapacity(7);
             Emit(OpCodes.Calli);
             RecordTokenFixup();
-            PutInteger4(modBuilder.GetMetadataToken(sig));
+            PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
         }
 
         public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
@@ -656,7 +656,7 @@ namespace System.Reflection.Emit
 
             int stackchange = 0;
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            int sig = modBuilder.GetMetadataToken(signature);
+            int sig = modBuilder.GetSignatureMetadataToken(signature);
 
             int tempVal = sig;
 
@@ -814,7 +814,7 @@ namespace System.Reflection.Emit
         public virtual void Emit(OpCode opcode, FieldInfo field)
         {
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            int tempVal = modBuilder.GetMetadataToken(field);
+            int tempVal = modBuilder.GetFieldMetadataToken(field);
             EnsureCapacity(7);
             InternalEmit(opcode);
             RecordTokenFixup();
@@ -828,7 +828,7 @@ namespace System.Reflection.Emit
             // fixups if the module is persisted to a PE.
 
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            int tempVal = modBuilder.GetMetadataToken(str);
+            int tempVal = modBuilder.GetStringMetadataToken(str);
             EnsureCapacity(7);
             InternalEmit(opcode);
             PutInteger4(tempVal);

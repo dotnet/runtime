@@ -3,13 +3,12 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
 
 namespace System.Reflection.Emit
 {
     public abstract partial class TypeBuilder : TypeInfo
     {
-        private protected TypeBuilder()
+        protected TypeBuilder()
         {
         }
 

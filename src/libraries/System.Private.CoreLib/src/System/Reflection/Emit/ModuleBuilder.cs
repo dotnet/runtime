@@ -8,11 +8,9 @@ namespace System.Reflection.Emit
 {
     public abstract class ModuleBuilder : Module
     {
-        private protected ModuleBuilder()
+        protected ModuleBuilder()
         {
         }
-
-        // The following virtual methods are abstract in reference assembly. We keep them as virtual to maintain backward compatibility.
 
         public void CreateGlobalFunctions()
             => CreateGlobalFunctionsCore();
@@ -135,11 +133,11 @@ namespace System.Reflection.Emit
 
         protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
 
-        public abstract int GetMetadataToken(Type type);
-        public abstract int GetMetadataToken(FieldInfo field);
-        public abstract int GetMetadataToken(MethodInfo method);
-        public abstract int GetMetadataToken(ConstructorInfo contsuctor);
-        public abstract int GetMetadataToken(SignatureHelper sigHelper);
-        public abstract int GetMetadataToken(string str);
+        public abstract int GetTypeMetadataToken(Type type);
+        public abstract int GetFieldMetadataToken(FieldInfo field);
+        public abstract int GetMethodMetadataToken(MethodInfo method);
+        public abstract int GetMethodMetadataToken(ConstructorInfo contsuctor);
+        public abstract int GetSignatureMetadataToken(SignatureHelper signature);
+        public abstract int GetStringMetadataToken(string stringConstant);
     }
 }

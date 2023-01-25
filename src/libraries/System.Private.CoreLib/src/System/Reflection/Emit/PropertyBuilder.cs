@@ -5,7 +5,7 @@ namespace System.Reflection.Emit
 {
     public abstract class PropertyBuilder : PropertyInfo
     {
-        private protected PropertyBuilder()
+        protected PropertyBuilder()
         {
         }
 

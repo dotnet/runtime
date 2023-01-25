@@ -519,7 +519,7 @@ namespace System.Reflection.Emit
         // return the byte interpretation of the custom attribute
         internal void CreateCustomAttribute(RuntimeModuleBuilder mod, int tkOwner)
         {
-            RuntimeTypeBuilder.DefineCustomAttribute(mod, tkOwner, mod.GetMetadataToken(m_con), m_blob);
+            RuntimeTypeBuilder.DefineCustomAttribute(mod, tkOwner, mod.GetMethodMetadataToken(m_con), m_blob);
         }
     }
 }

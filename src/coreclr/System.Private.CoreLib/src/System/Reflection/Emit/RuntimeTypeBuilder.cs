@@ -132,7 +132,7 @@ namespace System.Reflection.Emit
                 if (m_customBuilder == null)
                 {
                     Debug.Assert(m_con != null);
-                    DefineCustomAttribute(module, token, module.GetMetadataToken(m_con),
+                    DefineCustomAttribute(module, token, module.GetMethodMetadataToken(m_con),
                         m_binaryAttribute);
                 }
                 else
@@ -1200,8 +1200,8 @@ namespace System.Reflection.Emit
                     // Loader restriction: body method has to be from this class
                     throw new ArgumentException(SR.ArgumentException_BadMethodImplBody);
 
-                int tkBody = m_module.GetMetadataToken(methodInfoBody);
-                int tkDecl = m_module.GetMetadataToken(methodInfoDeclaration);
+                int tkBody = m_module.GetMethodMetadataToken(methodInfoBody);
+                int tkDecl = m_module.GetMethodMetadataToken(methodInfoDeclaration);
 
                 RuntimeModuleBuilder module = m_module;
                 DefineMethodImpl(new QCallModule(ref module), m_tdType, tkBody, tkDecl);
@@ -1581,7 +1581,6 @@ namespace System.Reflection.Emit
                         m_module,
                         name,
                         attributes,
-                        // tkType,
                         this,
                         evToken);
             }
@@ -1858,7 +1857,7 @@ namespace System.Reflection.Emit
 
         protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            DefineCustomAttribute(m_module, m_tdType, m_module.GetMetadataToken(con), binaryAttribute);
+            DefineCustomAttribute(m_module, m_tdType, m_module.GetMethodMetadataToken(con), binaryAttribute);
         }
 
         protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)

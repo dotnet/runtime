@@ -5,7 +5,7 @@ namespace System.Reflection.Emit
 {
     public abstract class ConstructorBuilder : ConstructorInfo
     {
-        private protected ConstructorBuilder()
+        protected ConstructorBuilder()
         {
         }
 

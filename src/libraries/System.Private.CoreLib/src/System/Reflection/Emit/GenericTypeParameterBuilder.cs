@@ -7,7 +7,7 @@ namespace System.Reflection.Emit
 {
     public abstract partial class GenericTypeParameterBuilder : TypeInfo
     {
-        private protected GenericTypeParameterBuilder()
+        protected GenericTypeParameterBuilder()
         {
         }
 

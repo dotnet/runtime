@@ -7,7 +7,7 @@ namespace System.Reflection.Emit
 {
     public abstract class MethodBuilder : MethodInfo
     {
-        private protected MethodBuilder()
+        protected MethodBuilder()
         {
         }
 

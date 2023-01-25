@@ -473,7 +473,7 @@ namespace System.Reflection.Emit
             return copy;
         }
 
-        public override int GetMetadataToken(MethodInfo method)
+        public override int GetMethodMetadataToken(MethodInfo method)
         {
             ArgumentNullException.ThrowIfNull(method);
 
@@ -482,17 +482,17 @@ namespace System.Reflection.Emit
 
         internal int GetArrayMethodToken(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
         {
-            return GetMetadataToken(GetArrayMethod(arrayClass, methodName, callingConvention, returnType, parameterTypes));
+            return GetMethodMetadataToken(GetArrayMethod(arrayClass, methodName, callingConvention, returnType, parameterTypes));
         }
 
-        public override int GetMetadataToken(ConstructorInfo con)
+        public override int GetMethodMetadataToken(ConstructorInfo constructor)
         {
-            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(constructor);
 
-            return con.MetadataToken;
+            return constructor.MetadataToken;
         }
 
-        public override int GetMetadataToken(FieldInfo field)
+        public override int GetFieldMetadataToken(FieldInfo field)
         {
             ArgumentNullException.ThrowIfNull(field);
 
@@ -516,19 +516,19 @@ namespace System.Reflection.Emit
             throw new NotImplementedException();
         }
 
-        public override int GetMetadataToken(SignatureHelper sigHelper)
+        public override int GetSignatureMetadataToken(SignatureHelper signature)
         {
-            ArgumentNullException.ThrowIfNull(sigHelper);
-            return GetToken(sigHelper);
+            ArgumentNullException.ThrowIfNull(signature);
+            return GetToken(signature);
         }
 
-        public override int GetMetadataToken(string str)
+        public override int GetStringMetadataToken(string stringConstant)
         {
-            ArgumentNullException.ThrowIfNull(str);
-            return GetToken(str);
+            ArgumentNullException.ThrowIfNull(stringConstant);
+            return GetToken(stringConstant);
         }
 
-        public override int GetMetadataToken(Type type)
+        public override int GetTypeMetadataToken(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
             if (type.IsByRef)
@@ -540,7 +540,7 @@ namespace System.Reflection.Emit
             Justification = "Reflection.Emit is not subject to trimming")]
         internal int GetTypeToken(string name)
         {
-            return GetMetadataToken(GetType(name)!);
+            return GetTypeMetadataToken(GetType(name)!);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -602,6 +602,7 @@ namespace System.Reflection.Emit
 
         protected override MethodBuilder DefineMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
+            check_name(nameof(name), name);
             check_not_created();
             if (IsInterface && (
                 !((attributes & MethodAttributes.Abstract) != 0) ||
@@ -635,6 +636,9 @@ namespace System.Reflection.Emit
                         CallingConvention nativeCallConv,
                         CharSet nativeCharSet)
         {
+            check_name(nameof(name), name);
+            check_name(nameof(dllName), dllName);
+            check_name(nameof(entryName), entryName);
             if ((attributes & MethodAttributes.Abstract) != 0)
                 throw new ArgumentException(SR.Argument_BadPInvokeMethod);
             if (IsInterface)
@@ -710,6 +714,7 @@ namespace System.Reflection.Emit
 
         protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
+            check_name(nameof(name), name);
             if (parameterTypes != null)
                 foreach (Type param in parameterTypes)
                     if (param == null)
@@ -1536,6 +1541,7 @@ namespace System.Reflection.Emit
 
         protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype)
         {
+            check_name(nameof(name), name);
             ArgumentNullException.ThrowIfNull(eventtype);
             check_not_created();
 

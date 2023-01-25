@@ -104,7 +104,7 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.DefineCustomAttribute(
                 m_moduleBuilder,
                 m_tkProperty,
-                m_moduleBuilder.GetMetadataToken(con),
+                m_moduleBuilder.GetMethodMetadataToken(con),
                 binaryAttribute);
         }
 
