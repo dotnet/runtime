@@ -275,13 +275,13 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromChar(int c)
         {
-            return c >= CharToHexLookup.Length ? 0xFF : CharToHexLookup[c];
+            return (uint)c >= CharToHexLookup.Length ? 0xFF : CharToHexLookup[c];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int FromUpperChar(int c)
         {
-            return c > 71 ? 0xFF : CharToHexLookup[c];
+            return (uint)c >= 72 ? 0xFF : CharToHexLookup[c];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
