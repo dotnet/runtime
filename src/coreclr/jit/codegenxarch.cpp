@@ -1002,7 +1002,6 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     if (compiler->opts.OptimizationEnabled())
     {
         if ((oper == GT_AND) && !varTypeIsLong(treeNode) && op2->IsIntegralConst(-1) &&
-            emit->emitCanPeepholeLastIns() && (targetReg == emit->emitLastIns->idReg1()) &&
             emit->AreUpper32BitsZero(targetReg))
         {
             genProduceReg(treeNode);
