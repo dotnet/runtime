@@ -1452,6 +1452,17 @@ PhaseStatus Compiler::fgPostImportationCleanup()
             {
                 JITDUMP(FMT_BB " was not imported, marking as removed (%d)\n", cur->bbNum, removedBlks);
 
+                // Notify all successors that cur is no longer a pred.
+                //
+                // This may not be necessary once we have pred lists built before importation.
+                // When we alter flow in the importer branch opts, we should be able to make
+                // suitable updates there for blocks that we plan to keep.
+                //
+                for (BasicBlock* succ : cur->Succs(this))
+                {
+                    fgRemoveAllRefPreds(succ, cur);
+                }
+
                 cur->bbFlags |= BBF_REMOVED;
                 removedBlks++;
 
@@ -1592,6 +1603,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         // here as the oldTryEntry is no longer in the main bb list.
                         newTryEntry = bbNewBasicBlock(BBJ_NONE);
                         newTryEntry->bbFlags |= (BBF_IMPORTED | BBF_INTERNAL);
+                        newTryEntry->bbRefs = 0;
 
                         // Set the right EH region indices on this new block.
                         //
@@ -1610,6 +1622,10 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         if (bbIsHandlerBeg(newTryEntry->bbNext))
                         {
                             newTryEntry->bbJumpKind = BBJ_THROW;
+                        }
+                        else
+                        {
+                            fgAddRefPred(newTryEntry->bbNext, newTryEntry);
                         }
 
                         JITDUMP("OSR: changing start of try region #%u from " FMT_BB " to new " FMT_BB "\n",
@@ -1845,6 +1861,11 @@ PhaseStatus Compiler::fgPostImportationCleanup()
     // Did we make any changes?
     //
     const bool madeChanges = madeFlowChanges || addedTemps;
+
+    // Note that we have now run post importation cleanup,
+    // so we can enable more stringent checking.
+    //
+    compPostImportationCleanupDone = true;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
