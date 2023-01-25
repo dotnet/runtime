@@ -424,14 +424,23 @@ namespace ILCompiler
         // CoreCLR compat - referring to function pointer types handled as IntPtr. No MethodTable for function pointers for now.
         private static TypeDesc WithoutFunctionPointerType(TypeDesc type)
         {
+            TypeDesc newParamType = null;
+            if (type.IsParameterizedType)
+            {
+                TypeDesc paramType = ((ParameterizedType)type).ParameterType;
+                newParamType = WithoutFunctionPointerType(paramType);
+                if (newParamType == paramType)
+                    return type;
+            }
+
             switch (type.Category)
             {
                 case TypeFlags.Array:
-                    return WithoutFunctionPointerType(((ParameterizedType)type).ParameterType).MakeArrayType(((ArrayType)type).Rank);
+                    return newParamType.MakeArrayType(((ArrayType)type).Rank);
                 case TypeFlags.SzArray:
-                    return WithoutFunctionPointerType(((ParameterizedType)type).ParameterType).MakeArrayType();
+                    return newParamType.MakeArrayType();
                 case TypeFlags.Pointer:
-                    return WithoutFunctionPointerType(((ParameterizedType)type).ParameterType).MakePointerType();
+                    return newParamType.MakePointerType();
                 case TypeFlags.FunctionPointer:
                     return type.Context.GetWellKnownType(WellKnownType.IntPtr);
                 default:
