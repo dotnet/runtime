@@ -682,6 +682,8 @@ OPDEF(MINT_STRLEN, "strlen", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ARRAY_RANK, "array_rank", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ARRAY_ELEMENT_SIZE, "array_element_size", 3, 1, 1, MintOpNoArgs)
 
+OPDEF(MINT_CALL_ALIGN_STACK, "call_align_stack", 3, 0, 0, MintOpTwoShorts)
+
 /* Calls */
 OPDEF(MINT_CALL, "call", 4, 1, 1, MintOpMethodToken)
 OPDEF(MINT_CALLVIRT_FAST, "callvirt.fast", 5, 1, 1, MintOpMethodToken)

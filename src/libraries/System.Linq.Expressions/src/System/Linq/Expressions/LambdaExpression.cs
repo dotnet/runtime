@@ -26,7 +26,7 @@ namespace System.Linq.Expressions
         private readonly Expression _body;
 
         // This can be flipped to false using feature switches at publishing time
-        public static bool CanCompileToIL => true;
+        public static bool CanCompileToIL => RuntimeFeature.IsDynamicCodeSupported;
 
         // This could be flipped to false using feature switches at publishing time
         public static bool CanInterpret => true;
@@ -154,7 +154,7 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public Delegate Compile(bool preferInterpretation)
         {
-            if (CanCompileToIL && CanInterpret && preferInterpretation)
+            if (CanInterpret && preferInterpretation)
             {
                 return new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
             }
@@ -234,7 +234,7 @@ namespace System.Linq.Expressions
         /// <returns>A delegate containing the compiled version of the lambda.</returns>
         public new TDelegate Compile(bool preferInterpretation)
         {
-            if (CanCompileToIL && CanInterpret && preferInterpretation)
+            if (CanInterpret && preferInterpretation)
             {
                 return (TDelegate)(object)new Interpreter.LightCompiler().CompileTop(this).CreateDelegate();
             }

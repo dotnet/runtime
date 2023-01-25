@@ -1185,7 +1185,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
     {
         if (_prepareInfoByteArray == null)
         {
-            Debug.Fail(string.Format(null, "this.prepareInfoByteArray == null in RecoveryInformation()"));
+            Debug.Fail("this.prepareInfoByteArray == null in RecoveryInformation()");
             throw TransactionException.CreateEnlistmentStateException(null, DistributedTxId);
         }
 

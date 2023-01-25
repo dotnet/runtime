@@ -300,6 +300,9 @@ namespace ILCompiler
                 method.IsInRequiresScope(requiresAttribute))
                 return true;
 
+            if (originMember.GetOwningType() == null)  // Basically a way to test if the entity is a member (type, method, field, ...)
+                return false;
+
             MethodDesc owningMethod;
             if (_compilerGeneratedState != null)
             {

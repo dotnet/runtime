@@ -20,7 +20,7 @@ RUN cd msquic/src/msquic/build/bin/Release && \
     $( ls ./* | cut -d "/" -f 2 | sed -r "s/(.*)/\1=\/usr\/lib\/\1/g" ) && \
     dpkg -i libmsquic_*.deb
 
-ARG VERSION=7.0
+ARG VERSION=8.0
 ARG CONFIGURATION=Release
 
 # Build the stress server

@@ -552,6 +552,8 @@ namespace System.Runtime.InteropServices
     [System.CLSCompliantAttribute(false)]
     public abstract class ComWrappers
     {
+        public static unsafe bool TryGetComInstance(object obj, out System.IntPtr unknown) { throw null; }
+        public static unsafe bool TryGetObject(System.IntPtr unknown, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? obj) { throw null; }
         public struct ComInterfaceEntry
         {
             public System.Guid IID;
@@ -572,7 +574,7 @@ namespace System.Runtime.InteropServices
         public static void RegisterForTrackerSupport(ComWrappers instance) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void RegisterForMarshalling(ComWrappers instance) { }
-        protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
+        public static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
     [System.FlagsAttribute]
     public enum CreateComInterfaceFlags
