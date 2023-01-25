@@ -81,17 +81,21 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     // should have at least one consecutive register requirement
     assert(consecutiveRefPosition != nullptr);
 
-    regMaskTP registerToAssign = firstRegAssigned;
-    int       refPosCount      = 1;
+    regNumber firstReg = genRegNumFromMask(firstRegAssigned);
+    regNumber regToAssign = firstReg == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstReg);
+
+#ifdef DEBUG
+    int refPosCount = 1;
+#endif // DEBUG
     while (consecutiveRefPosition != nullptr)
     {
-        registerToAssign <<= 1;
-        consecutiveRefPosition->registerAssignment = registerToAssign;
+        consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
         consecutiveRefPosition                     = getNextConsecutiveRefPosition(consecutiveRefPosition);
+        regToAssign                                = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
 
 #ifdef DEBUG
         refPosCount++;
-#endif
+#endif // DEBUG
     }
 
     assert(refPosCount == firstRefPosition->regCount);
