@@ -2004,7 +2004,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			return NULL;
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	case SN_Dot: {
-#ifdef TARGET_ARM64 || defined(TARGET_WASM)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
 		int instc0 = OP_FMUL;
 		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, MONO_TYPE_R4, fsig, args);
 		return emit_sum_vector (cfg, fsig->params [0], MONO_TYPE_R4, pairwise_multiply);
