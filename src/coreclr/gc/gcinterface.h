@@ -1061,11 +1061,17 @@ struct VersionInfo {
     const char* Name;
 };
 
-typedef void (*GC_VersionInfoFunction)(
+#ifdef TARGET_X86
+#define LOCALGC_CALLCONV __cdecl
+#else
+#define LOCALGC_CALLCONV
+#endif
+
+typedef void (LOCALGC_CALLCONV *GC_VersionInfoFunction)(
     /* Out */ VersionInfo*
 );
 
-typedef HRESULT (*GC_InitializeFunction)(
+typedef HRESULT (LOCALGC_CALLCONV *GC_InitializeFunction)(
     /* In  */ IGCToCLR*,
     /* Out */ IGCHeap**,
     /* Out */ IGCHandleManager**,

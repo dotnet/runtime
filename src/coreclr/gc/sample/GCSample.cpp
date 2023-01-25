@@ -47,6 +47,12 @@
 
 #include "gcdesc.h"
 
+#ifdef TARGET_X86
+#define CALLCONV __cdecl
+#else
+#define CALLCONV
+#endif
+
 //
 // The fast paths for object allocation and write barriers is performance critical. They are often
 // hand written in assembly code, etc.
@@ -106,9 +112,9 @@ void WriteBarrier(Object ** dst, Object * ref)
     ErectWriteBarrier(dst, ref);
 }
 
-extern "C" HRESULT GC_Initialize(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars);
+extern "C" HRESULT CALLCONV GC_Initialize(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars);
 
-int __cdecl main(int argc, char* argv[])
+int CALLCONV main(int argc, char* argv[])
 {
     //
     // Initialize system info
