@@ -254,13 +254,13 @@ namespace Internal.Runtime.TypeLoader
             return name;
         }
 
-        public static string GetFullName(this ScopeDefinitionHandle scopeDefHandle, MetadataReader reader)
+        private static string GetFullName(this ScopeDefinitionHandle scopeDefHandle, MetadataReader reader)
         {
             var scopeDef = scopeDefHandle.GetScopeDefinition(reader);
             return scopeDef.Name.GetConstantStringValue(reader).Value;
         }
 
-        public static string GetFullName(this ScopeReferenceHandle scopeRefHandle, MetadataReader reader)
+        private static string GetFullName(this ScopeReferenceHandle scopeRefHandle, MetadataReader reader)
         {
             var scopeRef = scopeRefHandle.GetScopeReference(reader);
             return scopeRef.Name.GetConstantStringValue(reader).Value;
