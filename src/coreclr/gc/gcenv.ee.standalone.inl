@@ -316,7 +316,7 @@ inline void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStar
 
 inline void GCToEEInterface::LogErrorToHost(const char *message)
 {
-    if (g_runtimeSupportedVersion.MajorVersion >= EE_INTERFACE_MAJOR_VERSION)
+    if (g_runtimeSupportedVersion.MajorVersion >= 1)
     {
         g_theGCToCLR->LogErrorToHost(message);
     }
