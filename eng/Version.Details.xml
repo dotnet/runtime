@@ -87,6 +87,7 @@
     <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23060.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
       <Sha>2941911af1e028ec4b508cbb8c326003089bc610</Sha>
+      <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.23060.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
