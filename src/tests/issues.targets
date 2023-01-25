@@ -66,9 +66,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/Github/Runtime_76219/Runtime_76219/*">
             <Issue>https://github.com/dotnet/runtime/issues/78899</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/*">
-            <Issue>https://github.com/dotnet/runtime/issues/81103</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
@@ -870,6 +867,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/debugging/poisoning/poison/*">
             <Issue>https://github.com/dotnet/runtime/issues/56148</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/*">
+            <Issue>https://github.com/dotnet/runtime/issues/81103</Issue>
         </ExcludeList>
     </ItemGroup>
 
