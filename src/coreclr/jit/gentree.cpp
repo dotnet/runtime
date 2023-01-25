@@ -8782,7 +8782,7 @@ GenTree* Compiler::gtCloneExpr(
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
 #endif
 
-                if (tree->AsField()->IsSpanLength())
+                if ((oper == GT_FIELD) && tree->AsField()->IsSpanLength())
                 {
                     copy->AsField()->SetIsSpanLength(true);
                 }
