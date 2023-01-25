@@ -17,7 +17,7 @@ public class IcuShardingTests : BuildTestBase
     public IcuShardingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
-    private static string customIcuPath = Path.Combine(Directory.GetCurrentDirectory().Split("artifacts")[0], "src", "mono", "wasm", "testassets", "icudt_custom.dat");
+    private static string customIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
     private static string[] customIcuExpectedLocales = new string[] { "cy-GB", "is-IS", "bs-BA" , "lb-LU"};
     private static string[] customIcuMissingLocales = new string[] { "fr-FR", "hr-HR", "ko-KR"};
 
