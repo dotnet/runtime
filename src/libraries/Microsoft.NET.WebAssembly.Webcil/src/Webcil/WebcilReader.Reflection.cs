@@ -19,7 +19,7 @@ public sealed partial class WebcilReader
     // Helpers to call into System.Reflection.Metadata internals
     internal static class Reflection
     {
-        private static Lazy<MethodInfo> _readUtf8NullTerminated = new Lazy<MethodInfo>(() =>
+        private static readonly Lazy<MethodInfo> s_readUtf8NullTerminated = new Lazy<MethodInfo>(() =>
         {
             var mi = typeof(BlobReader).GetMethod("ReadUtf8NullTerminated", BindingFlags.NonPublic | BindingFlags.Instance);
             if (mi == null)
@@ -29,9 +29,9 @@ public sealed partial class WebcilReader
             return mi;
         });
 
-        internal static string? ReadUtf8NullTerminated(BlobReader reader) => (string?)_readUtf8NullTerminated.Value.Invoke(reader, null);
+        internal static string? ReadUtf8NullTerminated(BlobReader reader) => (string?)s_readUtf8NullTerminated.Value.Invoke(reader, null);
 
-        private static Lazy<ConstructorInfo> _codeViewDebugDirectoryDataCtor = new Lazy<ConstructorInfo>(() =>
+        private static readonly Lazy<ConstructorInfo> s_codeViewDebugDirectoryDataCtor = new Lazy<ConstructorInfo>(() =>
         {
             var types = new Type[] { typeof(Guid), typeof(int), typeof(string) };
             var mi = typeof(CodeViewDebugDirectoryData).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, types, null);
@@ -42,9 +42,9 @@ public sealed partial class WebcilReader
             return mi;
         });
 
-        internal static CodeViewDebugDirectoryData MakeCodeViewDebugDirectoryData(Guid guid, int age, string path) => (CodeViewDebugDirectoryData)_codeViewDebugDirectoryDataCtor.Value.Invoke(new object[] { guid, age, path });
+        internal static CodeViewDebugDirectoryData MakeCodeViewDebugDirectoryData(Guid guid, int age, string path) => (CodeViewDebugDirectoryData)s_codeViewDebugDirectoryDataCtor.Value.Invoke(new object[] { guid, age, path });
 
-        private static Lazy<ConstructorInfo> _pdbChecksumDebugDirectoryDataCtor = new Lazy<ConstructorInfo>(() =>
+        private static readonly Lazy<ConstructorInfo> s_pdbChecksumDebugDirectoryDataCtor = new Lazy<ConstructorInfo>(() =>
         {
             var types = new Type[] { typeof(string), typeof(ImmutableArray<byte>) };
             var mi = typeof(PdbChecksumDebugDirectoryData).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, types, null);
@@ -54,6 +54,6 @@ public sealed partial class WebcilReader
             }
             return mi;
         });
-        internal static PdbChecksumDebugDirectoryData MakePdbChecksumDebugDirectoryData(string algorithmName, ImmutableArray<byte> checksum) => (PdbChecksumDebugDirectoryData)_pdbChecksumDebugDirectoryDataCtor.Value.Invoke(new object[] { algorithmName, checksum });
+        internal static PdbChecksumDebugDirectoryData MakePdbChecksumDebugDirectoryData(string algorithmName, ImmutableArray<byte> checksum) => (PdbChecksumDebugDirectoryData)s_pdbChecksumDebugDirectoryDataCtor.Value.Invoke(new object[] { algorithmName, checksum });
     }
 }
