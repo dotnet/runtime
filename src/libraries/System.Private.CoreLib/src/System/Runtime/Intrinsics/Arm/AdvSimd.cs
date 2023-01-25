@@ -3664,37 +3664,37 @@ namespace System.Runtime.Intrinsics.Arm
             ///  uint8x16_t vqtbl2q_u8(uint8x16x2_t t, uint8x16_t idx)
             ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B}, Vm.16B
             /// </summary>
-            internal static Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+            public static Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
 
             /// <summary>
             ///  int8x16_t vqtbl2q_s8(int8x16x2_t t, uint8x16_t idx)
             ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B}, Vm.16B
             /// </summary>
-            internal static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+            public static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
 
             /// <summary>
             ///  uint8x16_t vqtbl3q_u8(uint8x16x3_t t, uint8x16_t idx)
             ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B}, Vm.16B
             /// </summary>
-            internal static Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+            public static Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
 
             /// <summary>
             ///  int8x16_t vqtbl3q_s8(int8x16x3_t t, uint8x16_t idx)
             ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B}, Vm.16B
             /// </summary>
-            internal static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+            public static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
 
             /// <summary>
             ///  uint8x16_t vqtbl4q_u8(uint8x16x4_t t, uint8x16_t idx)
             ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B}, Vm.16B
             /// </summary>
-            internal static Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+            public static Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) => VectorTableLookup(table, byteIndexes);
 
             /// <summary>
             ///  int8x16_t vqtbl4q_s8(int8x16x4_t t, uint8x16_t idx)
             ///   A64: TBL Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B}, Vm.16B
             /// </summary>
-            internal static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
+            public static Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) => VectorTableLookup(table, byteIndexes);
 
             /// <summary>
             ///  uint8x16_t vqvtbx1q_u8(uint8x16_t r, int8x16_t t, uint8x16_t idx)
