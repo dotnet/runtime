@@ -5,3 +5,15 @@ T:System.Runtime.Serialization.DeserializationToken
 M:System.Runtime.Serialization.SerializationInfo.StartDeserialization
 T:System.Diagnostics.DebugProvider
 M:System.Diagnostics.Debug.SetProvider(System.Diagnostics.DebugProvider)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.VectorTableLookup((System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>), System.Runtime.Intrinsics.Vector128<byte>)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.VectorTableLookup((System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>), System.Runtime.Intrinsics.Vector128<sbyte>)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.VectorTableLookup((System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>), System.Runtime.Intrinsics.Vector128<byte>)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.VectorTableLookup((System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>), System.Runtime.Intrinsics.Vector128<sbyte>)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.VectorTableLookup((System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>), System.Runtime.Intrinsics.Vector128<byte>)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.VectorTableLookup((System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>), System.Runtime.Intrinsics.Vector128<sbyte>)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.VectorTableLookup((System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>), System.Runtime.Intrinsics.Vector64<byte>)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.VectorTableLookup((System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>), System.Runtime.Intrinsics.Vector64<sbyte>)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.VectorTableLookup((System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>), System.Runtime.Intrinsics.Vector64<byte>)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.VectorTableLookup((System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>), System.Runtime.Intrinsics.Vector64<sbyte>)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.VectorTableLookup((System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>), System.Runtime.Intrinsics.Vector64<byte>)
+M:System.Runtime.Intrinsics.Arm.AdvSimd.VectorTableLookup((System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>), System.Runtime.Intrinsics.Vector64<sbyte>)
