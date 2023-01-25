@@ -713,7 +713,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public DataflowAnalyzedTypeDefinitionNode DataflowAnalyzedTypeDefinition(TypeDesc type)
         {
-            Debug.Assert(type.IsTypeDefinition);
             return _dataflowAnalyzedTypeDefinitions.GetOrAdd(type);
         }
 
