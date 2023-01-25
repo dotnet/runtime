@@ -1137,12 +1137,24 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 
 	// get the name from the host if we can't get assembly info, e.g., if the runtime is
 	// suspended before an assembly is loaded.
+	// We'll cache the value in a static function global as the caller expect the lifetime of this value
+	// to outlast the calling function.
+	static const ep_char8_t* entrypoint_assembly_name = NULL;
 	static bool read_name_from_host = false;
-	static SString assembly_name;
-	if (read_name_from_host || HostInformation::GetProperty (HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, assembly_name))
+	SString assembly_name;
+	if (!read_name_from_host || HostInformation::GetProperty (HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, assembly_name))
 	{
+		const ep_char8_t* entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>(assembly_name.GetCopyOfUTF8String ());
+		// Try setting this entrypoint name as the cached value.
+		// If someone else beat us to it, free the memory we allocated.
+		// We want to only leak the one global copy of the entrypoint name,
+		// not mutliple copies.
+		if (InterlockedCompareExchangeT(&entrypoint_assembly_name, entrypoint_assembly_name_local, NULL) != NULL)
+		{
+			delete[] entrypoint_assembly_name_local;
+		}
 		read_name_from_host = true;
-		return assembly_name.GetUTF8 ();
+		return entrypoint_assembly_name;
 	}
 
 	// Record that we tried to read the name from the host so we don't try again.

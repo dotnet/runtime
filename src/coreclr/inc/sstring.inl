@@ -1649,6 +1649,28 @@ inline WCHAR *SString::GetCopyOfUnicodeString()
 }
 
 //----------------------------------------------------------------------------
+// Return a copy of the underlying  buffer, the caller is responsible for managing
+// the returned memory
+//----------------------------------------------------------------------------
+inline UTF8 *SString::GetCopyOfUTF8String()
+{
+    SS_CONTRACT(WCHAR*)
+    {
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(this));
+        SS_POSTCONDITION(CheckPointer(buffer));
+        THROWS;
+    }
+    SS_CONTRACT_END;
+    NewArrayHolder<UTF8> buffer = NULL;
+
+    buffer = new UTF8[GetCount() +1];
+    strncpy(buffer, GetUTF8(), GetCount() + 1);
+
+    SS_RETURN buffer.Extract();
+}
+
+//----------------------------------------------------------------------------
 // Return a writeable buffer that can store 'countChars'+1 ansi characters.
 // Call CloseBuffer when done.
 //----------------------------------------------------------------------------
