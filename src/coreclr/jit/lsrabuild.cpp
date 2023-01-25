@@ -3202,8 +3202,6 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     {
         return BuildOperandUses(node->gtGetOp1(), candidates);
     }
-#ifdef TARGET_XARCH
-#endif // TARGET_XARCH
 #ifdef FEATURE_HW_INTRINSICS
     if (node->OperIsHWIntrinsic())
     {
