@@ -24643,6 +24643,7 @@ ClassLayout* GenTreeLclVarCommon::GetLayout(Compiler* compiler) const
 //
 bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
 {
+    assert(OperIs(GT_LCL_VAR));
     return comp->lvaGetDesc(GetLclNum())->IsNeverNegative();
 }
 

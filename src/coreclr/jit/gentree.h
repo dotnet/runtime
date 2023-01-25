@@ -4050,6 +4050,7 @@ public:
 
     bool IsNeverNegative() const
     {
+        assert(OperIs(GT_FIELD));
         return gtFldIsNeverNegative;
     }
 
