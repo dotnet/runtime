@@ -2,6 +2,7 @@
   <!-- not really meant to be used w/o WasmApp.targets -->
 
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="EmccExec" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
@@ -435,7 +436,7 @@
     <Message Text="Linking for initial memory %24(EmccInitialHeapSize)=$(EmccInitialHeapSize) bytes. Set this msbuild property to change the value." Importance="High" />
     <Message Text="Linking with emcc with $(EmccLinkOptimizationFlag). This may take a while ..." Importance="High" />
     <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
-    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccDefaultLinkFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <EmccExec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccDefaultLinkFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
     <ItemGroup>
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.js" />
