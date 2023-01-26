@@ -158,7 +158,7 @@ namespace System.Text.Json.SourceGeneration
 #nullable disable warnings
 
 // Suppress warnings about [Obsolete] member usage in generated code.
-#pragma warning disable CS0618
+#pragma warning disable CS0612, CS0618
 
 
 """);
