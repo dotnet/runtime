@@ -319,7 +319,7 @@ namespace ILCompiler.Dataflow
             // are the same set of methods that we discovered and scanned above.
             if (_annotations.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod(startingMethod, out List<TypeSystemEntity>? compilerGeneratedCallees))
             {
-                var calleeMethods = compilerGeneratedCallees.OfType<MethodDefinition>();
+                var calleeMethods = compilerGeneratedCallees.OfType<MethodDesc>();
                 // https://github.com/dotnet/linker/issues/2845
                 // Disabled asserts due to a bug
                 // Debug.Assert (interproceduralState.Count == 1 + calleeMethods.Count ());
