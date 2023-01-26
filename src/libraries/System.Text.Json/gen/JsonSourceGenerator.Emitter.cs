@@ -26,7 +26,6 @@ namespace System.Text.Json.SourceGeneration
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
             private const string DefaultContextBackingStaticVarName = "s_defaultContext";
             internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
-            private const string MakeReadOnlyMethodName = "MakeReadOnly";
             private const string InfoVarName = "info";
             private const string PropertyInfoVarName = "propertyInfo";
             internal const string JsonContextVarName = "jsonContext";
@@ -1151,18 +1150,13 @@ private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {val
 /// </summary>
 public {typeInfoPropertyTypeRef} {typeFriendlyName}
 {{
-    get => _{typeFriendlyName} ??= {typeMetadata.CreateTypeInfoMethodName}({OptionsInstanceVariableName}, makeReadOnly: true);
+    get => _{typeFriendlyName} ??= ({typeInfoPropertyTypeRef}){OptionsInstanceVariableName}.GetTypeInfo(typeof({typeCompilableName}));
 }}
 
-private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName}, bool makeReadOnly)
+private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
 {{
     {typeInfoPropertyTypeRef}? {JsonTypeInfoReturnValueLocalVariableName} = null;
     {WrapWithCheckForCustomConverter(metadataInitSource, typeCompilableName)}
-
-    if (makeReadOnly)
-    {{
-        {JsonTypeInfoReturnValueLocalVariableName}.{MakeReadOnlyMethodName}();
-    }}
 
     return {JsonTypeInfoReturnValueLocalVariableName};
 }}
@@ -1327,10 +1321,7 @@ private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonS
 public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
 {{");
 
-                HashSet<TypeGenerationSpec> types = new(_currentContext.TypesWithMetadataGenerated);
-
-                // TODO (https://github.com/dotnet/runtime/issues/52218): Make this Dictionary-lookup-based if root-serializable type count > 64.
-                foreach (TypeGenerationSpec metadata in types)
+                foreach (TypeGenerationSpec metadata in _currentContext.TypesWithMetadataGenerated)
                 {
                     if (metadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
                     {
@@ -1351,15 +1342,14 @@ public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
                 sb.AppendLine();
                 sb.Append(@$"{JsonTypeInfoTypeRef}? {JsonTypeInfoResolverTypeRef}.GetTypeInfo({TypeTypeRef} type, {JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
 {{");
-                // TODO (https://github.com/dotnet/runtime/issues/52218): Make this Dictionary-lookup-based if root-serializable type count > 64.
-                foreach (TypeGenerationSpec metadata in types)
+                foreach (TypeGenerationSpec metadata in _currentContext.TypesWithMetadataGenerated)
                 {
                     if (metadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
                     {
                         sb.Append($@"
     if (type == typeof({metadata.TypeRef}))
     {{
-        return {metadata.CreateTypeInfoMethodName}({OptionsLocalVariableName}, makeReadOnly: false);
+        return {metadata.CreateTypeInfoMethodName}({OptionsLocalVariableName});
     }}
 ");
                     }
