@@ -23,11 +23,18 @@ export class WasmBuilder {
     inFunction!: boolean;
     locals = new Map<string, [WasmValtype, number]>();
     functionTypeCount!: number;
-    functionTypes!: { [name: string] : [number, { [name: string]: WasmValtype }, WasmValtype, string] };
+    functionTypes!: { [name: string] : [
+        index: number,
+        parameters: { [name: string]: WasmValtype },
+        returnType: WasmValtype,
+        signature: string
+    ] };
     functionTypesByShape!: { [shape: string] : number };
     functionTypesByIndex: Array<any> = [];
     importedFunctionCount!: number;
-    importedFunctions!: { [name: string] : [number, number, string] };
+    importedFunctions!: { [name: string] : [
+        index: number, typeIndex: number, unknown: string
+    ] };
     importsToEmit!: Array<[string, string, number, number]>;
     argumentCount!: number;
     activeBlocks!: number;
@@ -650,6 +657,7 @@ export const counters = {
     tracesCompiled: 0,
     entryWrappersCompiled: 0,
     jitCallsCompiled: 0,
+    directJitCallsCompiled: 0,
     failures: 0,
     bytesGenerated: 0
 };
@@ -901,6 +909,8 @@ export type JiterpreterOptions = {
     dumpTraces: boolean;
     // Use runtime imports for pointer constants
     useConstants: boolean;
+    // Unwrap gsharedvt wrappers when compiling jitcalls if possible
+    directJitCalls: boolean;
     minimumTraceLength: number;
     minimumTraceHitCount: number;
     jitCallHitCount: number;
@@ -924,6 +934,7 @@ const optionNames : { [jsName: string] : string } = {
     "countBailouts": "jiterpreter-count-bailouts",
     "dumpTraces": "jiterpreter-dump-traces",
     "useConstants": "jiterpreter-use-constants",
+    "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
     "jitCallHitCount": "jiterpreter-jit-call-hit-count",

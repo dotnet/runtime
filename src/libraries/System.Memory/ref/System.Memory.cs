@@ -370,6 +370,11 @@ namespace System
         public static System.Span<T> Trim<T>(this System.Span<T> span, T trimElement) where T : System.IEquatable<T>? { throw null; }
         public static bool TryWrite(this System.Span<char> destination, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("destination")] ref System.MemoryExtensions.TryWriteInterpolatedStringHandler handler, out int charsWritten) { throw null; }
         public static bool TryWrite(this System.Span<char> destination, IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("destination", "provider")] ref System.MemoryExtensions.TryWriteInterpolatedStringHandler handler, out int charsWritten) { throw null; }
+        public static bool TryWrite<TArg0>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0) { throw null; }
+        public static bool TryWrite<TArg0, TArg1>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1) { throw null; }
+        public static bool TryWrite<TArg0, TArg1, TArg2>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
+        public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params object?[] args) { throw null; }
+        public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, System.ReadOnlySpan<object?> args) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
         public ref struct TryWriteInterpolatedStringHandler

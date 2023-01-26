@@ -5208,9 +5208,9 @@ MONO_RESTORE_WARNING
 				for (j = 0; j < decoded_args->named_args_num; ++j) {
 					if (decoded_args->named_args_info [j].field && !strcmp (decoded_args->named_args_info [j].field->name, "EntryPoint")) {
 						named = (const char *)decoded_args->named_args[j]->value.primitive;
-						slen = mono_metadata_decode_value (named, &named);
+						slen = mono_metadata_decode_value (named, &named) + (int)strlen(acfg->user_symbol_prefix);
 						export_name = (char *)g_malloc (slen + 1);
-						memcpy (export_name, named, slen);
+						sprintf (export_name, "%s%s", acfg->user_symbol_prefix, named);
 						export_name [slen] = 0;
 					}
 				}
@@ -5222,7 +5222,7 @@ MONO_RESTORE_WARNING
 				add_method (acfg, wrapper);
 				if (export_name) {
 					g_hash_table_insert (acfg->export_names, wrapper, export_name);
-					g_string_append_printf (export_symbols, "%s%s\n", acfg->user_symbol_prefix, export_name);
+					g_string_append_printf (export_symbols, "%s\n", export_name);
 				}
 			}
 
@@ -13744,7 +13744,13 @@ got_info_free (GotInfo *info)
 static void
 acfg_free (MonoAotCompile *acfg)
 {
-	mono_img_writer_destroy (acfg->w);
+#ifdef ENABLE_LLVM
+	if (acfg->aot_opts.llvm)
+		mono_llvm_free_aot_module ();
+#endif
+
+	if (acfg->w)
+		mono_img_writer_destroy (acfg->w);
 	for (guint32 i = 0; i < acfg->nmethods; ++i)
 		if (acfg->cfgs [i])
 			mono_destroy_compile (acfg->cfgs [i]);
@@ -14441,9 +14447,11 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 
 	dedup_skip_methods (acfg);
 
-	if (acfg->dedup_collect_only)
+	if (acfg->dedup_collect_only) {
 		/* We only collected methods from this assembly */
+		acfg_free (acfg);
 		return 0;
+	}
 
 	current_acfg = NULL;
 

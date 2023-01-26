@@ -193,7 +193,10 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
     if (!hMod)
     {
         HRESULT err = GetLastError();
-        LOG((LF_GC, LL_FATALERROR, "Load of %S failed\n", standaloneGcLocation));
+#ifdef LOGGING
+        MAKE_UTF8PTR_FROMWIDE(standaloneGcLocationUtf8, standaloneGcLocation);
+        LOG((LF_GC, LL_FATALERROR, "Load of %s failed\n", standaloneGcLocationUtf8));
+#endif // LOGGING
         return __HRESULT_FROM_WIN32(err);
     }
 
@@ -215,8 +218,8 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
     }
 
     g_gc_load_status = GC_LOAD_STATUS_GET_VERSIONINFO;
-    g_gc_version_info.MajorVersion = GC_INTERFACE_MAJOR_VERSION;
-    g_gc_version_info.MinorVersion = GC_INTERFACE_MINOR_VERSION;
+    g_gc_version_info.MajorVersion = EE_INTERFACE_MAJOR_VERSION;
+    g_gc_version_info.MinorVersion = 0;
     g_gc_version_info.BuildVersion = 0;
     versionInfo(&g_gc_version_info);
     g_gc_load_status = GC_LOAD_STATUS_CALL_VERSIONINFO;

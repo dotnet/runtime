@@ -403,6 +403,13 @@ namespace ILCompiler
             return false;
         }
 
+        public override void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            base.GetDependenciesDueToEETypePresence(ref dependencies, factory, type);
+
+            DataflowAnalyzedTypeDefinitionNode.GetDependencies(ref dependencies, factory, FlowAnnotations, type);
+        }
+
         public override bool HasConditionalDependenciesDueToEETypePresence(TypeDesc type)
         {
             // Note: these are duplicated with the checks in GetConditionalDependenciesDueToEETypePresence
@@ -575,32 +582,15 @@ namespace ILCompiler
 
             if (scanReflection)
             {
-                if (methodIL != null && FlowAnnotations.RequiresDataflowAnalysis(method))
+                if (methodIL != null && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody(FlowAnnotations, method))
                 {
                     AddDataflowDependency(ref dependencies, factory, methodIL, "Method has annotated parameters");
-                }
-
-                if ((method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any)))
-                {
-                    MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-                    Debug.Assert(typicalMethod != method);
-
-                    GetFlowDependenciesForInstantiation(ref dependencies, factory, method.Instantiation, typicalMethod.Instantiation, method);
-                }
-
-                TypeDesc owningType = method.OwningType;
-                if (owningType.HasInstantiation && !owningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                {
-                    TypeDesc owningTypeDefinition = owningType.GetTypeDefinition();
-                    Debug.Assert(owningType != owningTypeDefinition);
-
-                    GetFlowDependenciesForInstantiation(ref dependencies, factory, owningType.Instantiation, owningTypeDefinition.Instantiation, owningType);
                 }
             }
 
             if (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod)
             {
-                DynamicDependencyAttributeAlgorithm.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaMethod);
+                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaMethod);
             }
 
             // Presence of code might trigger the reflectability dependencies.
@@ -752,7 +742,7 @@ namespace ILCompiler
 
             if (writtenField.GetTypicalFieldDefinition() is EcmaField ecmaField)
             {
-                DynamicDependencyAttributeAlgorithm.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
             }
         }
 
@@ -776,66 +766,12 @@ namespace ILCompiler
             return null;
         }
 
-        private void GetFlowDependenciesForInstantiation(ref DependencyList dependencies, NodeFactory factory, Instantiation instantiation, Instantiation typicalInstantiation, TypeSystemEntity source)
-        {
-            for (int i = 0; i < instantiation.Length; i++)
-            {
-                var genericParameter = (GenericParameterDesc)typicalInstantiation[i];
-                if (FlowAnnotations.GetGenericParameterAnnotation(genericParameter) != default)
-                {
-                    try
-                    {
-                        var deps = (new ILCompiler.Dataflow.GenericArgumentDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(source))).ProcessGenericArgumentDataFlow(genericParameter, instantiation[i]);
-                        if (deps.Count > 0)
-                        {
-                            if (dependencies == null)
-                                dependencies = deps;
-                            else
-                                dependencies.AddRange(deps);
-                        }
-                    }
-                    catch (TypeSystemException)
-                    {
-                        // Wasn't able to do dataflow because of missing references or something like that.
-                        // This likely won't compile either, so we don't care about missing dependencies.
-                    }
-                }
-            }
-        }
-
         public override void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            TypeDesc owningType = method.OwningType;
-
-            if (FlowAnnotations.HasAnyAnnotations(owningType))
-            {
-                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-                Debug.Assert(typicalMethod != method);
-
-                GetFlowDependenciesForInstantiation(ref dependencies, factory, method.Instantiation, typicalMethod.Instantiation, method);
-
-                if (owningType.HasInstantiation)
-                {
-                    // Since this also introduces a new type instantiation into the system, collect the dependencies for that too.
-                    // We might not see the instantiated type elsewhere.
-                    GetFlowDependenciesForInstantiation(ref dependencies, factory, owningType.Instantiation, owningType.GetTypeDefinition().Instantiation, method);
-                }
-            }
-
             // Presence of code might trigger the reflectability dependencies.
             if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
             {
                 GetDependenciesDueToReflectability(ref dependencies, factory, method);
-            }
-        }
-
-        public override void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-            if (FlowAnnotations.HasAnyAnnotations(type))
-            {
-                TypeDesc typeDefinition = type.GetTypeDefinition();
-                Debug.Assert(type != typeDefinition);
-                GetFlowDependenciesForInstantiation(ref dependencies, factory, type.Instantiation, typeDefinition.Instantiation, type);
             }
         }
 

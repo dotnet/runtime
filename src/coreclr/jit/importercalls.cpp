@@ -2781,7 +2781,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // Bounds check
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
-                GenTree*             length       = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
+
+                GenTreeField* length = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
+                length->SetIsSpanLength(true);
+
                 GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, length, SCK_RNGCHK_FAIL);
 
                 // Element access
@@ -2810,6 +2813,39 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
 
                 break;
+            }
+
+            case NI_System_Span_get_Length:
+            case NI_System_ReadOnlySpan_get_Length:
+            {
+                assert(sig->sigInst.classInstCount == 1);
+                assert(sig->numArgs == 0);
+
+                CORINFO_CLASS_HANDLE spanElemHnd = sig->sigInst.classInst[0];
+                const unsigned       elemSize    = info.compCompHnd->getClassSize(spanElemHnd);
+                assert(elemSize > 0);
+
+                const bool isReadOnly = (ni == NI_System_ReadOnlySpan_get_Length);
+
+                JITDUMP("\nimpIntrinsic: Expanding %sSpan<T>.get_Length, T=%s, sizeof(T)=%u\n",
+                        isReadOnly ? "ReadOnly" : "", eeGetClassName(spanElemHnd), elemSize);
+
+                GenTree* ptrToSpan = impPopStack().val;
+
+#if defined(DEBUG)
+                if (verbose)
+                {
+                    printf("with ptr-to-span\n");
+                    gtDispTree(ptrToSpan);
+                }
+#endif // defined(DEBUG)
+
+                CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
+                const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
+
+                GenTreeField* fieldRef = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
+                fieldRef->SetIsSpanLength(true);
+                return fieldRef;
             }
 
             case NI_System_RuntimeTypeHandle_GetValueInternal:
@@ -7230,6 +7266,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 {
                     result = NI_System_ReadOnlySpan_get_Item;
                 }
+                else if (strcmp(methodName, "get_Length") == 0)
+                {
+                    result = NI_System_ReadOnlySpan_get_Length;
+                }
             }
             else if (strcmp(className, "RuntimeType") == 0)
             {
@@ -7250,6 +7290,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 if (strcmp(methodName, "get_Item") == 0)
                 {
                     result = NI_System_Span_get_Item;
+                }
+                else if (strcmp(methodName, "get_Length") == 0)
+                {
+                    result = NI_System_Span_get_Length;
                 }
             }
             else if (strcmp(className, "String") == 0)

@@ -2759,12 +2759,19 @@ static volatile int bbTraverseLabel = 1;
 
 void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRefs /* = true  */)
 {
-#ifdef DEBUG
     if (verbose)
     {
-        printf("*************** In fgDebugCheckBBlist\n");
+        JITDUMP("*************** In fgDebugCheckBBlist\n");
     }
-#endif // DEBUG
+
+    // Don't bother checking a failed inlinee; we may have bailed
+    // out in the middle of importation.
+    //
+    if (compIsForInlining() && compInlineResult->IsFailure())
+    {
+        JITDUMP("... failed inline attempt, no checking needed\n");
+        return;
+    }
 
     fgDebugCheckBlockLinks();
     fgFirstBBisScratch();
@@ -2972,6 +2979,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     if (genReturnBB != nullptr)
     {
         assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->bbStmtList != nullptr);
+    }
+
+    // If this is an inlinee, we're done checking.
+    if (compIsForInlining())
+    {
+        return;
     }
 
     // The general encoder/decoder (currently) only reports "this" as a generics context as a stack location,
@@ -3412,15 +3425,25 @@ void Compiler::fgDebugCheckLinkedLocals()
     {
         for (Statement* stmt : block->Statements())
         {
-            GenTree* first = stmt->GetRootNode()->gtNext;
+            GenTree* first = stmt->GetTreeList();
             CheckDoublyLinkedList<GenTree, &GenTree::gtPrev, &GenTree::gtNext>(first);
 
             seq.Sequence(stmt);
 
             ArrayStack<GenTree*>* expected = seq.GetSequence();
 
-            bool success   = true;
-            int  nodeIndex = 0;
+            bool success = true;
+
+            if (expected->Height() > 0)
+            {
+                success &= (stmt->GetTreeList() == expected->Bottom(0)) && (stmt->GetTreeListEnd() == expected->Top(0));
+            }
+            else
+            {
+                success &= (stmt->GetTreeList() == nullptr) && (stmt->GetTreeListEnd() == nullptr);
+            }
+
+            int nodeIndex = 0;
             for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
             {
                 success &= cur->OperIsLocal() || cur->OperIsLocalAddr();

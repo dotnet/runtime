@@ -171,7 +171,7 @@ namespace ILCompiler.Logging
                 _ => null,
             };
 
-            ModuleDesc declaringAssembly = (declaringType as MetadataType)?.Module;
+            ModuleDesc declaringAssembly = (declaringType as MetadataType)?.Module ?? (origin.MemberDefinition as ModuleDesc);
             Debug.Assert(declaringAssembly != null);
             if (declaringAssembly == null)
                 return false;
