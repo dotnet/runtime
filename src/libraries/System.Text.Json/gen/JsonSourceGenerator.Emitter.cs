@@ -1320,7 +1320,7 @@ private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonS
 
                 sb.Append(
 @$"/// <inheritdoc/>
-public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
+public override {JsonTypeInfoTypeRef}? GetTypeInfo({TypeTypeRef} type)
 {{");
 
                 foreach (TypeGenerationSpec metadata in _currentContext.TypesWithMetadataGenerated)
@@ -1337,7 +1337,7 @@ public override {JsonTypeInfoTypeRef} GetTypeInfo({TypeTypeRef} type)
                 }
 
                 sb.AppendLine(@"
-    return null!;
+    return null;
 }");
 
                 // Explicit IJsonTypeInfoResolver implementation
