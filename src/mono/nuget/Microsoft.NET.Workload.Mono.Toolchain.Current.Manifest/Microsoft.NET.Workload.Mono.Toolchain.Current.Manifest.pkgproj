@@ -8,7 +8,7 @@
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" Returns="@(PackageFile)">
     <!-- Override the id to include the sdk band as per the workload installer spec -->
     <PropertyGroup>
-      <Id>Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest-$(SdkBandVersion)$(WorkloadVersionSuffix)</Id>
+      <Id>Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest-$(SdkBandVersionForWorkload)</Id>
     </PropertyGroup>
 
     <PropertyGroup>

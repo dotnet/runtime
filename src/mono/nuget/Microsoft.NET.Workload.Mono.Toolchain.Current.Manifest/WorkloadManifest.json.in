@@ -1,7 +1,7 @@
 {
   "version": "${WorkloadVersion}",
   "depends-on": {
-    "Microsoft.NET.Workload.Emscripten.net7": "${EmscriptenVersion}"
+    "Microsoft.NET.Workload.Emscripten.Current": "${EmscriptenVersion}"
   },
   "workloads": {
     "wasm-tools": {
@@ -11,7 +11,7 @@
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten-net7" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten-current" ],
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64"]
     },
     "wasm-experimental": {

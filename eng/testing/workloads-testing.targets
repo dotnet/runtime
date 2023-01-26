@@ -218,7 +218,7 @@
     <InstallWorkloadFromArtifacts
                      WorkloadIds="@(WorkloadIdForTesting)"
                      InstallTargets="@(_SdkWithWorkloadToInstall)"
-                     VersionBand="$(SdkBandVersion)"
+                     VersionBand="$(SdkBandVersionForWorkload)"
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
