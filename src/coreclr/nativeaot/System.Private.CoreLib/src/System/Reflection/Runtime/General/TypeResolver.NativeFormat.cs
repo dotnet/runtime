@@ -134,7 +134,7 @@ namespace System.Reflection.Runtime.General
                                 return null;
                             genericTypeArguments.Add(genericTypeArgument);
                         }
-                        return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments.ToArray());
+                        return genericTypeDefinition.GetConstructedGenericTypeNoConstraintCheck(genericTypeArguments.ToArray());
                     }
 
                 case HandleType.TypeReference:

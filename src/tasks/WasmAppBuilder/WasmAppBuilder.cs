@@ -197,8 +197,12 @@ public class WasmAppBuilder : Task
                 var tmpWebcil = Path.GetTempFileName();
                 var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil, logger: Log);
                 webcilWriter.ConvertToWebcil();
-                var finalWebcil = Path.ChangeExtension(assembly, ".webcil");
-                FileCopyChecked(tmpWebcil, Path.Combine(asmRootPath, Path.GetFileName(finalWebcil)), "Assemblies");
+                var finalWebcil = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
+                if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+                    Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
+                else
+                    Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+                _fileWrites.Add(finalWebcil);
             }
             else
             {
@@ -283,9 +287,13 @@ public class WasmAppBuilder : Task
                     var tmpWebcil = Path.GetTempFileName();
                     var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: fullPath, outputPath: tmpWebcil, logger: Log);
                     webcilWriter.ConvertToWebcil();
-                    var finalWebcil = Path.ChangeExtension(name, ".webcil");
-                    FileCopyChecked(tmpWebcil, Path.Combine(directory, finalWebcil), "SatelliteAssemblies");
-                    config.Assets.Add(new SatelliteAssemblyEntry(finalWebcil, culture));
+                    var finalWebcil = Path.Combine(directory, Path.ChangeExtension(name, ".webcil"));
+                    if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+                        Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
+                    else
+                        Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+                    _fileWrites.Add(finalWebcil);
+                    config.Assets.Add(new SatelliteAssemblyEntry(Path.GetFileName(finalWebcil), culture));
                 }
                 else
                 {

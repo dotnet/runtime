@@ -386,6 +386,11 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
+    <!-- Must be defined in a props file as imports in Microsoft.DotNet.ApiCompat.Task.targets depend on it. -->
+    <ApiCompatValidateAssemblies>true</ApiCompatValidateAssemblies>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(IsGeneratorProject)' == 'true'">
     <!-- Unique assembly versions increases(3x) the compiler throughput during reference package updates. -->
     <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>

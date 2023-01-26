@@ -140,7 +140,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void UnsuccessfulSourceGeneration()
+        public void MultiDimensionArrayDoesNotProduceWarnings()
         {
             static void RunTest(bool explicitRef)
             {
@@ -202,14 +202,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     location = compilation.GetSymbolsWithName("JsonContext").First().Locations[0];
                 }
 
-                // Expected warning logs.
-                (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
-                {
-                    (location, "Did not generate serialization metadata for type 'global::ReferencedAssembly.ActiveOrUpcomingEvent[]'.")
-                };
-
                 CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, expectedWarningDiagnostics);
+                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
                 CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
             }
 

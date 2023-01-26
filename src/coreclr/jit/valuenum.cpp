@@ -436,6 +436,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_longCnsMap(nullptr)
     , m_handleMap(nullptr)
     , m_embeddedToCompileTimeHandleMap(alloc)
+    , m_fieldAddressToFieldSeqMap(alloc)
     , m_floatCnsMap(nullptr)
     , m_doubleCnsMap(nullptr)
     , m_byrefCnsMap(nullptr)
@@ -5360,6 +5361,7 @@ GenTreeFlags ValueNumStore::GetFoldedArithOpResultHandleFlags(ValueNum vn)
         case GTF_ICON_CIDMID_HDL:
         case GTF_ICON_TLS_HDL:
         case GTF_ICON_STATIC_BOX_PTR:
+        case GTF_ICON_STATIC_ADDR_PTR:
             return GTF_ICON_CONST_PTR;
         case GTF_ICON_STATIC_HDL:
         case GTF_ICON_GLOBAL_PTR:
@@ -8253,12 +8255,20 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         case TYP_BOOL:
             if (tree->IsIconHandle())
             {
-                const ssize_t embeddedHandle = tree->AsIntCon()->IconValue();
-                tree->gtVNPair.SetBoth(vnStore->VNForHandle(embeddedHandle, tree->GetIconHandleFlag()));
-                if (tree->GetIconHandleFlag() == GTF_ICON_CLASS_HDL)
+                const GenTreeIntCon* cns         = tree->AsIntCon();
+                const GenTreeFlags   handleFlags = tree->GetIconHandleFlag();
+                tree->gtVNPair.SetBoth(vnStore->VNForHandle(cns->IconValue(), handleFlags));
+                if (handleFlags == GTF_ICON_CLASS_HDL)
                 {
-                    const ssize_t compileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
-                    vnStore->AddToEmbeddedHandleMap(embeddedHandle, compileTimeHandle);
+                    vnStore->AddToEmbeddedHandleMap(cns->IconValue(), cns->gtCompileTimeHandle);
+                }
+                else if ((handleFlags == GTF_ICON_STATIC_HDL) && (cns->gtFieldSeq != nullptr) &&
+                         (cns->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+                {
+                    assert(cns->IconValue() == cns->gtFieldSeq->GetOffset());
+
+                    // For now we're interested only in SimpleStaticKnownAddress
+                    vnStore->AddToFieldAddressToFieldSeqMap(cns->gtVNPair.GetLiberal(), cns->gtFieldSeq);
                 }
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
@@ -8569,13 +8579,13 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
         ValueNum op1vn = op1->gtVNPair.GetLiberal();
         ValueNum op2vn = op2->gtVNPair.GetLiberal();
 
-        if (!op1->IsIconHandle(GTF_ICON_STATIC_HDL) && op1->gtVNPair.BothEqual() && vnStore->IsVNConstant(op1vn) &&
+        if (op1->gtVNPair.BothEqual() && vnStore->IsVNConstant(op1vn) && !vnStore->IsVNHandle(op1vn) &&
             varTypeIsIntegral(vnStore->TypeOfVN(op1vn)))
         {
             val += vnStore->CoercedConstantValue<ssize_t>(op1vn);
             tree = op2;
         }
-        else if (!op2->IsIconHandle(GTF_ICON_STATIC_HDL) && op2->gtVNPair.BothEqual() && vnStore->IsVNConstant(op2vn) &&
+        else if (op2->gtVNPair.BothEqual() && vnStore->IsVNConstant(op2vn) && !vnStore->IsVNHandle(op2vn) &&
                  varTypeIsIntegral(vnStore->TypeOfVN(op2vn)))
         {
             val += vnStore->CoercedConstantValue<ssize_t>(op2vn);
@@ -8589,12 +8599,20 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     }
 
     // Base address is expected to be static field's address
-    if ((tree->IsCnsIntOrI()) && (tree->AsIntCon()->gtFieldSeq != nullptr) &&
-        (tree->AsIntCon()->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+    ValueNum treeVN = tree->gtVNPair.GetLiberal();
+    if (tree->gtVNPair.BothEqual() && vnStore->IsVNHandle(treeVN) &&
+        (vnStore->GetHandleFlags(treeVN) == GTF_ICON_STATIC_HDL))
     {
-        *pFseq      = tree->AsIntCon()->gtFieldSeq;
-        *byteOffset = tree->AsIntCon()->IconValue() + val - tree->AsIntCon()->gtFieldSeq->GetOffset();
-        return true;
+        FieldSeq* fldSeq = vnStore->GetFieldSeqFromAddress(treeVN);
+        if (fldSeq != nullptr)
+        {
+            assert(fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
+            assert(fldSeq->GetOffset() == vnStore->CoercedConstantValue<ssize_t>(treeVN));
+
+            *pFseq      = fldSeq;
+            *byteOffset = val;
+            return true;
+        }
     }
     return false;
 }
@@ -9768,6 +9786,13 @@ ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
                                   bool      srcIsUnsigned,    /* = false */
                                   bool      hasOverflowCheck) /* = false */
 {
+
+    if ((castFromType == TYP_I_IMPL) && (castToType == TYP_BYREF) && IsVNHandle(srcVN))
+    {
+        // Omit cast for (h)CNS_INT [TYP_I_IMPL -> TYP_BYREF]
+        return srcVN;
+    }
+
     // The resulting type after performing the cast is always widened to a supported IL stack size
     var_types resultType = genActualType(castToType);
 
@@ -9807,8 +9832,9 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
                                           bool         srcIsUnsigned,    /* = false */
                                           bool         hasOverflowCheck) /* = false */
 {
-    ValueNum srcLibVN  = srcVNPair.GetLiberal();
-    ValueNum srcConVN  = srcVNPair.GetConservative();
+    ValueNum srcLibVN = srcVNPair.GetLiberal();
+    ValueNum srcConVN = srcVNPair.GetConservative();
+
     ValueNum castLibVN = VNForCast(srcLibVN, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
     ValueNum castConVN;
 
