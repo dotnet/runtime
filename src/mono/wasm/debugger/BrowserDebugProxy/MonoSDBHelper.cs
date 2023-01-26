@@ -903,19 +903,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var method = asm.GetMethodByToken(methodToken);
 
-            if (method == null && !asm.HasSymbols)
-            {
-                try
-                {
-                    method = await proxy.LoadSymbolsOnDemand(asm, methodToken, sessionId, token);
-                }
-                catch (Exception e)
-                {
-                    logger.LogDebug($"Unable to find method token: {methodToken} assembly name: {asm.Name} exception: {e}");
-                    return null;
-                }
-            }
-
             string methodName = await GetMethodName(methodId, token);
             //get information from runtime
             method ??= await CreateMethodInfoFromRuntimeInformation(asm, methodId, methodName, methodToken, token);

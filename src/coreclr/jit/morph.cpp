@@ -3947,7 +3947,9 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     //
     if (opts.OptimizationEnabled() && arg->AbiInfo.PassedByRef)
     {
-        GenTreeLclVarCommon* implicitByRefLcl = argx->IsImplicitByrefParameterValue(this);
+        GenTree*             implicitByRefLclAddr;
+        GenTreeLclVarCommon* implicitByRefLcl =
+            argx->IsImplicitByrefParameterValuePostMorph(this, &implicitByRefLclAddr);
 
         GenTreeLclVarCommon* lcl = implicitByRefLcl;
         if ((lcl == nullptr) && argx->OperIsLocal())
@@ -3993,7 +3995,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             {
                 if (implicitByRefLcl != nullptr)
                 {
-                    arg->SetEarlyNode(lcl);
+                    arg->SetEarlyNode(implicitByRefLclAddr);
                 }
                 else
                 {
@@ -5920,8 +5922,8 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                 // and so still be able to avoid a struct copy.
                 if (opts.OptimizationEnabled())
                 {
-                    // First, see if this arg is an implicit byref param.
-                    GenTreeLclVar* const lcl = arg.GetNode()->IsImplicitByrefParameterValue(this);
+                    // First, see if this is an arg off of an implicit byref param.
+                    GenTreeLclVarCommon* const lcl = arg.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
 
                     if (lcl != nullptr)
                     {
@@ -5993,7 +5995,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                     if (arg2.AbiInfo.IsStruct && arg2.AbiInfo.PassedByRef)
                                     {
                                         GenTreeLclVarCommon* const lcl2 =
-                                            arg2.GetNode()->IsImplicitByrefParameterValue(this);
+                                            arg2.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
 
                                         if ((lcl2 != nullptr) && (lclNum == lcl2->GetLclNum()))
                                         {
@@ -7864,9 +7866,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // Liveness phase will remove unnecessary initializations.
     if (info.compInitMem || compSuppressedZeroInit)
     {
-        unsigned   varNum;
-        LclVarDsc* varDsc;
-        for (varNum = 0, varDsc = lvaTable; varNum < lvaCount; varNum++, varDsc++)
+        for (unsigned varNum = 0; varNum < lvaCount; varNum++)
         {
 #if FEATURE_FIXED_OUT_ARGS
             if (varNum == lvaOutgoingArgSpaceVar)
@@ -7874,29 +7874,55 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                 continue;
             }
 #endif // FEATURE_FIXED_OUT_ARGS
-            if (!varDsc->lvIsParam)
+
+            LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+            if (varDsc->lvIsParam)
             {
-                var_types lclType            = varDsc->TypeGet();
-                bool      isUserLocal        = (varNum < info.compLocalsCount);
-                bool      structWithGCFields = ((lclType == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr());
-                bool      hadSuppressedInit  = varDsc->lvSuppressedZeroInit;
-                if ((info.compInitMem && (isUserLocal || structWithGCFields)) || hadSuppressedInit)
+                continue;
+            }
+
+#if FEATURE_IMPLICIT_BYREFS
+            if (varDsc->lvPromoted)
+            {
+                LclVarDsc* firstField = lvaGetDesc(varDsc->lvFieldLclStart);
+                if (firstField->lvParentLcl != varNum)
                 {
-                    GenTree* lcl  = gtNewLclvNode(varNum, lclType);
-                    GenTree* init = nullptr;
-                    if (varTypeIsStruct(lclType))
-                    {
-                        init = gtNewBlkOpNode(lcl, gtNewIconNode(0));
-                        init = fgMorphInitBlock(init);
-                    }
-                    else
-                    {
-                        GenTree* zero = gtNewZeroConNode(lclType);
-                        init          = gtNewAssignNode(lcl, zero);
-                    }
-                    Statement* initStmt = gtNewStmt(init, callDI);
-                    fgInsertStmtBefore(block, lastStmt, initStmt);
+                    // Local copy for implicit byref promotion that was undone. Do
+                    // not introduce new references to it, all uses have been
+                    // morphed to access the parameter.
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef DEBUG
+                    LclVarDsc* param = lvaGetDesc(firstField->lvParentLcl);
+                    assert(param->lvIsImplicitByRef && !param->lvPromoted);
+                    assert(param->lvFieldLclStart == varNum);
+#endif
+                    continue;
                 }
+            }
+#endif
+
+            var_types lclType            = varDsc->TypeGet();
+            bool      isUserLocal        = (varNum < info.compLocalsCount);
+            bool      structWithGCFields = ((lclType == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr());
+            bool      hadSuppressedInit  = varDsc->lvSuppressedZeroInit;
+            if ((info.compInitMem && (isUserLocal || structWithGCFields)) || hadSuppressedInit)
+            {
+                GenTree* lcl  = gtNewLclvNode(varNum, lclType);
+                GenTree* init = nullptr;
+                if (varTypeIsStruct(lclType))
+                {
+                    init = gtNewBlkOpNode(lcl, gtNewIconNode(0));
+                    init = fgMorphInitBlock(init);
+                }
+                else
+                {
+                    GenTree* zero = gtNewZeroConNode(lclType);
+                    init          = gtNewAssignNode(lcl, zero);
+                }
+                Statement* initStmt = gtNewStmt(init, callDI);
+                fgInsertStmtBefore(block, lastStmt, initStmt);
             }
         }
     }

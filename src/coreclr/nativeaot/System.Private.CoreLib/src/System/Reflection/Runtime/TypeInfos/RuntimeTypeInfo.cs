@@ -478,7 +478,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 // Desktop compatibility: Treat generic type definitions as a constructed generic type using the generic parameters as type arguments.
                 if (runtimeTypeArgument.IsGenericTypeDefinition)
-                    runtimeTypeArgument = runtimeTypeArguments[i] = runtimeTypeArgument.GetConstructedGenericType(runtimeTypeArgument.RuntimeGenericTypeParameters);
+                    runtimeTypeArgument = runtimeTypeArguments[i] = runtimeTypeArgument.GetConstructedGenericTypeNoConstraintCheck(runtimeTypeArgument.RuntimeGenericTypeParameters);
 
                 if (runtimeTypeArgument.IsByRefLike)
                     throw new TypeLoadException(SR.CannotUseByRefLikeTypeInInstantiation);

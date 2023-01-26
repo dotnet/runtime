@@ -13,7 +13,7 @@ using System.Reflection.PortableExecutable;
 namespace Microsoft.NET.WebAssembly.Webcil;
 
 
-public sealed class WebcilReader : IDisposable
+public sealed partial class WebcilReader : IDisposable
 {
     // WISH:
     // This should be implemented in terms of System.Reflection.Internal.MemoryBlockProvider like the PEReader,
@@ -219,26 +219,11 @@ public sealed class WebcilReader : IDisposable
         return MakeCodeViewDebugDirectoryData(guid, age, path);
     }
 
-    private static string? ReadUtf8NullTerminated(BlobReader reader)
-    {
-        var mi = typeof(BlobReader).GetMethod("ReadUtf8NullTerminated", BindingFlags.NonPublic | BindingFlags.Instance);
-        if (mi == null)
-        {
-            throw new InvalidOperationException("Could not find BlobReader.ReadUtf8NullTerminated");
-        }
-        return (string?)mi.Invoke(reader, null);
-    }
+    private static string? ReadUtf8NullTerminated(BlobReader reader) => Reflection.ReadUtf8NullTerminated(reader);
 
-    private static CodeViewDebugDirectoryData MakeCodeViewDebugDirectoryData(Guid guid, int age, string path)
-    {
-        var types = new Type[] { typeof(Guid), typeof(int), typeof(string) };
-        var mi = typeof(CodeViewDebugDirectoryData).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, types, null);
-        if (mi == null)
-        {
-            throw new InvalidOperationException("Could not find CodeViewDebugDirectoryData constructor");
-        }
-        return (CodeViewDebugDirectoryData)mi.Invoke(new object[] { guid, age, path });
-    }
+    private static CodeViewDebugDirectoryData MakeCodeViewDebugDirectoryData(Guid guid, int age, string path) => Reflection.MakeCodeViewDebugDirectoryData(guid, age, path);
+
+    private static PdbChecksumDebugDirectoryData MakePdbChecksumDebugDirectoryData(string algorithmName, ImmutableArray<byte> checksum) => Reflection.MakePdbChecksumDebugDirectoryData(algorithmName, checksum);
 
     public MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(DebugDirectoryEntry entry)
     {
@@ -295,6 +280,44 @@ public sealed class WebcilReader : IDisposable
 
         return MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(decompressedBuffer, writable: false));
 
+    }
+
+    public PdbChecksumDebugDirectoryData ReadPdbChecksumDebugDirectoryData(DebugDirectoryEntry entry)
+    {
+        if (entry.Type != DebugDirectoryEntryType.PdbChecksum)
+        {
+            throw new ArgumentException($"expected debug directory entry type {nameof(DebugDirectoryEntryType.PdbChecksum)}", nameof(entry));
+        }
+
+        var pos = entry.DataPointer;
+        var buffer = new byte[entry.DataSize];
+        if (_stream.Seek(pos, SeekOrigin.Begin) != pos)
+        {
+            throw new BadImageFormatException("Could not seek to CodeView debug directory data", nameof(_stream));
+        }
+        if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
+        {
+            throw new BadImageFormatException("Could not read CodeView debug directory data", nameof(_stream));
+        }
+        unsafe
+        {
+            fixed (byte* p = buffer)
+            {
+                return DecodePdbChecksumDebugDirectoryData(new BlobReader(p, buffer.Length));
+            }
+        }
+    }
+
+    private static PdbChecksumDebugDirectoryData DecodePdbChecksumDebugDirectoryData(BlobReader reader)
+    {
+        var algorithmName = ReadUtf8NullTerminated(reader);
+        byte[]? checksum = reader.ReadBytes(reader.RemainingBytes);
+        if (string.IsNullOrEmpty(algorithmName) || checksum == null || checksum.Length == 0)
+        {
+            throw new BadImageFormatException("Invalid PdbChecksum data format");
+        }
+
+        return MakePdbChecksumDebugDirectoryData(algorithmName, ImmutableArray.Create(checksum));
     }
 
     private long TranslateRVA(uint rva)

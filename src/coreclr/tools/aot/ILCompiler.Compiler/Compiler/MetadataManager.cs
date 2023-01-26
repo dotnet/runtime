@@ -449,7 +449,7 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated EETypes.
         /// </summary>
-        public void GetDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public virtual void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
             MetadataCategory category = GetMetadataCategory(type);
 
@@ -894,10 +894,6 @@ namespace ILCompiler
         }
 
         public virtual void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-        }
-
-        public virtual void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
         }
 

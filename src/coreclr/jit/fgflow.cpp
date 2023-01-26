@@ -810,16 +810,22 @@ void Compiler::fgComputePreds()
         }
     }
 
-    for (EHblkDsc* const ehDsc : EHClauses(this))
+    // Add artifical ref counts to the entry of filters and handlers.
+    // We don't inline methods with EH, so this is only relevant to the root method.
+    //
+    if (!compIsForInlining())
     {
-        if (ehDsc->HasFilter())
+        for (EHblkDsc* const ehDsc : EHClauses(this))
         {
-            // The first block of a filter has an artificial extra refcount.
-            ehDsc->ebdFilter->bbRefs++;
-        }
+            if (ehDsc->HasFilter())
+            {
+                // The first block of a filter has an artificial extra refcount.
+                ehDsc->ebdFilter->bbRefs++;
+            }
 
-        // The first block of a handler has an artificial extra refcount.
-        ehDsc->ebdHndBeg->bbRefs++;
+            // The first block of a handler has an artificial extra refcount.
+            ehDsc->ebdHndBeg->bbRefs++;
+        }
     }
 
     fgModified         = false;

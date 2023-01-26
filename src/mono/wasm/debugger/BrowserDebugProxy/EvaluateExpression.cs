@@ -60,7 +60,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (visitCount == 0)
                 {
                     if (node is MemberAccessExpressionSyntax maes
-                        && node.Kind() == SyntaxKind.SimpleMemberAccessExpression
+                        && node.IsKind(SyntaxKind.SimpleMemberAccessExpression)
                         && !(node.Parent is MemberAccessExpressionSyntax)
                         && !(node.Parent is InvocationExpressionSyntax)
                         && !(node.Parent is ElementAccessExpressionSyntax))
@@ -403,7 +403,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             // this fails with `"a)"`
             // because the code becomes: return (a));
             // and the returned expression from GetExpressionFromSyntaxTree is `a`!
-            if (expressionTree.Kind() == SyntaxKind.IdentifierName || expressionTree.Kind() == SyntaxKind.ThisExpression)
+            if (expressionTree.IsKind(SyntaxKind.IdentifierName) || expressionTree.IsKind(SyntaxKind.ThisExpression))
             {
                 string varName = expressionTree.ToString();
                 JObject value = await resolver.Resolve(varName, token);
@@ -418,7 +418,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             syntaxTree = replacer.ReplaceVars(syntaxTree, memberAccessValues, identifierValues, null, null);
 
             // eg. "this.dateTime", "  dateTime.TimeOfDay"
-            if (expressionTree.Kind() == SyntaxKind.SimpleMemberAccessExpression && replacer.memberAccesses.Count == 1)
+            if (expressionTree.IsKind(SyntaxKind.SimpleMemberAccessExpression) && replacer.memberAccesses.Count == 1)
             {
                 return memberAccessValues[0];
             }

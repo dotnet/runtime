@@ -1971,9 +1971,8 @@ public:
         return const_cast<GenTreeLclVarCommon*>(static_cast<const GenTree*>(this)->IsLocalAddrExpr());
     }
 
-    // Determine if this tree represents the value of an entire implicit byref parameter,
-    // and if so return the tree for the parameter.
-    GenTreeLclVar* IsImplicitByrefParameterValue(Compiler* compiler);
+    GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
+    GenTreeLclVar* IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr);
 
     // Determine whether this is an assignment tree of the form X = X (op) Y,
     // where Y is an arbitrary tree, and X is a lclVar.
@@ -3795,6 +3794,8 @@ public:
     unsigned int GetFieldCount(Compiler* compiler) const;
     var_types GetFieldTypeByIndex(Compiler* compiler, unsigned idx);
 
+    bool IsNeverNegative(Compiler* comp) const;
+
     //-------------------------------------------------------------------
     // clearOtherRegFlags: clear GTF_* flags associated with gtOtherRegs
     //
@@ -4005,13 +4006,22 @@ struct GenTreeField : public GenTreeUnOp
 {
     CORINFO_FIELD_HANDLE gtFldHnd;
     DWORD                gtFldOffset;
-    bool                 gtFldMayOverlap;
+    bool                 gtFldMayOverlap : 1;
+
+private:
+    bool gtFldIsSpanLength : 1;
+
+public:
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtFieldLookup;
 #endif
 
     GenTreeField(genTreeOps oper, var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
-        : GenTreeUnOp(oper, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
+        : GenTreeUnOp(oper, type, obj)
+        , gtFldHnd(fldHnd)
+        , gtFldOffset(offs)
+        , gtFldMayOverlap(false)
+        , gtFldIsSpanLength(false)
     {
 #ifdef FEATURE_READYTORUN
         gtFieldLookup.addr = nullptr;
@@ -4036,6 +4046,24 @@ struct GenTreeField : public GenTreeUnOp
     {
         assert(((gtFlags & GTF_FLD_VOLATILE) == 0) || OperIs(GT_FIELD));
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
+    }
+
+    bool IsSpanLength() const
+    {
+        // This is limited to span length today rather than a more general "IsNeverNegative"
+        // to help avoid confusion around propagating the value to promoted lcl vars.
+        //
+        // Extending this support more in the future will require additional work and
+        // considerations to help ensure it is correctly used since people may want
+        // or intend to use this as more of a "point in time" feature like GTF_IND_NONNULL
+
+        assert(OperIs(GT_FIELD));
+        return gtFldIsSpanLength;
+    }
+
+    void SetIsSpanLength(bool value)
+    {
+        gtFldIsSpanLength = value;
     }
 
     bool IsInstance() const
@@ -7450,6 +7478,7 @@ public:
     Statement(GenTree* expr DEBUGARG(unsigned stmtID))
         : m_rootNode(expr)
         , m_treeList(nullptr)
+        , m_treeListEnd(nullptr)
         , m_next(nullptr)
         , m_prev(nullptr)
 #ifdef DEBUG
@@ -7479,9 +7508,29 @@ public:
         return m_treeList;
     }
 
+    GenTree** GetTreeListPointer()
+    {
+        return &m_treeList;
+    }
+
     void SetTreeList(GenTree* treeHead)
     {
         m_treeList = treeHead;
+    }
+
+    GenTree* GetTreeListEnd() const
+    {
+        return m_treeListEnd;
+    }
+
+    GenTree** GetTreeListEndPointer()
+    {
+        return &m_treeListEnd;
+    }
+
+    void SetTreeListEnd(GenTree* end)
+    {
+        m_treeListEnd = end;
     }
 
     GenTreeList       TreeList() const;
@@ -7559,6 +7608,12 @@ private:
     // The tree list head (for forward walks in evaluation order).
     // The value is `nullptr` until we have set the sequencing of the nodes.
     GenTree* m_treeList;
+
+    // The tree list tail. Only valid when locals are linked (fgNodeThreading
+    // == AllLocals), in which case this is the last local.
+    // When all nodes are linked (fgNodeThreading == AllTrees), m_rootNode
+    // should be considered the last node.
+    GenTree* m_treeListEnd;
 
     // The statement nodes are doubly-linked. The first statement node in a block points
     // to the last node in the block via its `m_prev` link. Note that the last statement node
