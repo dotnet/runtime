@@ -18,6 +18,10 @@
     </When>
   </Choose>
 
+  <ItemGroup>
+    <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
+  </ItemGroup>
+
   <!-- TODO: Remove this target when no library relies on the intellisense documentation file anymore.-->
   <Target Name="ChangeDocumentationFileForPackaging"
           AfterTargets="DocumentationProjectOutputGroup"
