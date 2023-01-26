@@ -11236,7 +11236,11 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     // For cases where 'align' was placed behind a 'jmp' in an IG that does not
     // immediately preced the loop IG, we do not know in advance the offset of
     // IG having loop. For such cases, skip the padding calculation validation.
-    bool validatePadding = !alignInstr->isPlacedAfterJmp;
+
+    // For NativeAOT, `dst` is not aliged as requested, but the final assembly will have them aligned.
+    // So, just calculate the offset of the current `dst` from the start.
+    size_t offset          = emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) ? (dst - emitCodeBlock) : (size_t)dst;
+    bool   validatePadding = !alignInstr->isPlacedAfterJmp;
 #endif
 
     // Candidate for loop alignment
@@ -11247,7 +11251,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 
     // Either things are already aligned or align them here.
     assert(!validatePadding || (paddingToAdd == 0) ||
-           (((size_t)dst & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
+           ((offset & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
 
     // Padding amount should not exceed the alignment boundary
     assert(0 <= paddingToAdd && paddingToAdd < emitComp->opts.compJitAlignLoopBoundary);
@@ -11256,7 +11260,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     if (validatePadding)
     {
         unsigned paddingNeeded =
-            emitCalculatePaddingForLoopAlignment(((instrDescAlign*)id)->idaIG->igNext, (size_t)dst, true);
+            emitCalculatePaddingForLoopAlignment(((instrDescAlign*)id)->idaIG->igNext, offset, true);
 
         // For non-adaptive, padding size is spread in multiple instructions, so don't bother checking
         if (emitComp->opts.compJitAlignLoopAdaptive)

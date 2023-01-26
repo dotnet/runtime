@@ -6385,7 +6385,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // For x64/x86/arm64, align methods that are "optimizations enabled" to 32 byte boundaries if
     // they are larger than 16 bytes and contain a loop.
     //
-    if (emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
+    if (emitComp->opts.OptimizationEnabled() &&
+        (!emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) || comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI)) &&
         (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
     {
         codeAlignment = 32;
@@ -6447,7 +6448,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
-        assert(((size_t)codeBlock & 31) == 0);
+        // For NativeAOT, codeBlock will not be necessarily aligned, but it is aligned
+        // in final obj file.
+        assert((((size_t)codeBlock & 31) == 0) || comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
     }
 #if 0
     // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
