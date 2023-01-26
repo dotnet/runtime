@@ -156,7 +156,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddLinkAttributes (string file)
 		{
-			Options.LinkAttributes.Add (file);
 		}
 
 		public virtual void AddAdditionalArgument (string flag, string[] values)

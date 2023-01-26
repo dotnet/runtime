@@ -162,10 +162,8 @@ namespace ILCompiler
 
                 if (processAllAssemblies)
                 {
-                    throw new NotImplementedException();
-                    // We could avoid loading all references in this case: https://github.com/dotnet/linker/issues/1708
-                    //foreach (ModuleDesc assembly in GetReferencedAssemblies())
-                    //    ProcessAssembly(assembly, assemblyNav, warnOnUnresolvedTypes: false);
+                    Debug.Assert(_owningModule != null);
+                    ProcessAssembly(_owningModule, assemblyNav, warnOnUnresolvedTypes: false);
                 }
                 else
                 {

@@ -67,13 +67,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			Logger logger = new Logger (logWriter, ilProvider, isVerbose: true);
 
-			HashSet<TypeDesc> removedAttributes = new HashSet<TypeDesc> ();
-			foreach (var linkAttributes in options.LinkAttributes) {
-				if (!File.Exists (linkAttributes))
-					throw new FileNotFoundException ($"'{linkAttributes}' doesn't exist");
-				_ = removedAttributes;
-			}
-
 			foreach (var descriptor in options.Descriptors) {
 				if (!File.Exists (descriptor))
 					throw new FileNotFoundException ($"'{descriptor}' doesn't exist");

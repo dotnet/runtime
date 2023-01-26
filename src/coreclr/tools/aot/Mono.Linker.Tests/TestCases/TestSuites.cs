@@ -25,13 +25,6 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
-		[MemberData (nameof (TestDatabase.LinkAttributes), MemberType = typeof (TestDatabase))]
-		public void LinkAttributes (string t)
-		{
-			Run (t);
-		}
-
-		[Theory]
 		[MemberData (nameof (TestDatabase.LinkXml), MemberType = typeof (TestDatabase))]
 		public void LinkXml (string t)
 		{

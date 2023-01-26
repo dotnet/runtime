@@ -39,7 +39,7 @@ namespace ILCompiler
 
         internal readonly UsageBasedMetadataGenerationOptions _generationOptions;
 
-        private readonly FeatureSwitchHashtable _featureSwitchHashtable;
+        private readonly LinkAttributesHashTable _featureSwitchHashtable;
 
         private static (string AttributeName, DiagnosticId Id)[] _requiresAttributeMismatchNameAndId = new[]
             {
@@ -91,7 +91,7 @@ namespace ILCompiler
             FlowAnnotations = flowAnnotations;
             Logger = logger;
 
-            _featureSwitchHashtable = new FeatureSwitchHashtable(Logger, new Dictionary<string, bool>(featureSwitchValues));
+            _featureSwitchHashtable = new LinkAttributesHashTable(Logger, new Dictionary<string, bool>(featureSwitchValues));
             FeatureSwitches = new Dictionary<string, bool>(featureSwitchValues);
 
             _rootEntireAssembliesModules = new HashSet<string>(rootEntireAssembliesModules);
@@ -1093,12 +1093,12 @@ namespace ILCompiler
             }
         }
 
-        private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
+        private sealed class LinkAttributesHashTable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
             private readonly Dictionary<string, bool> _switchValues;
             private readonly Logger _logger;
 
-            public FeatureSwitchHashtable(Logger logger, Dictionary<string, bool> switchValues)
+            public LinkAttributesHashTable(Logger logger, Dictionary<string, bool> switchValues)
             {
                 _logger = logger;
                 _switchValues = switchValues;
@@ -1126,13 +1126,17 @@ namespace ILCompiler
                 Module = module;
                 RemovedAttributes = new HashSet<TypeDesc>();
 
-                ParseLinkAttributesXml(module, logger, featureSwitchValues, false);
-                ParseLinkAttributesXml(module, logger, featureSwitchValues, true);
+                // System.Private.CorLib has a special functionality that could delete an attribute in all modules.
+                // In order to get the set of attributes that need to be removed the modules need collect both the
+                // set of attributes in it's embedded XML file and the set inside System.Private.CorLib embedded
+                // XML file
+                ParseLinkAttributesXml(module, logger, featureSwitchValues, globalAttributeRemoval: false);
+                ParseLinkAttributesXml(module, logger, featureSwitchValues, globalAttributeRemoval: true);
             }
 
-            public void  ParseLinkAttributesXml(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues, bool isCorLib)
+            public void  ParseLinkAttributesXml(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues, bool globalAttributeRemoval)
             {
-                EcmaModule xmlModule = isCorLib ? (EcmaModule) module.Context.SystemModule : module;
+                EcmaModule xmlModule = globalAttributeRemoval ? (EcmaModule) module.Context.SystemModule : module;
                 PEMemoryBlock resourceDirectory = xmlModule.PEReader.GetSectionData(xmlModule.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
 
                 foreach (var resourceHandle in xmlModule.MetadataReader.ManifestResources)
@@ -1157,7 +1161,7 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        RemovedAttributes.UnionWith(LinkAttributesReader.GetRemovedAttributes(logger, xmlModule.Context, ms, resource, module, "resource " + resourceName + " in " + module.ToString(), featureSwitchValues));
+                        RemovedAttributes.UnionWith(LinkAttributesReader.GetRemovedAttributes(logger, xmlModule.Context, ms, resource, module, "resource " + resourceName + " in " + module.ToString(), featureSwitchValues, globalAttributeRemoval));
                     }
                 }
             }
@@ -1172,11 +1176,13 @@ namespace ILCompiler
         {
             private readonly HashSet<TypeDesc> _removedAttributes = new();
             private readonly ModuleDesc _resource;
+            private readonly bool _globalAttributeRemoval;
 
-            public LinkAttributesReader(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public LinkAttributesReader(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues, bool globalAttributeRemoval)
                 : base(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
             {
                 _resource = resourceAssembly;
+                _globalAttributeRemoval = globalAttributeRemoval;
             }
 
             private void ProcessAttribute(TypeDesc type, XPathNavigator nav)
@@ -1188,9 +1194,9 @@ namespace ILCompiler
                 }
             }
 
-            public static HashSet<TypeDesc> GetRemovedAttributes(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public static HashSet<TypeDesc> GetRemovedAttributes(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues, bool globalAttributeRemoval)
             {
-                var rdr = new LinkAttributesReader(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
+                var rdr = new LinkAttributesReader(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues, globalAttributeRemoval);
                 rdr.ProcessXml(false);
                 return rdr._removedAttributes;
             }
