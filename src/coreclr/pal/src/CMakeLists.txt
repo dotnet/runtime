@@ -132,9 +132,7 @@ set(SOURCES
   cruntime/malloc.cpp
   cruntime/math.cpp
   cruntime/misc.cpp
-  cruntime/printf.cpp
   cruntime/printfcpp.cpp
-  cruntime/silent_printf.cpp
   cruntime/string.cpp
   cruntime/stringtls.cpp
   cruntime/thread.cpp

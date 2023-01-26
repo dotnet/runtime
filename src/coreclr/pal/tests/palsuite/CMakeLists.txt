@@ -17,12 +17,14 @@ list(APPEND COMMON_TEST_LIBRARIES coreclrpal)
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
   add_compile_options(-Wno-int-to-void-pointer-cast)
+  add_compile_options(-Wno-format)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-sign-compare)
   add_compile_options(-Wno-narrowing)
   add_compile_options(-fno-builtin)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fpermissive>)
   add_compile_options(-Wno-int-to-pointer-cast)
+  add_compile_options(-Wno-format)
 endif()
 
 
@@ -117,25 +119,6 @@ add_executable_clr(paltests
   c_runtime/fopen/test5/test5.cpp
   c_runtime/fopen/test6/test6.cpp
   c_runtime/fopen/test7/test7.cpp
-  c_runtime/fprintf/test1/test1.cpp
-  c_runtime/fprintf/test10/test10.cpp
-  c_runtime/fprintf/test11/test11.cpp
-  c_runtime/fprintf/test12/test12.cpp
-  c_runtime/fprintf/test13/test13.cpp
-  c_runtime/fprintf/test14/test14.cpp
-  c_runtime/fprintf/test15/test15.cpp
-  c_runtime/fprintf/test16/test16.cpp
-  c_runtime/fprintf/test17/test17.cpp
-  c_runtime/fprintf/test18/test18.cpp
-  c_runtime/fprintf/test19/test19.cpp
-  c_runtime/fprintf/test2/test2.cpp
-  c_runtime/fprintf/test3/test3.cpp
-  c_runtime/fprintf/test4/test4.cpp
-  c_runtime/fprintf/test5/test5.cpp
-  c_runtime/fprintf/test6/test6.cpp
-  c_runtime/fprintf/test7/test7.cpp
-  c_runtime/fprintf/test8/test8.cpp
-  c_runtime/fprintf/test9/test9.cpp
   c_runtime/fputs/test1/test1.cpp
   c_runtime/fputs/test2/test2.cpp
   c_runtime/fread/test1/test1.cpp
@@ -175,25 +158,6 @@ add_executable_clr(paltests
   c_runtime/modff/test1/test1.cpp
   c_runtime/pow/test1/test1.cpp
   c_runtime/powf/test1/test1.cpp
-  c_runtime/printf/test1/test1.cpp
-  c_runtime/printf/test10/test10.cpp
-  c_runtime/printf/test11/test11.cpp
-  c_runtime/printf/test12/test12.cpp
-  c_runtime/printf/test13/test13.cpp
-  c_runtime/printf/test14/test14.cpp
-  c_runtime/printf/test15/test15.cpp
-  c_runtime/printf/test16/test16.cpp
-  c_runtime/printf/test17/test17.cpp
-  c_runtime/printf/test18/test18.cpp
-  c_runtime/printf/test19/test19.cpp
-  c_runtime/printf/test2/test2.cpp
-  c_runtime/printf/test3/test3.cpp
-  c_runtime/printf/test4/test4.cpp
-  c_runtime/printf/test5/test5.cpp
-  c_runtime/printf/test6/test6.cpp
-  c_runtime/printf/test7/test7.cpp
-  c_runtime/printf/test8/test8.cpp
-  c_runtime/printf/test9/test9.cpp
   c_runtime/qsort/test1/test1.cpp
   c_runtime/qsort/test2/test2.cpp
   c_runtime/rand_srand/test1/test1.cpp
@@ -265,44 +229,6 @@ add_executable_clr(paltests
   c_runtime/toupper/test1/test1.cpp
   c_runtime/towlower/test1/test1.cpp
   c_runtime/towupper/test1/test1.cpp
-  c_runtime/vfprintf/test1/test1.cpp
-  c_runtime/vfprintf/test10/test10.cpp
-  c_runtime/vfprintf/test11/test11.cpp
-  c_runtime/vfprintf/test12/test12.cpp
-  c_runtime/vfprintf/test13/test13.cpp
-  c_runtime/vfprintf/test14/test14.cpp
-  c_runtime/vfprintf/test15/test15.cpp
-  c_runtime/vfprintf/test16/test16.cpp
-  c_runtime/vfprintf/test17/test17.cpp
-  c_runtime/vfprintf/test18/test18.cpp
-  c_runtime/vfprintf/test19/test19.cpp
-  c_runtime/vfprintf/test2/test2.cpp
-  c_runtime/vfprintf/test3/test3.cpp
-  c_runtime/vfprintf/test4/test4.cpp
-  c_runtime/vfprintf/test5/test5.cpp
-  c_runtime/vfprintf/test6/test6.cpp
-  c_runtime/vfprintf/test7/test7.cpp
-  c_runtime/vfprintf/test8/test8.cpp
-  c_runtime/vfprintf/test9/test9.cpp
-  #c_runtime/vprintf/test1/test1.cpp
-  c_runtime/vprintf/test10/test10.cpp
-  c_runtime/vprintf/test11/test11.cpp
-  c_runtime/vprintf/test12/test12.cpp
-  c_runtime/vprintf/test13/test13.cpp
-  c_runtime/vprintf/test14/test14.cpp
-  c_runtime/vprintf/test15/test15.cpp
-  c_runtime/vprintf/test16/test16.cpp
-  c_runtime/vprintf/test17/test17.cpp
-  c_runtime/vprintf/test18/test18.cpp
-  c_runtime/vprintf/test19/test19.cpp
-  c_runtime/vprintf/test2/test2.cpp
-  c_runtime/vprintf/test3/test3.cpp
-  c_runtime/vprintf/test4/test4.cpp
-  c_runtime/vprintf/test5/test5.cpp
-  c_runtime/vprintf/test6/test6.cpp
-  c_runtime/vprintf/test7/test7.cpp
-  c_runtime/vprintf/test8/test8.cpp
-  c_runtime/vprintf/test9/test9.cpp
   c_runtime/vsprintf/test1/test1.cpp
   c_runtime/vsprintf/test10/test10.cpp
   c_runtime/vsprintf/test11/test11.cpp

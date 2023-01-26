@@ -499,11 +499,8 @@ function_name() to call the system's implementation
 #undef uintptr_t
 #undef timeval
 
-
-#undef printf
 #undef fprintf
 #undef vfprintf
-#undef vprintf
 #undef wcstod
 #undef wcstoul
 #undef _wcstoui64
