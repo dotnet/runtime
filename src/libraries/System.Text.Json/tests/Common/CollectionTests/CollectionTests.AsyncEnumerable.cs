@@ -144,6 +144,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(5000, 1000, false)]
         [InlineData(1000, 10_000, true)]
         [InlineData(1000, 10_000, false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80020", TestRuntimes.Mono)]
         public async Task WriteAsyncEnumerable_LongRunningEnumeration_Cancellation(
             int cancellationTokenSourceDelayMilliseconds,
             int enumeratorDelayMilliseconds,

@@ -368,6 +368,7 @@ namespace System.Tests
         [InlineData(Environment.SpecialFolder.MyPictures)]
         [InlineData(Environment.SpecialFolder.MyVideos)]
         [InlineData(Environment.SpecialFolder.Templates)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void GetFolderPath_Unix_SpecialFolderDoesNotExist_CreatesSuccessfully(Environment.SpecialFolder folder)
         {
             string path = Environment.GetFolderPath(folder, Environment.SpecialFolderOption.DoNotVerify);
