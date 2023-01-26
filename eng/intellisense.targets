@@ -1,40 +1,32 @@
 <Project>
 
   <PropertyGroup>
-    <XmlDocFileRoot>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</XmlDocFileRoot>
+    <XmlDocPrivateIntellisenseRoot>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</XmlDocPrivateIntellisenseRoot>
+    <XmlDocPrivateIntellisenseFileFromNetFolder>$([MSBuild]::NormalizePath('$(XmlDocPrivateIntellisenseRoot)', 'net', '1033', '$(AssemblyName).xml'))</XmlDocPrivateIntellisenseFileFromNetFolder>
+    <XmlDocPrivateIntellisenseFileFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(XmlDocPrivateIntellisenseRoot)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</XmlDocPrivateIntellisenseFileFromDotNetPlatExtFolder>
+    <XmlDocPrivateIntellisenseFileFolder Condition="'$(UseIntellisenseDocumentationFile)' != 'true' and Exists($(XmlDocPrivateIntellisenseFileFromNetFolder))">net</XmlDocPrivateIntellisenseFileFolder>
+    <XmlDocPrivateIntellisenseFileFolder Condition="'$(UseIntellisenseDocumentationFile)' != 'true' and Exists($(XmlDocPrivateIntellisenseFileFromDotNetPlatExtFolder))">dotnet-plat-ext</XmlDocPrivateIntellisenseFileFolder>
+    <XmlDocPrivateIntellisenseFilePath Condition="'$(UseIntellisenseDocumentationFile)' != 'true'">$([MSBuild]::NormalizePath('$(XmlDocPrivateIntellisenseRoot)', '$(XmlDocPrivateIntellisenseFileFolder)', '1033', '$(AssemblyName).xml'))</XmlDocPrivateIntellisenseFilePath>
   </PropertyGroup>
-
-  <!-- If the project is not generating its own documentation yet, retrieve it from the dotnet-api-docs nuget package. -->
-  <Choose>
-    <When Condition="('$(UseIntellisenseDocumentationFile)' == '' or '$(UseIntellisenseDocumentationFile)' == 'false') and Exists($([MSBuild]::NormalizePath('$(XmlDocFileRoot)', 'net', '1033', '$(AssemblyName).xml')))">
-      <PropertyGroup>
-        <IntellisenseFilePath>$([MSBuild]::NormalizePath('$(XmlDocFileRoot)', 'net', '1033', '$(AssemblyName).xml')</IntellisenseFilePath>
-      </PropertyGroup>
-    </When>
-    <When Condition="('$(UseIntellisenseDocumentationFile)' == '' or '$(UseIntellisenseDocumentationFile)' == 'false') and Exists($([MSBuild]::NormalizePath('$(XmlDocFileRoot)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml')))">
-      <PropertyGroup>
-        <IntellisenseFilePath Condition="">$([MSBuild]::NormalizePath('$(XmlDocFileRoot)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml')</IntellisenseFilePath>
-      </PropertyGroup>
-    </When>
-  </Choose>
 
   <ItemGroup>
     <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
   </ItemGroup>
 
   <!-- TODO: Remove this target when no library relies on the intellisense documentation file anymore.-->
+  <!-- This replaces the default xml file generated in the obj folder with the one that comes from the docs feed. -->
   <Target Name="ChangeDocumentationFileForPackaging"
           AfterTargets="DocumentationProjectOutputGroup"
-          Condition="'$(UseIntellisenseDocumentationFile)' == 'true'">
+          Condition="'$(UseIntellisenseDocumentationFile)' != 'true'">
     <ItemGroup>
       <DocumentationProjectOutputGroupOutput Remove="@(DocumentationProjectOutputGroupOutput)" />
-      <DocumentationProjectOutputGroupOutput Include="$(IntellisenseFilePath)" />
+      <DocumentationProjectOutputGroupOutput Include="$(XmlDocPrivateIntellisenseFilePath)" />
     </ItemGroup>
   </Target>
 
   <Target Name="CopyDocumentationFileToXmlDocDir"
           AfterTargets="CopyFilesToOutputDirectory"
-          Condition="'$(IsNetCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
+          Condition="'$(UseIntellisenseDocumentationFile)' != 'true' and '$(IsNetCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
           DependsOnTargets="ChangeDocumentationFileForPackaging">
     <Copy SourceFiles="@(DocumentationProjectOutputGroupOutput)"
           DestinationFolder="$(XmlDocDir)"
