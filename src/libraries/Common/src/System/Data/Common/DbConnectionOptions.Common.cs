@@ -63,7 +63,6 @@ namespace System.Data.Common
 #endif
         internal const string DataDirectory = "|datadirectory|";
 
-#pragma warning disable CA1823 // used in some compilations and not others
         private static readonly Regex s_connectionStringValidKeyRegex = CreateConnectionStringValidKeyRegex(); // key not allowed to start with semi-colon or space or contain non-visible characters or end with space
         private static readonly Regex s_connectionStringQuoteValueRegex = CreateConnectionStringQuoteValueRegex(); // generally do not quote the value if it matches the pattern
         private static readonly Regex s_connectionStringQuoteOdbcValueRegex = CreateConnectionStringQuoteOdbcValueRegex(); // do not quote odbc value if it matches this pattern
@@ -80,9 +79,6 @@ namespace System.Data.Common
         private static Regex CreateConnectionStringQuoteValueRegex() => new Regex("^[^\"'=;\\s\\p{Cc}]*$", RegexOptions.Compiled);
         private static Regex CreateConnectionStringQuoteOdbcValueRegex() => new Regex("^\\{([^\\}\u0000]|\\}\\})*\\}$", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 #endif
-#pragma warning restore CA1823
-
-
 
         // connection string common keywords
         private static class KEY

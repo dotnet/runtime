@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
 
-#pragma warning disable SYSLIB1054 // Use LibraryImport instead of DllImport
+#pragma warning disable SYSLIB1054 // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib
 
 namespace System.Runtime
 {
