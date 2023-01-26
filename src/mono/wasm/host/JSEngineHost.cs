@@ -78,13 +78,10 @@ internal sealed class JSEngineHost
         args.Add(_args.JSPath!);
 
         args.AddRange(engineArgs);
-        if (_args.Host is WasmHost.V8 or WasmHost.JavaScriptCore)
-        {
-            // v8/jsc want arguments to the script separated by "--", others don't
-            args.Add("--");
-        }
-
+        // only v8/jsc require arguments to the script separated by "--", for consistency do it for all
+        args.Add("--");
         args.AddRange(_args.CommonConfig.RuntimeArguments);
+        args.Add("--");
         args.AddRange(_args.AppArgs);
 
         ProcessStartInfo psi = new()

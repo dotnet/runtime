@@ -185,8 +185,7 @@ internal sealed class BrowserHost
             sb.Append('&');
         sb.AppendJoin("&", environmentVariables.Select(arg => $"arg=--setenv={HttpUtility.UrlEncode(arg.Key)}={HttpUtility.UrlEncode(arg.Value)}"));
 
-        if (sb.Length > 0 && passThroughArguments.Any())
-            sb.Append('&');
+        sb.Append(" -- ");
         sb.AppendJoin("&", passThroughArguments.Select(arg => $"arg={HttpUtility.UrlEncode(arg)}"));
 
         string query = sb.ToString();

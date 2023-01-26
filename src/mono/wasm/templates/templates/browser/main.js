@@ -6,6 +6,7 @@ import { dotnet } from './dotnet.js'
 const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
     .withDiagnosticTracing(false)
     .withApplicationArgumentsFromQuery()
+    .withRuntimeOptionsFromQuery()
     .create();
 
 setModuleImports('main.js', {

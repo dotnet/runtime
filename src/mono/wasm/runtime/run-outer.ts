@@ -261,9 +261,56 @@ class HostBuilder implements DotnetHostBuilder {
                 throw new Error("URLSearchParams is supported");
             }
 
-            const params = new URLSearchParams(window.location.search);
-            const values = params.getAll("arg");
-            return this.withApplicationArguments(...values);
+            const allArgs = window.location.search.split("%20--%20");
+            let appArgs;
+            if (ENVIRONMENT_IS_WEB) // mono runtime args -- app args
+            {
+                if (allArgs.length != 2)
+                    throw new Error("URL has wrong format, expected: mono runtime args -- app args");
+                appArgs = allArgs[1];
+            }
+            else // hosting engine args -- mono runtime args -- app args
+            {
+                if (allArgs.length != 3)
+                    throw new Error("URL has wrong format, expected: hosting engine args -- mono runtime args -- app args");
+                appArgs = allArgs[2];
+            }
+            const appParams = new URLSearchParams(appArgs);
+            const appValues = appParams.getAll("arg");
+            return this.withApplicationArguments(...appValues);
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withRuntimeOptionsFromQuery(): DotnetHostBuilder {
+        try {
+            if (!globalThis.window) {
+                throw new Error("Missing window to the query parameters from");
+            }
+
+            if (typeof globalThis.URLSearchParams == "undefined") {
+                throw new Error("URLSearchParams is supported");
+            }
+
+            const allArgs = window.location.search.split("%20--%20");
+            let runtimeArgs;
+            if (ENVIRONMENT_IS_WEB) // mono runtime args -- app args
+            {
+                if (allArgs.length != 2)
+                    throw new Error("URL has wrong format, expected: mono runtime args -- app args");
+                runtimeArgs = allArgs[0];
+            }
+            else // hosting engine args -- mono runtime args -- app args
+            {
+                if (allArgs.length != 3)
+                    throw new Error("URL has wrong format, expected: hosting engine args -- mono runtime args -- app args");
+                runtimeArgs = allArgs[1];
+            }
+            const runtimeParams = new URLSearchParams(runtimeArgs);
+            const runtimeValues = runtimeParams.getAll("arg");
+            return this.withRuntimeOptions(runtimeValues);
         } catch (err) {
             mono_exit(1, err);
             throw err;
