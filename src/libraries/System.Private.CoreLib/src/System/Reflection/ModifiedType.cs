@@ -135,11 +135,7 @@ namespace System.Reflection
         }
 
         // TypeDelegator doesn't forward these the way we want:
-        public override Type UnderlyingSystemType => typeImpl; // We don't want to forward to typeImpl.UnderlyingSystemType.
-        public override bool IsGenericType => typeImpl.IsGenericType; // Not forwarded.
-        public override Type GetGenericTypeDefinition() => typeImpl.GetGenericTypeDefinition(); // not forwarded; we don't wrap
-        public override string ToString() => UnderlyingSystemType.ToString(); // Not forwarded.
-        public override int GetHashCode() => UnderlyingSystemType.GetHashCode(); // Not forwarded.
+        public override bool ContainsGenericParameters => typeImpl.ContainsGenericParameters; // not forwarded.
         public override bool Equals(Type? other) // Not forwarded.
         {
             if (other is ModifiedType otherModifiedType)
@@ -149,6 +145,11 @@ namespace System.Reflection
 
             return false;
         }
+        public override int GetHashCode() => UnderlyingSystemType.GetHashCode(); // Not forwarded.
+        public override Type GetGenericTypeDefinition() => typeImpl.GetGenericTypeDefinition(); // not forwarded.
+        public override bool IsGenericType => typeImpl.IsGenericType; // Not forwarded.
+        public override string ToString() => UnderlyingSystemType.ToString(); // Not forwarded.
+        public override Type UnderlyingSystemType => typeImpl; // We don't want to forward to typeImpl.UnderlyingSystemType.
 
         public static T[] CloneArray<T>(T[] original, int start = 0)
         {
