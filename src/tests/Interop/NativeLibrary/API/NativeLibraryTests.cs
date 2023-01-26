@@ -133,11 +133,19 @@ public class NativeLibraryTests : IDisposable
     public void LoadSystemLibrary_WithSearchPath()
     {
         string libName = "url.dll";
-        // Calls on a valid library from System32 directory
+        // Library should be found in the system directory
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.System32));
         EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.System32));
 
-        // Calls on a valid library from application directory
+        // Library should not be found in the assembly directory and should be found in the system directory
+        EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32));
+        EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32));
+
+        // Library should not be found in the assembly directory
+        EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.DllNotFound);
+        EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.ReturnFailure);
+
+        // Library should not be found in application directory
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.ApplicationDirectory), TestResult.DllNotFound);
         EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.ApplicationDirectory), TestResult.ReturnFailure);
     }
@@ -163,6 +171,34 @@ public class NativeLibraryTests : IDisposable
         string libName = Path.Combine(testBinDir, Path.Combine("lib", NativeLibraryToLoad.Name));
         EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.DllNotFound);
         EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.ReturnFailure);
+    }
+
+    [Fact]
+    public void LoadLibrary_AssemblyDirectory()
+    {
+        string suffix = "-in-subdirectory";
+        string libName = $"{NativeLibraryToLoad.Name}{suffix}";
+
+        string subdirectory = Path.Combine(testBinDir, "subdirectory");
+
+        // Library should be found in the assembly directory
+        Assembly assemblyInSubdirectory = Assembly.LoadFile(Path.Combine(subdirectory, $"{Path.GetFileNameWithoutExtension(assembly.Location)}{suffix}.dll"));
+        EXPECT(LoadLibrary_WithAssembly(libName, assemblyInSubdirectory, DllImportSearchPath.AssemblyDirectory));
+        EXPECT(TryLoadLibrary_WithAssembly(libName, assemblyInSubdirectory, DllImportSearchPath.AssemblyDirectory));
+
+        string currentDirectory = Environment.CurrentDirectory;
+        try
+        {
+            Environment.CurrentDirectory = subdirectory;
+
+            // Library should not be found in the assembly directory and should not fall back to the current directory
+            EXPECT(LoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.DllNotFound);
+            EXPECT(TryLoadLibrary_WithAssembly(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.ReturnFailure);
+        }
+        finally
+        {
+            Environment.CurrentDirectory = currentDirectory;
+        }
     }
 
     [Fact]
