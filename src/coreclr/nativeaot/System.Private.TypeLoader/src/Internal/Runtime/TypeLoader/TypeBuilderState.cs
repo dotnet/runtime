@@ -4,18 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
-using System.Text;
 
-using Internal.Runtime;
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
-
-using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.TypeSystem;
-using Internal.TypeSystem.NativeFormat;
-using Internal.TypeSystem.NoMetadata;
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -54,7 +45,6 @@ namespace Internal.Runtime.TypeLoader
 
         public RuntimeTypeHandle HalfBakedRuntimeTypeHandle;
         public IntPtr HalfBakedDictionary;
-        public IntPtr HalfBakedSealedVTable;
 
         private bool _templateComputed;
         private bool _nativeLayoutTokenComputed;
@@ -66,11 +56,22 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (!_templateComputed)
                 {
-                    // Multidimensional arrays and szarrays of pointers don't implement generic interfaces and are special cases. They use
+                    // Multidimensional arrays don't implement generic interfaces and are special cases. They use
                     // typeof(object[,]) as their template.
-                    if (TypeBeingBuilt.IsMdArray || (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer))
+                    if (TypeBeingBuilt.IsMdArray)
                     {
                         _templateType = TypeBeingBuilt.Context.ResolveRuntimeTypeHandle(typeof(object[,]).TypeHandle);
+                        _templateTypeLoaderNativeLayout = false;
+                        _nativeLayoutComputed = _nativeLayoutTokenComputed = _templateComputed = true;
+
+                        return _templateType;
+                    }
+
+                    // Arrays of pointers don't implement generic interfaces and are special cases. They use
+                    // typeof(char*[]) as their template.
+                    if (TypeBeingBuilt.IsSzArray && ((ArrayType)TypeBeingBuilt).ElementType.IsPointer)
+                    {
+                        _templateType = TypeBeingBuilt.Context.ResolveRuntimeTypeHandle(typeof(char*[]).TypeHandle);
                         _templateTypeLoaderNativeLayout = false;
                         _nativeLayoutComputed = _nativeLayoutTokenComputed = _templateComputed = true;
 
@@ -290,70 +291,16 @@ namespace Internal.Runtime.TypeLoader
 
         public GenericTypeDictionary Dictionary;
 
-        public int NonGcDataSize
-        {
-            get
-            {
-                DefType defType = TypeBeingBuilt as DefType;
+        public int NonGcDataSize;
+        public int GcDataSize;
+        public int ThreadDataSize;
 
-                // The NonGCStatic fields hold the class constructor data if it exists in the negative space
-                // of the memory region. The ClassConstructorOffset is negative, so it must be negated to
-                // determine the extra space that is used.
-
-                if (defType != null)
-                {
-                    return defType.NonGCStaticFieldSize.AsInt - (HasStaticConstructor ? TypeBuilder.ClassConstructorOffset : 0);
-                }
-                else
-                {
-                    return -(HasStaticConstructor ? TypeBuilder.ClassConstructorOffset : 0);
-                }
-            }
-        }
-
-        public int GcDataSize
-        {
-            get
-            {
-                DefType defType = TypeBeingBuilt as DefType;
-                if (defType != null)
-                {
-                    return defType.GCStaticFieldSize.AsInt;
-                }
-                else
-                {
-                    return 0;
-                }
-            }
-        }
-
-        public int ThreadDataSize
-        {
-            get
-            {
-                DefType defType = TypeBeingBuilt as DefType;
-                if (defType != null && !defType.IsGenericDefinition)
-                {
-                    return defType.ThreadGcStaticFieldSize.AsInt;
-                }
-                else
-                {
-                    // Non-DefType's and GenericEETypeDefinitions do not have static fields of any form
-                    return 0;
-                }
-            }
-        }
-
-        public bool HasStaticConstructor
-        {
-            get { return TypeBeingBuilt.HasStaticConstructor; }
-        }
+        public bool HasStaticConstructor => ClassConstructorPointer.HasValue;
 
         public IntPtr? ClassConstructorPointer;
         public IntPtr GcStaticDesc;
         public IntPtr ThreadStaticDesc;
         public uint ThreadStaticOffset;
-        public uint NumSealedVTableEntries;
         public GenericVariance[] GenericVarianceFlags;
 
         // Sentinel static to allow us to initialize _instanceLayout to something
@@ -533,180 +480,5 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
         }
-
-        public int? BaseTypeSize
-        {
-            get
-            {
-                if (TypeBeingBuilt.BaseType == null)
-                {
-                    return null;
-                }
-                else
-                {
-                    return TypeBeingBuilt.BaseType.InstanceByteCountUnaligned.AsInt;
-                }
-            }
-        }
-
-        public int? TypeSize
-        {
-            get
-            {
-                DefType defType = TypeBeingBuilt as DefType;
-                if (defType != null)
-                {
-                    // Generic Type Definition EETypes do not have size
-                    if (defType.IsGenericDefinition)
-                        return null;
-
-                    if (defType.IsValueType)
-                    {
-                        return defType.InstanceFieldSize.AsInt;
-                    }
-                    else
-                    {
-                        if (defType.IsInterface)
-                            return IntPtr.Size;
-
-                        return defType.InstanceByteCountUnaligned.AsInt;
-                    }
-                }
-                else if (TypeBeingBuilt is ArrayType)
-                {
-                    int basicArraySize = 2 * IntPtr.Size; // EETypePtr + Length
-                    if (TypeBeingBuilt.IsMdArray)
-                    {
-                        // MD Arrays are arranged like normal arrays, but they also have 2 int's per rank for the individual dimension loBounds and range.
-                        basicArraySize += ((ArrayType)TypeBeingBuilt).Rank * sizeof(int) * 2;
-                    }
-                    return basicArraySize;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
-
-        public int? UnalignedTypeSize
-        {
-            get
-            {
-                DefType defType = TypeBeingBuilt as DefType;
-                if (defType != null)
-                {
-                    return defType.InstanceByteCountUnaligned.AsInt;
-                }
-                else if (TypeBeingBuilt is ArrayType)
-                {
-                    // Arrays use the same algorithm for TypeSize as for UnalignedTypeSize
-                    return TypeSize;
-                }
-                else
-                {
-                    return 0;
-                }
-            }
-        }
-
-        public int? FieldAlignment
-        {
-            get
-            {
-                if (TypeBeingBuilt is DefType)
-                {
-                    return checked((ushort)((DefType)TypeBeingBuilt).InstanceFieldAlignment.AsInt);
-                }
-                else if (TypeBeingBuilt is ArrayType arrayType)
-                {
-                    if (arrayType.ElementType is DefType)
-                    {
-                        return checked((ushort)((DefType)arrayType.ElementType).InstanceFieldAlignment.AsInt);
-                    }
-                    else
-                    {
-                        return (ushort)arrayType.Context.Target.PointerSize;
-                    }
-                }
-                else if (TypeBeingBuilt is PointerType || TypeBeingBuilt is ByRefType)
-                {
-                    return (ushort)TypeBeingBuilt.Context.Target.PointerSize;
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
-
-        public ushort? ComponentSize
-        {
-            get
-            {
-                ArrayType arrayType = TypeBeingBuilt as ArrayType;
-                if (arrayType != null)
-                {
-                    if (arrayType.ElementType is DefType)
-                    {
-                        uint size = (uint)((DefType)arrayType.ElementType).InstanceFieldSize.AsInt;
-
-                        if (size > ArrayTypesConstants.MaxSizeForValueClassInArray && arrayType.ElementType.IsValueType)
-                            ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, arrayType.ElementType);
-
-                        return checked((ushort)size);
-                    }
-                    else
-                    {
-                        return (ushort)arrayType.Context.Target.PointerSize;
-                    }
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
-
-        public uint NullableValueOffset
-        {
-            get
-            {
-                if (!TypeBeingBuilt.IsNullable)
-                    return 0;
-
-                Debug.Assert(TypeBeingBuilt.IsTemplateCanonical());
-                // Pull the GC Desc from the canonical instantiation
-                TypeDesc templateType = TypeBeingBuilt.ComputeTemplate();
-                bool success = templateType.RetrieveRuntimeTypeHandleIfPossible();
-                Debug.Assert(success);
-                unsafe
-                {
-                    return templateType.RuntimeTypeHandle.ToEETypePtr()->NullableValueOffset;
-                }
-            }
-        }
-
-#pragma warning disable CA1822
-        public bool IsHFA
-        {
-            get
-            {
-#if TARGET_ARM
-                if (TypeBeingBuilt.IsValueType && TypeBeingBuilt is DefType)
-                {
-                    return ((DefType)TypeBeingBuilt).IsHomogeneousAggregate;
-                }
-                else
-                {
-                    return false;
-                }
-#else
-                // On Non-ARM platforms, HFA'ness is not encoded in the MethodTable as it doesn't effect ABI
-                return false;
-#endif
-            }
-        }
-#pragma warning restore CA1822
     }
 }

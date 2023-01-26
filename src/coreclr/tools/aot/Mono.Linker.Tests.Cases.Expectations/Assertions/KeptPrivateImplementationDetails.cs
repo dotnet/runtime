@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public KeptPrivateImplementationDetailsAttribute (string methodName)
 		{
-			if (string.IsNullOrEmpty (methodName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (methodName));
+			ArgumentException.ThrowIfNullOrEmpty (methodName);
 		}
 	}
 }

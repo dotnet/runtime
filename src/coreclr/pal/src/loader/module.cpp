@@ -384,28 +384,6 @@ FreeLibrary(
 
 /*++
 Function:
-  FreeLibraryAndExitThread
-
-See MSDN doc.
-
---*/
-PALIMPORT
-VOID
-PALAPI
-FreeLibraryAndExitThread(
-    IN HMODULE hLibModule,
-    IN DWORD dwExitCode)
-{
-    PERF_ENTRY(FreeLibraryAndExitThread);
-    ENTRY("FreeLibraryAndExitThread()\n");
-    FreeLibrary(hLibModule);
-    ExitThread(dwExitCode);
-    LOGEXIT("FreeLibraryAndExitThread\n");
-    PERF_EXIT(FreeLibraryAndExitThread);
-}
-
-/*++
-Function:
   GetModuleFileNameA
 
 See MSDN doc.

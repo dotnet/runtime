@@ -33,10 +33,8 @@ namespace System.Net.Http.Headers
         {
             HeaderUtilities.CheckValidToken(value, nameof(value));
 
-            if ((quality < 0) || (quality > 1))
-            {
-                throw new ArgumentOutOfRangeException(nameof(quality));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(quality);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, 1.0);
 
             _value = value;
             _quality = quality;
@@ -99,7 +97,7 @@ namespace System.Net.Http.Headers
             return result;
         }
 
-        public static StringWithQualityHeaderValue Parse(string? input)
+        public static StringWithQualityHeaderValue Parse(string input)
         {
             int index = 0;
             return (StringWithQualityHeaderValue)GenericHeaderParser.SingleValueStringWithQualityParser.ParseValue(

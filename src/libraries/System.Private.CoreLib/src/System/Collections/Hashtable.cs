@@ -257,8 +257,7 @@ namespace System.Collections
         //
         public Hashtable(int capacity, float loadFactor)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             if (!(loadFactor >= 0.1f && loadFactor <= 1.0f))
                 throw new ArgumentOutOfRangeException(nameof(loadFactor), SR.ArgumentOutOfRange_HashtableLoadFactor);
 
@@ -571,8 +570,7 @@ namespace System.Collections
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-            if (arrayIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
             if (array.Length - arrayIndex < Count)
                 throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
 
@@ -1191,8 +1189,7 @@ namespace System.Collections
 
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-                if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
                 if (array.Length - arrayIndex < _hashtable._count)
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 _hashtable.CopyKeys(array, arrayIndex);
@@ -1227,8 +1224,7 @@ namespace System.Collections
 
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-                if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
                 if (array.Length - arrayIndex < _hashtable._count)
                     throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 _hashtable.CopyValues(array, arrayIndex);

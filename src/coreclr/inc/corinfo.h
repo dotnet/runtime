@@ -416,7 +416,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
     CORINFO_HELP_STRCNS,            // create a new string literal
-    CORINFO_HELP_STRCNS_CURRENT_MODULE, // create a new string literal from the current module (used by NGen code)
 
     /* Object model */
 
@@ -591,7 +590,10 @@ enum CorInfoHelpFunc
     CORINFO_HELP_READYTORUN_NEWARR_1,
     CORINFO_HELP_READYTORUN_ISINSTANCEOF,
     CORINFO_HELP_READYTORUN_CHKCAST,
-    CORINFO_HELP_READYTORUN_STATIC_BASE,
+    CORINFO_HELP_READYTORUN_GCSTATIC_BASE,           // static gc field access
+    CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE,        // static non gc field access
+    CORINFO_HELP_READYTORUN_THREADSTATIC_BASE,
+    CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE,
     CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
     CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
     CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
@@ -1683,7 +1685,7 @@ enum CORINFO_FIELD_ACCESSOR
     CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
     CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
     CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
-
+    CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access using relocation (used in AOT)
     CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
     CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
     CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN, // intrinsic BitConverter.IsLittleEndian
@@ -1696,7 +1698,6 @@ enum CORINFO_FIELD_FLAGS
     CORINFO_FLG_FIELD_UNMANAGED                 = 0x00000002, // RVA field
     CORINFO_FLG_FIELD_FINAL                     = 0x00000004,
     CORINFO_FLG_FIELD_STATIC_IN_HEAP            = 0x00000008, // See code:#StaticFields. This static field is in the GC heap as a boxed object
-    CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN   = 0x00000010, // Field can be returned safely (has GC heap lifetime)
     CORINFO_FLG_FIELD_INITCLASS                 = 0x00000020, // initClass has to be called before accessing the field
     CORINFO_FLG_FIELD_PROTECTED                 = 0x00000040,
 };
@@ -3255,13 +3256,6 @@ public:
                     CORINFO_FIELD_HANDLE    field,
                     void                  **ppIndirection = NULL
                     ) = 0;
-
-    // Adds an active dependency from the context method's module to the given module
-    // This is internal callback for the EE. JIT should not call it directly.
-    virtual void addActiveDependency(
-               CORINFO_MODULE_HANDLE       moduleFrom,
-               CORINFO_MODULE_HANDLE       moduleTo
-                ) = 0;
 
     virtual CORINFO_METHOD_HANDLE GetDelegateCtor(
             CORINFO_METHOD_HANDLE  methHnd,

@@ -270,15 +270,6 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
             }
             return WALK_SKIP_SUBTREES;
 
-        case GT_ADDR:
-            newState.isUnderIndir = false;
-            // We'll assume p in "**p = " can be vulnerable because by changing 'p', someone
-            // could control where **p stores to.
-            {
-                comp->fgWalkTreePre(&tree->AsOp()->gtOp1, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
-            }
-            return WALK_SKIP_SUBTREES;
-
         case GT_ASG:
         {
             GenTreeOp* asg = tree->AsOp();
@@ -469,6 +460,11 @@ void Compiler::gsParamsToShadows()
         }
         shadowVarDsc->lvIsUnsafeBuffer = varDsc->lvIsUnsafeBuffer;
         shadowVarDsc->lvIsPtr          = varDsc->lvIsPtr;
+
+        if (varDsc->IsNeverNegative())
+        {
+            shadowVarDsc->SetIsNeverNegative(true);
+        }
 
 #ifdef DEBUG
         if (verbose)

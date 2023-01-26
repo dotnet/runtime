@@ -532,12 +532,12 @@ namespace System.Reflection.Emit
         private void RejectIfCreated()
         {
             if (type.is_created)
-                throw new InvalidOperationException("Type definition of the method is complete.");
+                throw new InvalidOperationException(SR.InvalidOperation_MethodBaked);
         }
 
         private static Exception NotSupported()
         {
-            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
+            return new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]

@@ -24,9 +24,9 @@ namespace ILCompiler.Dataflow
             return method.GetDisplayName();
         }
 
-        internal static string GetGenericParameterDeclaringMemberDisplayName(GenericParameterOrigin origin)
+        internal static string GetGenericParameterDeclaringMemberDisplayName(GenericParameterDesc genericParameter)
         {
-            var param = (EcmaGenericParameter)origin.GenericParameter;
+            var param = (EcmaGenericParameter)genericParameter;
             var parent = param.Module.GetObject(param.MetadataReader.GetGenericParameter(param.Handle).Parent);
             if (parent is MethodDesc m)
                 return m.GetDisplayName();

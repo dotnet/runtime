@@ -61,22 +61,22 @@ namespace System.IO
                     string.Empty;
             }
 
-            fixed (char* pathPtr = &MemoryMarshal.GetReference(path))
+#pragma warning disable CS8500 // takes address of managed type
+            ReadOnlySpan<char> tmpPath = path; // avoid address exposing the span and impacting the other code in the method that uses it
+            return string.Create(appendPathSeparator ? tmpPath.Length + 1 : tmpPath.Length, (appendPathSeparator, RosPtr: (IntPtr)(&tmpPath)), static (dest, state) =>
             {
-                return string.Create(appendPathSeparator ? path.Length + 1 : path.Length, (appendPathSeparator, (IntPtr)pathPtr, path.Length), static (dest, state) =>
+                var path = *(ReadOnlySpan<char>*)state.RosPtr;
+                path.CopyTo(dest);
+                if (state.appendPathSeparator)
                 {
-                    ReadOnlySpan<char> path = new ReadOnlySpan<char>((char*)state.Item2, state.Length);
-                    path.CopyTo(dest);
-                    if (state.appendPathSeparator)
-                    {
-                        dest[^1] = '/';
-                    }
+                    dest[^1] = '/';
+                }
 
-                    // To ensure tar files remain compatible with Unix, and per the ZIP File Format Specification 4.4.17.1,
-                    // all slashes should be forward slashes.
-                    dest.Replace('\\', '/');
-                });
-            }
+                // To ensure tar files remain compatible with Unix, and per the ZIP File Format Specification 4.4.17.1,
+                // all slashes should be forward slashes.
+                dest.Replace('\\', '/');
+            });
+#pragma warning restore CS8500
         }
     }
 }

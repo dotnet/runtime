@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
@@ -14,10 +13,18 @@ namespace System.Text.Json.SourceGeneration
     [DebuggerDisplay("Type={Type}, ClassType={ClassType}")]
     internal sealed class TypeGenerationSpec
     {
+        public TypeGenerationSpec(Type type)
+        {
+            Type = type;
+            TypeRef = type.GetCompilableName();
+            TypeInfoPropertyName = type.GetTypeInfoPropertyName();
+            IsValueType = type.IsValueType;
+        }
+
         /// <summary>
         /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.
         /// </summary>
-        public string TypeRef { get; private set; }
+        public string TypeRef { get; private init; }
 
         /// <summary>
         /// If specified as a root type via <c>JsonSerializableAttribute</c>, specifies the location of the attribute application.
@@ -42,7 +49,7 @@ namespace System.Text.Json.SourceGeneration
 
         public bool GenerateSerializationLogic => GenerationModeIsSpecified(JsonSourceGenerationMode.Serialization) && FastPathIsSupported();
 
-        public Type Type { get; private set; }
+        public Type Type { get; private init; }
 
         public ClassType ClassType { get; private set; }
 
@@ -50,15 +57,19 @@ namespace System.Text.Json.SourceGeneration
         public bool ImplementsIJsonOnSerializing { get; private set; }
 
         public bool IsPolymorphic { get; private set; }
-        public bool IsValueType { get; private set; }
+        public bool IsValueType { get; private init; }
 
         public bool CanBeNull { get; private set; }
 
         public JsonNumberHandling? NumberHandling { get; private set; }
+        public JsonUnmappedMemberHandling? UnmappedMemberHandling { get; private set; }
 
         public List<PropertyGenerationSpec>? PropertyGenSpecList { get; private set; }
 
         public ParameterGenerationSpec[]? CtorParamGenSpecArray { get; private set; }
+
+        public List<PropertyInitializerGenerationSpec>? PropertyInitializerSpecList { get; private set; }
+        public int PropertyInitializersWithoutMatchingConstructorParameters { get; private set; }
 
         public CollectionType CollectionType { get; private set; }
 
@@ -67,6 +78,8 @@ namespace System.Text.Json.SourceGeneration
         public TypeGenerationSpec? CollectionValueTypeMetadata { get; private set; }
 
         public ObjectConstructionStrategy ConstructionStrategy { get; private set; }
+
+        public bool ConstructorSetsRequiredParameters { get; private set; }
 
         public TypeGenerationSpec? NullableUnderlyingTypeMetadata { get; private set; }
 
@@ -93,7 +106,7 @@ namespace System.Text.Json.SourceGeneration
         {
             get
             {
-                string builderName;
+                string? builderName;
 
                 if (CollectionType == CollectionType.ImmutableDictionary)
                 {
@@ -115,15 +128,17 @@ namespace System.Text.Json.SourceGeneration
 
         public void Initialize(
             JsonSourceGenerationMode generationMode,
-            Type type,
             ClassType classType,
             JsonNumberHandling? numberHandling,
+            JsonUnmappedMemberHandling? unmappedMemberHandling,
             List<PropertyGenerationSpec>? propertyGenSpecList,
             ParameterGenerationSpec[]? ctorParamGenSpecArray,
+            List<PropertyInitializerGenerationSpec>? propertyInitializerSpecList,
             CollectionType collectionType,
             TypeGenerationSpec? collectionKeyTypeMetadata,
             TypeGenerationSpec? collectionValueTypeMetadata,
             ObjectConstructionStrategy constructionStrategy,
+            bool constructorSetsRequiredMembers,
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
             string? runtimeTypeRef,
             TypeGenerationSpec? extensionDataPropertyTypeSpec,
@@ -136,20 +151,19 @@ namespace System.Text.Json.SourceGeneration
             bool isPolymorphic)
         {
             GenerationMode = generationMode;
-            TypeRef = type.GetCompilableName();
-            TypeInfoPropertyName = type.GetTypeInfoPropertyName();
-            Type = type;
             ClassType = classType;
-            IsValueType = type.IsValueType;
             CanBeNull = !IsValueType || nullableUnderlyingTypeMetadata != null;
             IsPolymorphic = isPolymorphic;
             NumberHandling = numberHandling;
+            UnmappedMemberHandling = unmappedMemberHandling;
             PropertyGenSpecList = propertyGenSpecList;
+            PropertyInitializerSpecList = propertyInitializerSpecList;
             CtorParamGenSpecArray = ctorParamGenSpecArray;
             CollectionType = collectionType;
             CollectionKeyTypeMetadata = collectionKeyTypeMetadata;
             CollectionValueTypeMetadata = collectionValueTypeMetadata;
             ConstructionStrategy = constructionStrategy;
+            ConstructorSetsRequiredParameters = constructorSetsRequiredMembers;
             NullableUnderlyingTypeMetadata = nullableUnderlyingTypeMetadata;
             RuntimeTypeRef = runtimeTypeRef;
             ExtensionDataPropertyTypeSpec = extensionDataPropertyTypeSpec;
@@ -166,6 +180,8 @@ namespace System.Text.Json.SourceGeneration
                 [NotNullWhen(true)] out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
                 out bool castingRequiredForProps)
         {
+            Debug.Assert(PropertyGenSpecList != null);
+
             castingRequiredForProps = false;
             serializableProperties = new Dictionary<string, PropertyGenerationSpec>();
             Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;
@@ -282,6 +298,8 @@ namespace System.Text.Json.SourceGeneration
                 {
                     return false;
                 }
+
+                Debug.Assert(PropertyGenSpecList != null);
 
                 foreach (PropertyGenerationSpec property in PropertyGenSpecList)
                 {

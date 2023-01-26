@@ -1916,7 +1916,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         }
         else // print weight in this format ddd.dd
         {
-            printf("%6s", refCntWtd2str(weight));
+            printf("%6s", refCntWtd2str(weight, /* padForDecimalPlaces */ true));
         }
     }
 
@@ -2759,12 +2759,19 @@ static volatile int bbTraverseLabel = 1;
 
 void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRefs /* = true  */)
 {
-#ifdef DEBUG
     if (verbose)
     {
-        printf("*************** In fgDebugCheckBBlist\n");
+        JITDUMP("*************** In fgDebugCheckBBlist\n");
     }
-#endif // DEBUG
+
+    // Don't bother checking a failed inlinee; we may have bailed
+    // out in the middle of importation.
+    //
+    if (compIsForInlining() && compInlineResult->IsFailure())
+    {
+        JITDUMP("... failed inline attempt, no checking needed\n");
+        return;
+    }
 
     fgDebugCheckBlockLinks();
     fgFirstBBisScratch();
@@ -2800,6 +2807,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         block->bbTraversalStamp = curTraversalStamp;
     }
 
+    bool allNodesLinked = (fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR);
+
     for (BasicBlock* const block : Blocks())
     {
         if (checkBBNum)
@@ -2814,11 +2823,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         if (block->bbJumpKind == BBJ_COND)
         {
-            assert(block->lastNode()->gtNext == nullptr && block->lastNode()->OperIsConditionalJump());
+            assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
+                   block->lastNode()->OperIsConditionalJump());
         }
         else if (block->bbJumpKind == BBJ_SWITCH)
         {
-            assert(block->lastNode()->gtNext == nullptr &&
+            assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
                    (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
         }
 
@@ -2971,6 +2981,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->bbStmtList != nullptr);
     }
 
+    // If this is an inlinee, we're done checking.
+    if (compIsForInlining())
+    {
+        return;
+    }
+
     // The general encoder/decoder (currently) only reports "this" as a generics context as a stack location,
     // so we mark info.compThisArg as lvAddrTaken to ensure that it is not enregistered. Otherwise, it should
     // not be address-taken.  This variable determines if the address-taken-ness of "thisArg" is "OK".
@@ -3057,7 +3073,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             break;
 
         case GT_ASG:
-        case GT_ADDR:
             // Note that this is a weak check - the "op1" location node can be a COMMA.
             assert(!op1->CanCSE());
             break;
@@ -3151,12 +3166,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         return GenTree::VisitResult::Continue;
     });
 
-    // Addresses of locals never need GTF_GLOB_REF
-    if (tree->OperIs(GT_ADDR) && tree->IsLocalAddrExpr())
-    {
-        expectedFlags &= ~GTF_GLOB_REF;
-    }
-
     fgDebugCheckFlagsHelper(tree, actualFlags, expectedFlags);
 }
 
@@ -3244,7 +3253,7 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
         // TODO: return?
     }
 
-    assert(fgStmtListThreaded);
+    assert(fgNodeThreading != NodeThreading::None);
 
     noway_assert(stmt->GetTreeList());
 
@@ -3330,6 +3339,146 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
 
         noway_assert(expectedPrevTree == nullptr ||     // No expectations about the prev node
                      tree->gtPrev == expectedPrevTree); // The "normal" case
+    }
+}
+
+//------------------------------------------------------------------------------
+// fgDebugCheckLinkedLocals: Check the linked list of locals.
+//
+void Compiler::fgDebugCheckLinkedLocals()
+{
+    if (fgNodeThreading != NodeThreading::AllLocals)
+    {
+        return;
+    }
+
+    class DebugLocalSequencer : public GenTreeVisitor<DebugLocalSequencer>
+    {
+        ArrayStack<GenTree*> m_locals;
+
+        bool ShouldLink(GenTree* node)
+        {
+            return node->OperIsLocal() || node->OperIsLocalAddr();
+        }
+
+    public:
+        enum
+        {
+            DoPostOrder       = true,
+            UseExecutionOrder = true,
+        };
+
+        DebugLocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_locals(comp->getAllocator(CMK_DebugOnly))
+        {
+        }
+
+        void Sequence(Statement* stmt)
+        {
+            m_locals.Reset();
+            WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        ArrayStack<GenTree*>* GetSequence()
+        {
+            return &m_locals;
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if (ShouldLink(node))
+            {
+                if ((user != nullptr) && user->OperIs(GT_ASG) && (node == user->gtGetOp1()))
+                {
+                }
+                else if ((user != nullptr) && user->IsCall() &&
+                         (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
+                {
+                }
+                else
+                {
+                    m_locals.Push(node);
+                }
+            }
+
+            if (node->OperIs(GT_ASG) && ShouldLink(node->gtGetOp1()))
+            {
+                m_locals.Push(node->gtGetOp1());
+            }
+
+            if (node->IsCall())
+            {
+                GenTree* defined = m_compiler->gtCallGetDefinedRetBufLclAddr(node->AsCall());
+                if (defined != nullptr)
+                {
+                    assert(ShouldLink(defined));
+                    m_locals.Push(defined);
+                }
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    DebugLocalSequencer seq(this);
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->Statements())
+        {
+            GenTree* first = stmt->GetTreeList();
+            CheckDoublyLinkedList<GenTree, &GenTree::gtPrev, &GenTree::gtNext>(first);
+
+            seq.Sequence(stmt);
+
+            ArrayStack<GenTree*>* expected = seq.GetSequence();
+
+            bool success = true;
+
+            if (expected->Height() > 0)
+            {
+                success &= (stmt->GetTreeList() == expected->Bottom(0)) && (stmt->GetTreeListEnd() == expected->Top(0));
+            }
+            else
+            {
+                success &= (stmt->GetTreeList() == nullptr) && (stmt->GetTreeListEnd() == nullptr);
+            }
+
+            int nodeIndex = 0;
+            for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
+            {
+                success &= cur->OperIsLocal() || cur->OperIsLocalAddr();
+                success &= (nodeIndex < expected->Height()) && (cur == expected->Bottom(nodeIndex));
+                nodeIndex++;
+            }
+
+            success &= nodeIndex == expected->Height();
+
+            if (!success && verbose)
+            {
+                printf("Locals are improperly linked in the following statement:\n");
+                DISPSTMT(stmt);
+
+                printf("\nExpected:\n");
+                const char* pref = "  ";
+                for (int i = 0; i < expected->Height(); i++)
+                {
+                    printf("%s[%06u]", pref, dspTreeID(expected->Bottom(i)));
+                    pref = " -> ";
+                }
+
+                printf("\n\nActual:\n");
+                pref = "  ";
+                for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
+                {
+                    printf("%s[%06u]", pref, dspTreeID(cur));
+                    pref = " -> ";
+                }
+
+                printf("\n");
+            }
+
+            assert(success && "Locals are improperly linked!");
+        }
     }
 }
 
@@ -3438,7 +3587,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         }
 
         // For each statement check that the nodes are threaded correctly - m_treeList.
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             fgDebugCheckNodeLinks(block, stmt);
         }

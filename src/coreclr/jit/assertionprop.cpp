@@ -169,11 +169,20 @@ bool IntegralRange::Contains(int64_t value) const
             break;
 
         case GT_LCL_VAR:
-            if (compiler->lvaGetDesc(node->AsLclVar())->lvNormalizeOnStore())
+        {
+            LclVarDsc* const varDsc = compiler->lvaGetDesc(node->AsLclVar());
+
+            if (varDsc->lvNormalizeOnStore())
             {
                 rangeType = compiler->lvaGetDesc(node->AsLclVar())->TypeGet();
             }
+
+            if (varDsc->IsNeverNegative())
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
             break;
+        }
 
         case GT_CNS_INT:
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
@@ -217,6 +226,15 @@ bool IntegralRange::Contains(int64_t value) const
             }
             break;
 #endif // defined(FEATURE_HW_INTRINSICS)
+
+        case GT_FIELD:
+        {
+            if (node->AsField()->IsSpanLength())
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+            break;
+        }
 
         default:
             break;
@@ -1926,11 +1944,9 @@ void Compiler::optPrintVnAssertionMapping()
 {
     printf("\nVN Assertion Mapping\n");
     printf("---------------------\n");
-    for (ValueNumToAssertsMap::KeyIterator ki = optValueNumToAsserts->Begin(); !ki.Equal(optValueNumToAsserts->End());
-         ++ki)
+    for (ValueNumToAssertsMap::Node* const iter : ValueNumToAssertsMap::KeyValueIteration(optValueNumToAsserts))
     {
-        printf("(%d => ", ki.Get());
-        printf("%s)\n", BitVecOps::ToString(apTraits, ki.GetValue()));
+        printf("(%d => %s)\n", iter->GetKey(), BitVecOps::ToString(apTraits, iter->GetValue()));
     }
 }
 #endif
@@ -3229,13 +3245,10 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
     if (conValTree != nullptr)
     {
-        if (tree->OperIs(GT_LCL_VAR))
+        if (!optIsProfitableToSubstitute(tree, block, conValTree))
         {
-            if (!optIsProfitableToSubstitute(tree->AsLclVar(), block, conValTree))
-            {
-                // Not profitable to substitute
-                return nullptr;
-            }
+            // Not profitable to substitute
+            return nullptr;
         }
 
         // Were able to optimize.
@@ -3261,26 +3274,34 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 }
 
 //------------------------------------------------------------------------------
-// optIsProfitableToSubstitute: Checks if value worth substituting to lcl location
+// optIsProfitableToSubstitute: Checks if value worth substituting to dest
 //
 // Arguments:
-//    lcl       - lcl to replace with value if profitable
-//    lclBlock  - Basic block lcl located in
-//    value     - value we plan to substitute to lcl
+//    dest      - destination to substitute value to
+//    destBlock - Basic block of destination
+//    value     - value we plan to substitute
 //
 // Returns:
 //    False if it's likely not profitable to do substitution, True otherwise
 //
-bool Compiler::optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock* lclBlock, GenTree* value)
+bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* value)
 {
+    // Giving up on these kinds of handles demonstrated size improvements
+    if (value->IsIconHandle(GTF_ICON_STATIC_HDL, GTF_ICON_CLASS_HDL))
+    {
+        return false;
+    }
+
     // A simple heuristic: If the constant is defined outside of a loop (not far from its head)
     // and is used inside it - don't propagate.
 
     // TODO: Extend on more kinds of trees
-    if (!value->OperIs(GT_CNS_VEC, GT_CNS_DBL))
+    if (!value->OperIs(GT_CNS_VEC, GT_CNS_DBL) || !dest->OperIs(GT_LCL_VAR))
     {
         return true;
     }
+
+    const GenTreeLclVar* lcl = dest->AsLclVar();
 
     gtPrepareCost(value);
 
@@ -3296,11 +3317,11 @@ bool Compiler::optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock*
                 // NOTE: this currently does not take "a float living across a call" case into account
                 // where we might end up with spill/restore on ABIs without callee-saved registers
                 const weight_t defBlockWeight = defBlock->getBBWeight(this);
-                const weight_t lclblockWeight = lclBlock->getBBWeight(this);
+                const weight_t lclblockWeight = destBlock->getBBWeight(this);
 
                 if ((defBlockWeight > 0) && ((lclblockWeight / defBlockWeight) >= BB_LOOP_WEIGHT_SCALE))
                 {
-                    JITDUMP("Constant propagation inside loop " FMT_BB " is not profitable\n", lclBlock->bbNum);
+                    JITDUMP("Constant propagation inside loop " FMT_BB " is not profitable\n", destBlock->bbNum);
                     return false;
                 }
             }
@@ -3652,6 +3673,15 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
 
     tree->SetLclNum(copyLclNum);
     tree->SetSsaNum(copySsaNum);
+
+    // Copy prop and last-use copy elision happens at the same time in morph.
+    // This node may potentially not be a last use of the new local.
+    //
+    // TODO-CQ: It is probably better to avoid doing this propagation if we
+    // would otherwise omit an implicit byref copy since this propagation will
+    // force us to create another copy anyway.
+    //
+    tree->gtFlags &= ~GTF_VAR_DEATH;
 
 #ifdef DEBUG
     if (verbose)
@@ -4691,6 +4721,8 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
     {
         return true;
     }
+
+    op = op->gtEffectiveVal(/* commaOnly */ true);
 
     if (!op->OperIs(GT_LCL_VAR))
     {

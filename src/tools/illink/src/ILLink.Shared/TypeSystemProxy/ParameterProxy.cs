@@ -4,9 +4,12 @@
 using System;
 using System.Collections.Generic;
 
+// This is needed due to NativeAOT which doesn't enable nullable globally yet
+#nullable enable
+
 namespace ILLink.Shared.TypeSystemProxy
 {
-	internal partial struct ParameterProxy
+	internal readonly partial struct ParameterProxy
 	{
 		public ParameterProxy (MethodProxy method, ParameterIndex index)
 		{

@@ -493,7 +493,7 @@ register_trampoline_jit_info (MonoMemoryManager *mem_manager, MonoTrampInfo *inf
 {
 	MonoJitInfo *ji;
 
-	ji = (MonoJitInfo *)mono_mem_manager_alloc0 (mem_manager, mono_jit_info_size ((MonoJitInfoFlags)0, 0, 0));
+	ji = mini_alloc_jinfo (jit_mm_for_mm (mem_manager), mono_jit_info_size ((MonoJitInfoFlags)0, 0, 0));
 	mono_jit_info_init (ji, NULL, (guint8*)MINI_FTNPTR_TO_ADDR (info->code), info->code_size, (MonoJitInfoFlags)0, 0, 0);
 	ji->d.tramp_info = info;
 	ji->is_trampoline = TRUE;
@@ -2401,7 +2401,8 @@ create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 		uw_info = mono_unwind_ops_encode (info->unwind_ops, &info_len);
 	}
 
-	jinfo = (MonoJitInfo *)mono_mem_manager_alloc0 (get_default_mem_manager (), MONO_SIZEOF_JIT_INFO);
+	// FIXME:
+	jinfo = mini_alloc_jinfo (get_default_jit_mm (), MONO_SIZEOF_JIT_INFO);
 	jinfo->d.method = wrapper;
 	jinfo->code_start = MINI_FTNPTR_TO_ADDR (info->code);
 	jinfo->code_size = info->code_size;
@@ -4314,6 +4315,15 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	mono_llvm_free_mem_manager (info);
 #endif
 
+	/* Unregister/free jit info */
+	if (info->jit_infos) {
+		for (guint i = 0; i < info->jit_infos->len; ++i) {
+			MonoJitInfo *ji = g_ptr_array_index (info->jit_infos, i);
+			mono_jit_info_table_remove (ji);
+		}
+		g_ptr_array_free (info->jit_infos, TRUE);
+	}
+
 	g_free (info);
 	mem_manager->runtime_info = NULL;
 }
@@ -4326,7 +4336,7 @@ init_class (MonoClass *klass)
 
 	const char *name = m_class_get_name (klass);
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 	/*
 	 * Some of the intrinsics used by the VectorX classes are only implemented on amd64.
 	 * The JIT can't handle SIMD types with != 16 size yet.
@@ -4339,7 +4349,7 @@ init_class (MonoClass *klass)
 #endif
 
 	if (m_class_is_ginst (klass)) {
-		if (!strcmp (name, "Vector`1") || !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1")) {
+		if (!strcmp (name, "Vector`1") || !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1") || !strcmp (name, "Vector512`1")) {
 			MonoGenericClass *gclass = mono_class_try_get_generic_class (klass);
 			g_assert (gclass);
 			MonoType *etype = gclass->context.class_inst->type_argv [0];
@@ -4747,6 +4757,8 @@ mini_init (const char *filename)
 		mono_runtime_setup_stat_profiler ();
 
 	MONO_PROFILER_RAISE (runtime_initialized, ());
+
+	mono_runtime_run_startup_hooks ();
 
 	MONO_VES_INIT_END ();
 
@@ -5360,4 +5372,21 @@ const MonoEECallbacks*
 mini_get_interp_callbacks_api (void)
 {
 	return mono_interp_callbacks_pointer;
+}
+
+MonoJitInfo*
+mini_alloc_jinfo (MonoJitMemoryManager *jit_mm, int size)
+{
+	if (jit_mm->mem_manager->collectible) {
+		/* These are freed by mono_jit_info_table_remove () in an async way, so they have to be malloc-ed */
+		MonoJitInfo *ji = (MonoJitInfo*)g_malloc0 (size);
+		jit_mm_lock (jit_mm);
+		if (!jit_mm->jit_infos)
+			jit_mm->jit_infos = g_ptr_array_new ();
+		g_ptr_array_add (jit_mm->jit_infos, ji);
+		jit_mm_unlock (jit_mm);
+		return ji;
+	} else {
+		return (MonoJitInfo*)mono_mem_manager_alloc0 (jit_mm->mem_manager, size);
+	}
 }

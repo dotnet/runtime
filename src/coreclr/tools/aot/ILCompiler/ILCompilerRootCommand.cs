@@ -261,8 +261,9 @@ namespace ILCompiler
                         // + the original command line arguments
                         // + a rsp file that should work to directly run out of the zip file
 
-                        Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args,
-                            context.ParseResult, new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" });
+                        Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args, context.ParseResult,
+                            inputOptions : new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" },
+                            outputOptions : new[] { "o", "out", "exportsfile" });
                     }
 
                     context.ExitCode = new Program(this).Run();
@@ -305,7 +306,7 @@ namespace ILCompiler
                     "considered to be input files. If no input files begin with '--' then this option is not necessary.\n");
 
                 string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64" };
-                string[] ValidOS = new string[] { "windows", "linux", "osx" };
+                string[] ValidOS = new string[] { "windows", "linux", "osx", "freebsd" };
 
                 Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
 

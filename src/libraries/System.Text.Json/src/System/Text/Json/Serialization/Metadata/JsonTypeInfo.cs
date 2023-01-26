@@ -4,10 +4,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -444,9 +446,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// <exception cref="InvalidOperationException">
         /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
         /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Specified an invalid <see cref="JsonNumberHandling"/> value.
+        /// </exception>
         /// <remarks>
         /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
-        /// the value of this callback will be mapped from any <see cref="JsonNumberHandling"/> annotations.
+        /// the value of this callback will be mapped from any <see cref="JsonNumberHandlingAttribute"/> annotations.
         /// </remarks>
         public JsonNumberHandling? NumberHandling
         {
@@ -454,11 +459,59 @@ namespace System.Text.Json.Serialization.Metadata
             set
             {
                 VerifyMutable();
+
+                if (value is not null && !JsonSerializer.IsValidNumberHandlingValue(value.Value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
                 _numberHandling = value;
             }
         }
 
         private JsonNumberHandling? _numberHandling;
+
+        /// <summary>
+        /// Gets or sets the type-level <see cref="JsonUnmappedMemberHandling"/> override.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
+        ///
+        /// -or-
+        ///
+        /// Unmapped member handling only supported for <see cref="JsonTypeInfoKind.Object"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Specified an invalid <see cref="JsonUnmappedMemberHandling"/> value.
+        /// </exception>
+        /// <remarks>
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this callback will be mapped from any <see cref="JsonUnmappedMemberHandlingAttribute"/> annotations.
+        /// </remarks>
+        public JsonUnmappedMemberHandling? UnmappedMemberHandling
+        {
+            get => _unmappedMemberHandling;
+            set
+            {
+                VerifyMutable();
+
+                if (Kind != JsonTypeInfoKind.Object)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
+                }
+
+                if (value is not null && !JsonSerializer.IsValidUnmappedMemberHandlingValue(value.Value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                _unmappedMemberHandling = value;
+            }
+        }
+
+        private JsonUnmappedMemberHandling? _unmappedMemberHandling;
+
+        internal JsonUnmappedMemberHandling EffectiveUnmappedMemberHandling { get; private set; }
 
         internal JsonTypeInfo(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
@@ -552,7 +605,7 @@ namespace System.Text.Json.Serialization.Metadata
             PropertyInfoForTypeInfo.EnsureChildOf(this);
             PropertyInfoForTypeInfo.EnsureConfigured();
 
-            CanUseSerializeHandler &= Options.SerializerContext?.CanUseSerializationLogic == true;
+            CanUseSerializeHandler &= Options.CanUseFastPathSerializationLogic;
 
             JsonConverter converter = Converter;
             Debug.Assert(PropertyInfoForTypeInfo.EffectiveConverter.ConverterStrategy == Converter.ConverterStrategy,
@@ -563,7 +616,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (converter.ConstructorIsParameterized)
                 {
-                    InitializeConstructorParameters(GetParameterInfoValues(), sourceGenMode: Options.SerializerContext != null);
+                    InitializeConstructorParameters(GetParameterInfoValues(), sourceGenMode: Options.TypeInfoResolver is JsonSerializerContext);
                 }
             }
 
@@ -763,6 +816,17 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal abstract JsonParameterInfoValues[] GetParameterInfoValues();
 
+        // Untyped, root-level serialization methods
+        internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue, bool isInvokedByPolymorphicConverter = false);
+        internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken, bool isInvokedByPolymorphicConverter = false);
+        internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue, bool isInvokedByPolymorphicConverter = false);
+
+        // Untyped, root-level deserialization methods
+        internal abstract object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state);
+        internal abstract ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken);
+        internal abstract object? DeserializeAsObject(Stream utf8Json);
+        internal abstract IAsyncEnumerable<object?> DeserializeAsyncEnumerableAsObject(Stream utf8Json, CancellationToken cancellationToken);
+
         internal void CacheMember(JsonPropertyInfo jsonPropertyInfo, JsonPropertyDictionary<JsonPropertyInfo> propertyCache, ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
         {
             Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
@@ -772,6 +836,11 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (jsonPropertyInfo.IsExtensionData)
             {
+                if (UnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_ExtensionDataConflictsWithUnmappedMemberHandling(Type, jsonPropertyInfo);
+                }
+
                 if (ExtensionDataProperty != null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
@@ -894,6 +963,11 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (property.IsExtensionData)
                     {
+                        if (UnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                        {
+                            ThrowHelper.ThrowInvalidOperationException_ExtensionDataConflictsWithUnmappedMemberHandling(Type, property);
+                        }
+
                         if (ExtensionDataProperty != null)
                         {
                             ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
@@ -944,6 +1018,12 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             NumberOfRequiredProperties = numberOfRequiredProperties;
+            // Override global UnmappedMemberHandling configuration
+            // if type specifies an extension data property.
+            EffectiveUnmappedMemberHandling = UnmappedMemberHandling ??
+                (ExtensionDataProperty is null
+                    ? Options.UnmappedMemberHandling
+                    : JsonUnmappedMemberHandling.Skip);
         }
 
         internal void InitializeConstructorParameters(JsonParameterInfoValues[] jsonParameters, bool sourceGenMode = false)

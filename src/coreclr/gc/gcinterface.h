@@ -4,14 +4,18 @@
 #ifndef _GC_INTERFACE_H_
 #define _GC_INTERFACE_H_
 
-// The major version of the GC/EE interface. Breaking changes to this interface
+// The major version of the IGCHeap interface. Breaking changes to this interface
 // require bumps in the major version number.
 #define GC_INTERFACE_MAJOR_VERSION 5
 
-// The minor version of the GC/EE interface. Non-breaking changes are required
+// The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
-// mismatches can still interopate correctly, with some care.
+// mismatches can still interoperate correctly, with some care.
 #define GC_INTERFACE_MINOR_VERSION 1
+
+// The major version of the IGCToCLR interface. Breaking changes to this interface
+// require bumps in the major version number.
+#define EE_INTERFACE_MAJOR_VERSION 1
 
 struct ScanContext;
 struct gc_alloc_context;

@@ -423,7 +423,52 @@ namespace ILCompiler
 
         // CoreCLR compat - referring to function pointer types handled as IntPtr. No MethodTable for function pointers for now.
         private static TypeDesc WithoutFunctionPointerType(TypeDesc type)
-            => type.IsFunctionPointer ? type.Context.GetWellKnownType(WellKnownType.IntPtr) : type;
+        {
+            TypeDesc newParamType = null;
+            if (type.IsParameterizedType)
+            {
+                TypeDesc paramType = ((ParameterizedType)type).ParameterType;
+                newParamType = WithoutFunctionPointerType(paramType);
+                if (newParamType == paramType)
+                    return type;
+            }
+
+            switch (type.Category)
+            {
+                case TypeFlags.Array:
+                    return newParamType.MakeArrayType(((ArrayType)type).Rank);
+                case TypeFlags.SzArray:
+                    return newParamType.MakeArrayType();
+                case TypeFlags.Pointer:
+                    return newParamType.MakePointerType();
+                case TypeFlags.FunctionPointer:
+                    return type.Context.GetWellKnownType(WellKnownType.IntPtr);
+                default:
+                    TypeDesc typeDef = type.GetTypeDefinition();
+                    if (type != typeDef)
+                    {
+                        TypeDesc[] newInst = null;
+                        for (int i = 0; i < type.Instantiation.Length; i++)
+                        {
+                            TypeDesc arg = type.Instantiation[i];
+                            TypeDesc newArg = WithoutFunctionPointerType(arg);
+                            if (arg != newArg || newInst != null)
+                            {
+                                if (newInst == null)
+                                {
+                                    newInst = new TypeDesc[type.Instantiation.Length];
+                                    for (int j = 0; j < i; i++)
+                                        newInst[j] = type.Instantiation[j];
+                                }
+                                newInst[i] = newArg;
+                            }
+                        }
+                        if (newInst != null)
+                            return ((MetadataType)typeDef).MakeInstantiatedType(newInst);
+                    }
+                    return type;
+            }
+        }
 
         public bool IsFatPointerCandidate(MethodDesc containingMethod, MethodSignature signature)
         {

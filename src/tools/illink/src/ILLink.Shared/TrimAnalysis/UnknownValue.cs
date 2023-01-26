@@ -8,7 +8,7 @@ using ILLink.Shared.DataFlow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	sealed record UnknownValue : SingleValue
+	internal sealed record UnknownValue : SingleValue
 	{
 		private UnknownValue ()
 		{

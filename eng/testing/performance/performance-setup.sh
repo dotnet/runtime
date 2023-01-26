@@ -7,7 +7,7 @@ source_directory=$BUILD_SOURCESDIRECTORY
 core_root_directory=
 baseline_core_root_directory=
 architecture=x64
-framework=net5.0
+framework=
 compilation_mode=tiered
 repository=$BUILD_REPOSITORY_NAME
 branch=$BUILD_SOURCEBRANCH
@@ -345,6 +345,8 @@ else
     fi
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
+
+    (cd $performance_directory; git show -s HEAD)
 
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory

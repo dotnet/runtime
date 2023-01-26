@@ -1257,31 +1257,103 @@ namespace System
 
         #region Attributes
 
+        internal CorElementType GetCorElementType()
+        {
+            TypeCache cache = Cache;
+            if ((cache.Cached & (int)TypeCacheEntries.CorElementType) != 0)
+                return cache.CorElementType;
+
+            var type = this;
+            cache.CorElementType = RuntimeTypeHandle.GetCorElementType (new QCallTypeHandle(ref type));
+            Interlocked.MemoryBarrier ();
+            UpdateCached(TypeCacheEntries.CorElementType);
+            return cache.CorElementType;
+        }
+
+        internal TypeAttributes GetAttributes()
+        {
+            TypeCache cache = Cache;
+            if ((cache.Cached & (int)TypeCacheEntries.TypeAttributes) != 0)
+                return cache.TypeAttributes;
+
+            var type = this;
+            cache.TypeAttributes = RuntimeTypeHandle.GetAttributes(new QCallTypeHandle(ref type));
+            Interlocked.MemoryBarrier ();
+            UpdateCached(TypeCacheEntries.TypeAttributes);
+            return cache.TypeAttributes;
+        }
+
         internal bool IsDelegate()
         {
-            return GetBaseType() == typeof(System.MulticastDelegate);
+            TypeCache cache = Cache;
+            if ((cache.Cached & (int)TypeCacheEntries.IsDelegate) != 0)
+                return (cache.Flags & (int)TypeCacheEntries.IsDelegate) != 0;
+
+            bool res = GetBaseType() == typeof(System.MulticastDelegate);
+            CacheFlag(TypeCacheEntries.IsDelegate, res);
+            return res;
         }
 
         protected override bool IsValueTypeImpl()
         {
+            TypeCache cache = Cache;
+            if ((cache.Cached & (int)TypeCacheEntries.IsValueType) != 0)
+                return (cache.Flags & (int)TypeCacheEntries.IsValueType) != 0;
+
             // We need to return true for generic parameters with the ValueType constraint.
             // So we cannot use the faster RuntimeTypeHandle.IsValueType because it returns
             // false for all generic parameters.
-            if (this == typeof(ValueType) || this == typeof(Enum))
-                return false;
-
-            return IsSubclassOf(typeof(ValueType));
+            bool res = false;
+            if (!(this == typeof(ValueType) || this == typeof(Enum)))
+                res = IsSubclassOf(typeof(ValueType));
+            CacheFlag(TypeCacheEntries.IsValueType, res);
+            return res;
         }
 
         // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
 
         // Returns true for actual enum types only.
-        internal bool IsActualEnum => !IsGenericParameter && RuntimeTypeHandle.GetBaseType(this) == EnumType;
+        internal bool IsActualEnum
+        {
+            get
+            {
+                TypeCache cache = Cache;
+                if ((cache.Cached & (int)TypeCacheEntries.IsActualEnum) != 0)
+                    return (cache.Flags & (int)TypeCacheEntries.IsActualEnum) != 0;
+                bool res = !IsGenericParameter && RuntimeTypeHandle.GetBaseType(this) == EnumType;
+                CacheFlag(TypeCacheEntries.IsActualEnum, res);
+                return res;
+            }
+        }
 
         public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
-        public override bool IsGenericType => RuntimeTypeHandle.HasInstantiation(this);
-        public override bool IsGenericTypeDefinition => RuntimeTypeHandle.IsGenericTypeDefinition(this);
+
+        public override bool IsGenericType
+        {
+            get
+            {
+                TypeCache cache = Cache;
+                if ((cache.Cached & (int)TypeCacheEntries.IsGenericType) != 0)
+                    return (cache.Flags & (int)TypeCacheEntries.IsGenericType) != 0;
+                bool res = RuntimeTypeHandle.HasInstantiation(this);
+                CacheFlag(TypeCacheEntries.IsGenericType, res);
+                return res;
+            }
+        }
+
+        public override bool IsGenericTypeDefinition
+        {
+            get
+            {
+                TypeCache cache = Cache;
+                if ((cache.Cached & (int)TypeCacheEntries.IsGenericTypeDef) != 0)
+                    return (cache.Flags & (int)TypeCacheEntries.IsGenericTypeDef) != 0;
+                bool res = RuntimeTypeHandle.IsGenericTypeDefinition(this);
+                CacheFlag(TypeCacheEntries.IsGenericTypeDef, res);
+                return res;
+            }
+        }
 
         public override Type GetGenericTypeDefinition()
         {
@@ -1549,18 +1621,55 @@ namespace System
             Interlocked.CompareExchange(ref cache, new TypeCache(), null) ??
             cache;
 
+        [Flags]
+        // Types of entries cached in TypeCache
+        private enum TypeCacheEntries {
+            IsGenericTypeDef = 1,
+            IsDelegate = 2,
+            IsValueType = 4,
+            IsActualEnum = 8,
+            IsGenericType = 16,
+            CorElementType = 32,
+            TypeAttributes = 64,
+            DefaultCtor = 128
+        }
+
         internal sealed class TypeCache
         {
-            public Enum.EnumInfo? EnumInfo;
+            public object? EnumInfo;
             public TypeCode TypeCode;
             // this is the displayed form: special characters
             // ,+*&*[]\ in the identifier portions of the names
             // have been escaped with a leading backslash (\)
             public string? full_name;
-            public bool default_ctor_cached;
             public RuntimeConstructorInfo? default_ctor;
+            public CorElementType CorElementType;
+            public TypeAttributes TypeAttributes;
+            // TypeCacheEntries, accessed using CAS
+            public int Flags;
+            // TypeCacheEntries, accessed using CAS
+            public int Cached;
         }
 
+        private void UpdateCached(TypeCacheEntries entry)
+        {
+            TypeCache cache = Cache;
+            int oldCached = cache.Cached;
+            int newCached = oldCached | (int)entry;
+            // This CAS will ensure ordering with the the store into the cache
+            // If this fails, we will just take the slowpath again
+            Interlocked.CompareExchange(ref cache.Cached, newCached, oldCached);
+        }
+
+        private void CacheFlag(TypeCacheEntries flag, bool value)
+        {
+            TypeCache cache = Cache;
+            int oldFlags = cache.Flags;
+            int newFlags = value ? (oldFlags | (int)flag) : oldFlags;
+            // If this fails, we will just take the slowpath again
+            if (Interlocked.CompareExchange(ref cache.Flags, newFlags, oldFlags) == oldFlags)
+                UpdateCached(flag);
+        }
 
         internal RuntimeType(object obj)
         {
@@ -1569,10 +1678,10 @@ namespace System
 
         internal RuntimeConstructorInfo? GetDefaultConstructor()
         {
-            TypeCache? cache = Cache;
+            TypeCache cache = Cache;
             RuntimeConstructorInfo? ctor = null;
 
-            if (Volatile.Read(ref cache.default_ctor_cached))
+            if ((cache.Cached & (int)TypeCacheEntries.DefaultCtor) != 0)
                 return cache.default_ctor;
 
             ListBuilder<ConstructorInfo> ctors = GetConstructorCandidates(
@@ -1582,9 +1691,10 @@ namespace System
 
             if (ctors.Count == 1)
                 cache.default_ctor = ctor = (RuntimeConstructorInfo)ctors[0];
+            Interlocked.MemoryBarrier ();
 
             // Note down even if we found no constructors
-            Volatile.Write(ref cache.default_ctor_cached, true);
+            UpdateCached(TypeCacheEntries.DefaultCtor);
 
             return ctor;
         }
@@ -2041,29 +2151,29 @@ namespace System
             }
         }
 
-        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type ifaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
 
-            ArgumentNullException.ThrowIfNull(ifaceType);
+            ArgumentNullException.ThrowIfNull(interfaceType);
 
-            RuntimeType? ifaceRtType = ifaceType as RuntimeType;
+            RuntimeType? ifaceRtType = interfaceType as RuntimeType;
 
             if (ifaceRtType == null)
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
 
             InterfaceMapping res;
-            if (!ifaceType.IsInterface)
-                throw new ArgumentException("Argument must be an interface.", nameof(ifaceType));
+            if (!interfaceType.IsInterface)
+                throw new ArgumentException(SR.Arg_MustBeInterface, nameof(interfaceType));
             if (IsInterface)
-                throw new ArgumentException("'this' type cannot be an interface itself");
+                throw new ArgumentException(SR.Argument_InterfaceMap);
             var this_type = this;
             res.TargetType = this;
-            res.InterfaceType = ifaceType;
+            res.InterfaceType = interfaceType;
             GetInterfaceMapData(new QCallTypeHandle(ref this_type), new QCallTypeHandle(ref ifaceRtType), out res.TargetMethods, out res.InterfaceMethods);
             if (res.TargetMethods == null)
-                throw new ArgumentException("Interface not found", nameof(ifaceType));
+                throw new ArgumentException(SR.Arg_NotFoundIFace, nameof(interfaceType));
 
             return res;
         }

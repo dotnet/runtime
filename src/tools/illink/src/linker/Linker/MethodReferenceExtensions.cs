@@ -103,13 +103,13 @@ namespace Mono.Linker
 #pragma warning restore RS0030 // Do not used banned APIs
 
 		/// <summary>
-		/// Returns true if the method has any parameters in the .parameters section of the method's metadata
+		/// Returns true if the method has any parameters in the .parameters section of the method's metadata (i.e. excludes the impicit 'this')
 		/// </summary>
 		public static bool HasMetadataParameters (this MethodReference method)
 			=> method.GetMetadataParametersCount () != 0;
 
 		/// <summary>
-		/// Returns a list of the parameters in the method's 'parameters' metadata section (i.e. excluding the implicit 'this' parameter)
+		/// Returns the number of the parameters pushed before the method's call (i.e. including the implicit 'this' if present)
 		/// </summary>
 #pragma warning disable RS0030 // MethodReference.Parameters is banned -- this provides a wrapper
 		public static int GetParametersCount (this MethodReference method)

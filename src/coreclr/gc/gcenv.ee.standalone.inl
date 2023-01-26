@@ -314,4 +314,12 @@ inline void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStar
     g_theGCToCLR->DiagAddNewRegion(generation, rangeStart, rangeEnd, rangeEndReserved);
 }
 
+inline void GCToEEInterface::LogErrorToHost(const char *message)
+{
+    if (g_runtimeSupportedVersion.MajorVersion >= 1)
+    {
+        g_theGCToCLR->LogErrorToHost(message);
+    }
+}
+
 #endif // __GCTOENV_EE_STANDALONE_INL__

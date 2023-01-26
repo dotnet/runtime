@@ -10,6 +10,8 @@ using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
 
+#pragma warning disable SYSLIB1054 // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib
+
 namespace System.Runtime
 {
     internal enum DispatchCellType
@@ -44,6 +46,9 @@ namespace System.Runtime
         OnUnhandledException = 7,
         IDynamicCastableIsInterfaceImplemented = 8,
         IDynamicCastableGetInterfaceImplementation = 9,
+        ObjectiveCMarshalTryGetTaggedMemory = 10,
+        ObjectiveCMarshalGetIsTrackedReferenceCallback = 11,
+        ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 12,
     }
 
     internal static class InternalCalls

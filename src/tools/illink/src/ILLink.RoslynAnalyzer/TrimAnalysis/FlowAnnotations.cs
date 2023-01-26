@@ -35,7 +35,7 @@ namespace ILLink.Shared.TrimAnalysis
 			return false;
 		}
 
-		public static DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (ParameterProxy param)
+		internal static DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (ParameterProxy param)
 		{
 			IMethodSymbol method = param.Method.Method;
 			if (param.IsImplicitThis)

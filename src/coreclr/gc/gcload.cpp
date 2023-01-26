@@ -88,6 +88,7 @@ GC_Initialize(
 
     if (!GCToOSInterface::Initialize())
     {
+        GCToEEInterface::LogErrorToHost("Failed to initialize GCToOSInterface");
         return E_FAIL;
     }
 #endif

@@ -134,22 +134,7 @@ GenTree* MorphInitBlockHelper::Morph()
 
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
-        GenTree* oneAsgTree = nullptr;
-        if (!m_initBlock)
-        {
-            oneAsgTree = m_comp->fgMorphOneAsgBlockOp(m_asg);
-        }
-        if (oneAsgTree != nullptr)
-        {
-            assert((m_asg == oneAsgTree) && "fgMorphOneAsgBlock must return the incoming tree.");
-
-            m_transformationDecision = BlockTransformation::OneAsgBlock;
-            m_result                 = oneAsgTree;
-        }
-        else
-        {
-            MorphStructCases();
-        }
+        MorphStructCases();
     }
 
     PropagateExpansionAssertions();
@@ -300,7 +285,7 @@ void MorphInitBlockHelper::TrySpecialCases()
 //    but sets appropriate flags for the involved lclVars.
 //
 // Assumptions:
-//    we have already checked that it is not a special case and can't be transformed as OneAsgBlock.
+//    we have already checked that it is not a special case.
 //
 void MorphInitBlockHelper::MorphStructCases()
 {
@@ -358,7 +343,7 @@ GenTree* MorphInitBlockHelper::MorphBlock(Compiler* comp, GenTree* tree, bool is
     if (tree->OperIs(GT_COMMA))
     {
         // TODO-Cleanup: this block is not needed for not struct nodes, but
-        // fgMorphOneAsgBlockOp works wrong without this transformation.
+        // TryPrimitiveCopy works wrong without this transformation.
         tree = MorphCommaBlock(comp, tree->AsOp());
         if (isDest)
         {
@@ -682,6 +667,7 @@ protected:
     void TrySpecialCases() override;
 
     void     MorphStructCases() override;
+    void     TryPrimitiveCopy();
     GenTree* CopyFieldByField();
 
     const char* GetHelperName() const override
@@ -753,21 +739,10 @@ void MorphCopyBlockHelper::PrepareSrc()
         m_srcVarDsc    = m_comp->lvaGetDesc(m_srcLclNum);
     }
 
-    // Verify that the types on the LHS and RHS match and morph away "IND<struct>" nodes.
+    // Verify that the types on the LHS and RHS match.
     assert(m_dst->TypeGet() == m_src->TypeGet());
     if (m_dst->TypeIs(TYP_STRUCT))
     {
-        // TODO-1stClassStructs: delete this once "IND<struct>" nodes are no more.
-        if (m_src->OperIs(GT_IND))
-        {
-            m_src->SetOper(m_blockLayout->IsBlockLayout() ? GT_BLK : GT_OBJ);
-            m_src->AsBlk()->SetLayout(m_blockLayout);
-            m_src->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
-#ifndef JIT32_GCENCODER
-            m_src->AsBlk()->gtBlkOpGcUnsafe = false;
-#endif // !JIT32_GCENCODER
-        }
-
         assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
     }
     // TODO-1stClassStructs: produce simple "IND<simd>" nodes in importer.
@@ -805,7 +780,7 @@ void MorphCopyBlockHelper::TrySpecialCases()
 //    but sets appropriate flags for the involved lclVars.
 //
 // Assumptions:
-//    we have already checked that it is not a special case and can't be transformed as OneAsgBlock.
+//    We have already checked that it is not a special case.
 //
 void MorphCopyBlockHelper::MorphStructCases()
 {
@@ -868,8 +843,10 @@ void MorphCopyBlockHelper::MorphStructCases()
     //
     bool requiresCopyBlock = false;
 
-    // If either src or dest is a reg-sized non-field-addressed struct, keep the copyBlock.
-    if ((m_dstVarDsc != nullptr && m_dstVarDsc->lvRegStruct) || (m_srcVarDsc != nullptr && m_srcVarDsc->lvRegStruct))
+    // If either src or dest is a reg-sized non-field-addressed struct, keep the copyBlock;
+    // this will avoid having to DNER the enregisterable local when creating LCL_FLD nodes.
+    if ((m_dst->OperIs(GT_LCL_VAR) && m_dstVarDsc->lvRegStruct) ||
+        (m_src->OperIs(GT_LCL_VAR) && m_srcVarDsc->lvRegStruct))
     {
         requiresCopyBlock = true;
     }
@@ -1052,8 +1029,13 @@ void MorphCopyBlockHelper::MorphStructCases()
 
     if (requiresCopyBlock)
     {
-        m_result                 = m_asg;
-        m_transformationDecision = BlockTransformation::StructBlock;
+        TryPrimitiveCopy();
+
+        if (m_transformationDecision == BlockTransformation::Undefined)
+        {
+            m_result                 = m_asg;
+            m_transformationDecision = BlockTransformation::StructBlock;
+        }
     }
     else
     {
@@ -1087,6 +1069,86 @@ void MorphCopyBlockHelper::MorphStructCases()
             m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
     }
+}
+
+//------------------------------------------------------------------------
+// TryPrimitiveCopy: Attempt to replace a block assignment with a scalar assignment.
+//
+// If successful, will set "m_transformationDecision" to "OneAsgBlock".
+//
+void MorphCopyBlockHelper::TryPrimitiveCopy()
+{
+    if (!m_dst->TypeIs(TYP_STRUCT) || (m_blockSize == 0))
+    {
+        return;
+    }
+
+    if (m_comp->opts.OptimizationDisabled() && (m_blockSize >= genTypeSize(TYP_INT)))
+    {
+        return;
+    }
+
+    var_types asgType = TYP_UNDEF;
+    assert((m_src == m_src->gtEffectiveVal()) && (m_dst == m_dst->gtEffectiveVal()));
+
+    // Can we use the LHS local directly?
+    if (m_dst->OperIs(GT_LCL_FLD))
+    {
+        if (m_blockSize == genTypeSize(m_dstVarDsc))
+        {
+            asgType = m_dstVarDsc->TypeGet();
+        }
+    }
+    else if (!m_dst->OperIsIndir())
+    {
+        return;
+    }
+
+    if (m_srcVarDsc != nullptr)
+    {
+        if ((asgType == TYP_UNDEF) && (m_blockSize == genTypeSize(m_srcVarDsc)))
+        {
+            asgType = m_srcVarDsc->TypeGet();
+        }
+    }
+    else if (!m_src->OperIsIndir())
+    {
+        return;
+    }
+
+    if (asgType == TYP_UNDEF)
+    {
+        return;
+    }
+
+    auto doRetypeNode = [asgType](GenTree* op, LclVarDsc* varDsc) {
+        if (op->OperIsIndir())
+        {
+            op->SetOper(GT_IND);
+            op->ChangeType(asgType);
+        }
+        else if (varDsc->TypeGet() == asgType)
+        {
+            op->SetOper(GT_LCL_VAR);
+            op->ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
+            op->gtFlags &= ~GTF_VAR_USEASG;
+        }
+        else
+        {
+            if (op->OperIs(GT_LCL_VAR))
+            {
+                op->SetOper(GT_LCL_FLD);
+            }
+            op->ChangeType(asgType);
+        }
+    };
+
+    doRetypeNode(m_dst, m_dstVarDsc);
+    doRetypeNode(m_src, m_srcVarDsc);
+    m_asg->ChangeType(asgType);
+
+    m_result                 = m_asg;
+    m_transformationDecision = BlockTransformation::OneAsgBlock;
 }
 
 //------------------------------------------------------------------------
@@ -1210,7 +1272,12 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             dstFld = m_comp->gtNewLclvNode(dstFieldLclNum, m_comp->lvaGetDesc(dstFieldLclNum)->TypeGet());
 
             // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
-            dstFld->gtFlags |= m_dstLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG);
+            dstFld->gtFlags |= m_dstLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK);
+
+            if (m_dstLclNode->IsLastUse(i))
+            {
+                dstFld->gtFlags |= GTF_VAR_DEATH;
+            }
 
             // Don't CSE the lhs of an assignment.
             dstFld->gtFlags |= GTF_DONT_CSE;
@@ -1438,7 +1505,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 //
 // Return Value:
 //    We can return the original block copy unmodified (least desirable, but always correct)
-//    We can return a single assignment, when fgMorphOneAsgBlockOp transforms it (most desirable).
+//    We can return a single assignment, when TryPrimitiveCopy transforms it (most desirable).
 //    If we have performed struct promotion of the Source() or the Dest() then we will try to
 //    perform a field by field assignment for each of the promoted struct fields.
 //
@@ -1465,7 +1532,6 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 //    tree - A GT_ASG tree that performs block initialization.
 //
 // Return Value:
-//    A single assignment, when fgMorphOneAsgBlockOp transforms it.
 //    If the destination is a promoted struct local variable then we will try to
 //    perform a field by field assignment for each of the promoted struct fields.
 //    This is not always possible (e.g. if the struct is address exposed).
@@ -1507,25 +1573,41 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
 
         if ((size != 0) && FitsIn<int32_t>(size))
         {
-            GenTree* lhs = gtNewBlockVal(tree->Addr(), static_cast<unsigned>(size));
-            GenTree* asg = gtNewAssignNode(lhs, tree->Data());
+            ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(size));
+            GenTree*     dst    = gtNewStructVal(layout, tree->Addr());
+            dst->gtFlags |= GTF_GLOB_REF;
+
+            GenTree* src = tree->Data();
+            if (src->OperIs(GT_IND))
+            {
+                assert(src->TypeIs(TYP_STRUCT));
+                src->SetOper(GT_BLK);
+                src->AsBlk()->Initialize(layout);
+            }
+
+            GenTree* asg = gtNewAssignNode(dst, src);
             asg->gtFlags |= (tree->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED));
             INDEBUG(asg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
-            JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into ASG(BLK, Data())\n");
+            fgAssignSetVarDef(asg);
 
-            GenTree* lclVarTree = fgIsIndirOfAddrOfLocal(lhs);
-            if (lclVarTree != nullptr)
-            {
-                lclVarTree->gtFlags |= GTF_VAR_DEF;
-            }
+            JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into ASG(BLK, Data())\n");
 
             return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(asg) : fgMorphInitBlock(asg);
         }
     }
 
     tree->SetAllEffectsFlags(tree->Addr(), tree->Data(), tree->gtDynamicSize);
-    tree->SetIndirExceptionFlags(this);
+
+    if (tree->OperMayThrow(this))
+    {
+        tree->gtFlags |= GTF_EXCEPT;
+    }
+    else
+    {
+        tree->gtFlags |= GTF_IND_NONFAULTING;
+    }
+
     tree->gtFlags |= GTF_ASG;
 
     return tree;

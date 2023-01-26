@@ -307,10 +307,7 @@ namespace System.Net.Http
 
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 if (value > HttpContent.MaxBufferSize)
                 {

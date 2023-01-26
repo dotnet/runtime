@@ -70,6 +70,16 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+        public static bool IsStaticMethodSignature(MethodNameAndSignature signature)
+        {
+            Debug.Assert(signature.Signature.IsNativeLayoutSignature);
+            NativeReader reader = GetNativeLayoutInfoReader(signature.Signature);
+            NativeParser parser = new NativeParser(reader, signature.Signature.NativeLayoutOffset);
+
+            MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
+            return (callingConvention & MethodCallingConvention.Static) != 0;
+        }
+
         public uint GetGenericArgumentCountFromMethodNameAndSignature(MethodNameAndSignature signature)
         {
             if (signature.Signature.IsNativeLayoutSignature)
@@ -82,35 +92,13 @@ namespace Internal.Runtime.TypeLoader
             else
             {
                 ModuleInfo module = signature.Signature.GetModuleInfo();
+                NativeFormatModuleInfo nativeFormatModule = (NativeFormatModuleInfo)module;
+                var metadataReader = nativeFormatModule.MetadataReader;
+                var methodHandle = signature.Signature.Token.AsHandle().ToMethodHandle(metadataReader);
 
-#if ECMA_METADATA_SUPPORT
-                if (module is NativeFormatModuleInfo)
-#endif
-                {
-                    NativeFormatModuleInfo nativeFormatModule = (NativeFormatModuleInfo)module;
-                    var metadataReader = nativeFormatModule.MetadataReader;
-                    var methodHandle = signature.Signature.Token.AsHandle().ToMethodHandle(metadataReader);
-
-                    var method = methodHandle.GetMethod(metadataReader);
-                    var methodSignature = method.Signature.GetMethodSignature(metadataReader);
-                    return checked((uint)methodSignature.GenericParameterCount);
-                }
-#if ECMA_METADATA_SUPPORT
-                else
-                {
-                    EcmaModuleInfo ecmaModuleInfo = (EcmaModuleInfo)module;
-                    var metadataReader = ecmaModuleInfo.MetadataReader;
-                    var ecmaHandle = (System.Reflection.Metadata.MethodDefinitionHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(signature.Signature.Token);
-                    var method = metadataReader.GetMethodDefinition(ecmaHandle);
-                    var blobHandle = method.Signature;
-                    var blobReader = metadataReader.GetBlobReader(blobHandle);
-                    byte sigByte = blobReader.ReadByte();
-                    if ((sigByte & (byte)System.Reflection.Metadata.SignatureAttributes.Generic) == 0)
-                        return 0;
-                    uint genArgCount = checked((uint)blobReader.ReadCompressedInteger());
-                    return genArgCount;
-                }
-#endif
+                var method = methodHandle.GetMethod(metadataReader);
+                var methodSignature = method.Signature.GetMethodSignature(metadataReader);
+                return checked((uint)methodSignature.GenericParameterCount);
             }
         }
 
@@ -176,79 +164,6 @@ namespace Internal.Runtime.TypeLoader
 
             return new MethodNameAndSignature(methodName, methodSig);
         }
-
-        internal static bool IsStaticMethodSignature(RuntimeSignature methodSig)
-        {
-            if (methodSig.IsNativeLayoutSignature)
-            {
-                NativeReader reader = GetNativeLayoutInfoReader(methodSig);
-                NativeParser parser = new NativeParser(reader, methodSig.NativeLayoutOffset);
-
-                MethodCallingConvention callingConvention = (MethodCallingConvention)parser.GetUnsigned();
-                return callingConvention.HasFlag(MethodCallingConvention.Static);
-            }
-            else
-            {
-                ModuleInfo module = methodSig.GetModuleInfo();
-
-#if ECMA_METADATA_SUPPORT
-                if (module is NativeFormatModuleInfo)
-#endif
-                {
-                    NativeFormatModuleInfo nativeFormatModule = (NativeFormatModuleInfo)module;
-                    var metadataReader = nativeFormatModule.MetadataReader;
-                    var methodHandle = methodSig.Token.AsHandle().ToMethodHandle(metadataReader);
-
-                    var method = methodHandle.GetMethod(metadataReader);
-                    return (method.Flags & MethodAttributes.Static) != 0;
-                }
-#if ECMA_METADATA_SUPPORT
-                else
-                {
-                    EcmaModuleInfo ecmaModuleInfo = (EcmaModuleInfo)module;
-                    var metadataReader = ecmaModuleInfo.MetadataReader;
-                    var ecmaHandle = (System.Reflection.Metadata.MethodDefinitionHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(methodSig.Token);
-                    var method = metadataReader.GetMethodDefinition(ecmaHandle);
-                    var blobHandle = method.Signature;
-                    var blobReader = metadataReader.GetBlobReader(blobHandle);
-                    byte sigByte = blobReader.ReadByte();
-                    return ((sigByte & (byte)System.Reflection.Metadata.SignatureAttributes.Instance) == 0);
-                }
-#endif
-            }
-        }
-
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-        // Create a TypeSystem.MethodSignature object from a RuntimeSignature that isn't a NativeLayoutSignature
-        private TypeSystem.MethodSignature TypeSystemSigFromRuntimeSignature(TypeSystemContext context, RuntimeSignature signature)
-        {
-            Debug.Assert(!signature.IsNativeLayoutSignature);
-
-            ModuleInfo module = signature.GetModuleInfo();
-
-#if ECMA_METADATA_SUPPORT
-            if (module is NativeFormatModuleInfo)
-#endif
-            {
-                NativeFormatModuleInfo nativeFormatModule = (NativeFormatModuleInfo)module;
-                var metadataReader = nativeFormatModule.MetadataReader;
-                var methodHandle = signature.Token.AsHandle().ToMethodHandle(metadataReader);
-                var metadataUnit = ((TypeLoaderTypeSystemContext)context).ResolveMetadataUnit(nativeFormatModule);
-                var parser = new Internal.TypeSystem.NativeFormat.NativeFormatSignatureParser(metadataUnit, metadataReader.GetMethod(methodHandle).Signature, metadataReader);
-                return parser.ParseMethodSignature();
-            }
-#if ECMA_METADATA_SUPPORT
-            else
-            {
-                EcmaModuleInfo ecmaModuleInfo = (EcmaModuleInfo)module;
-                TypeSystem.Ecma.EcmaModule ecmaModule = context.ResolveEcmaModule(ecmaModuleInfo);
-                var ecmaHandle = System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(signature.Token);
-                MethodDesc ecmaMethod = ecmaModule.GetMethod(ecmaHandle);
-                return ecmaMethod.Signature;
-            }
-#endif
-        }
-#endif
 
         #region Private Helpers
 

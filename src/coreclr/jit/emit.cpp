@@ -679,10 +679,32 @@ void emitter::emitGenIG(insGroup* ig)
         emitIGbuffSize = (SC_IG_BUFFER_NUM_SMALL_DESCS * (SMALL_IDSC_SIZE + m_debugInfoSize)) +
                          (SC_IG_BUFFER_NUM_LARGE_DESCS * (sizeof(emitter::instrDesc) + m_debugInfoSize));
         emitCurIGfreeBase = (BYTE*)emitGetMem(emitIGbuffSize);
+        emitCurIGfreeEndp = emitCurIGfreeBase + emitIGbuffSize;
     }
 
     emitCurIGfreeNext = emitCurIGfreeBase;
-    emitCurIGfreeEndp = emitCurIGfreeBase + emitIGbuffSize;
+}
+
+/*****************************************************************************
+ *
+ *  Add a new IG to the current list, and get it ready to receive code.
+ */
+
+void emitter::emitNewIG()
+{
+    insGroup* ig = emitAllocAndLinkIG();
+
+    /* It's linked in. Now, set it up to accept code */
+
+    emitGenIG(ig);
+
+#ifdef DEBUG
+    if (emitComp->verbose)
+    {
+        printf("Created:\n      ");
+        emitDispIG(ig, nullptr, /* displayInstructions */ false, /* displayLocation */ false);
+    }
+#endif // DEBUG
 }
 
 /*****************************************************************************
@@ -850,20 +872,17 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 #ifdef DEBUG
     if (emitComp->opts.dspCode)
     {
-        printf("\n      %s:", emitLabelString(ig));
         if (emitComp->verbose)
         {
-            printf("        ; offs=%06XH, funclet=%02u, bbWeight=%s", ig->igOffs, ig->igFuncIdx,
-                   refCntWtd2str(ig->igWeight));
-            emitDispIGflags(ig->igFlags);
+            printf("Saved:\n      ");
+            emitDispIG(ig, nullptr, /* displayInstructions */ false, /* displayLocation */ false);
         }
         else
         {
-            printf("        ; funclet=%02u", ig->igFuncIdx);
+            printf("      %s:        ; funclet=%02u\n", emitLabelString(ig), ig->igFuncIdx);
         }
-        printf("\n");
     }
-#endif
+#endif // DEBUG
 
 #if FEATURE_LOOP_ALIGN
     // Did we have any align instructions in this group?
@@ -1001,23 +1020,28 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
     }
 
-    // Fix the last instruction field
+    // Fix the last instruction field, if set. Note that even if there are instructions in the IG,
+    // emitLastIns might not be set if an optimization has just deleted it, and the new instruction
+    // being adding causes a new EXTEND IG to be created. Also, emitLastIns might not be in this IG
+    // at all if this IG is empty.
 
-    if (sz != 0)
+    assert((emitLastIns == nullptr) == (emitLastInsIG == nullptr));
+    if ((emitLastIns != nullptr) && (sz != 0))
     {
-        assert(emitLastIns != nullptr);
+        // If we get here, emitLastIns must be in the current IG we are saving.
+        assert(emitLastInsIG == emitCurIG);
         assert(emitCurIGfreeBase <= (BYTE*)emitLastIns);
         assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
 
 #if defined(TARGET_XARCH)
-        assert(emitLastIns != nullptr);
         if (emitLastIns->idIns() == INS_jmp)
         {
             ig->igFlags |= IGF_HAS_REMOVABLE_JMP;
         }
 #endif
 
-        emitLastIns = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
+        emitLastIns   = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
+        emitLastInsIG = ig;
     }
 
     // Reset the buffer free pointers
@@ -1166,7 +1190,8 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    emitLastIns = nullptr;
+    emitLastIns   = nullptr;
+    emitLastInsIG = nullptr;
 
 #ifdef TARGET_ARMARCH
     emitLastMemBarrier = nullptr;
@@ -1488,6 +1513,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     /* Grab the space for the instruction */
 
     emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+    emitLastInsIG    = emitCurIG;
     emitCurIGfreeNext += fullSize;
 
     assert(sz >= sizeof(void*));
@@ -1580,6 +1606,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     {
         emitCurIG->igBlocks.push_back(emitComp->compCurBB);
         emitCurIG->lastGeneratedBlock = emitComp->compCurBB;
+
+        JITDUMP("Mapped " FMT_BB " to %s\n", emitComp->compCurBB->bbNum, emitLabelString(emitCurIG));
     }
 #endif // DEBUG
 
@@ -1589,32 +1617,107 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
-// emitCheckIGoffsets: Make sure the code offsets of all instruction groups look reasonable.
+// emitCheckIGList: Check properties of the IG list.
 //
-// Note: It checks that each instruction group starts right after the previous ig.
-// For the first cold ig offset is also should be the last hot ig + its size.
+// 1. IG offsets: Make sure the code offsets of all instruction groups look reasonable.
+//
+// Note: It checks that each instruction group starts right after the previous IG.
+// For the first cold IG offset is also should be the last hot IG + its size.
 // emitCurCodeOffs maintains distance for the split case to look like they are consistent.
-// Also it checks total code size.
 //
-void emitter::emitCheckIGoffsets()
+// 2. Total code size
+// 3. IG flags
+//
+void emitter::emitCheckIGList()
 {
+    assert(emitPrologIG != nullptr);
+
     size_t currentOffset = 0;
 
-    for (insGroup* tempIG = emitIGlist; tempIG != nullptr; tempIG = tempIG->igNext)
+    for (insGroup *currIG = emitIGlist, *prevIG = nullptr; currIG != nullptr; prevIG = currIG, currIG = currIG->igNext)
     {
-        if (tempIG->igOffs != currentOffset)
+        if (currIG->igOffs != currentOffset)
         {
-            printf("IG%02u has offset %08X, expected %08X\n", tempIG->igNum, tempIG->igOffs, currentOffset);
+            printf("IG%02u has offset %08X, expected %08X\n", currIG->igNum, currIG->igOffs, currentOffset);
             assert(!"bad block offset");
         }
 
-        currentOffset += tempIG->igSize;
+        currentOffset += currIG->igSize;
+
+        if (prevIG == nullptr)
+        {
+            // First IG can't be an extension group.
+            assert((currIG->igFlags & IGF_EXTEND) == 0);
+
+            // First IG must be the function prolog.
+            assert(currIG == emitPrologIG);
+        }
+
+        if (currIG == emitPrologIG)
+        {
+            // If we're in the function prolog, we can't be in any other prolog or epilog.
+            assert((currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) == 0);
+        }
+
+        // An IG can have at most one of the prolog and epilog flags set.
+        assert(genCountBits(currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
+
+        // An IG can't have both IGF_HAS_ALIGN and IGF_REMOVED_ALIGN.
+        assert(genCountBits(currIG->igFlags & (IGF_HAS_ALIGN | IGF_REMOVED_ALIGN)) <= 1);
+
+        if (currIG->igFlags & IGF_EXTEND)
+        {
+            // Extension groups don't store GC info.
+            assert((currIG->igFlags & (IGF_GC_VARS | IGF_BYREF_REGS)) == 0);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+            // Extension groups can't be branch targets.
+            assert((currIG->igFlags & IGF_FINALLY_TARGET) == 0);
+#endif
+
+            // TODO: It would be nice if we could assert that a funclet prolog, funclet epilog, or
+            // function epilog could only extend one of the same type. However, epilogs are created
+            // using emitCreatePlaceholderIG() and might be in EXTEND groups. Can we force them to
+            // not be EXTEND groups, and would there be a benefit to that? Since epilogs are NOGC
+            // it would help eliminate NOGC EXTEND groups.
+            //
+            // Note that function prologs must currently exist entirely within one IG and there is
+            // no flag to indicate a function prolog (the `emitPrologIG` variable points to the single
+            // unique prolog IG).
+            //
+            // Thus, we can't have this assert:
+            // assert((currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) ==
+            //        (prevIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)));
+
+            // If this is a funclet prolog IG, then it can only extend another funclet prolog IG.
+            assert((currIG->igFlags & IGF_FUNCLET_PROLOG) == (prevIG->igFlags & IGF_FUNCLET_PROLOG));
+
+            // If this is a function epilog IG, it can't extend a funclet prolog or funclet epilog IG.
+            if (currIG->igFlags & IGF_EPILOG)
+            {
+                assert((prevIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG)) == 0);
+            }
+
+            // If this is a funclet epilog IG, it can't extend a funclet prolog or function epilog IG.
+            if (currIG->igFlags & IGF_FUNCLET_EPILOG)
+            {
+                assert((prevIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_EPILOG)) == 0);
+            }
+
+            // Unfortunately, the following assert can't be made currently, because epilog groups
+            // are EXTEND groups, and are marked as NOGC.
+            //
+            // // If this extension group is NOGC, then the predecessor group (back to the last
+            // // non-EXTEND group) must also be NOGC. We don't want a GC region to solely consist
+            // // of an EXTEND group, as EXTEND groups should only be used for "overflow", and not
+            // // change any semantics of the included instructions.
+            // assert((currIG->igFlags & IGF_NOGCINTERRUPT) == (prevIG->igFlags & IGF_NOGCINTERRUPT));
+        }
     }
 
     if (emitTotalCodeSize != 0 && emitTotalCodeSize != currentOffset)
     {
         printf("Total code size is %08X, expected %08X\n", emitTotalCodeSize, currentOffset);
-
         assert(!"bad total code size");
     }
 }
@@ -1902,7 +2005,7 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     if (emitComp->verbose)
     {
         printf("*************** After placeholder IG creation\n");
-        emitDispIGlist(false);
+        emitDispIGlist(/* displayInstructions */ false);
     }
 #endif
 }
@@ -2583,13 +2686,16 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
     {
         emitNxtIG();
     }
-#if defined(DEBUG) || defined(LATE_DISASM)
     else
     {
+        // This is not an EXTEND group.
+        assert((emitCurIG->igFlags & IGF_EXTEND) == 0);
+
+#if defined(DEBUG) || defined(LATE_DISASM)
         emitCurIG->igWeight    = getCurrentBlockWeight();
         emitCurIG->igPerfScore = 0.0;
-    }
 #endif
+    }
 
     VarSetOps::Assign(emitComp, emitThisGCrefVars, GCvars);
     VarSetOps::Assign(emitComp, emitInitGCrefVars, GCvars);
@@ -2604,11 +2710,9 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
-    JITDUMP("Mapped " FMT_BB " to %s\n", block->bbNum, emitLabelString(emitCurIG));
-
     if (EMIT_GC_VERBOSE)
     {
-        printf("Label: IG%02u, GCvars=%s ", emitCurIG->igNum, VarSetOps::ToString(emitComp, GCvars));
+        printf("Label: %s, GCvars=%s ", emitLabelString(emitCurIG), VarSetOps::ToString(emitComp, GCvars));
         dumpConvertedVarSet(emitComp, GCvars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
@@ -3589,7 +3693,7 @@ void emitter::emitDispIGflags(unsigned flags)
     }
 }
 
-void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
+void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool displayInstructions, bool displayLocation)
 {
     const int TEMP_BUFFER_LEN = 40;
     char      buff[TEMP_BUFFER_LEN];
@@ -3649,18 +3753,22 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 
         emitDispIGflags(igPh->igFlags);
 
-        if (ig == emitCurIG)
+        if (displayLocation)
         {
-            printf(" <-- Current IG");
+            if (ig == emitCurIG)
+            {
+                printf(" <-- Current IG");
+            }
+            if (igPh == emitPlaceholderList)
+            {
+                printf(" <-- First placeholder");
+            }
+            if (igPh == emitPlaceholderLast)
+            {
+                printf(" <-- Last placeholder");
+            }
         }
-        if (igPh == emitPlaceholderList)
-        {
-            printf(" <-- First placeholder");
-        }
-        if (igPh == emitPlaceholderLast)
-        {
-            printf(" <-- Last placeholder");
-        }
+
         printf("\n");
 
         printf("%*s;   PrevGCVars=%s ", strlen(buff), "",
@@ -3698,9 +3806,12 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
             separator = ", ";
         }
 
+        printf("%sbbWeight=%s", separator, refCntWtd2str(ig->igWeight));
+        separator = ", ";
+
         if (emitComp->compCodeGenDone)
         {
-            printf("%sbbWeight=%s PerfScore %.2f", separator, refCntWtd2str(ig->igWeight), ig->igPerfScore);
+            printf("%sPerfScore %.2f", separator, ig->igPerfScore);
             separator = ", ";
         }
 
@@ -3746,17 +3857,21 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
 
         emitDispIGflags(ig->igFlags);
 
-        if (ig == emitCurIG)
+        if (displayLocation)
         {
-            printf(" <-- Current IG");
+            if (ig == emitCurIG)
+            {
+                printf(" <-- Current IG");
+            }
+            if (ig == emitPrologIG)
+            {
+                printf(" <-- Prolog IG");
+            }
         }
-        if (ig == emitPrologIG)
-        {
-            printf(" <-- Prolog IG");
-        }
+
         printf("\n");
 
-        if (verbose)
+        if (displayInstructions)
         {
             instrDesc*     id  = emitFirstInstrDesc(ig->igData);
             UNATIVE_OFFSET ofs = ig->igOffs;
@@ -3791,14 +3906,14 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
     }
 }
 
-void emitter::emitDispIGlist(bool verbose)
+void emitter::emitDispIGlist(bool displayInstructions)
 {
     insGroup* ig;
     insGroup* igPrev;
 
     for (igPrev = nullptr, ig = emitIGlist; ig; igPrev = ig, ig = ig->igNext)
     {
-        emitDispIG(ig, igPrev, verbose);
+        emitDispIG(ig, igPrev, displayInstructions);
     }
 }
 
@@ -4031,7 +4146,7 @@ void emitter::emitRecomputeIGoffsets()
     emitTotalCodeSize = offs;
 
 #ifdef DEBUG
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif
 }
 
@@ -4072,6 +4187,12 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
             const char* fieldName =
                 emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), true, buffer, sizeof(buffer));
             printf("%s %s for %s", commentPrefix, flag == GTF_ICON_STATIC_HDL ? "data" : "box", fieldName);
+            return;
+        }
+
+        if (flag == GTF_ICON_STATIC_ADDR_PTR)
+        {
+            printf("%s static base addr cell", commentPrefix);
             return;
         }
     }
@@ -4156,7 +4277,7 @@ void emitter::emitRemoveJumpToNextInst()
     if (EMIT_INSTLIST_VERBOSE)
     {
         JITDUMP("\nInstruction group list before unconditional jump to next instruction removal:\n\n");
-        emitDispIGlist(true);
+        emitDispIGlist(/* displayInstructions */ true);
     }
     if (EMITVERBOSE)
     {
@@ -4216,9 +4337,9 @@ void emitter::emitRemoveJumpToNextInst()
                     printf("   id: %u: ", id->idDebugOnlyInfo()->idNum);
                     emitDispIns(id, false, true, false, 0, nullptr, 0, jmpGroup);
                     printf("jump group:\n");
-                    emitDispIG(jmpGroup, nullptr, true);
+                    emitDispIG(jmpGroup, nullptr, /* displayInstructions */ true);
                     printf("target group:\n");
-                    emitDispIG(targetGroup, nullptr, false);
+                    emitDispIG(targetGroup, nullptr, /* displayInstructions */ false);
                     assert(jmp == id);
                 }
 
@@ -4306,12 +4427,12 @@ void emitter::emitRemoveJumpToNextInst()
 #ifdef DEBUG
     if (totalRemovedSize > 0)
     {
-        emitCheckIGoffsets();
+        emitCheckIGList();
 
         if (EMIT_INSTLIST_VERBOSE)
         {
             printf("\nInstruction group list after unconditional jump to next instruction removal:\n\n");
-            emitDispIGlist(false);
+            emitDispIGlist(/* displayInstructions */ false);
         }
         if (EMITVERBOSE)
         {
@@ -4350,7 +4471,7 @@ void emitter::emitJumpDistBind()
     if (EMIT_INSTLIST_VERBOSE)
     {
         printf("\nInstruction list before jump distance binding:\n\n");
-        emitDispIGlist(true);
+        emitDispIGlist(/* displayInstructions */ true);
     }
     if (EMITVERBOSE)
     {
@@ -4384,7 +4505,7 @@ void emitter::emitJumpDistBind()
 AGAIN:
 
 #ifdef DEBUG
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif
 
 /*
@@ -5057,7 +5178,7 @@ AGAIN:
         }
 
 #ifdef DEBUG
-        emitCheckIGoffsets();
+        emitCheckIGList();
 #endif
 
         /* Is there a chance of other jumps becoming short? */
@@ -5097,10 +5218,10 @@ AGAIN:
     if (EMIT_INSTLIST_VERBOSE)
     {
         printf("\nLabels list after the jump dist binding:\n\n");
-        emitDispIGlist(false);
+        emitDispIGlist(/* displayInstructions */ false);
     }
 
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif // DEBUG
 }
 #endif
@@ -5729,7 +5850,7 @@ void emitter::emitLoopAlignAdjustments()
     }
 
 #ifdef DEBUG
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif
 }
 
@@ -6208,10 +6329,10 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     if (EMIT_INSTLIST_VERBOSE)
     {
         printf("\nInstruction list before instruction issue:\n\n");
-        emitDispIGlist(true);
+        emitDispIGlist(/* displayInstructions */ true);
     }
 
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif
 
     /* Allocate the code block (and optionally the data blocks) */
@@ -7099,10 +7220,10 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     if (EMIT_INSTLIST_VERBOSE)
     {
         printf("\nLabels list after the end of codegen:\n\n");
-        emitDispIGlist(false);
+        emitDispIGlist(/* displayInstructions */ false);
     }
 
-    emitCheckIGoffsets();
+    emitCheckIGList();
 
 #endif // DEBUG
 
@@ -9004,7 +9125,7 @@ void emitter::emitInitIG(insGroup* ig)
 #ifdef DEBUG
     ig->lastGeneratedBlock = nullptr;
     // Explicitly call init, since IGs don't actually have a constructor.
-    ig->igBlocks.jitstd::list<BasicBlock*>::init(emitComp->getAllocator(CMK_LoopOpt));
+    ig->igBlocks.jitstd::list<BasicBlock*>::init(emitComp->getAllocator(CMK_DebugOnly));
 #endif
 }
 

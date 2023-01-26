@@ -262,7 +262,10 @@ namespace Microsoft.Extensions.Configuration
                 config.GetSection(GetPropertyName(property)),
                 options);
 
-            if (propertyBindingPoint.HasNewValue)
+            // For property binding, there are some cases when HasNewValue is not set in BindingPoint while a non-null Value inside that object can be retrieved from the property getter.
+            // As example, when binding a property which not having a configuration entry matching this property and the getter can initialize the Value.
+            // It is important to call the property setter as the setters can have a logic adjusting the Value.
+            if (!propertyBindingPoint.IsReadOnly && propertyBindingPoint.Value is not null)
             {
                 property.SetValue(instance, propertyBindingPoint.Value);
             }
@@ -361,24 +364,26 @@ namespace Microsoft.Extensions.Configuration
                     }
                 }
 
+                Debug.Assert(bindingPoint.Value is not null);
+
                 // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
                 // using the IDictionary<> or ICollection<> interfaces, or properties using reflection.
                 Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
 
                 if (dictionaryInterface != null)
                 {
-                    BindDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
+                    BindDictionary(bindingPoint.Value, dictionaryInterface, config, options);
                 }
                 else
                 {
                     Type? collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
                     if (collectionInterface != null)
                     {
-                        BindCollection(bindingPoint.Value!, collectionInterface, config, options);
+                        BindCollection(bindingPoint.Value, collectionInterface, config, options);
                     }
                     else
                     {
-                        BindProperties(bindingPoint.Value!, config, options);
+                        BindProperties(bindingPoint.Value, config, options);
                     }
                 }
             }
@@ -590,17 +595,8 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            Debug.Assert(dictionary is not null);
-
-
             MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
-            PropertyInfo? indexerProperty  = dictionaryType.GetProperty("Item", DeclaredOnlyLookup);
-
-            if (indexerProperty is null || !indexerProperty.CanWrite)
-            {
-                // Cannot set any item on the dictionary object.
-                return;
-            }
+            PropertyInfo indexerProperty = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
 
             foreach (IConfigurationSection child in config.GetChildren())
             {
@@ -695,7 +691,7 @@ namespace Microsoft.Extensions.Configuration
                 elementType = type.GetGenericArguments()[0];
             }
 
-            IList list = new List<object?>();
+            var list = new List<object?>();
 
             if (source != null)
             {
@@ -731,7 +727,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             Array result = Array.CreateInstance(elementType, list.Count);
-            list.CopyTo(result, 0);
+            ((IList)list).CopyTo(result, 0);
             return result;
         }
 
@@ -980,7 +976,7 @@ namespace Microsoft.Extensions.Configuration
             return propertyBindingPoint.Value;
         }
 
-        private static string GetPropertyName(MemberInfo property)
+        private static string GetPropertyName(PropertyInfo property)
         {
             ThrowHelper.ThrowIfNull(property);
 
