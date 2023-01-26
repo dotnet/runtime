@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 
 namespace System.Collections.Frozen
@@ -10,7 +9,7 @@ namespace System.Collections.Frozen
     /// <summary>Provides an empty <see cref="FrozenSet{T}"/> to use when there are zero values to be stored.</summary>
     internal sealed class EmptyFrozenSet<T> : FrozenSet<T>
     {
-        internal EmptyFrozenSet() : base(EqualityComparer<T>.Default) { }
+        internal EmptyFrozenSet(IEqualityComparer<T> comparer) : base(comparer) { }
 
         /// <inheritdoc />
         private protected override T[] ItemsCore => Array.Empty<T>();
