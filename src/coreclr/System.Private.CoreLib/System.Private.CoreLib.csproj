@@ -337,7 +337,7 @@
 
     </PropertyGroup>
 
-    <Exec Command="$(PYTHON) -B $(_PythonWarningParameter) &quot;@(EventingGenerationScript)&quot; --man &quot;@(EventManifestFile)&quot; --intermediate &quot;$(_EventingSourceFileDirectory)&quot;" />
+    <Exec Command="&quot;$(PYTHON)&quot; -B $(_PythonWarningParameter) &quot;@(EventingGenerationScript)&quot; --man &quot;@(EventManifestFile)&quot; --intermediate &quot;$(_EventingSourceFileDirectory)&quot;" />
 
     <ItemGroup>
       <FileWrites Include="@(EventingSourceFile)" />
