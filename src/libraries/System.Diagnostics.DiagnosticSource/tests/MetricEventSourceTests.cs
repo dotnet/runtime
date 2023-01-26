@@ -37,7 +37,7 @@ namespace System.Diagnostics.Metrics.Tests
             Histogram<int> h = meter.CreateHistogram<int>("histogram1");
             UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1");
             int upDownCounterState = 0;
-            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; });
+            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState -= 11; return upDownCounterState; });
 
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter1"))
@@ -45,11 +45,11 @@ namespace System.Diagnostics.Metrics.Tests
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
-                udc.Add(33);
+                udc.Add(-33);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
-                udc.Add(40);
+                udc.Add(-40);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
@@ -60,8 +60,8 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-40");
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", "", "-11");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
@@ -137,7 +137,7 @@ namespace System.Diagnostics.Metrics.Tests
                     h = meter.CreateHistogram<int>("histogram1");
                     udc = meter.CreateUpDownCounter<int>("upDownCounter1");
                     int upDownCounterState = 0;
-                    oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; });
+                    oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState -= 11; return upDownCounterState; });
 
                     c.Add(5);
                     h.Record(19);
@@ -157,7 +157,7 @@ namespace System.Diagnostics.Metrics.Tests
                 AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
                 AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
                 AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
-                AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
+                AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", "", "-11");
                 AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
             }
             finally
@@ -197,11 +197,11 @@ namespace System.Diagnostics.Metrics.Tests
 
                 c.Add(5);
                 h.Record(19);
-                udc.Add(33);
+                udc.Add(-33);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
-                udc.Add(40);
+                udc.Add(-40);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
@@ -212,7 +212,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", "33", "40");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", "-33", "-40");
             AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", "", "11");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
@@ -248,7 +248,7 @@ namespace System.Diagnostics.Metrics.Tests
             int upDownCounterState = 0;
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () =>
             {
-                upDownCounterState += 11;
+                upDownCounterState -= 11;
                 return new Measurement<int>[]
                 {
                     new Measurement<int>(upDownCounterState,   new KeyValuePair<string,object?>("Color", "red"),  new KeyValuePair<string,object?>("Size", 19) ),
@@ -265,8 +265,8 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(6, new KeyValuePair<string, object?>("Color", "blue"));
                 h.Record(19, new KeyValuePair<string, object?>("Size", 123));
                 h.Record(20, new KeyValuePair<string, object?>("Size", 124));
-                udc.Add(33, new KeyValuePair<string, object?>("Color", "red"));
-                udc.Add(34, new KeyValuePair<string, object?>("Color", "blue"));
+                udc.Add(-33, new KeyValuePair<string, object?>("Color", "red"));
+                udc.Add(-34, new KeyValuePair<string, object?>("Color", "blue"));
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 c.Add(12, new KeyValuePair<string, object?>("Color", "red"));
@@ -289,10 +289,10 @@ namespace System.Diagnostics.Metrics.Tests
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "Color=blue,Size=4", "", "18", "36");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=123", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=124", "", "0.5=20;0.95=20;0.99=20", "0.5=27;0.95=27;0.99=27");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=red", "", "33", "40");
-            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=blue", "", "34", "41");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "Color=red,Size=19", "", "", "11");
-            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "Color=blue,Size=4", "", "", "22");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=red", "", "-33", "40");
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=blue", "", "-34", "41");
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "Color=red,Size=19", "", "", "-11");
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "Color=blue,Size=4", "", "", "-22");
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
