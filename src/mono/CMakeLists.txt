@@ -622,10 +622,10 @@ if(LLVM_PREFIX)
   set(llvm_cxxflags "-I${LLVM_PREFIX}/include -std=c++14 -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
-  if(CLR_CMAKE_HOST_OS STREQUAL "linux")
+  if(HOST_LINUX)
     # llvm-config --system-libs
     set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
-  elseif(CLR_CMAKE_HOST_OS STREQUAL "darwin")
+  elseif(HOST_OSX)
     # llvm-config --system-libs
     set(llvm_system_libs "-lz" "-lm")
   endif()
