@@ -207,10 +207,10 @@ export async function init_polyfills_async(): Promise<void> {
             } catch (err: any) {
                 // Noop, error throwing polyfill provided bellow
             }
-            
+
             if (!nodeCrypto) {
-                globalThis.crypto.getRandomValues = () => { 
-                    throw new Error("Using node without crypto support. To enable current operation, either provide polyfill for 'globalThis.crypto.getRandomValues' or enable 'node:crypto' module."); 
+                globalThis.crypto.getRandomValues = () => {
+                    throw new Error("Using node without crypto support. To enable current operation, either provide polyfill for 'globalThis.crypto.getRandomValues' or enable 'node:crypto' module.");
                 };
             } else if (nodeCrypto.webcrypto) {
                 globalThis.crypto = nodeCrypto.webcrypto;
@@ -246,6 +246,7 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             const arrayBuffer = await node_fs.promises.readFile(url);
             return <Response><any>{
                 ok: true,
+                headers: [],
                 url,
                 arrayBuffer: () => arrayBuffer,
                 json: () => JSON.parse(arrayBuffer)
