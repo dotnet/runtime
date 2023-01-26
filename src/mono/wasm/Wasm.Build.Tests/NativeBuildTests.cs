@@ -167,7 +167,7 @@ namespace Wasm.Build.Tests
             CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", "-c Release", $"-p:WasmAllowUndefinedSymbols={allowUndefined.ToString().ToLower()}");
+                .ExecuteWithCapturedOutput("build", "-c Release", allowUndefined ? $"-p:WasmAllowUndefinedSymbols=true" : string.Empty);
 
             if (allowUndefined)
             {
@@ -177,6 +177,7 @@ namespace Wasm.Build.Tests
             {
                 Assert.False(result.ExitCode == 0, "Expected build to fail");
                 Assert.Contains("undefined symbol: sgfg", result.Output);
+                Assert.Contains("Use '-p:WasmAllowUndefinedSymbols=true' to allow undefined symbols", result.Output);
             }
         }
     }
