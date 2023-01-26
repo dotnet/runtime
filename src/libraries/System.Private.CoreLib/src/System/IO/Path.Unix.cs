@@ -104,6 +104,8 @@ namespace System.IO
             int totalByteCount = tempPathByteCount + fileTemplate.Length + 1;
 
 #if TARGET_BROWSER
+            // https://github.com/emscripten-core/emscripten/issues/18591
+            // The emscripten implementation of __randname uses pointer address as another entry into the randomness.
             Span<byte> path = new byte[totalByteCount];
 #else
             Span<byte> path = totalByteCount <= 256 ? stackalloc byte[256].Slice(0, totalByteCount) : new byte[totalByteCount];
