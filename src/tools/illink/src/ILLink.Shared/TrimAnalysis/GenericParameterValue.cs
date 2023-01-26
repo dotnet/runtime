@@ -12,7 +12,7 @@ namespace ILLink.Shared.TrimAnalysis
 	/// This is a System.Type value which represents generic parameter (basically result of typeof(T))
 	/// Its actual type is unknown, but it can have annotations.
 	/// </summary>
-	sealed partial record GenericParameterValue : ValueWithDynamicallyAccessedMembers
+	internal sealed partial record GenericParameterValue : ValueWithDynamicallyAccessedMembers
 	{
 		public readonly GenericParameterProxy GenericParameter;
 	}

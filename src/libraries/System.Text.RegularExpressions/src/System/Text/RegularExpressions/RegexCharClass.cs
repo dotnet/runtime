@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -547,12 +548,13 @@ namespace System.Text.RegularExpressions
                 strLength -= 2;
             }
 
-#if REGEXGENERATOR
-            return StringExtensions.Create
+            return
+#if NETCOREAPP2_1_OR_GREATER
+                string
 #else
-            return string.Create
+                StringExtensions
 #endif
-                (strLength, (set, category, startsWithNulls), static (span, state) =>
+                .Create(strLength, (set, category, startsWithNulls), static (span, state) =>
             {
                 int index;
 
@@ -839,6 +841,22 @@ namespace System.Text.RegularExpressions
             return count;
         }
 
+        public static bool TryGetAsciiSetChars(string set, [NotNullWhen(true)] out char[]? asciiChars)
+        {
+            Span<char> chars = stackalloc char[128];
+
+            chars = chars.Slice(0, GetSetChars(set, chars));
+
+            if (chars.IsEmpty || !IsAscii(chars))
+            {
+                asciiChars = null;
+                return false;
+            }
+
+            asciiChars = chars.ToArray();
+            return true;
+        }
+
         /// <summary>
         /// Determines whether two sets may overlap.
         /// </summary>
@@ -981,7 +999,9 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets whether the specified span contains only ASCII.</summary>
         public static bool IsAscii(ReadOnlySpan<char> s)
         {
-#if REGEXGENERATOR
+#if NET8_0_OR_GREATER
+            return Ascii.IsValid(s);
+#else
             foreach (char c in s)
             {
                 if (c >= 128)
@@ -991,8 +1011,6 @@ namespace System.Text.RegularExpressions
             }
 
             return true;
-#else
-            return Ascii.IsValid(s);
 #endif
         }
 
@@ -1250,11 +1268,12 @@ namespace System.Text.RegularExpressions
                 }
 
                 uint[]? cache = asciiLazyCache ?? Interlocked.CompareExchange(ref asciiLazyCache, new uint[CacheArrayLength], null) ?? asciiLazyCache;
-#if REGEXGENERATOR
-                InterlockedExtensions.Or(ref cache[ch >> 4], bitsToSet);
+#if NET5_0_OR_GREATER
+                Interlocked
 #else
-                Interlocked.Or(ref cache[ch >> 4], bitsToSet);
+                InterlockedExtensions
 #endif
+                    .Or(ref cache[ch >> 4], bitsToSet);
 
                 // Return the computed value.
                 return isInClass;
@@ -1542,12 +1561,13 @@ namespace System.Text.RegularExpressions
             // Get the pointer/length of the span to be able to pass it into string.Create.
 #pragma warning disable CS8500 // takes address of managed type
             ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
-#if REGEXGENERATOR
-            return StringExtensions.Create(
+            return
+#if NETCOREAPP2_1_OR_GREATER
+                string
 #else
-            return string.Create(
+                StringExtensions
 #endif
-                SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
+                .Create(SetStartIndex + count, (IntPtr)(&tmpChars), static (span, charsPtr) =>
             {
                 // Fill in the set string
                 span[FlagsIndex] = (char)0;
@@ -1753,7 +1773,8 @@ namespace System.Text.RegularExpressions
                 SR.Format(SR.MakeException, pattern, currentPos, SR.Format(SR.UnrecognizedUnicodeProperty, capname)));
         }
 
-        public static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
+#if DEBUG || !SYSTEM_TEXT_REGULAREXPRESSIONS
+        private static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
 
         private static string[] PopulateCategoryIdToName()
         {
@@ -1928,5 +1949,6 @@ namespace System.Text.RegularExpressions
                 < 0 => $"\\P{{{CategoryIdToName[-(short)ch - 1]}}}",
                 _ => $"\\p{{{CategoryIdToName[ch - 1]}}}",
             };
+#endif
     }
 }

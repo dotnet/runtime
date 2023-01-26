@@ -90,6 +90,7 @@ private:
     bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
     void ContainCheckCompareChainForAnd(GenTree* tree);
     void ContainCheckConditionalCompare(GenTreeOp* cmp);
+    void ContainCheckNeg(GenTreeOp* neg);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
@@ -107,9 +108,6 @@ private:
     void ContainCheckFloatBinary(GenTreeOp* node);
     void ContainCheckIntrinsic(GenTreeOp* node);
 #endif // TARGET_XARCH
-#ifdef FEATURE_SIMD
-    void ContainCheckSIMD(GenTreeSIMD* simdNode);
-#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
     void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr);
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -346,9 +344,6 @@ private:
     GenTree* LowerArrElem(GenTreeArrElem* arrElem);
     void LowerRotate(GenTree* tree);
     void LowerShift(GenTreeOp* shift);
-#ifdef FEATURE_SIMD
-    void LowerSIMD(GenTreeSIMD* simdNode);
-#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);

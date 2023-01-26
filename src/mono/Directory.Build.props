@@ -19,7 +19,7 @@
     <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
     <macOSVersionMin>10.14</macOSVersionMin>
     <!-- FIXME: when we're building ios or tvOS cross-compilers hosted on OSX/arm64 targeting ios/arm64 we should set the min macOS version to 11.0, also -->
-    <macOSVersionMin Condition="('$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'MacCatalyst') and '$(TargetArchitecture)' == 'arm64'">11.0</macOSVersionMin>
+    <macOSVersionMin Condition="('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst') and '$(TargetArchitecture)' == 'arm64'">11.0</macOSVersionMin>
 
     <!-- Version of the OS SDK we target -->
     <iOSVersion></iOSVersion>
@@ -40,8 +40,16 @@
   <!-- Directory to provision and use emscripten if EMSDK_PATH env variable is not set -->
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
     <ProvisionEmscriptenDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm', 'emsdk'))</ProvisionEmscriptenDir>
-    <ShouldProvisionEmscripten Condition="'$(OS)' == 'Windows_NT' and '$(TargetArchitecture)' == 'wasm' and '$(EMSDK_PATH)' == '' and !Exists('$(ProvisionEmscriptenDir)')">true</ShouldProvisionEmscripten>
+    <ShouldProvisionEmscripten Condition="'$(EMSDK_PATH)' == '' and !Exists('$(ProvisionEmscriptenDir)')">true</ShouldProvisionEmscripten>
     <EMSDK_PATH Condition="Exists('$(ProvisionEmscriptenDir)') and '$(EMSDK_PATH)' == ''">$(ProvisionEmscriptenDir.Replace('\', '/'))</EMSDK_PATH>
+  </PropertyGroup>
+
+  <!-- Directory to provision and use WASI sdk if WASI_SDK_PATH env variable is not set -->
+  <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
+    <ProvisionWasiSdkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasi-sdk'))</ProvisionWasiSdkDir>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$(ProvisionWasiSdkDir.Replace('\', '/'))</WASI_SDK_PATH>
+    <ShouldProvisionWasiSdk Condition="'$(WASI_SDK_PATH)' == '' and !Exists('$(ProvisionWasiSdkDir)')">true</ShouldProvisionWasiSdk>
+    <ShouldProvisionWasiSdk Condition="'$(WASI_SDK_PATH)' != '' and !Exists('$(WASI_SDK_PATH)')">true</ShouldProvisionWasiSdk>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -53,19 +61,17 @@
     <MonoAOTEnableLLVM Condition="'$(TargetsMacCatalyst)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsBrowser)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsAndroid)' == 'true'">true</MonoAOTEnableLLVM>
-    <_MonoUseLLVMPackage Condition="'$(MonoLLVMDir)' == '' and '$(MonoEnableLLVM)' == 'true'">true</_MonoUseLLVMPackage>
-    <_MonoUseAOTLLVMPackage Condition="'$(MonoAOTLLVMDir)' == '' and '$(MonoAOTEnableLLVM)' == 'true'">true</_MonoUseAOTLLVMPackage>
-    <MonoLLVMDir Condition="'$(MonoLLVMDir)' == '' and '$(MonoEnableLLVM)' == 'true'">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'llvm'))</MonoLLVMDir>
-    <MonoAOTLLVMDir Condition="'$(MonoAOTLLVMDir)' == '' and '$(MonoAOTEnableLLVM)' == 'true'">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross', 'llvm'))</MonoAOTLLVMDir>
+    <_MonoUseLLVMPackage Condition="'$(MonoLLVMDir)' == '' and ('$(MonoEnableLLVM)' == 'true' or $(MonoAOTEnableLLVM) == 'true')">true</_MonoUseLLVMPackage>
+    <MonoLLVMDir Condition="'$(MonoLLVMDir)' == '' or '$(_MonoUseLLVMPackage)' == 'true'">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'llvm'))</MonoLLVMDir>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MonoAotCrossDir>$([MSBuild]::NormalizePath($(RuntimeBinDir), 'cross', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</MonoAotCrossDir>
+    <MonoAotCrossDir>$([MSBuild]::NormalizePath($(RuntimeBinDir), 'cross', '$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))</MonoAotCrossDir>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>
   <ItemGroup>
-    <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
+    <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())" />
   </ItemGroup>
 
   <!-- Paths for Mobile App Projects  -->

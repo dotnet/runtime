@@ -64,6 +64,7 @@ namespace ILCompiler
         private readonly SortedSet<DefType> _typesWithStructMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private HashSet<NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries = new HashSet<NativeLayoutTemplateMethodSignatureVertexNode>();
         private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
+        private readonly SortedSet<MetadataType> _typesWithGenericStaticBaseInfo = new SortedSet<MetadataType>(TypeSystemComparer.Instance);
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -234,10 +235,10 @@ namespace ILCompiler
                 return;
             }
 
-            var reflectableMethodNode = obj as ReflectableMethodNode;
-            if (reflectableMethodNode != null)
+            var reflectedMethodNode = obj as ReflectedMethodNode;
+            if (reflectedMethodNode != null)
             {
-                _reflectableMethods.Add(reflectableMethodNode.Method);
+                _reflectableMethods.Add(reflectedMethodNode.Method);
             }
 
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
@@ -294,6 +295,11 @@ namespace ILCompiler
             if (obj is FrozenStringNode frozenStr)
             {
                 _frozenObjects.Add(frozenStr);
+            }
+
+            if (obj is GenericStaticBaseInfoNode genericStaticBaseInfo)
+            {
+                _typesWithGenericStaticBaseInfo.Add(genericStaticBaseInfo.Type);
             }
         }
 
@@ -443,7 +449,7 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated EETypes.
         /// </summary>
-        public void GetDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public virtual void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
             MetadataCategory category = GetMetadataCategory(type);
 
@@ -727,6 +733,11 @@ namespace ILCompiler
             return _frozenObjects;
         }
 
+        public IEnumerable<MetadataType> GetTypesWithGenericStaticBaseInfos()
+        {
+            return _typesWithGenericStaticBaseInfo;
+        }
+
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()
         {
             return _methodBodiesGenerated;
@@ -883,10 +894,6 @@ namespace ILCompiler
         }
 
         public virtual void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-        }
-
-        public virtual void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
         }
 

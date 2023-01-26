@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -428,6 +429,29 @@ namespace System.Linq.Expressions.Tests
                 );
 
             Assert.Throws<InvalidOperationException>(() => e.Compile());
+        }
+
+        /// <summary>
+        /// Verifies that compiling and executing a lambda method works when IsDynamicCodeSupported == false.
+        /// </summary>
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void CompileWorksWhenDynamicCodeNotSupported()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", false.ToString());
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                ParameterExpression param = Expression.Parameter(typeof(int));
+
+                Func<int, int> typedDel =
+                    Expression.Lambda<Func<int, int>>(Expression.Add(param, Expression.Constant(4)), param).Compile();
+                Assert.Equal(304, typedDel(300));
+
+                Delegate del =
+                    Expression.Lambda(Expression.Add(param, Expression.Constant(5)), param).Compile();
+                Assert.Equal(305, del.DynamicInvoke(300));
+            }, options);
         }
     }
 

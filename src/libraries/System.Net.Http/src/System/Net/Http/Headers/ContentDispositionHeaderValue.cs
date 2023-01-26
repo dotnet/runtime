@@ -104,18 +104,18 @@ namespace System.Net.Http.Headers
                         _parameters!.Remove(sizeParameter);
                     }
                 }
-                else if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-                else if (sizeParameter != null)
-                {
-                    sizeParameter.Value = value.Value.ToString(CultureInfo.InvariantCulture);
-                }
                 else
                 {
-                    string sizeString = value.Value.ToString(CultureInfo.InvariantCulture);
-                    Parameters.Add(new NameValueHeaderValue(size, sizeString));
+                    ArgumentOutOfRangeException.ThrowIfNegative(value.GetValueOrDefault());
+                    if (sizeParameter != null)
+                    {
+                        sizeParameter.Value = value.Value.ToString(CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        string sizeString = value.Value.ToString(CultureInfo.InvariantCulture);
+                        Parameters.Add(new NameValueHeaderValue(size, sizeString));
+                    }
                 }
             }
         }
@@ -184,7 +184,7 @@ namespace System.Net.Http.Headers
 
         #region Parsing
 
-        public static ContentDispositionHeaderValue Parse(string? input)
+        public static ContentDispositionHeaderValue Parse(string input)
         {
             int index = 0;
             return (ContentDispositionHeaderValue)GenericHeaderParser.ContentDispositionParser.ParseValue(input,

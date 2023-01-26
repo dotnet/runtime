@@ -38,7 +38,7 @@ namespace System.Collections.Tests
         /// </summary>
         protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations)
         {
-            foreach (var item in base.GetModifyEnumerables(operations))
+            foreach (ModifyEnumerable item in base.GetModifyEnumerables(operations))
                 yield return item;
 
             if (!AddRemoveClear_ThrowsNotSupported && (operations & ModifyOperation.Insert) == ModifyOperation.Insert)

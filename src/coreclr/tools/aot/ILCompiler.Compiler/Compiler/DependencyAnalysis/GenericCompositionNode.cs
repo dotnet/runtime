@@ -28,10 +28,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append("__GenericInstance");
 
-            for (int i = 0; i < _details.Instantiation.Length; i++)
+            Debug.Assert(_details.Instantiation[0] != null || _details.Variance != null);
+            if (_details.Instantiation[0] != null)
             {
-                sb.Append('_');
-                sb.Append(nameMangler.GetMangledTypeName(_details.Instantiation[i]));
+                for (int i = 0; i < _details.Instantiation.Length; i++)
+                {
+                    sb.Append('_');
+                    sb.Append(nameMangler.GetMangledTypeName(_details.Instantiation[i]));
+                }
             }
 
             if (_details.Variance != null)
@@ -84,7 +88,12 @@ namespace ILCompiler.DependencyAnalysis
                 builder.EmitInt(0);
 
             foreach (var typeArg in _details.Instantiation)
-                builder.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(typeArg));
+            {
+                if (typeArg == null)
+                    builder.EmitZeroPointer();
+                else
+                    builder.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(typeArg));
+            }
 
             if (hasVariance)
             {
@@ -112,9 +121,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public GenericCompositionDetails(TypeDesc genericTypeInstance, bool forceVarianceInfo = false)
         {
-            Debug.Assert(!genericTypeInstance.IsTypeDefinition);
-
-            Instantiation = genericTypeInstance.Instantiation;
+            if (genericTypeInstance.IsTypeDefinition)
+                Instantiation = new Instantiation(new TypeDesc[genericTypeInstance.Instantiation.Length]);
+            else
+                Instantiation = genericTypeInstance.Instantiation;
 
             bool emitVarianceInfo = forceVarianceInfo;
             if (!emitVarianceInfo)
@@ -225,7 +235,10 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            return Instantiation.ComputeGenericInstanceHashCode(hashCode);
+            // If the element is null, this is a variance-only composition info
+            // for generic definitions.
+            Debug.Assert(Instantiation[0] != null || Variance != null);
+            return Instantiation[0] == null ? hashCode : Instantiation.ComputeGenericInstanceHashCode(hashCode);
         }
     }
 }

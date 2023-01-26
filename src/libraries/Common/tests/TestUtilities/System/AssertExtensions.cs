@@ -407,15 +407,15 @@ namespace System
                 actualCount++;
             }
 
-            var expectedArray = expected.ToArray();
-            var expectedCount = expectedArray.Length;
+            T[] expectedArray = expected.ToArray();
+            int expectedCount = expectedArray.Length;
 
             if (expectedCount != actualCount)
             {
                 throw new XunitException($"Expected count: {expectedCount}{Environment.NewLine}Actual count: {actualCount}");
             }
 
-            for (var i = 0; i < expectedCount; i++)
+            for (int i = 0; i < expectedCount; i++)
             {
                 T currentExpectedItem = expectedArray[i];
                 if (!actualItemCountMapping.TryGetValue(currentExpectedItem, out ItemCount countInfo))
@@ -504,9 +504,21 @@ namespace System
         /// </summary>
         public static void Equal(string expected, string actual)
         {
-            if (!expected.Equals(actual))
+            try
             {
-                throw new AssertActualExpectedException(expected, actual, "Provided strings were not equal!");
+                Assert.Equal(expected, actual);
+            }
+            catch (Exception e)
+            {
+                throw new XunitException(
+                    e.Message + Environment.NewLine +
+                    Environment.NewLine +
+                    "Expected:" + Environment.NewLine +
+                    expected + Environment.NewLine +
+                    Environment.NewLine +
+                    "Actual:" + Environment.NewLine +
+                    actual + Environment.NewLine +
+                    Environment.NewLine);
             }
         }
 
@@ -698,7 +710,7 @@ namespace System
                 // and we should fallback to checking if it is within the allowed variance instead.
             }
 
-            var delta = Math.Abs(actual - expected);
+            double delta = Math.Abs(actual - expected);
 
             if (delta > variance)
             {
@@ -851,7 +863,7 @@ namespace System
                 // and we should fallback to checking if it is within the allowed variance instead.
             }
 
-            var delta = Math.Abs(actual - expected);
+            float delta = Math.Abs(actual - expected);
 
             if (delta > variance)
             {
@@ -1005,7 +1017,7 @@ namespace System
                 // and we should fallback to checking if it is within the allowed variance instead.
             }
 
-            var delta = (Half)Math.Abs((float)actual - (float)expected);
+            Half delta = (Half)Math.Abs((float)actual - (float)expected);
 
             if (delta > variance)
             {
