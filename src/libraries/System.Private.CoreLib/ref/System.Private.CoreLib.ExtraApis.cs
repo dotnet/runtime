@@ -48,7 +48,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<byte> VectorTableLookup((System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>) table, System.Runtime.Intrinsics.Vector64<byte> byteIndexes) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<sbyte> VectorTableLookup((System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>) table, System.Runtime.Intrinsics.Vector64<sbyte> byteIndexes) { throw null; }
 
-        [CLSCompliant(false)]
         public abstract partial class Arm64 : ArmBase.Arm64
         {
             public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookup((System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>) table, System.Runtime.Intrinsics.Vector128<byte> byteIndexes) { throw null; }
