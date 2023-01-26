@@ -48,6 +48,22 @@ jobs:
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
       - Ubuntu.1804.Amd64.Open
 
+    # iOS devices
+    - ${{ if in(parameters.platform, 'ios_arm64') }}:
+      # split traffic for runtime-extra-platforms (which mostly runs on rolling builds)
+      - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
+        - OSX.1015.Amd64.Iphone.Open
+      - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
+        - OSX.1200.Amd64.Iphone.Open
+
+    # tvOS devices
+    - ${{ if in(parameters.platform, 'tvos_arm64') }}:
+      # split traffic for runtime-extra-platforms (which mostly runs on rolling builds)
+      - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
+        - OSX.1015.Amd64.AppleTV.Open
+      - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
+        - OSX.1100.Amd64.AppleTV.Open
+
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
