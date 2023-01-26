@@ -18,45 +18,66 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILCompiler.Dataflow
 {
-    public readonly struct GenericArgumentDataFlow
+    public static class GenericArgumentDataFlow
     {
-        private readonly Logger _logger;
-        private readonly NodeFactory _factory;
-        private readonly FlowAnnotations _annotations;
-        private readonly MessageOrigin _origin;
-
-        public GenericArgumentDataFlow(Logger logger, NodeFactory factory, FlowAnnotations annotations, in MessageOrigin origin)
+        public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, Logger logger, NodeFactory factory, FlowAnnotations annotations, in MessageOrigin origin, TypeDesc type)
         {
-            _logger = logger;
-            _factory = factory;
-            _annotations = annotations;
-            _origin = origin;
-        }
-
-        public DependencyList ProcessGenericArgumentDataFlow(GenericParameterDesc genericParameter, TypeDesc genericArgument)
-        {
-            var genericParameterValue = _annotations.GetGenericParameterValue(genericParameter);
-            Debug.Assert(genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None);
-
-            MultiValue genericArgumentValue = _annotations.GetTypeValueFromGenericArgument(genericArgument);
-
             var diagnosticContext = new DiagnosticContext(
-                _origin,
-                _logger.ShouldSuppressAnalysisWarningsForRequires(_origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
-                _logger);
-            return RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue, new GenericParameterOrigin(genericParameter));
+                origin,
+                !logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                logger);
+            var reflectionMarker = new ReflectionMarker(logger, factory, annotations, typeHierarchyDataFlowOrigin: null, enabled: true);
+
+            ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, type);
+
+            if (reflectionMarker.Dependencies.Count > 0)
+            {
+                if (dependencies == null)
+                    dependencies = reflectionMarker.Dependencies;
+                else
+                    dependencies.AddRange(reflectionMarker.Dependencies);
+            }
         }
 
-        private DependencyList RequireDynamicallyAccessedMembers(
-            in DiagnosticContext diagnosticContext,
-            in MultiValue value,
-            ValueWithDynamicallyAccessedMembers targetValue,
-            Origin memberWithRequirements)
+        public static void ProcessGenericArgumentDataFlow(in DiagnosticContext diagnosticContext, ReflectionMarker reflectionMarker, TypeDesc type)
         {
-            var reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlow: false, enabled: true);
-            var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, memberWithRequirements);
-            requireDynamicallyAccessedMembersAction.Invoke(value, targetValue);
-            return reflectionMarker.Dependencies;
+            TypeDesc typeDefinition = type.GetTypeDefinition();
+            if (typeDefinition != type)
+            {
+                ProcessGenericInstantiation(diagnosticContext, reflectionMarker, type.Instantiation, typeDefinition.Instantiation);
+            }
+        }
+
+        public static void ProcessGenericArgumentDataFlow(in DiagnosticContext diagnosticContext, ReflectionMarker reflectionMarker, MethodDesc method)
+        {
+            MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+            if (typicalMethod != method)
+            {
+                ProcessGenericInstantiation(diagnosticContext, reflectionMarker, method.Instantiation, typicalMethod.Instantiation);
+            }
+
+            ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, method.OwningType);
+        }
+
+        public static void ProcessGenericArgumentDataFlow(in DiagnosticContext diagnosticContext, ReflectionMarker reflectionMarker, FieldDesc field)
+        {
+            ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, field.OwningType);
+        }
+
+        private static void ProcessGenericInstantiation(in DiagnosticContext diagnosticContext, ReflectionMarker reflectionMarker, Instantiation instantiation, Instantiation typicalInstantiation)
+        {
+            for (int i = 0; i < instantiation.Length; i++)
+            {
+                var genericParameter = (GenericParameterDesc)typicalInstantiation[i];
+                if (reflectionMarker.Annotations.GetGenericParameterAnnotation(genericParameter) != default)
+                {
+                    var genericParameterValue = reflectionMarker.Annotations.GetGenericParameterValue(genericParameter);
+                    Debug.Assert(genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None);
+                    MultiValue genericArgumentValue = reflectionMarker.Annotations.GetTypeValueFromGenericArgument(instantiation[i]);
+                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, genericParameter.GetDisplayName());
+                    requireDynamicallyAccessedMembersAction.Invoke(genericArgumentValue, genericParameterValue);
+                }
+            }
         }
     }
 }

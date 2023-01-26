@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Text;
+
 namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
@@ -1547,6 +1549,8 @@ namespace System
         public static bool operator !=(System.DateOnly left, System.DateOnly right) { throw null; }
         public static bool operator <(System.DateOnly left, System.DateOnly right) { throw null; }
         public static bool operator <=(System.DateOnly left, System.DateOnly right) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out int year, out int month, out int day) { throw null; }
         public static System.DateOnly Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         public static System.DateOnly Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider = null, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
         public static System.DateOnly Parse(string s) { throw null; }
@@ -1604,6 +1608,8 @@ namespace System
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.Globalization.Calendar calendar, System.DateTimeKind kind) { throw null; }
         public DateTime(long ticks) { throw null; }
         public DateTime(long ticks, System.DateTimeKind kind) { throw null; }
+        public DateTime(System.DateOnly date, System.TimeOnly time) { throw null; }
+        public DateTime(System.DateOnly date, System.TimeOnly time, System.DateTimeKind kind) { throw null; }
         public System.DateTime Date { get { throw null; } }
         public int Day { get { throw null; } }
         public System.DayOfWeek DayOfWeek { get { throw null; } }
@@ -1658,6 +1664,10 @@ namespace System
         public static bool operator !=(System.DateTime d1, System.DateTime d2) { throw null; }
         public static bool operator <(System.DateTime t1, System.DateTime t2) { throw null; }
         public static bool operator <=(System.DateTime t1, System.DateTime t2) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out System.DateOnly date, out System.TimeOnly time) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out int year, out int month, out int day) { throw null; }
         public static System.TimeSpan operator -(System.DateTime d1, System.DateTime d2) { throw null; }
         public static System.DateTime operator -(System.DateTime d, System.TimeSpan t) { throw null; }
         public static System.DateTime Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
@@ -1733,6 +1743,7 @@ namespace System
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.Globalization.Calendar calendar, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, System.TimeSpan offset) { throw null; }
+        public DateTimeOffset(System.DateOnly date, System.TimeOnly time, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, System.TimeSpan offset) { throw null; }
         public DateTimeOffset(long ticks, System.TimeSpan offset) { throw null; }
         public System.DateTime Date { get { throw null; } }
@@ -1785,6 +1796,8 @@ namespace System
         public static bool operator !=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator <(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator <=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out System.DateOnly date, out System.TimeOnly time, out System.TimeSpan offset) { throw null; }
         public static System.TimeSpan operator -(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static System.DateTimeOffset operator -(System.DateTimeOffset dateTimeOffset, System.TimeSpan timeSpan) { throw null; }
         public static System.DateTimeOffset Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
@@ -4409,6 +4422,9 @@ namespace System
         public Random() { }
         public Random(int Seed) { }
         public static System.Random Shared { get { throw null; } }
+        public T[] GetItems<T>(System.ReadOnlySpan<T> choices, int length) { throw null; }
+        public void GetItems<T>(System.ReadOnlySpan<T> choices, System.Span<T> destination) { }
+        public T[] GetItems<T>(T[] choices, int length) { throw null; }
         public virtual int Next() { throw null; }
         public virtual int Next(int maxValue) { throw null; }
         public virtual int Next(int minValue, int maxValue) { throw null; }
@@ -4420,6 +4436,8 @@ namespace System
         public virtual long NextInt64(long minValue, long maxValue) { throw null; }
         public virtual float NextSingle() { throw null; }
         protected virtual double Sample() { throw null; }
+        public void Shuffle<T>(System.Span<T> values) { }
+        public void Shuffle<T>(T[] values) { }
     }
     public readonly partial struct Range : System.IEquatable<System.Range>
     {
@@ -5029,6 +5047,11 @@ namespace System
         public static System.String Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, object? arg0, object? arg1) { throw null; }
         public static System.String Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, object? arg0, object? arg1, object? arg2) { throw null; }
         public static System.String Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] System.String format, params object?[] args) { throw null; }
+        public static System.String Format<TArg0>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0) { throw null; }
+        public static System.String Format<TArg0, TArg1>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1) { throw null; }
+        public static System.String Format<TArg0, TArg1, TArg2>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
+        public static System.String Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, params object?[] args) { throw null; }
+        public static System.String Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, System.ReadOnlySpan<object?> args) { throw null; }
         public System.CharEnumerator GetEnumerator() { throw null; }
         public override int GetHashCode() { throw null; }
         public static int GetHashCode(System.ReadOnlySpan<char> value) { throw null; }
@@ -5242,6 +5265,14 @@ namespace System
         public static bool operator !=(System.TimeOnly left, System.TimeOnly right) { throw null; }
         public static bool operator <(System.TimeOnly left, System.TimeOnly right) { throw null; }
         public static bool operator <=(System.TimeOnly left, System.TimeOnly right) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out int hour, out int minute) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out int hour, out int minute, out int second) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out int hour, out int minute, out int second, out int millisecond) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out int hour, out int minute, out int second, out int millisecond, out int microsecond) { throw null; }
         public static System.TimeSpan operator -(System.TimeOnly t1, System.TimeOnly t2) { throw null; }
         public static System.TimeOnly Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         public static System.TimeOnly Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider = null, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
@@ -12549,6 +12580,12 @@ namespace System.Runtime.CompilerServices
     {
         public PreserveBaseOverridesAttribute() { }
     }
+    [System.AttributeUsage(System.AttributeTargets.Module, AllowMultiple=false, Inherited=false)]
+    public sealed partial class RefSafetyRulesAttribute : System.Attribute
+    {
+        public RefSafetyRulesAttribute(int version) { }
+        public int Version { get { throw null; } }
+    }
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public sealed class RequiredMemberAttribute : System.Attribute
     {
@@ -13845,6 +13882,13 @@ namespace System.Text
         public static System.Range TrimStart(System.ReadOnlySpan<byte> value) { throw null; }
         public static System.Range TrimStart(System.ReadOnlySpan<char> value) { throw null; }
     }
+    public sealed class CompositeFormat
+    {
+        internal CompositeFormat() { }
+        public static System.Text.CompositeFormat Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.CompositeFormat? compositeFormat) { throw null; }
+        public string Format { get { throw null; } }
+    }
     public abstract partial class Decoder
     {
         protected Decoder() { }
@@ -14242,6 +14286,11 @@ namespace System.Text
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
+        public System.Text.StringBuilder AppendFormat<TArg0>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0) { throw null; }
+        public System.Text.StringBuilder AppendFormat<TArg0, TArg1>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1) { throw null; }
+        public System.Text.StringBuilder AppendFormat<TArg0, TArg1, TArg2>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, params object?[] args) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, System.ReadOnlySpan<object?> args) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params object?[] values) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params string?[] values) { throw null; }
         public System.Text.StringBuilder AppendJoin(string? separator, params object?[] values) { throw null; }

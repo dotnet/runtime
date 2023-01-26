@@ -302,7 +302,7 @@ $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreApp
    ]]>
       </CLRTestBashPreCommands>
 
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetArchitecture)' != 'arm64'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android' And '$(TargetArchitecture)' != 'arm64'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
@@ -339,7 +339,7 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'Browser' And '$(TargetOS)' != 'Android' And '$(TargetArchitecture)' == 'arm64'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android' And '$(TargetArchitecture)' == 'arm64'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
@@ -367,14 +367,14 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
       <![CDATA[
 cd WasmApp
 ./run-v8.sh
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'android'">
       <![CDATA[
 # run Android app
 __Command=""
@@ -399,7 +399,7 @@ CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'iOSSimulator' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'iossimulator'">
       <![CDATA[
 __Command=""
 if [ ! -z ${__TestDotNetCmd+x} ] %3B then
@@ -498,12 +498,12 @@ done
 $(BashCLRTestArgPrep)
       ]]></BashCLRTestArgPrep>
 
-      <CLRTestExecutionScriptHeader Condition=" $(TargetOS) == 'Android' ">
+      <CLRTestExecutionScriptHeader Condition="'$(TargetOS)' == 'android'">
         <![CDATA[
 %23%21/usr/bin/env bash
 set -e
       ]]></CLRTestExecutionScriptHeader>
-      <CLRTestExecutionScriptHeader Condition=" $(TargetOS) != 'Android' ">
+      <CLRTestExecutionScriptHeader Condition="'$(TargetOS)' != 'android'">
         <![CDATA[
 %23%21/usr/bin/env bash
       ]]></CLRTestExecutionScriptHeader>

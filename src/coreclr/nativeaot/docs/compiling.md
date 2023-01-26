@@ -26,9 +26,9 @@ Once you have added the package sources, add a reference to the ILCompiler packa
 
 or by adding the following element to the project file:
 ```xml
-  <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="8.0.0-*" />
-  </ItemGroup>
+<ItemGroup>
+  <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="8.0.0-*" />
+</ItemGroup>
 ```
 
 ## Cross-architecture compilation
@@ -36,9 +36,9 @@ or by adding the following element to the project file:
 Native AOT toolchain allows targeting ARM64 on an x64 host and vice versa for both Windows and Linux and is now supported in the SDK. Cross-OS compilation, such as targeting Linux on a Windows host, is not supported. For SDK support, add the following to your project file,
 
 ```xml
-    <PropertyGroup>
-        <PublishAot>true</PublishAot>
-    </PropertyGroup>
+<PropertyGroup>
+  <PublishAot>true</PublishAot>
+</PropertyGroup>
 ```
 
 Targeting win-arm64 on a Windows x64 host machine,
@@ -77,16 +77,79 @@ NativeAOT binaries built with this feature can run even when libicu libraries ar
 You can use this feature by adding the `StaticICULinking` property to your project file as follows:
 
 ```xml
-    <PropertyGroup>
-      <StaticICULinking>true</StaticICULinking>
-    </PropertyGroup>
+<PropertyGroup>
+  <StaticICULinking>true</StaticICULinking>
+</PropertyGroup>
 ```
 
 This feature is only supported on Linux. This feature is not supported when crosscompiling.
 
+License (Unicode): https://github.com/unicode-org/icu/blob/main/icu4c/LICENSE
+
 ### Prerequisites
 
-Ubuntu (20.04+)
+Ubuntu
+```sh
+apt install libicu-dev cmake
 ```
-sudo apt-get install libicu-dev cmake
+
+Alpine
+```sh
+apk add cmake icu-static icu-dev
+```
+
+## Using statically linked OpenSSL
+This feature can statically link OpenSSL libraries (such as libssl.a and libcrypto.a) into your applications at build time.
+NativeAOT binaries built with this feature can run even when OpenSSL libraries are not installed.
+**WARNING:** *This is scenario for advanced users, please use with extreme caution. Incorrect usage of this feature, can cause security vulnerabilities in your product*
+
+You can use this feature by adding the `StaticOpenSslLinking` property to your project file as follows:
+
+```xml
+<PropertyGroup>
+  <StaticOpenSslLinking>true</StaticOpenSslLinking>
+</PropertyGroup>
+```
+
+This feature is only supported on Linux. This feature is not supported when crosscompiling.
+
+License for OpenSSL v3+ (Apache v2.0): https://github.com/openssl/openssl/blob/master/LICENSE.txt
+License for OpenSSL releases prior to v3 (dual OpenSSL and SSLeay license): https://www.openssl.org/source/license-openssl-ssleay.txt
+
+### Prerequisites
+
+Ubuntu
+```sh
+apt install libssl-dev cmake
+```
+
+Alpine
+```sh
+apk add cmake openssl-dev openssl-libs-static
+```
+
+## Using statically linked NUMA
+This feature can statically link NUMA library (libnuma.a) into your applications at build time.
+NativeAOT binaries built with this feature can run even when NUMA libraries are not installed.
+
+You can use this feature by adding the `StaticNumaLinking` property to your project file as follows:
+
+```xml
+<PropertyGroup>
+  <StaticNumaLinking>true</StaticNumaLinking>
+</PropertyGroup>
+```
+
+License (LGPL v2.1): https://github.com/numactl/numactl/blob/master/LICENSE.LGPL2.1. Note that this license imposes specific requirements on distribution of statically linked binaries.
+
+### Prerequisites
+
+Ubuntu
+```sh
+apt install libnuma-dev
+```
+
+Alpine
+```sh
+apk add numactl-dev
 ```

@@ -150,6 +150,8 @@ if (HOST_LINUX)
   set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
 endif()
 
+check_symbol_exists(CPU_COUNT "sched.h" HAVE_GNU_CPU_COUNT)
+
 check_c_source_compiles(
   "
   #include <string.h>
@@ -161,17 +163,6 @@ check_c_source_compiles(
   }
   "
   HAVE_GNU_STRERROR_R)
-
-check_c_source_compiles(
-  "
-  #include <sched.h>
-  int main(void)
-  {
-    CPU_COUNT((void *) 0);
-    return 0;
-  }
-  "
-  HAVE_GNU_CPU_COUNT)
 
 if (HOST_LINUX OR HOST_ANDROID)
   set(CMAKE_REQUIRED_DEFINITIONS)

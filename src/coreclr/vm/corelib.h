@@ -15,8 +15,8 @@
 //
 
 //
-// Note: This file gets parsed by the Mono IL Linker (https://github.com/mono/linker/) which may throw an exception during parsing.
-// Specifically, this (https://github.com/mono/linker/blob/main/corebuild/integration/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
+// Note: This file gets parsed by the IL Linker (https://github.com/dotnet/runtime/blob/main/src/tools/illink) which may throw an exception during parsing.
+// Specifically, this (https://github.com/dotnet/runtime/blob/main/src/tools/illink/src/ILLink.Tasks/CreateRuntimeRootDescriptorFile.cs) will try to
 // parse this header, and it may throw an exception while doing that. If you edit this file and get a build failure on msbuild.exe D:\repos\coreclr\build.proj
 // you might want to check out the parser linked above.
 //
@@ -484,6 +484,7 @@ DEFINE_METHOD(NATIVELIBRARY,        LOADLIBRARYCALLBACKSTUB, LoadLibraryCallback
 DEFINE_CLASS(VECTOR64T,             Intrinsics,             Vector64`1)
 DEFINE_CLASS(VECTOR128T,            Intrinsics,             Vector128`1)
 DEFINE_CLASS(VECTOR256T,            Intrinsics,             Vector256`1)
+DEFINE_CLASS(VECTOR512T,            Intrinsics,             Vector512`1)
 
 DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
 
@@ -813,7 +814,7 @@ DEFINE_FIELD_U(rgiLastFrameFromForeignExceptionStackTrace,            StackFrame
 DEFINE_FIELD_U(iFrameCount,                StackFrameHelper,   iFrameCount)
 
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
-DEFINE_METHOD(STARTUP_HOOK_PROVIDER, PROCESS_STARTUP_HOOKS, ProcessStartupHooks, SM_RetVoid)
+DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_RetVoid)
 
 DEFINE_CLASS(STREAM,                IO,                     Stream)
 DEFINE_METHOD(STREAM,               BEGIN_READ,             BeginRead,  IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult)
