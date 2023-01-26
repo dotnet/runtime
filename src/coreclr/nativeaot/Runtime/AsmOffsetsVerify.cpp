@@ -19,15 +19,6 @@
 #include "shash.h"
 #include "CallDescr.h"
 
-template<size_t A, size_t B>
-struct ExpectedAndActualValues
-{
-    static constexpr bool Equal()
-    {
-        return A == B;
-    }
-};
-
 class AsmOffsets
 {
     static_assert(sizeof(Thread::m_rgbAllocContextBuffer) >= sizeof(gc_alloc_context), "Thread::m_rgbAllocContextBuffer is not big enough to hold a gc_alloc_context");
@@ -37,13 +28,16 @@ class AsmOffsets
     static_assert(sizeof(((Array*)0)->m_Length) == sizeof(((String*)0)->m_Length), "The length field of String and Array have different sizes");
 
 #define PLAT_ASM_OFFSET(offset, cls, member) \
-    static_assert(ExpectedAndActualValues<0x##offset, offsetof(cls, member)>::Equal(), "Bad asm offset for '" #cls "." #member "'.");
+    static_assert((offsetof(cls, member) == 0x##offset) || (offsetof(cls, member) > 0x##offset), "Bad asm offset for '" #cls "." #member "', the actual offset is smaller than 0x" #offset "."); \
+    static_assert((offsetof(cls, member) == 0x##offset) || (offsetof(cls, member) < 0x##offset), "Bad asm offset for '" #cls "." #member "', the actual offset is larger than 0x" #offset ".");
 
 #define PLAT_ASM_SIZEOF(size,   cls        ) \
-    static_assert(ExpectedAndActualValues<0x##size, sizeof(cls)>::Equal(), "Bad asm size for '" #cls "'.");
+    static_assert((sizeof(cls) == 0x##size) || (sizeof(cls) > 0x##size), "Bad asm size for '" #cls "', the actual size is smaller than 0x" #size "."); \
+    static_assert((sizeof(cls) == 0x##size) || (sizeof(cls) < 0x##size), "Bad asm size for '" #cls "', the actual size is larger than 0x" #size ".");
 
 #define PLAT_ASM_CONST(constant, expr) \
-    static_assert(ExpectedAndActualValues<0x##constant, (expr)>::Equal(),  "Bad asm constant for '" #expr "'.");
+    static_assert(((expr) == 0x##constant) || ((expr) > 0x##constant), "Bad asm constant for '" #expr "', the actual value is smaller than 0x" #constant "."); \
+    static_assert(((expr) == 0x##constant) || ((expr) < 0x##constant), "Bad asm constant for '" #expr "', the actual value is larger than 0x" #constant ".");
 
 #include "AsmOffsets.h"
 
