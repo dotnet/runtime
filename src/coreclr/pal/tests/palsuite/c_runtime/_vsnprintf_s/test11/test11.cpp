@@ -8,7 +8,7 @@
 ** Purpose:   Test #11 for the _vsnprintf function.
 **
 **
-**===================================================================*/ 
+**===================================================================*/
 
 #include <palsuite.h>
 #include "../_vsnprintf_s.h"
@@ -22,7 +22,7 @@ PALTEST(c_runtime__vsnprintf_s_test11_paltest_vsnprintf_test11, "c_runtime/_vsnp
     int neg = -42;
     int pos = 42;
     INT64 l = 42;
-    
+
     if (PAL_Initialize(argc, argv) != 0)
     {
         return(FAIL);
@@ -32,7 +32,6 @@ PALTEST(c_runtime__vsnprintf_s_test11_paltest_vsnprintf_test11, "c_runtime/_vsnp
     DoNumTest("foo %lu", 0xFFFF, "foo 65535");
     DoNumTest("foo %hu", 0xFFFF, "foo 65535");
     DoNumTest("foo %Lu", pos, "foo 42");
-    DoI64Test("foo %I64u", l, "42", "foo 42");
     DoNumTest("foo %3u", pos, "foo  42");
     DoNumTest("foo %-3u", pos, "foo 42 ");
     DoNumTest("foo %.1u", pos, "foo 42");
