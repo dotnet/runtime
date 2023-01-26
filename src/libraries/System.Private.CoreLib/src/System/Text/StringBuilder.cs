@@ -1983,7 +1983,7 @@ namespace System.Text
                     }
                 }
 
-                Debug.Assert(oldValue.Length > chunk.m_ChunkLength - indexInChunk || count == 0,
+                Debug.Assert(oldValue.Length > Math.Min(count, chunk.m_ChunkLength - indexInChunk),
                     $"oldValue.Length = {oldValue.Length}, chunk.m_ChunkLength - indexInChunk = {chunk.m_ChunkLength - indexInChunk}, count == {count}");
 
                 // Now do the more complicated cross-chunk matching.
@@ -2003,7 +2003,7 @@ namespace System.Text
                 }
 
                 // We've either fully explored the chunk or we've reached our count limit.
-                Debug.Assert(indexInChunk >= chunk.m_ChunkLength || count <= 0,
+                Debug.Assert(indexInChunk >= chunk.m_ChunkLength || count == 0,
                     $"indexInChunk = {indexInChunk}, chunk.m_ChunkLength == {chunk.m_ChunkLength}, count == {count}");
 
                 // Replacing mutates the blocks, so we need to convert to a logical index and back afterwards.
