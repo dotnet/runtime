@@ -8,7 +8,7 @@
     <Exec Command="py -3 $(_PythonLocationScript) 2&gt; nul || python3 $(_PythonLocationScript) 2&gt; nul || python $(_PythonLocationScript) 2&gt; nul"
           StandardOutputImportance="Low"
           EchoOff="true"
-          IgnoreExitCode="true"
+          ContinueOnError="ErrorAndContinue"
           ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
     </Exec>
@@ -22,7 +22,7 @@
     <Exec Command="command -v python3 || command -v python || command -v py"
           StandardOutputImportance="Low"
           EchoOff="true"
-          IgnoreExitCode="true"
+          ContinueOnError="ErrorAndContinue"
           ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
     </Exec>
