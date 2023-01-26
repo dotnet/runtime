@@ -42,7 +42,7 @@ DLLEXPORT int __cdecl vsprintf_s (
         string[0] = '\0';
         _SECURECRT__FILL_STRING(string, sizeInBytes, 1);
     }
-    if (retvalue > sizeInBytes)
+    if (retvalue > (int)sizeInBytes)
     {
         _VALIDATE_RETURN(("Buffer too small" && 0), ERANGE, -1);
     }
@@ -78,7 +78,7 @@ DLLEXPORT int __cdecl _vsnprintf_s (
     {
         save_errno = errno;
         retvalue = vsnprintf(string, count + 1, format, ap);
-        if (retvalue > count + 1)
+        if (retvalue > (int)(count + 1))
         {
             /* the string has been truncated, return -1 */
             _SECURECRT__FILL_STRING(string, sizeInBytes, count + 1);
@@ -95,7 +95,7 @@ DLLEXPORT int __cdecl _vsnprintf_s (
         retvalue = vsnprintf(string, sizeInBytes, format, ap);
         string[sizeInBytes - 1] = '\0';
         /* we allow truncation if count == _TRUNCATE */
-        if (retvalue > sizeInBytes && count == _TRUNCATE)
+        if (retvalue > (int)sizeInBytes && count == _TRUNCATE)
         {
             if (errno == ERANGE)
             {
