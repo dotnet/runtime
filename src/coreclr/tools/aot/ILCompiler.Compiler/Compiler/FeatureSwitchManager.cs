@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Resources;
 
@@ -145,9 +146,14 @@ namespace ILCompiler
             // Last step is a sweep - we replace the tail of all unreachable blocks with "br $-2"
             // and nop out the rest. If the basic block is smaller than 2 bytes, we don't touch it.
             // We also eliminate any EH records that correspond to the stubbed out basic block.
+            //
+            // We also attempt to rewrite calls to SR.SomeResourceString accessors with string
+            // literals looked up from the managed resources.
 
             Debug.Assert(method.GetMethodILDefinition() == method);
 
+            // Do not attempt to inline resource strings if we only want to use resource keys.
+            // The optimizations are not compatible.
             bool shouldInlineResourceStrings =
                 !_hashtable._switchValues.TryGetValue("System.Resources.UseSystemResourceKeys", out bool useResourceKeys) || !useResourceKeys;
 
@@ -399,9 +405,10 @@ namespace ILCompiler
                     {
                         var callee = method.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as EcmaMethod;
                         if (callee != null && callee.IsSpecialName && callee.OwningType is EcmaType calleeType
-                            && calleeType.Name == "SR" && calleeType.Namespace == "System"
+                            && calleeType.Name == InlineableStringsResourceNode.ResourceAccessorTypeName
+                            && calleeType.Namespace == InlineableStringsResourceNode.ResourceAccessorTypeNamespace
                             && callee.Signature is { Length: 0, IsStatic: true }
-                            && callee.Name.StartsWith("get_"))
+                            && callee.Name.StartsWith("get_", StringComparison.Ordinal))
                         {
                             flags[offset] |= OpcodeFlags.GetResourceStringCall;
                             hasGetResourceStringCall = true;
@@ -495,9 +502,16 @@ namespace ILCompiler
                 debugInfo = new SubstitutedDebugInformation(debugInfo, sequencePoints.ToArray());
             }
 
+            // We only optimize EcmaMethods because there we can find out the highest string token RID
+            // in use.
             ArrayBuilder<string> newStrings = default;
-            if (hasGetResourceStringCall)
+            if (hasGetResourceStringCall && method.GetMethodILDefinition() is EcmaMethodIL ecmaMethodIL)
             {
+                // We're going to inject new string tokens. Start where the last token of the module left off.
+                // We don't need this token to be globally unique because all token resolution happens in the context
+                // of a MethodIL and we're making a new one here. It just has to be unique to the MethodIL.
+                int tokenRid = ecmaMethodIL.Module.MetadataReader.GetHeapSize(HeapIndex.UserString);
+
                 for (int offset = 0; offset < flags.Length; offset++)
                 {
                     if ((flags[offset] & OpcodeFlags.GetResourceStringCall) == 0)
@@ -506,18 +520,25 @@ namespace ILCompiler
                     Debug.Assert(newBody[offset] == (byte)ILOpcode.call);
                     var getter = (EcmaMethod)method.GetObject(new ILReader(newBody, offset + 1).ReadILToken());
 
+                    // If we can't get the string, this might be something else.
                     string resourceString = GetResourceStringForAccessor(getter);
                     if (resourceString == null)
                         continue;
 
-                    int tokenValue = NewStringTokenRidStart - newStrings.Count;
+                    // If we ran out of tokens, we can't optimize anymore.
+                    if (tokenRid > 0xFFFFFF)
+                        continue;
+
                     newStrings.Add(resourceString);
 
+                    // call and ldstr are both 5-byte instructions: opcode followed by a token.
                     newBody[offset] = (byte)ILOpcode.ldstr;
-                    newBody[offset + 1] = (byte)tokenValue;
-                    newBody[offset + 2] = (byte)(tokenValue >> 8);
-                    newBody[offset + 3] = (byte)(tokenValue >> 16);
-                    newBody[offset + 4] = 0x70;
+                    newBody[offset + 1] = (byte)tokenRid;
+                    newBody[offset + 2] = (byte)(tokenRid >> 8);
+                    newBody[offset + 3] = (byte)(tokenRid >> 16);
+                    newBody[offset + 4] = TokenTypeString;
+
+                    tokenRid++;
                 }
             }
 
@@ -692,7 +713,7 @@ namespace ILCompiler
 
         private string GetResourceStringForAccessor(EcmaMethod method)
         {
-            Debug.Assert(method.Name.StartsWith("get_"));
+            Debug.Assert(method.Name.StartsWith("get_", StringComparison.Ordinal));
             string resourceStringName = method.Name.Substring(4);
 
             Dictionary<string, string> dict = _hashtable.GetOrCreateValue(method.Module).InlineableResourceStrings;
@@ -730,12 +751,16 @@ namespace ILCompiler
             public override LocalVariableDefinition[] GetLocals() => _wrappedMethodIL.GetLocals();
             public override object GetObject(int token, NotFoundBehavior notFoundBehavior)
             {
-                if ((token >>> 24) == 0x70)
+                // If this is a string token, it could be one of the new string tokens we injected.
+                if ((token >>> 24) == TokenTypeString
+                    && _wrappedMethodIL.GetMethodILDefinition() is EcmaMethodIL ecmaMethodIL)
                 {
                     int rid = token & 0xFFFFFF;
-                    if (rid > (NewStringTokenRidStart - _newStrings.Length))
+                    int maxRealTokenRid = ecmaMethodIL.Module.MetadataReader.GetHeapSize(HeapIndex.UserString);
+                    if (rid >= maxRealTokenRid)
                     {
-                        return _newStrings[-(rid - 0xFFFFFF)];
+                        // Yep, string injected by us.
+                        return _newStrings[rid - maxRealTokenRid];
                     }
                 }
 
@@ -760,7 +785,7 @@ namespace ILCompiler
             public override IEnumerable<ILSequencePoint> GetSequencePoints() => _sequencePoints;
         }
 
-        private const int NewStringTokenRidStart = 0xFFFFFF;
+        private const int TokenTypeString = 0x70; // CorTokenType for strings
 
         private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {

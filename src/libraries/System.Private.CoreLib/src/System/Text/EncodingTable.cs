@@ -237,24 +237,20 @@ namespace System.Text
 
         private static string GetDisplayName(int codePage)
         {
-            return codePage switch
+            switch (codePage)
             {
-                1200 => SR.Globalization_cp_1200,
-                1201 => SR.Globalization_cp_1201,
-                12000 => SR.Globalization_cp_12000,
-                12001 => SR.Globalization_cp_12001,
-                20127 => SR.Globalization_cp_20127,
-                28591 => SR.Globalization_cp_28591,
-                65000 => SR.Globalization_cp_65000,
-                65001 => SR.Globalization_cp_65001,
-                _ => AssertFailAndEmptyString()
+                case 1200: return SR.Globalization_cp_1200;
+                case 1201: return SR.Globalization_cp_1201;
+                case 12000: return SR.Globalization_cp_12000;
+                case 12001: return SR.Globalization_cp_12001;
+                case 20127: return SR.Globalization_cp_20127;
+                case 28591: return SR.Globalization_cp_28591;
+                case 65000: return SR.Globalization_cp_65000;
+                case 65001: return SR.Globalization_cp_65001;
             };
 
-            static string AssertFailAndEmptyString()
-            {
-                Debug.Fail("Unexpected code page");
-                return "";
-            }
+            Debug.Fail("Unexpected code page");
+            return "";
         }
     }
 }

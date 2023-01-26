@@ -18,6 +18,10 @@ namespace ILCompiler.DependencyAnalysis
     {
         private readonly EcmaModule _module;
 
+        public const string ResourceAccessorTypeName = "SR";
+        public const string ResourceAccessorTypeNamespace = "System";
+        public const string ResourceAccessorGetStringMethodName = "GetResourceString";
+
         public InlineableStringsResourceNode(EcmaModule module)
         {
             _module = module;
@@ -43,17 +47,17 @@ namespace ILCompiler.DependencyAnalysis
             if (resourceName != resourceName1 && resourceName != resourceName2)
                 return false;
 
-            MetadataType srType = module.GetType("System", "SR", throwIfNotFound: false);
+            MetadataType srType = module.GetType(ResourceAccessorTypeNamespace, ResourceAccessorTypeName, throwIfNotFound: false);
             if (srType == null)
                 return false;
 
-            return srType.GetMethod("GetResourceString", null) != null;
+            return srType.GetMethod(ResourceAccessorGetStringMethodName, null) != null;
         }
 
         public static void AddDependenciesDueToResourceStringUse(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (method.Name == "GetResourceString" && method.OwningType is MetadataType mdType
-                && mdType.Name == "SR" && mdType.Namespace == "System")
+            if (method.Name == ResourceAccessorGetStringMethodName && method.OwningType is MetadataType mdType
+                && mdType.Name == ResourceAccessorTypeName && mdType.Namespace == ResourceAccessorTypeNamespace)
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.InlineableStringResource((EcmaModule)mdType.Module), "Using the System.SR class");
