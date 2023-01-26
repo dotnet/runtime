@@ -13937,7 +13937,6 @@ acfg_free (MonoAotCompile *acfg)
 	got_info_free (&acfg->llvm_got_info);
 	arch_free_unwind_info_section_cache (acfg);
 	mono_mempool_destroy (acfg->mempool);
-	aot_opts_free (&acfg->aot_opts);
 
 	method_to_external_icall_symbol_name = NULL;
 	g_free (acfg);
@@ -15175,7 +15174,8 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 	mono_aot_parse_options (aot_options, &aot_opts);
 	if (aot_opts.direct_extern_calls && !(aot_opts.llvm && aot_opts.static_link)) {
 		fprintf (stderr, "The 'direct-extern-calls' option requires the 'llvm' and 'static' options.\n");
-		return 1;
+		res = 1;
+		goto early_exit;
 	}
 
 	if (aot_opts.dedup_include) {
@@ -15189,7 +15189,8 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		}
 		if (dedup_aindex == -1) {
 			fprintf (stderr, "Can't find --dedup-include assembly '%s' among the assemblies to be compiled.\n", aot_opts.dedup_include);
-			return 1;
+			res = 1;
+			goto early_exit;
 		}
 
 		dedup_assembly = assemblies [dedup_aindex];
@@ -15206,10 +15207,13 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		res = aot_assembly (assemblies [i], jit_opts, &aot_opts);
 		if (res != 0) {
 			fprintf (stderr, "AOT of image %s failed.\n", assemblies [i]->image->name);
-			return 1;
+			goto early_exit;
 		}
 	}
-	return 0;
+
+early_exit:
+	aot_opts_free (&aot_opts);
+	return res;
 }
 
 #else
