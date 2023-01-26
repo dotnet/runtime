@@ -12,9 +12,6 @@
           ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
     </Exec>
-    <PropertyGroup>
-      <PYTHON>$(PYTHON)</PYTHON>
-    </PropertyGroup>
   </Target>
   <Target Name="_FindPythonUnix"
           Condition="!$([MSBuild]::IsOSPlatform(Windows)) and '$(PYTHON)' == ''"
@@ -26,9 +23,6 @@
           ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
     </Exec>
-    <PropertyGroup>
-      <PYTHON>$(PYTHON)</PYTHON>
-    </PropertyGroup>
   </Target>
   <Target Name="FindPython" DependsOnTargets="_FindPythonWindows;_FindPythonUnix">
       <Error Condition="'$(PYTHON)' == ''"
