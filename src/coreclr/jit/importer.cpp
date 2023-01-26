@@ -8260,15 +8260,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 {
                                     op1 = gtNewNothingNode();
                                 }
-
-                                if (fgAddrCouldBeNull(op1->gtGetOp1()))
-                                {
-                                    gtChangeOperToNullCheck(op1, block);
-                                }
-                                else
-                                {
-                                    op1 = gtNewNothingNode();
-                                }
                             }
                             else
                             {
