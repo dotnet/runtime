@@ -29,6 +29,7 @@ namespace System.Net.Http
         private readonly Stream _stream;
 
         // NOTE: These are mutable structs; do not make these readonly.
+        // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync are responsible for disposing/returning their respective buffers.
         private ArrayBuffer _incomingBuffer;
         private ArrayBuffer _outgoingBuffer;
 
@@ -245,6 +246,9 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
+                // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync are responsible for disposing/returning their respective buffers.
+                // SetupAsync is the exception as it's responsible for starting the ProcessOutgoingFramesAsync loop.
+                // As we're about to throw and ProcessOutgoingFramesAsync will never be called, we must return the buffer here.
                 _outgoingBuffer.Dispose();
 
                 Dispose();
@@ -1885,6 +1889,10 @@ namespace System.Net.Http
 
             _connectionWindow.Dispose();
             _writeChannel.Writer.Complete();
+
+            // We're not disposing the _incomingBuffer and _outgoingBuffer here as they may still be in use by
+            // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync respectively, and those methods are
+            // responsible for returning the buffers.
 
             if (HttpTelemetry.Log.IsEnabled())
             {

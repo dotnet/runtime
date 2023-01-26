@@ -59,7 +59,7 @@ namespace System.Net
             byte[] array = _bytes;
             _bytes = null!;
 
-            if (array != null)
+            if (array is not null)
             {
                 ReturnBufferIfPooled(array);
             }
