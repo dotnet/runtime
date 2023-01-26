@@ -13,6 +13,7 @@ using System.Web;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
+using System.Linq;
 
 #nullable enable
 
@@ -64,13 +65,6 @@ internal sealed class BrowserHost
                 envVars[(string)de.Key] = (string)de.Value;
         }
 
-        var runArgsJson = new RunArgumentsJson(applicationArguments: _args.AppArgs,
-                                               runtimeArguments: _args.CommonConfig.RuntimeArguments,
-                                               environmentVariables: envVars,
-                                               forwardConsoleToWS: _args.ForwardConsoleOutput ?? false,
-                                               debugging: _args.CommonConfig.Debugging);
-        runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
-
         string[] urls = envVars.TryGetValue("ASPNETCORE_URLS", out string? aspnetUrls)
                             ? aspnetUrls.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
                             : new string[] { $"http://127.0.0.1:{_args.CommonConfig.HostProperties.WebServerPort}", "https://127.0.0.1:0" };
@@ -80,7 +74,12 @@ internal sealed class BrowserHost
                                                                            urls,
                                                                            token);
 
-        string[] fullUrls = BuildUrls(serverURLs, _args.AppArgs);
+        string[] fullUrls = BuildUrls(serverURLs,
+                                    _args.AppArgs,
+                                    _args.CommonConfig.RuntimeArguments,
+                                    envVars,
+                                    _args.ForwardConsoleOutput ?? false,
+                                    _args.CommonConfig.Debugging);
         Console.WriteLine();
         foreach (string url in fullUrls)
             Console.WriteLine($"App url: {url}");
@@ -157,16 +156,38 @@ internal sealed class BrowserHost
         }
     }
 
-    private string[] BuildUrls(ServerURLs serverURLs, IEnumerable<string> passThroughArguments)
+    private string[] BuildUrls(ServerURLs serverURLs,
+                            IEnumerable<string> passThroughArguments,
+                            string[] runtimeArguments,
+                            IDictionary<string, string> environmentVariables,
+                            bool forwardConsoleToWS=false,
+                            bool debugging = false)
     {
         var sb = new StringBuilder();
-        foreach (string arg in passThroughArguments)
+        if (!forwardConsoleToWS)
+            sb.Append($"arg=--no-forward-console");
+        if (debugging)
         {
             if (sb.Length > 0)
-                sb.Append('&');
-
-            sb.Append($"arg={HttpUtility.UrlEncode(arg)}");
+            {
+                sb.Append($"&arg=--debug");
+            }
+            else
+            {
+                sb.Append($"arg=--debug");
+            }
         }
+        if (sb.Length > 0 && runtimeArguments.Length > 0)
+            sb.Append('&');
+        sb.AppendJoin("&", runtimeArguments.Select(arg => ($"arg=--runtime-arg={HttpUtility.UrlEncode(arg)}")));
+
+        if (sb.Length > 0 && environmentVariables.Count > 0)
+            sb.Append('&');
+        sb.AppendJoin("&", environmentVariables.Select(arg => $"arg=--setenv={HttpUtility.UrlEncode(arg.Key)}={HttpUtility.UrlEncode(arg.Value)}"));
+
+        if (sb.Length > 0 && passThroughArguments.Any())
+            sb.Append('&');
+        sb.AppendJoin("&", passThroughArguments.Select(arg => $"arg={HttpUtility.UrlEncode(arg)}"));
 
         string query = sb.ToString();
         string filename = Path.GetFileName(_args.HTMLPath!);

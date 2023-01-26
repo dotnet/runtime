@@ -63,14 +63,7 @@ async function getArgs() {
         queryArguments = Array.from(WScript.Arguments);
     }
 
-    let runArgsJson = initRunArgs({});
-    const response = await fetch('/runArgs.json');
-    if (response.ok) {
-        runArgsJson = initRunArgs(await response.json());
-    } else {
-        console.debug(`could not load /runArgs.json: ${response.status}. Ignoring`);
-    }
-    let runArgs = queryArguments.length > 0 ? processArguments(queryArguments, runArgsJson) : runArgsJson;
+    const runArgs = queryArguments.length > 0 ? processArguments(queryArguments) : initRunArgs({});
     return runArgs;
 }
 
@@ -91,8 +84,8 @@ function initRunArgs(runArgs) {
     return runArgs;
 }
 
-function processArguments(incomingArguments, runArgsJson) {
-    const runArgs = runArgsJson;
+function processArguments(incomingArguments) {
+    const runArgs = initRunArgs({});
 
     console.log("Incoming arguments: " + incomingArguments.join(' '));
     while (incomingArguments && incomingArguments.length > 0) {

@@ -67,10 +67,6 @@ internal sealed class JSEngineHost
         if (_args.CommonConfig.Debugging)
             throw new CommandLineException($"Debugging not supported with {_args.Host}");
 
-        var runArgsJson = new RunArgumentsJson(applicationArguments: Array.Empty<string>(),
-                                               runtimeArguments: _args.CommonConfig.RuntimeArguments);
-        runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
-
         var args = new List<string>();
 
         if (_args.Host == WasmHost.V8)
@@ -88,6 +84,7 @@ internal sealed class JSEngineHost
             args.Add("--");
         }
 
+        args.AddRange(_args.CommonConfig.RuntimeArguments);
         args.AddRange(_args.AppArgs);
 
         ProcessStartInfo psi = new()
