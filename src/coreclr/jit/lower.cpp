@@ -7179,6 +7179,7 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
         // into a register.
         if (op1->gtGetOp2()->isContained())
         {
+            op1->gtOper = GT_ANDFLAGS;
             op1->gtType = TYP_VOID;
             op1->gtFlags |= GTF_SET_FLAGS;
         }

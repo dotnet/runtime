@@ -307,18 +307,11 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
-        case GT_AND:
+        case GT_ANDFLAGS:
             srcCount = BuildBinaryUses(tree->AsOp());
-            if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
-            {
-                assert(tree->TypeGet() == TYP_VOID);
-                assert(dstCount == 0);
-            }
-            else
-            {
-                assert(dstCount == 1);
-                BuildDef(tree);
-            }
+            assert(dstCount == 0);
+            assert((tree->gtFlags & GTF_SET_FLAGS) != 0);
+            assert(tree->TypeGet() == TYP_VOID);
             break;
 
         case GT_BFIZ:

@@ -242,6 +242,10 @@ GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF|DBK_NOTHIR)
 // The XARCH BT instruction. Like CMP, this sets the condition flags (CF to be precise) and does not produce a value.
 GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR))
 #endif
+// Sets the condition flags according to the combined results of it's children.
+#if defined(TARGET_ARM64)
+GTNODE(ANDFLAGS         , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+#endif
 
 //-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:

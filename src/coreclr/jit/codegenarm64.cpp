@@ -2519,12 +2519,12 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(targetReg != REG_NA);
+
     // Handles combined operations: 'madd', 'msub'
     if (op2->OperIs(GT_MUL) && op2->isContained())
     {
-        // The arithmetic node must be sitting in a register (since it's not contained)
-        assert(targetReg != REG_NA);
-
         // In the future, we might consider enabling this for floating-point "unsafe" math.
         assert(varTypeIsIntegral(tree));
 
@@ -2720,16 +2720,10 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         assert(chain);
 
         // Move the result from flags into a register.
-        if (targetReg != REG_NA)
-        {
-            inst_SETCC(cond, tree->TypeGet(), targetReg);
-            genProduceReg(tree);
-        }
+        inst_SETCC(cond, tree->TypeGet(), targetReg);
+        genProduceReg(tree);
         return;
     }
-
-    // The arithmetic node must be sitting in a register (since it's not contained)
-    assert(targetReg != REG_NA);
 
     instruction ins = genGetInsForOper(tree->OperGet(), targetType);
 
@@ -4788,6 +4782,50 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
 
     regSet.verifyRegUsed(targetReg);
     genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForAndFlags: Generates code for ANDFLAGS statement.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForAndFlags(GenTreeOp* tree)
+{
+    var_types targetType = tree->TypeGet();
+    emitter*  emit       = GetEmitter();
+
+    assert(tree->OperIs(GT_ANDFLAGS));
+    assert(tree->GetRegNum() == REG_NA);
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    if (tree->isContainedCompareChainSegment(op2))
+    {
+        GenCondition cond;
+        bool         chain = false;
+
+        JITDUMP("Generating compare chain:\n");
+        if (op1->isContained())
+        {
+            // Generate Op1 into flags.
+            genCodeForContainedCompareChain(op1, &chain, &cond);
+            assert(chain);
+        }
+        else
+        {
+            // Op1 is not contained, move it from a register into flags.
+            emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
+            cond  = GenCondition::NE;
+            chain = true;
+        }
+
+        // Gen Op2 into flags.
+        genCodeForContainedCompareChain(op2, &chain, &cond);
+        assert(chain);
+        return;
+    }
 }
 
 //------------------------------------------------------------------------

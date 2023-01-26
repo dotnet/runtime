@@ -2601,27 +2601,27 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
 #if defined(TARGET_ARM64)
     if (relop->OperIs(GT_AND))
     {
-        if ((relop->gtFlags & GTF_SET_FLAGS) == 0)
+        // The condition was generated into a register.
+        assert(relop->gtType != TYP_VOID);
+        regNumber reg = relop->GetRegNum();
+        assert(reg != REG_NA);
+        emitAttr attr = emitActualTypeSize(relop->TypeGet());
+        GetEmitter()->emitIns_J_R(INS_cbnz, attr, compiler->compCurBB->bbJumpDest, reg);
+        return;
+    }
+    else if (relop->OperIs(GT_ANDFLAGS))
+    {
+        // Find the last contained compare in the chain.
+        assert(relop->gtType == TYP_VOID);
+        GenTreeOp* lastCompare = relop->gtGetOp2()->AsOp();
+        assert(lastCompare->isContained());
+        while (!lastCompare->OperIsCompare())
         {
-            // The condition was generated into a register.
-            regNumber reg  = relop->GetRegNum();
-            emitAttr  attr = emitActualTypeSize(relop->TypeGet());
-            GetEmitter()->emitIns_J_R(INS_cbnz, attr, compiler->compCurBB->bbJumpDest, reg);
-            return;
-        }
-        else
-        {
-            // Find the last contained compare in the chain.
-            GenTreeOp* lastCompare = relop->gtGetOp2()->AsOp();
+            assert(lastCompare->OperIs(GT_AND));
+            lastCompare = lastCompare->gtGetOp2()->AsOp();
             assert(lastCompare->isContained());
-            while (!lastCompare->OperIsCompare())
-            {
-                assert(lastCompare->OperIs(GT_AND));
-                lastCompare = lastCompare->gtGetOp2()->AsOp();
-                assert(lastCompare->isContained());
-            }
-            condition = GenCondition::FromRelop(lastCompare);
         }
+        condition = GenCondition::FromRelop(lastCompare);
     }
     else
 #endif

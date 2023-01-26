@@ -10668,7 +10668,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_TEST_EQ:
             case GT_TEST_NE:
             case GT_SELECT:
-            case GT_AND:
                 if (tree->gtFlags & GTF_RELOP_NAN_UN)
                 {
                     printf("N");
