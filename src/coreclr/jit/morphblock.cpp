@@ -1183,9 +1183,16 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     unsigned fieldCnt = 0;
 
     unsigned dyingFieldCnt = 0;
-    if (m_dstDoFldAsg && m_comp->fgGlobalMorph)
+    if (m_dstDoFldAsg)
     {
-        dyingFieldCnt = genCountBits(static_cast<unsigned>(m_dstLclNode->gtFlags & m_dstVarDsc->AllFieldDeathFlags()));
+        fieldCnt = m_dstVarDsc->lvFieldCnt;
+
+        if (m_comp->fgGlobalMorph)
+        {
+            dyingFieldCnt =
+                genCountBits(static_cast<unsigned>(m_dstLclNode->gtFlags & m_dstVarDsc->AllFieldDeathFlags()));
+            assert(dyingFieldCnt <= fieldCnt);
+        }
     }
 
     if (m_dstDoFldAsg && m_srcDoFldAsg)
@@ -1195,12 +1202,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         // at the same offsets.
         assert(m_dstLclNum != BAD_VAR_NUM && m_srcLclNum != BAD_VAR_NUM);
         assert(m_dstVarDsc != nullptr && m_srcVarDsc != nullptr && m_dstVarDsc->lvFieldCnt == m_srcVarDsc->lvFieldCnt);
-
-        fieldCnt = m_dstVarDsc->lvFieldCnt;
     }
     else if (m_dstDoFldAsg)
     {
-        fieldCnt       = m_dstVarDsc->lvFieldCnt;
         m_srcUseLclFld = m_srcVarDsc != nullptr;
 
         if (!m_srcUseLclFld)
@@ -1239,23 +1243,35 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         {
             dstAddr = m_dst->AsIndir()->Addr();
 
-            if (m_comp->gtClone(dstAddr))
+            // "dstAddr" might be a complex expression that we need to clone
+            // and spill, unless we only end up using the address once.
+            if (m_srcVarDsc->lvFieldCnt > 1)
             {
-                // "dstAddr" is simple expression. No need to spill
-                noway_assert((dstAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
-            }
-            else
-            {
-                // "dstAddr" is complex expression. Clone and spill it (unless the source is a struct
-                // local that only has one field, in which case we'd only use the address value once...)
-                if (m_srcVarDsc->lvFieldCnt > 1)
+                if (m_comp->gtClone(dstAddr))
                 {
-                    // We will spill "dstAddr" (i.e. assign to a temp "BlockOp address local")
-                    // no need to clone a new copy as it is only used once
-                    //
-                    addrSpill = dstAddr; // addrSpill represents the "dstAddr"
+                    // "dstAddr" is simple expression. No need to spill
+                    noway_assert((dstAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+                }
+                else
+                {
+                    addrSpill = dstAddr;
                 }
             }
+        }
+    }
+
+    if (dyingFieldCnt == fieldCnt)
+    {
+        JITDUMP("All fields of destination of field-by-field copy are dying, skipping entirely\n");
+
+        if (m_srcUseLclFld)
+        {
+            return m_comp->gtNewNothingNode();
+        }
+        else
+        {
+            JITDUMP("  ...but keeping a nullcheck\n");
+            return m_comp->gtNewIndir(TYP_BYTE, srcAddr);
         }
     }
 
@@ -1276,7 +1292,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
     // We may have allocated a temp above, and that may have caused the lvaTable to be expanded.
     // So, beyond this point we cannot rely on the old values of 'm_srcVarDsc' and 'm_dstVarDsc'.
-    unsigned numCreated = 0;
 
     for (unsigned i = 0; i < fieldCnt; ++i)
     {
@@ -1325,9 +1340,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     }
                     else
                     {
-                        if (i == (fieldCnt - 1))
+                        if (result == nullptr)
                         {
-                            // Reuse the original "dstAddr" tree for the last field.
+                            // Reuse the original "dstAddr" tree for the first field.
                             dstAddrClone = dstAddr;
                         }
                         else
@@ -1378,8 +1393,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             }
         }
 
-        numCreated++;
-
         GenTree* srcFld = nullptr;
         if (m_srcDoFldAsg)
         {
@@ -1415,9 +1428,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     }
                     else
                     {
-                        if (numCreated == fieldCnt - dyingFieldCnt)
+                        if (result == nullptr)
                         {
-                            // Reuse the original m_srcAddr tree for the last field.
+                            // Reuse the original m_srcAddr tree for the first field.
                             srcAddrClone = srcAddr;
                         }
                         else
@@ -1515,18 +1528,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         }
     }
 
-    if (dyingFieldCnt == fieldCnt)
-    {
-        assert(result == nullptr);
-        if (m_srcUseLclFld)
-        {
-            result = m_comp->gtNewNothingNode();
-        }
-        else
-        {
-            result = m_comp->gtNewIndir(TYP_BYTE, srcAddr);
-        }
-    }
     return result;
 }
 
