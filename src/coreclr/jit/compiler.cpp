@@ -1910,8 +1910,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compGeneratingProlog = false;
     compGeneratingEpilog = false;
 
-    compLSRADone       = false;
-    compRationalIRForm = false;
+    compPostImportationCleanupDone = false;
+    compLSRADone                   = false;
+    compRationalIRForm             = false;
 
 #ifdef DEBUG
     compCodeGenDone        = false;
@@ -4431,19 +4432,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
 
-    // Expand any patchpoints
-    //
-    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
-
-    // Transform indirect calls that require control flow expansion.
-    //
-    DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
-
-    // Cleanup un-imported BBs, cleanup un-imported or
-    // partially imported try regions, add OSR step blocks.
-    //
-    DoPhase(this, PHASE_POST_IMPORT, &Compiler::fgPostImportationCleanup);
-
     // Compute bbNum, bbRefs and bbPreds
     //
     // This is the first time full (not cheap) preds will be computed.
@@ -4460,6 +4448,19 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         activePhaseChecks |= PhaseChecks::CHECK_FG;
     };
     DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
+
+    // Expand any patchpoints
+    //
+    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgTransformPatchpoints);
+
+    // Transform indirect calls that require control flow expansion.
+    //
+    DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
+
+    // Cleanup un-imported BBs, cleanup un-imported or
+    // partially imported try regions, add OSR step blocks.
+    //
+    DoPhase(this, PHASE_POST_IMPORT, &Compiler::fgPostImportationCleanup);
 
     // If we're importing for inlining, we're done.
     if (compIsForInlining())

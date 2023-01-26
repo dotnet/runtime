@@ -9122,6 +9122,7 @@ public:
     bool fgLocalVarLivenessChanged;
     bool fgIsDoingEarlyLiveness;
     bool fgDidEarlyLiveness;
+    bool compPostImportationCleanupDone;
     bool compLSRADone;
     bool compRationalIRForm;
 
