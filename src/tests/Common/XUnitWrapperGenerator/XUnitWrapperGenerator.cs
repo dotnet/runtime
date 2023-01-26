@@ -230,6 +230,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
         builder.AppendLine("System.Console.SetOut(outputRecorder);");
 
+        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.templog.xml""))");
+        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.templog.xml"");");
+
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
         StringBuilder testExecutorBuilder = new();
@@ -238,6 +241,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         if (testInfos.Length > 0)
         {
+            // Open the stream writer for the temp log.
+            builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.templog.xml"")) {{");
+
             // Break tests into groups of 50 so that we don't create an unreasonably large main method
             // Excessively large methods are known to take a long time to compile, and use excessive stack
             // leading to test failures.
@@ -248,14 +254,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     if (currentTestExecutor != 0)
                         testExecutorBuilder.AppendLine("}");
                     currentTestExecutor++;
-                    testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}(XUnitWrapperLibrary.TestSummary summary, XUnitWrapperLibrary.TestFilter filter, XUnitWrapperLibrary.TestOutputRecorder outputRecorder, System.Diagnostics.Stopwatch stopwatch){{");
-                    builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch);");
+                    testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}(XUnitWrapperLibrary.TestSummary summary, XUnitWrapperLibrary.TestFilter filter, XUnitWrapperLibrary.TestOutputRecorder outputRecorder, System.Diagnostics.Stopwatch stopwatch, System.IO.StreamWriter tempLogSw){{");
+                    builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch, tempLogSw);");
                     testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
                 }
                 testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
                 testsLeftInCurrentTestExecutor--;
             }
             testExecutorBuilder.AppendLine("}");
+            builder.AppendLine("}");
         }
 
         builder.AppendLine("return summary;");
