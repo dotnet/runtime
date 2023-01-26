@@ -4498,6 +4498,8 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         {
             index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
 #ifdef TARGET_AMD64
+            // Mark this GT_CAST node as being used for indexing, can potentially skip generating a
+            // redundant mov during the CodeGen phase.
             index->AsCast()->usedForIndexing = true;
 #endif
         }

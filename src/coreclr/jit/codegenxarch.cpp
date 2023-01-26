@@ -6920,6 +6920,18 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 #ifdef TARGET_AMD64
         if (compiler->opts.OptimizationEnabled() && cast->usedForIndexing)
         {
+            // If a GT_CAST is used when indexing into an array, a sequence like this could potentially be generated:
+            //
+            //      mov      dstReg, srcReg
+            //      mov      dstReg, dword ptr [baseReg+imm*dstReg]
+            //
+            // This can be rewritten as the following for unsigned casts:
+            //
+            //      mov      dstReg, dword ptr [baseReg+imm*srcReg]
+            // 
+            // Check to see if the next node is a GT_LEA containing this GT_CAST and if the node after the GT_LEA is
+            // a GT_IND using the GT_CAST. If it is possible to remove the first mov instruction, mark this GT_CAST
+            // as skipped and use srcReg when generating the GT_IND.
             GenTree* leaOper = cast->gtNext;
             if (leaOper != nullptr && leaOper->OperIs(GT_LEA) && leaOper->AsAddrMode()->gtOp2 == cast)
             {

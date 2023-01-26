@@ -4196,6 +4196,8 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
 #ifdef TARGET_AMD64
             if (index->OperIs(GT_CAST) && index->AsCast()->skippedGenForIndexing)
             {
+                // If the index node is a GT_CAST that was skipped for indexing, use the
+                // srcReg of the GT_CAST to skip a redundant mov instruction.
                 amIndxReg = index->AsCast()->CastOp()->GetRegNum();
             }
             else
