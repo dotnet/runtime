@@ -111,11 +111,11 @@ namespace System.Collections.Frozen
         /// <remarks>
         /// This tries to select a prime number of buckets. Rather than iterating through all possible bucket
         /// sizes, starting at the exact number of hash codes and incrementing the bucket count by 1 per trial,
-        /// this is a trade-off between speed of determining a good number of buckets and maximumal density.
+        /// this is a trade-off between speed of determining a good number of buckets and maximal density.
         /// </remarks>
         private static int CalcNumBuckets(int[] hashCodes)
         {
-            const double AcceptableCollisionRate = 0.05;  // What is a satifactory rate of hash collisions?
+            const double AcceptableCollisionRate = 0.05;  // What is a satisfactory rate of hash collisions?
             const int LargeInputSizeThreshold = 1000;     // What is the limit for an input to be considered "small"?
             const int MaxSmallBucketTableMultiplier = 16; // How large a bucket table should be allowed for small inputs?
             const int MaxLargeBucketTableMultiplier = 3;  // How large a bucket table should be allowed for large inputs?
@@ -125,13 +125,14 @@ namespace System.Collections.Frozen
             Debug.Assert(codes.Count != 0);
 
             // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
-            // hash codes. If there are more codes than in our precomputed primes table, which accomodates millions of values,
+            // hash codes. If there are more codes than in our precomputed primes table, which accommodates millions of values,
             // give up and just use the next prime.
             int minPrimeIndexInclusive = 0;
             while (minPrimeIndexInclusive < HashHelpers.s_primes.Length && codes.Count > HashHelpers.s_primes[minPrimeIndexInclusive])
             {
                 minPrimeIndexInclusive++;
             }
+
             if (minPrimeIndexInclusive >= HashHelpers.s_primes.Length)
             {
                 return HashHelpers.GetPrime(codes.Count);
@@ -143,12 +144,13 @@ namespace System.Collections.Frozen
                 codes.Count *
                 (codes.Count >= LargeInputSizeThreshold ? MaxLargeBucketTableMultiplier : MaxSmallBucketTableMultiplier);
 
-            // Find the index of the smallest prime that accomodates our max buckets.
+            // Find the index of the smallest prime that accommodates our max buckets.
             int maxPrimeIndexExclusive = minPrimeIndexInclusive;
             while (maxPrimeIndexExclusive < HashHelpers.s_primes.Length && maxNumBuckets > HashHelpers.s_primes[maxPrimeIndexExclusive])
             {
                 maxPrimeIndexExclusive++;
             }
+
             if (maxPrimeIndexExclusive < HashHelpers.s_primes.Length)
             {
                 Debug.Assert(maxPrimeIndexExclusive != 0);

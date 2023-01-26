@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
@@ -327,5 +327,9 @@
     <Reference Include="System.Transactions.Local" />
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XmlSerializer" />
+    <ProjectReference Include="..\..\System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
+                  SetTargetFramework="TargetFramework=netstandard2.0"
+                  OutputItemType="Analyzer"
+                  ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

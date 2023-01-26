@@ -37,8 +37,6 @@ internal sealed class JSEngineHost
 
     private async Task<int> RunAsync()
     {
-        string[] engineArgs = Array.Empty<string>();
-
         string engineBinary = _args.Host switch
         {
             WasmHost.V8 => "v8",
@@ -75,9 +73,10 @@ internal sealed class JSEngineHost
             args.Add("--expose_wasm");
         }
 
-        args.Add(_args.JSPath!);
+        args.AddRange(_args.CommonConfig.HostArguments);
 
-        args.AddRange(engineArgs);
+        args.Add(_args.JSPath!);
+ 
         // only v8/jsc require arguments to the script separated by "--", for consistency do it for all
         args.Add("--");
         args.AddRange(_args.CommonConfig.RuntimeArguments);
