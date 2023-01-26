@@ -4,6 +4,8 @@
 
 #include <eventpipe/ep-rt-config.h>
 
+#include <inttypes.h>
+
 #ifdef ENABLE_PERFTRACING
 
 #include "gcenv.h"
