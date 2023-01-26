@@ -100,49 +100,56 @@ namespace System.Tests.Types
             Assert.Equal(typeof(OutAttribute).Project(), paramType.GetRequiredCustomModifiers()[0]);
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void Methods_OpenGeneric_Unmodified()
-        {
-            MethodInfo mi = typeof(ModifiedTypeHolder).Project().GetMethod(nameof(ModifiedTypeHolder.M_ArrayOpenGenericFcnPtr), Bindings);
-            Assert.Equal(1, mi.GetGenericArguments().Length);
-            Type p0 = mi.GetGenericArguments()[0];
-            Assert.True(p0.IsGenericMethodParameter);
-            Assert.False(IsModifiedType(p0));
+        // NOTE: commented out due to compiler issue on NativeAOT: #81117
+        //[Fact]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        //public static unsafe void Methods_OpenGeneric_Unmodified()
+        //{
+        //    MethodInfo mi = typeof(ModifiedTypeHolder).Project().GetMethod(nameof(ModifiedTypeHolder.M_ArrayOpenGenericFcnPtr), Bindings);
+        //    Assert.Equal(1, mi.GetGenericArguments().Length);
+        //    Type p0 = mi.GetGenericArguments()[0];
+        //    Assert.True(p0.IsGenericMethodParameter);
+        //    Assert.False(IsModifiedType(p0));
 
-            Type p1 = mi.GetParameters()[1].ParameterType.GetElementType();
-            Assert.True(p1.IsFunctionPointer);
-            Assert.False(p1.IsGenericTypeParameter);
-            Assert.False(IsModifiedType(p1));
-            Assert.Equal(1, p1.GetFunctionPointerParameterTypes().Length);
-            Type paramType = p1.GetFunctionPointerParameterTypes()[0];
-            Assert.Equal(0, paramType.GetRequiredCustomModifiers().Length);
-            Assert.False(IsModifiedType(paramType));
-        }
+        //    Type arr = mi.GetParameters()[1].ParameterType;
+        //    Assert.False(IsModifiedType(arr));
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095",TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void Methods_OpenGeneric_Modified()
-        {
-            MethodInfo mi = typeof(ModifiedTypeHolder).Project().GetMethod(nameof(ModifiedTypeHolder.M_ArrayOpenGenericFcnPtr), Bindings);
-            Assert.Equal(1, mi.GetGenericArguments().Length);
-            Type p0 = mi.GetGenericArguments()[0];
-            Assert.True(p0.IsGenericMethodParameter);
-            Assert.False(IsModifiedType(p0));
+        //    Type p1 = arr.GetElementType();
+        //    Assert.True(p1.IsFunctionPointer);
+        //    Assert.False(p1.IsGenericTypeParameter);
+        //    Assert.False(IsModifiedType(p1));
+        //    Assert.Equal(1, p1.GetFunctionPointerParameterTypes().Length);
+        //    Type paramType = p1.GetFunctionPointerParameterTypes()[0];
+        //    Assert.Equal(0, paramType.GetRequiredCustomModifiers().Length);
+        //    Assert.False(IsModifiedType(paramType));
+        //}
 
-            Type p1 = mi.GetParameters()[1].GetModifiedParameterType().GetElementType();
-            Assert.True(p1.IsFunctionPointer);
-            Assert.False(p1.IsGenericTypeParameter);
-            Assert.True(IsModifiedType(p1));
+        //[Fact]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/71095",TestRuntimes.Mono)]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        //public static unsafe void Methods_OpenGeneric_Modified()
+        //{
+        //    MethodInfo mi = typeof(ModifiedTypeHolder).Project().GetMethod(nameof(ModifiedTypeHolder.M_ArrayOpenGenericFcnPtr), Bindings);
+        //    Assert.Equal(1, mi.GetGenericArguments().Length);
+        //    Type p0 = mi.GetGenericArguments()[0];
+        //    Assert.True(p0.IsGenericMethodParameter);
+        //    Assert.False(IsModifiedType(p0));
 
-            Assert.Equal(1, p1.GetFunctionPointerParameterTypes().Length);
-            Type paramType = p1.GetFunctionPointerParameterTypes()[0];
-            Assert.True(IsModifiedType(paramType));
-            Assert.Equal(1, paramType.GetRequiredCustomModifiers().Length);
-            Assert.Equal(typeof(OutAttribute).Project(), paramType.GetRequiredCustomModifiers()[0]);
-        }
+        //    Type arr = mi.GetParameters()[1].GetModifiedParameterType();
+        //    Assert.True(IsModifiedType(arr));
+
+        //    Type p1 = arr.GetElementType();
+        //    Assert.True(p1.IsFunctionPointer);
+        //    Assert.False(p1.IsGenericTypeParameter);
+        //    Assert.True(IsModifiedType(p1));
+
+        //    Assert.Equal(1, p1.GetFunctionPointerParameterTypes().Length);
+        //    Type paramType = p1.GetFunctionPointerParameterTypes()[0];
+        //    Assert.True(IsModifiedType(paramType));
+        //    Assert.Equal(1, paramType.GetRequiredCustomModifiers().Length);
+        //    Assert.Equal(typeof(OutAttribute).Project(), paramType.GetRequiredCustomModifiers()[0]);
+        //}
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
@@ -458,51 +465,50 @@ namespace System.Tests.Types
         }
 
         // NOTE: commented out due to compiler issue on NativeAOT: #81117
-        /*
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void Property_FcnPtr_Complex_Unmodified()
-        {
-            Type mt = typeof(ModifiedTypeHolder).Project().GetProperty(nameof(ModifiedTypeHolder.Property_FcnPtr_Complex), Bindings).PropertyType;
-            Type f1 = mt.GetElementType();
-            Assert.Equal("System.Boolean(System.Int32(), System.Void(System.Byte(), System.Int32(), System.Int64()))", f1.ToString());
+        //[Fact]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        //public static unsafe void Property_FcnPtr_Complex_Unmodified()
+        //{
+        //    Type mt = typeof(ModifiedTypeHolder).Project().GetProperty(nameof(ModifiedTypeHolder.Property_FcnPtr_Complex), Bindings).PropertyType;
+        //    Type f1 = mt.GetElementType();
+        //    Assert.Equal("System.Boolean(System.Int32(), System.Void(System.Byte(), System.Int32(), System.Int64()))", f1.ToString());
 
-            Type f2 = f1.GetFunctionPointerParameterTypes()[1];
-            Assert.Equal("System.Void(System.Byte(), System.Int32(), System.Int64())", f2.ToString());
+        //    Type f2 = f1.GetFunctionPointerParameterTypes()[1];
+        //    Assert.Equal("System.Void(System.Byte(), System.Int32(), System.Int64())", f2.ToString());
 
-            Type target = f2.GetFunctionPointerParameterTypes()[2];
-            Assert.Equal("System.Int64()", target.ToString());
+        //    Type target = f2.GetFunctionPointerParameterTypes()[2];
+        //    Assert.Equal("System.Int64()", target.ToString());
 
-            Assert.Equal(0, target.GetFunctionPointerCallingConventions().Length);
-        }
+        //    Assert.Equal(0, target.GetFunctionPointerCallingConventions().Length);
+        //}
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void Property_FcnPtr_Complex_Modified()
-        {
-            Type mt = typeof(ModifiedTypeHolder).Project().GetProperty(nameof(ModifiedTypeHolder.Property_FcnPtr_Complex), Bindings).GetModifiedPropertyType();
+        //[Fact]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        //public static unsafe void Property_FcnPtr_Complex_Modified()
+        //{
+        //    Type mt = typeof(ModifiedTypeHolder).Project().GetProperty(nameof(ModifiedTypeHolder.Property_FcnPtr_Complex), Bindings).GetModifiedPropertyType();
 
-            Type f1 = mt.GetElementType();
-            Assert.Equal("System.Boolean(System.Int32(), System.Void(System.Byte(), System.Int32(), System.Int64()))", f1.ToString());
+        //    Type f1 = mt.GetElementType();
+        //    Assert.Equal("System.Boolean(System.Int32(), System.Void(System.Byte(), System.Int32(), System.Int64()))", f1.ToString());
 
-            Type f2 = f1.GetFunctionPointerParameterTypes()[1];
-            Assert.Equal("System.Void(System.Byte(), System.Int32(), System.Int64())", f2.ToString());
+        //    Type f2 = f1.GetFunctionPointerParameterTypes()[1];
+        //    Assert.Equal("System.Void(System.Byte(), System.Int32(), System.Int64())", f2.ToString());
 
-            Type target = f2.GetFunctionPointerParameterTypes()[2];
-            Assert.Equal("System.Int64()", target.ToString());
-            Assert.Equal(1, target.GetFunctionPointerCallingConventions().Length);
-            Assert.Equal(typeof(CallConvCdecl).Project(), target.GetFunctionPointerCallingConventions()[0]);
-        }
-        */
+        //    Type target = f2.GetFunctionPointerParameterTypes()[2];
+        //    Assert.Equal("System.Int64()", target.ToString());
+        //    Assert.Equal(1, target.GetFunctionPointerCallingConventions().Length);
+        //    Assert.Equal(typeof(CallConvCdecl).Project(), target.GetFunctionPointerCallingConventions()[0]);
+        //}
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void GenericMethodWithModifiers_Unmodified()
+        public static unsafe void MethodWithGenericParameter_Unmodified()
         {
-            MethodInfo mi = typeof(GenericWithModifiers).Project().GetMethod(nameof(GenericWithModifiers.MyMethodWithGeneric), Bindings);
+            MethodInfo mi = typeof(GenericWithModifiers).Project().GetMethod(nameof(GenericWithModifiers.MethodWithGenericParameter), Bindings);
+            Assert.False(mi.ContainsGenericParameters);
 
             Type a1 = mi.GetParameters()[0].ParameterType;
             Assert.False(IsModifiedType(a1));
@@ -521,9 +527,10 @@ namespace System.Tests.Types
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void GenericMethodWithModifiers_Modified()
+        public static unsafe void MethodWithGenericParameter_Modified()
         {
-            MethodInfo mi = typeof(GenericWithModifiers).Project().GetMethod(nameof(GenericWithModifiers.MyMethodWithGeneric), Bindings);
+            MethodInfo mi = typeof(GenericWithModifiers).Project().GetMethod(nameof(GenericWithModifiers.MethodWithGenericParameter), Bindings);
+            Assert.False(mi.ContainsGenericParameters);
 
             Type a1 = mi.GetParameters()[0].GetModifiedParameterType();
             Assert.True(IsModifiedType(a1));
@@ -541,6 +548,34 @@ namespace System.Tests.Types
             Assert.Equal(typeof(IsConst).Project(), ga2.GetOptionalCustomModifiers()[0]);
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void GenericMethod_Unmodified()
+        {
+            MethodInfo mi = typeof(GenericWithModifiers).Project().GetMethod(nameof(GenericWithModifiers.GenericMethod), Bindings);
+            Assert.True(mi.ContainsGenericParameters);
+
+            Type a1 = mi.GetParameters()[0].ParameterType;
+            Assert.False(IsModifiedType(a1));
+            Assert.True(a1.ContainsGenericParameters);
+            Assert.Equal(0, a1.GetOptionalCustomModifiers().Length);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void GenericMethod_Modified()
+        {
+            MethodInfo mi = typeof(GenericWithModifiers).Project().GetMethod(nameof(GenericWithModifiers.GenericMethod), Bindings);
+            Assert.True(mi.ContainsGenericParameters);
+
+            Type a1 = mi.GetParameters()[0].GetModifiedParameterType();
+            Assert.True(IsModifiedType(a1));
+            Assert.True(a1.ContainsGenericParameters);
+            Assert.Equal(1, a1.GetOptionalCustomModifiers().Length);
+        }
+
         private static bool IsModifiedType(Type type)
         {
             return !ReferenceEquals(type, type.UnderlyingSystemType);
@@ -555,8 +590,8 @@ namespace System.Tests.Types
             public static volatile int* _volatileIntPointer;
             public static volatile delegate* unmanaged[Cdecl]<bool, void> _volatileFcnPtr;
 
-            // Although function pointers can't be used in generics directly, they can be used indirectly
-            // through an array or pointer.
+            // Although function pointer types can't be used as generic parameters, they can be used indirectly
+            // as an array element type.
             public static volatile Tuple<delegate*<out bool, void>[]> _arrayGenericFcnPtr;
 
             public static int** _ptr_ptr_int;
@@ -567,7 +602,9 @@ namespace System.Tests.Types
 
             public static void M_P0IntOut(out int i) { i = 42; }
             public static void M_P0FcnPtrOut(delegate*<out int, void> fp) { }
-            public static void M_ArrayOpenGenericFcnPtr<T>(T t, delegate*<out bool, void>[] fp) { }
+
+            // NOTE: commented out due to compiler issue on NativeAOT: #81117
+            //public static void M_ArrayOpenGenericFcnPtr<T>(T t, delegate*<out bool, void>[] fp) { }
 
             public int InitProperty_Int { get; init; }
             public static delegate*<out int, void> Property_FcnPtr { get; set; }

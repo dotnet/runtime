@@ -29,7 +29,14 @@
 			IL_0007:  ret
 		}
 
-		.method public hidebysig instance void  MyMethodWithGeneric(class [System.Runtime]System.Tuple`2<int32,bool modopt([System.Runtime]System.Runtime.CompilerServices.IsConst)> t) cil managed
+		.method public hidebysig instance void  MethodWithGenericParameter(class [System.Runtime]System.Tuple`2<int32,bool modopt([System.Runtime]System.Runtime.CompilerServices.IsConst)> t) cil managed
+		{
+			.maxstack  8
+			IL_0000:  nop
+			IL_0001:  ret
+		}
+
+		.method public hidebysig instance void  GenericMethod<T>(!!T modopt([System.Runtime]System.Runtime.CompilerServices.IsConst) t) cil managed
 		{
 			.maxstack  8
 			IL_0000:  nop
