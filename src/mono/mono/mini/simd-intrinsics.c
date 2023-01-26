@@ -310,7 +310,6 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 						ins->inst_c0 = OP_FDIV;
 						return ins;
 					} else if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type == MONO_TYPE_GENERICINST)) {
-						instc0 = OP_FMUL;
 						break;
 					} else {
 						return NULL;
