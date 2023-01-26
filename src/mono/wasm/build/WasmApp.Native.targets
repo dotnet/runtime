@@ -189,8 +189,7 @@
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">536870912</EmccInitialHeapSize>
-      <WasmAllowUndefinedSymbols Condition="'$(WasmBuildingForNestedPublish)' == 'true'">false</WasmAllowUndefinedSymbols>
-      <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">true</WasmAllowUndefinedSymbols>
+      <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
     </PropertyGroup>
 
     <ItemGroup>
