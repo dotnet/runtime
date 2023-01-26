@@ -543,10 +543,8 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 //    We ignore other block types.
 // 2. All branch targets found are updated. If there are multiple ways for a block
 //    to reach 'oldTarget' (e.g., multiple arms of a switch), all of them are changed.
-// 3. The predecessor lists are not changed.
+// 3. The predecessor lists are updated, if they've been built.
 // 4. If any switch table entry was updated, the switch table "unique successor" cache is invalidated.
-//
-// This function is most useful early, before the full predecessor lists have been computed.
 //
 void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, BasicBlock* oldTarget)
 {
@@ -559,11 +557,17 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-        case BBJ_LEAVE: // This function will be called before import, so we still have BBJ_LEAVE
+        case BBJ_LEAVE: // This function can be called before import, so we still have BBJ_LEAVE
 
             if (block->bbJumpDest == oldTarget)
             {
                 block->bbJumpDest = newTarget;
+
+                if (fgComputePredsDone)
+                {
+                    fgRemoveRefPred(oldTarget, block);
+                    fgAddRefPred(newTarget, block);
+                }
             }
             break;
 
@@ -585,6 +589,12 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
                 {
                     jumpTab[i] = newTarget;
                     changed    = true;
+
+                    if (fgComputePredsDone)
+                    {
+                        fgRemoveRefPred(oldTarget, block);
+                        fgAddRefPred(newTarget, block);
+                    }
                 }
             }
 
