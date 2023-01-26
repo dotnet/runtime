@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Sockets;
@@ -155,32 +156,14 @@ namespace System.Net.WebSockets.Client.Tests
 
             Task serverTask = Task.Run(async () =>
             {
-                var buffer = new byte[128 * 1024];
-
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
                 (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 // send status 200 OK to establish websocket
                 await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false);
 
                 var webSocketStream = new Http2Stream(connection, streamId);
-                using WebSocket websocket = WebSocket.CreateFromStream(webSocketStream, true, null, TimeSpan.FromSeconds(30));
+                await WebSocketSendReceive(webSocketStream);
 
-                while (websocket.State == WebSocketState.Open || websocket.State == WebSocketState.CloseSent)
-                {
-                    var result = await websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                    if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        await websocket.CloseAsync(
-                            result.CloseStatus ?? WebSocketCloseStatus.Empty,
-                            result.CloseStatusDescription,
-                            CancellationToken.None);
-
-                        continue;
-                    }
-
-                    int offset = result.Count;
-                    await websocket.SendAsync(new ArraySegment<byte>(buffer, 0, offset), result.MessageType, result.EndOfMessage, CancellationToken.None);
-                }
                 await connection.DisposeAsync();
             });
 
@@ -194,30 +177,35 @@ namespace System.Net.WebSockets.Client.Tests
 
             Task serverTask = server.AcceptConnectionAsync(async connection =>
             {
-                var buffer = new byte[128 * 1024];
                 Dictionary<string, string> headers = await LoopbackHelper.WebSocketHandshakeAsync(connection);
-                using WebSocket websocket = WebSocket.CreateFromStream(connection.Stream, true, null, TimeSpan.FromSeconds(30));
-                while (websocket.State == WebSocketState.Open || websocket.State == WebSocketState.CloseSent)
-                {
-                    var result = await websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                    if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        await websocket.CloseAsync(
-                            result.CloseStatus ?? WebSocketCloseStatus.Empty,
-                            result.CloseStatusDescription,
-                            CancellationToken.None);
-
-                        continue;
-                    }
-
-                    int offset = result.Count;
-                    await websocket.SendAsync(new ArraySegment<byte>(buffer, 0, offset), result.MessageType, true, CancellationToken.None);
-                }
+                await WebSocketSendReceive(connection.Stream);
 
                 await connection.DisposeAsync();
             });
 
             await new Task[] { serverTask, clientFunc(server.Address) }.WhenAllOrAnyFailed(TimeOutMilliseconds * 2);
+        }
+
+        private static async Task WebSocketSendReceive(Stream stream)
+        {
+            var buffer = new byte[128 * 1024];
+            using WebSocket websocket = WebSocket.CreateFromStream(stream, true, null, TimeSpan.FromMilliseconds(TimeOutMilliseconds));
+            while (websocket.State == WebSocketState.Open || websocket.State == WebSocketState.CloseSent)
+            {
+                var result = await websocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    await websocket.CloseAsync(
+                        result.CloseStatus ?? WebSocketCloseStatus.Empty,
+                        result.CloseStatusDescription,
+                        CancellationToken.None);
+
+                    continue;
+                }
+
+                int offset = result.Count;
+                await websocket.SendAsync(new ArraySegment<byte>(buffer, 0, offset), result.MessageType, result.EndOfMessage, CancellationToken.None);
+            }
         }
 
         private static bool InitWebSocketSupported()

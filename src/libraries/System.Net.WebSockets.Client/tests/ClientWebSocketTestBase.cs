@@ -177,7 +177,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         protected Task<ClientWebSocket> GetConnectedWebSocket(Uri uri, int TimeOutMilliseconds, ITestOutputHelper output) =>
-            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, invoker: GetInvoker(), version: UseVersion);
+            WebSocketHelper.GetConnectedWebSocket(uri, TimeOutMilliseconds, output, version: UseVersion, invoker: GetInvoker());
 
         protected Task ConnectAsync(ClientWebSocket cws, Uri uri, CancellationToken cancellationToken) =>
             cws.ConnectAsync(uri, GetInvoker(), cancellationToken);
