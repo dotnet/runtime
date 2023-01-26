@@ -159,7 +159,7 @@
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
-      <EmccInitialHeapSize>536870912</EmccInitialHeapSize>
+      <EmccInitialHeapSize>16777216</EmccInitialHeapSize>
     </PropertyGroup>
     <ItemGroup>
       <_EmccLinkFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />

@@ -212,7 +212,7 @@ namespace System.Collections.Frozen
                         return (FrozenDictionary<TKey, TValue>)(object)frozenDictionary;
                     }
 
-                    var entries = (string[])(object)source.Keys.ToArray();
+                    string[] entries = (string[])(object)source.Keys.ToArray();
 
                     KeyAnalyzer.Analyze(entries, ReferenceEquals(stringComparer, StringComparer.OrdinalIgnoreCase), out KeyAnalyzer.AnalysisResults results);
                     if (results.SubstringHashing)
@@ -242,9 +242,9 @@ namespace System.Collections.Frozen
                             }
                             else
                             {
-                                    frozenDictionary = results.HashCount == 1
-                                        ? new OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex)
-                                        : new OrdinalStringFrozenDictionary_LeftJustifiedSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
+                                frozenDictionary = results.HashCount == 1
+                                    ? new OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex)
+                                    : new OrdinalStringFrozenDictionary_LeftJustifiedSubstring<TValue>(stringEntries, entries, stringComparer, results.MinimumLength, results.MaximumLengthDiff, results.HashIndex, results.HashCount);
                             }
                         }
                     }

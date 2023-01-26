@@ -657,6 +657,10 @@ public:
     unsigned char lvIsOSRLocal : 1; // Root method local in an OSR method. Any stack home will be on the Tier0 frame.
                                     // Initial value will be defined by Tier0. Requires special handing in prolog.
 
+private:
+    unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
+
+public:
     union {
         unsigned lvFieldLclStart; // The index of the local var representing the first field in the promoted struct
                                   // local.  For implicit byref parameters, this gets hijacked between
@@ -957,6 +961,18 @@ public:
         return false;
     }
 #endif
+
+    // Is this is local never negative?
+    bool IsNeverNegative() const
+    {
+        return lvIsNeverNegative;
+    }
+
+    // Is this is local never negative?
+    void SetIsNeverNegative(bool value)
+    {
+        lvIsNeverNegative = value;
+    }
 
     /////////////////////
 
@@ -7502,7 +7518,7 @@ public:
     GenTree* optConstantAssertionProp(AssertionDsc*        curAssertion,
                                       GenTreeLclVarCommon* tree,
                                       Statement* stmt DEBUGARG(AssertionIndex index));
-    bool optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock* lclBlock, GenTree* value);
+    bool optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* value);
     bool optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions);
 
     // Assertion propagation functions.

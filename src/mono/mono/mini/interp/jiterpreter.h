@@ -63,8 +63,7 @@ mono_interp_tier_prepare_jiterpreter (
 //  or JitCallInfo
 extern void
 mono_interp_jit_wasm_jit_call_trampoline (
-	MonoMethod *method, void *rmethod, void *cinfo, void *func,
-	gboolean has_this, int param_count,
+	MonoMethod *method, void *rmethod, void *cinfo,
 	guint32 *arg_offsets, gboolean catch_exceptions
 );
 

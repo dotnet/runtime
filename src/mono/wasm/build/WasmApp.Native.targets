@@ -189,7 +189,6 @@
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
-      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">536870912</EmccInitialHeapSize>
       <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
     </PropertyGroup>
 
@@ -380,7 +379,39 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmWriteRspFilesForLinking" DependsOnTargets="_CheckEmccIsExpectedVersion">
+  <Target Name="_WasmCalculateInitialHeapSize" 
+      Condition="'$(EmccInitialHeapSize)' == ''"
+      DependsOnTargets="_CheckEmccIsExpectedVersion">
+    <ItemGroup>
+      <_AOTObjectFile Include="%(_BitcodeFile.ObjectFile)" />
+    </ItemGroup>
+
+    <!-- for AOT builds we use llvm-size tool to collect size of the DATA segment in each object file -->
+    <Exec Command="llvm-size$(_ExeExt) -d --format=sysv @(_AOTObjectFile, ' ')"
+          Condition="'$(_WasmShouldAOT)' == 'true'"
+          IgnoreStandardErrorWarningFormat="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="low" StandardErrorImportance="low"
+          EnvironmentVariables="@(EmscriptenEnvVars)" >
+      <Output TaskParameter="ConsoleOutput" ItemName="LlvmAotSizeOutput" />
+    </Exec>
+    <ItemGroup Condition="'$(_WasmShouldAOT)' == 'true'">
+      <_AOTDataSegmentSize Condition="$([System.String]::Copy('%(LlvmAotSizeOutput.Identity)').StartsWith('DATA '))"
+        Include="$([System.String]::Copy('%(LlvmAotSizeOutput.Identity)').Replace(&quot;DATA &quot;, &quot;&quot;).Replace(&quot; 0&quot;, &quot;&quot;).Trim())" />
+    </ItemGroup>
+
+    <WasmCalculateInitialHeapSize
+        Assemblies="@(WasmAssembliesToBundle)"
+        AOTDataSegmentSizes="@(_AOTDataSegmentSize)">
+      <Output TaskParameter="InitialHeapSize" PropertyName="_WasmCalculatedInitialHeapSize" />
+    </WasmCalculateInitialHeapSize>
+    <PropertyGroup>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == '' and '$(_WasmCalculatedInitialHeapSize)' != '' and $(_WasmCalculatedInitialHeapSize) > 16777216">$(_WasmCalculatedInitialHeapSize)</EmccInitialHeapSize>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">16777216</EmccInitialHeapSize>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_WasmWriteRspFilesForLinking" DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmCalculateInitialHeapSize">
     <PropertyGroup>
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>
@@ -391,6 +422,8 @@
     </PropertyGroup>
     <ItemGroup>
       <!-- order matters -->
+      <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
+
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
 
