@@ -1322,7 +1322,11 @@ private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonS
 @$"/// <inheritdoc/>
 public override {JsonTypeInfoTypeRef}? GetTypeInfo({TypeTypeRef} type)
 {{");
-
+                // This method body grows linearly over the number of generated types.
+                // In line with https://github.com/dotnet/runtime/issues/77897 we should
+                // eventually replace this method with a direct call to Options.GetTypeInfo().
+                // We can't do this currently because Options.GetTypeInfo throws whereas
+                // this GetTypeInfo returns null for unsupported types, so we need new API to support it.
                 foreach (TypeGenerationSpec metadata in _currentContext.TypesWithMetadataGenerated)
                 {
                     if (metadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
