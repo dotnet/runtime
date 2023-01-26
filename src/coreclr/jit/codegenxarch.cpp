@@ -6914,7 +6914,6 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             unreached();
     }
 
-
     if (srcReg != REG_NA)
     {
 #ifdef TARGET_AMD64
@@ -6928,7 +6927,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             // This can be rewritten as the following for unsigned casts:
             //
             //      mov      dstReg, dword ptr [baseReg+imm*srcReg]
-            // 
+            //
             // Check to see if the next node is a GT_LEA containing this GT_CAST and if the node after the GT_LEA is
             // a GT_IND using the GT_CAST. If it is possible to remove the first mov instruction, mark this GT_CAST
             // as skipped and use srcReg when generating the GT_IND.
@@ -6939,12 +6938,14 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 if (indirOper != nullptr && indirOper->OperIs(GT_IND) && indirOper->AsIndir()->gtOp1 == leaOper)
                 {
                     GenTree* indexOper = indirOper->AsIndir()->Index();
-                    if (indexOper != nullptr && indexOper == cast && indexOper->GetRegNum() != REG_NA) {
+                    if (indexOper != nullptr && indexOper == cast && indexOper->GetRegNum() != REG_NA)
+                    {
                         regNumber indexReg = indexOper->GetRegNum();
                         regNumber indirReg = indirOper->GetRegNum();
                         regNumber baseReg  = indirOper->AsIndir()->Base()->GetRegNum();
 
-                        if (indexReg != REG_NA && indirReg != REG_NA && dstReg == indexReg && dstReg == indirReg && baseReg != dstReg && baseReg != srcReg && baseReg != indexReg)
+                        if (indexReg != REG_NA && indirReg != REG_NA && dstReg == indexReg && dstReg == indirReg &&
+                            baseReg != dstReg && baseReg != srcReg && baseReg != indexReg)
                         {
                             cast->skippedGenForIndexing = true;
                             return;
