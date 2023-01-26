@@ -24,7 +24,7 @@ export function http_wasm_abort_response(res: ResponseExtension): void {
     if (res.__reader) {
         res.__reader.cancel().catch((err) => {
             if (err && err.name !== "AbortError") {
-                Module.printErr("MONO_WASM: Error in http_wasm_abort_response: " + err);
+                Module.err("MONO_WASM: Error in http_wasm_abort_response: " + err);
             }
             // otherwise, it's expected
         });

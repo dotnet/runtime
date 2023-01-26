@@ -91,7 +91,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         wrap_no_error_root(is_exception, resultRoot);
     }
     catch (ex: any) {
-        Module.printErr(ex.toString());
+        Module.err(ex.toString());
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
         resultRoot.release();

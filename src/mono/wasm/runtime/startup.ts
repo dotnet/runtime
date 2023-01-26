@@ -100,7 +100,7 @@ function instantiateWasm(
     // this is called so early that even Module exports like addRunDependency don't exist yet
 
     if (!Module.configSrc && !Module.config && !userInstantiateWasm) {
-        Module.print("MONO_WASM: configSrc nor config was specified");
+        Module.out("MONO_WASM: configSrc nor config was specified");
     }
     if (Module.config) {
         config = runtimeHelpers.config = Module.config as MonoConfig;
@@ -389,10 +389,10 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
 
 
 function _print_error(message: string, err: any): void {
-    Module.printErr(`${message}: ${JSON.stringify(err)}`);
+    Module.err(`${message}: ${JSON.stringify(err)}`);
     if (err.stack) {
-        Module.printErr("MONO_WASM: Stacktrace: \n");
-        Module.printErr(err.stack);
+        Module.err("MONO_WASM: Stacktrace: \n");
+        Module.err(err.stack);
     }
 }
 

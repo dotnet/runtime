@@ -68,11 +68,11 @@ function initializeImportsAndExports(
         module.configSrc = "./mono-config.json";
     }
 
-    if (!module.print) {
-        module.print = console.log.bind(console);
+    if (!module.out) {
+        module.out = console.log.bind(console);
     }
-    if (!module.printErr) {
-        module.printErr = console.error.bind(console);
+    if (!module.err) {
+        module.err = console.error.bind(console);
     }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {

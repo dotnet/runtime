@@ -117,7 +117,8 @@
 
     <ItemGroup>
       <EmccExportedRuntimeMethod Include="FS" />
-      <EmccExportedRuntimeMethod Include="print" />
+      <EmccExportedRuntimeMethod Include="out" />
+      <EmccExportedRuntimeMethod Include="err" />
       <EmccExportedRuntimeMethod Include="ccall" />
       <EmccExportedRuntimeMethod Include="cwrap" />
       <EmccExportedRuntimeMethod Include="setValue" />

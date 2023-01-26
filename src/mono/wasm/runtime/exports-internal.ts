@@ -18,7 +18,7 @@ import { getOptions, applyOptions } from "./jiterpreter-support";
 export function export_internal(): any {
     return {
         // tests
-        mono_wasm_exit: (exit_code: number) => { Module.printErr("MONO_WASM: early exit " + exit_code); },
+        mono_wasm_exit: (exit_code: number) => { Module.err("MONO_WASM: early exit " + exit_code); },
         mono_wasm_enable_on_demand_gc: cwraps.mono_wasm_enable_on_demand_gc,
         mono_wasm_profiler_init_aot: cwraps.mono_wasm_profiler_init_aot,
         mono_wasm_profiler_init_browser: cwraps.mono_wasm_profiler_init_browser,

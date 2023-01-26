@@ -111,11 +111,11 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
         if (reason && !(reason instanceof runtimeHelpers.ExitStatus)) {
             if (!runtimeHelpers.config.logExitCode) {
                 if (reason instanceof Error)
-                    Module.printErr(mono_wasm_stringify_as_error_with_stack(reason));
+                    Module.err(mono_wasm_stringify_as_error_with_stack(reason));
                 else if (typeof reason == "string")
-                    Module.printErr(reason);
+                    Module.err(reason);
                 else
-                    Module.printErr(JSON.stringify(reason));
+                    Module.err(JSON.stringify(reason));
             }
         }
         else {

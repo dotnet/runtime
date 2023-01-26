@@ -121,17 +121,17 @@ export async function mono_download_assets(): Promise<void> {
         // and we are not awating it here
         Promise.all(promises_of_asset_instantiation).then(() => {
             allAssetsInMemory.promise_control.resolve();
-        }).catch(err => {
-            Module.printErr("MONO_WASM: Error in mono_download_assets: " + err);
-            abort_startup(err, true);
+        }).catch(e => {
+            Module.err("MONO_WASM: Error in mono_download_assets: " + e);
+            abort_startup(e, true);
         });
         // OPTIMIZATION explained:
         // we do it this way so that we could allocate memory immediately after asset is downloaded (and after onRuntimeInitialized which happened already)
         // spreading in time
         // rather than to block all downloads after onRuntimeInitialized or block onRuntimeInitialized after all downloads are done. That would create allocation burst.
-    } catch (err: any) {
-        Module.printErr("MONO_WASM: Error in mono_download_assets: " + err);
-        throw err;
+    } catch (e: any) {
+        Module.err("MONO_WASM: Error in mono_download_assets: " + e);
+        throw e;
     }
 }
 
@@ -283,7 +283,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
         err.status = response.status;
         throw err;
     } else {
-        Module.print(`MONO_WASM: optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        Module.out(`MONO_WASM: optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
         return undefined;
     }
 }
@@ -425,7 +425,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
     }
     else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
-            Module.printErr(`MONO_WASM: Error loading ICU asset ${asset.name}`);
+            Module.err(`MONO_WASM: Error loading ICU asset ${asset.name}`);
     }
     else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);

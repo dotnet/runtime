@@ -361,7 +361,7 @@ export type EarlyReplacements = {
     require: any,
     requirePromise: Promise<Function>,
     noExitRuntime: boolean,
-    updateGlobalBufferAndViews: Function,
+    updateMemoryViews: Function,
     pthreadReplacements: PThreadReplacements | undefined | null
     scriptDirectory: string;
     scriptUrl: string

@@ -233,6 +233,7 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "emscripten")
   add_definitions(-D_THREAD_SAFE)
   add_compile_options(-Wno-strict-prototypes)
   add_compile_options(-Wno-unused-but-set-variable)
+  add_compile_options(-Wno-single-bit-bitfield-constant-conversion)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
   set(DISABLE_SHARED_LIBS 1)

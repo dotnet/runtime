@@ -90,7 +90,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
         endMeasure(mark, MeasuredBlock.bindJsFunction, js_function_name);
     } catch (ex: any) {
         setI32_unchecked(function_js_handle, 0);
-        Module.printErr(ex.toString());
+        Module.err(ex.toString());
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
         resultRoot.release();

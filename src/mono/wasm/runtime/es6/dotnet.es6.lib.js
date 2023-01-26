@@ -28,7 +28,7 @@ if (${usePThreads}) {
     __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
     __dotnet_replacement_PThread.allocateUnusedWorker = PThread.allocateUnusedWorker;
 }
-let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
+let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateMemoryViews, pthreadReplacements: __dotnet_replacement_PThread};
 if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => mod.createRequire(import.meta.url));
 }
@@ -36,7 +36,7 @@ let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
     { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_imports: IMPORTS },
     __dotnet_replacements, __callbackAPI);
-updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
+    updateMemoryViews = __dotnet_replacements.updateMemoryViews;
 var fetch = __dotnet_replacements.fetch;
 _scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;
 if (ENVIRONMENT_IS_NODE) {

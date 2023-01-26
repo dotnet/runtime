@@ -11,7 +11,6 @@ import cwraps, { I52Error } from "./cwraps";
 const alloca_stack: Array<VoidPtr> = [];
 const alloca_buffer_size = 32 * 1024;
 let alloca_base: VoidPtr, alloca_offset: VoidPtr, alloca_limit: VoidPtr;
-let HEAPI64: BigInt64Array = <any>null;
 
 function _ensure_allocated(): void {
     if (alloca_base)
@@ -140,7 +139,7 @@ export function setI64Big(offset: MemOffset, value: bigint): void {
     mono_assert(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
     mono_assert(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
 
-    HEAPI64[<any>offset >>> 3] = value;
+    Module.HEAP64[<any>offset >>> 3] = value;
 }
 
 export function setF32(offset: MemOffset, value: number): void {
@@ -204,7 +203,7 @@ export function getU52(offset: MemOffset): number {
 
 export function getI64Big(offset: MemOffset): bigint {
     mono_assert(is_bigint_supported, "BigInt is not supported.");
-    return HEAPI64[<any>offset >>> 3];
+    return Module.HEAP64[<any>offset >>> 3];
 }
 
 export function getF32(offset: MemOffset): number {
@@ -217,11 +216,11 @@ export function getF64(offset: MemOffset): number {
 
 let max_int64_big: BigInt;
 let min_int64_big: BigInt;
-export function afterUpdateGlobalBufferAndViews(buffer: ArrayBufferLike): void {
+export function afterUpdateMemoryViews(): void {
     if (is_bigint_supported) {
+        // TODO: why do we need to initialize these on memory change?
         max_int64_big = BigInt("9223372036854775807");
         min_int64_big = BigInt("-9223372036854775808");
-        HEAPI64 = new BigInt64Array(buffer);
     }
 }
 

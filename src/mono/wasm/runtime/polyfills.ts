@@ -4,7 +4,7 @@
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, runtimeHelpers } from "./imports";
-import { afterUpdateGlobalBufferAndViews } from "./memory";
+import { afterUpdateMemoryViews } from "./memory";
 import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
 import { DotnetModuleConfigImports, EarlyReplacements } from "./types";
 import { TypedArray } from "./types/emscripten";
@@ -181,10 +181,10 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     }
 
     // memory
-    const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
-    replacements.updateGlobalBufferAndViews = (buffer: ArrayBufferLike) => {
-        originalUpdateGlobalBufferAndViews(buffer);
-        afterUpdateGlobalBufferAndViews(buffer);
+    const originalUpdateMemoryViews = replacements.updateMemoryViews;
+    replacements.updateMemoryViews = () => {
+        originalUpdateMemoryViews();
+        afterUpdateMemoryViews();
     };
 }
 

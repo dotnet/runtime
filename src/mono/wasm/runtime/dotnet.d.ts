@@ -45,8 +45,8 @@ declare interface EmscriptenModule {
     HEAPF64: Float64Array;
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
-    print(message: string): void;
-    printErr(message: string): void;
+    out(message: string): void;
+    err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
     cwrap<T extends Function>(ident: string, returnType: string, argTypes?: string[], opts?: any): T;
     cwrap<T extends Function>(ident: string, ...args: any[]): T;
