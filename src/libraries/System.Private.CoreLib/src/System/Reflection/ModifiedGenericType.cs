@@ -13,14 +13,14 @@ namespace System.Reflection
             Type genericType,
             object? signatureProvider,
             int rootSignatureParameterIndex,
-            int nestedSignatureIndex,
+            ref int nestedSignatureIndex,
             int nestedSignatureParameterIndex,
             bool isRoot)
             : base(
                   genericType,
                   signatureProvider,
                   rootSignatureParameterIndex,
-                  nestedSignatureIndex, // To support modifiers on generic types, pass nestedSignatureIndex+1
+                  ++nestedSignatureIndex,
                   nestedSignatureParameterIndex,
                   isRoot)
         {
@@ -35,8 +35,9 @@ namespace System.Reflection
                     genericArguments[i],
                     signatureProvider,
                     rootSignatureParameterIndex,
-                    nestedSignatureIndex, // To support modifiers on generic types, pass nestedSignatureIndex+1
-                    nestedSignatureParameterIndex: -1); // To support modifiers on generic types, pass index value.
+                    ref nestedSignatureIndex,
+                    // Since generic signatures don't have a return type, we use +1 here.
+                    nestedSignatureParameterIndex: i + 1);
             }
 
             _argumentTypes = modifiedTypes;

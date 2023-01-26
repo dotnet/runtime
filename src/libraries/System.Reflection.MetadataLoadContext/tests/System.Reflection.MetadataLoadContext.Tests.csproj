@@ -75,6 +75,7 @@
   </ItemGroup>
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
     <ProjectReference Include="$(CommonPath)..\tests\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" />
+    <ProjectReference Include="$(CommonPath)..\tests\System\TestReflectionILAssembly\TestReflectionILAssembly.ilproj" />
     <Compile Include="src\TestUtils\FunctionPointerTestsExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\FunctionPointerTests.cs" Link="Common\System\FunctionPointerTests.cs" />
     <Compile Include="$(CommonTestPath)System\FunctionPointerTests.CallingConventions.cs" Link="Common\System\FunctionPointerTests.CallingConventions.cs" />

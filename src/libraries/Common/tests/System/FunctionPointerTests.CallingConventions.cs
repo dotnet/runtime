@@ -15,7 +15,7 @@ namespace System.Tests.Types
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestManagedCallingConvention(bool modified)
+        public static unsafe void ManagedCallingConvention(bool modified)
         {
             Type t = typeof(FunctionPointerHolder).Project();
             MethodInfo m = t.GetMethod(nameof(FunctionPointerHolder.MethodCallConv_Managed), Bindings);
@@ -37,7 +37,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestUnmanagedCallConv_Param_Unmodified(string methodName)
+        public static unsafe void UnmanagedCallConv_Param_Unmodified(string methodName)
         {
             Type t = typeof(FunctionPointerHolder).Project();
             MethodInfo m = t.GetMethod(methodName, Bindings);
@@ -56,7 +56,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall), typeof(CallConvFastcall))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestUnmanagedCallConv_Param_Modified(string methodName, Type callingConventionRuntime)
+        public static unsafe void UnmanagedCallConv_Param_Modified(string methodName, Type callingConventionRuntime)
         {
             Type callingConvention = callingConventionRuntime.Project();
             Type t = typeof(FunctionPointerHolder).Project();
@@ -74,7 +74,7 @@ namespace System.Tests.Types
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestUnmanagedCallConvs_Return_Unmodified()
+        public static unsafe void UnmanagedCallConvs_Return_Unmodified()
         {
             Type t = typeof(FunctionPointerHolder).Project();
 
@@ -95,7 +95,7 @@ namespace System.Tests.Types
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestUnmanagedCallConvs_Return_Modified()
+        public static unsafe void UnmanagedCallConvs_Return_Modified()
         {
             Type t = typeof(FunctionPointerHolder).Project();
 
@@ -124,7 +124,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall_SuppressGCTransition))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestUnmanagedCallConv_PhysicalModifiers_Unmodified(string methodName)
+        public static unsafe void UnmanagedCallConv_PhysicalModifiers_Unmodified(string methodName)
         {
             Type t = typeof(FunctionPointerHolder).Project();
             MethodInfo m = t.GetMethod(methodName, Bindings);
@@ -144,7 +144,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Fastcall_SuppressGCTransition), typeof(CallConvFastcall))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestUnmanagedCallConv_PhysicalModifiers_Modified(string methodName, Type callingConventionRuntime)
+        public static unsafe void UnmanagedCallConv_PhysicalModifiers_Modified(string methodName, Type callingConventionRuntime)
         {
             Type suppressGcTransitionType = typeof(CallConvSuppressGCTransition).Project();
             Type callingConvention = callingConventionRuntime.Project();

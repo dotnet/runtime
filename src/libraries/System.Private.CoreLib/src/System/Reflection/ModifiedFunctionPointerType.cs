@@ -13,20 +13,19 @@ namespace System.Reflection
 
         private readonly ModifiedType[] _parameterTypes;
         private readonly ModifiedType _returnType;
-        private Type[]? _callingConventions;
 
         public ModifiedFunctionPointerType(
             Type functionPointerType,
             object? signatureProvider,
             int rootSignatureParameterIndex,
-            int nestedSignatureIndex,
+            ref int nestedSignatureIndex,
             int nestedSignatureParameterIndex,
             bool isRoot)
             : base(
                   functionPointerType,
                   signatureProvider,
                   rootSignatureParameterIndex,
-                  nestedSignatureIndex + 1,
+                  ++nestedSignatureIndex,
                   nestedSignatureParameterIndex,
                   isRoot)
         {
@@ -35,7 +34,7 @@ namespace System.Reflection
                 functionPointerType.GetFunctionPointerReturnType(),
                 signatureProvider,
                 rootSignatureParameterIndex,
-                nestedSignatureIndex + 1,
+                ref nestedSignatureIndex,
                 nestedSignatureParameterIndex: 0);
 
             Type[] parameters = functionPointerType.GetFunctionPointerParameterTypes();
@@ -47,7 +46,7 @@ namespace System.Reflection
                     parameters[i],
                     signatureProvider,
                     rootSignatureParameterIndex,
-                    nestedSignatureIndex + 1,
+                    ref nestedSignatureIndex,
                     nestedSignatureParameterIndex: i + 1);
             }
 
@@ -59,53 +58,33 @@ namespace System.Reflection
 
         public override Type[] GetFunctionPointerCallingConventions()
         {
-            _callingConventions ??= CreateCallingConventions();
-            return CloneArray(_callingConventions);
-        }
-
-        private Type[] CreateCallingConventions()
-        {
-            Type[] returnTypeOptionalModifiers = GetFunctionPointerReturnType().GetOptionalCustomModifiers();
-
             ArrayBuilder<Type> builder = default;
 
-            bool foundCallingConvention = false;
-
-            for (int i = 0; i < returnTypeOptionalModifiers.Length; i++)
+            // Normalize the calling conventions by manufacturing a type.
+            switch (GetCallingConvention())
             {
-                Type type = returnTypeOptionalModifiers[i];
-                if (type.FullName!.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
-                {
-                    builder.Add(type);
-
-                    if (type == typeof(CallConvCdecl) ||
-                        type == typeof(CallConvFastcall) ||
-                        type == typeof(CallConvStdcall) ||
-                        type == typeof(CallConvThiscall))
+                case SignatureCallingConvention.Cdecl:
+                    builder.Add(typeof(CallConvCdecl));
+                    break;
+                case SignatureCallingConvention.StdCall:
+                    builder.Add(typeof(CallConvStdcall));
+                    break;
+                case SignatureCallingConvention.ThisCall:
+                    builder.Add(typeof(CallConvThiscall));
+                    break;
+                case SignatureCallingConvention.FastCall:
+                    builder.Add(typeof(CallConvFastcall));
+                    break;
+                case SignatureCallingConvention.Unmanaged:
+                    // For the above cases, there will be no other custom calling convention modifiers.
+                    foreach (Type type in GetFunctionPointerReturnType().GetOptionalCustomModifiers())
                     {
-                        foundCallingConvention = true;
+                        if (type.FullName!.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
+                        {
+                            builder.Add(type);
+                        }
                     }
-                }
-            }
-
-            if (!foundCallingConvention)
-            {
-                // Normalize the calling conventions by manufacturing a type.
-                switch (GetCallingConvention())
-                {
-                    case MdSigCallingConvention.C:
-                        builder.Add(typeof(CallConvCdecl));
-                        break;
-                    case MdSigCallingConvention.StdCall:
-                        builder.Add(typeof(CallConvStdcall));
-                        break;
-                    case MdSigCallingConvention.ThisCall:
-                        builder.Add(typeof(CallConvThiscall));
-                        break;
-                    case MdSigCallingConvention.FastCall:
-                        builder.Add(typeof(CallConvFastcall));
-                        break;
-                }
+                    break;
             }
 
             return builder.Count == 0 ? EmptyTypes : builder.ToArray();

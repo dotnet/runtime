@@ -12,7 +12,7 @@ namespace System.Reflection
         private readonly object? _signatureProvider;
 
         // These 3 fields, in order, determine the lookup hierarchy for custom modifiers.
-        // The native tree traveral must match the managed semantics in order for indexes to match up.
+        // The native tree traversal must match the managed semantics in order for indexes to match up.
         private readonly int _rootSignatureParameterIndex;
         private readonly int _nestedSignatureIndex;
         private readonly int _nestedSignatureParameterIndex;
@@ -43,7 +43,7 @@ namespace System.Reflection
             Type unmodifiedType,
             object? signatureProvider,
             int rootSignatureParameterIndex,
-            int nestedSignatureIndex,
+            ref int nestedSignatureIndex,
             int nestedSignatureParameterIndex,
             bool isRoot = false)
         {
@@ -55,17 +55,17 @@ namespace System.Reflection
                     unmodifiedType,
                     signatureProvider,
                     rootSignatureParameterIndex,
-                    nestedSignatureIndex,
+                    ref nestedSignatureIndex,
                     nestedSignatureParameterIndex,
                     isRoot);
             }
             else if (unmodifiedType.HasElementType)
             {
-                modifiedType = new ModifiedContainerType(
+                modifiedType = new ModifiedHasElementType(
                     unmodifiedType,
                     signatureProvider,
                     rootSignatureParameterIndex,
-                    nestedSignatureIndex,
+                    ref nestedSignatureIndex,
                     nestedSignatureParameterIndex,
                     isRoot);
             }
@@ -75,7 +75,7 @@ namespace System.Reflection
                     unmodifiedType,
                     signatureProvider,
                     rootSignatureParameterIndex,
-                    nestedSignatureIndex,
+                    ref nestedSignatureIndex,
                     nestedSignatureParameterIndex,
                     isRoot);
             }
@@ -85,7 +85,7 @@ namespace System.Reflection
                     unmodifiedType,
                     signatureProvider,
                     rootSignatureParameterIndex,
-                    nestedSignatureIndex,
+                    nestedSignatureIndex, // Passing byref is not necessary; no more recursion.
                     nestedSignatureParameterIndex,
                     isRoot);
             }
@@ -137,6 +137,7 @@ namespace System.Reflection
         // TypeDelegator doesn't forward these the way we want:
         public override Type UnderlyingSystemType => typeImpl; // We don't want to forward to typeImpl.UnderlyingSystemType.
         public override bool IsGenericType => typeImpl.IsGenericType; // Not forwarded.
+        public override Type GetGenericTypeDefinition() => typeImpl.GetGenericTypeDefinition(); // not forwarded; we don't wrap
         public override string ToString() => UnderlyingSystemType.ToString(); // Not forwarded.
         public override int GetHashCode() => UnderlyingSystemType.GetHashCode(); // Not forwarded.
         public override bool Equals(Type? other) // Not forwarded.

@@ -1846,7 +1846,7 @@ FCIMPL5(Object *, SignatureNative::GetCustomModifiers,
         BYTE callConv = *(BYTE*)gc.pSig->GetCorSig();
         SigTypeContext typeContext;
         gc.pSig->GetTypeContext(&typeContext);
-        MetaSig sig = MetaSig(gc.pSig->GetCorSig(),
+        MetaSig sig(gc.pSig->GetCorSig(),
             gc.pSig->GetCorSigSize(),
             gc.pSig->GetModule(),
             &typeContext,
@@ -1869,7 +1869,7 @@ FCIMPL5(Object *, SignatureNative::GetCustomModifiers,
             argument = sig.GetArgProps();
         }
 
-        // Check if we need to move and\or switch to a function pointer signature.
+        // Check if we need to move and\or switch to a function pointer or generic method signature.
         if (nestedSignatureIndex >= 0)
         {
             sig.MoveToSignature(argument, nestedSignatureIndex);
@@ -1892,6 +1892,7 @@ FCIMPL5(Object *, SignatureNative::GetCustomModifiers,
         //    FCThrowResVoid(kArgumentNullException, W("Arg_ArgumentOutOfRangeException"));
 
         SigPointer sp = argument;
+        Module* pModule = sig.GetModule();
         INT32 cMods = 0;
         CorElementType cmodType;
 
@@ -1923,7 +1924,6 @@ FCIMPL5(Object *, SignatureNative::GetCustomModifiers,
         // modifiers now that we know how long they should be.
         sp = argument;
 
-        Module* pModule = sig.GetModule();
         MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
         TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
 

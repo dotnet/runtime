@@ -608,6 +608,15 @@ void MetaSig::Init(
             m_pRetType = SigPointer(NULL, 0);
             break;
         }
+        case sigGeneric:
+        {
+            IfFailGo(psig.SkipExactlyOne()); // Skip generic type
+
+            uint32_t data = 0;
+            IfFailGo(psig.GetData(&data));  // Store number of arguments.
+            m_nArgs = data;
+            break;
+        }
         default:
         {
             UNREACHABLE();
@@ -865,7 +874,7 @@ MetaSig::SkipArg()
 
 //---------------------------------------------------------------------------------------
 //
-// Move to the specified signature in a type tree.
+// Move to the specified signature.
 HRESULT
 MetaSig::MoveToSignature(SigPointer start, INT32 index)
 {
@@ -882,7 +891,8 @@ MetaSig::MoveToSignature(SigPointer start, INT32 index)
 
     m_pLastType = m_pWalk;
 
-    HRESULT hr = start.MoveToSignature(index);
+    CorElementType signatureType = CorElementType::ELEMENT_TYPE_END;
+    HRESULT hr = start.MoveToSignature(index, &signatureType);
     if (FAILED(hr))
     {
         m_pWalk = m_pLastType;
@@ -895,9 +905,24 @@ MetaSig::MoveToSignature(SigPointer start, INT32 index)
     uint32_t cbSigSize;
     start.GetSignature(&pSig, &cbSigSize);
 
-    // To support modifiers on generic types, create a 'MetaSigKind::sigGeneric' and pass
-    // that instead of 'MetaSigKind::sigMember' for generic types.
-    Init(pSig, cbSigSize, m_pModule, &typeContext, sigMember);
+    // Select the right signature type to re-initialize.
+    MetaSigKind kind;
+    if (signatureType == ELEMENT_TYPE_FNPTR)
+    {
+        kind = sigMember;
+    }
+    else if (signatureType == ELEMENT_TYPE_GENERICINST)
+    {
+        kind = sigGeneric;
+    }
+    else
+    {
+        UNREACHABLE();
+        m_pWalk = m_pLastType;
+        return BFA_INVALID_TOKEN_TYPE;
+    }
+
+    Init(pSig, cbSigSize, m_pModule, &typeContext, kind);
     return hr;
 }
 
@@ -1644,7 +1669,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             TypeHandle *retAndArgTypes = (TypeHandle*) _alloca(cAllocaSize);
             bool fReturnTypeOrParameterNotLoaded = false;
 
-            SigPointer psigModReread = psig;
             for (unsigned i = 0; i <= cArgs; i++)
             {
                 // Lookup type handle.

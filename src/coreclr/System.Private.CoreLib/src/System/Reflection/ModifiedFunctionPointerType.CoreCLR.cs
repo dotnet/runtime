@@ -5,15 +5,15 @@ namespace System.Reflection
 {
     internal partial class ModifiedFunctionPointerType
     {
-        private MdSigCallingConvention GetCallingConvention()
+        private SignatureCallingConvention GetCallingConvention()
         {
             Signature? signature = GetSignature();
             if (signature is not null)
             {
-                return (MdSigCallingConvention)signature.GetCallingConventionFromFunctionPointer(RootSignatureParameterIndex, NestedSignatureIndex);
+                return (SignatureCallingConvention)signature.GetCallingConventionFromFunctionPointer(RootSignatureParameterIndex, NestedSignatureIndex);
             }
 
-            return MdSigCallingConvention.Default;
+            return SignatureCallingConvention.Default;
         }
     }
 }

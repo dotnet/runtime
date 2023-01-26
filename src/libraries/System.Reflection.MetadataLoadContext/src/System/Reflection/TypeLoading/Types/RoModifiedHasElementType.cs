@@ -9,11 +9,11 @@ namespace System.Reflection
     /// <summary>
     /// An array, pointer or reference type that is modified.
     /// </summary>
-    internal sealed class RoModifiedContainerType : RoModifiedType
+    internal sealed class RoModifiedHasElementType : RoModifiedType
     {
         private RoModifiedType? _elementModifiedType;
 
-        public RoModifiedContainerType(RoType unmodifiedType) : base(unmodifiedType)
+        public RoModifiedHasElementType(RoType unmodifiedType) : base(unmodifiedType)
         {
             Debug.Assert(unmodifiedType.HasElementType);
             _elementModifiedType = Create(unmodifiedType.GetRoElementType()!);

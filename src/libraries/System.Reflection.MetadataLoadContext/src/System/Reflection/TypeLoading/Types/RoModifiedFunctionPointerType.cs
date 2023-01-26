@@ -52,43 +52,31 @@ namespace System.Reflection
         {
             List<Type> builder = new(returnTypeOptionalModifiers.Length + 1);
 
-            bool foundCallingConvention = false;
-
-            for (int i = 0; i < returnTypeOptionalModifiers.Length; i++)
+            // Normalize the calling conventions by manufacturing a type.
+            switch (functionPointerType.CallKind)
             {
-                Type type = returnTypeOptionalModifiers[i];
-                if (type.FullName!.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
-                {
-                    builder.Add(type);
-
-                    if (type == CDeclType ||
-                        type == StdCallType ||
-                        type == ThisCallType ||
-                        type == FastCallType)
+                case Metadata.SignatureCallingConvention.CDecl:
+                    builder.Add(CDeclType);
+                    break;
+                case Metadata.SignatureCallingConvention.StdCall:
+                    builder.Add(StdCallType);
+                    break;
+                case Metadata.SignatureCallingConvention.ThisCall:
+                    builder.Add(ThisCallType);
+                    break;
+                case Metadata.SignatureCallingConvention.FastCall:
+                    builder.Add(FastCallType);
+                    break;
+                case Metadata.SignatureCallingConvention.Unmanaged:
+                    for (int i = 0; i < returnTypeOptionalModifiers.Length; i++)
                     {
-                        foundCallingConvention = true;
+                        Type type = returnTypeOptionalModifiers[i];
+                        if (type.FullName!.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
+                        {
+                            builder.Add(type);
+                        }
                     }
-                }
-            }
-
-            if (!foundCallingConvention)
-            {
-                // Normalize the calling conventions by manufacturing a type.
-                switch (functionPointerType.CallKind)
-                {
-                    case Metadata.SignatureCallingConvention.CDecl:
-                        builder.Add(CDeclType);
-                        break;
-                    case Metadata.SignatureCallingConvention.StdCall:
-                        builder.Add(StdCallType);
-                        break;
-                    case Metadata.SignatureCallingConvention.ThisCall:
-                        builder.Add(ThisCallType);
-                        break;
-                    case Metadata.SignatureCallingConvention.FastCall:
-                        builder.Add(FastCallType);
-                        break;
-                }
+                    break;
             }
 
             return builder.Count == 0 ? EmptyTypes : builder.ToArray();

@@ -666,7 +666,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflectableType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\LocalVariableInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ManifestResourceInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MdSigCallingConvention.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberTypes.cs" />
@@ -678,8 +677,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.Internal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInvoker.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Missing.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedHasElementType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedType.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedContainerType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedFunctionPointerType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedGenericType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedStandaloneType.cs" />
@@ -708,6 +707,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\RuntimeReflectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureArrayType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureByRefType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureCallingConvention.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureConstructedGenericType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureGenericMethodParameterType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureGenericParameterType.cs" />

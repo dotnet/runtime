@@ -8,11 +8,11 @@ namespace System.Reflection
     /// <summary>
     /// An array, pointer or reference type.
     /// </summary>
-    internal sealed class ModifiedContainerType : ModifiedType
+    internal sealed class ModifiedHasElementType : ModifiedType
     {
-        private readonly ModifiedType _elementModifiedType;
+        private readonly ModifiedType? _elementModifiedType;
 
-        public ModifiedContainerType(
+        public ModifiedHasElementType(
             Type containerType,
             object? signatureProvider,
             int rootSignatureParameterIndex,

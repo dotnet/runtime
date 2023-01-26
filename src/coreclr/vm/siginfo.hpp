@@ -487,6 +487,7 @@ class MetaSig
             sigMember,
             sigLocalVars,
             sigField,
+            sigGeneric
             };
 
         //------------------------------------------------------------------
@@ -571,8 +572,8 @@ class MetaSig
         void SkipArg();
 
         //------------------------------------------------------------------
-        // Move to the specified new signature in a type tree and
-        // re-initialize.
+        // Move to the specified new signature and re-initialize to the
+        // new signature type.
         //------------------------------------------------------------------
         HRESULT MoveToSignature(SigPointer start, INT32 index);
 

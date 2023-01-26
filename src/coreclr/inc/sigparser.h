@@ -724,15 +724,15 @@ class SigParser
 private:
 
         __checkReturn
-        HRESULT MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, BOOL* isFinished);
+        HRESULT MoveToSignature(uint32_t indexToFind, uint32_t* pCurrentIndex, bool* pIsFinished, CorElementType* pSignatureType);
 
 public:
 
         //------------------------------------------------------------------------
-        // Move to the specified signature (immediately follows an ELEMENT_TYPE_FNPTR)
+        // Move to the specified signature
         //------------------------------------------------------------------------
         __checkReturn
-        HRESULT MoveToSignature(uint32_t indexToFind);
+        HRESULT MoveToSignature(uint32_t indexToFind, CorElementType* pSignatureType);
 
         //------------------------------------------------------------------------
         // Return pointer

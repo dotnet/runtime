@@ -15,7 +15,7 @@ namespace System.Tests.Types
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestFunctionUnmanagedPointerReturn_DifferentReturnValue()
+        public static unsafe void FunctionUnmanagedPointerReturn_DifferentReturnValue()
         {
             Type t = typeof(FunctionPointerHolder).Project();
 
@@ -34,7 +34,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.Field_DateOnly), nameof(FunctionPointerHolder.Field_Int))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestSigEqualityInDifferentModule_Field(string name, string otherName)
+        public static unsafe void SigEqualityInDifferentModule_Field(string name, string otherName)
         {
             Type fph1 = typeof(FunctionPointerHolder).Project();
             Type fph2 = typeof(FunctionPointerHolderSeparateModule).Project();
@@ -54,7 +54,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.Prop_DateOnly), nameof(FunctionPointerHolder.Prop_Int))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestSigEqualityInDifferentModule_Property(string name, string otherName)
+        public static unsafe void SigEqualityInDifferentModule_Property(string name, string otherName)
         {
             Type fph1 = typeof(FunctionPointerHolder).Project();
             Type fph2 = typeof(FunctionPointerHolderSeparateModule).Project();
@@ -74,7 +74,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodReturnValue_DateOnly), nameof(FunctionPointerHolder.MethodReturnValue_Int))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void TestSigEqualityInDifferentModule_MethodReturn(string name, string otherName)
+        public static unsafe void SigEqualityInDifferentModule_MethodReturn(string name, string otherName)
         {
             Type fph1 = typeof(FunctionPointerHolder).Project();
             Type fph2 = typeof(FunctionPointerHolderSeparateModule).Project();

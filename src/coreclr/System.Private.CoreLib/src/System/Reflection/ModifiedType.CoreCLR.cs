@@ -11,13 +11,17 @@ namespace System.Reflection
         public static ModifiedType CreateRoot(
             Type unmodifiedType,
             object? signatureProvider,
-            int rootSignatureParameterIndex) => Create(
+            int rootSignatureParameterIndex)
+        {
+            int nestedSignatureIndex = -1;
+            return Create(
                 unmodifiedType,
                 signatureProvider,
                 rootSignatureParameterIndex,
-                nestedSignatureIndex: -1,
+                ref nestedSignatureIndex,
                 nestedSignatureParameterIndex: -1,
                 isRoot: true);
+        }
 
         private Type[] GetCustomModifiers(bool required)
         {

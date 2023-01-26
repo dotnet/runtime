@@ -193,7 +193,7 @@ HRESULT SigParser::SkipSignature()
     return hr;
 }
 
-HRESULT SigParser::MoveToSignature(uint32_t indexToFind)
+HRESULT SigParser::MoveToSignature(uint32_t indexToFind, CorElementType* pSignatureType)
 {
     CONTRACTL
     {
@@ -205,9 +205,10 @@ HRESULT SigParser::MoveToSignature(uint32_t indexToFind)
     }
     CONTRACTL_END
 
-    BOOL isFinished = FALSE;
-    HRESULT hr = MoveToSignature(indexToFind, 0, &isFinished);
-    if (isFinished == FALSE)
+    bool isFinished = false;
+    uint32_t currentIndex = 0;
+    HRESULT hr = MoveToSignature(indexToFind, &currentIndex, &isFinished, pSignatureType);
+    if (isFinished == false)
     {
         return META_E_BAD_SIGNATURE;
     }
@@ -215,7 +216,7 @@ HRESULT SigParser::MoveToSignature(uint32_t indexToFind)
     return hr;
 }
 
-HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, BOOL* isFinished)
+HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t* pCurrentIndex, bool* pIsFinished, CorElementType* pSignatureType)
 {
     CONTRACTL
     {
@@ -256,9 +257,9 @@ HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, 
             case ELEMENT_TYPE_PINNED:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
-                IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished));
+                IfFailRet(MoveToSignature(indexToFind, pCurrentIndex, pIsFinished, pSignatureType));
 
-                if (*isFinished)
+                if (*pIsFinished)
                     return S_OK;
 
                 break;
@@ -274,13 +275,14 @@ HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, 
                 break;
 
             case ELEMENT_TYPE_FNPTR:
-                if (indexToFind == currentIndex)
+                if (indexToFind == *pCurrentIndex)
                 {
-                    *isFinished = TRUE;
+                    *pIsFinished = TRUE;
+                    *pSignatureType = ELEMENT_TYPE_FNPTR;
                     return S_OK;
                 }
 
-                currentIndex++;
+                (*pCurrentIndex)++;
 
                 // Skip calling convention
                 uint32_t uCallConv;
@@ -300,15 +302,15 @@ HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, 
                 IfFailRet(GetData(&fpArgCnt));
 
                 // Handle return type
-                IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished));
-                if (*isFinished)
+                IfFailRet(MoveToSignature(indexToFind, pCurrentIndex, pIsFinished, pSignatureType));
+                if (*pIsFinished)
                     return S_OK;
 
                 // Handle args
                 while (fpArgCnt--)
                 {
-                    IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished));
-                    if (*isFinished)
+                    IfFailRet(MoveToSignature(indexToFind, pCurrentIndex, pIsFinished, pSignatureType));
+                    if (*pIsFinished)
                         return S_OK;
                 }
 
@@ -316,8 +318,8 @@ HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, 
 
             case ELEMENT_TYPE_ARRAY:
                 {
-                    IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished)); // Element type
-                    if (*isFinished)
+                    IfFailRet(MoveToSignature(indexToFind, pCurrentIndex, pIsFinished, pSignatureType));
+                    if (*pIsFinished)
                         return S_OK;
 
                     uint32_t rank;
@@ -350,7 +352,15 @@ HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, 
                 break;
 
             case ELEMENT_TYPE_GENERICINST:
-                // To support modifiers on generics, apply similar logic here from the ELEMENT_TYPE_FNPTR case.
+                if (indexToFind == *pCurrentIndex)
+                {
+                    *pIsFinished = TRUE;
+                    *pSignatureType = ELEMENT_TYPE_GENERICINST;
+                    return S_OK;
+                }
+
+                (*pCurrentIndex)++;
+                
                 IfFailRet(SkipExactlyOne()); // Skip generic type
 
                 // Handle args
@@ -358,8 +368,8 @@ HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t currentIndex, 
                 IfFailRet(GetData(&argCnt));
                 while (argCnt--)
                 {
-                    IfFailRet(MoveToSignature(indexToFind, currentIndex, isFinished));
-                    if (*isFinished)
+                    IfFailRet(MoveToSignature(indexToFind, pCurrentIndex, pIsFinished, pSignatureType));
+                    if (*pIsFinished)
                         return S_OK;
                 }
 

@@ -33,7 +33,7 @@ namespace System.Reflection
             }
             else if (unmodifiedType.HasElementType)
             {
-                modifiedType = new RoModifiedContainerType(unmodifiedType);
+                modifiedType = new RoModifiedHasElementType(unmodifiedType);
             }
             else
             {

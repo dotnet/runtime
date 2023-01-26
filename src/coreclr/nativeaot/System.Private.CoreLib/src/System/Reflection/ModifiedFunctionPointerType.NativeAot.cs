@@ -5,6 +5,6 @@ namespace System.Reflection
 {
     internal partial class ModifiedFunctionPointerType
     {
-        private MdSigCallingConvention GetCallingConvention() => throw new NotSupportedException();
+        private SignatureCallingConvention GetCallingConvention() => throw new NotSupportedException();
     }
 }

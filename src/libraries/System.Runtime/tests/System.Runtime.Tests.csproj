@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -338,7 +338,8 @@
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true" />
 
-    <ProjectReference Include="$(CommonPath)..\tests\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" Link="Common\System\\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" />
+    <ProjectReference Include="$(CommonPath)..\tests\System\TestReflectionILAssembly\TestReflectionILAssembly.ilproj" Link="Common\System\TestReflectionILAssembly\TestReflectionILAssembly.ilproj" />
+    <ProjectReference Include="$(CommonPath)..\tests\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" Link="Common\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" />
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
