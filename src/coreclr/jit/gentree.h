@@ -2008,6 +2008,7 @@ public:
 
     void SetContained()
     {
+        assert(IsValue());
         gtFlags |= GTF_CONTAINED;
         assert(isContained());
     }
