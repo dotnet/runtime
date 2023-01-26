@@ -10644,9 +10644,9 @@ public:
     // As only 64-bit xarch has the capability to have the additional registers, we limit the changes
     // to TARGET_AMD64 only.
     //
-    // Users of `targetamd.h` need to define three macros, RBM_ALLFLOAT_USE, RBM_FLT_CALLEE_TRASH_USE,
+    // Users of `targetamd64.h` need to define three macros, RBM_ALLFLOAT_USE, RBM_FLT_CALLEE_TRASH_USE,
     // and CNT_CALLEE_TRASH_FLOAT_USE which should point to these three variables respectively.
-    // We did this to avoid poluting all `targetXXX.h` macro definitions with a compiler parameter, where only
+    // We did this to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
     // TARGET_AMD64 requires one.
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
