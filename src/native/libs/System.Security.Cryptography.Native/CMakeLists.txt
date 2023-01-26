@@ -44,6 +44,20 @@ set(NATIVECRYPTO_SOURCES
     pal_x509ext.c
 )
 
+if (LOCAL_BUILD)
+    add_definitions(-DLOCAL_BUILD)
+    add_definitions(-DPALEXPORT=EXTERN_C)
+    add_definitions(-DTARGET_UNIX)
+    # For minipal files
+    include_directories(../../)
+    include_directories(../Common)
+    include_directories(${CMAKE_CURRENT_BINARY_DIR})
+    configure_file(
+        ../Common/pal_config.h.in
+        ${CMAKE_CURRENT_BINARY_DIR}/pal_config.h)
+endif()
+
+
 # Always build portable on macOS because OpenSSL is not a system component
 # and our prebuilts should not assume a specific ABI version for the types
 # that use OpenSSL at runtime.

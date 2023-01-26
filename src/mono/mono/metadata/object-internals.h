@@ -2148,4 +2148,7 @@ mono_string_instance_is_interned (MonoString *str);
 gpointer
 mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean only_unmanaged_callers_only, MonoError *error);
 
+void
+mono_runtime_run_startup_hooks (void);
+
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

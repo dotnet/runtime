@@ -371,7 +371,6 @@
     <Compile Include="Compiler\Dataflow\MethodBodyScanner.cs" />
     <Compile Include="Compiler\Dataflow\MethodParameterValue.cs" />
     <Compile Include="Compiler\Dataflow\MethodReturnValue.cs" />
-    <Compile Include="Compiler\Dataflow\Origin.cs" />
     <Compile Include="Compiler\Dataflow\ParameterReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\ReferenceValue.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionMethodBodyScanner.cs" />
@@ -379,16 +378,19 @@
     <Compile Include="Compiler\Dataflow\RequireDynamicallyAccessedMembersAction.cs" />
     <Compile Include="Compiler\Dataflow\ScannerExtensions.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisAssignmentPattern.cs" />
+    <Compile Include="Compiler\Dataflow\TrimAnalysisGenericInstantiationAccessPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
+    <Compile Include="Compiler\Dataflow\TrimAnalysisReflectionAccessPattern.cs" />
     <Compile Include="Compiler\Dataflow\ValueNode.cs" />
     <Compile Include="Compiler\DebugInformationProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedTrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedTypeDefinitionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributeAlgorithm.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericStaticBaseInfoNode.cs" />
@@ -434,6 +436,7 @@
     <Compile Include="Compiler\LazyGenerics\GraphBuilder.MethodCall.cs" />
     <Compile Include="Compiler\HardwareIntrinsicHelpers.Aot.cs" />
     <Compile Include="Compiler\IInliningPolicy.cs" />
+    <Compile Include="Compiler\Logging\NativeAotFatalErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\MethodImportationErrorProvider.cs" />
     <Compile Include="Compiler\MstatObjectDumper.cs" />

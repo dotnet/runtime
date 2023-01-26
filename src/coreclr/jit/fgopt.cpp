@@ -174,16 +174,19 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 // to be recomputed if they know certain things do NOT need to be recomputed.
 //
 // Arguments:
-//    computePreds        -- `true` if we should recompute predecessors
-//    computeDoms         -- `true` if we should recompute dominators
-//    computeReturnBlocks -- `true` if we should recompute the list of return blocks
-//    computeLoops        -- `true` if we should recompute the loop table
+//    updates -- enum flag set indicating what to update
 //
-void Compiler::fgUpdateChangedFlowGraph(const bool computePreds,
-                                        const bool computeDoms,
-                                        const bool computeReturnBlocks,
-                                        const bool computeLoops)
+// Notes:
+//    Always renumbers, computes enter blocks, and computes reachability.
+//    Optionally rebuilds dominators, return blocks, and computes loop information.
+//
+void Compiler::fgUpdateChangedFlowGraph(FlowGraphUpdates updates)
 {
+    const bool computeDoms = ((updates & FlowGraphUpdates::COMPUTE_DOMS) == FlowGraphUpdates::COMPUTE_DOMS);
+    const bool computeReturnBlocks =
+        ((updates & FlowGraphUpdates::COMPUTE_RETURNS) == FlowGraphUpdates::COMPUTE_RETURNS);
+    const bool computeLoops = ((updates & FlowGraphUpdates::COMPUTE_LOOPS) == FlowGraphUpdates::COMPUTE_LOOPS);
+
     // We need to clear this so we don't hit an assert calling fgRenumberBlocks().
     fgDomsComputed = false;
 
@@ -194,11 +197,6 @@ void Compiler::fgUpdateChangedFlowGraph(const bool computePreds,
 
     JITDUMP("\nRenumbering the basic blocks for fgUpdateChangeFlowGraph\n");
     fgRenumberBlocks();
-
-    if (computePreds) // This condition is only here until all phases don't require it.
-    {
-        fgComputePreds();
-    }
     fgComputeEnterBlocksSet();
     fgComputeReachabilitySets();
     if (computeDoms)
@@ -1454,6 +1452,17 @@ PhaseStatus Compiler::fgPostImportationCleanup()
             {
                 JITDUMP(FMT_BB " was not imported, marking as removed (%d)\n", cur->bbNum, removedBlks);
 
+                // Notify all successors that cur is no longer a pred.
+                //
+                // This may not be necessary once we have pred lists built before importation.
+                // When we alter flow in the importer branch opts, we should be able to make
+                // suitable updates there for blocks that we plan to keep.
+                //
+                for (BasicBlock* succ : cur->Succs(this))
+                {
+                    fgRemoveAllRefPreds(succ, cur);
+                }
+
                 cur->bbFlags |= BBF_REMOVED;
                 removedBlks++;
 
@@ -1594,6 +1603,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         // here as the oldTryEntry is no longer in the main bb list.
                         newTryEntry = bbNewBasicBlock(BBJ_NONE);
                         newTryEntry->bbFlags |= (BBF_IMPORTED | BBF_INTERNAL);
+                        newTryEntry->bbRefs = 0;
 
                         // Set the right EH region indices on this new block.
                         //
@@ -1612,6 +1622,10 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         if (bbIsHandlerBeg(newTryEntry->bbNext))
                         {
                             newTryEntry->bbJumpKind = BBJ_THROW;
+                        }
+                        else
+                        {
+                            fgAddRefPred(newTryEntry->bbNext, newTryEntry);
                         }
 
                         JITDUMP("OSR: changing start of try region #%u from " FMT_BB " to new " FMT_BB "\n",
@@ -1847,6 +1861,11 @@ PhaseStatus Compiler::fgPostImportationCleanup()
     // Did we make any changes?
     //
     const bool madeChanges = madeFlowChanges || addedTemps;
+
+    // Note that we have now run post importation cleanup,
+    // so we can enable more stringent checking.
+    //
+    compPostImportationCleanupDone = true;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

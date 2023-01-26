@@ -322,6 +322,11 @@ namespace Internal.Runtime.TypeLoader
                 throw new MissingTemplateException();
             }
 
+            if (templateMethod.FunctionPointer != IntPtr.Zero)
+            {
+                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer, isFunctionPointerUSG: false);
+            }
+
             // Ensure that if this method is non-shareable from a normal canonical perspective, then
             // its template MUST be a universal canonical template method
             Debug.Assert(!method.IsNonSharableMethod || (method.IsNonSharableMethod && templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal)));

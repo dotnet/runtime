@@ -1285,7 +1285,7 @@ method_body_object_construct (MonoClass *unused_class, MonoMethod *method, gpoin
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (image->raw_data && image->raw_data [1] != 'Z') ||
+		(image->raw_data && (image->raw_data [1] != 'Z' && image->raw_data [1] != 'b')) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME))
 		return MONO_HANDLE_CAST (MonoReflectionMethodBody, NULL_HANDLE);
 

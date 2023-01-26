@@ -975,10 +975,11 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 	if (minfo)
 		loc = mono_debug_method_lookup_location (minfo, sp->il_offset);
 
-	if (!loc) {
-		PRINT_DEBUG_MSG (1, "[%p] No line number info for il offset %x, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
+	if (!loc) { //we should not continue single stepping because the client side can have symbols loaded dynamically
+		PRINT_DEBUG_MSG (1, "[%p] No line number info for il offset %x, don't know if it's in the same line single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
 		req->last_method = method;
-		hit = FALSE;
+		req->last_line = -1;
+		return hit;
 	} else if (loc && method == req->last_method && loc->row == req->last_line) {
 		int nframes;
 		rt_callbacks.ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);

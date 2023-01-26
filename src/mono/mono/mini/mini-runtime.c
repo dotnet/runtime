@@ -4336,7 +4336,7 @@ init_class (MonoClass *klass)
 
 	const char *name = m_class_get_name (klass);
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 	/*
 	 * Some of the intrinsics used by the VectorX classes are only implemented on amd64.
 	 * The JIT can't handle SIMD types with != 16 size yet.
@@ -4728,6 +4728,8 @@ mini_init (const char *filename)
 		mono_runtime_setup_stat_profiler ();
 
 	MONO_PROFILER_RAISE (runtime_initialized, ());
+
+	mono_runtime_run_startup_hooks ();
 
 	MONO_VES_INIT_END ();
 

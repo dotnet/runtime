@@ -1562,3 +1562,17 @@ public class ToStringOverriden
         System.Diagnostics.Debugger.Break();
     }
 }
+public class TestLoadSymbols
+{
+    public static void Run()
+    {
+        var array = new Newtonsoft.Json.Linq.JArray();
+        var text = new Newtonsoft.Json.Linq.JValue("Manual text");
+        var date = new Newtonsoft.Json.Linq.JValue(new DateTime(2000, 5, 23));
+
+        System.Diagnostics.Debugger.Break();
+
+        array.Add(text);
+        array.Add(date);
+    }
+}

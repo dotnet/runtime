@@ -68,6 +68,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddLinkXmlFile (string file)
 		{
+			Options.Descriptors.Add (file);
 		}
 
 		public virtual void AddResponseFile (NPath path)

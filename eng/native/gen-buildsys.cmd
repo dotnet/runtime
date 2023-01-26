@@ -11,12 +11,9 @@ if %argC% lss 4 GOTO :USAGE
 if %1=="/?" GOTO :USAGE
 
 setlocal enabledelayedexpansion
-set basePath=%~dp0
-set __repoRoot=%~dp0..\..\
-:: remove quotes
-set "basePath=%basePath:"=%"
-:: remove trailing slash
-if %basePath:~-1%==\ set "basePath=%basePath:~0,-1%"
+set "__repoRoot=%~dp0..\.."
+:: normalize
+for %%i in ("%__repoRoot%") do set "__repoRoot=%%~fi"
 
 set __SourceDir=%1
 set __IntermediatesDir=%2
@@ -53,7 +50,7 @@ if /i "%__Arch%" == "wasm" (
                 exit /B 1
             )
 
-            set EMSDK_PATH=%__repoRoot%\src\mono\wasm\emsdk
+            set "EMSDK_PATH=%__repoRoot%\src\mono\wasm\emsdk"
         )
         :: replace backslash with forward slash and append last slash
         set "EMSDK_PATH=!EMSDK_PATH:\=/!"
@@ -69,7 +66,7 @@ if /i "%__Arch%" == "wasm" (
                 exit /B 1
             )
 
-            set WASI_SDK_PATH=%__repoRoot%src\mono\wasi\wasi-sdk
+            set "WASI_SDK_PATH=%__repoRoot%src\mono\wasi\wasi-sdk"
         )
         :: replace backslash with forward slash and append last slash
         set "WASI_SDK_PATH=!WASI_SDK_PATH:\=/!"
