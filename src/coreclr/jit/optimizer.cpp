@@ -10706,7 +10706,3 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 // `fgDebugCheckLoopTable()` is called.
 #endif // DEBUG
 }
-
-#undef RBM_ALLFLOAT_USE
-#undef RBM_FLT_CALLEE_TRASH_USE
-#undef CNT_CALLEE_TRASH_FLOAT

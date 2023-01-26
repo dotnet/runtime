@@ -2691,7 +2691,3 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     genProduceReg(setcc);
 }
 #endif // !TARGET_LOONGARCH64
-
-#undef RBM_ALLFLOAT_USE
-#undef RBM_FLT_CALLEE_TRASH_USE
-#undef CNT_CALLEE_TRASH_FLOAT_USE

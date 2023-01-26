@@ -11054,7 +11054,3 @@ bool CodeGenInterface::genCodeAddrNeedsReloc(size_t addr)
 }
 
 #endif // TARGET_XARCH
-
-#undef RBM_ALLFLOAT_USE
-#undef RBM_FLT_CALLEE_TRASH_USE
-#undef CNT_CALLEE_TRASH_FLOAT

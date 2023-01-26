@@ -2004,8 +2004,4 @@ void CodeGen::genX86SerializeIntrinsic(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
-#undef RBM_ALLFLOAT_USE
-#undef RBM_FLT_CALLEE_TRASH_USE
-#undef CNT_CALLEE_TRASH_FLOAT
-
 #endif // FEATURE_HW_INTRINSICS

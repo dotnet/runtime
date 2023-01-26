@@ -8981,6 +8981,8 @@ void LinearScan::dumpLsraStatsSummary(FILE* file)
 
 #ifdef DEBUG
 // Please see the comment for these instance variables in `compiler.h`
+// Here, the `compiler` object used must match the parameter name that
+// follows. If it is changed below, change it here.
 #if defined(TARGET_AMD64)
 #define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
 #define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
