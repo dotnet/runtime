@@ -47,7 +47,6 @@ namespace System.Net.Http
         private readonly TransportContext? _transportContext;
 
         private HttpRequestMessage? _currentRequest;
-        private bool _lastRequestWasAsync;
         private ArrayBuffer _writeBuffer;
         private int _allowedReadLineBytes;
 
@@ -91,7 +90,6 @@ namespace System.Net.Http
             _readBuffer = new ArrayBuffer(InitialReadBufferSize, usePool: false);
 
             _idleSinceTickCount = Environment.TickCount64;
-            _lastRequestWasAsync = true;
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -106,14 +104,14 @@ namespace System.Net.Http
 
         public override void Dispose() => Dispose(disposing: true);
 
-        private void Dispose(bool disposing, bool fromReadAheadTask = false)
+        private void Dispose(bool disposing)
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.
             int previousValue = Interlocked.Exchange(ref _disposed, Status_Disposed);
             if (previousValue != Status_Disposed)
             {
-                if (NetEventSource.Log.IsEnabled()) Trace($"Connection closing. {nameof(fromReadAheadTask)}={fromReadAheadTask}");
+                if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
 
                 // Only decrement the connection count if we counted this connection
                 if (HttpTelemetry.Log.IsEnabled() && previousValue == Status_NotDisposedAndTrackedByTelemetry)
@@ -123,7 +121,7 @@ namespace System.Net.Http
 
                 if (!_detachedFromPool)
                 {
-                    _pool.InvalidateHttp11Connection(this, fromReadAheadTask);
+                    _pool.InvalidateHttp11Connection(this, disposing);
                 }
 
                 if (disposing)
@@ -193,11 +191,24 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>Check whether a currently idle connection is still usable, or should be scavenged.</summary>
+        /// <returns>True if connection can be used, false if it is invalid due to a timeout or receiving EOF or unexpected data.</returns>
+        public override bool CheckUsabilityOnScavenge()
+        {
+            if (CheckKeepAliveTimeoutExceeded())
+            {
+                return false;
+            }
+
+            // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
+            EnsureReadAheadTaskHasStarted();
+
+            // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
+            return !_readAheadTask.IsCompleted;
+        }
+
         private bool ReadAheadTaskHasStarted() =>
             _readAheadTaskStatus != ReadAheadTask_NotStarted;
-
-        private bool CanOwnReadAheadTaskCompletion() =>
-            _readAheadTaskStatus == ReadAheadTask_Started;
 
         private bool TryOwnReadAheadTaskCompletion() =>
             Interlocked.CompareExchange(ref _readAheadTaskStatus, ReadAheadTask_CompletionReserved, ReadAheadTask_Started) == ReadAheadTask_Started;
@@ -254,7 +265,7 @@ namespace System.Net.Http
                     {
                         if (NetEventSource.Log.IsEnabled()) Trace("Read-ahead task observed data before the request was sent.");
 
-                        Dispose(disposing: true, fromReadAheadTask: true);
+                        return 0;
                     }
 
                     return read;
@@ -263,27 +274,9 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.Log.IsEnabled()) Trace($"Error performing read ahead: {error}");
 
-                    Dispose(disposing: true, fromReadAheadTask: true);
-
                     return 0;
                 }
             }
-        }
-
-        /// <summary>Check whether a currently idle connection is still usable, or should be scavenged.</summary>
-        /// <returns>True if connection can be used, false if it is invalid due to a timeout or receiving EOF or unexpected data.</returns>
-        public override bool CheckUsabilityOnScavenge()
-        {
-            if (CheckKeepAliveTimeoutExceeded())
-            {
-                return false;
-            }
-
-            Debug.Assert(!_lastRequestWasAsync || ReadAheadTaskHasStarted());
-
-            EnsureReadAheadTaskHasStarted();
-
-            return CanOwnReadAheadTaskCompletion();
         }
 
         private bool CheckKeepAliveTimeoutExceeded()
@@ -540,13 +533,12 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             Debug.Assert(_readBuffer.ActiveLength == 0, "Unexpected data in read buffer");
-            Debug.Assert(!ReadAheadTaskHasStarted() || !CanOwnReadAheadTaskCompletion());
+            Debug.Assert(_readAheadTaskStatus != ReadAheadTask_Started);
 
             TaskCompletionSource<bool>? allowExpect100ToContinue = null;
             Task? sendRequestContentTask = null;
 
             _currentRequest = request;
-            _lastRequestWasAsync = async;
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
             _canRetry = false;
@@ -611,7 +603,7 @@ namespace System.Net.Http
                 if (ReadAheadTaskHasStarted())
                 {
                     Debug.Assert(_readAheadTask != default);
-                    Debug.Assert(!CanOwnReadAheadTaskCompletion());
+                    Debug.Assert(_readAheadTaskStatus == ReadAheadTask_CompletionReserved);
 
                     // Handle the pre-emptive read.  For the async==false case, hopefully the read has
                     // already completed and this will be a nop, but if it hasn't, the caller will be forced to block
@@ -852,7 +844,7 @@ namespace System.Net.Http
 
                 if (_readAheadTask != default)
                 {
-                    Debug.Assert(!CanOwnReadAheadTaskCompletion());
+                    Debug.Assert(_readAheadTaskStatus == ReadAheadTask_CompletionReserved);
 
                     LogExceptions(_readAheadTask.AsTask());
                 }
@@ -2105,23 +2097,10 @@ namespace System.Net.Http
             {
                 Debug.Assert(!_detachedFromPool, "Should not be detached from pool unless _connectionClose is true");
 
+                _idleSinceTickCount = Environment.TickCount64;
+
                 // Put connection back in the pool.
                 _pool.RecycleHttp11Connection(this);
-            }
-        }
-
-        // This should be called while holding the lock (mustn't overlap with SendAsync).
-        internal void OnAddingIdleConnectionToPool()
-        {
-            _idleSinceTickCount = Environment.TickCount64;
-
-            // It could be a while until we start serving the next request. Issue a read to
-            // the transport stream so we can quickly react to potential server disconnects.
-            if (_lastRequestWasAsync)
-            {
-                Debug.Assert(!ReadAheadTaskHasStarted());
-
-                EnsureReadAheadTaskHasStarted();
             }
         }
 

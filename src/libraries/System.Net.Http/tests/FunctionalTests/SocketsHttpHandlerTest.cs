@@ -2071,52 +2071,6 @@ namespace System.Net.Http.Functional.Tests
             });
             await serverTask.WaitAsync(TestHelper.PassingTestTimeout);
         }
-
-        [Theory]
-        [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(3)]
-        public async Task ReadAheadTaskObservesPrematureResult_ConnectionIsClosedImmediately(int mode)
-        {
-            var cts = new CancellationTokenSource();
-            var requestCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var streamDisposed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            using var handler = new SocketsHttpHandler
-            {
-                PooledConnectionIdleTimeout = TimeSpan.FromDays(42), // Effectively disable scavenging logic
-                ConnectCallback = async (_, _) =>
-                {
-                    cts.Cancel();
-                    await requestCompleted.Task;
-
-                    return new DelegateDelegatingStream(Stream.Null)
-                    {
-                        ReadAsyncMemoryFunc = (memory, _) =>
-                        {
-                            Assert.Equal(0, memory.Length);
-
-                            return mode switch
-                            {
-                                1 => new ValueTask<int>(0),
-                                2 => new ValueTask<int>(42),
-                                _ => throw new Exception("Foo")
-                            };
-                        },
-                        DisposeFunc = _ => streamDisposed.TrySetResult(),
-                        DisposeAsyncFunc = () => { streamDisposed.TrySetResult(); return default; },
-                    };
-                }
-            };
-
-            using var client = new HttpClient(handler);
-
-            await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetStringAsync("http://foo", cts.Token));
-
-            requestCompleted.SetResult();
-
-            await streamDisposed.Task.WaitAsync(TestHelper.PassingTestTimeout);
-        }
     }
 
     // System.Net.Sockets is not supported on this platform
