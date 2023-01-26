@@ -91,6 +91,8 @@ namespace System.Reflection.Emit
                                  AssemblyLoadContext assemblyLoadContext,
                                  IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
+            Debug.Assert(name is not null);
+
             _access = access;
 
             _internalAssembly = CreateDynamicAssembly(assemblyLoadContext, name, access);
