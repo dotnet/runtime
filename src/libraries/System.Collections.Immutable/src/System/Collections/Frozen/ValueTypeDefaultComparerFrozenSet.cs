@@ -10,10 +10,10 @@ namespace System.Collections.Frozen
     /// <typeparam name="T">The type of values in the set.</typeparam>
     internal sealed class ValueTypeDefaultComparerFrozenSet<T> : ItemsFrozenSet<T, ValueTypeDefaultComparerFrozenSet<T>.GSW>
     {
-        internal ValueTypeDefaultComparerFrozenSet(HashSet<T> source) :
-            base(source, EqualityComparer<T>.Default)
+        internal ValueTypeDefaultComparerFrozenSet(HashSet<T> source) : base(source)
         {
             Debug.Assert(typeof(T).IsValueType);
+            Debug.Assert(ReferenceEquals(source.Comparer, EqualityComparer<T>.Default));
         }
 
         /// <inheritdoc />

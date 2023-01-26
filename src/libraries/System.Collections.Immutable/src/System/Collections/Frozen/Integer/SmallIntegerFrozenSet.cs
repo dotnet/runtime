@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 
 namespace System.Collections.Frozen
@@ -17,13 +19,15 @@ namespace System.Collections.Frozen
         private readonly T[] _items;
         private readonly T _max;
 
-        // this assumes the entries are sorted
-        internal SmallIntegerFrozenSet(T[] entries)
-            : base(EqualityComparer<T>.Default)
+        internal SmallIntegerFrozenSet(HashSet<T> source) : base(EqualityComparer<T>.Default)
         {
-            Debug.Assert(entries.Length != 0);
+            Debug.Assert(source.Count != 0);
+            Debug.Assert(ReferenceEquals(source.Comparer, EqualityComparer<T>.Default));
 
-            _items = entries;
+            T[] items = source.ToArray();
+            Array.Sort(items);
+
+            _items = items;
             _max = _items[^1];
         }
 
