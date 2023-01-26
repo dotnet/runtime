@@ -221,28 +221,9 @@ namespace System.Net.Http
 
                 _readAheadTaskStatus = ReadAheadTask_Started;
 
-                // Avoid capturing the ExecutionContext in the read-ahead task to avoid
-                // artificially extending the lifetime of unrelated AsyncLocals.
-                bool restoreFlow = false;
-                try
-                {
-                    if (!ExecutionContext.IsFlowSuppressed())
-                    {
-                        ExecutionContext.SuppressFlow();
-                        restoreFlow = true;
-                    }
-
 #pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
-                    _readAheadTask = ReadAheadWithZeroByteReadAsync();
+                _readAheadTask = ReadAheadWithZeroByteReadAsync();
 #pragma warning restore CA2012
-                }
-                finally
-                {
-                    if (restoreFlow)
-                    {
-                        ExecutionContext.RestoreFlow();
-                    }
-                }
             }
 
             async ValueTask<int> ReadAheadWithZeroByteReadAsync()
