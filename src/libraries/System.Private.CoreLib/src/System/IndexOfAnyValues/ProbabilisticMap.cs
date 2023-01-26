@@ -108,8 +108,8 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> ContainsMask32CharsAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, ref char searchSpace)
         {
-            Vector256<ushort> source0 = Vector256.LoadUnsafe(ref Unsafe.As<char, ushort>(ref searchSpace));
-            Vector256<ushort> source1 = Vector256.LoadUnsafe(ref Unsafe.As<char, ushort>(ref searchSpace), (nuint)Vector256<ushort>.Count);
+            Vector256<ushort> source0 = Vector256.LoadUnsafe(ref searchSpace);
+            Vector256<ushort> source1 = Vector256.LoadUnsafe(ref searchSpace, (nuint)Vector256<ushort>.Count);
 
             Vector256<byte> sourceLower = Avx2.PackUnsignedSaturate(
                 (source0 & Vector256.Create((ushort)255)).AsInt16(),
@@ -144,8 +144,8 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> ContainsMask16Chars(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, ref char searchSpace)
         {
-            Vector128<ushort> source0 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref searchSpace));
-            Vector128<ushort> source1 = Vector128.LoadUnsafe(ref Unsafe.As<char, ushort>(ref searchSpace), (nuint)Vector128<ushort>.Count);
+            Vector128<ushort> source0 = Vector128.LoadUnsafe(ref searchSpace);
+            Vector128<ushort> source1 = Vector128.LoadUnsafe(ref searchSpace, (nuint)Vector128<ushort>.Count);
 
             Vector128<byte> sourceLower = Sse2.IsSupported
                 ? Sse2.PackUnsignedSaturate((source0 & Vector128.Create((ushort)255)).AsInt16(), (source1 & Vector128.Create((ushort)255)).AsInt16())
@@ -168,24 +168,15 @@ namespace System.Buffers
                 ? Sse2.ShiftRightLogical(values.AsInt32(), VectorizedIndexShift).AsByte() & Vector128.Create((byte)15)
                 : AdvSimd.ShiftRightLogical(values, VectorizedIndexShift);
 
-            Vector128<byte> bitPositions = Shuffle(Vector128.Create(0x8040201008040201).AsByte(), highNibble);
+            Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), highNibble);
 
             Vector128<byte> index = values & Vector128.Create((byte)VectorizedIndexMask);
-            Vector128<byte> bitMaskLower = Shuffle(charMapLower, index);
-            Vector128<byte> bitMaskUpper = Shuffle(charMapUpper, index - Vector128.Create((byte)16));
+            Vector128<byte> bitMaskLower = Vector128.ShuffleUnsafe(charMapLower, index);
+            Vector128<byte> bitMaskUpper = Vector128.ShuffleUnsafe(charMapUpper, index - Vector128.Create((byte)16));
             Vector128<byte> mask = Vector128.GreaterThan(index, Vector128.Create((byte)15));
             Vector128<byte> bitMask = Vector128.ConditionalSelect(mask, bitMaskUpper, bitMaskLower);
 
             return Vector128.Equals(bitMask & bitPositions, Vector128<byte>.Zero);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<byte> Shuffle(Vector128<byte> vector, Vector128<byte> indices)
-        {
-            // We're not using Vector128.Shuffle as the caller already accounts for differences in behavior between platforms.
-            return Ssse3.IsSupported
-                ? Ssse3.Shuffle(vector, indices)
-                : AdvSimd.Arm64.VectorTableLookup(vector, indices);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
