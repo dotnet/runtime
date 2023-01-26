@@ -538,8 +538,6 @@ private:
                 JITDUMP(" ... found foldable jtrue at [%06u] in " FMT_BB "\n", m_compiler->dspTreeID(tree),
                         block->bbNum);
 
-                noway_assert(!m_compiler->fgComputePredsDone);
-
                 // We have a constant operand, and should have the all clear to optimize.
                 // Update side effects on the tree, assert there aren't any, and bash to nop.
                 m_compiler->gtUpdateNodeSideEffects(tree);
@@ -550,10 +548,12 @@ private:
                 if (!condTree->IsIntegralConst(0))
                 {
                     block->bbJumpKind = BBJ_ALWAYS;
+                    m_compiler->fgRemoveRefPred(block->bbNext, block);
                 }
                 else
                 {
                     block->bbJumpKind = BBJ_NONE;
+                    m_compiler->fgRemoveRefPred(block->bbJumpDest, block);
                 }
             }
         }
@@ -731,6 +731,14 @@ PhaseStatus Compiler::fgInline()
     }
 
 #endif // DEBUG
+
+    if (madeChanges)
+    {
+        // Optional quirk to keep this as zero diff. Some downstream phases are bbNum sensitive
+        // but rely on the ambient bbNums.
+        //
+        fgRenumberBlocks();
+    }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -1204,11 +1212,19 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
                 block->bbJumpKind = BBJ_NONE;
             }
+
+            fgAddRefPred(bottomBlock, block);
         }
     }
 
+    // Inlinee's top block will have an artificial ref count. Remove.
+    assert(InlineeCompiler->fgFirstBB->bbRefs > 0);
+    InlineeCompiler->fgFirstBB->bbRefs--;
+
     // Insert inlinee's blocks into inliner's block list.
     topBlock->setNext(InlineeCompiler->fgFirstBB);
+    fgRemoveRefPred(bottomBlock, topBlock);
+    fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
     InlineeCompiler->fgLastBB->setNext(bottomBlock);
 
     //

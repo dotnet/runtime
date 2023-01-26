@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -158,7 +157,7 @@ namespace System.Collections.Frozen
             else if (typeof(T) == typeof(string))
             {
                 // Null is rare as a value in the set and we don't optimize for it.  This enables the ordinal string
-                // implementation to fast-path out on null inputs rather than having to accomodate null inputs.
+                // implementation to fast-path out on null inputs rather than having to accommodate null inputs.
                 if (!uniqueValues.Contains(default!))
                 {
                     // If the value is a string and the comparer is known to provide ordinal (case-sensitive or case-insensitive) semantics,

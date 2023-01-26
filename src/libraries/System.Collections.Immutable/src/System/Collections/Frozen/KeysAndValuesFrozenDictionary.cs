@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace System.Collections.Frozen
 {
     /// <summary>Provides a base class for frozen dictionaries that store their keys and values in dedicated arrays.</summary>
-    public abstract class KeysAndValuesFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>, IDictionary<TKey, TValue>
+    internal abstract class KeysAndValuesFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>, IDictionary<TKey, TValue>
         where TKey : notnull
     {
         private protected readonly FrozenHashTable _hashTable;

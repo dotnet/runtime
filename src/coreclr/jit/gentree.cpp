@@ -12095,14 +12095,16 @@ void Compiler::gtDispTree(GenTree*     tree,
                     break;
 #if defined(FEATURE_SIMD)
                 case NI_SIMD_UpperRestore:
-                    printf(" simd_upperRestr");
+                    printf(" simdUpperRestore");
                     break;
                 case NI_SIMD_UpperSave:
-                    printf(" simd_upperSave");
+                    printf(" simdUpperSave");
                     break;
 #endif // FEATURE_SIMD
                 default:
-                    unreached();
+                    printf("Unknown intrinsic: ");
+                    printTreeID(tree);
+                    break;
             }
         }
 

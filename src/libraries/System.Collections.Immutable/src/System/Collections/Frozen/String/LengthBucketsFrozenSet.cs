@@ -12,6 +12,7 @@ namespace System.Collections.Frozen
     {
         /// <summary>Allowed ratio between buckets with values and total buckets.  Under this ratio, this implementation won't be used due to too much wasted space.</summary>
         private const double EmptyLengthsRatio = 0.2;
+
         /// <summary>The maximum number of items allowed per bucket.  The larger the value, the longer it can take to search a bucket, which is sequentially examined.</summary>
         private const int MaxPerLength = 5;
 
@@ -20,8 +21,8 @@ namespace System.Collections.Frozen
         private readonly string[] _items;
         private readonly bool _ignoreCase;
 
-        private LengthBucketsFrozenSet(string[] items, KeyValuePair<string, int>[][] lengthBuckets, int minLength, IEqualityComparer<string> comparer) :
-            base(comparer)
+        private LengthBucketsFrozenSet(string[] items, KeyValuePair<string, int>[][] lengthBuckets, int minLength, IEqualityComparer<string> comparer)
+            : base(comparer)
         {
             Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);
 
