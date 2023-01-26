@@ -54,8 +54,6 @@ namespace System.Tests.Types
             }
         }
 
-        // NOTE: commented out due to compiler issue on NativeAOT: #81117
-        /*
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
@@ -145,7 +143,6 @@ namespace System.Tests.Types
             Assert.Equal(1, paramType.GetRequiredCustomModifiers().Length);
             Assert.Equal(typeof(OutAttribute).Project(), paramType.GetRequiredCustomModifiers()[0]);
         }
-        */
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
@@ -460,6 +457,8 @@ namespace System.Tests.Types
             Assert.Equal(typeof(OutAttribute).Project(), target.GetRequiredCustomModifiers()[0]);
         }
 
+        // NOTE: commented out due to compiler issue on NativeAOT: #81117
+        /*
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
@@ -496,6 +495,7 @@ namespace System.Tests.Types
             Assert.Equal(1, target.GetFunctionPointerCallingConventions().Length);
             Assert.Equal(typeof(CallConvCdecl).Project(), target.GetFunctionPointerCallingConventions()[0]);
         }
+        */
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
@@ -513,14 +513,9 @@ namespace System.Tests.Types
             Assert.Equal(typeof(int).Project(), ga1);
 
             Type ga2 = a1.GetGenericArguments()[1];
+            Assert.False(IsModifiedType(ga2));
             Assert.Equal(typeof(bool).Project(), ga2);
-
-            // Currently the modified types leak out in this case and return the modifiers.
-            if (!FunctionPointerTestsExtensions.IsMetadataLoadContext)
-            {
-                Assert.False(IsModifiedType(ga2));
-                Assert.Equal(0, ga2.GetOptionalCustomModifiers().Length);
-            }
+            Assert.Equal(0, ga2.GetOptionalCustomModifiers().Length);
         }
 
         [Fact]
@@ -562,8 +557,7 @@ namespace System.Tests.Types
 
             // Although function pointers can't be used in generics directly, they can be used indirectly
             // through an array or pointer.
-            // NOTE: commented out due to compiler issue on NativeAOT: #81117
-            //public static volatile Tuple<delegate*<out bool, void>[]> _arrayGenericFcnPtr;
+            public static volatile Tuple<delegate*<out bool, void>[]> _arrayGenericFcnPtr;
 
             public static int** _ptr_ptr_int;
             public static int*[] _array_ptr_int;
@@ -573,23 +567,24 @@ namespace System.Tests.Types
 
             public static void M_P0IntOut(out int i) { i = 42; }
             public static void M_P0FcnPtrOut(delegate*<out int, void> fp) { }
-            // NOTE: commented out due to compiler issue on NativeAOT: #81117
-            //public static void M_ArrayOpenGenericFcnPtr<T>(T t, delegate*<out bool, void>[] fp) { }
+            public static void M_ArrayOpenGenericFcnPtr<T>(T t, delegate*<out bool, void>[] fp) { }
 
             public int InitProperty_Int { get; init; }
             public static delegate*<out int, void> Property_FcnPtr { get; set; }
-            public delegate*
-            <
-                delegate*<int>, // p0
-                delegate*       // p1
-                <
-                    delegate*<byte>, // p0
-                    delegate*<int>,  // p1
-                    delegate* unmanaged[Cdecl]<long>, // p2
-                    void // ret
-                >,
-                bool // ret
-            >[] Property_FcnPtr_Complex { get; }
+
+            // NOTE: commented out due to compiler issue on NativeAOT: #81117
+            //public delegate*
+            //<
+            //    delegate*<int>, // p0
+            //    delegate*       // p1
+            //    <
+            //        delegate*<byte>, // p0
+            //        delegate*<int>,  // p1
+            //        delegate* unmanaged[Cdecl]<long>, // p2
+            //        void // ret
+            //    >,
+            //    bool // ret
+            //>[] Property_FcnPtr_Complex { get; }
 
             public static delegate*<out int, void> FcnPtrP0Out { get; set; }
             public static delegate*<out int, void> _fcnPtrP0Out;

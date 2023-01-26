@@ -28,7 +28,10 @@ namespace System.Reflection.TypeLoading
         }
 
         [return: NotNullIfNotNull(nameof(original))]
-        public static Type[]? CloneArrayToUnmodified(this Type[]? original)
+        // Converts an array of modified types to unmodified types when unmodified are requested.
+        // This prevents inconsistencies such as allowing modifiers to be returned.
+        // This doesn't affect performance since we need to clone arrays anyway before returning to the caller.
+        public static Type[]? CloneArrayToUnmodifiedTypes(this Type[]? original)
         {
             if (original == null)
                 return null;

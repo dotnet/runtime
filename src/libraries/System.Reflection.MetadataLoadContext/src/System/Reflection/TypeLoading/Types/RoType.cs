@@ -106,7 +106,10 @@ namespace System.Reflection.TypeLoading
 
         // .NET 2.0 apis for detecting/deconstructing generic type definition/constructed generic types.
         public sealed override bool IsGenericType => IsConstructedGenericType || IsGenericTypeDefinition;
-        public sealed override Type[] GetGenericArguments() => GetGenericArgumentsNoCopy().CloneArray<Type>();
+
+        //  Don't seal since we may need to convert any modified types to unmodified.
+        public override Type[] GetGenericArguments() => GetGenericArgumentsNoCopy().CloneArray();
+
         protected internal abstract RoType[] GetGenericArgumentsNoCopy();
 
         // Naming

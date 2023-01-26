@@ -121,6 +121,7 @@ namespace System.Reflection.TypeLoading
         internal sealed override RoType[] GetGenericTypeParametersNoCopy() => Array.Empty<RoType>();
         internal sealed override RoType[] GetGenericTypeArgumentsNoCopy() => _genericTypeArguments;
         protected internal sealed override RoType[] GetGenericArgumentsNoCopy() => _genericTypeArguments;
+        public sealed override Type[] GetGenericArguments() => _genericTypeArguments.CloneArrayToUnmodifiedTypes();
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments) => throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 

@@ -47,7 +47,7 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsFunctionPointer => true;
         public sealed override bool IsUnmanagedFunctionPointer => _isUnmanaged;
         public sealed override Type GetFunctionPointerReturnType() => _returnType.UnderlyingSystemType;
-        public sealed override Type[] GetFunctionPointerParameterTypes() => _parameterTypes.CloneArrayToUnmodified();
+        public sealed override Type[] GetFunctionPointerParameterTypes() => _parameterTypes.CloneArrayToUnmodifiedTypes();
         protected sealed override string? ComputeFullName() => null;
         protected sealed override string ComputeName() => string.Empty;
 
