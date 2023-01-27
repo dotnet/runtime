@@ -12,14 +12,10 @@ namespace ComInterfaceGenerator.Tests
     {
         internal partial class NoImplicitThis
         {
-            internal partial interface IStaticMethodTable : IUnmanagedInterfaceType<IStaticMethodTable>
+            [UnmanagedObjectUnwrapperAttribute<VTableGCHandlePair<IStaticMethodTable>>]
+            internal partial interface IStaticMethodTable : IUnmanagedInterfaceType
             {
-                static int IUnmanagedInterfaceType<IStaticMethodTable>.VirtualMethodTableLength => 2;
-                static void* IUnmanagedInterfaceType<IStaticMethodTable>.VirtualMethodTableManagedImplementation => null;
-
-                static void* IUnmanagedInterfaceType<IStaticMethodTable>.GetUnmanagedWrapperForObject(IStaticMethodTable obj) => null;
-
-                static IStaticMethodTable IUnmanagedInterfaceType<IStaticMethodTable>.GetObjectForUnmanagedWrapper(void* ptr) => null;
+                static void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
 
                 [VirtualMethodIndex(0, Direction = MarshalDirection.ManagedToUnmanaged, ImplicitThisParameter = false)]
                 int Add(int x, int y);

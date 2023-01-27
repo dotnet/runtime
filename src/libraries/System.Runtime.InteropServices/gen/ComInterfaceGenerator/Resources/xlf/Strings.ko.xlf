@@ -52,6 +52,11 @@
         <target state="translated">메서드 '{0}'은(는) 'partial'로 표시되지 않은 '{1}' 형식에 포함되어 있습니다. P/Invoke 소스 생성은 '{0}' 메서드를 무시합니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute">
+        <source>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </source>
+        <target state="new">Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
         <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
         <target state="translated">'LibraryImportAttribute'로 표시된 메소드는 'static', 'partial' 및 비제네릭이어야 합니다. P/Invoke 소스 생성은 'static'이 아니거나 'partial'이 아니거나 제네릭인 메서드를 무시합니다.</target>

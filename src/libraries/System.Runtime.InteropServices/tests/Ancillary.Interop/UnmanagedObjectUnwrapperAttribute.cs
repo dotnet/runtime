@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices.Marshalling;
 // This attribute provides the mechanism for the VTable source generator to know which type to use to get the managed object
 // from the unmanaged "this" pointer. If we decide to not expose VirtualMethodIndexAttribute, we don't need to expose this.
 [AttributeUsage(AttributeTargets.Interface)]
-internal class UnmanagedObjectUnwrapperAttribute<TMapper> : Attribute
+public class UnmanagedObjectUnwrapperAttribute<TMapper> : Attribute
     where TMapper : IUnmanagedObjectUnwrapper
 {
 }

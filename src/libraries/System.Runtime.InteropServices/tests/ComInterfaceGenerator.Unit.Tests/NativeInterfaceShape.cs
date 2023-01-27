@@ -23,7 +23,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [VirtualMethodIndex(0)]
@@ -49,7 +50,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [VirtualMethodIndex(0)]
@@ -75,7 +77,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [VirtualMethodIndex(0)]
@@ -106,7 +109,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [VirtualMethodIndex(0)]

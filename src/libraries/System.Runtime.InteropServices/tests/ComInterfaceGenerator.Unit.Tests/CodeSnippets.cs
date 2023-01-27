@@ -18,10 +18,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             """;
 
         public const string INativeAPI_IUnmanagedInterfaceTypeMethodImpl = """
-                static int IUnmanagedInterfaceType<INativeAPI>.VirtualMethodTableLength => 1;
-                static unsafe void* IUnmanagedInterfaceType<INativeAPI>.VirtualMethodTableManagedImplementation => null;
-                static unsafe void* IUnmanagedInterfaceType<INativeAPI>.GetUnmanagedWrapperForObject(INativeAPI obj) => null;
-                static unsafe INativeAPI IUnmanagedInterfaceType<INativeAPI>.GetObjectForUnmanagedWrapper(void* ptr) => null;
+                static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
             """;
 
         public static string NativeInterfaceUsage() => @"
@@ -36,7 +33,8 @@ sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider, INativeAPI.Native
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {
     [VirtualMethodIndex(0)]
     void Method();
@@ -46,7 +44,8 @@ partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
     void Method();
@@ -57,7 +56,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {
 
     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
@@ -89,7 +89,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0)]
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
@@ -102,7 +103,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, Direction = MarshalDirection.ManagedToUnmanaged)]
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
@@ -116,7 +118,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0)]
     {typeName} Method({typeName} value, in {typeName} inValue, out {typeName} outValue);
@@ -126,7 +129,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
@@ -140,7 +144,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0)]
     [return:MarshalUsing(ConstantElementCount=10)]
@@ -159,7 +164,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ExceptionMarshalling = ExceptionMarshalling.Com)]
     {typeName} Method();
@@ -171,7 +177,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, CustomExceptionMarshallingType = typeof({customExceptionType}))]
     {typeName} Method();

@@ -3,11 +3,15 @@
 
 using System;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 namespace Microsoft.Interop
 {
     public sealed record NativeToManagedStubCodeContext : StubCodeContext
     {
         public override bool SingleFrameSpansNativeContext => false;
+
+        public TypeSyntax UnwrapperType { get; private set; }
 
         public override bool AdditionalTemporaryStateLivesAcrossStages => false;
 
@@ -23,12 +27,14 @@ namespace Microsoft.Interop
             TargetFramework targetFramework,
             Version targetFrameworkVersion,
             string returnIdentifier,
-            string nativeReturnIdentifier)
+            string nativeReturnIdentifier,
+            TypeSyntax unwrapperType)
         {
             _framework = targetFramework;
             _frameworkVersion = targetFrameworkVersion;
             _returnIdentifier = returnIdentifier;
             _nativeReturnIdentifier = nativeReturnIdentifier;
+            UnwrapperType = unwrapperType;
             Direction = MarshalDirection.UnmanagedToManaged;
         }
 

@@ -31,7 +31,8 @@ namespace Microsoft.Interop
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> ManagedToUnmanagedGeneratorFactory,
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
             ManagedTypeInfo TypeKeyOwner,
-            SequenceEqualImmutableArray<Diagnostic> Diagnostics);
+            SequenceEqualImmutableArray<Diagnostic> Diagnostics,
+            TypeSyntax UnwrapperType);
 
         public static class StepNames
         {
@@ -309,68 +310,80 @@ namespace Microsoft.Interop
             {
                 // Report missing or invalid index
             }
-
-            if (virtualMethodIndexData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
+            return SecondHalf();
+            IncrementalStubGenerationContext SecondHalf()
             {
-                // User specified StringMarshalling.Custom without specifying StringMarshallingCustomType
-                if (virtualMethodIndexData.StringMarshalling == StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is null)
+
+                if (virtualMethodIndexData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
                 {
-                    generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
-                        virtualMethodIndexAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationMissingCustomType);
+                    // User specified StringMarshalling.Custom without specifying StringMarshallingCustomType
+                    if (virtualMethodIndexData.StringMarshalling == StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is null)
+                    {
+                        generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
+                            virtualMethodIndexAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationMissingCustomType);
+                    }
+
+                    // User specified something other than StringMarshalling.Custom while specifying StringMarshallingCustomType
+                    if (virtualMethodIndexData.StringMarshalling != StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is not null)
+                    {
+                        generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
+                            virtualMethodIndexAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationNotCustom);
+                    }
                 }
 
-                // User specified something other than StringMarshalling.Custom while specifying StringMarshallingCustomType
-                if (virtualMethodIndexData.StringMarshalling != StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is not null)
+                if (!virtualMethodIndexData.ImplicitThisParameter && virtualMethodIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                 {
-                    generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
-                        virtualMethodIndexAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationNotCustom);
+                    // Report invalid configuration
                 }
+
+                if (lcidConversionAttr is not null)
+                {
+                    // Using LCIDConversion with source-generated interop is not supported
+                    generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
+                }
+
+                // Create the stub.
+                var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, virtualMethodIndexData, virtualMethodIndexAttr), environment, typeof(VtableIndexStubGenerator).Assembly);
+
+                var containingSyntaxContext = new ContainingSyntaxContext(syntax);
+
+                var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
+
+                ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
+
+                var interfaceType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
+
+                INamedTypeSymbol expectedUnmanagedInterfaceType = iUnmanagedInterfaceTypeType;
+
+                bool implementsIUnmanagedInterfaceOfSelf = symbol.ContainingType.AllInterfaces.Any(iface => SymbolEqualityComparer.Default.Equals(iface, expectedUnmanagedInterfaceType));
+                if (!implementsIUnmanagedInterfaceOfSelf)
+                {
+                    // TODO: Report invalid configuration
+                }
+
+                var unmanagedObjectUnwrapper = symbol.ContainingType.GetAttributes().FirstOrDefault(att => att.AttributeClass.IsOfType(TypeNames.UnmanagedObjectUnwrapperAttribute));
+                if (unmanagedObjectUnwrapper is null)
+                {
+                    throw new ArgumentException("Found a method on a type without a UnmanagedObjectUnwrapperAttribute.");
+                }
+
+
+                MarshallingInfo exceptionMarshallingInfo = CreateExceptionMarshallingInfo(virtualMethodIndexAttr, symbol, environment.Compilation, generatorDiagnostics, virtualMethodIndexData);
+                var unwrapperSyntax = ParseTypeName(unmanagedObjectUnwrapper.AttributeClass.TypeArguments[0].ToDisplayString());
+                return new IncrementalStubGenerationContext(
+                    signatureContext,
+                    containingSyntaxContext,
+                    methodSyntaxTemplate,
+                    new MethodSignatureDiagnosticLocations(syntax),
+                    new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
+                    VirtualMethodIndexData.From(virtualMethodIndexData),
+                    exceptionMarshallingInfo,
+                    ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
+                    ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
+                    interfaceType,
+                    new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
+                    unwrapperSyntax);
             }
-
-            if (!virtualMethodIndexData.ImplicitThisParameter && virtualMethodIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
-            {
-                // Report invalid configuration
-            }
-
-            if (lcidConversionAttr is not null)
-            {
-                // Using LCIDConversion with source-generated interop is not supported
-                generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
-            }
-
-            // Create the stub.
-            var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, virtualMethodIndexData, virtualMethodIndexAttr), environment, typeof(VtableIndexStubGenerator).Assembly);
-
-            var containingSyntaxContext = new ContainingSyntaxContext(syntax);
-
-            var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
-
-            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
-
-            var interfaceType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
-
-            INamedTypeSymbol expectedUnmanagedInterfaceType = iUnmanagedInterfaceTypeType.Construct(symbol.ContainingType);
-
-            bool implementsIUnmanagedInterfaceOfSelf = symbol.ContainingType.AllInterfaces.Any(iface => SymbolEqualityComparer.Default.Equals(iface, expectedUnmanagedInterfaceType));
-            if (!implementsIUnmanagedInterfaceOfSelf)
-            {
-                // TODO: Report invalid configuration
-            }
-
-            MarshallingInfo exceptionMarshallingInfo = CreateExceptionMarshallingInfo(virtualMethodIndexAttr, symbol, environment.Compilation, generatorDiagnostics, virtualMethodIndexData);
-
-            return new IncrementalStubGenerationContext(
-                signatureContext,
-                containingSyntaxContext,
-                methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(syntax),
-                new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
-                VirtualMethodIndexData.From(virtualMethodIndexData),
-                exceptionMarshallingInfo,
-                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
-                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
-                interfaceType,
-                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
         private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnostics diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)
@@ -466,7 +479,8 @@ namespace Microsoft.Interop
                 {
                     diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
                 },
-                methodStub.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
+                methodStub.UnmanagedToManagedGeneratorFactory.GeneratorFactory,
+                methodStub.UnwrapperType);
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
@@ -566,6 +580,15 @@ namespace Microsoft.Interop
                 return Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, methodSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
             }
 
+            // Verify there is an [UnmanagedObjectUnwrapperAttribute<TMapper>]
+            if (!method.ContainingType.GetAttributes().Any(att => att.AttributeClass.IsOfType(TypeNames.UnmanagedObjectUnwrapperAttribute)))
+            //!method.ContainingType.GetAttributes().Any(att =>
+            //att.AttributeClass.MetadataName == TypeNames.UnmanagedObjectUnwrapperAttribute.Substring(TypeNames.UnmanagedObjectUnwrapperAttribute.LastIndexOf('.') + 1)
+            //&& att.AttributeClass.OriginalDefinition.ToDisplayString().Substring(0, att.AttributeClass.OriginalDefinition.ToDisplayString().LastIndexOf(att.AttributeClass.ToDisplayString())) == TypeNames.UnmanagedObjectUnwrapperAttribute.Substring(0, TypeNames.UnmanagedObjectUnwrapperAttribute.LastIndexOf('.'))))
+            {
+                return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute, methodSyntax.Identifier.GetLocation(), method.Name);
+            }
+
             return null;
         }
 
@@ -587,7 +610,7 @@ namespace Microsoft.Interop
                 .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword)))
                 .AddParameterListParameters(
                     Parameter(Identifier(vtableParameter))
-                    .WithType(GenericName(TypeNames.System_Span).AddTypeArgumentListArguments(IdentifierName("nint"))));
+                    .WithType(PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))))));
 
             foreach (var method in vtableMethods)
             {
@@ -597,7 +620,8 @@ namespace Microsoft.Interop
                     AddImplicitElementInfos(method),
                     // Swallow diagnostics here since the diagnostics will be reported by the unmanaged->managed stub generation
                     (elementInfo, ex) => { },
-                    method.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
+                    method.UnmanagedToManagedGeneratorFactory.GeneratorFactory,
+                    method.UnwrapperType);
 
                 List<FunctionPointerParameterSyntax> functionPointerParameters = new();
                 var (paramList, retType, _) = stubGenerator.GenerateAbiMethodSignatureData();
@@ -610,14 +634,14 @@ namespace Microsoft.Interop
                         FunctionPointerCallingConvention(Token(SyntaxKind.UnmanagedKeyword), callConv.IsEmpty ? null : FunctionPointerUnmanagedCallingConventionList(SeparatedList(callConv))),
                         FunctionPointerParameterList(SeparatedList(functionPointerParameters)));
 
-                // <vtableParameter>[<index>] = (nint)(<functionPointerType>)&ABI_<methodIdentifier>;
+                // <vtableParameter>[<index>] = (void*)(<functionPointerType>)&ABI_<methodIdentifier>;
                 populateVtableMethod = populateVtableMethod.AddBodyStatements(
                     ExpressionStatement(
                         AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                             ElementAccessExpression(
                                 IdentifierName(vtableParameter))
                             .AddArgumentListArguments(Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(method.VtableIndexData.Index)))),
-                            CastExpression(IdentifierName("nint"),
+                            CastExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
                                 CastExpression(functionPointerType,
                                     PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
                                         IdentifierName($"ABI_{method.StubMethodSyntaxTemplate.Identifier}")))))));

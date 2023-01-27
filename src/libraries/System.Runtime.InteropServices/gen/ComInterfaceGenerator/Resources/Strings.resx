@@ -207,4 +207,7 @@
   <data name="InterfaceTypeNotSupportedMessage" xml:space="preserve">
     <value>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</value>
   </data>
+  <data name="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute" xml:space="preserve">
+    <value>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </value>
+  </data>
 </root>

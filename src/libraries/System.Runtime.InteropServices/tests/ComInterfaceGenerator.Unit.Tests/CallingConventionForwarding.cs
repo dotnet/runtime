@@ -23,7 +23,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [VirtualMethodIndex(0)]
@@ -49,7 +50,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [SuppressGCTransitionAttribute]
@@ -76,7 +78,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [UnmanagedCallConv]
@@ -103,7 +106,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
@@ -130,7 +134,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
@@ -163,7 +168,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [SuppressGCTransition]

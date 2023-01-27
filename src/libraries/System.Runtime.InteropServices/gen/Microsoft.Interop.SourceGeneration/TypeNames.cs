@@ -38,7 +38,7 @@ namespace Microsoft.Interop
 
         public const string IUnmanagedVirtualMethodTableProvider = "System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider";
 
-        public const string IUnmanagedInterfaceType_Metadata = "System.Runtime.InteropServices.IUnmanagedInterfaceType`1";
+        public const string IUnmanagedInterfaceType_Metadata = "System.Runtime.InteropServices.Marshalling.IUnmanagedInterfaceType";
 
         public const string System_Span_Metadata = "System.Span`1";
         public const string System_Span = "System.Span";
@@ -105,5 +105,10 @@ namespace Microsoft.Interop
         public const string InterfaceTypeAttribute = "System.Runtime.InteropServices.InterfaceTypeAttribute";
         public const string ComInterfaceTypeAttribute = "System.Runtime.InteropServices.ComInterfaceType";
         public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch = "System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch";
+        public const string ComWrappersUnwrapper = "System.Runtime.InteropServices.Marshalling.ComWrappersUnwrapper";
+        public const string UnmanagedObjectUnwrapperAttribute = "System.Runtime.InteropServices.Marshalling.UnmanagedObjectUnwrapperAttribute`1";
+
+        public const string IUnmanagedObjectUnwrapper = "System.Runtime.InteropServices.Marshalling.IUnmanagedObjectUnwrapper";
+        public const string UnmanagedObjectUnwrapper = "System.Runtime.InteropServices.Marshalling.UnmanagedObjectUnwrapper";
     }
 }

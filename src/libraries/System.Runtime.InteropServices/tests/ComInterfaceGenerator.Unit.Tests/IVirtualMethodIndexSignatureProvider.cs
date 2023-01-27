@@ -27,10 +27,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             """;
 
         public const string INativeAPI_IUnmanagedInterfaceTypeMethodImpl = """
-                static int IUnmanagedInterfaceType<INativeAPI>.VirtualMethodTableLength => 1;
-                static unsafe void* IUnmanagedInterfaceType<INativeAPI>.VirtualMethodTableManagedImplementation => null;
-                static unsafe void* IUnmanagedInterfaceType<INativeAPI>.GetUnmanagedWrapperForObject(INativeAPI obj) => null;
-                static unsafe INativeAPI IUnmanagedInterfaceType<INativeAPI>.GetObjectForUnmanagedWrapper(void* ptr) => null;
+                static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
             """;
 
         public static abstract string NativeInterfaceUsage();
@@ -42,7 +39,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
@@ -55,7 +53,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     {typeName} Method({typeName} value, in {typeName} inValue, out {typeName} outValue);
@@ -67,7 +66,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     void Method({typeName} value);
@@ -81,7 +81,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     void Method({modifier} {typeName} value);
@@ -92,7 +93,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     {typeName} Method();
@@ -103,7 +105,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     [return: MarshalUsing(typeof({marshallerTypeName}))]
@@ -119,7 +122,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     [return:MarshalUsing(ConstantElementCount=10)]
@@ -138,7 +142,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     [return:MarshalUsing(typeof({marshallerType}), ConstantElementCount=10)]
@@ -158,7 +163,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     int Method(
@@ -174,7 +180,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     int Method(
@@ -190,7 +197,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     [return:MarshalUsing(ConstantElementCount = 10)]
@@ -205,7 +213,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     [return:MarshalUsing(ConstantElementCount=10)]

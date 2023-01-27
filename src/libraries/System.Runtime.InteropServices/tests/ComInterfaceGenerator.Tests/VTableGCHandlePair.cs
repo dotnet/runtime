@@ -6,14 +6,14 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace ComInterfaceGenerator.Tests
 {
-    public static unsafe class VTableGCHandlePair<TUnmanagedInterface>
-        where TUnmanagedInterface : IUnmanagedInterfaceType<TUnmanagedInterface>
+    public unsafe class VTableGCHandlePair<TUnmanagedInterface> : IUnmanagedObjectUnwrapper
+        where TUnmanagedInterface : IUnmanagedInterfaceType
     {
         public static void* Allocate(TUnmanagedInterface obj)
         {
-            void** unmanaged = (void**)NativeMemory.Alloc((nuint)sizeof(void*) * (nuint)IUnmanagedVirtualMethodTableProvider.GetVirtualMethodTableLength<TUnmanagedInterface>());
+            void** unmanaged = (void**)NativeMemory.Alloc((nuint)sizeof(void*) * 2);
             unmanaged[0] = TUnmanagedInterface.VirtualMethodTableManagedImplementation;
-            unmanaged[1] = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(obj));
+            unmanaged[1] = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(obj, GCHandleType.Pinned));
             return unmanaged;
         }
 
@@ -27,5 +27,8 @@ namespace ComInterfaceGenerator.Tests
         {
             return (TUnmanagedInterface)GCHandle.FromIntPtr((nint)((void**)pair)[1]).Target;
         }
+
+        static object IUnmanagedObjectUnwrapper.GetObjectForUnmanagedWrapper(void* ptr) => 
+            (TUnmanagedInterface)GCHandle.FromIntPtr((nint)((void**)ptr)[1]).Target;
     }
 }

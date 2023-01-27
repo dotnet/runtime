@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.Marshalling;
 /// This interface would be used by the VTable source generator to enable users to indicate how to get the managed object from the "this pointer".
 /// We can hard-code the ComWrappers logic here if we don't want to ship this interface.
 /// </remarks>
-internal unsafe interface IUnmanagedObjectUnwrapper
+public unsafe interface IUnmanagedObjectUnwrapper
 {
     /// <summary>
     /// Get the object wrapped by <paramref name="ptr"/>.

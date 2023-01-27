@@ -52,6 +52,11 @@
         <target state="translated">Die Methode \"{0}\" ist in einem Typ \"{1}\" enthalten, der nicht als \"partiell\" gekennzeichnet ist. Die P/Invoke-Quellgenerierung ignoriert die Methode \"{0}\".</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute">
+        <source>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </source>
+        <target state="new">Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
         <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
         <target state="translated">Methoden, die mit \"LibraryImportAttribute\" gekennzeichnet sind, sollten \"statisch\", \"partiell\" und nicht generisch sein. Die P/Invoke-Quellgenerierung ignoriert Methoden, die nicht \"statisch\", nicht \"partiell\" oder generisch sind.</target>
