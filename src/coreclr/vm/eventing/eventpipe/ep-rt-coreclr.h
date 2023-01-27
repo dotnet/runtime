@@ -1137,7 +1137,7 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 
 	// get the name from the host if we can't get assembly info, e.g., if the runtime is
 	// suspended before an assembly is loaded.
-	// We'll cache the value in a static function global as the caller expect the lifetime of this value
+	// We'll cache the value in a static function global as the caller expects the lifetime of this value
 	// to outlast the calling function.
 	static const ep_char8_t* entrypoint_assembly_name = nullptr;
 	if (entrypoint_assembly_name == nullptr)
