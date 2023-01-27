@@ -278,7 +278,7 @@ namespace ILCompiler.Logging
         {
             Debug.Assert(provider is not ModuleDesc);
 
-            foreach (var ca in CustomAttributeExtensions.GetDecodedCustomAttributes(provider, UnconditionalSuppressMessageAttributeNamespace, UnconditionalSuppressMessageAttributeName))
+            foreach (var ca in provider.GetDecodedCustomAttributesForEntity(UnconditionalSuppressMessageAttributeNamespace, UnconditionalSuppressMessageAttributeName))
             {
                 if (!TryDecodeSuppressMessageAttributeData(ca, out var info))
                     continue;
@@ -294,7 +294,7 @@ namespace ILCompiler.Logging
 
             return DecodeGlobalSuppressions(
                 ecmaAssembly,
-                ecmaAssembly.GetDecodedCustomAttributes(UnconditionalSuppressMessageAttributeNamespace, UnconditionalSuppressMessageAttributeName),
+                ecmaAssembly.GetDecodedCustomAttributesForEntity(UnconditionalSuppressMessageAttributeNamespace, UnconditionalSuppressMessageAttributeName),
                 module);
         }
 

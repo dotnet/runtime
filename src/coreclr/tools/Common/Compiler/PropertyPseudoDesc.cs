@@ -3,7 +3,7 @@
 
 using System;
 using System.Reflection.Metadata;
-using ILLink.Shared;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -83,10 +83,10 @@ namespace ILCompiler
         public override TypeSystemContext Context => _type.Context;
 
         #region Do not use these
-        public override bool Equals(object obj) => obj is not PropertyPseudoDesc property ? false : (property._type == _type && property._handle == _handle);
-        public override int GetHashCode() => HashUtils.Combine(_type.GetHashCode(), _handle.GetHashCode());
-        public static bool operator ==(PropertyPseudoDesc a, PropertyPseudoDesc b) => throw new NotImplementedException();
-        public static bool operator !=(PropertyPseudoDesc a, PropertyPseudoDesc b) => throw new NotImplementedException();
+        public override bool Equals(object obj) => obj is not PropertyPseudoDesc property ? false : this == property;
+        public override int GetHashCode() => _type.GetHashCode() ^ _handle.GetHashCode();
+        public static bool operator ==(PropertyPseudoDesc a, PropertyPseudoDesc b) => a._type == b._type && a._handle == b._handle;
+        public static bool operator !=(PropertyPseudoDesc a, PropertyPseudoDesc b) => !(a == b);
         #endregion
     }
 }

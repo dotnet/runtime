@@ -43,7 +43,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			// With feature switched to false, the linker sees only the 'else' branch.
 			// The 'else' branch contains trimmer-compatible code, the linker identifies the suppression as redundant.
 
-			[ExpectedWarning ("IL2121", "IL2072")]
+			[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
 			[UnconditionalSuppressMessage ("Test", "IL2072")]
 			public static void Test ()
 			{

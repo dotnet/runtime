@@ -12,7 +12,7 @@ namespace ILCompiler
 {
     public static class CustomAttributeExtensions
     {
-        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(TypeSystemEntity entity, string attributeNamespace, string attributeName)
+        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributesForEntity(this TypeSystemEntity entity, string attributeNamespace, string attributeName)
         {
             switch (entity)
             {
@@ -38,7 +38,7 @@ namespace ILCompiler
                 case ModuleDesc module:
                     if (module is not EcmaAssembly ecmaAssembly)
                         return Enumerable.Empty<CustomAttributeValue<TypeDesc>>();
-                    return ecmaAssembly.GetDecodedModuleCustomAttributes(attributeNamespace, attributeName)
+                    return ecmaAssembly.GetDecodedCustomAttributesForModule(attributeNamespace, attributeName)
                         .Concat(ecmaAssembly.GetDecodedCustomAttributes(attributeNamespace, attributeName));
                 default:
                     Debug.Fail("Trying to operate with unsupported TypeSystemEntity " + entity.GetType().ToString());
@@ -104,7 +104,7 @@ namespace ILCompiler
             }
         }
 
-        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedModuleCustomAttributes(this EcmaModule module, string attributeNamespace, string attributeName)
+        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributesForModule(this EcmaModule module, string attributeNamespace, string attributeName)
         {
             var metadataReader = module.MetadataReader;
 
