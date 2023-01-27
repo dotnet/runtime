@@ -1784,7 +1784,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
 #ifdef TARGET_AMD64
     if (tree->OperIs(GT_DIV) && op2->isContained() && op2->IsIntegralConstAbsPow2())
     {
-        srcCount = BuildDelayFreeUses(tree->gtGetOp1());
+        srcCount = BuildBinaryUses(tree->AsOp());
         BuildDef(tree);
         return 1;
     }
