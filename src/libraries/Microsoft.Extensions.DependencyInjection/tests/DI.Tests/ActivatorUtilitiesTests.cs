@@ -303,7 +303,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NoArguments_UseDefaultValue(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NullArgument_UseDefaultValue(bool isDynamicCodeSupported)
         {
             var options = new RemoteInvokeOptions();
             if (!isDynamicCodeSupported)
