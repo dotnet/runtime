@@ -110,7 +110,7 @@ struct VersionInfo {
   const char* Name;
 };
 
-extern "C" void __cdecl GC_VersionInfo(
+extern "C" void LOCALGC_CALLCONV GC_VersionInfo(
   /* Out */ VersionInfo*
 );
 ```
