@@ -205,6 +205,29 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Assert.IsType<ClassWithABCS>(item2);
             }, options);
         }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NET6_0_OR_GREATER
+        [InlineData(false)]
+#endif
+        public void CreateFactory_NullArguments_Throws(bool isDynamicCodeSupported)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!isDynamicCodeSupported)
+            {
+                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithA), new Type[] { typeof(A) });
+
+                var services = new ServiceCollection();
+                using var provider = services.BuildServiceProvider();
+                Assert.Throws<NullReferenceException>(() => factory1(provider, null));
+            }, options);
+        }
     }
 
     internal class A { }

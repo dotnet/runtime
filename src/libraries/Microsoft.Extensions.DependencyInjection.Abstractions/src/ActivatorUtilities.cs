@@ -301,25 +301,34 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return (IServiceProvider serviceProvider, object?[]? arguments) =>
             {
-                var constructorArguments = new object?[parameters.Length];
-                for (int i = 0; i < parameters.Length; i++)
+                object?[] constructorArguments;
+                if (parameters.Length == 0)
                 {
-                    FactoryParameterContext parameter = parameters[i];
-                    if (parameter.ArgumentIndex != -1)
+                    constructorArguments = Array.Empty<object?>();
+                }
+                else
+                {
+                    constructorArguments = new object?[parameters.Length];
+                    for (int i = 0; i < parameters.Length; i++)
                     {
-                        constructorArguments[i] = arguments?[parameter.ArgumentIndex];
-                    }
-                    else
-                    {
-                        constructorArguments[i] = GetService(
-                            serviceProvider,
-                            parameter.ParameterType,
-                            constructor.DeclaringType!,
-                            parameter.HasDefaultValue);
-                    }
-                    if (parameter.HasDefaultValue && constructorArguments[i] == null)
-                    {
-                        constructorArguments[i] = parameter.DefaultValue;
+                        FactoryParameterContext parameter = parameters[i];
+                        if (parameter.ArgumentIndex != -1)
+                        {
+                            // Throws an NullReferenceException if arguments is null. Consistent with expression-based factory.
+                            constructorArguments[i] = arguments![parameter.ArgumentIndex];
+                        }
+                        else
+                        {
+                            constructorArguments[i] = GetService(
+                                serviceProvider,
+                                parameter.ParameterType,
+                                constructor.DeclaringType!,
+                                parameter.HasDefaultValue);
+                        }
+                        if (parameter.HasDefaultValue && constructorArguments[i] == null)
+                        {
+                            constructorArguments[i] = parameter.DefaultValue;
+                        }
                     }
                 }
 
