@@ -35,7 +35,6 @@ namespace System.Text.Json.Serialization.Converters
         internal override Type? ElementType => Converter.ElementType;
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
-        internal override bool SupportsCreateObjectDelegate => Converter.SupportsCreateObjectDelegate;
         internal override bool CanHaveMetadata => Converter.CanHaveMetadata;
 
         public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy)

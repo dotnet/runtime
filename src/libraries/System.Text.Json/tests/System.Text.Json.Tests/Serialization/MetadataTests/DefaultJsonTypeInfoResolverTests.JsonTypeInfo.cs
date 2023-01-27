@@ -508,20 +508,59 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(isDelegateInvoked);
         }
 
-        [Theory]
-        [InlineData(typeof(int[]))]
-        [InlineData(typeof(ImmutableArray<int>))]
-        [InlineData(typeof(IEnumerable))]
-        [InlineData(typeof(IEnumerable<int>))]
-        [InlineData(typeof(IAsyncEnumerable<int>))]
-        [InlineData(typeof(IReadOnlyDictionary<string, int>))]
-        [InlineData(typeof(ImmutableDictionary<string, int>))]
-        public static void JsonTypeInfo_CreateObject_UnsupportedCollection_ThrowsInvalidOperationException(Type collectionType)
+        // TODO: finish writing tests similar to the ones below
+        //[Theory]
+        //[InlineData(typeof(int[]))]
+        //[InlineData(typeof(ImmutableArray<int>))]
+        //[InlineData(typeof(IEnumerable))]
+        //[InlineData(typeof(IEnumerable<int>))]
+        //[InlineData(typeof(IAsyncEnumerable<int>))]
+        //[InlineData(typeof(IReadOnlyDictionary<string, int>))]
+        //[InlineData(typeof(ImmutableDictionary<string, int>))]
+        //public static void JsonTypeInfo_CreateObject_UnsupportedCollection_ThrowsInvalidOperationException(Type collectionType)
+        //{
+        //    var options = new JsonSerializerOptions();
+        //    JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(collectionType, options);
+        //    Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.CreateObject = () => new object());
+        //}
+
+        [Fact]
+        public static void JsonTypeInfo_CreateObject_ArrayOfInt()
         {
-            var options = new JsonSerializerOptions();
-            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(collectionType, options);
-            Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.CreateObject = () => new object());
+            var options = CreateOptionsWithCustomizedCreateObjectForEnumerableOfInt(typeof(int[]));
+
+            int[] obj = JsonSerializer.Deserialize<int[]>("[]", options);
+            Assert.Equal(3, obj.Length);
+            Assert.Equal(1, obj[0]);
+            Assert.Equal(2, obj[1]);
+            Assert.Equal(3, obj[2]);
+
+            obj = JsonSerializer.Deserialize<int[]>("[4, 5]", options);
+            Assert.Equal(5, obj.Length);
+            Assert.Equal(1, obj[0]);
+            Assert.Equal(2, obj[1]);
+            Assert.Equal(3, obj[2]);
+            Assert.Equal(4, obj[3]);
+            Assert.Equal(5, obj[4]);
         }
+
+        private static JsonSerializerOptions CreateOptionsWithCustomizedCreateObjectForEnumerableOfInt(Type type)
+            => new JsonSerializerOptions()
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+                {
+                    Modifiers =
+                    {
+                        (ti) =>
+                        {
+                            if (ti.Type == type)
+                            {
+                                ti.CreateObject = () => new List<int>() { 1, 2, 3 };
+                            }
+                        }
+                    }
+                }
+            };
 
         [Theory]
         [InlineData(typeof(object), JsonTypeInfoKind.None)]

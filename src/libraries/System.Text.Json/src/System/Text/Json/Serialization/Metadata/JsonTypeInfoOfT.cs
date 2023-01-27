@@ -62,13 +62,6 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
             }
 
-            if (!Converter.SupportsCreateObjectDelegate)
-            {
-                Debug.Assert(_createObject is null);
-                Debug.Assert(_typedCreateObject == null);
-                ThrowHelper.ThrowInvalidOperationException_CreateObjectConverterNotCompatible(Type);
-            }
-
             Func<object>? untypedCreateObject;
             Func<T>? typedCreateObject;
 
@@ -99,7 +92,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Guard against the reflection resolver/source generator attempting to pass
             // a CreateObject delegate to converters/metadata that do not support it.
-            if (Converter.SupportsCreateObjectDelegate && !Converter.ConstructorIsParameterized)
+            if (!Converter.ConstructorIsParameterized && Kind != JsonTypeInfoKind.None)
             {
                 SetCreateObject(createObject);
             }

@@ -132,7 +132,7 @@ namespace System.Text.Json
                 Func<object>? createObjectForExtensionDataProp = jsonPropertyInfo.JsonTypeInfo.CreateObject
                     ?? jsonPropertyInfo.JsonTypeInfo.CreateObjectForExtensionDataProperty;
 
-                if (createObjectForExtensionDataProp == null)
+                if (createObjectForExtensionDataProp == null || jsonPropertyInfo.JsonTypeInfo.NotSupportedExtensionDataProperty)
                 {
                     // Avoid a reference to the JsonNode type for trimming
                     if (jsonPropertyInfo.PropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)

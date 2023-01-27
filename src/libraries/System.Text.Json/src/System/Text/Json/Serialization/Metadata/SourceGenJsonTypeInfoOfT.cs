@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Reflection;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -76,12 +77,24 @@ namespace System.Text.Json.Serialization.Metadata
             SerializeHandler = collectionInfo.SerializeHandler;
             CreateObjectWithArgs = createObjectWithArgs;
             AddMethodDelegate = addFunc;
-            SetCreateObjectIfCompatible(collectionInfo.ObjectCreator);
             PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
 
-            // Plug in any converter configuration -- should be run last.
             Converter.ConfigureJsonTypeInfo(this, options);
+
+            if (collectionInfo.ObjectCreator != null)
+            {
+                if (typeof(T).IsImmutableEnumerableType() || typeof(T).IsImmutableDictionaryType())
+                {
+                    // Source-gen should not generate CreateObject for those types
+                    // This should be fixed as part of https://github.com/dotnet/runtime/issues/31645
+                    CreateObjectForExtensionDataProperty = () => collectionInfo.ObjectCreator()!;
+                }
+                else
+                {
+                    SetCreateObjectIfCompatible(collectionInfo.ObjectCreator);
+                }
+            }
         }
 
         private static JsonMetadataServicesConverter<T> GetConverter(JsonObjectInfoValues<T> objectInfo)

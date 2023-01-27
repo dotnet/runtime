@@ -22,10 +22,9 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            // Deserialize as HashSet<TElement> for interface types that support it.
+            // Deserialize as HashSet<TElement> for types that support it.
             if (jsonTypeInfo.CreateObject is null && TypeToConvert.IsAssignableFrom(typeof(HashSet<TElement>)))
             {
-                Debug.Assert(TypeToConvert.IsInterface);
                 jsonTypeInfo.CreateObject = () => new HashSet<TElement>();
             }
         }

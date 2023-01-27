@@ -17,7 +17,6 @@ namespace System.Text.Json.Serialization.Converters
         internal override Type? ElementType => _sourceConverter.ElementType;
 
         public override bool HandleNull { get; }
-        internal override bool SupportsCreateObjectDelegate => _sourceConverter.SupportsCreateObjectDelegate;
 
         internal CastingConverter(JsonConverter sourceConverter, bool handleNull, bool handleNullOnRead, bool handleNullOnWrite)
         {

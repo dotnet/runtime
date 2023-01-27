@@ -15,7 +15,6 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class JsonCollectionConverter<TCollection, TElement, IntermediateType> : JsonAdvancedConverter<TCollection, IntermediateType>
     {
-        internal override bool SupportsCreateObjectDelegate => true;
         private protected sealed override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Enumerable;
         internal override Type ElementType => typeof(TElement);
 

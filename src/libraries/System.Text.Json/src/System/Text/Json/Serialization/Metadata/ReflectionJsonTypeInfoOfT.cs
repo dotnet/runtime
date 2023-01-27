@@ -28,13 +28,18 @@ namespace System.Text.Json.Serialization.Metadata
             PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
 
-            Func<object>? createObject = JsonSerializerOptions.MemberAccessorStrategy.CreateConstructor(typeof(T));
-            SetCreateObjectIfCompatible(createObject);
-            CreateObjectForExtensionDataProperty = createObject;
-
-            // Plug in any converter configuration -- should be run last.
             converter.ConfigureJsonTypeInfo(this, options);
             converter.ConfigureJsonTypeInfoUsingReflection(this, options);
+
+            Func<object>? createObject = ((JsonTypeInfo)this).CreateObject;
+
+            if (createObject == null)
+            {
+                createObject = JsonSerializerOptions.MemberAccessorStrategy.CreateConstructor(typeof(T));
+                SetCreateObjectIfCompatible(createObject);
+            }
+
+            CreateObjectForExtensionDataProperty ??= createObject;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",

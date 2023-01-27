@@ -29,12 +29,9 @@ namespace System.Text.Json.Serialization.Converters
             ((BufferedAsyncEnumerable)collection)._buffer.Add(value);
         }
 
-        internal override bool SupportsCreateObjectDelegate => false;
-
-        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out IAsyncEnumerable<TElement>? obj)
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            obj = new BufferedAsyncEnumerable();
-            return true;
+            jsonTypeInfo.CreateObject ??= () => new BufferedAsyncEnumerable();
         }
 
         internal override bool OnTryWrite(Utf8JsonWriter writer, TAsyncEnumerable value, JsonSerializerOptions options, ref WriteStack state)

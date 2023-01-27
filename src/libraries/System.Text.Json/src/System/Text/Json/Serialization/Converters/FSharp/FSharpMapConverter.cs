@@ -28,12 +28,9 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool CanHaveMetadata => false;
 
-        internal override bool SupportsCreateObjectDelegate => false;
-
-        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out List<Tuple<TKey, TValue>>? obj)
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            obj = new List<Tuple<TKey, TValue>>();
-            return true;
+            jsonTypeInfo.CreateObject ??= () => new List<Tuple<TKey, TValue>>();
         }
 
         private protected override bool TryConvert(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, List<Tuple<TKey, TValue>> obj, out TMap value)

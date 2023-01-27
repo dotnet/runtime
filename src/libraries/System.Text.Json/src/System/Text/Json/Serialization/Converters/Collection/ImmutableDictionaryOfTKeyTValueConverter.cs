@@ -20,12 +20,10 @@ namespace System.Text.Json.Serialization.Converters
 
         internal sealed override bool CanHaveMetadata => false;
 
-        internal override bool SupportsCreateObjectDelegate => false;
-
-        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out Dictionary<TKey, TValue>? obj)
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            obj = new Dictionary<TKey, TValue>();
-            return true;
+            jsonTypeInfo.CreateObject ??= () => new Dictionary<TKey, TValue>();
+            jsonTypeInfo.NotSupportedExtensionDataProperty = true;
         }
 
         private protected override bool TryConvert(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, Dictionary<TKey, TValue> obj, out TDictionary value)

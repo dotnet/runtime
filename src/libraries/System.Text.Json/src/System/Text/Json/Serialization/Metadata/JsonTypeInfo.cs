@@ -286,6 +286,9 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal PolymorphicTypeResolver? PolymorphicTypeResolver { get; private set; }
 
+        // TODO: this can be supported when https://github.com/dotnet/runtime/issues/31645 is fixed
+        internal bool NotSupportedExtensionDataProperty { get; set; }
+
         // If enumerable or dictionary, the JsonTypeInfo for the element type.
         private JsonTypeInfo? _elementTypeInfo;
 

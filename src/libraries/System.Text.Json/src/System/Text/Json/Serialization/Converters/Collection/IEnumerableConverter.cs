@@ -23,19 +23,22 @@ namespace System.Text.Json.Serialization.Converters
             collection.Add(value);
         }
 
-        internal override bool SupportsCreateObjectDelegate => false;
-
         private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out List<object?>? obj)
         {
-            // TODO: IsReadOnly
             if (!_isDeserializable)
             {
                 ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
 
-            // TODO: should use default TryCreateObject and use ConfigureJsonTypeInfo
-            obj = new List<object?>();
-            return true;
+            return base.TryCreateObject(ref reader, jsonTypeInfo, ref state, out obj);
+        }
+
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
+        {
+            if (jsonTypeInfo.CreateObject == null && _isDeserializable)
+            {
+                jsonTypeInfo.CreateObject = () => new List<object?>();
+            }
         }
     }
 }

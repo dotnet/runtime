@@ -47,14 +47,6 @@ namespace System.Text.Json.Serialization
         private protected abstract ConverterStrategy GetDefaultConverterStrategy();
 
         /// <summary>
-        /// Indicates that the converter can consume the <see cref="JsonTypeInfo.CreateObject"/> delegate.
-        /// Needed because certain collection converters cannot support arbitrary delegates.
-        /// TODO remove once https://github.com/dotnet/runtime/pull/73395/ and
-        /// https://github.com/dotnet/runtime/issues/71944 have been addressed.
-        /// </summary>
-        internal virtual bool SupportsCreateObjectDelegate => false;
-
-        /// <summary>
         /// Can direct Read or Write methods be called (for performance).
         /// </summary>
         internal bool CanUseDirectReadOrWrite { get; set; }

@@ -25,12 +25,9 @@ namespace System.Text.Json.Serialization.Converters
             collection.Add(value);
         }
 
-        internal override bool SupportsCreateObjectDelegate => false;
-
-        private protected override bool TryCreateObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, [NotNullWhen(true)] out List<TElement>? obj)
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            obj = new List<TElement>();
-            return true;
+            jsonTypeInfo.CreateObject ??= () => new List<TElement>();
         }
 
         private protected override bool TryConvert(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo, scoped ref ReadStack state, List<TElement> obj, out TSet value)
