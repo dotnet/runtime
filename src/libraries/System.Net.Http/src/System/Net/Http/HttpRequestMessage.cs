@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
@@ -171,7 +172,11 @@ namespace System.Net.Http
         private bool Disposed
         {
             get => (_sendStatus & MessageDisposed) != 0;
-            set => _sendStatus |= MessageDisposed;
+            set
+            {
+                Debug.Assert(value);
+                _sendStatus |= MessageDisposed;
+            }
         }
 
         internal bool IsExtendedConnectRequest => Method == HttpMethod.Connect && _headers?.Protocol != null;
