@@ -6123,6 +6123,14 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     LIR::Use opDividend(BlockRange(), &divMod->AsOp()->gtOp1, divMod);
     dividend = ReplaceWithLclVar(opDividend);
 
+#ifdef TARGET_AMD64
+    if (comp->opts.OptimizationEnabled() && isDiv && (absDivisorValue >= 4))
+    {
+        MakeSrcContained(divMod, divisor);
+        return divMod->gtNext;
+    }
+#endif // TARGET_AMD64
+
     GenTree* adjustment = comp->gtNewOperNode(GT_RSH, type, dividend, comp->gtNewIconNode(type == TYP_INT ? 31 : 63));
 
     if (absDivisorValue == 2)

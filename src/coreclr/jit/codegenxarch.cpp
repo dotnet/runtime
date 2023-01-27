@@ -806,6 +806,15 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIs(GT_DIV, GT_UDIV, GT_MOD, GT_UMOD));
 
+#ifdef TARGET_AMD64
+    if (treeNode->OperIs(GT_DIV) && treeNode->gtGetOp2()->isContained() &&
+        treeNode->gtGetOp2()->IsIntegralConstAbsPow2())
+    {
+        genCodeForDivCnsPow2(treeNode);
+        return;
+    }
+#endif // TARGET_AMD64
+
     GenTree* dividend = treeNode->gtOp1;
 
 #ifdef TARGET_X86
@@ -872,6 +881,54 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     }
     genProduceReg(treeNode);
 }
+
+#ifdef TARGET_AMD64
+//------------------------------------------------------------------------
+// genCodeForDivCnsPow2: Generate code for a DIV with a divisor that is a constant power of two.
+//
+// Arguments:
+//    treeNode - the node to generate the code for
+//
+void CodeGen::genCodeForDivCnsPow2(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_DIV));
+
+    GenTree* dividend = treeNode->gtOp1;
+
+    GenTree*   divisor    = treeNode->gtOp2;
+    emitAttr   size       = emitTypeSize(treeNode);
+    regNumber  targetReg  = treeNode->GetRegNum();
+    var_types  targetType = treeNode->TypeGet();
+    emitter*   emit       = GetEmitter();
+
+    assert(varTypeIsIntOrI(targetType));
+    assert(divisor->IsIntegralConstAbsPow2());
+    assert(divisor->isContained());
+
+    genConsumeOperands(treeNode);
+
+    regNumber dividendReg = dividend->GetRegNum();
+
+    const ssize_t cnsDivisor    = divisor->AsIntConCommon()->IntegralValue();
+    const size_t  absCnsDivisor = abs(cnsDivisor);
+
+    assert(absCnsDivisor != 2);
+    assert(targetReg != dividendReg);
+
+    emit->emitIns_R_AR(INS_lea, size, targetReg, dividendReg, static_cast<int>(absCnsDivisor - 1));
+    emit->emitIns_R_R(INS_test, size, dividendReg, dividendReg);
+    emit->emitIns_R_R(INS_cmovns, size, targetReg, dividendReg);
+
+    emit->emitIns_R_I(INS_sar_N, size, targetReg, genLog2(static_cast<size_t>(absCnsDivisor)));
+
+    if (cnsDivisor < 0)
+    {
+        emit->emitIns_R(INS_neg, size, targetReg);
+    }
+
+    genProduceReg(treeNode);
+}
+#endif // TARGET_AMD64
 
 //------------------------------------------------------------------------
 // genCodeForBinary: Generate code for many binary arithmetic operators

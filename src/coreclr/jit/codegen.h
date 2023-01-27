@@ -780,6 +780,10 @@ protected:
     void genLeaInstruction(GenTreeAddrMode* lea);
     void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
+#ifdef TARGET_AMD64
+    void genCodeForDivCnsPow2(GenTreeOp* treeNode);
+#endif // TARGET_AMD64
+
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64

@@ -1781,6 +1781,15 @@ int LinearScan::BuildModDiv(GenTree* tree)
         return BuildSimple(tree);
     }
 
+#ifdef TARGET_AMD64
+    if (tree->OperIs(GT_DIV) && op2->isContained() && op2->IsIntegralConstAbsPow2())
+    {
+        srcCount = BuildDelayFreeUses(tree->gtGetOp1());
+        BuildDef(tree);
+        return 1;
+    }
+#endif // TARGET_AMD64
+
     // Amd64 Div/Idiv instruction:
     //    Dividend in RAX:RDX  and computes
     //    Quotient in RAX, Remainder in RDX
