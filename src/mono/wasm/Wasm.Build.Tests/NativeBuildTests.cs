@@ -153,12 +153,12 @@ namespace Wasm.Build.Tests
                 [DllImport(""undefined"")] static extern void call();
             ";
 
-            CreateWasmTemplateProject(id);
+            string projectPath = CreateWasmTemplateProject(id);
 
             AddItemsPropertiesToProject(
-                Path.Combine(_projectDir!, $"{id}.csproj"),
+                projectPath,
                 extraItems: @$"<NativeFileReference Include=""undefined.c"" />",
-                extraProperties: null
+                extraProperties: allowUndefined ? $"<WasmAllowUndefinedSymbols>true</WasmAllowUndefinedSymbols>" : null
             );
 
             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
@@ -167,7 +167,7 @@ namespace Wasm.Build.Tests
             CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
                 .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", "-c Release", allowUndefined ? $"-p:WasmAllowUndefinedSymbols=true" : string.Empty);
+                .ExecuteWithCapturedOutput("build", "-c Release");
 
             if (allowUndefined)
             {
