@@ -4393,6 +4393,30 @@ mini_llvm_init (void)
 #endif
 }
 
+#ifdef ENSURE_PRIMARY_STACK_SIZE
+/*++ 
+ Function: 
+   EnsureStackSize 
+  
+ Abstract: 
+   This fixes a problem on MUSL where the initial stack size reported by the 
+   pthread_attr_getstack is about 128kB, but this limit is not fixed and 
+   the stack can grow dynamically. The problem is that it makes the 
+   functions ReflectionInvocation::[Try]EnsureSufficientExecutionStack 
+   to fail for real life scenarios like e.g. compilation of corefx. 
+   Since there is no real fixed limit for the stack, the code below 
+   ensures moving the stack limit to a value that makes reasonable 
+   real life scenarios work. 
+  
+ --*/
+static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE void
+ensure_stack_size (size_t size)
+{
+	volatile uint8_t *s = (uint8_t *)g_alloca(size);
+	*s = 0;
+}
+#endif // ENSURE_PRIMARY_STACK_SIZE
+
 void
 mini_add_profiler_argument (const char *desc)
 {
@@ -4553,6 +4577,11 @@ mini_init (const char *filename)
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
 #endif
+
+#ifdef ENSURE_PRIMARY_STACK_SIZE 
+	// TODO: https://github.com/dotnet/runtime/issues/72920
+	ensure_stack_size (5 * 1024 * 1024);
+#endif // ENSURE_PRIMARY_STACK_SIZE
 
 	mono_thread_info_runtime_init (&ticallbacks);
 
