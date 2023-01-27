@@ -315,7 +315,7 @@ namespace Microsoft.Extensions.DependencyInjection
                             : GetService(
                                 serviceProvider,
                                 parameter.ParameterType,
-                                constructor.DeclaringType!,
+                                declaringType,
                                 parameter.HasDefaultValue)) ?? parameter.DefaultValue;
                     }
                 }
