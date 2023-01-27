@@ -309,22 +309,15 @@ namespace Microsoft.Extensions.DependencyInjection
                     for (int i = 0; i < parameters.Length; i++)
                     {
                         ref FactoryParameterContext parameter = ref parameters[i];
-                        if (parameter.ArgumentIndex != -1)
-                        {
+                        constructorArguments[i] = ((parameter.ArgumentIndex != -1) ?
                             // Throws an NullReferenceException if arguments is null. Consistent with expression-based factory.
-                            constructorArguments[i] = arguments![parameter.ArgumentIndex];
-                        }
-                        else
-                        {
-                            constructorArguments[i] = GetService(
+                            arguments![parameter.ArgumentIndex]
+                            :
+                            GetService(
                                 serviceProvider,
                                 parameter.ParameterType,
-                                declaringType,
-                                parameter.HasDefaultValue);
-                        }
-                        if (parameter.HasDefaultValue && constructorArguments[i] == null)
-                        {
-                            constructorArguments[i] = parameter.DefaultValue;
+                                constructor.DeclaringType!,
+                                parameter.HasDefaultValue)) ?? parameter.DefaultValue;
                         }
                     }
                 }
