@@ -14,17 +14,18 @@ endif()
 
 list(APPEND COMMON_TEST_LIBRARIES coreclrpal)
 
+# Skip validation of printf format flags.
+add_compile_options(-Wno-format)
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
   add_compile_options(-Wno-int-to-void-pointer-cast)
-  add_compile_options(-Wno-format)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-Wno-sign-compare)
   add_compile_options(-Wno-narrowing)
   add_compile_options(-fno-builtin)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fpermissive>)
   add_compile_options(-Wno-int-to-pointer-cast)
-  add_compile_options(-Wno-format)
 endif()
 
 

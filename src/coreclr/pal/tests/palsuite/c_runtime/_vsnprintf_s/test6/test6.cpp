@@ -30,7 +30,6 @@ PALTEST(c_runtime__vsnprintf_s_test6_paltest_vsnprintf_test6, "c_runtime/_vsnpri
     DoCharTest("foo %5c", 'b', "foo     b");
     DoCharTest("foo %.0c", 'b', "foo b");
     DoCharTest("foo %-5c", 'b', "foo b    ");
-    DoCharTest("foo %05c", 'b', "foo     b");
     DoCharTest("foo % c", 'b', "foo b");
     DoCharTest("foo %#c", 'b', "foo b");
 

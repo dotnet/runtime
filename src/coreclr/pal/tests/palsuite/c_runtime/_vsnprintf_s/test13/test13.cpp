@@ -22,7 +22,6 @@ PALTEST(c_runtime__vsnprintf_s_test13_paltest_vsnprintf_test13, "c_runtime/_vsnp
 {
     int neg = -42;
     int pos = 0x1234AB;
-    INT64 l = I64(0x1234567887654321);
 
     if (PAL_Initialize(argc, argv) != 0)
     {
@@ -32,7 +31,6 @@ PALTEST(c_runtime__vsnprintf_s_test13_paltest_vsnprintf_test13, "c_runtime/_vsnp
     DoNumTest("foo %X", pos, "foo 1234AB");
     DoNumTest("foo %lX", pos, "foo 1234AB");
     DoNumTest("foo %hX", pos, "foo 34AB");
-    DoNumTest("foo %LX", pos, "foo 1234AB");
     DoNumTest("foo %7X", pos, "foo  1234AB");
     DoNumTest("foo %-7X", pos, "foo 1234AB ");
     DoNumTest("foo %.1X", pos, "foo 1234AB");

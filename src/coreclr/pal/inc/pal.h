@@ -3991,6 +3991,10 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define _mm_setcsr    PAL__mm_setcsr
 #endif // HOST_AMD64
 
+// Forward declare functions that are in header files we can't include yet
+int printf(const char *, ...);
+int vprintf(const char *, va_list);
+
 #endif // !PAL_STDCPP_COMPAT
 
 #ifndef _CONST_RETURN
@@ -4338,10 +4342,6 @@ PALIMPORT PAL_FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 
 PALIMPORT int __cdecl rand(void);
 PALIMPORT void __cdecl srand(unsigned int);
-
-// Forward declare functions that are in header files we can't include yet
-int printf(const char *, ...);
-int vprintf(const char *, va_list);
 
 #ifdef _MSC_VER
 #define PAL_get_caller _MSC_VER

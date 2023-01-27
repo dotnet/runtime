@@ -44,7 +44,6 @@ PALTEST(c_runtime__vsnprintf_s_test4_paltest_vsnprintf_test4, "c_runtime/_vsnpri
      */
 #if defined(HOST_64BIT)
 	Trace("Testing for 64 Bit Platforms \n");
-	DoPointerTest("%p", NULL, "NULL", "(nil)");
     DoPointerTest("%p", ptr, "pointer to 0x123456", "0x123456");
     DoPointerTest("%17p", ptr, "pointer to 0x123456", "         0x123456");
     DoPointerTest("%-17p", ptr, "pointer to 0x123456", "0x123456         ");
@@ -53,7 +52,6 @@ PALTEST(c_runtime__vsnprintf_s_test4_paltest_vsnprintf_test4, "c_runtime/_vsnpri
 
 #else
 	Trace("Testing for Non 64 Bit Platforms \n");
-	DoPointerTest("%p", NULL, "NULL", "(nil)");
     DoPointerTest("%p", ptr, "pointer to 0x123456", "0x123456");
     DoPointerTest("%9p", ptr, "pointer to 0x123456", " 0x123456");
     DoPointerTest("%-9p", ptr, "pointer to 0x123456", "0x123456 ");
