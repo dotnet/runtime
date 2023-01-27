@@ -1664,8 +1664,8 @@ inline UTF8 *SString::GetCopyOfUTF8String()
     SS_CONTRACT_END;
     NewArrayHolder<UTF8> buffer = NULL;
 
-    buffer = new UTF8[GetCount() +1];
-    strncpy(buffer, GetUTF8(), GetCount() + 1);
+    buffer = new UTF8[GetSize()];
+    strncpy(buffer, GetUTF8(), GetSize());
 
     SS_RETURN buffer.Extract();
 }
@@ -1917,6 +1917,7 @@ FORCEINLINE SString::CIterator SString::End() const
     }
     SS_CONTRACT_END;
 
+    ConvertToIteratable();
     ConvertToIteratable();
 
     SS_RETURN CIterator(this, GetCount());
