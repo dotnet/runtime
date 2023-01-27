@@ -6048,10 +6048,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			} else if (!td->optimized) {
 				int tos = get_tos_offset (td);
 				td->sp -= csignature->param_count;
-				int param_size = tos - get_tos_offset (td);
+				int param_offset = get_tos_offset (td);
+				int param_size = tos - param_offset;
 
 				td->cbb->contains_call_instruction = TRUE;
 				interp_add_ins (td, MINT_NEWOBJ_SLOW_UNOPT);
+				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+				init_last_ins_call (td);
+				td->last_ins->info.call_info->call_offset = param_offset;
 				td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 				td->last_ins->data [1] = param_size;
 				if (csignature->param_count > 0) {
