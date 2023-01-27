@@ -68,7 +68,19 @@ async function getArgs() {
         queryArguments = Array.from(WScript.Arguments);
     }
 
-    const runArgs = queryArguments.length > 0 ? processArguments(queryArguments) : initRunArgs({});
+    let runArgsJson;
+    // ToDo: runArgs should be read for all kinds of hosts, but
+    // fetch is added to node>=18 and current Windows's emcc node<18
+    if (is_browser)
+    {
+        const response = await globalThis.fetch('./runArgs.json');
+        if (response.ok) {
+            runArgsJson = await response.json();
+        } else {
+            console.debug(`could not load /runArgs.json: ${response.status}. Ignoring`);
+        }
+    }
+    let runArgs = initRunArgs(queryArguments.length > 0 ? processArguments(queryArguments, runArgsJson) : runArgsJson);
     return runArgs;
 }
 
@@ -89,8 +101,8 @@ function initRunArgs(runArgs) {
     return runArgs;
 }
 
-function processArguments(incomingArguments) {
-    const runArgs = initRunArgs({});
+function processArguments(incomingArguments, runArgsJson) {
+    const runArgs = runArgsJson ?? initRunArgs({});
 
     console.log("Incoming arguments: " + incomingArguments.join(' '));
     while (incomingArguments && incomingArguments.length > 0) {

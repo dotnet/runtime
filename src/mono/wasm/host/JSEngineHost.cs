@@ -65,6 +65,10 @@ internal sealed class JSEngineHost
         if (_args.CommonConfig.Debugging)
             throw new CommandLineException($"Debugging not supported with {_args.Host}");
 
+        var runArgsJson = new RunArgumentsJson(applicationArguments: Array.Empty<string>(),
+                                               runtimeArguments: _args.CommonConfig.RuntimeArguments);
+        runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
+
         var args = new List<string>();
 
         if (_args.Host == WasmHost.V8)
@@ -76,11 +80,13 @@ internal sealed class JSEngineHost
         args.AddRange(_args.CommonConfig.HostArguments);
 
         args.Add(_args.JSPath!);
- 
-        // only v8/jsc require arguments to the script separated by "--", for consistency do it for all
-        args.Add("--");
-        args.AddRange(_args.CommonConfig.RuntimeArguments);
-        args.Add("--");
+
+        if (_args.Host is WasmHost.V8 or WasmHost.JavaScriptCore)
+        {
+            // v8/jsc want arguments to the script separated by "--", others don't
+            args.Add("--");
+        }
+
         args.AddRange(_args.AppArgs);
 
         ProcessStartInfo psi = new()
