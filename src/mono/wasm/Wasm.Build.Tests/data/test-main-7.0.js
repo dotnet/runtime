@@ -10,7 +10,7 @@
 /*****************************************************************************
  * Please don't use this as template for startup code.
  * There are simpler and better samples like src\mono\sample\wasm\browser\main.js
- * This one is not ES6 nor CJS, doesn't use top level await and has edge case polyfills.
+ * This one is not ES6 nor CJS, doesn't use top level await and has edge case polyfills. 
  * It handles strange things which happen with XHarness.
  ****************************************************************************/
 
@@ -47,17 +47,12 @@ async function getArgs() {
         queryArguments = process.argv.slice(2);
     } else if (is_browser) {
         // We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-        const allArgs = window.location.search.split("%20--%20"); // mono runtime args -- app args
-        const runtimeParams = new URLSearchParams(allArgs[0]);
-        const runtimeValues = runtimeParams.getAll("arg");
-        const appParams = new URLSearchParams(allArgs[1]);
-        const appValues = appParams.getAll("arg");
+        const url = new URL(decodeURI(window.location));
         let urlArguments = []
-        for (let param of runtimeValues) {
-            urlArguments.push(param);
-        }
-        for (let param of appValues) {
-            urlArguments.push(param);
+        for (let param of url.searchParams) {
+            if (param[0] == "arg") {
+                urlArguments.push(param[1]);
+            }
         }
         queryArguments = urlArguments;
     } else if (v8args !== undefined) {
@@ -68,7 +63,18 @@ async function getArgs() {
         queryArguments = Array.from(WScript.Arguments);
     }
 
-    const runArgs = queryArguments.length > 0 ? processArguments(queryArguments) : initRunArgs({});
+    let runArgs;
+    if (queryArguments.length > 0) {
+        runArgs = processArguments(queryArguments);
+    } else {
+        const response = fetch('/runArgs.json')
+        if (!response.ok) {
+            console.debug(`could not load /args.json: ${response.status}. Ignoring`);
+        }
+        runArgs = await response.json();
+    }
+    runArgs = initRunArgs(runArgs);
+
     return runArgs;
 }
 
@@ -260,7 +266,7 @@ async function run() {
             dotnet
                 .withEnvironmentVariable("NodeJSPlatform", process.platform)
                 .withAsyncFlushOnExit();
-
+            
             const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
             if (modulesToLoad) {
                 dotnet.withModuleConfig({
