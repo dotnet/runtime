@@ -693,14 +693,6 @@ void Compiler::fgComputePreds()
     // the first block is always reachable
     fgFirstBB->bbRefs = 1;
 
-    // Under OSR, we may need to specially protect the original method entry.
-    //
-    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
-    {
-        JITDUMP("OSR: protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
-        fgEntryBB->bbRefs = 1;
-    }
-
     for (BasicBlock* const block : Blocks())
     {
         switch (block->bbJumpKind)
