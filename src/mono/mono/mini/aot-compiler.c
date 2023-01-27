@@ -15167,7 +15167,7 @@ emit_aot_image (MonoAotCompile *acfg)
 int
 mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opts, const char *aot_options)
 {
-	int res;
+	int res = 0;
 	MonoAotOptions aot_opts;
 
 	init_options (&aot_opts);
@@ -15207,6 +15207,7 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		res = aot_assembly (assemblies [i], jit_opts, &aot_opts);
 		if (res != 0) {
 			fprintf (stderr, "AOT of image %s failed.\n", assemblies [i]->image->name);
+			res = 1;
 			goto early_exit;
 		}
 	}
