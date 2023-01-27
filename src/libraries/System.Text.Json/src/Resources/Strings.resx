@@ -617,9 +617,6 @@
   <data name="FSharpDiscriminatedUnionsNotSupported" xml:space="preserve">
     <value>F# discriminated union serialization is not supported. Consider authoring a custom converter for the type.</value>
   </data>
-  <data name="NoMetadataForTypeCtorParams" xml:space="preserve">
-    <value>TypeInfoResolver '{0}' did not provide constructor parameter metadata for type '{1}'.</value>
-  </data>
   <data name="Polymorphism_BaseConverterDoesNotSupportMetadata" xml:space="preserve">
     <value>The converter for polymorphic type '{0}' does not support metadata writes or reads.</value>
   </data>
