@@ -30,6 +30,10 @@
     <EnableDefaultItems>false</EnableDefaultItems>
     <!-- Libraries packages use the incremental servicing infrastructure. -->
     <PackageUseIncrementalServicingVersion>true</PackageUseIncrementalServicingVersion>
+    <!-- Enabling this rule will cause build failures on undocumented public APIs.
+         We cannot add it in eng/Versions.props because src/coreclr does not have access to UseIntellisensePackageDocXmlFile, which ensures
+         we only enable it in specific projects. so to avoid duplicating this property in coreclr, we can first scope it to src/libraries. -->
+    <SkipArcadeNoWarnCS1591>true</SkipArcadeNoWarnCS1591>
   </PropertyGroup>
 
   <!-- Language configuration -->
