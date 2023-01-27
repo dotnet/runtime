@@ -11,7 +11,7 @@
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten-current" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64"]
     },
     "wasm-experimental": {
