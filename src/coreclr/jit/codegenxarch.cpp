@@ -895,11 +895,11 @@ void CodeGen::genCodeForDivCnsPow2(GenTreeOp* treeNode)
 
     GenTree* dividend = treeNode->gtOp1;
 
-    GenTree*   divisor    = treeNode->gtOp2;
-    emitAttr   size       = emitTypeSize(treeNode);
-    regNumber  targetReg  = treeNode->GetRegNum();
-    var_types  targetType = treeNode->TypeGet();
-    emitter*   emit       = GetEmitter();
+    GenTree*  divisor    = treeNode->gtOp2;
+    emitAttr  size       = emitTypeSize(treeNode);
+    regNumber targetReg  = treeNode->GetRegNum();
+    var_types targetType = treeNode->TypeGet();
+    emitter*  emit       = GetEmitter();
 
     assert(varTypeIsIntOrI(targetType));
     assert(divisor->IsIntegralConstAbsPow2());
