@@ -37,12 +37,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public static bool IsInlineableStringsResource(EcmaModule module, string resourceName)
         {
-            if (!resourceName.EndsWith(".resources"))
+            if (!resourceName.EndsWith(".resources", StringComparison.Ordinal))
                 return false;
 
             // TODO: we should grab this name from the SR class
-            string resourceName1 = $"{module.Assembly.GetName().Name}.Strings.resources";
-            string resourceName2 = $"FxResources.{module.Assembly.GetName().Name}.SR.resources";
+            string simpleName = module.Assembly.GetName().Name;
+            string resourceName1 = $"{simpleName}.Strings.resources";
+            string resourceName2 = $"FxResources.{simpleName}.SR.resources";
 
             if (resourceName != resourceName1 && resourceName != resourceName2)
                 return false;
