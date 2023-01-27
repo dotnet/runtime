@@ -1157,7 +1157,7 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 		// Try setting this entrypoint name as the cached value.
 		// If someone else beat us to it, free the memory we allocated.
 		// We want to only leak the one global copy of the entrypoint name,
-		// not mutliple copies.
+		// not multiple copies.
 		if (InterlockedCompareExchangeT(&entrypoint_assembly_name, entrypoint_assembly_name_local, nullptr) != nullptr)
 		{
 			delete[] entrypoint_assembly_name_local;
