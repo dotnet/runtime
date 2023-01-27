@@ -69,8 +69,8 @@
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM Exception Handling feature.
       - $(WasmEnableSIMD)                   - Enable support for the WASM SIMD feature.
       - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to .webcil
-      - $(WasmBundleFullIcuData)            - Loads full ICU data (icudt.dat). Only when InvariantGlobalization false. Defaults to false.
-      - $(WasmIcuDataFileName)              - Name/path of ICU globalization file loaded to app. Only when InvariantGloblization=false and WasmBundleFullIcuData=false.
+      - $(WasmIncludeFullIcuData )          - Loads full ICU data (icudt.dat). Only when InvariantGlobalization false. Defaults to false.
+      - $(WasmIcuDataFileName)              - Name/path of ICU globalization file loaded to app. Only when InvariantGloblization=false and WasmIncludeFullIcuData=false.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).

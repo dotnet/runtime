@@ -22,8 +22,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         [MemberData(nameof(NativeBuildData))]
         public void NoOpRebuildForNativeBuilds(BuildArgs buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
         {
-            bool hasIcudt = !invariant;
-            buildArgs = buildArgs with { ProjectName = $"rebuild_noop_{buildArgs.Config}", WasmIncludeFullIcuData = hasIcudt };
+            buildArgs = buildArgs with { ProjectName = $"rebuild_noop_{buildArgs.Config}" };
             (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink: nativeRelink, invariant: invariant, buildArgs, id);
 
             var pathsDict = GetFilesTable(buildArgs, paths, unchanged: true);

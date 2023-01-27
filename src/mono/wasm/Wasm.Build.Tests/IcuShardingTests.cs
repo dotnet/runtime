@@ -113,7 +113,7 @@ public class IcuShardingTests : BuildTestBase
         string projectName = $"shard_{Path.GetFileName(shardName)}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
-        buildArgs = buildArgs with { ProjectName = projectName, WasmIncludeFullIcuData = false };
+        buildArgs = buildArgs with { ProjectName = projectName };
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName>");
 
         string programText = GetProgramText(expectedLocales, missingLocales);
@@ -139,8 +139,8 @@ public class IcuShardingTests : BuildTestBase
         string projectName = $"fullIcuInvariant_{fullIcu}_{invariant}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
-        buildArgs = buildArgs with { ProjectName = projectName, WasmIncludeFullIcuData = fullIcu };
-        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<InvariantGlobalization>{invariant}</InvariantGlobalization>");
+        buildArgs = buildArgs with { ProjectName = projectName };
+        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<InvariantGlobalization>{invariant}</InvariantGlobalization><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
         // in invariant mode, all locales should be missing
         string[] expectedLocales = invariant ? Array.Empty<string>() : testedLocales;
@@ -198,7 +198,7 @@ public class IcuShardingTests : BuildTestBase
     public void NonExistingCustomFileAssertError(BuildArgs buildArgs, string id)
     {
         string projectName = $"invalidCustomIcu_{buildArgs.Config}_{buildArgs.AOT}";
-        buildArgs = buildArgs with { ProjectName = projectName, WasmIncludeFullIcuData = false };
+        buildArgs = buildArgs with { ProjectName = projectName };
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>nonexisting.dat</WasmIcuDataFileName>");
 
         (_, string output) = BuildProject(buildArgs,

@@ -48,8 +48,7 @@ namespace Wasm.Build.Tests
             if (invariantGlobalization != null)
                 extraProperties = $"{extraProperties}<InvariantGlobalization>{invariantGlobalization}</InvariantGlobalization>";
 
-            bool hasIcudt =  invariantGlobalization == null || invariantGlobalization.Value == false;
-            buildArgs = buildArgs with { ProjectName = projectName, WasmIncludeFullIcuData = hasIcudt };
+            buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
 
             if (dotnetWasmFromRuntimePack == null)
@@ -79,7 +78,7 @@ namespace Wasm.Build.Tests
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                                GlobalizationMode: hasIcudt ? GlobalizationMode.FullIcu : GlobalizationMode.Invariant));
+                                GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : null));
 
             if (invariantGlobalization == true)
             {

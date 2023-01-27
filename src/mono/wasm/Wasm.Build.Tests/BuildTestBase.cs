@@ -139,7 +139,8 @@ namespace Wasm.Build.Tests
                                            string targetFramework = DefaultTargetFramework,
                                            string? extraXHarnessMonoArgs = null,
                                            string? extraXHarnessArgs = null,
-                                           string jsRelativePath = "test-main.js")
+                                           string jsRelativePath = "test-main.js",
+                                           string environmentLocale = "en-US")
         {
             buildDir ??= _projectDir;
             envVars ??= new();
@@ -169,6 +170,7 @@ namespace Wasm.Build.Tests
             };
 
             extraXHarnessArgs += " " + xharnessArgs;
+            args = $"{args} --lang={environmentLocale}";
 
             string testLogPath = Path.Combine(_logPath, host.ToString());
             string output = RunWithXHarness(
@@ -342,8 +344,6 @@ namespace Wasm.Build.Tests
             if (UseWebcil) {
                 extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>\n";
             }
-            if (buildArgs.WasmIncludeFullIcuData)
-                extraProperties += $"\n<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>";
 
             string projectContents = projectTemplate
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
@@ -632,7 +632,7 @@ namespace Wasm.Build.Tests
                                                    string mainJS,
                                                    bool hasV8Script,
                                                    string targetFramework,
-                                                   GlobalizationMode globalizationMode = GlobalizationMode.FullIcu,
+                                                   GlobalizationMode? globalizationMode,
                                                    string predefinedIcudt = "",
                                                    bool dotnetWasmFromRuntimePack = true,
                                                    bool useWebcil = true)
@@ -648,22 +648,7 @@ namespace Wasm.Build.Tests
             });
 
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
-            switch (globalizationMode)
-            {
-                case GlobalizationMode.Invariant:
-                    AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: false);
-                    break;
-                case GlobalizationMode.FullIcu:
-                    AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: true);
-                    break;
-                case GlobalizationMode.PredefinedIcu:
-                    if (string.IsNullOrEmpty(predefinedIcudt))
-                        throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
-                    AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
-                    break;
-                case GlobalizationMode.AutomaticIcu:
-                    throw new ArgumentException($"Running WBT in GlobalizationMode=AutomaticIcu is not allowed. In this mode icu loading depends on the locale of environment where the test is running and no check if globalization data was loaded is performed.");
-            }
+            AssertIcuAssets();
 
             string managedDir = Path.Combine(bundleDir, "managed");
             string bundledMainAppAssembly =
@@ -685,6 +670,53 @@ namespace Wasm.Build.Tests
             }
 
             AssertDotNetWasmJs(bundleDir, fromRuntimePack: dotnetWasmFromRuntimePack, targetFramework);
+
+            void AssertIcuAssets()
+            {
+                bool expectEFIGS = false;
+                bool expectCJK = false;
+                bool expectNOCJK = false;
+                bool expectFULL = false;
+                switch (globalizationMode)
+                {
+                    case GlobalizationMode.Invariant:
+                        break;
+                    case GlobalizationMode.FullIcu:
+                        expectFULL = true;
+                        break;
+                    case GlobalizationMode.PredefinedIcu:
+                        if (string.IsNullOrEmpty(predefinedIcudt))
+                            throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
+                        AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
+                        // predefined ICU name can be identical with the icu files from runtime pack
+                        switch (predefinedIcudt)
+                        {
+                            case "icudt.dat":
+                                expectFULL = true;
+                                break;
+                            case "icudt_EFIGS.dat":
+                                expectEFIGS = true;
+                                break;
+                            case "icudt_CJK.dat":
+                                expectCJK = true;
+                                break;
+                            case "icudt_no_CJK.dat":
+                                expectNOCJK = true;
+                                break;
+                        }
+                        break;
+                    default:
+                        // icu shard chosen based on the locale
+                        expectCJK = true;
+                        expectEFIGS = true;
+                        expectNOCJK = true;
+                        break;
+                }
+                AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
+                AssertFilesExist(bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
+                AssertFilesExist(bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
+                AssertFilesExist(bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
+            }
         }
 
         protected static void AssertDotNetWasmJs(string bundleDir, bool fromRuntimePack, string targetFramework)
@@ -1114,8 +1146,7 @@ namespace Wasm.Build.Tests
                             string Config,
                             bool AOT,
                             string ProjectFileContents,
-                            string? ExtraBuildArgs,
-                            bool WasmIncludeFullIcuData = true);
+                            string? ExtraBuildArgs);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result);
     internal record FileStat (bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
     internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
@@ -1124,7 +1155,7 @@ namespace Wasm.Build.Tests
     (
         Action?             InitProject               = null,
         bool?               DotnetWasmFromRuntimePack = null,
-        GlobalizationMode   GlobalizationMode         = GlobalizationMode.FullIcu,
+        GlobalizationMode?  GlobalizationMode         = null,
         string?             PredefinedIcudt           = null,
         bool                UseCache                  = true,
         bool                ExpectSuccess             = true,
@@ -1140,14 +1171,6 @@ namespace Wasm.Build.Tests
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 
-    public enum GlobalizationMode
-    {
-        Invariant,       // no icu
-        FullIcu,         // full icu data: icudt.dat is loaded
-        AutomaticIcu,    // icu loaded based on the current locale
-        PredefinedIcu   // user set WasmIcuDataFileName value and we are loading that file
-    };
-
     public record BlazorBuildOptions
     (
         string Id,
@@ -1156,6 +1179,13 @@ namespace Wasm.Build.Tests
         string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
         bool WarnAsError = true
     );
+
+    public enum GlobalizationMode
+    {
+        Invariant,       // no icu
+        FullIcu,         // full icu data: icudt.dat is loaded
+        PredefinedIcu   // user set WasmIcuDataFileName value and we are loading that file
+    };
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
 }

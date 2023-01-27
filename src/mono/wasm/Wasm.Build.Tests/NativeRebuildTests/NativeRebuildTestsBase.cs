@@ -52,7 +52,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: false,
-                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.FullIcu,
+                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : null,
                                 CreateProject: true));
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.Chrome, id: id);
@@ -66,8 +66,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
-            bool hasIcudt =  !invariant;
-            buildArgs = buildArgs with { ExtraBuildArgs = $"{buildArgs.ExtraBuildArgs} {extraBuildArgs}", WasmIncludeFullIcuData = hasIcudt };
+            buildArgs = buildArgs with { ExtraBuildArgs = $"{buildArgs.ExtraBuildArgs} {extraBuildArgs}" };
             var newBuildArgs = GenerateProjectContents(buildArgs, nativeRelink, invariant, extraProperties);
 
             // key(buildArgs) being changed
@@ -83,7 +82,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                                             id: id,
                                             new BuildProjectOptions(
                                                 DotnetWasmFromRuntimePack: false,
-                                                GlobalizationMode: hasIcudt ? GlobalizationMode.FullIcu : GlobalizationMode.Invariant,
+                                                GlobalizationMode: invariant ? GlobalizationMode.Invariant : null,
                                                 CreateProject: false,
                                                 UseCache: false,
                                                 Verbosity: verbosity));
@@ -99,8 +98,6 @@ namespace Wasm.Build.NativeRebuild.Tests
                 propertiesBuilder.Append($"<WasmBuildNative>true</WasmBuildNative>");
             if (invariant)
                 propertiesBuilder.Append($"<InvariantGlobalization>true</InvariantGlobalization>");
-            else
-                propertiesBuilder.Append($"<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>");
             propertiesBuilder.Append(extraProperties);
 
             return ExpandBuildArgs(buildArgs, propertiesBuilder.ToString());

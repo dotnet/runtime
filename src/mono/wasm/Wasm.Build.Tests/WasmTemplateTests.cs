@@ -87,7 +87,6 @@ namespace Wasm.Build.Tests
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             UpdateBrowserMainJs(DefaultTargetFramework);
-            AddItemsPropertiesToProject(projectFile, "<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>");
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -136,7 +135,6 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            AddItemsPropertiesToProject(projectFile, "<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>");
             UpdateConsoleMainJs();
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
@@ -202,7 +200,6 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            AddItemsPropertiesToProject(projectFile, "<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>");
             UpdateProgramCS();
             UpdateConsoleMainJs();
             if (relinking)
@@ -364,7 +361,6 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            AddItemsPropertiesToProject(projectFile, "<WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>");
             UpdateProgramCS();
             UpdateConsoleMainJs();
 
