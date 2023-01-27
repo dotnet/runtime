@@ -294,10 +294,6 @@ HANDLES(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_G
 HANDLES(MCATTR_2, "GetCustomAttributesInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesInternal, MonoArray, 3, (MonoObject, MonoReflectionType, MonoBoolean))
 HANDLES(MCATTR_3, "IsDefinedInternal", ves_icall_MonoCustomAttrs_IsDefinedInternal, MonoBoolean, 2, (MonoObject, MonoReflectionType))
 
-ICALL_TYPE(ASSEMB, "System.Reflection.Emit.AssemblyBuilder", ASSEMB_1)
-HANDLES(ASSEMB_1, "UpdateNativeCustomAttributes", ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes, void, 1, (MonoReflectionAssemblyBuilder))
-HANDLES(ASSEMB_2, "basic_init", ves_icall_AssemblyBuilder_basic_init, void, 1, (MonoReflectionAssemblyBuilder))
-
 #ifndef DISABLE_REFLECTION_EMIT
 ICALL_TYPE(CATTRB, "System.Reflection.Emit.CustomAttributeBuilder", CATTRB_1)
 HANDLES(CATTRB_1, "GetBlob", ves_icall_CustomAttributeBuilder_GetBlob, MonoArray, 7, (MonoReflectionAssembly, MonoObject, MonoArray, MonoArray, MonoArray, MonoArray, MonoArray))
@@ -306,10 +302,14 @@ HANDLES(CATTRB_1, "GetBlob", ves_icall_CustomAttributeBuilder_GetBlob, MonoArray
 ICALL_TYPE(DYNM, "System.Reflection.Emit.DynamicMethod", DYNM_1)
 HANDLES(DYNM_1, "create_dynamic_method", ves_icall_DynamicMethod_create_dynamic_method, void, 4, (MonoReflectionDynamicMethod, MonoString, guint32, guint32))
 
-ICALL_TYPE(ENUMB, "System.Reflection.Emit.EnumBuilder", ENUMB_1)
+ICALL_TYPE(ASSEMB, "System.Reflection.Emit.RuntimeAssemblyBuilder", ASSEMB_1)
+HANDLES(ASSEMB_1, "UpdateNativeCustomAttributes", ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes, void, 1, (MonoReflectionAssemblyBuilder))
+HANDLES(ASSEMB_2, "basic_init", ves_icall_AssemblyBuilder_basic_init, void, 1, (MonoReflectionAssemblyBuilder))
+
+ICALL_TYPE(ENUMB, "System.Reflection.Emit.RuntimeEnumBuilder", ENUMB_1)
 HANDLES(ENUMB_1, "setup_enum_type", ves_icall_EnumBuilder_setup_enum_type, void, 2, (MonoReflectionType, MonoReflectionType))
 
-ICALL_TYPE(MODULEB, "System.Reflection.Emit.ModuleBuilder", MODULEB_10)
+ICALL_TYPE(MODULEB, "System.Reflection.Emit.RuntimeModuleBuilder", MODULEB_10)
 HANDLES(MODULEB_10, "GetRegisteredToken", ves_icall_ModuleBuilder_GetRegisteredToken, MonoObject, 2, (MonoReflectionModuleBuilder, guint32))
 HANDLES(MODULEB_8, "RegisterToken", ves_icall_ModuleBuilder_RegisterToken, void, 3, (MonoReflectionModuleBuilder, MonoObject, guint32))
 HANDLES(MODULEB_2, "basic_init", ves_icall_ModuleBuilder_basic_init, void, 1, (MonoReflectionModuleBuilder))
@@ -318,12 +318,12 @@ HANDLES(MODULEB_6, "getToken", ves_icall_ModuleBuilder_getToken, gint32, 3, (Mon
 HANDLES(MODULEB_7, "getUSIndex", ves_icall_ModuleBuilder_getUSIndex, guint32, 2, (MonoReflectionModuleBuilder, MonoString))
 HANDLES(MODULEB_9, "set_wrappers_type", ves_icall_ModuleBuilder_set_wrappers_type, void, 2, (MonoReflectionModuleBuilder, MonoReflectionType))
 
+ICALL_TYPE(TYPEB, "System.Reflection.Emit.RuntimeTypeBuilder", TYPEB_1)
+HANDLES(TYPEB_1, "create_runtime_class", ves_icall_TypeBuilder_create_runtime_class, MonoReflectionType, 1, (MonoReflectionTypeBuilder))
+
 ICALL_TYPE(SIGH, "System.Reflection.Emit.SignatureHelper", SIGH_1)
 HANDLES(SIGH_1, "get_signature_field", ves_icall_SignatureHelper_get_signature_field, MonoArray, 1, (MonoReflectionSigHelper))
 HANDLES(SIGH_2, "get_signature_local", ves_icall_SignatureHelper_get_signature_local, MonoArray, 1, (MonoReflectionSigHelper))
-
-ICALL_TYPE(TYPEB, "System.Reflection.Emit.TypeBuilder", TYPEB_1)
-HANDLES(TYPEB_1, "create_runtime_class", ves_icall_TypeBuilder_create_runtime_class, MonoReflectionType, 1, (MonoReflectionTypeBuilder))
 
 ICALL_TYPE(FIELDI, "System.Reflection.FieldInfo", FILEDI_1)
 HANDLES(FILEDI_1, "get_marshal_info", ves_icall_System_Reflection_FieldInfo_get_marshal_info, MonoReflectionMarshalAsAttribute, 1, (MonoReflectionField))

@@ -51,8 +51,7 @@ namespace System.Net.Security
             string? targetName,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
-            SslAuthenticationOptions sslAuthenticationOptions,
-            SelectClientCertificate? clientCertificateSelectionCallback)
+            SslAuthenticationOptions sslAuthenticationOptions)
         {
             return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
@@ -176,6 +175,14 @@ namespace System.Net.Security
             ref SslConnectionInfo connectionInfo)
         {
             connectionInfo.UpdateSslConnectionInfo(securityContext.SslContext);
+        }
+
+        public static bool TryUpdateClintCertificate(
+            SafeFreeCredentials? _1,
+            SafeDeleteSslContext? _2,
+            SslAuthenticationOptions _3)
+        {
+            return false;
         }
 
         private static SecurityStatusPal HandshakeInternal(

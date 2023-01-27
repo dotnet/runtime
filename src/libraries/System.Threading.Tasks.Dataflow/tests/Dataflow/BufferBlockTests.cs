@@ -567,5 +567,32 @@ namespace System.Threading.Tasks.Dataflow.Tests
             bb.Complete();
             await Assert.ThrowsAsync<FormatException>(() => bb.Completion);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task TestSynchronousWaitForCompletionDoesNotDeadlock()
+        {
+            SynchronizationContext origContext = SynchronizationContext.Current;
+            try
+            {
+                // Avoid xunit synchronization context which impacts scheduling and the outcome of this test
+                SynchronizationContext.SetSynchronizationContext(null);
+
+                var block1 = new BufferBlock<int>();
+                var block2 = new BufferBlock<int>();
+                block1.LinkTo(block2, new DataflowLinkOptions { PropagateCompletion = true });
+
+                block1.Post(1);
+                block1.Complete();
+                await block1.Completion;
+
+                Assert.True(block2.TryReceive(out int value), "Value should have been received");
+                Assert.Equal(1, value);
+                Assert.True(block2.Completion.Wait(30_000), "Synchronous wait should have completed within timeout period");
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(origContext);
+            }
+        }
     }
 }

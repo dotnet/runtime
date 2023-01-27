@@ -1325,7 +1325,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     // Try copying data using a copy-on-write clone. This shares storage between the files.
     if (sourceLength != 0)
     {
-        while ((ret = ioctl(outFd, FICLONE, inFd)) < 0 && errno == EINTR);
+        while ((ret = ioctl(outFd, (int)FICLONE, inFd)) < 0 && errno == EINTR);
         copied = ret == 0;
     }
 #endif

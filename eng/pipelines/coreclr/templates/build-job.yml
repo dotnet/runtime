@@ -189,8 +189,9 @@ jobs:
       displayName: Build and generate native prerequisites
 
     # Build CoreCLR Runtime
+    # TODO: Use --keepnativesymbols only for PRs.
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg) --keepnativesymbols
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)

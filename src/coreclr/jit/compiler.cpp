@@ -1910,8 +1910,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compGeneratingProlog = false;
     compGeneratingEpilog = false;
 
-    compLSRADone       = false;
-    compRationalIRForm = false;
+    compPostImportationCleanupDone = false;
+    compLSRADone                   = false;
+    compRationalIRForm             = false;
 
 #ifdef DEBUG
     compCodeGenDone        = false;
@@ -4407,12 +4408,46 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
+    // If this is a failed inline attempt, we're done.
+    //
+    if (compIsForInlining() && compInlineResult->IsFailure())
+    {
+#ifdef FEATURE_JIT_METHOD_PERF
+        if (pCompJitTimer != nullptr)
+        {
+#if MEASURE_CLRAPI_CALLS
+            EndPhase(PHASE_CLR_API);
+#endif
+            pCompJitTimer->Terminate(this, CompTimeSummaryInfo::s_compTimeSummary, false);
+        }
+#endif
+
+        return;
+    }
+
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
+
+    // Compute bbNum, bbRefs and bbPreds
+    //
+    // This is the first time full (not cheap) preds will be computed.
+    // And, if we have profile data, we can now check integrity.
+    //
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated.
+    //
+    auto computePredsPhase = [this]() {
+        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
+        fgRenumberBlocks();
+        fgComputePreds();
+        // Enable flow graph checks
+        activePhaseChecks |= PhaseChecks::CHECK_FG;
+    };
+    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
     // Expand any patchpoints
     //
@@ -4466,24 +4501,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
-
-    // Compute bbNum, bbRefs and bbPreds
-    //
-    // This is the first time full (not cheap) preds will be computed.
-    // And, if we have profile data, we can now check integrity.
-    //
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated.
-    //
-    auto computePredsPhase = [this]() {
-        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
-        fgRenumberBlocks();
-        noway_assert(!fgComputePredsDone);
-        fgComputePreds();
-        // Enable flow graph checks
-        activePhaseChecks |= PhaseChecks::CHECK_FG;
-    };
-    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
     // local variable allocation on the stack.

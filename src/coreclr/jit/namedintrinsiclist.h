@@ -56,7 +56,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Collections_Generic_Comparer_get_Default,
     NI_System_Collections_Generic_EqualityComparer_get_Default,
     NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness,
-    NI_System_Numerics_BitOperations_PopCount,
+
     NI_System_GC_KeepAlive,
     NI_System_Threading_Thread_get_CurrentThread,
     NI_System_Threading_Thread_get_ManagedThreadId,
@@ -110,16 +110,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_MemoryExtensions_SequenceEqual,
     NI_System_MemoryExtensions_StartsWith,
 
-    // These are used by HWIntrinsics but are defined more generally
-    // to allow dead code optimization and handle the recursion case
-
-    NI_IsSupported_True,
-    NI_IsSupported_False,
-    NI_IsSupported_Dynamic,
-    NI_IsSupported_Type,
-    NI_Throw_PlatformNotSupportedException,
-    NI_Vector_GetCount,
-
     NI_System_Threading_Interlocked_And,
     NI_System_Threading_Interlocked_Or,
     NI_System_Threading_Interlocked_CompareExchange,
@@ -159,6 +149,28 @@ enum NamedIntrinsic : unsigned short
     NI_SIMD_UpperSave,
 #endif // FEATURE_SIMD
 
+    //
+    // Special Import Intrinsics
+    //
+
+    NI_SPECIAL_IMPORT_START,
+
+    // These are used by HWIntrinsics but are defined more generally
+    // to allow dead code optimization and handle the recursion case
+
+    NI_IsSupported_True,
+    NI_IsSupported_False,
+    NI_IsSupported_Dynamic,
+    NI_IsSupported_Type,
+    NI_Throw_PlatformNotSupportedException,
+    NI_Vector_GetCount,
+
+    NI_SPECIAL_IMPORT_END,
+
+    //
+    // System.Runtime.CompilerServices.Unsafe Intrinsics
+    //
+
     NI_SRCS_UNSAFE_START,
 
     NI_SRCS_UNSAFE_Add,
@@ -188,6 +200,22 @@ enum NamedIntrinsic : unsigned short
     NI_SRCS_UNSAFE_WriteUnaligned,
 
     NI_SRCS_UNSAFE_END,
+
+    //
+    // Primitive Intrinsics
+    //
+
+    NI_PRIMITIVE_START,
+
+    NI_PRIMITIVE_Crc32C,
+    NI_PRIMITIVE_LeadingZeroCount,
+    NI_PRIMITIVE_Log2,
+    NI_PRIMITIVE_PopCount,
+    NI_PRIMITIVE_RotateLeft,
+    NI_PRIMITIVE_RotateRight,
+    NI_PRIMITIVE_TrailingZeroCount,
+
+    NI_PRIMITIVE_END,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_
