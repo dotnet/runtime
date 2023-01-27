@@ -255,7 +255,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_RemoteExecutor_NoArguments_UseDefaultValue(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NoArguments_UseNullDefaultValue(bool isDynamicCodeSupported)
         {
             var options = new RemoteInvokeOptions();
             if (!isDynamicCodeSupported)
@@ -295,6 +295,30 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 using var provider = services.BuildServiceProvider();
                 var ex = Assert.Throws<InvalidOperationException>(() => factory1(provider, null));
                 Assert.Equal($"Unable to resolve service for type '{typeof(A).FullName}' while attempting to activate '{typeof(ClassWithA).FullName}'.", ex.Message);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_RemoteExecutor_NoArguments_UseDefaultValue(bool isDynamicCodeSupported)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!isDynamicCodeSupported)
+            {
+                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithStringDefaultValue), new[] { typeof(string) });
+
+                var services = new ServiceCollection();
+                using var provider = services.BuildServiceProvider();
+                var item = (ClassWithStringDefaultValue)factory1(provider, new object[] { null });
+                Assert.Equal("DEFAULT", item.Text);
             }, options);
         }
     }
@@ -468,5 +492,14 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public ClassWithABC_DefaultConstructorLast(A a, B b) : base (a, b) { }
         public ClassWithABC_DefaultConstructorLast(A a) : base(a) { }
         public ClassWithABC_DefaultConstructorLast() : base() { }
+    }
+
+    internal class ClassWithStringDefaultValue
+    {
+        public string Text { get; set; }
+        public ClassWithStringDefaultValue(string text = "DEFAULT")
+        {
+            Text = text;
+        }
     }
 }
