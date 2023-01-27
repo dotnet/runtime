@@ -123,6 +123,7 @@ namespace System.Reflection.Emit
         public System.Type CreateType() { throw null; }
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Reflection.TypeInfo CreateTypeInfo() { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         protected abstract System.Reflection.TypeInfo CreateTypeInfoCore();
         public System.Reflection.Emit.FieldBuilder DefineLiteral(string literalName, object? literalValue) { throw null; }
         protected abstract System.Reflection.Emit.FieldBuilder DefineLiteralCore(string literalName, object? literalValue);
@@ -416,6 +417,7 @@ namespace System.Reflection.Emit
         public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         protected abstract System.Reflection.Emit.MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet);
         public System.Reflection.Emit.TypeBuilder DefineType(string name) { throw null; }
         public System.Reflection.Emit.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr) { throw null; }
@@ -542,6 +544,7 @@ namespace System.Reflection.Emit
         protected abstract System.Reflection.Emit.PackingSize PackingSizeCore { get; }
         public override System.Type? ReflectedType { get { throw null; } }
         public int Size { get { throw null; } }
+        protected abstract int SizeCore { get; }
         public override System.RuntimeTypeHandle TypeHandle { get { throw null; } }
         public override System.Type UnderlyingSystemType { get { throw null; } }
         public void AddInterfaceImplementation([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type interfaceType) { }
@@ -550,6 +553,7 @@ namespace System.Reflection.Emit
         public System.Type CreateType() { throw null; }
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Reflection.TypeInfo CreateTypeInfo() { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         protected abstract System.Reflection.TypeInfo CreateTypeInfoCore();
         public System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[]? parameterTypes) { throw null; }
         public System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[]? parameterTypes, System.Type[][]? requiredCustomModifiers, System.Type[][]? optionalCustomModifiers) { throw null; }

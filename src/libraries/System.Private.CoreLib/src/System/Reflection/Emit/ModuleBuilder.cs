@@ -136,7 +136,7 @@ namespace System.Reflection.Emit
         public abstract int GetTypeMetadataToken(Type type);
         public abstract int GetFieldMetadataToken(FieldInfo field);
         public abstract int GetMethodMetadataToken(MethodInfo method);
-        public abstract int GetMethodMetadataToken(ConstructorInfo contsuctor);
+        public abstract int GetMethodMetadataToken(ConstructorInfo constructor);
         public abstract int GetSignatureMetadataToken(SignatureHelper signature);
         public abstract int GetStringMetadataToken(string stringConstant);
     }

@@ -38,7 +38,7 @@ namespace System.Reflection.Emit
             return fieldBuilder;
         }
 
-        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         protected override TypeInfo CreateTypeInfoCore()
         {
             return m_typeBuilder.CreateTypeInfo();
