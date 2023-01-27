@@ -1103,7 +1103,8 @@ extern "C" int32_t _stricmp(const char *string1, const char *string2)
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI TryPopulateControlSegmentRegisters(CONTEXT* pContext)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // TODO: attempt to fill in SegCs and SegSs
+    // Currently the CONTEXT is only used on Windows for RaiseFailFastException.
+    // So we punt on filling in SegCs and SegSs for now.
     return false;
 #else
     return true;
