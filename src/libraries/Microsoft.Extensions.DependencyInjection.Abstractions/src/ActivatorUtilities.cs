@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type[] argumentTypes)
         {
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
             if (!RuntimeFeature.IsDynamicCodeSupported)
             {
                 return CreateFactoryReflection(instanceType, argumentTypes);
@@ -161,7 +161,7 @@ namespace Microsoft.Extensions.DependencyInjection
             CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(
                 Type[] argumentTypes)
         {
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
             if (!RuntimeFeature.IsDynamicCodeSupported)
             {
                 var factory = CreateFactoryReflection(typeof(T), argumentTypes);
@@ -282,7 +282,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return Expression.New(constructor, constructorArguments);
         }
 
-#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
         private static ObjectFactory CreateFactoryReflection(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type?[] argumentTypes)
@@ -296,7 +296,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 ParameterInfo constructorParameter = constructorParameters[i];
                 bool hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(constructorParameter, out object? defaultValue);
 
-                parameters[i] = new FactoryParameterContext(constructorParameter, hasDefaultValue, defaultValue, parameterMap[i]);
+                parameters[i] = new FactoryParameterContext(constructorParameter.ParameterType, hasDefaultValue, defaultValue, parameterMap[i] ?? -1);
             }
 
             return (IServiceProvider serviceProvider, object?[]? arguments) =>
@@ -305,15 +305,15 @@ namespace Microsoft.Extensions.DependencyInjection
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     FactoryParameterContext parameter = parameters[i];
-                    if (parameter.ArgumentIndex is { } index)
+                    if (parameter.ArgumentIndex != -1)
                     {
-                        constructorArguments[i] = arguments?[index];
+                        constructorArguments[i] = arguments?[parameter.ArgumentIndex];
                     }
                     else
                     {
                         constructorArguments[i] = GetService(
                             serviceProvider,
-                            parameter.ParameterInfo.ParameterType,
+                            parameter.ParameterType,
                             constructor.DeclaringType!,
                             parameter.HasDefaultValue);
                     }
@@ -327,20 +327,20 @@ namespace Microsoft.Extensions.DependencyInjection
             };
         }
 
-        private sealed class FactoryParameterContext
+        private readonly struct FactoryParameterContext
         {
-            public FactoryParameterContext(ParameterInfo parameterInfo, bool hasDefaultValue, object? defaultValue, int? argumentIndex)
+            public FactoryParameterContext(Type parameterType, bool hasDefaultValue, object? defaultValue, int argumentIndex)
             {
-                ParameterInfo = parameterInfo;
+                ParameterType = parameterType;
                 HasDefaultValue = hasDefaultValue;
                 DefaultValue = defaultValue;
                 ArgumentIndex = argumentIndex;
             }
 
-            public ParameterInfo ParameterInfo { get; }
+            public Type ParameterType { get; }
             public bool HasDefaultValue { get; }
             public object? DefaultValue { get; }
-            public int? ArgumentIndex { get; }
+            public int ArgumentIndex { get; }
         }
 #endif
 
