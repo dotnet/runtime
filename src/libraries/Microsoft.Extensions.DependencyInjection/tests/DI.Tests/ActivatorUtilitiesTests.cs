@@ -203,7 +203,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var options = new RemoteInvokeOptions();
             if (!isDynamicCodeSupported)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
+                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -237,7 +237,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var options = new RemoteInvokeOptions();
             if (!isDynamicCodeSupported)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
+                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -260,7 +260,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var options = new RemoteInvokeOptions();
             if (!isDynamicCodeSupported)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
+                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
@@ -284,7 +284,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var options = new RemoteInvokeOptions();
             if (!isDynamicCodeSupported)
             {
-                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
+                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
             }
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
