@@ -326,9 +326,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 return constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, constructorArguments, culture: null);
             };
         }
-#endif
 
-        private class FactoryParameterContext
+        private sealed class FactoryParameterContext
         {
             public FactoryParameterContext(ParameterInfo parameterInfo, bool hasDefaultValue, object? defaultValue)
             {
@@ -341,6 +340,7 @@ namespace Microsoft.Extensions.DependencyInjection
             public bool HasDefaultValue { get; }
             public object? DefaultValue { get; }
         }
+#endif
 
         private static void FindApplicableConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
