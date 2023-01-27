@@ -6450,7 +6450,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         // For NativeAOT, codeBlock will not be necessarily aligned, but it is aligned
         // in final obj file.
-        assert((((size_t)codeBlock & 31) == 0) || comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+        assert((((size_t)codeBlock & 31) == 0) || emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
     }
 #if 0
     // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
