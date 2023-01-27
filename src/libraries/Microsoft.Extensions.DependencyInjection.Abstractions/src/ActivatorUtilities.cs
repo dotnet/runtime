@@ -311,7 +311,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     constructorArguments = new object?[parameters.Length];
                     for (int i = 0; i < parameters.Length; i++)
                     {
-                        FactoryParameterContext parameter = parameters[i];
+                        ref FactoryParameterContext parameter = ref parameters[i];
                         if (parameter.ArgumentIndex != -1)
                         {
                             // Throws an NullReferenceException if arguments is null. Consistent with expression-based factory.
