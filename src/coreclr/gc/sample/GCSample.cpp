@@ -48,7 +48,7 @@
 #include "gcdesc.h"
 
 #ifdef TARGET_X86
-#define CALLCONV __cdecl
+#define LOCALGC_CALLCONV __cdecl
 #else
 #define CALLCONV
 #endif
