@@ -65,6 +65,7 @@ export function get_preferred_icu_asset(): string | null {
     const EFIGS = "icudt_EFIGS.dat";
     const OTHERS = "icudt_no_CJK.dat";
 
+
     // not all "fr", "it", "de", "es" are in EFIGS, only the one that is mostly used
     if (prefix == "en" || ["fr-FR", "it-IT", "de-DE", "es-ES"].includes(preferredCulture))
         return EFIGS;
@@ -73,7 +74,7 @@ export function get_preferred_icu_asset(): string | null {
     return OTHERS;
 }
 
-export function shouldLoadIcuAsset(asset : AssetEntryInternal) : boolean{
+export function shouldLoadIcuAsset(asset : AssetEntryInternal, preferredIcuAsset: string | null) : boolean{
     return !(asset.behavior == "icu" && asset.name === preferredIcuAsset);
 }
 
@@ -90,9 +91,8 @@ type AssetWithBuffer = {
     buffer?: ArrayBuffer
 }
 
-const preferredIcuAsset = get_preferred_icu_asset();
-
 export async function mono_download_assets(): Promise<void> {
+    const preferredIcuAsset = get_preferred_icu_asset();
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_download_assets");
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     try {
@@ -106,10 +106,10 @@ export async function mono_download_assets(): Promise<void> {
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
-            if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+            if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                 expected_instantiated_assets_count++;
             }
-            if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+            if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                 expected_downloaded_assets_count++;
                 promises_of_assets_with_buffer.push(start_asset_download(asset));
             }
@@ -139,10 +139,10 @@ export async function mono_download_assets(): Promise<void> {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
                     if (!headersOnly) {
                         mono_assert(asset.isOptional, "Expected asset to have the downloaded buffer");
-                        if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                        if (!skipDownloadsByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                             expected_downloaded_assets_count--;
                         }
-                        if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
+                        if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset, preferredIcuAsset)) {
                             expected_instantiated_assets_count--;
                         }
                     }
