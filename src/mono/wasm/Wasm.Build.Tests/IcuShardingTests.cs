@@ -21,6 +21,15 @@ public class IcuShardingTests : BuildTestBase
     private static string[] customIcuExpectedLocales = new string[] { "cy-GB", "is-IS", "bs-BA" , "lb-LU"};
     private static string[] customIcuMissingLocales = new string[] { "fr-FR", "hr-HR", "ko-KR"};
 
+    public static IEnumerable<object?[]> IcuExpectedAndMissingAutomaticShardTestData(bool aot, RunHost host)
+        => ConfigWithAOTData(aot)
+            .Multiply(
+                new object[] { "fr-FR", new string[] { "en-US", "fr-FR", "es-ES" }, new string[] { "pl-PL", "ko-KR", "cs-CZ" } },   // "icudt_EFIGS.dat"
+                new object[] { "ja-JP", new string[] { "en-GB", "zh-CN", "ja-JP" }, new string[] { "fr-FR", "hr-HR", "it-IT" } },   // icudt_CJK.dat
+                new object[] { "fr-CA", new string[] { "en-AU", "fr-FR", "sk-SK" }, new string[] { "ja-JP", "ko-KR", "zh-CN"} })    // "icudt_no_CJK.dat"
+            .WithRunHosts(host)
+            .UnwrapItemsAsArrays();
+
     public static IEnumerable<object?[]> IcuExpectedAndMissingCustomShardTestData(bool aot, RunHost host)
         => ConfigWithAOTData(aot)
             .Multiply(
@@ -105,6 +114,30 @@ public class IcuShardingTests : BuildTestBase
     [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { true, RunHost.All })]
     public void CustomIcuShard(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id) =>
         TestIcuShards(buildArgs, shardName, expectedLocales, missingLocales, host, id);
+
+    [Theory]
+    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { false, RunHost.All })]
+    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { true, RunHost.All })]
+    public void AutomaticShardSelectionDependingOnEnvLocale(BuildArgs buildArgs, string environmentLocale, string[] expectedLocales, string[] missingLocales, RunHost host, string id)
+    {
+        string projectName = $"automatic_shard_{environmentLocale}_{buildArgs.Config}_{buildArgs.AOT}";
+        bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+
+        buildArgs = buildArgs with { ProjectName = projectName };
+        buildArgs = ExpandBuildArgs(buildArgs);
+
+        string programText = GetProgramText(expectedLocales, missingLocales);
+        (_, string output) = BuildProject(buildArgs,
+                        id: id,
+                        new BuildProjectOptions(
+                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                            DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
+
+        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id, environmentLocale: environmentLocale);
+
+        CheckExpectedLocales(expectedLocales, runOutput);
+        CheckMissingLocales(missingLocales, runOutput);
+    }
 
     // on Chrome: when loading only EFIGS or only CJK, CoreLib's failure on culture not found cannot be easily caught:
     // Encountered infinite recursion while looking up resource 'Argument_CultureNotSupported' in System.Private.CoreLib.
