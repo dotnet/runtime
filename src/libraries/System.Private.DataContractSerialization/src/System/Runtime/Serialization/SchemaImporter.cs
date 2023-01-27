@@ -21,11 +21,11 @@ namespace System.Runtime.Serialization
 
     internal sealed class SchemaImporter
     {
-        private DataContractSet _dataContractSet;
-        private XmlSchemaSet _schemaSet;
-        private IEnumerable<XmlQualifiedName>? _typeNames;
-        private IEnumerable<XmlSchemaElement>? _elements;
-        private bool _importXmlDataType;
+        private readonly DataContractSet _dataContractSet;
+        private readonly XmlSchemaSet _schemaSet;
+        private readonly IEnumerable<XmlQualifiedName>? _typeNames;
+        private readonly IEnumerable<XmlSchemaElement>? _elements;
+        private readonly bool _importXmlDataType;
         private SchemaObjectDictionary _schemaObjects = null!;   // Not directly referenced. Always lazy initialized by property getter.
         private List<XmlSchemaRedefine> _redefineList = null!;   // Not directly referenced. Always lazy initialized by property getter.
         private bool _needToImportKnownTypesForObject;

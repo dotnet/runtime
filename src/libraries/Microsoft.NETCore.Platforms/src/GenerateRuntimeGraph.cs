@@ -395,7 +395,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             return true;
         }
 
-        private static XNamespace s_dgmlns = @"http://schemas.microsoft.com/vs/2009/dgml";
+        private static readonly XNamespace s_dgmlns = @"http://schemas.microsoft.com/vs/2009/dgml";
         private static void WriteRuntimeGraph(RuntimeGraph graph, string dependencyGraphFilePath)
         {
 

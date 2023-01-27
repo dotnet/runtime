@@ -58,7 +58,7 @@ namespace System.Text.Json
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
-        private ConfigurationList<JsonConverter> _converters;
+        private readonly ConfigurationList<JsonConverter> _converters;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
         private JsonUnknownTypeHandling _unknownTypeHandling;

@@ -24,7 +24,7 @@ namespace System.Net.Sockets
 
         private static readonly IPAddress s_IPAddressAnyMapToIPv6 = IPAddress.Any.MapToIPv6();
 
-        private SafeSocketHandle _handle;
+        private readonly SafeSocketHandle _handle;
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is an EndPoint of the
         // correct type (IPEndPoint, etc). The Bind operation sets _rightEndPoint. Other operations must only set

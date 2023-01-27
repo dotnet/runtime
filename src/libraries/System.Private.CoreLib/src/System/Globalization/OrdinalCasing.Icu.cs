@@ -12,11 +12,11 @@ namespace System.Globalization
     internal static partial class OrdinalCasing
     {
         // s_noCasingPage means the Unicode page doesn't support any casing and no case translation is needed.
-        private static ushort [] s_noCasingPage = Array.Empty<ushort>();
+        private static readonly ushort[] s_noCasingPage = Array.Empty<ushort>();
 
         // s_basicLatin is covering the casing for the Basic Latin & C0 Controls range.
         // we are not lazy initializing this range because it is the most common used range and we'll cache it anyway very early.
-        private static ushort [] s_basicLatin =
+        private static readonly ushort[] s_basicLatin =
         {
             // Upper Casing
 
@@ -41,7 +41,7 @@ namespace System.Globalization
         // s_casingTable is covering the Unicode BMP plane only. Surrogate casing is handled separately.
         // Every cell in the table is covering the casing of 256 characters in the BMP.
         // Every cell is array of 512 character for uppercasing mapping.
-        private static ushort []?[] s_casingTable = InitCasingTable();
+        private static readonly ushort[]?[] s_casingTable = InitCasingTable();
 
         /*
          The table is initialized to:

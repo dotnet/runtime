@@ -10,7 +10,8 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class SpanJSGenerator : PrimitiveJSGenerator
     {
-        private MarshalerType _elementMarshalerType;
+        private readonly MarshalerType _elementMarshalerType;
+
         public SpanJSGenerator(MarshalerType elementMarshalerType)
             : base(MarshalerType.Span)
         {

@@ -21,7 +21,7 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
 
     private readonly delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void> _releaseAction;
     private string? _traceId;
-    private SafeHandleType _type;
+    private readonly SafeHandleType _type;
 
     public override bool IsInvalid => handle == IntPtr.Zero;
 

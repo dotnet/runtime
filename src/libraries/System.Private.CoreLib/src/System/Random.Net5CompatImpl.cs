@@ -191,7 +191,7 @@ namespace System
         /// </summary>
         private struct CompatPrng
         {
-            private int[] _seedArray;
+            private readonly int[] _seedArray;
             private int _inext;
             private int _inextp;
 

@@ -31,8 +31,8 @@ namespace System.Security.Cryptography.Cose
         internal readonly byte[] _protectedHeaderAsBstr;
         internal readonly bool _isTagged;
 
-        private CoseHeaderMap _protectedHeaders;
-        private CoseHeaderMap _unprotectedHeaders;
+        private readonly CoseHeaderMap _protectedHeaders;
+        private readonly CoseHeaderMap _unprotectedHeaders;
 
         /// <summary>
         /// Gets the protected header parameters associated with this message.

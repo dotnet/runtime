@@ -10,7 +10,7 @@ namespace System.Runtime.CompilerServices
     // Wrapper for address of a string variable on stack
     internal unsafe ref struct StringHandleOnStack
     {
-        private void* _ptr;
+        private readonly void* _ptr;
 
         internal StringHandleOnStack(ref string? s)
         {
@@ -21,7 +21,7 @@ namespace System.Runtime.CompilerServices
     // Wrapper for address of a object variable on stack
     internal unsafe ref struct ObjectHandleOnStack
     {
-        private void* _ptr;
+        private readonly void* _ptr;
 
         private ObjectHandleOnStack(void* pObject)
         {
@@ -37,7 +37,7 @@ namespace System.Runtime.CompilerServices
     // Wrapper for StackCrawlMark
     internal unsafe ref struct StackCrawlMarkHandle
     {
-        private void* _ptr;
+        private readonly void* _ptr;
 
         internal StackCrawlMarkHandle(ref StackCrawlMark stackMark)
         {
@@ -48,8 +48,8 @@ namespace System.Runtime.CompilerServices
     // Wraps RuntimeModule into a handle. Used to pass RuntimeModule to native code without letting it be collected
     internal unsafe ref struct QCallModule
     {
-        private void* _ptr;
-        private IntPtr _module;
+        private readonly void* _ptr;
+        private readonly IntPtr _module;
 
         internal QCallModule(ref System.Reflection.RuntimeModule module)
         {
@@ -67,8 +67,8 @@ namespace System.Runtime.CompilerServices
     // Wraps RuntimeAssembly into a handle. Used to pass RuntimeAssembly to native code without letting it be collected
     internal unsafe ref struct QCallAssembly
     {
-        private void* _ptr;
-        private IntPtr _assembly;
+        private readonly void* _ptr;
+        private readonly IntPtr _assembly;
 
         internal QCallAssembly(ref System.Reflection.RuntimeAssembly assembly)
         {
@@ -80,8 +80,8 @@ namespace System.Runtime.CompilerServices
     // Wraps RuntimeType into a handle. Used to pass RuntimeType to native code without letting it be collected
     internal unsafe ref struct QCallTypeHandle
     {
-        private void* _ptr;
-        private IntPtr _handle;
+        private readonly void* _ptr;
+        private readonly IntPtr _handle;
 
         internal QCallTypeHandle(ref System.RuntimeType type)
         {

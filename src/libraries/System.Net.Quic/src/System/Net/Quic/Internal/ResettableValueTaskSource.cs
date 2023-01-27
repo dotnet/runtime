@@ -31,7 +31,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     private Action<object?>? _cancellationAction;
     private GCHandle _keepAlive;
 
-    private TaskCompletionSource _finalTaskSource;
+    private readonly TaskCompletionSource _finalTaskSource;
 
     public ResettableValueTaskSource(bool runContinuationsAsynchronously = true)
     {
