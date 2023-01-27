@@ -52,7 +52,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     const mark = startMeasure();
     // these all could be overridden on DotnetModuleConfig, we are chaing them to async below, as opposed to emscripten
     // when user set configSrc or config, we are running our default startup sequence.
-    const userInstantiateWasm: undefined | ((imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any) = module.instantiateWasm;
+    const userInstantiateWasm: undefined | ((imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any) = module.instantiateWasm;
     const userPreInit: (() => void)[] = !module.preInit ? [] : typeof module.preInit === "function" ? [module.preInit] : module.preInit;
     const userPreRun: (() => void)[] = !module.preRun ? [] : typeof module.preRun === "function" ? [module.preRun] : module.preRun as any;
     const userpostRun: (() => void)[] = !module.postRun ? [] : typeof module.postRun === "function" ? [module.postRun] : module.postRun as any;
@@ -111,7 +111,7 @@ function instantiateWasm(
 
     const mark = startMeasure();
     if (userInstantiateWasm) {
-        const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module) => {
+        const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => {
             endMeasure(mark, MeasuredBlock.instantiateWasm);
             afterInstantiateWasm.promise_control.resolve();
             successCallback(instance, module);
@@ -121,6 +121,25 @@ function instantiateWasm(
 
     instantiate_wasm_module(imports, successCallback);
     return []; // No exports
+}
+
+function instantiateWasmWorker(
+    imports: WebAssembly.Imports,
+    successCallback: InstantiateWasmSuccessCallback
+): any {
+    const anyModule = Module as any;
+
+    config = runtimeHelpers.config = Module.config = {} as any;
+    runtimeHelpers.diagnosticTracing = !!config.diagnosticTracing;
+
+    replace_linker_placeholders(imports, export_linker());
+
+    // Instantiate from the module posted from the main thread.
+    // We can just use sync instantiation in the worker.
+    const instance = new WebAssembly.Instance(anyModule.wasmModule, imports);
+    successCallback(instance, undefined);
+    anyModule.wasmModule = null;
+    return instance.exports;
 }
 
 function preInit(userPreInit: (() => void)[]) {
@@ -667,6 +686,7 @@ export async function mono_wasm_pthread_worker_init(module: DotnetModule, export
 
     // this is the only event which is called on worker
     module.preInit = [() => preInitWorkerAsync()];
+    module.instantiateWasm = instantiateWasmWorker;
 
     await afterPreInit.promise;
     return exportedAPI.Module;
