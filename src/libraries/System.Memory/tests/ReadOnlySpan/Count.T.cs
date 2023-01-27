@@ -10,19 +10,26 @@ namespace System.SpanTests
         [Fact]
         public static void ZeroLengthCount_Int()
         {
-            ReadOnlySpan<int> span = new ReadOnlySpan<int>(Array.Empty<int>());
-
-            Assert.Equal(0, span.Count(0));
+            Assert.Equal(0, ReadOnlySpan<int>.Empty.Count(0));
         }
         
         [Fact]
         public static void ZeroLengthCount_RosInt()
         {
-            ReadOnlySpan<int> span = new ReadOnlySpan<int>(Array.Empty<int>());
-
-            Assert.Equal(0, span.Count<int>(new ReadOnlySpan<int>(new int[] { 0, 0 })));
+            for (int i = 0; i <= 2; i++)
+            {
+                Assert.Equal(0, ReadOnlySpan<int>.Empty.Count(new int[i]));
+            }
         }
-        
+
+        [Fact]
+        public static void ZeroLengthNeedleCount_RosInt()
+        {
+            ReadOnlySpan<int> span = new ReadOnlySpan<int>(new int[] { 5, 5, 5, 5, 5 });
+
+            Assert.Equal(0, span.Count<int>(ReadOnlySpan<int>.Empty));
+        }
+
         [Fact]
         public static void TestCount_Int()
         {
@@ -56,8 +63,7 @@ namespace System.SpanTests
 
                 for (int targetIndex = 0; targetIndex < length - 1; targetIndex++)
                 {
-                    ReadOnlySpan<int> target = new int[] { a[targetIndex], a[targetIndex + 1] };
-                    Assert.Equal(1, span.Count(target));
+                    Assert.Equal(1, span.Count(new int[] { a[targetIndex], a[targetIndex + 1] }));
                 }
             }
         }
@@ -73,8 +79,7 @@ namespace System.SpanTests
                     a[i] = 10 * (i + 1);
                 }
 
-                a[length - 1] = 5555;
-                a[length - 2] = 5555;
+                a[^1] = a[^2] = 5555;
 
                 ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
                 Assert.Equal(2, span.Count(5555));
@@ -91,14 +96,10 @@ namespace System.SpanTests
                 {
                     a[i] = 10 * (i + 1);
                 }
-                a[0] = 5555;
-                a[1] = 5555;
-                a[length - 1] = 5555;
-                a[length - 2] = 5555;
+                a[0] = a[1] = a[^1] = a[^2] = 5555;
 
                 ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
-                ReadOnlySpan<int> target = new int[] { 5555, 5555 };
-                Assert.Equal(2, span.Count<int>(target));
+                Assert.Equal(2, span.Count<int>(new int[] { 5555, 5555 }));
             }
         }
 
@@ -143,8 +144,7 @@ namespace System.SpanTests
                 }
 
                 ReadOnlySpan<TInt> span = new ReadOnlySpan<TInt>(a);
-                ReadOnlySpan<TInt> target = new TInt[] { new TInt(9999, log), new TInt(10000, log) };
-                Assert.Equal(0, span.Count(target));
+                Assert.Equal(0, span.Count(new TInt[] { new TInt(9999, log), new TInt(10000, log) }));
 
                 // Since we asked for a non-existent value, make sure each element of the array was compared once.
                 // (Strictly speaking, it would not be illegal for Count to compare an element more than once but
@@ -170,11 +170,8 @@ namespace System.SpanTests
             const int GuardValue = 77777;
             const int GuardLength = 50;
 
-            void CheckForOutOfRangeAccess(int x, int y)
-            {
-                if (x == GuardValue || y == GuardValue)
-                    throw new Exception("Detected out of range access in IndexOf()");
-            }
+            void CheckForOutOfRangeAccess(int x, int y) =>
+                Assert.True(x != GuardValue && y != GuardValue, $"{x} or {y} == {GuardValue}");
 
             for (int length = 0; length < 100; length++)
             {
@@ -200,11 +197,8 @@ namespace System.SpanTests
             const int GuardValue = 77777;
             const int GuardLength = 50;
 
-            void CheckForOutOfRangeAccess(int x, int y)
-            {
-                if (x == GuardValue || y == GuardValue)
-                    throw new Exception("Detected out of range access in IndexOf()");
-            }
+            void CheckForOutOfRangeAccess(int x, int y) =>
+                Assert.True(x != GuardValue && y != GuardValue, $"{x} or {y} == {GuardValue}");
 
             for (int length = 0; length < 100; length++)
             {
@@ -220,24 +214,20 @@ namespace System.SpanTests
                 }
 
                 ReadOnlySpan<TInt> span = new ReadOnlySpan<TInt>(a, GuardLength, length);
-                ReadOnlySpan<TInt> target = new TInt[] { new TInt(9999, CheckForOutOfRangeAccess), new TInt(9999, CheckForOutOfRangeAccess) };
-                Assert.Equal(0, span.Count(target));
+                Assert.Equal(0, span.Count(new TInt[] { new TInt(9999, CheckForOutOfRangeAccess), new TInt(9999, CheckForOutOfRangeAccess) }));
             }
         }
 
         [Fact]
         public static void ZeroLengthCount_String()
         {
-            ReadOnlySpan<string> span = new ReadOnlySpan<string>(Array.Empty<string>());
-            Assert.Equal(0, span.Count("a"));
+            Assert.Equal(0, ReadOnlySpan<string>.Empty.Count("a"));
         }
         
         [Fact]
         public static void ZeroLengthCount_RosString()
         {
-            ReadOnlySpan<string> span = new ReadOnlySpan<string>(Array.Empty<string>());
-            ReadOnlySpan<string> target = new [] { "a", "b" };
-            Assert.Equal(0, span.Count(target));
+            Assert.Equal(0, ReadOnlySpan<string>.Empty.Count(new[] { "a", "b" }));
         }
 
         [Fact]
@@ -273,8 +263,7 @@ namespace System.SpanTests
 
                 for (int targetIndex = 0; targetIndex < length - 1; targetIndex++)
                 {
-                    ReadOnlySpan<string> target = new string[] { a[targetIndex], a[targetIndex + 1] };
-                    Assert.Equal(1, span.Count(target));
+                    Assert.Equal(1, span.Count(new string[] { a[targetIndex], a[targetIndex + 1] }));
                 }
             }
         }
@@ -286,7 +275,7 @@ namespace System.SpanTests
             for (int length = 0; length <= byte.MaxValue; length++)
             {
                 string[] a = new string[length];
-                string target = (rnd.Next(0, 256)).ToString();
+                string target = rnd.Next(0, 256).ToString();
                 for (int i = 0; i < length; i++)
                 {
                     string val = (i + 1).ToString();
@@ -328,8 +317,7 @@ namespace System.SpanTests
                     a[i] = (10 * (i + 1)).ToString();
                 }
 
-                a[length - 1] = "5555";
-                a[length - 2] = "5555";
+                a[^1] = a[^2] = "5555";
 
                 ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
                 Assert.Equal(2, span.Count("5555"));
@@ -347,14 +335,10 @@ namespace System.SpanTests
                     a[i] = (10 * (i + 1)).ToString();
                 }
                 
-                a[0] = "5555";
-                a[1] = "5555";
-                a[length - 1] = "5555";
-                a[length - 2] = "5555";
+                a[0] = a[1] = a[^1] = a[^2] = "5555";
 
                 ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
-                ReadOnlySpan<string> target = new string[] { "5555", "5555" };
-                Assert.Equal(2, span.Count(target));
+                Assert.Equal(2, span.Count(new string[] { "5555", "5555" }));
             }
         }
 
@@ -369,8 +353,7 @@ namespace System.SpanTests
         public static void TestOrdinalStringCount_RosString()
         {
             ReadOnlySpan<string> span = new string[] { "ii", "II", "μμ", "ii", "μμ" };
-            ReadOnlySpan<string> target = new string[] { "ii", "II" };
-            Assert.Equal(1, span.Count(target));
+            Assert.Equal(1, span.Count(new string[] { "ii", "II" }));
         }
         
         [Fact]

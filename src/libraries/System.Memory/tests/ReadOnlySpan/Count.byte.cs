@@ -12,36 +12,32 @@ namespace System.SpanTests
         [Fact]
         public static void ZeroLengthCount_Byte()
         {
-            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(Array.Empty<byte>());
-
-            Assert.Equal(0, span.Count<byte>(0));
+            Assert.Equal(0, ReadOnlySpan<byte>.Empty.Count<byte>(0));
         }
         
         [Fact]
         public static void ZeroLengthCount_RosByte()
         {
-            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(Array.Empty<byte>());
-
-            Assert.Equal(0, span.Count<byte>(new ReadOnlySpan<byte>(new byte[] { 0, 0 })));
+            for (int i = 0; i <= 2; i++)
+            {
+                Assert.Equal(0, ReadOnlySpan<byte>.Empty.Count(new byte[i]));
+            }
         }
         
         [Fact]
         public static void ZeroLengthNeedleCount_RosByte()
         {
-            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(new byte[] { 5, 5, 5, 5, 5 });
+            var span = new ReadOnlySpan<byte>(new byte[] { 5, 5, 5, 5, 5 });
 
-            Assert.Equal(0, span.Count<byte>(new ReadOnlySpan<byte>()));
+            Assert.Equal(0, span.Count<byte>(ReadOnlySpan<byte>.Empty));
         }
         
         [Fact]
         public static void DefaultFilledCount_Byte()
         {
-            int[] lengths = new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 };
-            foreach (int length in lengths)
+            foreach (int length in new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 })
             {
-                byte[] a = new byte[length];
-
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
+                var span = new ReadOnlySpan<byte>(new byte[length]);
                 Assert.Equal(length, span.Count((byte)0));
             }
         }
@@ -49,25 +45,19 @@ namespace System.SpanTests
         [Fact]
         public static void DefaultFilledCount_RosByte()
         {
-            int[] lengths = new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 };
-            foreach (int length in lengths)
+            foreach (int length in new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 })
             {
-                byte[] a = new byte[length];
-
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
-                ReadOnlySpan<byte> target0 = new byte[] { 0, 0 };
-                Assert.Equal(length / 2,  span.Count(target0));
+                var span = new ReadOnlySpan<byte>(new byte[length]);
+                Assert.Equal(length / 2,  span.Count(new byte[2]));
             }
         }
         
         [Fact]
         public static void TestCount_Byte()
         {
-            int[] lengths = new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 };
-            foreach (int length in lengths)
+            foreach (int length in new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 })
             {
-                byte[] a = Enumerable.Range(1, length).Select(i => (byte)i).ToArray();
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
+                var span = new ReadOnlySpan<byte>(Enumerable.Range(1, length).Select(i => (byte)i).ToArray());
 
                 foreach (byte target in span)
                 {
@@ -79,16 +69,13 @@ namespace System.SpanTests
         [Fact]
         public static void TestCount_RosByte()
         {
-            int[] lengths = new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 };
-            foreach (int length in lengths)
+            foreach (int length in new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 })
             {
-                byte[] a = Enumerable.Range(1, length).Select(i => (byte)i).ToArray();
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
+                var span = new ReadOnlySpan<byte>(Enumerable.Range(1, length).Select(i => (byte)i).ToArray());
 
                 for (int targetIndex = 0; targetIndex < length - 1; targetIndex++)
                 {
-                    ReadOnlySpan<byte> target = new byte[] { a[targetIndex], a[targetIndex + 1] };
-                    Assert.Equal(1, span.Count(target));
+                    Assert.Equal(1, span.Count(new byte[] { span[targetIndex], span[targetIndex + 1] }));
                 }
             }
         }
@@ -96,16 +83,13 @@ namespace System.SpanTests
         [Fact]
         public static void TestSingleValueCount_Byte()
         {
-            int[] lengths = new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 };
-            foreach (int length in lengths)
+            foreach (int length in new int[] { 0, 1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 255, 256 })
             {
-                byte[] a = Enumerable.Range(1, length).Select(i => (byte)i).ToArray();
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
+                var span = new ReadOnlySpan<byte>(Enumerable.Range(1, length).Select(i => (byte)i).ToArray());
 
                 foreach (byte value in span)
                 {
-                    ReadOnlySpan<byte> target = new byte[] { value };
-                    Assert.Equal(1, span.Count(target));
+                    Assert.Equal(1, span.Count(new byte[] { value }));
                 }
             }
         }
@@ -125,7 +109,7 @@ namespace System.SpanTests
                     a[i] = val == target ? (byte)(target + 1) : val;
                 }
 
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
+                var span = new ReadOnlySpan<byte>(a);
                 Assert.Equal(0, span.Count(target));
             }
         }
@@ -139,15 +123,14 @@ namespace System.SpanTests
             {
                 byte[] a = new byte[length];
                 byte targetVal = (byte)rnd.Next(0, 256);
-                ReadOnlySpan<byte> target = new byte[] { targetVal, 0 };
                 for (int i = 0; i < length; i++)
                 {
                     byte val = (byte)(i + 1);
                     a[i] = val == targetVal ? (byte)(targetVal + 1) : val;
                 }
 
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
-                Assert.Equal(0, span.Count(target));
+                var span = new ReadOnlySpan<byte>(a);
+                Assert.Equal(0, span.Count(new byte[] { targetVal, 0 }));
             }
         }
 
@@ -223,10 +206,9 @@ namespace System.SpanTests
                     a[i] = val == 200 ? (byte)201 : val;
                 }
 
-                a[length - 1] = 200;
-                a[length - 2] = 200;
+                a[^1] = a[^2] = 200;
 
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
+                var span = new ReadOnlySpan<byte>(a);
                 Assert.Equal(2, span.Count<byte>(200));
             }
         }
@@ -242,14 +224,10 @@ namespace System.SpanTests
                     byte val = (byte)(i + 1);
                     a[i] = val == 200 ? (byte)201 : val;
                 }
-                a[0] = 200;
-                a[1] = 200;
-                a[length - 1] = 200;
-                a[length - 2] = 200;
+                a[0] = a[1] = a[^1] = a[^2] = 200;
 
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
-                ReadOnlySpan<byte> target = new byte[] { 200, 200 };
-                Assert.Equal(2, span.Count<byte>(target));
+                var span = new ReadOnlySpan<byte>(a);
+                Assert.Equal(2, span.Count<byte>(new byte[] { 200, 200 }));
             }
         }
 
@@ -259,10 +237,9 @@ namespace System.SpanTests
             for (int length = 0; length <= byte.MaxValue; length++)
             {
                 byte[] a = new byte[length + 2];
-                a[0] = 99;
-                a[^1] = 99;
+                a[0] = a[^1] = 99;
 
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a, 1, length);
+                var span = new ReadOnlySpan<byte>(a, 1, length);
                 Assert.Equal(0, span.Count<byte>(99));
             }
         }
@@ -273,14 +250,10 @@ namespace System.SpanTests
             for (int length = 0; length <= byte.MaxValue; length++)
             {
                 byte[] a = new byte[length + 4];
-                a[0] = 99;
-                a[1] = 99;
-                a[^1] = 99;
-                a[^2] = 99;
+                a[0] = a[1] = a[^1] = a[^2] = 99;
 
-                ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a, 2, length);
-                ReadOnlySpan<byte> target = new byte[] { 99, 99 };
-                Assert.Equal(0, span.Count<byte>(target));
+                var span = new ReadOnlySpan<byte>(a, 2, length);
+                Assert.Equal(0, span.Count<byte>(new byte[] { 99, 99 }));
             }
         }
         
@@ -291,7 +264,7 @@ namespace System.SpanTests
             Array.Fill<byte>(a, 6);
 
 
-            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(a);
+            var span = new ReadOnlySpan<byte>(a);
             Assert.Equal(5, span.Count(new byte[] { 6, 6 }));
         }
     }
