@@ -49,6 +49,7 @@ namespace System.Runtime
         ObjectiveCMarshalTryGetTaggedMemory = 10,
         ObjectiveCMarshalGetIsTrackedReferenceCallback = 11,
         ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 12,
+        ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 13,
     }
 
     internal static class InternalCalls
@@ -231,6 +232,13 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpCallFilterFunclet(
             object exceptionObj, byte* pFilterIP, void* pvRegDisplay);
+
+#if FEATURE_OBJCMARSHAL
+        [RuntimeImport(Redhawk.BaseName, "RhpCallPropagateExceptionCallback")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe IntPtr RhpCallPropagateExceptionCallback(
+            IntPtr callbackContext, IntPtr callback, void* pvRegDisplay, ref EH.ExInfo exInfo, IntPtr pPreviousTransitionFrame);
+#endif // FEATURE_OBJCMARSHAL
 
         [RuntimeImport(Redhawk.BaseName, "RhpFallbackFailFast")]
         [MethodImpl(MethodImplOptions.InternalCall)]
