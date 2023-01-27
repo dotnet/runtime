@@ -50,7 +50,7 @@
 #ifdef TARGET_X86
 #define LOCALGC_CALLCONV __cdecl
 #else
-#define CALLCONV
+#define LOCALGC_CALLCONV
 #endif
 
 //
