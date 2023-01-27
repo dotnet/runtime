@@ -4571,6 +4571,8 @@ mini_init (const char *filename)
 	callbacks.get_jit_stats = get_jit_stats;
 	callbacks.get_exception_stats = get_exception_stats;
 	callbacks.init_class = init_class;
+	callbacks.get_trace = mono_get_trace;
+	callbacks.get_frame_info = mono_get_frame_info;
 
 	mono_install_callbacks (&callbacks);
 
@@ -4768,13 +4770,6 @@ mini_init (const char *filename)
 static void
 register_icalls (void)
 {
-	mono_add_internal_call_internal ("System.Diagnostics.StackFrame::get_frame_info",
-				ves_icall_get_frame_info);
-	mono_add_internal_call_internal ("System.Diagnostics.StackTrace::get_trace",
-				ves_icall_get_trace);
-	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_install_handlers",
-				mono_runtime_install_handlers);
-
 	/*
 	 * It's important that we pass `TRUE` as the last argument here, as
 	 * it causes the JIT to omit a wrapper for these icalls. If the JIT

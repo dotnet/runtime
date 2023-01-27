@@ -156,6 +156,12 @@ NOHANDLES(ICALL(DEBUGR_1, "IsAttached_internal", ves_icall_System_Diagnostics_De
 NOHANDLES(ICALL(DEBUGR_2, "IsLogging", ves_icall_System_Diagnostics_Debugger_IsLogging))
 NOHANDLES(ICALL(DEBUGR_3, "Log_icall", ves_icall_System_Diagnostics_Debugger_Log))
 
+ICALL_TYPE(STACKFRAME, "System.Diagnostics.StackFrame", STACKFRAME_1)
+NOHANDLES(ICALL(STACKFRAME_1, "GetFrameInfo", ves_icall_System_Diagnostics_StackFrame_GetFrameInfo))
+
+ICALL_TYPE(STACKTRACE, "System.Diagnostics.StackTrace", STACKTRACE_1)
+NOHANDLES(ICALL(STACKTRACE_1, "GetTrace", ves_icall_System_Diagnostics_StackTrace_GetTrace))
+
 ICALL_TYPE(EVENTPIPE, "System.Diagnostics.Tracing.EventPipeInternal", EVENTPIPE_1)
 HANDLES(EVENTPIPE_1, "CreateProvider", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider, gconstpointer, 3, (MonoString, gpointer, gpointer))
 NOHANDLES(ICALL(EVENTPIPE_2, "DefineEvent", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_DefineEvent))
