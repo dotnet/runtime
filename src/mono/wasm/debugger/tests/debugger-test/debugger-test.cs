@@ -1588,6 +1588,10 @@ public class MultiThreadedTest
             myThreads.Add(t);
             t.Start();
         }
+        foreach (System.Threading.Thread curThread in myThreads)
+        {
+            curThread.Join();
+        }
     }
     static void Write(string input)
     {

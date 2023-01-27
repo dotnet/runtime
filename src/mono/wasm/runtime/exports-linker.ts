@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint } from "./debug";
+import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint } from "./debug";
 
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -37,8 +37,6 @@ const mono_wasm_threads_exports = !MonoWasmThreads ? undefined : {
     mono_wasm_diagnostic_server_on_server_thread_created,
     mono_wasm_diagnostic_server_on_runtime_server_init,
     mono_wasm_diagnostic_server_stream_signal_work_available,
-    // mini-wasm-debugger.c
-    mono_wasm_fire_debugger_agent_message_with_data
 };
 
 // the methods would be visible to EMCC linker
@@ -51,7 +49,6 @@ export function export_linker(): any {
 
         // mini-wasm-debugger.c
         mono_wasm_asm_loaded,
-        mono_wasm_fire_debugger_agent_message_with_data,
         mono_wasm_debugger_log,
         mono_wasm_add_dbg_command_received,
 

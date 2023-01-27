@@ -115,8 +115,6 @@ const linked_functions = [
     "mono_wasm_diagnostic_server_on_server_thread_created",
     "mono_wasm_diagnostic_server_on_runtime_server_init",
     "mono_wasm_diagnostic_server_stream_signal_work_available",
-    // mini-wasm-debugger.c
-    "mono_wasm_fire_debugger_agent_message_with_data",
     #endif
 ];
 
