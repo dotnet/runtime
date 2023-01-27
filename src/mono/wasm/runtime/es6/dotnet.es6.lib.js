@@ -121,7 +121,12 @@ const linked_functions = [
 // -- this javascript file is evaluated by emcc during compilation! --
 // we generate simple proxy for each exported function so that emcc will include them in the final output
 for (let linked_function of linked_functions) {
+    #if USE_PTHREADS
+    const fn_template = `return __dotnet_runtime.__linker_exports.${linked_function}.apply(__dotnet_runtime, arguments)`;
+    DotnetSupportLib[linked_function] = new Function(fn_template);
+    #else
     DotnetSupportLib[linked_function] = new Function("");
+    #endif
 }
 
 autoAddDeps(DotnetSupportLib, "$DOTNET");
