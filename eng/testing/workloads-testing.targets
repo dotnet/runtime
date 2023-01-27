@@ -75,6 +75,14 @@
 
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
+
+    <!-- HACK: Remove the now invalid manifest `microsoft.net.workload.mono.toolchain` as a workaround
+               till the sdk removes it completely. -->
+    <ItemGroup>
+      <_ManifestsToRemove Include="$(_SdkWithNoWorkloadPath)\sdk-manifests\8.0.100\microsoft.net.workload.mono.toolchain" />
+    </ItemGroup>
+    <Message Text="Removing @(_ManifestsToRemove)" Condition="Exists(%(_ManifestsToRemove.Identity))" Importance="High" />
+    <RemoveDir Directories="@(_ManifestsToRemove)" Condition="Exists(%(_ManifestsToRemove.Identity))" />
   </Target>
 
   <Target Name="_SetPackageVersionForWorkloadsTesting">
