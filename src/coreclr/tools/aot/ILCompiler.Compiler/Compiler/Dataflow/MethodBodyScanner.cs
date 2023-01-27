@@ -148,9 +148,9 @@ namespace ILCompiler.Dataflow
                 return;
             }
 
-            if (knownStacks.ContainsKey(newOffset))
+            if (knownStacks.TryGetValue(newOffset, out var knownStack))
             {
-                knownStacks[newOffset] = MergeStack(knownStacks[newOffset], newStack);
+                knownStacks[newOffset] = MergeStack(knownStack, newStack);
             }
             else
             {
@@ -363,16 +363,16 @@ namespace ILCompiler.Dataflow
                 ValidateNoReferenceToReference(locals, methodBody, reader.Offset);
                 int curBasicBlock = blockIterator.MoveNext(reader.Offset);
 
-                if (knownStacks.ContainsKey(reader.Offset))
+                if (knownStacks.TryGetValue(reader.Offset, out var knownStack))
                 {
                     if (currentStack == null)
                     {
                         // The stack copy constructor reverses the stack
-                        currentStack = new Stack<StackSlot>(knownStacks[reader.Offset].Reverse());
+                        currentStack = new Stack<StackSlot>(knownStack.Reverse());
                     }
                     else
                     {
-                        currentStack = MergeStack(currentStack, knownStacks[reader.Offset]);
+                        currentStack = MergeStack(currentStack, knownStack);
                     }
                 }
 
