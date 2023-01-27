@@ -1654,7 +1654,7 @@ inline WCHAR *SString::GetCopyOfUnicodeString()
 //----------------------------------------------------------------------------
 inline UTF8 *SString::GetCopyOfUTF8String()
 {
-    SS_CONTRACT(WCHAR*)
+    SS_CONTRACT(UTF8*)
     {
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
