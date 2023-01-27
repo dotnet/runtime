@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.Internal;
 
@@ -127,6 +129,16 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type[] argumentTypes)
         {
+#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+            //if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
+
+                return CreateFactory(constructor, parameterMap);
+            }
+#endif
+
+#if !(NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER)
             CreateFactoryInternal(instanceType, argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
             var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, object>>(
@@ -134,6 +146,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             Func<IServiceProvider, object?[]?, object>? result = factoryLambda.Compile();
             return result.Invoke;
+#endif
         }
 
         /// <summary>
@@ -152,6 +165,16 @@ namespace Microsoft.Extensions.DependencyInjection
             CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(
                 Type[] argumentTypes)
         {
+#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+            //if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                FindApplicableConstructor(typeof(T), argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
+                var factory = CreateFactory(constructor, parameterMap);
+                return (IServiceProvider serviceProvider, object?[]? arguments) => (T)factory(serviceProvider, arguments);
+            }
+#endif
+
+#if !(NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER)
             CreateFactoryInternal(typeof(T), argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
             var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, T>>(
@@ -159,6 +182,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             Func<IServiceProvider, object?[]?, T>? result = factoryLambda.Compile();
             return result.Invoke;
+#endif
         }
 
         private static void CreateFactoryInternal([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType, Type[] argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody)
@@ -262,6 +286,64 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             return Expression.New(constructor, constructorArguments);
+        }
+
+#if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
+        private static ObjectFactory CreateFactory(
+            ConstructorInfo constructor,
+            int?[] parameterMap)
+        {
+            ParameterInfo[]? constructorParameters = constructor.GetParameters();
+            List<FactoryParameterContext> parameters = new List<FactoryParameterContext>();
+            for (int i = 0; i < constructorParameters.Length; i++)
+            {
+                ParameterInfo constructorParameter = constructorParameters[i];
+                bool hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(constructorParameter, out object? defaultValue);
+
+                parameters.Add(new FactoryParameterContext(constructorParameter, hasDefaultValue, defaultValue));
+            }
+
+            return (IServiceProvider serviceProvider, object?[]? arguments) =>
+            {
+                var constructorArguments = new object?[parameters.Count];
+                for (int i = 0; i < parameters.Count; i++)
+                {
+                    var parameter = parameters[i];
+                    if (parameterMap[i] is { } index)
+                    {
+                        constructorArguments[i] = arguments?[index];
+                    }
+                    else
+                    {
+                        constructorArguments[i] = GetService(
+                            serviceProvider,
+                            parameter.ParameterInfo.ParameterType,
+                            constructor.DeclaringType!,
+                            parameter.HasDefaultValue);
+                    }
+                    if (parameter.HasDefaultValue && constructorArguments[i] == null)
+                    {
+                        constructorArguments[i] = parameter.DefaultValue;
+                    }
+                }
+
+                return constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, constructorArguments, culture: null);
+            };
+        }
+#endif
+
+        private class FactoryParameterContext
+        {
+            public FactoryParameterContext(ParameterInfo parameterInfo, bool hasDefaultValue, object? defaultValue)
+            {
+                ParameterInfo = parameterInfo;
+                HasDefaultValue = hasDefaultValue;
+                DefaultValue = defaultValue;
+            }
+
+            public ParameterInfo ParameterInfo { get; }
+            public bool HasDefaultValue { get; }
+            public object? DefaultValue { get; }
         }
 
         private static void FindApplicableConstructor(

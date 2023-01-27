@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using static Microsoft.Extensions.DependencyInjection.Tests.AsyncServiceScopeTests;
 
@@ -171,25 +172,38 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Equal(message, exception.Message);
         }
 
-        [Fact]
-        public void CreateFactory_CreatesFactoryMethod()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NET6_0_OR_GREATER
+        [InlineData(false)]
+#endif
+        public void CreateFactory_CreatesFactoryMethod(bool isDynamicCodeSupported)
         {
-            var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithABCS), new Type[] { typeof(B) });
-            var factory2 = ActivatorUtilities.CreateFactory<ClassWithABCS>(new Type[] { typeof(B) });
+            var options = new RemoteInvokeOptions();
+            if (!isDynamicCodeSupported)
+            {
+                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
+            }
 
-            var services = new ServiceCollection();
-            services.AddSingleton(new A());
-            services.AddSingleton(new C());
-            services.AddSingleton(new S());
-            using var provider = services.BuildServiceProvider();
-            object item1 = factory1(provider, new[] { new B() });
-            var item2 = factory2(provider, new[] { new B() });
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithABCS), new Type[] { typeof(B) });
+                var factory2 = ActivatorUtilities.CreateFactory<ClassWithABCS>(new Type[] { typeof(B) });
 
-            Assert.IsType<ObjectFactory>(factory1);
-            Assert.IsType<ClassWithABCS>(item1);
+                var services = new ServiceCollection();
+                services.AddSingleton(new A());
+                services.AddSingleton(new C());
+                services.AddSingleton(new S());
+                using var provider = services.BuildServiceProvider();
+                object item1 = factory1(provider, new[] { new B() });
+                var item2 = factory2(provider, new[] { new B() });
 
-            Assert.IsType<ObjectFactory<ClassWithABCS>>(factory2);
-            Assert.IsType<ClassWithABCS>(item2);
+                Assert.IsType<ObjectFactory>(factory1);
+                Assert.IsType<ClassWithABCS>(item1);
+
+                Assert.IsType<ObjectFactory<ClassWithABCS>>(factory2);
+                Assert.IsType<ClassWithABCS>(item2);
+            }, options);
         }
     }
 
