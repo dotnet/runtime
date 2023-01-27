@@ -501,7 +501,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>All of the output messages queued up to be received by consumers/targets.</summary>
             private readonly Queue<TOutput> _messages = new Queue<TOutput>();
             /// <summary>A TaskCompletionSource that represents the completion of this block.</summary>
-            private readonly TaskCompletionSource<VoidResult> _completionTask = new TaskCompletionSource<VoidResult>();
+            private readonly TaskCompletionSource<VoidResult> _completionTask = new TaskCompletionSource<VoidResult>(TaskCreationOptions.RunContinuationsAsynchronously);
             /// <summary>
             /// An action to be invoked on the owner block when an item is removed.
             /// This may be null if the owner block doesn't need to be notified.

@@ -15,7 +15,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Security;
 
 namespace System.Threading.Tasks.Dataflow.Internal
 {
@@ -34,7 +33,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         // *** These fields are readonly and are initialized to new instances at construction.
 
         /// <summary>A TaskCompletionSource that represents the completion of this block.</summary>
-        private readonly TaskCompletionSource<VoidResult> _completionTask = new TaskCompletionSource<VoidResult>();
+        private readonly TaskCompletionSource<VoidResult> _completionTask = new TaskCompletionSource<VoidResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         /// <summary>A registry used to store all linked targets and information about them.</summary>
         private readonly TargetRegistry<TOutput> _targetRegistry;
         /// <summary>The output messages queued up to be received by consumers/targets.</summary>

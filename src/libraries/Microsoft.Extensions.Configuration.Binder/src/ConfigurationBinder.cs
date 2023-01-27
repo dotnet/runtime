@@ -315,12 +315,15 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // for sets and read-only set interfaces, we clone what's there into a new collection, if we can
-                if (TypeIsASetInterface(type) && !bindingPoint.IsReadOnly)
+                if (TypeIsASetInterface(type))
                 {
-                    object? newValue = BindSet(type, (IEnumerable?)bindingPoint.Value, config, options);
-                    if (newValue != null)
+                    if (!bindingPoint.IsReadOnly || bindingPoint.Value is not null)
                     {
-                        bindingPoint.SetValue(newValue);
+                        object? newValue = BindSet(type, (IEnumerable?)bindingPoint.Value, config, options);
+                        if (!bindingPoint.IsReadOnly && newValue != null)
+                        {
+                            bindingPoint.SetValue(newValue);
+                        }
                     }
 
                     return;
@@ -530,33 +533,41 @@ namespace Microsoft.Extensions.Configuration
                 return null;
             }
 
-            Type genericType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
-            MethodInfo addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup)!;
-
-            Type kvpType = typeof(KeyValuePair<,>).MakeGenericType(keyType, valueType);
-            PropertyInfo keyMethod = kvpType.GetProperty("Key", DeclaredOnlyLookup)!;
-            PropertyInfo valueMethod = kvpType.GetProperty("Value", DeclaredOnlyLookup)!;
-
-            object dictionary = Activator.CreateInstance(genericType)!;
-
-            var orig = source as IEnumerable;
-            object?[] arguments = new object?[2];
-
-            if (orig != null)
+            // addMethod can only be null if dictionaryType is IReadOnlyDictionary<TKey, TValue> rather than IDictionary<TKey, TValue>.
+            MethodInfo? addMethod = dictionaryType.GetMethod("Add", DeclaredOnlyLookup);
+            if (addMethod is null || source is null)
             {
-                foreach (object? item in orig)
+                dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+                var dictionary = Activator.CreateInstance(dictionaryType);
+                addMethod = dictionaryType.GetMethod("Add", DeclaredOnlyLookup);
+
+                var orig = source as IEnumerable;
+                if (orig is not null)
                 {
-                    object? k = keyMethod.GetMethod!.Invoke(item, null);
-                    object? v = valueMethod.GetMethod!.Invoke(item, null);
-                    arguments[0] = k;
-                    arguments[1] = v;
-                    addMethod.Invoke(dictionary, arguments);
+                    Type kvpType = typeof(KeyValuePair<,>).MakeGenericType(keyType, valueType);
+                    PropertyInfo keyMethod = kvpType.GetProperty("Key", DeclaredOnlyLookup)!;
+                    PropertyInfo valueMethod = kvpType.GetProperty("Value", DeclaredOnlyLookup)!;
+                    object?[] arguments = new object?[2];
+
+                    foreach (object? item in orig)
+                    {
+                        object? k = keyMethod.GetMethod!.Invoke(item, null);
+                        object? v = valueMethod.GetMethod!.Invoke(item, null);
+                        arguments[0] = k;
+                        arguments[1] = v;
+                        addMethod!.Invoke(dictionary, arguments);
+                    }
                 }
+
+                source = dictionary;
             }
 
-            BindDictionary(dictionary, genericType, config, options);
+            Debug.Assert(source is not null);
+            Debug.Assert(addMethod is not null);
 
-            return dictionary;
+            BindDictionary(source, dictionaryType, config, options);
+
+            return source;
         }
 
         // Binds and potentially overwrites a dictionary object.
@@ -737,31 +748,37 @@ namespace Microsoft.Extensions.Configuration
         {
             Type elementType = type.GetGenericArguments()[0];
 
-            Type keyType = type.GenericTypeArguments[0];
+            bool keyTypeIsEnum = elementType.IsEnum;
 
-            bool keyTypeIsEnum = keyType.IsEnum;
-
-            if (keyType != typeof(string) && !keyTypeIsEnum)
+            if (elementType != typeof(string) && !keyTypeIsEnum)
             {
                 // We only support string and enum keys
                 return null;
             }
 
-            Type genericType = typeof(HashSet<>).MakeGenericType(keyType);
-            object instance = Activator.CreateInstance(genericType)!;
-
-            MethodInfo addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup)!;
-
             object?[] arguments = new object?[1];
-
-            if (source != null)
+            // addMethod can only be null if type is IReadOnlySet<T> rather than ISet<T>.
+            MethodInfo? addMethod = type.GetMethod("Add", DeclaredOnlyLookup);
+            if (addMethod is null || source is null)
             {
-                foreach (object? item in source)
+                Type genericType = typeof(HashSet<>).MakeGenericType(elementType);
+                object instance = Activator.CreateInstance(genericType)!;
+                addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup);
+
+                if (source != null)
                 {
-                    arguments[0] = item;
-                    addMethod.Invoke(instance, arguments);
+                    foreach (object? item in source)
+                    {
+                        arguments[0] = item;
+                        addMethod!.Invoke(instance, arguments);
+                    }
                 }
+
+                source = (IEnumerable)instance;
             }
+
+            Debug.Assert(source is not null);
+            Debug.Assert(addMethod is not null);
 
             foreach (IConfigurationSection section in config.GetChildren())
             {
@@ -777,7 +794,7 @@ namespace Microsoft.Extensions.Configuration
                     {
                         arguments[0] = itemBindingPoint.Value;
 
-                        addMethod.Invoke(instance, arguments);
+                        addMethod.Invoke(source, arguments);
                     }
                 }
                 catch (Exception ex)
@@ -790,7 +807,7 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            return instance;
+            return source;
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]

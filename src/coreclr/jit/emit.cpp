@@ -33,6 +33,22 @@ void emitLocation::CaptureLocation(emitter* emit)
     assert(Valid());
 }
 
+void emitLocation::SetLocation(insGroup* _ig, unsigned _codePos)
+{
+    ig      = _ig;
+    codePos = _codePos;
+
+    assert(Valid());
+}
+
+void emitLocation::SetLocation(emitLocation newLocation)
+{
+    ig      = newLocation.ig;
+    codePos = newLocation.codePos;
+
+    assert(Valid());
+}
+
 bool emitLocation::IsCurrentLocation(emitter* emit) const
 {
     assert(Valid());
@@ -48,6 +64,11 @@ UNATIVE_OFFSET emitLocation::CodeOffset(emitter* emit) const
 int emitLocation::GetInsNum() const
 {
     return emitGetInsNumFromCodePos(codePos);
+}
+
+int emitLocation::GetInsOffset() const
+{
+    return emitGetInsOfsFromCodePos(codePos);
 }
 
 // Get the instruction offset in the current instruction group, which must be a funclet prolog group.
@@ -798,6 +819,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     assert((ig->igFlags & IGF_PLACEHOLDER) == 0);
     ig->igData = id;
+    INDEBUG(ig->igDataSize = gs;)
 
     memcpy(id, emitCurIGfreeBase, sz);
 
@@ -8724,6 +8746,14 @@ UNATIVE_OFFSET emitter::emitCodeOffset(void* blockPtr, unsigned codePos)
     {
         of = ig->igSize;
     }
+#ifdef TARGET_ARM64
+    else if ((ig->igFlags & IGF_HAS_REMOVED_INSTR) != 0 && no == ig->igInsCnt + 1U)
+    {
+        // This can happen if a instruction was replaced, but the replacement couldn't fit into
+        // the same IG and instead was place in a new IG.
+        return ig->igNext->igOffs + emitFindOffset(ig->igNext, 1);
+    }
+#endif
     else if (ig->igFlags & IGF_UPD_ISZ)
     {
         /*
@@ -8742,7 +8772,6 @@ UNATIVE_OFFSET emitter::emitCodeOffset(void* blockPtr, unsigned codePos)
         // printf("[IG=%02u;ID=%03u;OF=%04X] <= %08X\n", ig->igNum, emitGetInsNumFromCodePos(codePos), of, codePos);
 
         /* Make sure the offset estimate is accurate */
-
         assert(of == emitFindOffset(ig, emitGetInsNumFromCodePos(codePos)));
     }
 
@@ -9197,6 +9226,66 @@ void emitter::emitNxtIG(bool extend)
     emitCurIG->lastGeneratedBlock = nullptr;
 #endif
 }
+
+//------------------------------------------------------------------------
+// emitRemoveLastInstruction: Remove the last instruction emitted; it has been optimized away by the
+// next instruction we are generating. `emitLastIns` must be non-null, meaning there is a
+// previous instruction. The previous instruction might have already been saved, or it might
+// be in the currently accumulating insGroup buffer.
+//
+// The `emitLastIns` is set to nullptr after this function. It is expected that a new instruction
+// will be immediately generated after this, which will set it again.
+//
+// Removing an instruction can invalidate any captured emitter location
+// (using emitLocation::CaptureLocation()) after the instruction was generated. This is because the
+// emitLocation stores the current IG instruction number and code size. If the instruction is
+// removed and not replaced (e.g., it is at the end of the IG, and any replacement creates a new
+// EXTEND IG), then the saved instruction number is incorrect. The IGF_HAS_REMOVED_INSTR flag is
+// used to check for this later.
+//
+// NOTE: It is expected that the GC effect of the removed instruction will be handled by the newly
+// generated replacement(s).
+//
+#ifdef TARGET_ARM64
+void emitter::emitRemoveLastInstruction()
+{
+    assert(emitLastIns != nullptr);
+    assert(emitLastInsIG != nullptr);
+
+    JITDUMP("Removing saved instruction in %s:\n> ", emitLabelString(emitLastInsIG));
+    JITDUMPEXEC(dispIns(emitLastIns))
+
+    // We should assert it's not a jmp, as that would require updating the jump lists, e.g. emitCurIGjmpList.
+
+    BYTE*          lastInsActualStartAddr = (BYTE*)emitLastIns - m_debugInfoSize;
+    unsigned short lastCodeSize           = (unsigned short)emitLastIns->idCodeSize();
+
+    // Check that a new buffer hasn't been create since the last instruction was emitted.
+    assert((emitCurIGfreeBase <= lastInsActualStartAddr) && (lastInsActualStartAddr < emitCurIGfreeEndp));
+
+    // Ensure the current IG is non-empty.
+    assert(emitCurIGnonEmpty());
+    assert(lastInsActualStartAddr < emitCurIGfreeNext);
+    assert(emitCurIGinsCnt >= 1);
+    assert(emitCurIGsize >= emitLastIns->idCodeSize());
+
+    size_t insSize = emitCurIGfreeNext - lastInsActualStartAddr;
+
+    emitCurIGfreeNext = lastInsActualStartAddr;
+    emitCurIGinsCnt -= 1;
+    emitInsCount -= 1;
+    emitCurIGsize -= lastCodeSize;
+
+    // We're going to overwrite the memory; zero it.
+    memset(emitCurIGfreeNext, 0, insSize);
+
+    // Remember this happened.
+    emitCurIG->igFlags |= IGF_HAS_REMOVED_INSTR;
+
+    emitLastIns   = nullptr;
+    emitLastInsIG = nullptr;
+}
+#endif
 
 /*****************************************************************************
  *
