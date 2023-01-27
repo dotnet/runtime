@@ -114,7 +114,7 @@ void WriteBarrier(Object ** dst, Object * ref)
 
 extern "C" HRESULT LOCALGC_CALLCONV GC_Initialize(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars);
 
-int CALLCONV main(int argc, char* argv[])
+int __cdecl main(int argc, char* argv[])
 {
     //
     // Initialize system info
