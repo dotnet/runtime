@@ -12,7 +12,7 @@
 .class private auto ansi beforefieldinit switchdefaultonly1
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32 Main(string[] args) cil managed
+  .method private hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -21,7 +21,8 @@
     // Code size       49 (0x31)
     .maxstack  2
     .locals init (int32 V_0)
-    IL_0000:  ldarg.0
+              ldc.i4.s 0
+    IL_0000:  newarr [mscorlib]System.String
     IL_0001:  ldlen
     IL_0002:  conv.i4
     IL_0003:  stloc.0
@@ -29,8 +30,9 @@
     IL_0005:  ldc.i4.1
     IL_0006:  sub
     IL_0007:  switch     (IL_0014)
-    IL_0014:  br.s       IL_0026
-    IL_0026:  ldarg.0
+    IL_0014:  br.s       IL_0025
+    IL_0025:  ldc.i4.s 0
+    IL_0026:  newarr [mscorlib]System.String
     IL_0027:  ldlen
     IL_0028:  conv.i4
     IL_0029:  call       void [System.Console]System.Console::WriteLine(int32)
