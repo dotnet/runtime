@@ -125,7 +125,7 @@ for (let linked_function of linked_functions) {
     const fn_template = `return __dotnet_runtime.__linker_exports.${linked_function}.apply(__dotnet_runtime, arguments)`;
     DotnetSupportLib[linked_function] = new Function(fn_template);
     #else
-    DotnetSupportLib[linked_function] = new Function("");
+    DotnetSupportLib[linked_function] = new Function('throw new Error("unreachable");');
     #endif
 }
 
