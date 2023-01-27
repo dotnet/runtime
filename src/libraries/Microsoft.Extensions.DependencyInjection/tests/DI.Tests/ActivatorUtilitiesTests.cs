@@ -172,12 +172,33 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Equal(message, exception.Message);
         }
 
+        [Fact]
+        public void CreateFactory_CreatesFactoryMethod()
+        {
+            var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithABCS), new Type[] { typeof(B) });
+            var factory2 = ActivatorUtilities.CreateFactory<ClassWithABCS>(new Type[] { typeof(B) });
+
+            var services = new ServiceCollection();
+            services.AddSingleton(new A());
+            services.AddSingleton(new C());
+            services.AddSingleton(new S());
+            using var provider = services.BuildServiceProvider();
+            object item1 = factory1(provider, new[] { new B() });
+            var item2 = factory2(provider, new[] { new B() });
+
+            Assert.IsType<ObjectFactory>(factory1);
+            Assert.IsType<ClassWithABCS>(item1);
+
+            Assert.IsType<ObjectFactory<ClassWithABCS>>(factory2);
+            Assert.IsType<ClassWithABCS>(item2);
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_CreatesFactoryMethod(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_CreatesFactoryMethod(bool isDynamicCodeSupported)
         {
             var options = new RemoteInvokeOptions();
             if (!isDynamicCodeSupported)
@@ -208,10 +229,10 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
         [InlineData(false)]
 #endif
-        public void CreateFactory_NullArguments_Throws(bool isDynamicCodeSupported)
+        public void CreateFactory_RemoteExecutor_NullArguments_Throws(bool isDynamicCodeSupported)
         {
             var options = new RemoteInvokeOptions();
             if (!isDynamicCodeSupported)
