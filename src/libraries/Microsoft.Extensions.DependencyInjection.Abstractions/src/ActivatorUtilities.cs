@@ -298,15 +298,12 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 parameters[i] = new FactoryParameterContext(constructorParameter.ParameterType, hasDefaultValue, defaultValue, parameterMap[i] ?? -1);
             }
+            Type declaringType = constructor.DeclaringType!;
 
             return (IServiceProvider serviceProvider, object?[]? arguments) =>
             {
-                object?[] constructorArguments;
-                if (parameters.Length == 0)
-                {
-                    constructorArguments = Array.Empty<object?>();
-                }
-                else
+                object?[]? constructorArguments = null;
+                if (parameters.Length != 0)
                 {
                     constructorArguments = new object?[parameters.Length];
                     for (int i = 0; i < parameters.Length; i++)
@@ -322,7 +319,7 @@ namespace Microsoft.Extensions.DependencyInjection
                             constructorArguments[i] = GetService(
                                 serviceProvider,
                                 parameter.ParameterType,
-                                constructor.DeclaringType!,
+                                declaringType,
                                 parameter.HasDefaultValue);
                         }
                         if (parameter.HasDefaultValue && constructorArguments[i] == null)
