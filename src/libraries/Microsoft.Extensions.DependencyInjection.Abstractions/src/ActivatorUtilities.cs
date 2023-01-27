@@ -289,20 +289,20 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
 
-            ParameterInfo[]? constructorParameters = constructor.GetParameters();
-            List<FactoryParameterContext> parameters = new List<FactoryParameterContext>();
+            ParameterInfo[] constructorParameters = constructor.GetParameters();
+            FactoryParameterContext[] parameters = new FactoryParameterContext[constructorParameters.Length];
             for (int i = 0; i < constructorParameters.Length; i++)
             {
                 ParameterInfo constructorParameter = constructorParameters[i];
                 bool hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(constructorParameter, out object? defaultValue);
 
-                parameters.Add(new FactoryParameterContext(constructorParameter, hasDefaultValue, defaultValue, parameterMap[i]));
+                parameters[i] = new FactoryParameterContext(constructorParameter, hasDefaultValue, defaultValue, parameterMap[i]);
             }
 
             return (IServiceProvider serviceProvider, object?[]? arguments) =>
             {
-                var constructorArguments = new object?[parameters.Count];
-                for (int i = 0; i < parameters.Count; i++)
+                var constructorArguments = new object?[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
                 {
                     FactoryParameterContext parameter = parameters[i];
                     if (parameter.ArgumentIndex is { } index)
