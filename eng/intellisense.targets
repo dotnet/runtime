@@ -6,7 +6,7 @@
     <IntellisensePackageXmlFileFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFileFromNetFolder>
     <IntellisensePackageXmlFileFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFileFromDotNetPlatExtFolder>
     <IntellisensePackageXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFileFromNetFolder))">$(IntellisensePackageXmlFileFromNetFolder)</IntellisensePackageXmlFile>
-    <IntellisensePackageXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFileFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFileFromDotNetPlatExtFolder)</IntellisensePackageXmlFile>
+    <IntellisensePackageXmlFile Condition="'$(IntellisensePackageXmlFile)' == '' and '$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFileFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFileFromDotNetPlatExtFolder)</IntellisensePackageXmlFile>
   </PropertyGroup>
 
   <ItemGroup>
