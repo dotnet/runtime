@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <UseIntellisensePackageDocXmlFile>true</UseIntellisensePackageDocXmlFile>
+    <UseIntellisensePackageDocXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' == ''">true</UseIntellisensePackageDocXmlFile>
     <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
     <IntellisensePackageXmlFileFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFileFromNetFolder>
     <IntellisensePackageXmlFileFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFileFromDotNetPlatExtFolder>
