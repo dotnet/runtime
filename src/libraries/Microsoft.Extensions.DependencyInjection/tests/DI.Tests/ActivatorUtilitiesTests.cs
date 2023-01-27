@@ -249,6 +249,54 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Assert.Throws<NullReferenceException>(() => factory1(provider, null));
             }, options);
         }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_RemoteExecutor_NoArguments_UseDefaultValue(bool isDynamicCodeSupported)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!isDynamicCodeSupported)
+            {
+                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithADefaultValue), new Type[0]);
+
+                var services = new ServiceCollection();
+                using var provider = services.BuildServiceProvider();
+                var item = (ClassWithADefaultValue)factory1(provider, null);
+                Assert.Null(item.A);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_RemoteExecutor_NoArguments_ThrowRequiredValue(bool isDynamicCodeSupported)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!isDynamicCodeSupported)
+            {
+                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithA), new Type[0]);
+
+                var services = new ServiceCollection();
+                using var provider = services.BuildServiceProvider();
+                var ex = Assert.Throws<InvalidOperationException>(() => factory1(provider, null));
+                Assert.Equal($"Unable to resolve service for type '{typeof(A).FullName}' while attempting to activate '{typeof(ClassWithA).FullName}'.", ex.Message);
+            }, options);
+        }
     }
 
     internal class A { }
@@ -318,6 +366,15 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     {
         public A A { get; }
         public ClassWithA(A a)
+        {
+            A = a;
+        }
+    }
+
+    internal class ClassWithADefaultValue
+    {
+        public A A { get; }
+        public ClassWithADefaultValue(A a = null)
         {
             A = a;
         }
