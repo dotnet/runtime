@@ -3224,12 +3224,18 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         return BuildOperandUses(hwintrinsic->Op(1), candidates);
     }
 #endif // FEATURE_HW_INTRINSICS
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (node->OperIsCompare())
+    {
+        // Compares can be contained by a SELECT/compare chains.
+        return BuildBinaryUses(node->AsOp(), candidates);
+    }
+#endif
 #ifdef TARGET_ARM64
-    if (node->OperIs(GT_MUL) || node->OperIsCompare() || node->OperIs(GT_AND))
+    if (node->OperIs(GT_MUL) || node->OperIs(GT_AND))
     {
         // MUL can be contained for madd or msub on arm64.
-        // Compares can be contained by a SELECT.
-        // ANDs and Cmp Compares may be contained in a chain.
+        // ANDs may be contained in a chain.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
     if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ))

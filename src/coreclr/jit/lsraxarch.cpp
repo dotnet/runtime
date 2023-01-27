@@ -932,6 +932,8 @@ int LinearScan::BuildSelect(GenTreeOp* select)
     else
     {
         tgtPrefUse = BuildUse(select->gtOp1);
+        setDelayFree(tgtPrefUse);
+
         srcCount++;
     }
 
@@ -942,6 +944,8 @@ int LinearScan::BuildSelect(GenTreeOp* select)
     else
     {
         tgtPrefUse2 = BuildUse(select->gtOp2);
+        setDelayFree(tgtPrefUse2);
+
         srcCount++;
     }
 

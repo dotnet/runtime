@@ -301,6 +301,15 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                         return false;
                     }
 
+#ifdef TARGET_64BIT
+                    // Disallow 64-bit operands on 32-bit targets as the
+                    // backend currently cannot handle contained compares efficiently.
+                    if (varTypeIsLong(tree))
+                    {
+                        return false;
+                    }
+#endif
+
                     // Ensure it won't cause any additional side effects.
                     if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
                     {
@@ -621,12 +630,6 @@ bool OptIfConversionDsc::optIfConvert()
     // Put a limit on the original source and destinations.
     if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_COST, 25))
     {
-#ifdef TARGET_XARCH
-        // xarch does not support containing relops in GT_SELECT nodes
-        // currently so only introduce GT_SELECT in stress.
-        JITDUMP("Skipping if-conversion on xarch\n");
-        return false;
-#else
         int thenCost = 0;
         int elseCost = 0;
 
@@ -657,7 +660,6 @@ bool OptIfConversionDsc::optIfConvert()
                     elseCost);
             return false;
         }
-#endif
     }
 
     // Get the select node inputs.
@@ -777,7 +779,7 @@ PhaseStatus Compiler::optIfConversion()
     // Currently only enabled on arm64 and under debug on xarch, since we only
     // do it under stress.
     CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_ARM64) || (defined(TARGET_XARCH) && defined(DEBUG))
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
     while (block != nullptr)

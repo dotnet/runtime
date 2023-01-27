@@ -1304,6 +1304,46 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// JumpKindToCmov:
+//   Convert an emitJumpKind to the corresponding cmov instruction.
+//
+// Arguments:
+//    condition - the condition
+//
+// Returns:
+//    A cmov instruction.
+//
+instruction CodeGen::JumpKindToCmov(emitJumpKind condition)
+{
+    static constexpr instruction s_table[EJ_COUNT] = {
+        INS_none,  INS_none,  INS_cmovo,  INS_cmovno, INS_cmovb,  INS_cmovae, INS_cmove,  INS_cmovne, INS_cmovbe,
+        INS_cmova, INS_cmovs, INS_cmovns, INS_cmovp,  INS_cmovnp, INS_cmovl,  INS_cmovge, INS_cmovle, INS_cmovg,
+    };
+
+    static_assert_no_msg(s_table[EJ_NONE] == INS_none);
+    static_assert_no_msg(s_table[EJ_jmp] == INS_none);
+    static_assert_no_msg(s_table[EJ_jo] == INS_cmovo);
+    static_assert_no_msg(s_table[EJ_jno] == INS_cmovno);
+    static_assert_no_msg(s_table[EJ_jb] == INS_cmovb);
+    static_assert_no_msg(s_table[EJ_jae] == INS_cmovae);
+    static_assert_no_msg(s_table[EJ_je] == INS_cmove);
+    static_assert_no_msg(s_table[EJ_jne] == INS_cmovne);
+    static_assert_no_msg(s_table[EJ_jbe] == INS_cmovbe);
+    static_assert_no_msg(s_table[EJ_ja] == INS_cmova);
+    static_assert_no_msg(s_table[EJ_js] == INS_cmovs);
+    static_assert_no_msg(s_table[EJ_jns] == INS_cmovns);
+    static_assert_no_msg(s_table[EJ_jp] == INS_cmovp);
+    static_assert_no_msg(s_table[EJ_jnp] == INS_cmovnp);
+    static_assert_no_msg(s_table[EJ_jl] == INS_cmovl);
+    static_assert_no_msg(s_table[EJ_jge] == INS_cmovge);
+    static_assert_no_msg(s_table[EJ_jle] == INS_cmovle);
+    static_assert_no_msg(s_table[EJ_jg] == INS_cmovg);
+
+    assert((condition >= EJ_NONE) && (condition < EJ_COUNT));
+    return s_table[condition];
+}
+
+//------------------------------------------------------------------------
 // genCodeForCompare: Produce code for a GT_SELECT/GT_SELECT_HI node.
 //
 // Arguments:
@@ -1317,37 +1357,123 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     assert(select->OperIs(GT_SELECT));
 #endif
 
-    regNumber dstReg = select->GetRegNum();
     if (select->OperIs(GT_SELECT))
     {
-        genConsumeReg(select->AsConditional()->gtCond);
+        genConsumeRegs(select->AsConditional()->gtCond);
     }
 
     genConsumeOperands(select);
 
-    instruction cmovKind = INS_cmovne;
-    GenTree*    trueVal  = select->gtOp1;
-    GenTree*    falseVal = select->gtOp2;
+    regNumber dstReg = select->GetRegNum();
 
-    // If the 'true' operand was allocated the same register as the target
-    // register then flip it to the false value so we can skip a reg-reg mov.
-    if (trueVal->isUsedFromReg() && (trueVal->GetRegNum() == dstReg))
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
+    GenCondition cc = GenCondition::NE;
+
+    if (select->OperIs(GT_SELECT))
+    {
+        GenTree* cond = select->AsConditional()->gtCond;
+        if (cond->isContained())
+        {
+            cc = GenCondition::FromRelop(cond);
+        }
+    }
+
+    // The usual codegen will be
+    // mov targetReg, falseValue
+    // cmovne targetReg, trueValue
+    //
+    // However, if the 'true' operand was allocated the same register as the
+    // target register then prefer to generate
+    //
+    // mov targetReg, trueValue
+    // cmove targetReg, falseValue
+    //
+    // so the first mov is elided.
+    //
+    if (falseVal->isUsedFromReg() && (falseVal->GetRegNum() == dstReg))
     {
         std::swap(trueVal, falseVal);
-        cmovKind = INS_cmove;
+        cc = GenCondition::Reverse(cc);
+    }
+
+    // The next conditions are constraints from the instruction's side. Lowering ensures that the constraints are satisfies
+    // - For contained constants, they do not end up in the cmov
+    // - For contained indirs, they do not end up in the cmov if we need multiple cmovs for the comparison
+    if (trueVal->isContained() && trueVal->IsCnsIntOrI())
+    {
+        // cmov instruction cannot handle contained constants, so swap it to the mov
+        std::swap(trueVal, falseVal);
+        cc = GenCondition::Reverse(cc);
+    }
+
+    GenConditionDesc desc = GenConditionDesc::Get(cc);
+
+    // OTOH, we cannot do anything if we need to check two conditions for the relop,
+    // so reverse it into an 'or' where we can emit two cmovs.
+    if (desc.oper == GT_AND)
+    {
+        std::swap(trueVal, falseVal);
+        cc   = GenCondition::Reverse(cc);
+        desc = GenConditionDesc::Get(cc);
+    }
+
+    // Finally, with multiple cmovs lowering should have ensured that the
+    // 'true' value is not contained when reversed into the GT_OR case. We may
+    // need to reverse it again due to the above logic to make it the case.
+    if ((desc.oper != GT_NONE) && !trueVal->isUsedFromReg())
+    {
+        std::swap(trueVal, falseVal);
+        cc   = GenCondition::Reverse(cc);
+        desc = GenConditionDesc::Get(cc);
+    }
+
+    // If the falseVal is a constant 0 and we do not interfere with any of the
+    // registers used by the comparre then zero it out with xor before the
+    // test.
+    bool genFalse = true;
+    if (select->OperIs(GT_SELECT) &&
+        falseVal->isContained() &&
+        falseVal->IsIntegralConst(0) &&
+        ((select->AsConditional()->gtCond->gtGetContainedRegMask() & (genRegMask(dstReg))) == 0))
+    {
+        instGen_Set_Reg_To_Zero(emitTypeSize(select), dstReg);
+        genFalse = false;
     }
 
     if (select->OperIs(GT_SELECT))
     {
-        // TODO-CQ: Support contained relops here.
-        assert(select->AsConditional()->gtCond->isUsedFromReg());
-
-        regNumber condReg = select->AsConditional()->gtCond->GetRegNum();
-        GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
+        GenTree* cond = select->AsConditional()->gtCond;
+        if (cond->isContained())
+        {
+            assert(cond->OperIsCompare());
+            genCodeForCompare(cond->AsOp());
+        }
+        else
+        {
+            regNumber condReg = cond->GetRegNum();
+            GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
+        }
     }
 
-    inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
-    inst_RV_TT(cmovKind, emitTypeSize(select), dstReg, trueVal);
+    if (genFalse)
+    {
+        // Note that this relies on inst_RV_TT not generating xor dstReg,
+        // dstReg for contained 0, which would kill the flags.
+        // When the compare does not interfere we handle it above.
+        inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
+    }
+
+    assert(!trueVal->isContained() || trueVal->isUsedFromMemory());
+    inst_RV_TT(JumpKindToCmov(desc.jumpKind1), emitTypeSize(select), dstReg, trueVal);
+
+    if (desc.oper != GT_NONE)
+    {
+        assert(desc.oper == GT_OR);
+        assert(trueVal->isUsedFromReg());
+        inst_RV_TT(JumpKindToCmov(desc.jumpKind2), emitTypeSize(select), dstReg, trueVal);
+    }
 
     genProduceReg(select);
 }
@@ -1765,6 +1891,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_TEST_EQ:
         case GT_TEST_NE:
         case GT_CMP:
+            genConsumeOperands(treeNode->AsOp());
             genCodeForCompare(treeNode->AsOp());
             break;
 
@@ -6479,8 +6606,6 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     var_types  op1Type = op1->TypeGet();
     var_types  op2Type = op2->TypeGet();
 
-    genConsumeOperands(tree);
-
     assert(varTypeIsFloating(op1Type));
     assert(op1Type == op2Type);
 
@@ -6553,8 +6678,6 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     regNumber  targetReg     = tree->GetRegNum();
     emitter*   emit          = GetEmitter();
     bool       canReuseFlags = false;
-
-    genConsumeOperands(tree);
 
     assert(!op1->isContainedIntOrIImmed());
     assert(!varTypeIsFloating(op2Type));

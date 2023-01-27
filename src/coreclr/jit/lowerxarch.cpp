@@ -5874,7 +5874,42 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
     assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
 #endif
 
-    // TODO-CQ: Support containing relops here for the GT_SELECT case.
+    bool canContainTrueVal  = true;
+    bool canContainFalseVal = true;
+    // Disallow containing compares if the flags may be used by follow-up
+    // nodes, in which case those nodes expect zero/non-zero in the flags.
+    if (select->OperIs(GT_SELECT) && ((select->gtFlags & GTF_SET_FLAGS) == 0))
+    {
+        GenTree* cond = select->AsConditional()->gtCond;
+
+        if (cond->OperIsCompare())
+        {
+            MakeSrcContained(select, cond);
+
+            // Some compares require multiple cmovs to implement, see the
+            // comment in Codegen::GebConditionDesc::map. For those cases avoid
+            // containing the operand that ends up in the cmov so that we don't
+            // incur the memory access/address calculation twice.
+            GenCondition cc = GenCondition::FromRelop(cond);
+            switch (cc.GetCode())
+            {
+                case GenCondition::FEQ:
+                case GenCondition::FLT:
+                case GenCondition::FLE:
+                    // AND comparison requires reversing into an OR comparison, so
+                    // 'false' value ends up in the cmov.
+                    canContainFalseVal = false;
+                    break;
+                case GenCondition::FNEU:
+                case GenCondition::FGEU:
+                case GenCondition::FGTU:
+                    canContainTrueVal = false;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 
     GenTree* op1 = select->gtOp1;
     GenTree* op2 = select->gtOp2;
@@ -5885,7 +5920,7 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
     unsigned operSize = genTypeSize(select);
     assert((operSize == 4) || (operSize == TARGET_POINTER_SIZE));
 
-    if (genTypeSize(op1) == operSize)
+    if (canContainTrueVal && (genTypeSize(op1) == operSize))
     {
         if (IsContainableMemoryOp(op1))
         {
@@ -5900,7 +5935,7 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
         }
     }
 
-    if (genTypeSize(op2) == operSize)
+    if (canContainFalseVal && (genTypeSize(op2) == operSize))
     {
         if (IsContainableMemoryOp(op2))
         {
@@ -5913,6 +5948,15 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
         {
             MakeSrcRegOptional(select, op2);
         }
+    }
+
+    if (canContainTrueVal && op1->IsCnsIntOrI() && !op2->isContained())
+    {
+        MakeSrcContained(select, op1);
+    }
+    else if (canContainFalseVal && op2->IsCnsIntOrI() && !op1->isContained())
+    {
+        MakeSrcContained(select, op2);
     }
 }
 
