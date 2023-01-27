@@ -11250,8 +11250,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     unsigned paddingToAdd = id->idCodeSize();
 
     // Either things are already aligned or align them here.
-    assert(!validatePadding || (paddingToAdd == 0) ||
-           ((offset & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
+    assert(!validatePadding || (paddingToAdd == 0) || ((offset & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
 
     // Padding amount should not exceed the alignment boundary
     assert(0 <= paddingToAdd && paddingToAdd < emitComp->opts.compJitAlignLoopBoundary);
