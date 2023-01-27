@@ -334,13 +334,5 @@ namespace ILCompiler.Logging
                 }
             }
         }
-
-        private static bool CanStoreSuppressionsFor(TypeSystemEntity entity)
-            => entity switch
-            {
-                PropertyPseudoDesc => false,
-                EventPseudoDesc => false,
-                _ => true
-            };
     }
 }

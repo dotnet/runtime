@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner;
 
@@ -42,10 +41,6 @@ namespace Mono.Linker.Tests.TestCases
 
 		public static IEnumerable<object[]> Warnings ()
 		{
-			//while (!System.Diagnostics.Debugger.IsAttached)
-			// Thread.Sleep (100);
-			//System.Diagnostics.Debugger.Launch ();
-
 			return TestNamesBySuiteName ();
 		}
 
