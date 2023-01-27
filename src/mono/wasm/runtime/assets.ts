@@ -59,7 +59,7 @@ export function get_preferred_icu_asset(): string | null {
     if (icuAssets.length === 1)
         return icuAssets[0].name;
 
-    const preferredCulture = Intl.DateTimeFormat().resolvedOptions().locale;
+    const preferredCulture = ENVIRONMENT_IS_WEB ? navigator.language : Intl.DateTimeFormat().resolvedOptions().locale;
     const prefix = preferredCulture.split("-")[0];
     const CJK = "icudt_CJK.dat";
     const EFIGS = "icudt_EFIGS.dat";
@@ -75,7 +75,7 @@ export function get_preferred_icu_asset(): string | null {
 }
 
 export function shouldLoadIcuAsset(asset : AssetEntryInternal, preferredIcuAsset: string | null) : boolean{
-    return !(asset.behavior == "icu" && asset.name === preferredIcuAsset);
+    return !(asset.behavior == "icu" && asset.name != preferredIcuAsset);
 }
 
 export function resolve_asset_path(behavior: AssetBehaviours) {
