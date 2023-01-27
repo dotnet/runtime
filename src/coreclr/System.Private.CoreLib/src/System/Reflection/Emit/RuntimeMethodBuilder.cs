@@ -11,16 +11,16 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    public sealed class MethodBuilder : MethodInfo
+    internal sealed class RuntimeMethodBuilder : MethodBuilder
     {
         #region Private Data Members
         // Identity
         internal string m_strName; // The name of the method
         private int m_token; // The token of this method
-        private readonly ModuleBuilder m_module;
+        private readonly RuntimeModuleBuilder m_module;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        internal TypeBuilder m_containingType;
+        internal RuntimeTypeBuilder m_containingType;
 
         // IL
         private int[]? m_mdMethodFixups;              // The location of all of the token fixups. Null means no fixups.
@@ -50,16 +50,16 @@ namespace System.Reflection.Emit
         private Type[][]? m_parameterTypeOptionalCustomModifiers;
 
         // Generics
-        private GenericTypeParameterBuilder[]? m_inst;
+        private RuntimeGenericTypeParameterBuilder[]? m_inst;
         private bool m_bIsGenMethDef;
         #endregion
 
         #region Constructor
 
-        internal MethodBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
+        internal RuntimeMethodBuilder(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
-            ModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
+            RuntimeModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeTypeBuilder type)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
@@ -146,7 +146,7 @@ namespace System.Reflection.Emit
             int[] type;
             int numCatch;
             int start, end;
-            ModuleBuilder dynMod = (ModuleBuilder)m_module;
+            RuntimeModuleBuilder dynMod = m_module;
 
             m_containingType.ThrowIfCreated();
 
@@ -346,12 +346,12 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        internal TypeBuilder GetTypeBuilder()
+        internal RuntimeTypeBuilder GetTypeBuilder()
         {
             return m_containingType;
         }
 
-        internal ModuleBuilder GetModuleBuilder()
+        internal RuntimeModuleBuilder GetModuleBuilder()
         {
             return m_module;
         }
@@ -360,21 +360,21 @@ namespace System.Reflection.Emit
         #region Object Overrides
         public override bool Equals(object? obj)
         {
-            if (!(obj is MethodBuilder))
+            if (obj is not RuntimeMethodBuilder rmBuilder)
             {
                 return false;
             }
-            if (!m_strName.Equals(((MethodBuilder)obj).m_strName))
-            {
-                return false;
-            }
-
-            if (m_iAttributes != (((MethodBuilder)obj).m_iAttributes))
+            if (!m_strName.Equals(rmBuilder.m_strName))
             {
                 return false;
             }
 
-            SignatureHelper thatSig = ((MethodBuilder)obj).GetMethodSignature();
+            if (m_iAttributes != rmBuilder.m_iAttributes)
+            {
+                return false;
+            }
+
+            SignatureHelper thatSig = rmBuilder.GetMethodSignature();
             if (thatSig.Equals(GetMethodSignature()))
             {
                 return true;
@@ -514,13 +514,8 @@ namespace System.Reflection.Emit
             return MethodBuilderInstantiation.MakeGenericMethod(this, typeArguments);
         }
 
-        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
         {
-            ArgumentNullException.ThrowIfNull(names);
-
-            if (names.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
-
             if (m_inst != null)
                 throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
 
@@ -531,9 +526,9 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_MethodBuilderBaked);
 
             m_bIsGenMethDef = true;
-            m_inst = new GenericTypeParameterBuilder[names.Length];
+            m_inst = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
-                m_inst[i] = new GenericTypeParameterBuilder(new TypeBuilder(names[i], i, this));
+                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
 
             return m_inst;
         }
@@ -541,7 +536,7 @@ namespace System.Reflection.Emit
         internal void ThrowIfGeneric() { if (IsGenericMethod && !IsGenericMethodDefinition) throw new InvalidOperationException(); }
         #endregion
 
-        #region Public Members
+        #region Private Members
         private int GetToken()
         {
             // We used to always "tokenize" a MethodBuilder when it is constructed. After change list 709498
@@ -559,7 +554,7 @@ namespace System.Reflection.Emit
                 return m_token;
             }
 
-            MethodBuilder? currentMethod = null;
+            RuntimeMethodBuilder? currentMethod = null;
             int currentToken = 0;
             int i;
 
@@ -598,31 +593,23 @@ namespace System.Reflection.Emit
             Debug.Assert(m_token == 0, "m_token should not have been initialized");
 
             byte[] sigBytes = GetMethodSignature().InternalGetSignature(out int sigLength);
-            ModuleBuilder module = m_module;
+            RuntimeModuleBuilder module = m_module;
 
-            int token = TypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataToken, m_strName, sigBytes, sigLength, Attributes);
+            int token = RuntimeTypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataToken, m_strName, sigBytes, sigLength, Attributes);
             m_token = token;
 
             if (m_inst != null)
-                foreach (GenericTypeParameterBuilder tb in m_inst)
+                foreach (RuntimeGenericTypeParameterBuilder tb in m_inst)
                     if (!tb.m_type.IsCreated()) tb.m_type.CreateType();
 
-            TypeBuilder.SetMethodImpl(new QCallModule(ref module), token, m_dwMethodImplFlags);
+            RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), token, m_dwMethodImplFlags);
 
             return m_token;
         }
+        #endregion
 
-        public void SetParameters(params Type[] parameterTypes)
-        {
-            SetSignature(null, null, null, parameterTypes, null, null);
-        }
-
-        public void SetReturnType(Type? returnType)
-        {
-            SetSignature(returnType, null, null, null, null, null);
-        }
-
-        public void SetSignature(
+        #region Protected Members Overrides
+        protected override void SetSignatureCore(
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
@@ -650,10 +637,8 @@ namespace System.Reflection.Emit
             m_parameterTypeOptionalCustomModifiers = parameterTypeOptionalCustomModifiers;
         }
 
-        public ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, string? strParamName)
+        protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(position);
-
             ThrowIfGeneric();
             m_containingType.ThrowIfCreated();
 
@@ -664,29 +649,20 @@ namespace System.Reflection.Emit
             return new ParameterBuilder(this, position, attributes, strParamName);
         }
 
-        public void SetImplementationFlags(MethodImplAttributes attributes)
+        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
             ThrowIfGeneric();
-
             m_containingType.ThrowIfCreated();
 
             m_dwMethodImplFlags = attributes;
 
             m_canBeRuntimeImpl = true;
 
-            ModuleBuilder module = m_module;
-            TypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
+            RuntimeModuleBuilder module = m_module;
+            RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
         }
 
-        public ILGenerator GetILGenerator()
-        {
-            ThrowIfGeneric();
-            ThrowIfShouldNotHaveBody();
-
-            return m_ilGenerator ??= new ILGenerator(this);
-        }
-
-        public ILGenerator GetILGenerator(int size)
+        protected override ILGenerator GetILGeneratorCore(int size)
         {
             ThrowIfGeneric();
             ThrowIfShouldNotHaveBody();
@@ -707,7 +683,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public bool InitLocals
+        protected override bool InitLocalsCore
         {
             // Property is set to true if user wishes to have zero initialized stack frame for this method. Default to false.
             get { ThrowIfGeneric(); return m_fInitLocals; }
@@ -719,28 +695,21 @@ namespace System.Reflection.Emit
             return GetModuleBuilder();
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
             ThrowIfGeneric();
-
-            TypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
-                ((ModuleBuilder)m_module).GetConstructorToken(con),
+            RuntimeTypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
+                m_module.GetMethodMetadataToken(con),
                 binaryAttribute);
 
             if (IsKnownCA(con))
                 ParseCA(con);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             ThrowIfGeneric();
-
-            customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, MetadataToken);
+            customBuilder.CreateCustomAttribute(m_module, MetadataToken);
 
             if (IsKnownCA(customBuilder.m_con))
                 ParseCA(customBuilder.m_con);

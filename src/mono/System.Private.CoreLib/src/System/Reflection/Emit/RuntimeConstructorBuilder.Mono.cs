@@ -41,7 +41,7 @@ using System.Runtime.InteropServices;
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
-    public sealed partial class ConstructorBuilder : ConstructorInfo
+    internal sealed partial class RuntimeConstructorBuilder : ConstructorBuilder
     {
 #region Sync with MonoReflectionCtorBuilder in object-internals.h
         private RuntimeMethodHandle mhandle;
@@ -51,7 +51,7 @@ namespace System.Reflection.Emit
         private MethodImplAttributes iattrs;
         private int table_idx;
         private CallingConventions call_conv;
-        private TypeBuilder type;
+        private RuntimeTypeBuilder  type;
         internal ParameterBuilder[]? pinfo;
         private CustomAttributeBuilder[]? cattrs;
         private bool init_locals = true;
@@ -62,7 +62,7 @@ namespace System.Reflection.Emit
         internal bool finished;
 
         [DynamicDependency(nameof(paramModOpt))] // Automatically keeps all previous fields too due to StructLayout
-        internal ConstructorBuilder(TypeBuilder tb, MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
+        internal RuntimeConstructorBuilder(RuntimeTypeBuilder tb, MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
             attrs = attributes | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;
             call_conv = callingConvention;
@@ -80,7 +80,7 @@ namespace System.Reflection.Emit
             this.paramModOpt = paramModOpt;
             table_idx = get_next_table_index(0x06, 1);
 
-            ((ModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
+            ((RuntimeModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
         }
 
         // FIXME:
@@ -92,7 +92,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public bool InitLocals
+        protected override bool InitLocalsCore
         {
             get
             {
@@ -104,7 +104,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal TypeBuilder TypeBuilder
+        internal RuntimeTypeBuilder TypeBuilder
         {
             get
             {
@@ -209,7 +209,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string? strParamName)
+        protected override ParameterBuilder DefineParameterCore(int iSequence, ParameterAttributes attributes, string? strParamName)
         {
             // The 0th ParameterBuilder does not correspond to an
             // actual parameter, but .NETFramework lets you define
@@ -241,12 +241,7 @@ namespace System.Reflection.Emit
             throw not_supported();
         }
 
-        public ILGenerator GetILGenerator()
-        {
-            return GetILGenerator(64);
-        }
-
-        public ILGenerator GetILGenerator(int streamSize)
+        protected override ILGenerator GetILGeneratorCore(int streamSize)
         {
             if (finished)
                 throw new InvalidOperationException();
@@ -254,11 +249,11 @@ namespace System.Reflection.Emit
                 return ilgen;
             if (!(((attrs & (MethodAttributes.Abstract | MethodAttributes.PinvokeImpl)) == 0) && ((iattrs & (MethodImplAttributes.Runtime | MethodImplAttributes.InternalCall)) == 0)))
                 throw new InvalidOperationException();
-            ilgen = new ILGenerator(type.Module, ((ModuleBuilder)type.Module).GetTokenGenerator(), streamSize);
+            ilgen = new ILGenerator(type.Module, ((RuntimeModuleBuilder)type.Module).GetTokenGenerator(), streamSize);
             return ilgen;
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
@@ -286,15 +281,15 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        public void SetImplementationFlags(MethodImplAttributes attributes)
+        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
             if (type.is_created)
                 throw not_after_created();
@@ -331,16 +326,16 @@ namespace System.Reflection.Emit
 
         internal void ResolveUserTypes()
         {
-            TypeBuilder.ResolveUserTypes(parameters);
+            RuntimeTypeBuilder.ResolveUserTypes(parameters);
             if (paramModReq != null)
             {
                 foreach (Type[] types in paramModReq)
-                    TypeBuilder.ResolveUserTypes(types);
+                    RuntimeTypeBuilder.ResolveUserTypes(types);
             }
             if (paramModOpt != null)
             {
                 foreach (Type[] types in paramModOpt)
-                    TypeBuilder.ResolveUserTypes(types);
+                    RuntimeTypeBuilder.ResolveUserTypes(types);
             }
         }
 

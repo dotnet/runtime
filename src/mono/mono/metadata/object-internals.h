@@ -1059,7 +1059,7 @@ typedef struct {
 	MonoArray *param_modopt;
 } MonoReflectionCtorBuilder;
 
-/* Safely access System.Reflection.Emit.ConstructorBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeConstructorBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionCtorBuilder);
 
 typedef struct {
@@ -1092,7 +1092,7 @@ typedef struct {
 	MonoArray *param_modopt;
 } MonoReflectionMethodBuilder;
 
-/* Safely access System.Reflection.Emit.MethodBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeMethodBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionMethodBuilder);
 
 typedef struct {
@@ -1122,7 +1122,7 @@ typedef struct {
 	guint32 access;
 } MonoReflectionAssemblyBuilder;
 
-/* Safely access System.Reflection.Emit.AssemblyBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeAssemblyBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionAssemblyBuilder);
 
 typedef struct {
@@ -1141,7 +1141,7 @@ typedef struct {
 	MonoArray *modopt;
 } MonoReflectionFieldBuilder;
 
-/* Safely access System.Reflection.Emit.FieldBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeFieldBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionFieldBuilder);
 
 typedef struct {
@@ -1192,7 +1192,7 @@ typedef struct {
 	MonoArray *table_indexes;
 } MonoReflectionModuleBuilder;
 
-/* Safely acess System.Reflection.Emit.ModuleBuilder from native code */
+/* Safely acess System.Reflection.Emit.RuntimeModuleBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionModuleBuilder);
 
 typedef enum {
@@ -1258,7 +1258,7 @@ typedef struct {
 	guint32 attrs;
 } MonoReflectionGenericParam;
 
-/* Safely access System.Reflection.Emit.GenericTypeParameterBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeGenericTypeParameterBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionGenericParam);
 
 typedef struct {
@@ -1266,7 +1266,7 @@ typedef struct {
 	MonoReflectionTypeBuilder *tb;
 } MonoReflectionEnumBuilder;
 
-/* Safely access System.Reflection.Emit.EnumBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeEnumBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionEnumBuilder);
 
 typedef struct _MonoReflectionGenericClass MonoReflectionGenericClass;

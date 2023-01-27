@@ -17,7 +17,7 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    public sealed class EnumBuilder : TypeInfo
+    internal sealed class RuntimeEnumBuilder : EnumBuilder
     {
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
@@ -27,7 +27,7 @@ namespace System.Reflection.Emit
 
         // Define literal for enum
 
-        public FieldBuilder DefineLiteral(string literalName, object? literalValue)
+        protected override FieldBuilder DefineLiteralCore(string literalName, object? literalValue)
         {
             // Define the underlying field for the enum. It will be a non-static, private field with special name bit set.
             FieldBuilder fieldBuilder = m_typeBuilder.DefineField(
@@ -38,17 +38,10 @@ namespace System.Reflection.Emit
             return fieldBuilder;
         }
 
-        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public TypeInfo CreateTypeInfo()
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        protected override TypeInfo CreateTypeInfoCore()
         {
             return m_typeBuilder.CreateTypeInfo();
-        }
-
-        // CreateType cause EnumBuilder to be baked.
-        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public Type CreateType()
-        {
-            return m_typeBuilder.CreateType();
         }
 
         // Get the internal metadata token for this class.
@@ -56,7 +49,7 @@ namespace System.Reflection.Emit
 
 
         // return the underlying field for the enum
-        public FieldBuilder UnderlyingField => m_underlyingField;
+        protected override FieldBuilder UnderlyingFieldCore => m_underlyingField;
 
         public override string Name => m_typeBuilder.Name;
 
@@ -282,13 +275,13 @@ namespace System.Reflection.Emit
 
         // Use this function if client decides to form the custom attribute blob themselves
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
             m_typeBuilder.SetCustomAttribute(con, binaryAttribute);
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
             m_typeBuilder.SetCustomAttribute(customBuilder);
         }
@@ -323,13 +316,13 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType("&", this, 0)!;
         }
 
-        [RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return SymbolType.FormCompoundType("[]", this, 0)!;
         }
 
-        [RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             string s = GetRankString(rank);
@@ -341,16 +334,16 @@ namespace System.Reflection.Emit
         // EnumBuilder can only be a top-level (not nested) enum type.
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2064:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
-        internal EnumBuilder(
+        internal RuntimeEnumBuilder(
             string name,                       // name of type
             Type underlyingType,             // underlying type for an Enum
             TypeAttributes visibility,              // any bits on TypeAttributes.VisibilityMask)
-            ModuleBuilder module)                     // module containing this type
+            RuntimeModuleBuilder module)                     // module containing this type
         {
             // Client should not set any bits other than the visibility bits.
             if ((visibility & ~TypeAttributes.VisibilityMask) != 0)
                 throw new ArgumentException(SR.Argument_ShouldOnlySetVisibilityFlags, nameof(name));
-            m_typeBuilder = new TypeBuilder(name, visibility | TypeAttributes.Sealed, typeof(System.Enum), null, module, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
+            m_typeBuilder = new RuntimeTypeBuilder(name, visibility | TypeAttributes.Sealed, typeof(System.Enum), null, module, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
 
             // Define the underlying field for the enum. It will be a non-static, private field with special name bit set.
             m_underlyingField = m_typeBuilder.DefineField("value__", underlyingType, FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName);
@@ -362,7 +355,7 @@ namespace System.Reflection.Emit
          *
          */
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        internal TypeBuilder m_typeBuilder;
+        internal RuntimeTypeBuilder m_typeBuilder;
 
         private FieldBuilder m_underlyingField;
     }

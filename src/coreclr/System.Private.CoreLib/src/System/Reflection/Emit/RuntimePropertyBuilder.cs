@@ -21,17 +21,17 @@ namespace System.Reflection.Emit
     // A PropertyBuilder is always associated with a TypeBuilder.  The TypeBuilder.DefineProperty
     // method will return a new PropertyBuilder to a client.
     //
-    public sealed class PropertyBuilder : PropertyInfo
+    internal sealed class RuntimePropertyBuilder : PropertyBuilder
     {
         // Constructs a PropertyBuilder.
         //
-        internal PropertyBuilder(
-            ModuleBuilder mod, // the module containing this PropertyBuilder
+        internal RuntimePropertyBuilder(
+            RuntimeModuleBuilder mod, // the module containing this PropertyBuilder
             string name, // property name
             PropertyAttributes attr, // property attribute such as DefaultProperty, Bindable, DisplayBind, etc
             Type returnType, // return type of the property.
             int prToken, // the metadata token for this property
-            TypeBuilder containingType) // the containing type
+            RuntimeTypeBuilder containingType) // the containing type
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
             if (name[0] == '\0')
@@ -48,11 +48,11 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Set the default value of the Property
         /// </summary>
-        public void SetConstant(object? defaultValue)
+        protected override void SetConstantCore(object? defaultValue)
         {
             m_containingType.ThrowIfCreated();
 
-            TypeBuilder.SetConstantValue(
+            RuntimeTypeBuilder.SetConstantValue(
                 m_moduleBuilder,
                 m_tkProperty,
                 m_returnType,
@@ -71,51 +71,46 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(mdBuilder);
 
             m_containingType.ThrowIfCreated();
-            ModuleBuilder module = m_moduleBuilder;
-            TypeBuilder.DefineMethodSemantics(
+            RuntimeModuleBuilder module = m_moduleBuilder;
+            RuntimeTypeBuilder.DefineMethodSemantics(
                 new QCallModule(ref module),
                 m_tkProperty,
                 semantics,
                 mdBuilder.MetadataToken);
         }
 
-        public void SetGetMethod(MethodBuilder mdBuilder)
+        protected override void SetGetMethodCore(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Getter);
             m_getMethod = mdBuilder;
         }
 
-        public void SetSetMethod(MethodBuilder mdBuilder)
+        protected override void SetSetMethodCore(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Setter);
             m_setMethod = mdBuilder;
         }
 
-        public void AddOtherMethod(MethodBuilder mdBuilder)
+        protected override void AddOtherMethodCore(MethodBuilder mdBuilder)
         {
             SetMethodSemantics(mdBuilder, MethodSemanticsAttributes.Other);
         }
 
         // Use this function if client decides to form the custom attribute blob themselves
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
             m_containingType.ThrowIfCreated();
-            TypeBuilder.DefineCustomAttribute(
+            RuntimeTypeBuilder.DefineCustomAttribute(
                 m_moduleBuilder,
                 m_tkProperty,
-                m_moduleBuilder.GetConstructorToken(con),
+                m_moduleBuilder.GetMethodMetadataToken(con),
                 binaryAttribute);
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             m_containingType.ThrowIfCreated();
             customBuilder.CreateCustomAttribute(m_moduleBuilder, m_tkProperty);
         }
@@ -209,11 +204,11 @@ namespace System.Reflection.Emit
         // These are package private so that TypeBuilder can access them.
         private string m_name; // The name of the property
         private int m_tkProperty; // The token of this property
-        private ModuleBuilder m_moduleBuilder;
+        private RuntimeModuleBuilder m_moduleBuilder;
         private PropertyAttributes m_attributes; // property's attribute flags
         private Type m_returnType; // property's return type
         private MethodInfo? m_getMethod;
         private MethodInfo? m_setMethod;
-        private TypeBuilder m_containingType;
+        private RuntimeTypeBuilder m_containingType;
     }
 }

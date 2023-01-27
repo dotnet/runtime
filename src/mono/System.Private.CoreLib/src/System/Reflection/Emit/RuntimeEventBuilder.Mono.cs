@@ -40,12 +40,12 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
-    public sealed partial class EventBuilder
+    internal sealed partial class RuntimeEventBuilder : EventBuilder
     {
 #region Sync with MonoReflectionEventBuilder in object-internals.h
         internal string name;
         private Type type;
-        private TypeBuilder typeb;
+        private RuntimeTypeBuilder typeb;
         private CustomAttributeBuilder[]? cattrs;
         internal MethodBuilder? add_method;
         internal MethodBuilder? remove_method;
@@ -56,7 +56,7 @@ namespace System.Reflection.Emit
 #endregion
 
         [DynamicDependency(nameof(table_idx))]  // Automatically keeps all previous fields too due to StructLayout
-        internal EventBuilder(TypeBuilder tb, string eventName, EventAttributes eventAttrs, Type eventType)
+        internal RuntimeEventBuilder(RuntimeTypeBuilder tb, string eventName, EventAttributes eventAttrs, Type eventType)
         {
             name = eventName;
             attrs = eventAttrs;
@@ -70,7 +70,7 @@ namespace System.Reflection.Emit
             return typeb.get_next_table_index(table, count);
         }
 
-        public void AddOtherMethod(MethodBuilder mdBuilder)
+        protected override void AddOtherMethodCore(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
@@ -87,28 +87,27 @@ namespace System.Reflection.Emit
             other_methods[other_methods.Length - 1] = mdBuilder;
         }
 
-        public void SetAddOnMethod(MethodBuilder mdBuilder)
+        protected override void SetAddOnMethodCore(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
             add_method = mdBuilder;
         }
-        public void SetRaiseMethod(MethodBuilder mdBuilder)
+        protected override void SetRaiseMethodCore(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
             raise_method = mdBuilder;
         }
-        public void SetRemoveOnMethod(MethodBuilder mdBuilder)
+        protected override void SetRemoveOnMethodCore(MethodBuilder mdBuilder)
         {
             ArgumentNullException.ThrowIfNull(mdBuilder);
             RejectIfCreated();
             remove_method = mdBuilder;
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
             RejectIfCreated();
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.SpecialNameAttribute")
@@ -130,11 +129,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         private void RejectIfCreated()

@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace System.Reflection.Emit
 {
-    public sealed class GenericTypeParameterBuilder : TypeInfo
+    internal sealed class RuntimeGenericTypeParameterBuilder : GenericTypeParameterBuilder
     {
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
@@ -15,11 +15,11 @@ namespace System.Reflection.Emit
         }
 
         #region Private Data Members
-        internal TypeBuilder m_type;
+        internal RuntimeTypeBuilder m_type;
         #endregion
 
         #region Constructor
-        internal GenericTypeParameterBuilder(TypeBuilder type)
+        internal RuntimeGenericTypeParameterBuilder(RuntimeTypeBuilder type)
         {
             m_type = type;
         }
@@ -32,12 +32,12 @@ namespace System.Reflection.Emit
         }
         public override bool Equals(object? o)
         {
-            GenericTypeParameterBuilder? g = o as GenericTypeParameterBuilder;
+            if (o is RuntimeGenericTypeParameterBuilder g)
+            {
+                return ReferenceEquals(g.m_type, m_type);
+            }
 
-            if (g == null)
-                return false;
-
-            return object.ReferenceEquals(g.m_type, m_type);
+            return false;
         }
         public override int GetHashCode() { return m_type.GetHashCode(); }
         #endregion
@@ -214,28 +214,28 @@ namespace System.Reflection.Emit
         public override bool IsDefined(Type attributeType, bool inherit) { throw new NotSupportedException(); }
         #endregion
 
-        #region Public Members
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        #region Protected Members Overrides
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
             m_type.SetGenParamCustomAttribute(con, binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
             m_type.SetGenParamCustomAttribute(customBuilder);
         }
 
-        public void SetBaseTypeConstraint([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
+        protected override void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
         {
             m_type.SetParent(baseTypeConstraint);
         }
 
-        public void SetInterfaceConstraints(params Type[]? interfaceConstraints)
+        protected override void SetInterfaceConstraintsCore(params Type[]? interfaceConstraints)
         {
             m_type.SetInterfaces(interfaceConstraints);
         }
 
-        public void SetGenericParameterAttributes(GenericParameterAttributes genericParameterAttributes)
+        protected override void SetGenericParameterAttributesCore(GenericParameterAttributes genericParameterAttributes)
         {
             m_type.SetGenParamAttributes(genericParameterAttributes);
         }

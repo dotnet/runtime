@@ -41,23 +41,23 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    public sealed partial class EnumBuilder : TypeInfo
+    internal sealed partial class RuntimeEnumBuilder : EnumBuilder
     {
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        private TypeBuilder _tb;
+        private RuntimeTypeBuilder _tb;
 
         private FieldBuilder _underlyingField;
         private Type _underlyingType;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2064:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
-        internal EnumBuilder(ModuleBuilder mb, string name, TypeAttributes visibility, Type underlyingType)
+        internal RuntimeEnumBuilder(RuntimeModuleBuilder mb, string name, TypeAttributes visibility, Type underlyingType)
         {
             if ((visibility & ~TypeAttributes.VisibilityMask) != 0)
                 throw new ArgumentException(SR.Argument_ShouldOnlySetVisibilityFlags, nameof(name));
             if ((visibility & TypeAttributes.VisibilityMask) >= TypeAttributes.NestedPublic && (visibility & TypeAttributes.VisibilityMask) <= TypeAttributes.NestedFamORAssem)
                 throw new ArgumentException();
-            _tb = new TypeBuilder(mb, name, (visibility | TypeAttributes.Sealed),
+            _tb = new RuntimeTypeBuilder(mb, name, (visibility | TypeAttributes.Sealed),
                 typeof(Enum), null, PackingSize.Unspecified, 0, null);
             _underlyingType = underlyingType;
             _underlyingField = _tb.DefineField("value__", underlyingType,
@@ -65,7 +65,7 @@ namespace System.Reflection.Emit
             setup_enum_type(_tb);
         }
 
-        internal TypeBuilder GetTypeBuilder()
+        internal RuntimeTypeBuilder GetTypeBuilder()
         {
             return _tb;
         }
@@ -176,7 +176,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public FieldBuilder UnderlyingField
+        protected override FieldBuilder UnderlyingFieldCore
         {
             get
             {
@@ -193,13 +193,7 @@ namespace System.Reflection.Emit
         }
 
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public Type? CreateType()
-        {
-            return _tb.CreateType();
-        }
-
-        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.All)]
-        public TypeInfo? CreateTypeInfo()
+        protected override TypeInfo CreateTypeInfoCore()
         {
             return _tb.CreateTypeInfo();
         }
@@ -216,7 +210,7 @@ namespace System.Reflection.Emit
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void setup_enum_type(Type t);
 
-        public FieldBuilder DefineLiteral(string literalName, object? literalValue)
+        protected override FieldBuilder DefineLiteralCore(string literalName, object? literalValue)
         {
             Type fieldType = this;
             FieldBuilder fieldBuilder = _tb.DefineField(literalName,
@@ -454,14 +448,14 @@ namespace System.Reflection.Emit
             return new PointerType(this);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
             _tb.SetCustomAttribute(customBuilder);
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         internal override bool IsUserType

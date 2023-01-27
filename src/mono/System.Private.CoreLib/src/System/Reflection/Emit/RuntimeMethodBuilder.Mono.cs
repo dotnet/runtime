@@ -41,7 +41,7 @@ using System.Runtime.InteropServices;
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
-    public sealed partial class MethodBuilder : MethodInfo
+    internal sealed partial class RuntimeMethodBuilder : MethodBuilder
     {
 #region Sync with MonoReflectionMethodBuilder in object-internals.h
         private RuntimeMethodHandle mhandle;
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
         private int table_idx;
         private byte[]? code;
         private ILGenerator? ilgen;
-        private TypeBuilder type;
+        private RuntimeTypeBuilder type;
         internal ParameterBuilder[]? pinfo;
         private CustomAttributeBuilder[]? cattrs;
         private MethodInfo[]? override_methods;
@@ -65,7 +65,7 @@ namespace System.Reflection.Emit
         private CallingConventions call_conv;
         private bool init_locals = true;
         private IntPtr generic_container;
-        internal GenericTypeParameterBuilder[]? generic_params;
+        internal RuntimeGenericTypeParameterBuilder[]? generic_params;
         private Type[]? returnModReq;
         private Type[]? returnModOpt;
         private Type[][]? paramModReq;
@@ -75,7 +75,7 @@ namespace System.Reflection.Emit
         private RuntimeMethodInfo? created;
 
         [DynamicDependency(nameof(paramModOpt))]  // Automatically keeps all previous fields too due to StructLayout
-        internal MethodBuilder(TypeBuilder tb, string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
+        internal RuntimeMethodBuilder(RuntimeTypeBuilder tb, string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
             this.name = name;
             this.attrs = attributes;
@@ -101,10 +101,10 @@ namespace System.Reflection.Emit
             type = tb;
             table_idx = get_next_table_index(0x06, 1);
 
-            ((ModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
+            ((RuntimeModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
         }
 
-        internal MethodBuilder(TypeBuilder tb, string name, MethodAttributes attributes,
+        internal RuntimeMethodBuilder(RuntimeTypeBuilder tb, string name, MethodAttributes attributes,
                                 CallingConventions callingConvention, Type? returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt,
             string dllName, string entryName, CallingConvention nativeCConv, CharSet nativeCharset)
             : this(tb, name, attributes, callingConvention, returnType, returnModReq, returnModOpt, parameterTypes, paramModReq, paramModOpt)
@@ -120,13 +120,13 @@ namespace System.Reflection.Emit
             get { throw new NotSupportedException(); }
         }
 
-        public bool InitLocals
+        protected override bool InitLocalsCore
         {
             get { return init_locals; }
             set { init_locals = value; }
         }
 
-        internal TypeBuilder TypeBuilder
+        internal RuntimeTypeBuilder TypeBuilder
         {
             get { return type; }
         }
@@ -310,12 +310,7 @@ namespace System.Reflection.Emit
                 throw NotSupported();
         }
 
-        public ILGenerator GetILGenerator()
-        {
-            return GetILGenerator(64);
-        }
-
-        public ILGenerator GetILGenerator(int size)
+        protected override ILGenerator GetILGeneratorCore(int size)
         {
             if (((iattrs & MethodImplAttributes.CodeTypeMask) !=
                  MethodImplAttributes.IL) ||
@@ -324,11 +319,11 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException("Method body should not exist.");
             if (ilgen != null)
                 return ilgen;
-            ilgen = new ILGenerator(type.Module, ((ModuleBuilder)type.Module).GetTokenGenerator(), size);
+            ilgen = new ILGenerator(type.Module, ((RuntimeModuleBuilder)type.Module).GetTokenGenerator(), size);
             return ilgen;
         }
 
-        public ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, string strParamName)
+        protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName)
         {
             RejectIfCreated();
 
@@ -371,26 +366,24 @@ namespace System.Reflection.Emit
 
         internal void ResolveUserTypes()
         {
-            rtype = TypeBuilder.ResolveUserType(rtype);
-            TypeBuilder.ResolveUserTypes(parameters);
-            TypeBuilder.ResolveUserTypes(returnModReq);
-            TypeBuilder.ResolveUserTypes(returnModOpt);
+            rtype = RuntimeTypeBuilder.ResolveUserType(rtype);
+            RuntimeTypeBuilder.ResolveUserTypes(parameters);
+            RuntimeTypeBuilder.ResolveUserTypes(returnModReq);
+            RuntimeTypeBuilder.ResolveUserTypes(returnModOpt);
             if (paramModReq != null)
             {
                 foreach (Type[] types in paramModReq)
-                    TypeBuilder.ResolveUserTypes(types);
+                    RuntimeTypeBuilder.ResolveUserTypes(types);
             }
             if (paramModOpt != null)
             {
                 foreach (Type[] types in paramModOpt)
-                    TypeBuilder.ResolveUserTypes(types);
+                    RuntimeTypeBuilder.ResolveUserTypes(types);
             }
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             switch (customBuilder.Ctor.ReflectedType!.FullName)
             {
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
@@ -475,14 +468,12 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        public void SetImplementationFlags(MethodImplAttributes attributes)
+        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
             RejectIfCreated();
             iattrs = attributes;
@@ -591,30 +582,22 @@ namespace System.Reflection.Emit
             return result;
         }
 
-        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
         {
-            ArgumentNullException.ThrowIfNull(names);
-            if (names.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
             type.check_not_created();
-            generic_params = new GenericTypeParameterBuilder[names.Length];
+            generic_params = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
             {
                 string item = names[i];
                 if (item == null)
                     throw new ArgumentNullException(nameof(names));
-                generic_params[i] = new GenericTypeParameterBuilder(type, this, item, i);
+                generic_params[i] = new RuntimeGenericTypeParameterBuilder(type, this, item, i);
             }
 
             return generic_params;
         }
 
-        public void SetReturnType(Type? returnType)
-        {
-            rtype = returnType;
-        }
-
-        public void SetParameters(params Type[]? parameterTypes)
+        protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             if (parameterTypes != null)
             {
@@ -625,16 +608,12 @@ namespace System.Reflection.Emit
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
             }
-        }
 
-        public void SetSignature(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
-        {
-            SetReturnType(returnType);
-            SetParameters(parameterTypes);
-            this.returnModReq = returnTypeRequiredCustomModifiers;
-            this.returnModOpt = returnTypeOptionalCustomModifiers;
-            this.paramModReq = parameterTypeRequiredCustomModifiers;
-            this.paramModOpt = parameterTypeOptionalCustomModifiers;
+            rtype = returnType;
+            returnModReq = returnTypeRequiredCustomModifiers;
+            returnModOpt = returnTypeOptionalCustomModifiers;
+            paramModReq = parameterTypeRequiredCustomModifiers;
+            paramModOpt = parameterTypeOptionalCustomModifiers;
         }
 
         public override Module Module

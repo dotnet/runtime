@@ -6,18 +6,18 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    public sealed class FieldBuilder : FieldInfo
+    internal sealed class RuntimeFieldBuilder : FieldBuilder
     {
         #region Private Data Members
         private int m_fieldTok;
-        private TypeBuilder m_typeBuilder;
+        private RuntimeTypeBuilder m_typeBuilder;
         private string m_fieldName;
         private FieldAttributes m_Attributes;
         private Type m_fieldType;
         #endregion
 
         #region Constructor
-        internal FieldBuilder(TypeBuilder typeBuilder, string fieldName, Type type,
+        internal RuntimeFieldBuilder(RuntimeTypeBuilder typeBuilder, string fieldName, Type type,
             Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(fieldName);
@@ -40,8 +40,8 @@ namespace System.Reflection.Emit
 
             byte[] signature = sigHelp.InternalGetSignature(out int sigLength);
 
-            ModuleBuilder module = m_typeBuilder.GetModuleBuilder();
-            m_fieldTok = TypeBuilder.DefineField(new QCallModule(ref module),
+            RuntimeModuleBuilder module = m_typeBuilder.GetModuleBuilder();
+            m_fieldTok = RuntimeTypeBuilder.DefineField(new QCallModule(ref module),
                 typeBuilder.TypeToken, fieldName, signature, sigLength, m_Attributes);
         }
 
@@ -50,8 +50,8 @@ namespace System.Reflection.Emit
         #region Internal Members
         internal void SetData(byte[]? data, int size)
         {
-            ModuleBuilder module = m_typeBuilder.GetModuleBuilder();
-            ModuleBuilder.SetFieldRVAContent(new QCallModule(ref module), m_fieldTok, data, size);
+            RuntimeModuleBuilder module = m_typeBuilder.GetModuleBuilder();
+            RuntimeModuleBuilder.SetFieldRVAContent(new QCallModule(ref module), m_fieldTok, data, size);
         }
         #endregion
 
@@ -131,16 +131,16 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        #region Public Members
-        public void SetOffset(int iOffset)
+        #region Protected Members Overrides
+        protected override void SetOffsetCore(int iOffset)
         {
             m_typeBuilder.ThrowIfCreated();
 
-            ModuleBuilder module = m_typeBuilder.GetModuleBuilder();
-            TypeBuilder.SetFieldLayoutOffset(new QCallModule(ref module), m_fieldTok, iOffset);
+            RuntimeModuleBuilder module = m_typeBuilder.GetModuleBuilder();
+            RuntimeTypeBuilder.SetFieldLayoutOffset(new QCallModule(ref module), m_fieldTok, iOffset);
         }
 
-        public void SetConstant(object? defaultValue)
+        protected override void SetConstantCore(object? defaultValue)
         {
             m_typeBuilder.ThrowIfCreated();
 
@@ -151,31 +151,24 @@ namespace System.Reflection.Emit
                     throw new ArgumentException(SR.Argument_ConstantNull);
             }
 
-            TypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), m_fieldTok, m_fieldType, defaultValue);
+            RuntimeTypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), m_fieldTok, m_fieldType, defaultValue);
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
-            ModuleBuilder module = (m_typeBuilder.Module as ModuleBuilder)!;
+            RuntimeModuleBuilder moduleBuilder = (RuntimeModuleBuilder)m_typeBuilder.Module;
 
             m_typeBuilder.ThrowIfCreated();
 
-            TypeBuilder.DefineCustomAttribute(module,
-                m_fieldTok, module.GetConstructorToken(con), binaryAttribute);
+            RuntimeTypeBuilder.DefineCustomAttribute(moduleBuilder,
+                m_fieldTok, moduleBuilder.GetMethodMetadataToken(con), binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
             m_typeBuilder.ThrowIfCreated();
 
-            ModuleBuilder? module = m_typeBuilder.Module as ModuleBuilder;
-
-            customBuilder.CreateCustomAttribute(module!, m_fieldTok);
+            customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)m_typeBuilder.Module, m_fieldTok);
         }
 
         #endregion

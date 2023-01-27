@@ -10,53 +10,8 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    public sealed partial class TypeBuilder : TypeInfo
+    public abstract partial class TypeBuilder
     {
-        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
-        {
-            if (typeInfo == null) return false;
-            return IsAssignableFrom(typeInfo.AsType());
-        }
-
-        #region Declarations
-        private sealed class CustAttr
-        {
-            private readonly ConstructorInfo? m_con;
-            private readonly byte[]? m_binaryAttribute;
-            private readonly CustomAttributeBuilder? m_customBuilder;
-
-            public CustAttr(ConstructorInfo con, byte[] binaryAttribute)
-            {
-                ArgumentNullException.ThrowIfNull(con);
-                ArgumentNullException.ThrowIfNull(binaryAttribute);
-
-                m_con = con;
-                m_binaryAttribute = binaryAttribute;
-            }
-
-            public CustAttr(CustomAttributeBuilder customBuilder)
-            {
-                ArgumentNullException.ThrowIfNull(customBuilder);
-
-                m_customBuilder = customBuilder;
-            }
-
-            public void Bake(ModuleBuilder module, int token)
-            {
-                if (m_customBuilder == null)
-                {
-                    Debug.Assert(m_con != null);
-                    DefineCustomAttribute(module, token, module.GetConstructorToken(m_con),
-                        m_binaryAttribute);
-                }
-                else
-                {
-                    m_customBuilder.CreateCustomAttribute(module, token);
-                }
-            }
-        }
-        #endregion
-
         #region Public Static Methods
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
@@ -139,6 +94,54 @@ namespace System.Reflection.Emit
             return FieldOnTypeBuilderInstantiation.GetField(field, typeBuilderInstantiation);
         }
         #endregion
+    }
+
+    internal sealed partial class RuntimeTypeBuilder : TypeBuilder
+    {
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
+        {
+            if (typeInfo == null) return false;
+            return IsAssignableFrom(typeInfo.AsType());
+        }
+
+        #region Declarations
+        private sealed class CustAttr
+        {
+            private readonly ConstructorInfo? m_con;
+            private readonly byte[]? m_binaryAttribute;
+            private readonly CustomAttributeBuilder? m_customBuilder;
+
+            public CustAttr(ConstructorInfo con, byte[] binaryAttribute)
+            {
+                ArgumentNullException.ThrowIfNull(con);
+                ArgumentNullException.ThrowIfNull(binaryAttribute);
+
+                m_con = con;
+                m_binaryAttribute = binaryAttribute;
+            }
+
+            public CustAttr(CustomAttributeBuilder customBuilder)
+            {
+                ArgumentNullException.ThrowIfNull(customBuilder);
+
+                m_customBuilder = customBuilder;
+            }
+
+            public void Bake(RuntimeModuleBuilder module, int token)
+            {
+                if (m_customBuilder == null)
+                {
+                    Debug.Assert(m_con != null);
+                    DefineCustomAttribute(module, token, module.GetMethodMetadataToken(m_con),
+                        m_binaryAttribute);
+                }
+                else
+                {
+                    m_customBuilder.CreateCustomAttribute(module, token);
+                }
+            }
+        }
+        #endregion
 
         #region Private Static FCalls
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_SetParentType")]
@@ -172,7 +175,7 @@ namespace System.Reflection.Emit
         private static partial void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
             byte[]? attr, int attrLength);
 
-        internal static void DefineCustomAttribute(ModuleBuilder module, int tkAssociate, int tkConstructor,
+        internal static void DefineCustomAttribute(RuntimeModuleBuilder module, int tkAssociate, int tkConstructor,
             byte[]? attr)
         {
             byte[]? localAttr = null;
@@ -231,15 +234,15 @@ namespace System.Reflection.Emit
             // Maybe we are lucky that they are equal in the first place
             if (t1 == t2)
                 return true;
-            TypeBuilder? tb1 = null;
-            TypeBuilder? tb2 = null;
+            RuntimeTypeBuilder? tb1 = null;
+            RuntimeTypeBuilder? tb2 = null;
             Type? runtimeType1;
             Type? runtimeType2;
 
             // set up the runtimeType and TypeBuilder type corresponding to t1 and t2
-            if (t1 is TypeBuilder)
+            if (t1 is RuntimeTypeBuilder)
             {
-                tb1 = (TypeBuilder)t1;
+                tb1 = (RuntimeTypeBuilder)t1;
                 // This will be null if it is not baked.
                 runtimeType1 = tb1.m_bakedRuntimeType;
             }
@@ -248,9 +251,9 @@ namespace System.Reflection.Emit
                 runtimeType1 = t1;
             }
 
-            if (t2 is TypeBuilder)
+            if (t2 is RuntimeTypeBuilder)
             {
-                tb2 = (TypeBuilder)t2;
+                tb2 = (RuntimeTypeBuilder)t2;
                 // This will be null if it is not baked.
                 runtimeType2 = tb2.m_bakedRuntimeType;
             }
@@ -270,7 +273,7 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        internal static unsafe void SetConstantValue(ModuleBuilder module, int tk, Type destType, object? value)
+        internal static unsafe void SetConstantValue(RuntimeModuleBuilder module, int tk, Type destType, object? value)
         {
             // This is a helper function that is used by ParameterBuilder, PropertyBuilder,
             // and FieldBuilder to validate a default value and save it in the meta-data.
@@ -303,7 +306,7 @@ namespace System.Reflection.Emit
                     // The above behaviors might not be the most consistent but we have to live with them.
 
                     Type? underlyingType;
-                    if (destType is EnumBuilder enumBldr)
+                    if (destType is RuntimeEnumBuilder enumBldr)
                     {
                         underlyingType = enumBldr.GetEnumUnderlyingType();
 
@@ -312,7 +315,7 @@ namespace System.Reflection.Emit
                         if (type != enumBldr.m_typeBuilder.m_bakedRuntimeType && type != underlyingType)
                             throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
                     }
-                    else if (destType is TypeBuilder typeBldr)
+                    else if (destType is RuntimeTypeBuilder typeBldr)
                     {
                         underlyingType = typeBldr.m_enumUnderlyingType;
 
@@ -395,7 +398,7 @@ namespace System.Reflection.Emit
         #region Private Data Members
         private List<CustAttr>? m_ca;
         private int m_tdType;
-        private readonly ModuleBuilder m_module;
+        private readonly RuntimeModuleBuilder m_module;
         private readonly string? m_strName;
         private readonly string? m_strNameSpace;
         private string? m_strFullQualName;
@@ -406,12 +409,12 @@ namespace System.Reflection.Emit
         private List<Type>? m_typeInterfaces;
         private readonly TypeAttributes m_iAttr;
         private GenericParameterAttributes m_genParamAttributes;
-        internal List<MethodBuilder>? m_listMethods;
+        internal List<RuntimeMethodBuilder>? m_listMethods;
         internal int m_lastTokenizedMethod;
         private int m_constructorCount;
         private readonly int m_iTypeSize;
         private readonly PackingSize m_iPackingSize;
-        private readonly TypeBuilder? m_DeclaringType;
+        private readonly RuntimeTypeBuilder? m_DeclaringType;
 
         // We cannot store this on EnumBuilder because users can define enum types manually using TypeBuilder.
         private Type? m_enumUnderlyingType;
@@ -422,27 +425,27 @@ namespace System.Reflection.Emit
         private RuntimeType m_bakedRuntimeType = null!;
 
         private readonly int m_genParamPos;
-        private GenericTypeParameterBuilder[]? m_inst;
+        private RuntimeGenericTypeParameterBuilder[]? m_inst;
         private readonly bool m_bIsGenParam;
-        private readonly MethodBuilder? m_declMeth;
-        private readonly TypeBuilder? m_genTypeDef;
+        private readonly RuntimeMethodBuilder? m_declMeth;
+        private readonly RuntimeTypeBuilder? m_genTypeDef;
         #endregion
 
         #region Constructor
         // ctor for the global (module) type
-        internal TypeBuilder(ModuleBuilder module)
+        internal RuntimeTypeBuilder(RuntimeModuleBuilder module)
         {
             m_tdType = ((int)MetadataTokenType.TypeDef);
             m_isHiddenGlobalType = true;
             m_module = module;
-            m_listMethods = new List<MethodBuilder>();
+            m_listMethods = new List<RuntimeMethodBuilder>();
             // No token has been created so let's initialize it to -1
             // The first time we call MethodBuilder.GetToken this will incremented.
             m_lastTokenizedMethod = -1;
         }
 
         // ctor for generic method parameter
-        internal TypeBuilder(string szName, int genParamPos, MethodBuilder declMeth)
+        internal RuntimeTypeBuilder(string szName, int genParamPos, RuntimeMethodBuilder declMeth)
         {
             m_strName = szName;
             m_genParamPos = genParamPos;
@@ -456,7 +459,7 @@ namespace System.Reflection.Emit
         }
 
         // ctor for generic type parameter
-        private TypeBuilder(string szName, int genParamPos, TypeBuilder declType)
+        private RuntimeTypeBuilder(string szName, int genParamPos, RuntimeTypeBuilder declType)
         {
             m_strName = szName;
             m_genParamPos = genParamPos;
@@ -468,9 +471,9 @@ namespace System.Reflection.Emit
             m_module = declType.GetModuleBuilder();
         }
 
-        internal TypeBuilder(
-            string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, ModuleBuilder module,
-            PackingSize iPackingSize, int iTypeSize, TypeBuilder? enclosingType)
+        internal RuntimeTypeBuilder(
+            string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, RuntimeModuleBuilder module,
+            PackingSize iPackingSize, int iTypeSize, RuntimeTypeBuilder? enclosingType)
         {
             ArgumentException.ThrowIfNullOrEmpty(fullname);
 
@@ -483,7 +486,7 @@ namespace System.Reflection.Emit
             int i;
             m_module = module;
             m_DeclaringType = enclosingType;
-            AssemblyBuilder containingAssem = m_module.ContainingAssemblyBuilder;
+            RuntimeAssemblyBuilder containingAssem = m_module.ContainingAssemblyBuilder;
 
             // cannot have two types within the same assembly of the same name
             containingAssem.CheckTypeNameConflict(fullname, enclosingType);
@@ -531,7 +534,7 @@ namespace System.Reflection.Emit
 
             SetParent(parent);
 
-            m_listMethods = new List<MethodBuilder>();
+            m_listMethods = new List<RuntimeMethodBuilder>();
             m_lastTokenizedMethod = -1;
 
             SetInterfaces(interfaces);
@@ -592,7 +595,7 @@ namespace System.Reflection.Emit
             fdBuilder = DefineField(name, valueClassType, attributes | FieldAttributes.Static);
 
             // now we need to set the RVA
-            fdBuilder.SetData(data, size);
+            ((RuntimeFieldBuilder)fdBuilder).SetData(data, size);
             return fdBuilder;
         }
 
@@ -629,7 +632,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public bool IsCreated()
+        protected override bool IsCreatedCore()
         {
             return m_hasBeenCreated;
         }
@@ -657,7 +660,7 @@ namespace System.Reflection.Emit
 
         internal object SyncRoot => m_module.SyncRoot;
 
-        internal ModuleBuilder GetModuleBuilder()
+        internal RuntimeModuleBuilder GetModuleBuilder()
         {
             return m_module;
         }
@@ -691,7 +694,7 @@ namespace System.Reflection.Emit
 
         private void SetGenParamCustomAttributeNoLock(CustAttr ca)
         {
-            m_ca ??= new List<TypeBuilder.CustAttr>();
+            m_ca ??= new List<CustAttr>();
             m_ca.Add(ca);
         }
         #endregion
@@ -940,7 +943,7 @@ namespace System.Reflection.Emit
                 return true;
 
             Type? fromRuntimeType;
-            TypeBuilder? fromTypeBuilder = c as TypeBuilder;
+            RuntimeTypeBuilder? fromTypeBuilder = c as RuntimeTypeBuilder;
 
             if (fromTypeBuilder != null)
                 fromRuntimeType = fromTypeBuilder.m_bakedRuntimeType;
@@ -1150,21 +1153,17 @@ namespace System.Reflection.Emit
             }
         }
 
-        public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
+        protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
         {
-            ArgumentNullException.ThrowIfNull(names);
-            if (names.Length == 0)
-                throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
-
             for (int i = 0; i < names.Length; i++)
                 ArgumentNullException.ThrowIfNull(names[i], nameof(names));
 
             if (m_inst != null)
                 throw new InvalidOperationException();
 
-            m_inst = new GenericTypeParameterBuilder[names.Length];
+            m_inst = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
-                m_inst[i] = new GenericTypeParameterBuilder(new TypeBuilder(names[i], i, this));
+                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
 
             return m_inst;
         }
@@ -1191,86 +1190,58 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Define Method
-        public void DefineMethodOverride(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
+        protected override void DefineMethodOverrideCore(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
         {
             lock (SyncRoot)
             {
-                DefineMethodOverrideNoLock(methodInfoBody, methodInfoDeclaration);
-            }
-        }
+                ThrowIfCreated();
 
-        private void DefineMethodOverrideNoLock(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
-        {
-            ArgumentNullException.ThrowIfNull(methodInfoBody);
-            ArgumentNullException.ThrowIfNull(methodInfoDeclaration);
+                if (!ReferenceEquals(methodInfoBody.DeclaringType, this))
+                    // Loader restriction: body method has to be from this class
+                    throw new ArgumentException(SR.ArgumentException_BadMethodImplBody);
 
-            ThrowIfCreated();
+                int tkBody = m_module.GetMethodMetadataToken(methodInfoBody);
+                int tkDecl = m_module.GetMethodMetadataToken(methodInfoDeclaration);
 
-            if (!ReferenceEquals(methodInfoBody.DeclaringType, this))
-                // Loader restriction: body method has to be from this class
-                throw new ArgumentException(SR.ArgumentException_BadMethodImplBody);
-
-            int tkBody = m_module.GetMethodToken(methodInfoBody);
-            int tkDecl = m_module.GetMethodToken(methodInfoDeclaration);
-
-            ModuleBuilder module = m_module;
-            DefineMethodImpl(new QCallModule(ref module), m_tdType, tkBody, tkDecl);
-        }
-
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention,
-            Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
-            Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
-        {
-            lock (SyncRoot)
-            {
-                return DefineMethodNoLock(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers,
-                                          returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers,
-                                          parameterTypeOptionalCustomModifiers);
+                RuntimeModuleBuilder module = m_module;
+                DefineMethodImpl(new QCallModule(ref module), m_tdType, tkBody, tkDecl);
             }
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
-        private MethodBuilder DefineMethodNoLock(string name, MethodAttributes attributes, CallingConventions callingConvention,
+        protected override MethodBuilder DefineMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-
-            if (parameterTypes != null)
+            lock (SyncRoot)
             {
-                if (parameterTypeOptionalCustomModifiers != null && parameterTypeOptionalCustomModifiers.Length != parameterTypes.Length)
-                    throw new ArgumentException(SR.Format(SR.Argument_MismatchedArrays, nameof(parameterTypeOptionalCustomModifiers), nameof(parameterTypes)));
+                ThrowIfCreated();
 
-                if (parameterTypeRequiredCustomModifiers != null && parameterTypeRequiredCustomModifiers.Length != parameterTypes.Length)
-                    throw new ArgumentException(SR.Format(SR.Argument_MismatchedArrays, nameof(parameterTypeRequiredCustomModifiers), nameof(parameterTypes)));
-            }
+                // pass in Method attributes
+                RuntimeMethodBuilder method = new RuntimeMethodBuilder(
+                    name, attributes, callingConvention,
+                    returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
+                    parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
+                    m_module, this);
 
-            ThrowIfCreated();
-
-            // pass in Method attributes
-            MethodBuilder method = new MethodBuilder(
-                name, attributes, callingConvention,
-                returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
-                parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
-                m_module, this);
-
-            if (!m_isHiddenGlobalType)
-            {
-                // If this method is declared to be a constructor, increment our constructor count.
-                if ((method.Attributes & MethodAttributes.SpecialName) != 0 && method.Name.Equals(ConstructorInfo.ConstructorName))
+                if (!m_isHiddenGlobalType)
                 {
-                    m_constructorCount++;
+                    // If this method is declared to be a constructor, increment our constructor count.
+                    if ((method.Attributes & MethodAttributes.SpecialName) != 0 && method.Name.Equals(ConstructorInfo.ConstructorName))
+                    {
+                        m_constructorCount++;
+                    }
                 }
+
+                m_listMethods!.Add(method);
+
+                return method;
             }
-
-            m_listMethods!.Add(method);
-
-            return method;
         }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
+        protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes,
             CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
@@ -1278,10 +1249,6 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                ArgumentException.ThrowIfNullOrEmpty(name);
-                ArgumentException.ThrowIfNullOrEmpty(dllName);
-                ArgumentException.ThrowIfNullOrEmpty(entryName);
-
                 if ((attributes & MethodAttributes.Abstract) != 0)
                     throw new ArgumentException(SR.Argument_BadPInvokeMethod);
 
@@ -1291,7 +1258,7 @@ namespace System.Reflection.Emit
                 ThrowIfCreated();
 
                 attributes |= MethodAttributes.PinvokeImpl;
-                MethodBuilder method = new MethodBuilder(name, attributes, callingConvention,
+                RuntimeMethodBuilder method = new RuntimeMethodBuilder(name, attributes, callingConvention,
                     returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
                     parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers,
                     m_module, this);
@@ -1343,7 +1310,7 @@ namespace System.Reflection.Emit
                         break;
                 }
 
-                ModuleBuilder module = m_module;
+                RuntimeModuleBuilder module = m_module;
                 SetPInvokeData(new QCallModule(ref module),
                     dllName,
                     entryName,
@@ -1358,30 +1325,25 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Define Constructor
-        public ConstructorBuilder DefineTypeInitializer()
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
+        protected override ConstructorBuilder DefineTypeInitializerCore()
         {
             lock (SyncRoot)
             {
-                return DefineTypeInitializerNoLock();
+                ThrowIfCreated();
+
+                // change the attributes and the class constructor's name
+                const MethodAttributes attr = MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.SpecialName;
+
+                ConstructorBuilder constBuilder = new RuntimeConstructorBuilder(
+                    ConstructorInfo.TypeConstructorName, attr, CallingConventions.Standard, null, m_module, this);
+
+                return constBuilder;
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
-            Justification = "Reflection.Emit is not subject to trimming")]
-        private ConstructorBuilder DefineTypeInitializerNoLock()
-        {
-            ThrowIfCreated();
-
-            // change the attributes and the class constructor's name
-            const MethodAttributes attr = MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.SpecialName;
-
-            ConstructorBuilder constBuilder = new ConstructorBuilder(
-                ConstructorInfo.TypeConstructorName, attr, CallingConventions.Standard, null, m_module, this);
-
-            return constBuilder;
-        }
-
-        public ConstructorBuilder DefineDefaultConstructor(MethodAttributes attributes)
+        protected override ConstructorBuilder DefineDefaultConstructorCore(MethodAttributes attributes)
         {
             if ((m_iAttr & TypeAttributes.Interface) == TypeAttributes.Interface)
             {
@@ -1400,7 +1362,7 @@ namespace System.Reflection.Emit
             Justification = "GetConstructor is only called on a TypeBuilderInstantiation which is not subject to trimming")]
         private ConstructorBuilder DefineDefaultConstructorNoLock(MethodAttributes attributes)
         {
-            ConstructorBuilder constBuilder;
+            RuntimeConstructorBuilder constBuilder;
 
             // get the parent class's default constructor
             // We really don't want(BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic) here.  We really want
@@ -1414,8 +1376,8 @@ namespace System.Reflection.Emit
             {
                 Type? genericTypeDefinition = m_typeParent.GetGenericTypeDefinition();
 
-                if (genericTypeDefinition is TypeBuilder)
-                    genericTypeDefinition = ((TypeBuilder)genericTypeDefinition).m_bakedRuntimeType;
+                if (genericTypeDefinition is RuntimeTypeBuilder rtBuilder)
+                    genericTypeDefinition = rtBuilder.m_bakedRuntimeType;
 
                 if (genericTypeDefinition == null)
                     throw new NotSupportedException(SR.NotSupported_DynamicModule);
@@ -1436,7 +1398,7 @@ namespace System.Reflection.Emit
                 throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
 
             // Define the constructor Builder
-            constBuilder = DefineConstructor(attributes, CallingConventions.Standard, null);
+            constBuilder = (RuntimeConstructorBuilder)DefineConstructor(attributes, CallingConventions.Standard, null);
             m_constructorCount++;
 
             // generate the code to call the parent's default constructor
@@ -1449,7 +1411,7 @@ namespace System.Reflection.Emit
             return constBuilder;
         }
 
-        public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention,
+        protected override ConstructorBuilder DefineConstructorCore(MethodAttributes attributes, CallingConventions callingConvention,
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
         {
             if ((m_iAttr & TypeAttributes.Interface) == TypeAttributes.Interface && (attributes & MethodAttributes.Static) != MethodAttributes.Static)
@@ -1484,7 +1446,7 @@ namespace System.Reflection.Emit
             attributes |= MethodAttributes.SpecialName;
 
             ConstructorBuilder constBuilder =
-                new ConstructorBuilder(name, attributes, callingConvention,
+                new RuntimeConstructorBuilder(name, attributes, callingConvention,
                     parameterTypes, requiredCustomModifiers, optionalCustomModifiers, m_module, this);
 
             m_constructorCount++;
@@ -1495,181 +1457,133 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Define Nested Type
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
+        protected override TypeBuilder DefineNestedTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
         {
             lock (SyncRoot)
             {
-                return new TypeBuilder(name, attr, parent, interfaces, m_module, PackingSize.Unspecified, UnspecifiedTypeSize, this);
-            }
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize, int typeSize)
-        {
-            lock (SyncRoot)
-            {
-                return new TypeBuilder(name, attr, parent, null, m_module, packSize, typeSize, this);
+                return new RuntimeTypeBuilder(name, attr, parent, interfaces, m_module, packSize, typeSize, this);
             }
         }
 
         #endregion
 
         #region Define Field
-
-        public FieldBuilder DefineField(string fieldName, Type type, Type[]? requiredCustomModifiers,
+        protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers,
             Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             lock (SyncRoot)
             {
-                return DefineFieldNoLock(fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
-            }
-        }
+                ThrowIfCreated();
 
-        private FieldBuilder DefineFieldNoLock(string fieldName, Type type, Type[]? requiredCustomModifiers,
-            Type[]? optionalCustomModifiers, FieldAttributes attributes)
-        {
-            ThrowIfCreated();
-
-            if (m_enumUnderlyingType == null && IsEnum)
-            {
-                if ((attributes & FieldAttributes.Static) == 0)
+                if (m_enumUnderlyingType == null && IsEnum)
                 {
-                    // remember the underlying type for enum type
-                    m_enumUnderlyingType = type;
+                    if ((attributes & FieldAttributes.Static) == 0)
+                    {
+                        // remember the underlying type for enum type
+                        m_enumUnderlyingType = type;
+                    }
                 }
-            }
 
-            return new FieldBuilder(this, fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
+                return new RuntimeFieldBuilder(this, fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
+            }
         }
 
-        public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
+        protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes)
         {
             lock (SyncRoot)
             {
-                return DefineInitializedDataNoLock(name, data, attributes);
+                // This method will define an initialized Data in .sdata.
+                // We will create a fake TypeDef to represent the data with size. This TypeDef
+                // will be the signature for the Field.
+
+                return DefineDataHelper(name, data, data.Length, attributes);
             }
         }
 
-        private FieldBuilder DefineInitializedDataNoLock(string name, byte[] data, FieldAttributes attributes)
-        {
-            ArgumentNullException.ThrowIfNull(data);
-
-            // This method will define an initialized Data in .sdata.
-            // We will create a fake TypeDef to represent the data with size. This TypeDef
-            // will be the signature for the Field.
-
-            return DefineDataHelper(name, data, data.Length, attributes);
-        }
-
-        public FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
+        protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes)
         {
             lock (SyncRoot)
             {
-                return DefineUninitializedDataNoLock(name, size, attributes);
+                // This method will define an uninitialized Data in .sdata.
+                // We will create a fake TypeDef to represent the data with size. This TypeDef
+                // will be the signature for the Field.
+                return DefineDataHelper(name, null, size, attributes);
             }
-        }
-
-        private FieldBuilder DefineUninitializedDataNoLock(string name, int size, FieldAttributes attributes)
-        {
-            // This method will define an uninitialized Data in .sdata.
-            // We will create a fake TypeDef to represent the data with size. This TypeDef
-            // will be the signature for the Field.
-            return DefineDataHelper(name, null, size, attributes);
         }
 
         #endregion
 
         #region Define Properties and Events
 
-        public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention,
+        protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention,
             Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             lock (SyncRoot)
             {
-                return DefinePropertyNoLock(name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
-                                            parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
+                SignatureHelper sigHelper;
+                byte[] sigBytes;
+
+                ThrowIfCreated();
+
+                // get the signature in SignatureHelper form
+                sigHelper = SignatureHelper.GetPropertySigHelper(
+                    m_module, callingConvention,
+                    returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
+                    parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
+
+                // get the signature in byte form
+                sigBytes = sigHelper.InternalGetSignature(out int sigLength);
+
+                RuntimeModuleBuilder module = m_module;
+
+                int prToken = DefineProperty(
+                    new QCallModule(ref module),
+                    m_tdType,
+                    name,
+                    attributes,
+                    sigBytes,
+                    sigLength);
+
+                // create the property builder now.
+                return new RuntimePropertyBuilder(
+                        m_module,
+                        name,
+                        attributes,
+                        returnType,
+                        prToken,
+                        this);
             }
         }
 
-        private PropertyBuilder DefinePropertyNoLock(string name, PropertyAttributes attributes, CallingConventions callingConvention,
-            Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
-            Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-
-            SignatureHelper sigHelper;
-            byte[] sigBytes;
-
-            ThrowIfCreated();
-
-            // get the signature in SignatureHelper form
-            sigHelper = SignatureHelper.GetPropertySigHelper(
-                m_module, callingConvention,
-                returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers,
-                parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
-
-            // get the signature in byte form
-            sigBytes = sigHelper.InternalGetSignature(out int sigLength);
-
-            ModuleBuilder module = m_module;
-
-            int prToken = DefineProperty(
-                new QCallModule(ref module),
-                m_tdType,
-                name,
-                attributes,
-                sigBytes,
-                sigLength);
-
-            // create the property builder now.
-            return new PropertyBuilder(
-                    m_module,
-                    name,
-                    attributes,
-                    returnType,
-                    prToken,
-                    this);
-        }
-
-        public EventBuilder DefineEvent(string name, EventAttributes attributes, Type eventtype)
+        protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype)
         {
             lock (SyncRoot)
             {
-                return DefineEventNoLock(name, attributes, eventtype);
-            }
-        }
+                int tkType;
+                int evToken;
 
-        private EventBuilder DefineEventNoLock(string name, EventAttributes attributes, Type eventtype)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-            if (name[0] == '\0')
-                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
+                ThrowIfCreated();
 
-            int tkType;
-            int evToken;
+                tkType = m_module.GetTypeTokenInternal(eventtype);
 
-            ThrowIfCreated();
-
-            tkType = m_module.GetTypeTokenInternal(eventtype);
-
-            // Internal helpers to define property records
-            ModuleBuilder module = m_module;
-            evToken = DefineEvent(
-                new QCallModule(ref module),
-                m_tdType,
-                name,
-                attributes,
-                tkType);
-
-            // create the property builder now.
-            return new EventBuilder(
-                    m_module,
+                // Internal helpers to define property records
+                RuntimeModuleBuilder module = m_module;
+                evToken = DefineEvent(
+                    new QCallModule(ref module),
+                    m_tdType,
                     name,
                     attributes,
-                    // tkType,
-                    this,
-                    evToken);
+                    tkType);
+
+                // create the property builder now.
+                return new RuntimeEventBuilder(
+                        m_module,
+                        name,
+                        attributes,
+                        this,
+                        evToken);
+            }
         }
 
         #endregion
@@ -1677,19 +1591,11 @@ namespace System.Reflection.Emit
         #region Create Type
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public TypeInfo CreateTypeInfo()
+        protected override TypeInfo CreateTypeInfoCore()
         {
             TypeInfo? typeInfo = CreateTypeInfoImpl();
-            Debug.Assert(typeInfo != null);
-            return typeInfo;
-        }
-
-        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public Type CreateType()
-        {
-            Type? type = CreateTypeInfoImpl();
-            Debug.Assert(type != null);
-            return type;
+            Debug.Assert(m_isHiddenGlobalType || typeInfo != null);
+            return typeInfo!;
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
@@ -1727,7 +1633,7 @@ namespace System.Reflection.Emit
                 tkParent = m_module.GetTypeTokenInternal(m_typeParent);
             }
 
-            ModuleBuilder module = m_module;
+            RuntimeModuleBuilder module = m_module;
 
             if (IsGenericParameter)
             {
@@ -1774,7 +1680,7 @@ namespace System.Reflection.Emit
 
                 if (m_inst != null)
                 {
-                    foreach (GenericTypeParameterBuilder tb in m_inst)
+                    foreach (RuntimeGenericTypeParameterBuilder tb in m_inst)
                     {
                         tb.m_type.CreateType();
                     }
@@ -1795,7 +1701,7 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < size; i++)
             {
-                MethodBuilder meth = m_listMethods[i];
+                RuntimeMethodBuilder meth = m_listMethods[i];
 
                 if (meth.IsGenericMethodDefinition)
                 {
@@ -1895,11 +1801,11 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Misc
-        public int Size => m_iTypeSize;
+        protected override int SizeCore => m_iTypeSize;
 
-        public PackingSize PackingSize => m_iPackingSize;
+        protected override PackingSize PackingSizeCore => m_iPackingSize;
 
-        public void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
+        protected override void SetParentCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             ThrowIfCreated();
 
@@ -1927,14 +1833,12 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+        protected override void AddInterfaceImplementationCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
         {
-            ArgumentNullException.ThrowIfNull(interfaceType);
-
             ThrowIfCreated();
 
             int tkInterface = m_module.GetTypeTokenInternal(interfaceType);
-            ModuleBuilder module = m_module;
+            RuntimeModuleBuilder module = m_module;
             AddInterfaceImpl(new QCallModule(ref module), m_tdType, tkInterface);
 
             m_typeInterfaces!.Add(interfaceType);
@@ -1951,19 +1855,14 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
-            DefineCustomAttribute(m_module, m_tdType, ((ModuleBuilder)m_module).GetConstructorToken(con), binaryAttribute);
+            DefineCustomAttribute(m_module, m_tdType, m_module.GetMethodMetadataToken(con), binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
-            customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, m_tdType);
+            customBuilder.CreateCustomAttribute(m_module, m_tdType);
         }
 
         #endregion

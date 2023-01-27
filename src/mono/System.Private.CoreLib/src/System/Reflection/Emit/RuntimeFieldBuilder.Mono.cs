@@ -41,7 +41,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
-    public sealed partial class FieldBuilder : FieldInfo
+    internal sealed partial class RuntimeFieldBuilder : FieldBuilder
     {
 #region Sync with MonoReflectionFieldBuilder in object-internals.h
         private FieldAttributes attrs;
@@ -49,7 +49,7 @@ namespace System.Reflection.Emit
         private string name;
         private object? def_value;
         private int offset;
-        internal TypeBuilder typeb;
+        internal RuntimeTypeBuilder typeb;
         private byte[]? rva_data;
         private CustomAttributeBuilder[]? cattrs;
         private UnmanagedMarshal? marshal_info;
@@ -59,7 +59,7 @@ namespace System.Reflection.Emit
 #endregion
 
         [DynamicDependency(nameof(modOpt))]  // Automatically keeps all previous fields too due to StructLayout
-        internal FieldBuilder(TypeBuilder tb, string fieldName, Type type, FieldAttributes attributes, Type[]? modReq, Type[]? modOpt)
+        internal RuntimeFieldBuilder(RuntimeTypeBuilder tb, string fieldName, Type type, FieldAttributes attributes, Type[]? modReq, Type[]? modOpt)
         {
             ArgumentNullException.ThrowIfNull(type);
 
@@ -71,7 +71,7 @@ namespace System.Reflection.Emit
             offset = -1;
             typeb = tb;
 
-            ((ModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
+            ((RuntimeModuleBuilder)tb.Module).RegisterToken(this, MetadataToken);
         }
 
         public override FieldAttributes Attributes
@@ -133,7 +133,7 @@ namespace System.Reflection.Emit
                 throw CreateNotSupportedException();
         }
 
-        public override int MetadataToken { get { return ((ModuleBuilder)typeb.Module).GetToken(this); } }
+        public override int MetadataToken { get { return ((RuntimeModuleBuilder)typeb.Module).GetToken(this); } }
 
         public override object? GetValue(object? obj)
         {
@@ -165,7 +165,7 @@ namespace System.Reflection.Emit
             return PackingSize.Size1;
         }
 
-        public void SetConstant(object? defaultValue)
+        protected override void SetConstantCore(object? defaultValue)
         {
             RejectIfCreated();
 
@@ -174,11 +174,9 @@ namespace System.Reflection.Emit
             def_value = defaultValue;
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
         {
             RejectIfCreated();
-
-            ArgumentNullException.ThrowIfNull(customBuilder);
 
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.FieldOffsetAttribute")
@@ -221,13 +219,13 @@ namespace System.Reflection.Emit
             }
         }
 
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
             RejectIfCreated();
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
+            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        public void SetOffset(int iOffset)
+        protected override void SetOffsetCore(int iOffset)
         {
             RejectIfCreated();
             if (iOffset < 0)
@@ -253,11 +251,11 @@ namespace System.Reflection.Emit
 
         internal void ResolveUserTypes()
         {
-            type = TypeBuilder.ResolveUserType(type);
-            TypeBuilder.ResolveUserTypes(modReq);
-            TypeBuilder.ResolveUserTypes(modOpt);
+            type = RuntimeTypeBuilder.ResolveUserType(type);
+            RuntimeTypeBuilder.ResolveUserTypes(modReq);
+            RuntimeTypeBuilder.ResolveUserTypes(modOpt);
             if (marshal_info != null)
-                marshal_info.marshaltyperef = TypeBuilder.ResolveUserType(marshal_info.marshaltyperef);
+                marshal_info.marshaltyperef = RuntimeTypeBuilder.ResolveUserType(marshal_info.marshaltyperef);
         }
 
         internal FieldInfo RuntimeResolve()
