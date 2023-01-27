@@ -7899,7 +7899,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_ins (td, MINT_REFANYTYPE);
 				td->sp--;
 				interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-				push_simple_type (td, STACK_TYPE_I);
+				push_type_vt (td, mono_defaults.typehandle_class, mono_class_value_size (mono_defaults.typehandle_class, NULL));
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				++td->ip;
 				break;
