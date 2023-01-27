@@ -4425,13 +4425,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
-    // If instrumenting, add block and class probes.
-    //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-    {
-        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
-    }
-
     // Compute bbNum, bbRefs and bbPreds
     //
     // This is the first time full (not cheap) preds will be computed.
@@ -4448,6 +4441,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         activePhaseChecks |= PhaseChecks::CHECK_FG;
     };
     DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
+
+    // If instrumenting, add block and class probes.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
+    }
 
     // Expand any patchpoints
     //
