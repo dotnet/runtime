@@ -1144,7 +1144,7 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 	{
 		const ep_char8_t* entrypoint_assembly_name_local;
 		SString assembly_name;
-		if (!HostInformation::GetProperty (HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, assembly_name))
+		if (HostInformation::GetProperty (HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, assembly_name))
 		{
 			entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>(assembly_name.GetCopyOfUTF8String ());
 		}
