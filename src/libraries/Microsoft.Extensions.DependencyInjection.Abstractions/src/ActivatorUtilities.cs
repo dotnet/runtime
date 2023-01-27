@@ -130,15 +130,12 @@ namespace Microsoft.Extensions.DependencyInjection
             Type[] argumentTypes)
         {
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-            //if (!RuntimeFeature.IsDynamicCodeSupported)
+            if (!RuntimeFeature.IsDynamicCodeSupported)
             {
-                FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
-
-                return CreateFactory(constructor, parameterMap);
+                return CreateFactoryReflection(instanceType, argumentTypes);
             }
 #endif
 
-#if !(NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER)
             CreateFactoryInternal(instanceType, argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
             var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, object>>(
@@ -146,7 +143,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
             Func<IServiceProvider, object?[]?, object>? result = factoryLambda.Compile();
             return result.Invoke;
-#endif
         }
 
         /// <summary>
@@ -166,15 +162,14 @@ namespace Microsoft.Extensions.DependencyInjection
                 Type[] argumentTypes)
         {
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-            //if (!RuntimeFeature.IsDynamicCodeSupported)
+            if (!RuntimeFeature.IsDynamicCodeSupported)
             {
-                FindApplicableConstructor(typeof(T), argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
-                var factory = CreateFactory(constructor, parameterMap);
-                return (IServiceProvider serviceProvider, object?[]? arguments) => (T)factory(serviceProvider, arguments);
+                var factory = CreateFactoryReflection(typeof(T), argumentTypes);
+
+                return (serviceProvider, arguments) => (T)factory(serviceProvider, arguments);
             }
 #endif
 
-#if !(NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER)
             CreateFactoryInternal(typeof(T), argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
             var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, T>>(
@@ -182,7 +177,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
             Func<IServiceProvider, object?[]?, T>? result = factoryLambda.Compile();
             return result.Invoke;
-#endif
         }
 
         private static void CreateFactoryInternal([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType, Type[] argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody)
@@ -289,10 +283,12 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
 #if NETSTANDARD2_1_OR_GREATER || NET6_0_OR_GREATER
-        private static ObjectFactory CreateFactory(
-            ConstructorInfo constructor,
-            int?[] parameterMap)
+        private static ObjectFactory CreateFactoryReflection(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
+            Type?[] argumentTypes)
         {
+            FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
+
             ParameterInfo[]? constructorParameters = constructor.GetParameters();
             List<FactoryParameterContext> parameters = new List<FactoryParameterContext>();
             for (int i = 0; i < constructorParameters.Length; i++)
