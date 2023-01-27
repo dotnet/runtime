@@ -31,7 +31,7 @@ namespace Regression.Performance
 
             // Acquire native functions
             nint mod = NativeLibrary.Load(currentPath);
-            _Initialize = (delegate* unmanaged<void*, int, nint, int>)NativeLibrary.GetExport(mod, "Initialize");
+            _Initialize = (delegate* unmanaged<void*, int, nint, int>)NativeLibrary.GetExport(mod, "PerfInitialize");
 
             string[] scenarioNames = new[]
             {
@@ -48,8 +48,8 @@ namespace Regression.Performance
                 _scenarios.Add(new Scenario()
                 {
                     Name = name,
-                    Baseline = (delegate* unmanaged<int, int>)NativeLibrary.GetExport(mod, $"Baseline{name}"),
-                    Current = (delegate* unmanaged<int, int>)NativeLibrary.GetExport(mod, $"Current{name}"),
+                    Baseline = (delegate* unmanaged<int, int>)NativeLibrary.GetExport(mod, $"PerfBaseline{name}"),
+                    Current = (delegate* unmanaged<int, int>)NativeLibrary.GetExport(mod, $"PerfCurrent{name}"),
                 });
             }
 
@@ -93,9 +93,9 @@ namespace Regression.Performance
             else
             {
                 regperfPath =
-                    OperatingSystem.IsWindows() ? "regperf.dll"
-                    : OperatingSystem.IsMacOS() ? "libregperf.dylib"
-                    : "libregperf.so";
+                    OperatingSystem.IsWindows() ? "regnative.dll"
+                    : OperatingSystem.IsMacOS() ? "libregnative.dylib"
+                    : "libregnative.so";
             }
 
             var test = new Compare(regperfPath);

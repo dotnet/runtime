@@ -81,7 +81,7 @@ namespace
 }
 
 EXPORT
-HRESULT Initialize(
+HRESULT PerfInitialize(
     void const* data,
     uint32_t dataLen,
     IMetaDataDispenser* baseline)
@@ -109,7 +109,7 @@ HRESULT Initialize(
 }
 
 EXPORT
-HRESULT BaselineCreateImport(int iter)
+HRESULT PerfBaselineCreateImport(int iter)
 {
     HRESULT hr;
     IMetaDataImport* import;
@@ -123,7 +123,7 @@ HRESULT BaselineCreateImport(int iter)
 }
 
 EXPORT
-HRESULT CurrentCreateImport(int iter)
+HRESULT PerfCurrentCreateImport(int iter)
 {
     HRESULT hr;
     IMetaDataImport* import;
@@ -137,7 +137,7 @@ HRESULT CurrentCreateImport(int iter)
 }
 
 EXPORT
-HRESULT BaselineEnumTypeDefs(int iter)
+HRESULT PerfBaselineEnumTypeDefs(int iter)
 {
     HRESULT hr;
     for (int i = 0; i < iter; ++i)
@@ -149,7 +149,7 @@ HRESULT BaselineEnumTypeDefs(int iter)
 }
 
 EXPORT
-HRESULT CurrentEnumTypeDefs(int iter)
+HRESULT PerfCurrentEnumTypeDefs(int iter)
 {
     HRESULT hr;
     for (int i = 0; i < iter; ++i)
@@ -161,7 +161,7 @@ HRESULT CurrentEnumTypeDefs(int iter)
 }
 
 EXPORT
-HRESULT BaselineGetScopeProps(int iter)
+HRESULT PerfBaselineGetScopeProps(int iter)
 {
     HRESULT hr;
     for (int i = 0; i < iter; ++i)
@@ -173,7 +173,7 @@ HRESULT BaselineGetScopeProps(int iter)
 }
 
 EXPORT
-HRESULT CurrentGetScopeProps(int iter)
+HRESULT PerfCurrentGetScopeProps(int iter)
 {
     HRESULT hr;
     for (int i = 0; i < iter; ++i)
@@ -185,7 +185,7 @@ HRESULT CurrentGetScopeProps(int iter)
 }
 
 EXPORT
-HRESULT BaselineEnumUserStrings(int iter)
+HRESULT PerfBaselineEnumUserStrings(int iter)
 {
     HRESULT hr;
     for (int i = 0; i < iter; ++i)
@@ -197,7 +197,7 @@ HRESULT BaselineEnumUserStrings(int iter)
 }
 
 EXPORT
-HRESULT CurrentEnumUserStrings(int iter)
+HRESULT PerfCurrentEnumUserStrings(int iter)
 {
     HRESULT hr;
     for (int i = 0; i < iter; ++i)
@@ -209,7 +209,7 @@ HRESULT CurrentEnumUserStrings(int iter)
 }
 
 EXPORT
-HRESULT BaselineGetCustomAttributeByName(int iter)
+HRESULT PerfBaselineGetCustomAttributeByName(int iter)
 {
     for (int i = 0; i < iter; ++i)
     {
@@ -220,7 +220,7 @@ HRESULT BaselineGetCustomAttributeByName(int iter)
 }
 
 EXPORT
-HRESULT CurrentGetCustomAttributeByName(int iter)
+HRESULT PerfCurrentGetCustomAttributeByName(int iter)
 {
     for (int i = 0; i < iter; ++i)
     {
