@@ -47,17 +47,12 @@ async function getArgs() {
         queryArguments = process.argv.slice(2);
     } else if (is_browser) {
         // We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-        const allArgs = window.location.search.split("%20--%20"); // mono runtime args -- app args
-        const runtimeParams = new URLSearchParams(allArgs[0]);
-        const runtimeValues = runtimeParams.getAll("arg");
-        const appParams = new URLSearchParams(allArgs[1]);
-        const appValues = appParams.getAll("arg");
+        const url = new URL(decodeURI(window.location));
         let urlArguments = []
-        for (let param of runtimeValues) {
-            urlArguments.push(param);
-        }
-        for (let param of appValues) {
-            urlArguments.push(param);
+        for (let param of url.searchParams) {
+            if (param[0] == "arg") {
+                urlArguments.push(param[1]);
+            }
         }
         queryArguments = urlArguments;
     } else if (v8args !== undefined) {
