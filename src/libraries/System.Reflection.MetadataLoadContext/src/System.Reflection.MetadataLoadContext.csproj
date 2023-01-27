@@ -143,7 +143,6 @@
     <Compile Include="System\Reflection\TypeLoading\Types\RoStubType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoType.GetInterface.cs" />
-    <Compile Include="System\Reflection\TypeLoading\Types\RoType.ModifiedType.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoType.TypeClassification.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoTypeDelegator.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoWrappedType.cs" />

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.TypeLoading;
 
@@ -12,6 +14,11 @@ namespace System.Reflection
     /// </summary>
     internal abstract class RoModifiedType : RoTypeDelegator
     {
+        private List<Type>? _requiredModifiersBuilder;
+        private List<Type>? _optionalModifiersBuilder;
+        private Type[]? _requiredModifiers;
+        private Type[]? _optionalModifiers;
+
         protected RoModifiedType(RoType unmodifiedType) : base(unmodifiedType) { }
 
         public static RoModifiedType Create(RoType unmodifiedType)
@@ -41,6 +48,56 @@ namespace System.Reflection
             }
 
             return modifiedType;
+        }
+
+        public void AddRequiredModifier(Type type)
+        {
+            Debug.Assert(_requiredModifiers == null);
+            _requiredModifiersBuilder ??= new List<Type>();
+            _requiredModifiersBuilder.Add(type);
+        }
+
+        public void AddOptionalModifier(Type type)
+        {
+            Debug.Assert(_optionalModifiers == null);
+            _optionalModifiersBuilder ??= new List<Type>();
+            _optionalModifiersBuilder.Add(type);
+        }
+
+        public override Type[] GetRequiredCustomModifiers()
+        {
+            if (_requiredModifiers == null)
+            {
+                if (_requiredModifiersBuilder == null)
+                {
+                    _requiredModifiers = EmptyTypes;
+                }
+                else
+                {
+                    _requiredModifiers = _requiredModifiersBuilder.ToArray();
+                    _requiredModifiersBuilder = null;
+                }
+            }
+
+            return Helpers.CloneArray(_requiredModifiers);
+        }
+
+        public override Type[] GetOptionalCustomModifiers()
+        {
+            if (_optionalModifiers == null)
+            {
+                if (_optionalModifiersBuilder == null)
+                {
+                    _optionalModifiers = EmptyTypes;
+                }
+                else
+                {
+                    _optionalModifiers = _optionalModifiersBuilder.ToArray();
+                    _optionalModifiersBuilder = null;
+                }
+            }
+
+            return Helpers.CloneArray(_optionalModifiers);
         }
 
         public sealed override bool Equals([NotNullWhen(true)] object? obj)

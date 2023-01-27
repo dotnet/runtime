@@ -81,6 +81,10 @@ namespace System.Reflection.TypeLoading
         public abstract override Type GetFunctionPointerReturnType();
         public abstract override Type[] GetFunctionPointerParameterTypes();
 
+        // RoModifiedType overrides these.
+        public override Type[] GetOptionalCustomModifiers() => EmptyTypes;
+        public override Type[] GetRequiredCustomModifiers() => EmptyTypes;
+
         public abstract override bool ContainsGenericParameters { get; }
 
         // Applies if IsGenericTypeDefinition == true

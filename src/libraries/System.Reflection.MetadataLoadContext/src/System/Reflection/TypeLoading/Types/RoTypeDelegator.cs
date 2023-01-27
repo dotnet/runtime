@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// TODO (PR REVIEW COMMENT): remove this file and throw NSE from RoModifiedType for members
+// that can directly or indirectly return an unmodified Type.
+
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;

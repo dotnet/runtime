@@ -7,6 +7,8 @@ namespace System.Reflection
     /// Base class for all modified types.
     /// Design supports code sharing between different runtimes and lazy loading of custom modifiers.
     /// </summary>
+    // TODO (PR REVIEW COMMENT): no longer derive from TypeDelegator and throw NSE for members
+    // that can directly or indirectly return an unmodified Type.
     internal abstract partial class ModifiedType : TypeDelegator
     {
         private readonly object? _signatureProvider;
