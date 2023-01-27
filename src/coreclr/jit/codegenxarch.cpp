@@ -913,20 +913,11 @@ void CodeGen::genCodeForDivCnsPow2(GenTreeOp* treeNode)
     const size_t  absCnsDivisor = abs(cnsDivisor);
 
     assert(absCnsDivisor != 2);
+    assert(dividendReg != targetReg);
 
-    if (dividendReg == targetReg)
-    {
-        emit->emitIns_R_I(INS_sar_N, size, targetReg, (targetType == TYP_INT) ? 31 : 63);
-        emit->emitIns_R_I(INS_and, size, targetReg, absCnsDivisor - 1);
-        emit->emitIns_R_R(INS_add, size, targetReg, targetReg);
-    }
-    else
-    {
-        // Using this instruction set prevents an extra 'mov' instruction.
-        emit->emitIns_R_AR(INS_lea, size, targetReg, dividendReg, static_cast<int>(absCnsDivisor - 1));
-        emit->emitIns_R_R(INS_test, size, dividendReg, dividendReg);
-        emit->emitIns_R_R(INS_cmovns, size, targetReg, dividendReg);
-    }
+    emit->emitIns_R_AR(INS_lea, size, targetReg, dividendReg, static_cast<int>(absCnsDivisor - 1));
+    emit->emitIns_R_R(INS_test, size, dividendReg, dividendReg);
+    emit->emitIns_R_R(INS_cmovns, size, targetReg, dividendReg);
 
     emit->emitIns_R_I(INS_sar_N, size, targetReg, genLog2(static_cast<size_t>(absCnsDivisor)));
 
