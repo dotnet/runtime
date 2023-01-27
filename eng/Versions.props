@@ -206,7 +206,7 @@
     <GrpcDotnetClientVersion>2.45.0</GrpcDotnetClientVersion>
     <GrpcToolsVersion>2.45.0</GrpcToolsVersion>
     <!-- Uncomment to set a fixed version, else the latest is used -->
-    <!--<SdkVersionForWorkloadTesting>8.0.100-alpha.1.22463.23</SdkVersionForWorkloadTesting>-->
+    <SdkVersionForWorkloadTesting>8.0.100-alpha.1.23077.3</SdkVersionForWorkloadTesting>
     <CompilerPlatformTestingVersion>1.1.2-beta1.22403.2</CompilerPlatformTestingVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20221010.1</MicrosoftPrivateIntellisenseVersion>
