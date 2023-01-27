@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <UseIntellisensePackageDocXmlFile>true</UseIntellisensePackageDocXmlFile>
+    <UseIntellisensePackageDocXmlFile>false</UseIntellisensePackageDocXmlFile>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />

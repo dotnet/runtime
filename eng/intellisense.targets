@@ -1,11 +1,12 @@
 <Project>
 
   <PropertyGroup>
+    <UseIntellisensePackageDocXmlFile>true</UseIntellisensePackageDocXmlFile>
     <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
     <IntellisensePackageXmlFileFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFileFromNetFolder>
     <IntellisensePackageXmlFileFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFileFromDotNetPlatExtFolder>
-    <IntellisensePackageXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' != 'true' and Exists($(IntellisensePackageXmlFileFromNetFolder))">$(IntellisensePackageXmlFileFromNetFolder)</IntellisensePackageXmlFile>
-    <IntellisensePackageXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' != 'true' and Exists($(IntellisensePackageXmlFileFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFileFromDotNetPlatExtFolder)</IntellisensePackageXmlFile>
+    <IntellisensePackageXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFileFromNetFolder))">$(IntellisensePackageXmlFileFromNetFolder)</IntellisensePackageXmlFile>
+    <IntellisensePackageXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFileFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFileFromDotNetPlatExtFolder)</IntellisensePackageXmlFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,7 +17,7 @@
   <!-- Replace the default xml file generated in the obj folder with the one that comes from the docs feed. -->
   <Target Name="ChangeDocumentationFileForPackaging"
           AfterTargets="DocumentationProjectOutputGroup"
-          Condition="'$(UseIntellisensePackageDocXmlFile)' != 'true'">
+          Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">
     <ItemGroup>
       <DocFileItem Remove="@(DocFileItem)" />
       <DocFileItem Include="$(IntellisensePackageXmlFile)" />
@@ -25,7 +26,7 @@
 
   <Target Name="CopyDocumentationFileToXmlDocDir"
           AfterTargets="CopyFilesToOutputDirectory"
-          Condition="'$(UseIntellisensePackageDocXmlFile)' != 'true' and '$(IsNetCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
+          Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true' and '$(IsNetCoreAppSrc)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
           DependsOnTargets="ChangeDocumentationFileForPackaging">
     <Copy SourceFiles="@(DocFileItem)"
           DestinationFolder="$(XmlDocDir)"
