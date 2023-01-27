@@ -5836,7 +5836,9 @@ private:
     GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
 #if FEATURE_FASTTAILCALL
-    bool fgCallHasMustCopyByrefParameter(GenTreeCall* callee);
+    bool fgCallHasMustCopyByrefParameter(GenTreeCall* call);
+    bool fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg);
+
 #endif
     bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
