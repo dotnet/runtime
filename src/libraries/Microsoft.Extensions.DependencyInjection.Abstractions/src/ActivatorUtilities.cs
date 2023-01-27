@@ -296,7 +296,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 ParameterInfo constructorParameter = constructorParameters[i];
                 bool hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(constructorParameter, out object? defaultValue);
 
-                parameters.Add(new FactoryParameterContext(constructorParameter, hasDefaultValue, defaultValue));
+                parameters.Add(new FactoryParameterContext(constructorParameter, hasDefaultValue, defaultValue, parameterMap[i]));
             }
 
             return (IServiceProvider serviceProvider, object?[]? arguments) =>
@@ -304,8 +304,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 var constructorArguments = new object?[parameters.Count];
                 for (int i = 0; i < parameters.Count; i++)
                 {
-                    var parameter = parameters[i];
-                    if (parameterMap[i] is { } index)
+                    FactoryParameterContext parameter = parameters[i];
+                    if (parameter.ArgumentIndex is { } index)
                     {
                         constructorArguments[i] = arguments?[index];
                     }
@@ -329,16 +329,18 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private sealed class FactoryParameterContext
         {
-            public FactoryParameterContext(ParameterInfo parameterInfo, bool hasDefaultValue, object? defaultValue)
+            public FactoryParameterContext(ParameterInfo parameterInfo, bool hasDefaultValue, object? defaultValue, int? argumentIndex)
             {
                 ParameterInfo = parameterInfo;
                 HasDefaultValue = hasDefaultValue;
                 DefaultValue = defaultValue;
+                ArgumentIndex = argumentIndex;
             }
 
             public ParameterInfo ParameterInfo { get; }
             public bool HasDefaultValue { get; }
             public object? DefaultValue { get; }
+            public int? ArgumentIndex { get; }
         }
 #endif
 
