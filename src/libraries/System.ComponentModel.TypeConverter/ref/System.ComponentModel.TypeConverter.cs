@@ -2203,7 +2203,7 @@ namespace System.ComponentModel.Design.Serialization
     }
     public partial interface IDesignerSerializationProvider
     {
-        object? GetSerializer(System.ComponentModel.Design.Serialization.IDesignerSerializationManager manager, object currentSerializer, System.Type objectType, System.Type serializerType);
+        object? GetSerializer(System.ComponentModel.Design.Serialization.IDesignerSerializationManager manager, object? currentSerializer, System.Type? objectType, System.Type serializerType);
     }
     public partial interface IDesignerSerializationService
     {
