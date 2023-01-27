@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.Internal;
 
@@ -303,7 +302,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     }
 
                     callSitesByIndex.Sort((a, b) => a.Key.CompareTo(b.Key));
-                    callSites = callSitesByIndex.Select(p => p.Value).ToArray();
+                    callSites = new ServiceCallSite[callSitesByIndex.Count];
+                    for (var i = 0; i < callSites.Length; ++i)
+                    {
+                        callSites[i] = callSitesByIndex[i].Value;
+                    }
 
                     void AddCallSite(ServiceCallSite callSite, int index)
                     {
