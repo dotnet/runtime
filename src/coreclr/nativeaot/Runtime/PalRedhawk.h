@@ -636,7 +636,7 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx);
 // For platforms that have segment registers in the CONTEXT_CONTROL set that
 // are not saved in PAL_LIMITED_CONTEXT, this captures them from the current
 // thread and saves them in `pContext`.
-// This function returns true if the current plateform has no such registers or
+// This function returns true if the current platform has no such registers or
 // if the registers are successfully saved in `pContext`.
 // Other false is returned.
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI TryPopulateControlSegmentRegisters(CONTEXT* pContext);
