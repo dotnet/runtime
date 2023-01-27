@@ -33,6 +33,25 @@ namespace System.Collections.Frozen
 
         /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
         /// <param name="source">The values to use to populate the set.</param>
+        /// <param name="optimizeForReading">
+        /// <see langword="true"/> to do more work as part of set construction to optimize for subsequent reading of the data;
+        /// <see langword="false"/> to prefer making construction more efficient. The default is <see langword="false"/>.
+        /// </param>
+        /// <typeparam name="T">The type of the values in the set.</typeparam>
+        /// <returns>A frozen set.</returns>
+        /// <remarks>
+        /// Frozen collections are immutable and may be optimized for situations where a collection is created very infrequently but
+        /// is used very frequently at runtime. Setting <paramref name="optimizeForReading"/> to <see langword="true"/> will result in a
+        /// relatively high cost to create the collection in exchange for improved performance when subsequently using the collection.
+        /// Using <see langword="true"/> is ideal for collections that are created once, potentially at the startup of a service, and then
+        /// used throughout the remainder of the lifetime of the service. Because of the high cost of creation, frozen collections should
+        /// only be initialized with trusted input.
+        /// </remarks>
+        public static FrozenSet<T> ToFrozenSet<T>(this IEnumerable<T> source, bool optimizeForReading) =>
+            ToFrozenSet(source, null, optimizeForReading);
+
+        /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
+        /// <param name="source">The values to use to populate the set.</param>
         /// <param name="comparer">The comparer implementation to use to compare values for equality. If null, <see cref="EqualityComparer{T}.Default"/> is used.</param>
         /// <param name="optimizeForReading">
         /// <see langword="true"/> to do more work as part of set construction to optimize for subsequent reading of the data;

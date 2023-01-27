@@ -40,6 +40,33 @@ namespace System.Collections.Frozen
 
         /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
         /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
+        /// <param name="optimizeForReading">
+        /// <see langword="true"/> to do more work as part of dictionary construction to optimize for subsequent reading of the data;
+        /// <see langword="false"/> to prefer making construction more efficient. The default is <see langword="false"/>.
+        /// </param>
+        /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+        /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
+        /// <remarks>
+        /// <para>
+        /// Frozen collections are immutable and may be optimized for situations where a collection is created very infrequently but
+        /// is used very frequently at runtime. Setting <paramref name="optimizeForReading"/> to <see langword="true"/> will result in a
+        /// relatively high cost to create the collection in exchange for improved performance when subsequently using the collection.
+        /// Using <see langword="true"/> is ideal for collections that are created once, potentially at the startup of a service, and then
+        /// used throughout the remainder of the lifetime of the service. Because of the high cost of creation, frozen collections should
+        /// only be initialized with trusted input.
+        /// </para>
+        /// <para>
+        /// If the same key appears multiple times in the input, the latter one in the sequence takes precedence. This differs from
+        /// <see cref="M:System.Linq.Enumerable.ToDictionary"/>, with which multiple duplicate keys will result in an exception.
+        /// </para>
+        /// </remarks>
+        /// <returns>A <see cref="FrozenDictionary{TKey, TValue}"/> that contains the specified keys and values.</returns>
+        public static FrozenDictionary<TKey, TValue> ToFrozenDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, bool optimizeForReading)
+            where TKey : notnull =>
+            ToFrozenDictionary(source, null, optimizeForReading);
+
+        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
+        /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
         /// <param name="comparer">The comparer implementation to use to compare keys for equality. If null, <see cref="EqualityComparer{TKey}.Default"/> is used.</param>
         /// <param name="optimizeForReading">
         /// <see langword="true"/> to do more work as part of dictionary construction to optimize for subsequent reading of the data;
