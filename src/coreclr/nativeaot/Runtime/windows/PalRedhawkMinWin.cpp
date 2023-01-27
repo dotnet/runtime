@@ -449,16 +449,9 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI TryPopulateControlSegmentRegisters(CONTEXT* pContext)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    HANDLE hThread = GetCurrentThread();
-
     CONTEXT ctx;
-    memset(&ctx, 0, sizeof(ctx));
-    ctx.ContextFlags = CONTEXT_CONTROL;
 
-    if (!GetThreadContext(hThread, &ctx))
-    {
-        return false;
-    }
+    RtlCaptureContext(&ctx);
 
     pContext->SegCs = ctx.SegCs;
     pContext->SegSs = ctx.SegSs;
