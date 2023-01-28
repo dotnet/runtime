@@ -6,6 +6,7 @@
     <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
     <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iossimulator</TargetOS>
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
+    <IOSDedup Condition="'$(UseLLVM)' != 'true' and '$(TargetOS)' == 'ios' and $(Configuration) == 'Debug'">true</IOSDedup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
@@ -41,6 +42,19 @@
 
     <RemoveDir Directories="$(AppDir)" />
 
+    <PropertyGroup Condition="'$(IOSDedup)' == 'true'">
+      <DedupAssembly>$(MSBuildThisFileDirectory)$(PublishDir)\aot-instances.dll</DedupAssembly>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(IOSDedup)' == 'true'" File="$(MSBuildThisFileDirectory)$(PublishDir)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
+    <Csc Condition="'$(IOSDedup)' == 'true'"
+      Sources="$(MSBuildThisFileDirectory)$(PublishDir)\aot-instances.cs"
+      OutputAssembly="$(DedupAssembly)"
+      TargetType="library"
+      Deterministic="true"
+      References="@(ReferencePath)"
+      ToolExe="$(CscToolExe)"
+      ToolPath="$(CscToolPath)" />
+
     <ItemGroup>
       <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll" />
       <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(MSBuildThisFileDirectory)$(PublishDir)\*.dll">
@@ -61,6 +75,7 @@
         Mode="$(AOTMode)"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
+        DedupAssembly="$(DedupAssembly)"
         AotModulesTablePath="$(AppDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         OutputDir="$(PublishDir)"
