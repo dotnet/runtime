@@ -912,7 +912,17 @@ int LinearScan::BuildSelect(GenTreeOp* select)
 
     if (select->OperIs(GT_SELECT))
     {
-        srcCount += BuildOperandUses(select->AsConditional()->gtCond);
+        GenTree* cond = select->AsConditional()->gtCond;
+        if (cond->isContained())
+        {
+            assert(cond->OperIsCompare());
+            srcCount += BuildCmpOperands(cond);
+        }
+        else
+        {
+            BuildUse(cond);
+            srcCount++;
+        }
     }
 
     GenTree* trueVal  = select->gtOp1;

@@ -4077,24 +4077,49 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 //    tree      - The node of interest
 //
 // Return Value:
-//    None.
+//    Number of sources.
 //
 int LinearScan::BuildCmp(GenTree* tree)
 {
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP) || tree->OperIs(GT_JCMP));
     regMaskTP dstCandidates = RBM_NONE;
+
+#ifdef TARGET_X86
+    // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
+    // to store the result into the low byte of a register, which requires the dst be a byteable register.
+    if (!tree->TypeIs(TYP_VOID))
+    {
+        dstCandidates = allByteRegs();
+    }
+#endif
+
+    int srcCount = BuildCmpOperands(tree->AsOp());
+
+    if (tree->TypeGet() != TYP_VOID)
+    {
+        BuildDef(tree, dstCandidates);
+    }
+    return srcCount;
+}
+
+//------------------------------------------------------------------------
+// BuildCmpOperands: Set the register requirements for a compare's operands.
+//
+// Arguments:
+//    tree      - The node of interest
+//
+// Return Value:
+//    Number of sources.
+//
+int LinearScan::BuildCmpOperands(GenTree* tree)
+{
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP) || tree->OperIs(GT_JCMP));
     regMaskTP op1Candidates = RBM_NONE;
     regMaskTP op2Candidates = RBM_NONE;
     GenTree*  op1           = tree->gtGetOp1();
     GenTree*  op2           = tree->gtGetOp2();
 
 #ifdef TARGET_X86
-    // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
-    // to store the result into the low byte of a register, which requires the dst be a byteable register.
-    if (tree->TypeGet() != TYP_VOID)
-    {
-        dstCandidates = allByteRegs();
-    }
     bool needByteRegs = false;
     if (varTypeIsByte(tree))
     {
@@ -4141,9 +4166,5 @@ int LinearScan::BuildCmp(GenTree* tree)
 
     int srcCount = BuildOperandUses(op1, op1Candidates);
     srcCount += BuildOperandUses(op2, op2Candidates);
-    if (tree->TypeGet() != TYP_VOID)
-    {
-        BuildDef(tree, dstCandidates);
-    }
     return srcCount;
 }
