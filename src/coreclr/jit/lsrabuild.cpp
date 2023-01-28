@@ -4082,21 +4082,19 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 int LinearScan::BuildCmp(GenTree* tree)
 {
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP) || tree->OperIs(GT_JCMP));
-    regMaskTP dstCandidates = RBM_NONE;
-
-#ifdef TARGET_X86
-    // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
-    // to store the result into the low byte of a register, which requires the dst be a byteable register.
-    if (!tree->TypeIs(TYP_VOID))
-    {
-        dstCandidates = allByteRegs();
-    }
-#endif
 
     int srcCount = BuildCmpOperands(tree);
 
-    if (tree->TypeGet() != TYP_VOID)
+    if (!tree->TypeIs(TYP_VOID))
     {
+        regMaskTP dstCandidates = RBM_NONE;
+
+#ifdef TARGET_X86
+        // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
+        // to store the result into the low byte of a register, which requires the dst be a byteable register.
+        dstCandidates = allByteRegs();
+#endif
+
         BuildDef(tree, dstCandidates);
     }
     return srcCount;
