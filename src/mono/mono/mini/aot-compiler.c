@@ -482,6 +482,24 @@ ignore_cfg (MonoCompile *cfg)
 	return !cfg || cfg->skip;
 }
 
+static gboolean
+mono_aot_mode_is_full (MonoAotOptions *opts)
+{
+	return opts->mode == MONO_AOT_MODE_FULL;
+}
+
+static gboolean
+mono_aot_mode_is_interp (MonoAotOptions *opts)
+{
+	return opts->interp;
+}
+
+static gboolean
+mono_aot_mode_is_hybrid (MonoAotOptions *opts)
+{
+	return opts->mode == MONO_AOT_MODE_HYBRID;
+}
+
 static void
 aot_printf (MonoAotCompile *acfg, const gchar *format, ...)
 {
@@ -512,6 +530,27 @@ aot_printerrf (MonoAotCompile *acfg, const gchar *format, ...)
 	va_start (args, format);
 	vfprintf (output, format, args);
 	va_end (args);
+}
+
+static void
+report_error (MonoAotCompile *acfg, gboolean fatal, const char *format, ...)
+{
+	FILE *output;
+	va_list args;
+
+	if (acfg->logfile)
+		output = acfg->logfile;
+	else
+		output = stderr;
+
+	va_start (args, format);
+	vfprintf (output, format, args);
+	va_end (args);
+
+	if (acfg->is_full_aot && !acfg->aot_opts.allow_errors && fatal) {
+		fprintf (output, "FullAOT cannot continue if there are errors.\n");
+		exit (1);
+	}
 }
 
 static void
@@ -5070,9 +5109,58 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 	}
 
+	/* StructureToPtr/PtrToStructure wrappers */
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPEDEF]);
+	for (int i = 0; i < rows; ++i) {
+		ERROR_DECL (error);
+		MonoClass *klass;
+
+		token = MONO_TOKEN_TYPE_DEF | (i + 1);
+		klass = mono_class_get_checked (acfg->image, token, error);
+
+		if (!klass) {
+			mono_error_cleanup (error);
+			continue;
+		}
+
+		if ((m_class_is_valuetype (klass) || ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT))
+			&& !mono_class_is_gtd (klass) && can_marshal_struct (klass) &&
+			!(m_class_get_nested_in (klass) && strstr (m_class_get_name (m_class_get_nested_in (klass)), "<PrivateImplementationDetails>") == m_class_get_name (m_class_get_nested_in (klass)))) {
+			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
+			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
+		}
+	}
+
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPESPEC]);
+	for (int i = 0; i < rows; ++i) {
+		ERROR_DECL (error);
+		MonoClass *klass;
+
+		token = MONO_TOKEN_TYPE_SPEC | (i + 1);
+		klass = mono_class_get_checked (acfg->image, token, error);
+
+		if (!klass) {
+			mono_error_cleanup (error);
+			continue;
+		}
+
+		if (m_class_is_ginst (klass) && !mono_class_is_open_constructed_type (m_class_get_byval_arg (klass)) && can_marshal_struct (klass)) {
+			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
+			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
+		}
+	}
+}
+
+static void
+add_native_to_managed_wrappers (MonoAotCompile *acfg)
+{
+	MonoMethod *method;
+	MonoMethodSignature *sig;
+	guint32 token;
+
 	GString *export_symbols = g_string_new ("");
 	/* native-to-managed wrappers */
-	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
+	int rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
 	for (int i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
 
@@ -5198,9 +5286,9 @@ MONO_RESTORE_WARNING
 				MonoMethod *wrapper;
 
 				if (!(method->flags & METHOD_ATTRIBUTE_STATIC)) {
-					g_warning ("AOT restriction: Method '%s' must be static since it is decorated with [UnmanagedCallers].",
-						mono_method_full_name (method, TRUE));
-					exit (1);
+					report_error (acfg, FALSE, "AOT restriction: Method '%s' must be static since it is decorated with [UnmanagedCallers].",
+								  mono_method_full_name (method, TRUE));
+					continue;
 				}
 
 				MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (acfg->image, e->ctor, e->data, e->data_size, error);
@@ -5217,7 +5305,10 @@ MONO_RESTORE_WARNING
 				mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 
 				wrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, error);
-				mono_error_assert_ok (error);
+				if (!is_ok (error)) {
+					report_loader_error (acfg, error, FALSE, "Unable to generate native entry point '%s' due to '%s'.", mono_method_get_full_name (method), mono_error_get_message (error));
+					continue;
+				}
 
 				add_method (acfg, wrapper);
 				if (export_name) {
@@ -5229,8 +5320,9 @@ MONO_RESTORE_WARNING
 			g_free (cattr);
 		}
 
-		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-			(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) &&
+			((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
+			 (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))) {
 			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
 		}
 	}
@@ -5246,47 +5338,6 @@ MONO_RESTORE_WARNING
 		fprintf (export_symbols_outfile, "%s", export_symbols_out);
 		g_free (export_symbols_out);
 		fclose (export_symbols_outfile);
-	}
-
-	/* StructureToPtr/PtrToStructure wrappers */
-	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPEDEF]);
-	for (int i = 0; i < rows; ++i) {
-		ERROR_DECL (error);
-		MonoClass *klass;
-
-		token = MONO_TOKEN_TYPE_DEF | (i + 1);
-		klass = mono_class_get_checked (acfg->image, token, error);
-
-		if (!klass) {
-			mono_error_cleanup (error);
-			continue;
-		}
-
-		if ((m_class_is_valuetype (klass) || ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT))
-			&& !mono_class_is_gtd (klass) && can_marshal_struct (klass) &&
-			!(m_class_get_nested_in (klass) && strstr (m_class_get_name (m_class_get_nested_in (klass)), "<PrivateImplementationDetails>") == m_class_get_name (m_class_get_nested_in (klass)))) {
-			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
-			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
-		}
-	}
-
-	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPESPEC]);
-	for (int i = 0; i < rows; ++i) {
-		ERROR_DECL (error);
-		MonoClass *klass;
-
-		token = MONO_TOKEN_TYPE_SPEC | (i + 1);
-		klass = mono_class_get_checked (acfg->image, token, error);
-
-		if (!klass) {
-			mono_error_cleanup (error);
-			continue;
-		}
-
-		if (m_class_is_ginst (klass) && !mono_class_is_open_constructed_type (m_class_get_byval_arg (klass)) && can_marshal_struct (klass)) {
-			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
-			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
-		}
 	}
 }
 
@@ -5347,24 +5398,6 @@ method_has_type_vars (MonoMethod *method)
 		}
 	}
 	return FALSE;
-}
-
-static
-gboolean mono_aot_mode_is_full (MonoAotOptions *opts)
-{
-	return opts->mode == MONO_AOT_MODE_FULL;
-}
-
-static
-gboolean mono_aot_mode_is_interp (MonoAotOptions *opts)
-{
-	return opts->interp;
-}
-
-static
-gboolean mono_aot_mode_is_hybrid (MonoAotOptions *opts)
-{
-	return opts->mode == MONO_AOT_MODE_HYBRID;
 }
 
 static void add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth, const char *ref);
@@ -12596,6 +12629,7 @@ collect_methods (MonoAotCompile *acfg)
 
 	if (mono_aot_mode_is_full (&acfg->aot_opts))
 		add_wrappers (acfg);
+	add_native_to_managed_wrappers (acfg);
 	return TRUE;
 }
 
