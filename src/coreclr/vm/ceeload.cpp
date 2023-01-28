@@ -329,7 +329,7 @@ void Module::NotifyEtwLoadFinished(HRESULT hr)
 // The constructor phase initializes just enough so that Destruct() can be safely called.
 // It cannot throw or fail.
 //
-Module::Module(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAssembly)
+Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
 {
     CONTRACTL
     {
@@ -343,7 +343,6 @@ Module::Module(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAssembly)
 
     m_loaderAllocator = NULL;
     m_pAssembly = pAssembly;
-    m_moduleRef = moduleRef;
     m_pPEAssembly      = pPEAssembly;
     m_dwTransientFlags = CLASSES_FREED;
 
@@ -547,7 +546,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 
 #ifndef DACCESS_COMPILE
 /* static */
-Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker)
+Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker)
 {
     CONTRACT(Module *)
     {
@@ -555,6 +554,7 @@ Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAss
         PRECONDITION(CheckPointer(pAssembly));
         PRECONDITION(CheckPointer(pPEAssembly));
         POSTCONDITION(CheckPointer(RETVAL));
+        POSTCONDITION(RETVAL->GetAssembly() == pAssembly);
         POSTCONDITION(RETVAL->GetPEAssembly() == pPEAssembly);
     }
     CONTRACT_END;
@@ -572,13 +572,13 @@ Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAss
         // Debugger enables this by calling SetJITCompilerFlags on LoadModule callback.
 
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(EditAndContinueModule))));
-        pModule = new (pMemory) EditAndContinueModule(pAssembly, moduleRef, pPEAssembly);
+        pModule = new (pMemory) EditAndContinueModule(pAssembly, pPEAssembly);
     }
     else
 #endif // EnC_SUPPORTED
     {
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(Module))));
-        pModule = new (pMemory) Module(pAssembly, moduleRef, pPEAssembly);
+        pModule = new (pMemory) Module(pAssembly, pPEAssembly);
     }
 
     PREFIX_ASSUME(pModule != NULL);
@@ -4537,14 +4537,11 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
 
     // Hoist CONTRACT into separate routine because of EX incompatibility
 
-    mdFile token;
-    token = mdFileNil;
-
     // Initial memory block for Modules must be zero-initialized (to make it harder
     // to introduce Destruct crashes arising from OOM's during initialization.)
 
     void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ReflectionModule))));
-    ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, token, pPEAssembly));
+    ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, pPEAssembly));
 
     pModule->DoInit(pamTracker, szName);
 
@@ -4557,8 +4554,8 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
 // The constructor phase initializes just enough so that Destruct() can be safely called.
 // It cannot throw or fail.
 //
-ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly *pPEAssembly)
-  : Module(pAssembly, token, pPEAssembly)
+ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
+  : Module(pAssembly, pPEAssembly)
 {
     CONTRACTL
     {

@@ -701,7 +701,6 @@ private:
     VASigCookieBlock        *m_pVASigCookieBlock;
 
     PTR_Assembly            m_pAssembly;
-    mdFile                  m_moduleRef;
 
     CrstExplicitInit        m_Crst;
     CrstExplicitInit        m_FixupCrst;
@@ -887,10 +886,10 @@ protected:
 #endif // _DEBUG
 
  public:
-    static Module *Create(Assembly *pAssembly, mdFile kFile, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker);
+    static Module *Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker);
 
  protected:
-    Module(Assembly *pAssembly, mdFile moduleRef, PEAssembly *file);
+    Module(Assembly *pAssembly, PEAssembly *file);
 
 
  public:
@@ -924,13 +923,6 @@ protected:
 
     PTR_Assembly GetAssembly() const;
 
-    int GetClassLoaderIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return RidFromToken(m_moduleRef);
-    }
-
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
@@ -945,13 +937,6 @@ protected:
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager * GetCodeVersionManager();
 #endif
-
-    mdFile GetModuleRef()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_moduleRef;
-    }
 
     BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetPEAssembly()->IsDynamic(); }
     BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsDynamic(); }
@@ -1376,19 +1361,8 @@ public:
     {
         WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT
 
-
         _ASSERTE(TypeFromToken(token) == mdtFile);
         m_FileReferencesMap.SetElement(RidFromToken(token), value);
-    }
-
-
-    void StoreFileThrowing(mdFile token, Module *value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        m_FileReferencesMap.AddElement(this, RidFromToken(token), value);
     }
 
     BOOL StoreFileNoThrow(mdFile token, Module *value)
@@ -1399,17 +1373,6 @@ public:
         return m_FileReferencesMap.TrySetElement(RidFromToken(token), value);
     }
 
-    mdAssemblyRef FindManifestModule(Module *value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return m_ManifestModuleReferencesMap.Find(value) | mdtAssembly;
-    }
-#endif // !DACCESS_COMPILE
-
-    DWORD GetFileMax() { LIMITED_METHOD_DAC_CONTRACT;  return m_FileReferencesMap.GetSize(); }
-
-#ifndef DACCESS_COMPILE
     //
     // Increase the size of the AssemblyRef-to-Module LookupMap to make sure the specified token
     // can be stored.  Note that nothing is actually added to the LookupMap at this point.
@@ -1879,7 +1842,7 @@ private:
     PTR_SBuffer m_pDynamicMetadata;
 
 #if !defined DACCESS_COMPILE
-    ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly *pPEAssembly);
+    ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly);
 #endif // !DACCESS_COMPILE
 
 public:

@@ -192,7 +192,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
         // manifest modules of dynamic assemblies are always transient
         m_pModule = ReflectionModule::Create(this, pPEAssembly, pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
-        m_pModule = Module::Create(this, mdFileNil, pPEAssembly, pamTracker);
+        m_pModule = Module::Create(this, pPEAssembly, pamTracker);
 
     InterlockedIncrement((LONG*)&g_cAssemblies);
 
@@ -1023,7 +1023,7 @@ void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTrac
          module->GetDebuggerInfoBits()));
 #endif // DEBUGGING_SUPPORTED
 
-    m_pModule->EnsureFileCanBeStored(module->GetModuleRef());
+    m_pModule->EnsureFileCanBeStored(mdFileNil);
 }
 
 // This is the final step of publishing a Module into an Assembly. This step cannot fail.
@@ -1037,7 +1037,7 @@ void Assembly::PublishModuleIntoAssembly(Module *module)
     }
     CONTRACTL_END
 
-    GetModule()->EnsuredStoreFile(module->GetModuleRef(), module);
+    GetModule()->EnsuredStoreFile(mdFileNil, module);
     InterlockedIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
 }
 
