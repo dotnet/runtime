@@ -125,35 +125,75 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(const char* classN
 {
     assert(className != nullptr);
 
-    if ((enclosingClassName != nullptr) || (className[0] != 'V'))
+    if (enclosingClassName != nullptr)
     {
+        assert(!"Unrecognized SimdAsHWIntrinsic");
         return SimdAsHWIntrinsicClassId::Unknown;
     }
-    if (strcmp(className, "Vector2") == 0)
+
+    switch (className[0])
     {
-        return SimdAsHWIntrinsicClassId::Vector2;
-    }
-    if (strcmp(className, "Vector3") == 0)
-    {
-        return SimdAsHWIntrinsicClassId::Vector3;
-    }
-    if (strcmp(className, "Vector4") == 0)
-    {
-        return SimdAsHWIntrinsicClassId::Vector4;
-    }
-    if ((strcmp(className, "Vector") == 0) || (strcmp(className, "Vector`1") == 0))
-    {
-#if defined(TARGET_XARCH)
-        if (sizeOfVectorT == 32)
+        case 'P':
         {
-            return SimdAsHWIntrinsicClassId::VectorT256;
+            if (strcmp(className, "Plane") == 0)
+            {
+                return SimdAsHWIntrinsicClassId::Plane;
+            }
+            break;
         }
+
+        case 'Q':
+        {
+            if (strcmp(className, "Quaternion") == 0)
+            {
+                return SimdAsHWIntrinsicClassId::Quaternion;
+            }
+            break;
+        }
+
+        case 'V':
+        {
+            if (strncmp(className, "Vector", 6) != 0)
+            {
+                break;
+            }
+
+            className += 6;
+
+            if (strcmp(className, "2") == 0)
+            {
+                return SimdAsHWIntrinsicClassId::Vector2;
+            }
+            else if (strcmp(className, "3") == 0)
+            {
+                return SimdAsHWIntrinsicClassId::Vector3;
+            }
+            else if (strcmp(className, "4") == 0)
+            {
+                return SimdAsHWIntrinsicClassId::Vector4;
+            }
+            else if ((className[0] == '\0') || (strcmp(className, "`1") == 0))
+            {
+#if defined(TARGET_XARCH)
+                if (sizeOfVectorT == 32)
+                {
+                    return SimdAsHWIntrinsicClassId::VectorT256;
+                }
 #endif // TARGET_XARCH
 
-        assert(sizeOfVectorT == 16);
-        return SimdAsHWIntrinsicClassId::VectorT128;
+                assert(sizeOfVectorT == 16);
+                return SimdAsHWIntrinsicClassId::VectorT128;
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
     }
 
+    assert(!"Unrecognized SimdAsHWIntrinsic");
     return SimdAsHWIntrinsicClassId::Unknown;
 }
 
