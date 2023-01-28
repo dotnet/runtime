@@ -134,7 +134,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public float this[int index]
         {
-            get => GetElement(this, index);
+            readonly get => GetElement(this, index);
             set => this = WithElement(this, index, value);
         }
 
