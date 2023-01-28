@@ -7374,9 +7374,11 @@ void LinearScan::insertSwap(
 // getTempRegForResolution: Get a free register to use for resolution code.
 //
 // Arguments:
-//    fromBlock - The "from" block on the edge being resolved.
-//    toBlock   - The "to" block on the edge
-//    type      - the type of register required
+//    fromBlock             - The "from" block on the edge being resolved.
+//    toBlock               - The "to" block on the edge. Can be null for shared critical edge resolution.
+//    type                  - the type of register required
+//    sharedCriticalLiveSet - The set of live vars that require shared critical resolution. Only used when toBlock is
+//    nullptr.
 //
 // Return Value:
 //    Returns a register that is free on the given edge, or REG_NA if none is available.
@@ -7475,6 +7477,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     }
     else
     {
+        // Prefer a callee-trashed register if possible to prevent new prolog/epilog saves/restores.
         if ((freeRegs & RBM_CALLEE_TRASH) != 0)
         {
             freeRegs &= RBM_CALLEE_TRASH;
