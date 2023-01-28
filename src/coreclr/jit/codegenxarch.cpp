@@ -1369,14 +1369,22 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     GenTree* trueVal  = select->gtOp1;
     GenTree* falseVal = select->gtOp2;
 
-    GenCondition cc = GenCondition::NE;
+    GenCondition cc;
 
     if (select->OperIs(GT_SELECT))
     {
         GenTree* cond = select->AsConditional()->gtCond;
         if (cond->isContained())
         {
+            assert(cond->OperIsCompare());
+            genCodeForCompare(cond->AsOp());
             cc = GenCondition::FromRelop(cond);
+        }
+        else
+        {
+            regNumber condReg = cond->GetRegNum();
+            GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
+            cc = GenCondition::NE;
         }
     }
 
@@ -1417,21 +1425,6 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     }
 
     GenConditionDesc desc = GenConditionDesc::Get(cc);
-
-    if (select->OperIs(GT_SELECT))
-    {
-        GenTree* cond = select->AsConditional()->gtCond;
-        if (cond->isContained())
-        {
-            assert(cond->OperIsCompare());
-            genCodeForCompare(cond->AsOp());
-        }
-        else
-        {
-            regNumber condReg = cond->GetRegNum();
-            GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
-        }
-    }
 
     inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
 
