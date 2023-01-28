@@ -137,6 +137,7 @@ namespace System.Numerics
         /// <param name="value2">The scalar value.</param>
         /// <returns>The result of the division.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector2.op_Division" /> method defines the division operation for <see cref="System.Numerics.Vector2" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 operator /(Vector2 value1, float value2)
         {

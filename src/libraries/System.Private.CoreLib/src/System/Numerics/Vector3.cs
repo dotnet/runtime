@@ -160,6 +160,7 @@ namespace System.Numerics
         /// <param name="value2">The scalar value.</param>
         /// <returns>The result of the division.</returns>
         /// <remarks>The <see cref="System.Numerics.Vector3.op_Division" /> method defines the division operation for <see cref="System.Numerics.Vector3" /> objects.</remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator /(Vector3 value1, float value2)
         {
