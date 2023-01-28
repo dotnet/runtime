@@ -4093,7 +4093,7 @@ int LinearScan::BuildCmp(GenTree* tree)
     }
 #endif
 
-    int srcCount = BuildCmpOperands(tree->AsOp());
+    int srcCount = BuildCmpOperands(tree);
 
     if (tree->TypeGet() != TYP_VOID)
     {
