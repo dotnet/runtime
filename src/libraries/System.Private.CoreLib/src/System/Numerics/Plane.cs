@@ -46,6 +46,7 @@ namespace System.Numerics
 
         /// <summary>Creates a <see cref="Plane" /> object from a specified four-dimensional vector.</summary>
         /// <param name="value">A vector whose first three elements describe the normal vector, and whose <see cref="Vector4.W" /> defines the distance along that normal from the origin.</param>
+        [Intrinsic]
         public Plane(Vector4 value)
         {
             Normal = new Vector3(value.X, value.Y, value.Z);

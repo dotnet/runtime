@@ -1206,6 +1206,16 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
 
+                case NI_Plane_CreateFromVector4:
+                {
+                    assert(retType == TYP_VOID);
+
+                    copyBlkDst = op1;
+                    copyBlkSrc = op2;
+
+                    break;
+                }
+
                 case NI_Vector2_Divide:
                 case NI_Vector2_op_Division:
                 case NI_Vector3_Divide:
