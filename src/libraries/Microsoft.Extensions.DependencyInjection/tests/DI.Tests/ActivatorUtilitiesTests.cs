@@ -341,7 +341,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
                 var services = new ServiceCollection();
                 using var provider = services.BuildServiceProvider();
-                var item = (A)factory1(provider, new object[] { null });
+                var item = (A)factory1(provider, null);
                 Assert.NotNull(item);
             }, options);
         }
