@@ -915,37 +915,58 @@ int LinearScan::BuildSelect(GenTreeOp* select)
         srcCount += BuildOperandUses(select->AsConditional()->gtCond);
     }
 
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
     // cmov family of instructions are special in that they only conditionally
     // define the destination register, so when generating code for GT_SELECT
     // we normally need to preface it by a move into the destination with one
-    // of the operands. We can avoid this if one of the operands is already in
-    // the destination register, so try to prefer that.
+    // of the operands. I.e. the codegen ends up being:
     //
-    // Because of the above we also need to set delayRegFree on the intervals
-    // for contained operands. Otherwise we could pick a target register that
-    // conflicted with one of those registers.
+    // mov dstReg, op1/2
+    // cmov dstReg, op2/1
     //
-    if (select->gtOp1->isContained())
+    // The backend will elide the first move if one of the operands end up
+    // being in the dstReg already (by swapping the operands and reversing the
+    // sense of the cmov). So we can try to prefer that.
+    //
+    // In additional, the first move will kill dstReg. That means the operand
+    // that ends up in the cmov needs to be delay freed. There's a few cases to
+    // consider:
+    // - Lowering may have contained up to one constant operand. That operand
+    // can only go in the 'mov', so if the other operand is also contained then
+    // it is required to be delay freed.
+    //
+    if (trueVal->isContained())
     {
-        srcCount += BuildDelayFreeUses(select->gtOp1);
+        // If we allocate an interfering register here then codegen will
+        // ensure this operand ends up in the 'mov' before the dstReg is
+        // killed.
+        srcCount += BuildOperandUses(trueVal);
     }
     else
     {
-        tgtPrefUse = BuildUse(select->gtOp1);
-        setDelayFree(tgtPrefUse);
-
+        tgtPrefUse = BuildUse(trueVal);
         srcCount++;
     }
 
-    if (select->gtOp2->isContained())
+    if (falseVal->isContained())
     {
-        srcCount += BuildDelayFreeUses(select->gtOp2);
+        // If both operands are contained then one needs to be delay reg freed
+        // to we're sure one can go in the 'cmov' without interfering with the
+        // destination register.
+        if (trueVal->isContained())
+        {
+            srcCount += BuildDelayFreeUses(falseVal);
+        }
+        else
+        {
+            srcCount += BuildOperandUses(falseVal);
+        }
     }
     else
     {
-        tgtPrefUse2 = BuildUse(select->gtOp2);
-        setDelayFree(tgtPrefUse2);
-
+        tgtPrefUse2 = BuildUse(falseVal);
         srcCount++;
     }
 

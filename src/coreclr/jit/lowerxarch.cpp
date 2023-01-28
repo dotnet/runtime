@@ -5874,37 +5874,36 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
     assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
 #endif
 
-    bool canContainTrueVal  = true;
-    bool canContainFalseVal = true;
     // Disallow containing compares if the flags may be used by follow-up
     // nodes, in which case those nodes expect zero/non-zero in the flags.
     if (select->OperIs(GT_SELECT) && ((select->gtFlags & GTF_SET_FLAGS) == 0))
     {
         GenTree* cond = select->AsConditional()->gtCond;
 
-        if (cond->OperIsCompare())
+        if (cond->OperIsCompare() && IsSafeToContainMem(select, cond))
         {
             MakeSrcContained(select, cond);
 
-            // Some compares require multiple cmovs to implement, see the
-            // comment in Codegen::GebConditionDesc::map. For those cases avoid
-            // containing the operand that ends up in the cmov so that we don't
-            // incur the memory access/address calculation twice.
+            // op1 and op2 are emitted as two separate instructions due to the
+            // conditional nature of cmov, so both operands can usually be
+            // contained memory operands. The exception is for compares
+            // requiring two cmovs, in which case we do not want to incur the
+            // memory access/address calculation twice.
+            //
+            // See the comment in Codegen::GebConditionDesc::map for why these
+            // comparisons are special and end up requiring the two cmovs.
+            //
             GenCondition cc = GenCondition::FromRelop(cond);
             switch (cc.GetCode())
             {
                 case GenCondition::FEQ:
                 case GenCondition::FLT:
                 case GenCondition::FLE:
-                    // AND comparison requires reversing into an OR comparison, so
-                    // 'false' value ends up in the cmov.
-                    canContainFalseVal = false;
-                    break;
                 case GenCondition::FNEU:
                 case GenCondition::FGEU:
                 case GenCondition::FGTU:
-                    canContainTrueVal = false;
-                    break;
+                    // Skip containment checking below.
+                    return;
                 default:
                     break;
             }
@@ -5914,13 +5913,10 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
     GenTree* op1 = select->gtOp1;
     GenTree* op2 = select->gtOp2;
 
-    // op1 and op2 are emitted as two separate instructions due to the
-    // conditional nature of cmov, so both operands can be contained memory
-    // operands.
     unsigned operSize = genTypeSize(select);
     assert((operSize == 4) || (operSize == TARGET_POINTER_SIZE));
 
-    if (canContainTrueVal && (genTypeSize(op1) == operSize))
+    if (genTypeSize(op1) == operSize)
     {
         if (IsContainableMemoryOp(op1))
         {
@@ -5935,7 +5931,7 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
         }
     }
 
-    if (canContainFalseVal && (genTypeSize(op2) == operSize))
+    if (genTypeSize(op2) == operSize)
     {
         if (IsContainableMemoryOp(op2))
         {
@@ -5944,19 +5940,10 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
                 MakeSrcContained(select, op2);
             }
         }
-        else if (IsSafeToContainMem(select, op2))
+        else if (IsSafeToContainMem(select, op1))
         {
-            MakeSrcRegOptional(select, op2);
+            MakeSrcRegOptional(select, op1);
         }
-    }
-
-    if (canContainTrueVal && op1->IsCnsIntOrI() && !op2->isContained())
-    {
-        MakeSrcContained(select, op1);
-    }
-    else if (canContainFalseVal && op2->IsCnsIntOrI() && !op1->isContained())
-    {
-        MakeSrcContained(select, op2);
     }
 }
 

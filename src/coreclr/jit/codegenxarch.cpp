@@ -1399,9 +1399,10 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     }
 
     // The next conditions are constraints from the instruction's side. Lowering ensures that the constraints are
-    // satisfies
-    // - For contained constants, they do not end up in the cmov
-    // - For contained indirs, they do not end up in the cmov if we need multiple cmovs for the comparison
+    // satisfied
+    // - For contained constants, they must not end up in the cmov
+    // - We must ensure no interference between the cmov's op and the destination
+    //
     if (trueVal->isContained() && trueVal->IsCnsIntOrI())
     {
         // cmov instruction cannot handle contained constants, so swap it to the mov
@@ -1409,37 +1410,13 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
         cc = GenCondition::Reverse(cc);
     }
 
+    if ((trueVal->gtGetContainedRegMask() & genRegMask(dstReg)) != 0)
+    {
+        std::swap(trueVal, falseVal);
+        cc = GenCondition::Reverse(cc);
+    }
+
     GenConditionDesc desc = GenConditionDesc::Get(cc);
-
-    // OTOH, we cannot do anything if we need to check two conditions for the relop,
-    // so reverse it into an 'or' where we can emit two cmovs.
-    if (desc.oper == GT_AND)
-    {
-        std::swap(trueVal, falseVal);
-        cc   = GenCondition::Reverse(cc);
-        desc = GenConditionDesc::Get(cc);
-    }
-
-    // Finally, with multiple cmovs lowering should have ensured that the
-    // 'true' value is not contained when reversed into the GT_OR case. We may
-    // need to reverse it again due to the above logic to make it the case.
-    if ((desc.oper != GT_NONE) && !trueVal->isUsedFromReg())
-    {
-        std::swap(trueVal, falseVal);
-        cc   = GenCondition::Reverse(cc);
-        desc = GenConditionDesc::Get(cc);
-    }
-
-    // If the falseVal is a constant 0 and we do not interfere with any of the
-    // registers used by the comparre then zero it out with xor before the
-    // test.
-    bool genFalse = true;
-    if (select->OperIs(GT_SELECT) && falseVal->isContained() && falseVal->IsIntegralConst(0) &&
-        ((select->AsConditional()->gtCond->gtGetContainedRegMask() & (genRegMask(dstReg))) == 0))
-    {
-        instGen_Set_Reg_To_Zero(emitTypeSize(select), dstReg);
-        genFalse = false;
-    }
 
     if (select->OperIs(GT_SELECT))
     {
@@ -1456,20 +1433,19 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
         }
     }
 
-    if (genFalse)
-    {
-        // Note that this relies on inst_RV_TT not generating xor dstReg,
-        // dstReg for contained 0, which would kill the flags.
-        // When the compare does not interfere we handle it above.
-        inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
-    }
+    inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
 
     assert(!trueVal->isContained() || trueVal->isUsedFromMemory());
     inst_RV_TT(JumpKindToCmov(desc.jumpKind1), emitTypeSize(select), dstReg, trueVal);
 
-    if (desc.oper != GT_NONE)
+    if (desc.oper == GT_AND)
     {
-        assert(desc.oper == GT_OR);
+        assert(falseVal->isUsedFromReg());
+        inst_RV_TT(JumpKindToCmov(emitter::emitReverseJumpKind(desc.jumpKind2)), emitTypeSize(select), dstReg,
+                   falseVal);
+    }
+    else if (desc.oper == GT_OR)
+    {
         assert(trueVal->isUsedFromReg());
         inst_RV_TT(JumpKindToCmov(desc.jumpKind2), emitTypeSize(select), dstReg, trueVal);
     }

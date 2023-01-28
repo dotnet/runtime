@@ -1062,16 +1062,25 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
 //
 regMaskTP GenTree::gtGetContainedRegMask()
 {
+    regMaskTP mask = 0;
     if (!isContained())
     {
-        return gtGetRegMask();
+        mask |= gtGetRegMask();
+
+        if (OperIs(GT_COPY))
+        {
+            // GT_COPY is special and always treated as contained. This is handled in genConsumeReg.
+            mask |= gtGetOp1()->gtGetContainedRegMask();
+        }
+    }
+    else
+    {
+        for (GenTree* operand : Operands())
+        {
+            mask |= operand->gtGetContainedRegMask();
+        }
     }
 
-    regMaskTP mask = 0;
-    for (GenTree* operand : Operands())
-    {
-        mask |= operand->gtGetContainedRegMask();
-    }
     return mask;
 }
 
