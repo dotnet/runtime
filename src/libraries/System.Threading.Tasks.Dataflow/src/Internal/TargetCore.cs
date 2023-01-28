@@ -369,7 +369,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 _numberOfOutstandingOperations++;
                 if (UsesAsyncCompletion) _numberOfOutstandingServiceTasks++;
 
-                var taskForInputProcessing = new Task(thisTargetCore => ((TargetCore<TInput>)thisTargetCore!).ProcessMessagesLoopCore(), this,
+                var taskForInputProcessing = new Task(static thisTargetCore => ((TargetCore<TInput>)thisTargetCore!).ProcessMessagesLoopCore(), this,
                                                       Common.GetCreationOptionsForTask(repeat));
 
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
@@ -732,7 +732,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // Get out from under currently held locks.  This is to avoid
                 // invoking synchronous continuations off of _completionSource.Task
                 // while holding a lock.
-                Task.Factory.StartNew(state => ((TargetCore<TInput>)state!).CompleteBlockOncePossible(),
+                Task.Factory.StartNew(static state => ((TargetCore<TInput>)state!).CompleteBlockOncePossible(),
                     this, CancellationToken.None, Common.GetCreationOptionsForTask(), TaskScheduler.Default);
             }
         }
@@ -773,7 +773,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // If we completed with cancellation, finish in a canceled state
             else if (_dataflowBlockOptions.CancellationToken.IsCancellationRequested)
             {
-                _completionSource.TrySetCanceled();
+                _completionSource.TrySetCanceled(_dataflowBlockOptions.CancellationToken);
             }
             // Otherwise, finish in a successful state.
             else
@@ -843,7 +843,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <summary>Gets the number of messages waiting to be processed.</summary>
             internal int InputCount { get { return _target._messages.Count; } }
             /// <summary>Gets the messages waiting to be processed.</summary>
-            internal IEnumerable<TInput> InputQueue { get { return _target._messages.Select(kvp => kvp.Key).ToList(); } }
+            internal IEnumerable<TInput> InputQueue { get { return _target._messages.Select(static kvp => kvp.Key).ToList(); } }
 
             /// <summary>Gets any postponed messages.</summary>
             internal QueuedMap<ISourceBlock<TInput>, DataflowMessageHeader>? PostponedMessages
