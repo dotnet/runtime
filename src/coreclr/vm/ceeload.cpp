@@ -1878,7 +1878,6 @@ void Module::AllocateMaps()
         m_FieldDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_GenericParamToDescMap.dwCount = GENERICPARAM_MAP_INITIAL_SIZE;
         m_GenericTypeDefToCanonMethodTableMap.dwCount = TYPEDEF_MAP_INITIAL_SIZE;
-        m_FileReferencesMap.dwCount = FILEREFERENCES_MAP_INITIAL_SIZE;
         m_ManifestModuleReferencesMap.dwCount = ASSEMBLYREFERENCES_MAP_INITIAL_SIZE;
         m_MethodDefToPropertyInfoMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
     }
@@ -1904,9 +1903,6 @@ void Module::AllocateMaps()
         // Get # GenericParams
         m_GenericParamToDescMap.dwCount = pImport->GetCountWithTokenKind(mdtGenericParam)+1;
 
-        // Get the number of FileReferences in the map
-        m_FileReferencesMap.dwCount = pImport->GetCountWithTokenKind(mdtFile)+1;
-
         // Get the number of AssemblyReferences in the map
         m_ManifestModuleReferencesMap.dwCount = pImport->GetCountWithTokenKind(mdtAssemblyRef)+1;
 
@@ -1923,7 +1919,6 @@ void Module::AllocateMaps()
     nTotal += m_FieldDefToDescMap.dwCount;
     nTotal += m_GenericParamToDescMap.dwCount;
     nTotal += m_GenericTypeDefToCanonMethodTableMap.dwCount;
-    nTotal += m_FileReferencesMap.dwCount;
     nTotal += m_ManifestModuleReferencesMap.dwCount;
     nTotal += m_MethodDefToPropertyInfoMap.dwCount;
 
@@ -1961,13 +1956,9 @@ void Module::AllocateMaps()
     m_GenericTypeDefToCanonMethodTableMap.supportedFlags = GENERIC_TYPE_DEF_MAP_ALL_FLAGS;
     m_GenericTypeDefToCanonMethodTableMap.pTable = &m_GenericParamToDescMap.pTable[m_GenericParamToDescMap.dwCount];
 
-    m_FileReferencesMap.pNext  = NULL;
-    m_FileReferencesMap.supportedFlags = FILE_REF_MAP_ALL_FLAGS;
-    m_FileReferencesMap.pTable = &m_GenericTypeDefToCanonMethodTableMap.pTable[m_GenericTypeDefToCanonMethodTableMap.dwCount];
-
     m_ManifestModuleReferencesMap.pNext  = NULL;
     m_ManifestModuleReferencesMap.supportedFlags = MANIFEST_MODULE_MAP_ALL_FLAGS;
-    m_ManifestModuleReferencesMap.pTable = &m_FileReferencesMap.pTable[m_FileReferencesMap.dwCount];
+    m_ManifestModuleReferencesMap.pTable = &m_GenericTypeDefToCanonMethodTableMap.pTable[m_GenericTypeDefToCanonMethodTableMap.dwCount];
 
     m_MethodDefToPropertyInfoMap.pNext = NULL;
     m_MethodDefToPropertyInfoMap.supportedFlags = PROPERTY_INFO_MAP_ALL_FLAGS;
@@ -3161,9 +3152,6 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
 
     if (kFile == mdFileNil)
     {
-#ifndef DACCESS_COMPILE
-        StoreFileNoThrow(kFile, this);
-#endif
         return this;
     }
 
@@ -3421,9 +3409,8 @@ void Module::DebugLogRidMapOccupancy()
     COMPUTE_RID_MAP_OCCUPANCY(4, m_FieldDefToDescMap);
     COMPUTE_RID_MAP_OCCUPANCY(5, m_GenericParamToDescMap);
     COMPUTE_RID_MAP_OCCUPANCY(6, m_GenericTypeDefToCanonMethodTableMap);
-    COMPUTE_RID_MAP_OCCUPANCY(7, m_FileReferencesMap);
-    COMPUTE_RID_MAP_OCCUPANCY(8, m_ManifestModuleReferencesMap);
-    COMPUTE_RID_MAP_OCCUPANCY(9, m_MethodDefToPropertyInfoMap);
+    COMPUTE_RID_MAP_OCCUPANCY(7, m_ManifestModuleReferencesMap);
+    COMPUTE_RID_MAP_OCCUPANCY(8, m_MethodDefToPropertyInfoMap);
 
     LOG((
         LF_EEMEM,
@@ -3435,7 +3422,6 @@ void Module::DebugLogRidMapOccupancy()
         "      FieldDefToDesc map:  %4d/%4d (%2d %%)\n"
         "      GenericParamToDesc map:  %4d/%4d (%2d %%)\n"
         "      GenericTypeDefToCanonMethodTable map:  %4d/%4d (%2d %%)\n"
-        "      FileReferences map:  %4d/%4d (%2d %%)\n"
         "      AssemblyReferences map:  %4d/%4d (%2d %%)\n"
         "      MethodDefToPropInfo map: %4d/%4d (%2d %%)\n"
         ,
@@ -3446,8 +3432,7 @@ void Module::DebugLogRidMapOccupancy()
         dwOccupied5, dwSize5, dwPercent5,
         dwOccupied6, dwSize6, dwPercent6,
         dwOccupied7, dwSize7, dwPercent7,
-        dwOccupied8, dwSize8, dwPercent8,
-        dwOccupied9, dwSize9, dwPercent9
+        dwOccupied8, dwSize8, dwPercent8
     ));
 
 #undef COMPUTE_RID_MAP_OCCUPANCY
@@ -5132,7 +5117,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         m_MemberRefMap.ListEnumMemoryRegions(flags);
         m_GenericParamToDescMap.ListEnumMemoryRegions(flags);
         m_GenericTypeDefToCanonMethodTableMap.ListEnumMemoryRegions(flags);
-        m_FileReferencesMap.ListEnumMemoryRegions(flags);
         m_ManifestModuleReferencesMap.ListEnumMemoryRegions(flags);
         m_MethodDefToPropertyInfoMap.ListEnumMemoryRegions(flags);
 
@@ -5192,16 +5176,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         }
 
     }   // !CLRDATA_ENUM_MEM_MINI && !CLRDATA_ENUM_MEM_TRIAGE && !CLRDATA_ENUM_MEM_HEAP2
-
-
-    LookupMap<PTR_Module>::Iterator fileRefIter(&m_FileReferencesMap);
-    while (fileRefIter.Next())
-    {
-        if (fileRefIter.GetElement())
-        {
-            fileRefIter.GetElement()->EnumMemoryRegions(flags, true);
-        }
-    }
 
     LookupMap<PTR_Module>::Iterator asmRefIter(&m_ManifestModuleReferencesMap);
     while (asmRefIter.Next())

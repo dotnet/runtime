@@ -738,9 +738,6 @@ private:
 
     #define GENERIC_TYPE_DEF_MAP_ALL_FLAGS            NO_MAP_FLAGS
 
-    #define FILE_REF_MAP_ALL_FLAGS                    NO_MAP_FLAGS
-        // For file ref map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
-
     #define MANIFEST_MODULE_MAP_ALL_FLAGS             NO_MAP_FLAGS
         // For manifest module map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
 
@@ -765,9 +762,6 @@ private:
     // space in order to use the LookupMap infrastructure, but what it buys us is IBC support and
     // a compressed format for NGen that makes up for it.
     LookupMap<PTR_MethodTable>      m_GenericTypeDefToCanonMethodTableMap;
-
-    // Mapping from File token to Module *
-    LookupMap<PTR_Module>           m_FileReferencesMap;
 
     // Mapping from MethodDef token to pointer-sized value encoding property information
     LookupMap<SIZE_T>           m_MethodDefToPropertyInfoMap;
@@ -1344,35 +1338,12 @@ public:
         SUPPORTS_DAC;
 
         _ASSERTE(TypeFromToken(token) == mdtFile);
-        return m_FileReferencesMap.GetElement(RidFromToken(token));
-    }
 
+        // We don't support multi-module, so just check if we are looking for this module
+        return token == mdFileNil ? dac_cast<PTR_Module>(this) : NULL;
+    }
 
 #ifndef DACCESS_COMPILE
-    void EnsureFileCanBeStored(mdFile token)
-    {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        m_FileReferencesMap.EnsureElementCanBeStored(this, RidFromToken(token));
-    }
-
-    void EnsuredStoreFile(mdFile token, Module *value)
-    {
-        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        m_FileReferencesMap.SetElement(RidFromToken(token), value);
-    }
-
-    BOOL StoreFileNoThrow(mdFile token, Module *value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        return m_FileReferencesMap.TrySetElement(RidFromToken(token), value);
-    }
-
     //
     // Increase the size of the AssemblyRef-to-Module LookupMap to make sure the specified token
     // can be stored.  Note that nothing is actually added to the LookupMap at this point.

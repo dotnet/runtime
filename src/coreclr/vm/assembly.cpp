@@ -222,7 +222,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
         FAULT_FORBID();
         //Cannot fail after this point.
 
-        PublishModuleIntoAssembly(m_pModule);
+        InterlockedIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
 
         return;  // Explicit return to let you know you are NOT welcome to add code after the CANNOTTHROW/FAULT_FORBID expires
     }
@@ -1022,28 +1022,7 @@ void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTrac
          module->GetPEAssembly()->GetSimpleName(),
          module->GetDebuggerInfoBits()));
 #endif // DEBUGGING_SUPPORTED
-
-    m_pModule->EnsureFileCanBeStored(mdFileNil);
 }
-
-// This is the final step of publishing a Module into an Assembly. This step cannot fail.
-void Assembly::PublishModuleIntoAssembly(Module *module)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    GetModule()->EnsuredStoreFile(mdFileNil, module);
-    InterlockedIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
-}
-
-
-
-
 
 //*****************************************************************************
 // Set up the list of names of any friend assemblies
