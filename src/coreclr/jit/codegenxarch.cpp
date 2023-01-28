@@ -1398,7 +1398,8 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
         cc = GenCondition::Reverse(cc);
     }
 
-    // The next conditions are constraints from the instruction's side. Lowering ensures that the constraints are satisfies
+    // The next conditions are constraints from the instruction's side. Lowering ensures that the constraints are
+    // satisfies
     // - For contained constants, they do not end up in the cmov
     // - For contained indirs, they do not end up in the cmov if we need multiple cmovs for the comparison
     if (trueVal->isContained() && trueVal->IsCnsIntOrI())
@@ -1433,9 +1434,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     // registers used by the comparre then zero it out with xor before the
     // test.
     bool genFalse = true;
-    if (select->OperIs(GT_SELECT) &&
-        falseVal->isContained() &&
-        falseVal->IsIntegralConst(0) &&
+    if (select->OperIs(GT_SELECT) && falseVal->isContained() && falseVal->IsIntegralConst(0) &&
         ((select->AsConditional()->gtCond->gtGetContainedRegMask() & (genRegMask(dstReg))) == 0))
     {
         instGen_Set_Reg_To_Zero(emitTypeSize(select), dstReg);
