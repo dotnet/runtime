@@ -623,6 +623,7 @@ namespace Microsoft.Interop
             List<FunctionPointerParameterSyntax> functionPointerParameters = new();
             var (paramList, retType, _) = stubGenerator.GenerateAbiMethodSignatureData();
             functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(p.Type)));
+            // We add the return type as the last "parameter" here as that's what the function pointer syntax requires.
             functionPointerParameters.Add(FunctionPointerParameter(retType));
 
             // delegate* unmanaged<...>

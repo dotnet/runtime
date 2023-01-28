@@ -77,11 +77,12 @@ namespace Microsoft.Interop
                 .Zip(interfaceContexts)
                 .SelectMany(static (data, ct) =>
             {
-                ContainingSyntaxContext containingSyntax = new(data.Left.Syntax);
-                Location interfaceLocation = data.Left.Syntax.GetLocation();
+                var (interfaceData, interfaceContext) = data;
+                ContainingSyntaxContext containingSyntax = new(interfaceData.Syntax);
+                Location interfaceLocation = interfaceData.Syntax.GetLocation();
                 var methods = ImmutableArray.CreateBuilder<(MethodDeclarationSyntax Syntax, IMethodSymbol Symbol, int Index, Diagnostic? Diagnostic)>();
-                int methodVtableOffset = data.Right.MethodStartIndex;
-                foreach (var member in data.Left.Symbol.GetMembers())
+                int methodVtableOffset = interfaceContext.MethodStartIndex;
+                foreach (var member in interfaceData.Symbol.GetMembers())
                 {
                     if (member.Kind == SymbolKind.Method && !member.IsStatic)
                     {
@@ -108,11 +109,11 @@ namespace Microsoft.Interop
                                 member.CreateDiagnostic(
                                     GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface,
                                     member.ToDisplayString(),
-                                    data.Left.Symbol.ToDisplayString())));
+                                    interfaceData.Symbol.ToDisplayString())));
                         }
                         else
                         {
-                            var syntax = (MethodDeclarationSyntax)data.Left.Syntax.FindNode(locationInAttributeSyntax.SourceSpan);
+                            var syntax = (MethodDeclarationSyntax)interfaceData.Syntax.FindNode(locationInAttributeSyntax.SourceSpan);
                             var method = (IMethodSymbol)member;
                             Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(syntax, method);
                             methods.Add((syntax, method, diagnostic is not null ? methodVtableOffset++ : 0, diagnostic));
