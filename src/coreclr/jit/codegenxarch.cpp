@@ -1379,6 +1379,13 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
             assert(cond->OperIsCompare());
             genCodeForCompare(cond->AsOp());
             cc = GenCondition::FromRelop(cond);
+
+            if (cc.PreferSwap())
+            {
+                // genCodeForCompare generated the compare with swapped
+                // operands because this swap requires fewer branches/cmovs.
+                cc = GenCondition::Swap(cc);
+            }
         }
         else
         {
