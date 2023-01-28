@@ -301,9 +301,9 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                         return false;
                     }
 
-#ifdef TARGET_64BIT
-                    // Disallow 64-bit operands on 32-bit targets as the
-                    // backend currently cannot handle contained compares efficiently.
+#ifndef TARGET_64BIT
+                    // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
+                    // handle contained relops efficiently after decomposition.
                     if (varTypeIsLong(tree))
                     {
                         return false;
