@@ -748,6 +748,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewOneConNode(retType, simdBaseType);
                 }
 
+                case NI_Quaternion_get_Zero:
                 case NI_Vector2_get_Zero:
                 case NI_Vector3_get_Zero:
                 case NI_Vector4_get_Zero:
@@ -871,6 +872,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                         /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Quaternion_op_UnaryNegation:
                 case NI_Vector2_op_UnaryNegation:
                 case NI_Vector3_op_UnaryNegation:
                 case NI_Vector4_op_UnaryNegation:
@@ -1059,6 +1061,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             switch (intrinsic)
             {
+                case NI_Quaternion_op_Addition:
                 case NI_Vector2_op_Addition:
                 case NI_Vector3_op_Addition:
                 case NI_Vector4_op_Addition:
@@ -1134,6 +1137,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                               /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Plane_Dot:
+                case NI_Quaternion_Dot:
                 case NI_Vector2_Dot:
                 case NI_Vector3_Dot:
                 case NI_Vector4_Dot:
@@ -1155,6 +1160,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                               /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Plane_op_Equality:
+                case NI_Quaternion_op_Equality:
                 case NI_Vector2_op_Equality:
                 case NI_Vector3_op_Equality:
                 case NI_Vector4_op_Equality:
@@ -1254,6 +1261,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                  /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Plane_op_Inequality:
+                case NI_Quaternion_op_Inequality:
                 case NI_Vector2_op_Inequality:
                 case NI_Vector3_op_Inequality:
                 case NI_Vector4_op_Inequality:
@@ -1364,6 +1373,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                             /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Quaternion_op_Multiply:
                 case NI_Vector2_op_Multiply:
                 case NI_Vector3_op_Multiply:
                 case NI_Vector4_op_Multiply:
@@ -1473,6 +1483,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                          /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Quaternion_op_Subtraction:
                 case NI_Vector2_op_Subtraction:
                 case NI_Vector3_op_Subtraction:
                 case NI_Vector4_op_Subtraction:
@@ -1608,6 +1619,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
 
+                case NI_Plane_CreateFromVector3:
+                case NI_Quaternion_CreateFromVector3:
                 case NI_Vector3_CreateFromVector2:
                 case NI_Vector4_CreateFromVector3:
                 {
@@ -1824,6 +1837,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             switch (intrinsic)
             {
+                case NI_Plane_Create:
+                case NI_Quaternion_Create:
                 case NI_Vector4_Create:
                 {
                     assert(retType == TYP_VOID);
