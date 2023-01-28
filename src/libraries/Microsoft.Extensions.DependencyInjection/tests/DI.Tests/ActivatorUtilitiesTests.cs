@@ -321,6 +321,30 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 Assert.Equal("DEFAULT", item.Text);
             }, options);
         }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_RemoteExecutor_NoParameters_Success(bool isDynamicCodeSupported)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!isDynamicCodeSupported)
+            {
+                options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(A), new Type[0]);
+
+                var services = new ServiceCollection();
+                using var provider = services.BuildServiceProvider();
+                var item = (A)factory1(provider, new object[] { null });
+                Assert.NotNull(item);
+            }, options);
+        }
     }
 
     internal class A { }

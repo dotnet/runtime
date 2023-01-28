@@ -294,6 +294,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 return (IServiceProvider serviceProvider, object?[]? arguments) =>
                     constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: null, culture: null);
             }
+
             FactoryParameterContext[] parameters = new FactoryParameterContext[constructorParameters.Length];
             for (int i = 0; i < constructorParameters.Length; i++)
             {
@@ -318,7 +319,7 @@ namespace Microsoft.Extensions.DependencyInjection
                             parameter.ParameterType,
                             declaringType,
                             parameter.HasDefaultValue)) ?? parameter.DefaultValue;
-                    }
+                }
 
                 return constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, constructorArguments, culture: null);
             };
