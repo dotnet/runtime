@@ -1369,7 +1369,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     GenTree* trueVal  = select->gtOp1;
     GenTree* falseVal = select->gtOp2;
 
-    GenCondition cc;
+    GenCondition cc = GenCondition::NE;
 
     if (select->OperIs(GT_SELECT))
     {
@@ -1391,7 +1391,6 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
         {
             regNumber condReg = cond->GetRegNum();
             GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
-            cc = GenCondition::NE;
         }
     }
 
