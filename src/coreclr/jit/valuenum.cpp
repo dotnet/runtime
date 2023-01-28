@@ -5630,19 +5630,22 @@ bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
     VNFuncApp funcApp;
     if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
     {
-        const bool op1IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[0]);
-        const bool op2IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[1]);
-        if (!op1IsPositiveConst && op2IsPositiveConst)
+        // Handle one of these patterns:
+        //   (uint)X relop CNS
+        //   CNS relop (uint)x
+        // where CNS is > 0
+        if (IsVNPositiveInt32Constant(funcApp.m_args[0]) ^ IsVNPositiveInt32Constant(funcApp.m_args[1]))
         {
-            // (uint)index < CNS
-            // (uint)index >= CNS
-            return (funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN);
-        }
-        else if (op1IsPositiveConst && !op2IsPositiveConst)
-        {
-            // CNS > (uint)index
-            // CNS <= (uint)index
-            return (funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN);
+            switch (funcApp.m_func)
+            {
+                case VNF_LT_UN:
+                case VNF_LE_UN:
+                case VNF_GE_UN:
+                case VNF_GT_UN:
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
     return false;
