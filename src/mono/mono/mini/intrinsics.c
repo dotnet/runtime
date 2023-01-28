@@ -741,7 +741,7 @@ byref_arg_is_reference (MonoType *t)
  * return the type.
  */
 static MonoClass*
-get_class_from_ldtoken_ins (MonoInst *ins)
+get_class_from_ldtoken_ins (MonoCompile *cfg, MonoInst *ins)
 {
 	// FIXME: The JIT case uses PCONST
 
@@ -751,7 +751,7 @@ get_class_from_ldtoken_ins (MonoInst *ins)
 		MonoJumpInfoToken *token = (MonoJumpInfoToken*)ins->inst_p0;
 		MonoClass *handle_class;
 		ERROR_DECL (error);
-		gpointer handle = mono_ldtoken_checked (token->image, token->token, &handle_class, NULL, error);
+		gpointer handle = mono_ldtoken_checked (token->image, token->token, &handle_class, cfg->generic_context, error);
 		mono_error_assert_ok (error);
 		MonoType *t = (MonoType*)handle;
 		return mono_class_from_mono_type_internal (t);
@@ -767,10 +767,10 @@ get_class_from_ldtoken_ins (MonoInst *ins)
  * their relation (EQ/NE/NONE).
  */
 static CompRelation
-get_rttype_ins_relation (MonoInst *ins1, MonoInst *ins2, gboolean *vtype_constrained_gparam)
+get_rttype_ins_relation (MonoCompile *cfg, MonoInst *ins1, MonoInst *ins2, gboolean *vtype_constrained_gparam)
 {
-	MonoClass *k1 = get_class_from_ldtoken_ins (ins1);
-	MonoClass *k2 = get_class_from_ldtoken_ins (ins2);
+	MonoClass *k1 = get_class_from_ldtoken_ins (cfg, ins1);
+	MonoClass *k2 = get_class_from_ldtoken_ins (cfg, ins2);
 
 	CompRelation rel = CMP_UNORD;
 	if (k1 && k2) {
@@ -794,6 +794,8 @@ get_rttype_ins_relation (MonoInst *ins1, MonoInst *ins2, gboolean *vtype_constra
 				else if (MONO_TYPE_IS_REFERENCE (t2))
 					rel = CMP_NE;
 			}
+		} else if (MONO_TYPE_IS_PRIMITIVE (t1) && MONO_TYPE_IS_PRIMITIVE (t2)) {
+			rel = t1->type == t2->type ? CMP_EQ : CMP_NE;
 		}
 	}
 	return rel;
@@ -1868,7 +1870,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Equality") &&
 			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
 		gboolean vtype_constrained_gparam = FALSE;
-		CompRelation rel = get_rttype_ins_relation (args [0], args [1], &vtype_constrained_gparam);
+		CompRelation rel = get_rttype_ins_relation (cfg, args [0], args [1], &vtype_constrained_gparam);
 		if (rel == CMP_EQ) {
 			if (cfg->verbose_level > 2)
 				printf ("-> true\n");
@@ -1892,7 +1894,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Inequality") &&
 			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
 		gboolean vtype_constrained_gparam = FALSE;
-		CompRelation rel = get_rttype_ins_relation (args [0], args [1], &vtype_constrained_gparam);
+		CompRelation rel = get_rttype_ins_relation (cfg, args [0], args [1], &vtype_constrained_gparam);
 		if (rel == CMP_NE) {
 			if (cfg->verbose_level > 2)
 				printf ("-> true\n");
@@ -1914,7 +1916,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return ins;
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "get_IsValueType") &&
 			   args [0]->klass == mono_defaults.runtimetype_class) {
-		MonoClass *k1 = get_class_from_ldtoken_ins (args [0]);
+		MonoClass *k1 = get_class_from_ldtoken_ins (cfg, args [0]);
 		if (k1) {
 			MonoType *t1 = m_class_get_byval_arg (k1);
 			MonoType *constraint1 = NULL;
