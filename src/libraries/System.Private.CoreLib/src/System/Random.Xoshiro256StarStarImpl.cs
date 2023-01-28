@@ -102,7 +102,7 @@ namespace System
 
                 if (lowPart < (uint)maxValue)
                 {
-                    uint remainder = ((uint)0 - (uint)maxValue) % (uint)maxValue;
+                    uint remainder = (0u - (uint)maxValue) % (uint)maxValue;
 
                     while (lowPart < remainder)
                     {
@@ -111,7 +111,7 @@ namespace System
                     }
                 }
 
-                return (int)(randomProduct >> (sizeof(uint) * 8));
+                return (int)(randomProduct >> 32);
             }
 
             public override int Next(int minValue, int maxValue)
@@ -125,7 +125,7 @@ namespace System
 
                 if (lowPart < exclusiveRange)
                 {
-                    uint remainder = ((uint)0 - exclusiveRange) % exclusiveRange;
+                    uint remainder = (0u - exclusiveRange) % exclusiveRange;
 
                     while (lowPart < remainder)
                     {
@@ -134,7 +134,7 @@ namespace System
                     }
                 }
 
-                return (int)(randomProduct >> (sizeof(uint) * 8)) + minValue;
+                return (int)(randomProduct >> 32) + minValue;
             }
 
             public override long NextInt64()
@@ -161,7 +161,7 @@ namespace System
 
                 if (lowPart < (ulong)maxValue)
                 {
-                    ulong remainder = ((ulong)0 - (ulong)maxValue) % (ulong)maxValue;
+                    ulong remainder = (0ul - (ulong)maxValue) % (ulong)maxValue;
 
                     while (lowPart < remainder)
                     {
@@ -170,7 +170,7 @@ namespace System
                     }
                 }
 
-                return (long)(randomProduct >> (sizeof(ulong) * 8));
+                return (long)(randomProduct >> 64);
             }
 
             public override long NextInt64(long minValue, long maxValue)
@@ -184,7 +184,7 @@ namespace System
 
                 if (lowPart < exclusiveRange)
                 {
-                    ulong remainder = ((ulong)0 - exclusiveRange) % exclusiveRange;
+                    ulong remainder = (0ul - exclusiveRange) % exclusiveRange;
 
                     while (lowPart < remainder)
                     {
@@ -193,7 +193,7 @@ namespace System
                     }
                 }
 
-                return (long)(randomProduct >> (sizeof(ulong) * 8)) + minValue;
+                return (long)(randomProduct >> 64) + minValue;
             }
 
             public override void NextBytes(byte[] buffer) => NextBytes((Span<byte>)buffer);
