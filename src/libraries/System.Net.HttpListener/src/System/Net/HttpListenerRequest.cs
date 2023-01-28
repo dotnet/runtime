@@ -17,9 +17,9 @@ namespace System.Net
     {
         private CookieCollection? _cookies;
         private bool? _keepAlive;
-        private readonly string? _rawUrl;
+        private string? _rawUrl;
         private Uri? _requestUri;
-        private readonly Version _version;
+        private Version _version;
 
         public string[]? AcceptTypes => Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.Accept]!);
 
