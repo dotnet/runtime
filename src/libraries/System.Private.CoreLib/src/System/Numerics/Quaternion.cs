@@ -68,6 +68,7 @@ namespace System.Numerics
         /// <value>A quaternion whose values are <c>(0, 0, 0, 1)</c>.</value>
         public static Quaternion Identity
         {
+            [Intrinsic]
             get => new Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
         }
 

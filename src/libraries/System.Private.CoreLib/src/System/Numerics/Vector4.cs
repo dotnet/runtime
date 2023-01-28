@@ -104,6 +104,7 @@ namespace System.Numerics
         /// <value>The vector <c>(1,0,0,0)</c>.</value>
         public static Vector4 UnitX
         {
+            [Intrinsic]
             get => new Vector4(1.0f, 0.0f, 0.0f, 0.0f);
         }
 
@@ -111,6 +112,7 @@ namespace System.Numerics
         /// <value>The vector <c>(0,1,0,0)</c>.</value>
         public static Vector4 UnitY
         {
+            [Intrinsic]
             get => new Vector4(0.0f, 1.0f, 0.0f, 0.0f);
         }
 
@@ -118,6 +120,7 @@ namespace System.Numerics
         /// <value>The vector <c>(0,0,1,0)</c>.</value>
         public static Vector4 UnitZ
         {
+            [Intrinsic]
             get => new Vector4(0.0f, 0.0f, 1.0f, 0.0f);
         }
 
@@ -125,6 +128,7 @@ namespace System.Numerics
         /// <value>The vector <c>(0,0,0,1)</c>.</value>
         public static Vector4 UnitW
         {
+            [Intrinsic]
             get => new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
         }
 

@@ -76,6 +76,7 @@ namespace System.Numerics
         /// <value>The vector <c>(1,0)</c>.</value>
         public static Vector2 UnitX
         {
+            [Intrinsic]
             get => new Vector2(1.0f, 0.0f);
         }
 
@@ -83,6 +84,7 @@ namespace System.Numerics
         /// <value>The vector <c>(0,1)</c>.</value>
         public static Vector2 UnitY
         {
+            [Intrinsic]
             get => new Vector2(0.0f, 1.0f);
         }
 

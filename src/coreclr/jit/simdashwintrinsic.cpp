@@ -748,6 +748,63 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewOneConNode(retType, simdBaseType);
                 }
 
+                case NI_Vector2_get_UnitX:
+                case NI_Vector3_get_UnitX:
+                case NI_Vector4_get_UnitX:
+                {
+                    GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+                    vecCon->gtSimd16Val.f32[0] = 1.0f;
+                    vecCon->gtSimd16Val.f32[1] = 0.0f;
+                    vecCon->gtSimd16Val.f32[2] = 0.0f;
+                    vecCon->gtSimd16Val.f32[3] = 0.0f;
+
+                    return vecCon;
+                }
+
+                case NI_Vector2_get_UnitY:
+                case NI_Vector3_get_UnitY:
+                case NI_Vector4_get_UnitY:
+                {
+                    GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+                    vecCon->gtSimd16Val.f32[0] = 0.0f;
+                    vecCon->gtSimd16Val.f32[1] = 1.0f;
+                    vecCon->gtSimd16Val.f32[2] = 0.0f;
+                    vecCon->gtSimd16Val.f32[3] = 0.0f;
+
+                    return vecCon;
+                }
+
+                case NI_Vector2_get_UnitZ:
+                case NI_Vector3_get_UnitZ:
+                case NI_Vector4_get_UnitZ:
+                {
+                    GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+                    vecCon->gtSimd16Val.f32[0] = 0.0f;
+                    vecCon->gtSimd16Val.f32[1] = 0.0f;
+                    vecCon->gtSimd16Val.f32[2] = 1.0f;
+                    vecCon->gtSimd16Val.f32[3] = 0.0f;
+
+                    return vecCon;
+                }
+
+                case NI_Quaternion_get_Identity:
+                case NI_Vector2_get_UnitW:
+                case NI_Vector3_get_UnitW:
+                case NI_Vector4_get_UnitW:
+                {
+                    GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+                    vecCon->gtSimd16Val.f32[0] = 0.0f;
+                    vecCon->gtSimd16Val.f32[1] = 0.0f;
+                    vecCon->gtSimd16Val.f32[2] = 0.0f;
+                    vecCon->gtSimd16Val.f32[3] = 1.0f;
+
+                    return vecCon;
+                }
+
                 case NI_Quaternion_get_Zero:
                 case NI_Vector2_get_Zero:
                 case NI_Vector3_get_Zero:

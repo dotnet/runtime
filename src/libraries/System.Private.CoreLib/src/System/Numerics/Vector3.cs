@@ -89,6 +89,7 @@ namespace System.Numerics
         /// <value>The vector <c>(1,0,0)</c>.</value>
         public static Vector3 UnitX
         {
+            [Intrinsic]
             get => new Vector3(1.0f, 0.0f, 0.0f);
         }
 
@@ -96,6 +97,7 @@ namespace System.Numerics
         /// <value>The vector <c>(0,1,0)</c>.</value>
         public static Vector3 UnitY
         {
+            [Intrinsic]
             get => new Vector3(0.0f, 1.0f, 0.0f);
         }
 
@@ -103,6 +105,7 @@ namespace System.Numerics
         /// <value>The vector <c>(0,0,1)</c>.</value>
         public static Vector3 UnitZ
         {
+            [Intrinsic]
             get => new Vector3(0.0f, 0.0f, 1.0f);
         }
 
