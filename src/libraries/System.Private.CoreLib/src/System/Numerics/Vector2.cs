@@ -94,56 +94,12 @@ namespace System.Numerics
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public float this[int index]
         {
-            readonly get => GetElement(this, index);
-            set => this = WithElement(this, index, value);
-        }
+            [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get => this.GetElement(index);
 
-        /// <summary>Gets the element at the specified index.</summary>
-        /// <param name="vector">The vector of the element to get.</param>
-        /// <param name="index">The index of the element to get.</param>
-        /// <returns>The value of the element at <paramref name="index" />.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
-        [Intrinsic]
-        internal static float GetElement(Vector2 vector, int index)
-        {
-            if ((uint)index >= Count)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            return GetElementUnsafe(ref vector, index);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float GetElementUnsafe(ref Vector2 vector, int index)
-        {
-            Debug.Assert(index is >= 0 and < Count);
-            return Unsafe.Add(ref Unsafe.As<Vector2, float>(ref vector), index);
-        }
-
-        /// <summary>Sets the element at the specified index.</summary>
-        /// <param name="vector">The vector of the element to get.</param>
-        /// <param name="index">The index of the element to set.</param>
-        /// <param name="value">The value of the element to set.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
-        [Intrinsic]
-        internal static Vector2 WithElement(Vector2 vector, int index, float value)
-        {
-            if ((uint)index >= Count)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            Vector2 result = vector;
-            SetElementUnsafe(ref result, index, value);
-            return result;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void SetElementUnsafe(ref Vector2 vector, int index, float value)
-        {
-            Debug.Assert(index is >= 0 and < Count);
-            Unsafe.Add(ref Unsafe.As<Vector2, float>(ref vector), index) = value;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => this = this.WithElement(index, value);
         }
 
         /// <summary>Adds two vectors together.</summary>

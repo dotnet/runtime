@@ -408,6 +408,27 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #if defined(TARGET_XARCH)
     bool isVectorT256 = (SimdAsHWIntrinsicInfo::lookupClassId(intrinsic) == SimdAsHWIntrinsicClassId::VectorT256);
 
+    if (isVectorT256 && (simdSize != 32))
+    {
+        // We have a couple extension methods for Vector2/3/4 and Quaternion exposed here
+        // Such APIs are not actually AVX/AVX2 dependent and operate on 128-bit vectors
+
+        switch (intrinsic)
+        {
+            case NI_VectorT256_GetElement:
+            case NI_VectorT256_WithElement:
+            {
+                isVectorT256 = false;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+    }
+
     // We should have already exited early if SSE2 isn't supported
     assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
@@ -776,7 +797,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return vecCon;
                 }
 
-                case NI_Vector2_get_UnitZ:
                 case NI_Vector3_get_UnitZ:
                 case NI_Vector4_get_UnitZ:
                 {
@@ -791,8 +811,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 }
 
                 case NI_Quaternion_get_Identity:
-                case NI_Vector2_get_UnitW:
-                case NI_Vector3_get_UnitW:
                 case NI_Vector4_get_UnitW:
                 {
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
@@ -1253,6 +1271,10 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                               /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Quaternion_get_Item:
+                case NI_Vector2_get_Item:
+                case NI_Vector3_get_Item:
+                case NI_Vector4_get_Item:
                 case NI_VectorT128_get_Item:
                 case NI_VectorT128_GetElement:
 #if defined(TARGET_XARCH)
