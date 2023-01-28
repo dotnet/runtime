@@ -2595,14 +2595,10 @@ gpointer mono_get_restore_context               (void);
 gpointer mono_get_throw_corlib_exception        (void);
 gpointer mono_get_throw_exception_addr          (void);
 gpointer mono_get_rethrow_preserve_exception_addr          (void);
-ICALL_EXPORT
-MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
-
-ICALL_EXPORT
-MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info,
-						 MonoReflectionMethod **method,
-						 gint32 *iloffset, gint32 *native_offset,
-						 MonoString **file, gint32 *line, gint32 *column);
+MonoArray* mono_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
+MonoBoolean mono_get_frame_info            (gint32 skip, MonoMethod **out_method,
+											MonoDebugSourceLocation **out_location,
+											gint32 *iloffset, gint32 *native_offset);
 void mono_set_cast_details                      (MonoClass *from, MonoClass *to);
 
 void mono_decompose_typechecks (MonoCompile *cfg);

@@ -66,8 +66,8 @@ bool GCHeapUtilities::s_useThreadAllocationContexts;
 
 // GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
-extern "C" void GC_VersionInfo(/* Out */ VersionInfo* info);
-extern "C" HRESULT GC_Initialize(
+extern "C" void LOCALGC_CALLCONV GC_VersionInfo(/* Out */ VersionInfo* info);
+extern "C" HRESULT LOCALGC_CALLCONV GC_Initialize(
     /* In  */ IGCToCLR* clrToGC,
     /* Out */ IGCHeap** gcHeap,
     /* Out */ IGCHandleManager** gcHandleManager,

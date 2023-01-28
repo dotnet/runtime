@@ -43,10 +43,10 @@ namespace System.Reflection.Emit
     internal sealed class EventOnTypeBuilderInst : EventInfo
     {
         private TypeBuilderInstantiation instantiation;
-        private EventBuilder? event_builder;
+        private RuntimeEventBuilder? event_builder;
         private EventInfo? event_info;
 
-        internal EventOnTypeBuilderInst(TypeBuilderInstantiation instantiation, EventBuilder evt)
+        internal EventOnTypeBuilderInst(TypeBuilderInstantiation instantiation, RuntimeEventBuilder evt)
         {
             this.instantiation = instantiation;
             this.event_builder = evt;
