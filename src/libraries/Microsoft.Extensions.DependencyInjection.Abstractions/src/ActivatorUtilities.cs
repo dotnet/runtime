@@ -289,6 +289,11 @@ namespace Microsoft.Extensions.DependencyInjection
             FindApplicableConstructor(instanceType, argumentTypes, out ConstructorInfo constructor, out int?[] parameterMap);
 
             ParameterInfo[] constructorParameters = constructor.GetParameters();
+            if (constructorParameters.Length == 0)
+            {
+                return (IServiceProvider serviceProvider, object?[]? arguments) =>
+                    constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: null, culture: null);
+            }
             FactoryParameterContext[] parameters = new FactoryParameterContext[constructorParameters.Length];
             for (int i = 0; i < constructorParameters.Length; i++)
             {
@@ -301,23 +306,19 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return (IServiceProvider serviceProvider, object?[]? arguments) =>
             {
-                object?[]? constructorArguments = null;
-                if (parameters.Length != 0)
+                object?[] constructorArguments = new object?[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
                 {
-                    constructorArguments = new object?[parameters.Length];
-                    for (int i = 0; i < parameters.Length; i++)
-                    {
-                        ref FactoryParameterContext parameter = ref parameters[i];
-                        constructorArguments[i] = ((parameter.ArgumentIndex != -1)
-                            // Throws an NullReferenceException if arguments is null. Consistent with expression-based factory.
-                            ? arguments![parameter.ArgumentIndex]
-                            : GetService(
-                                serviceProvider,
-                                parameter.ParameterType,
-                                declaringType,
-                                parameter.HasDefaultValue)) ?? parameter.DefaultValue;
+                    ref FactoryParameterContext parameter = ref parameters[i];
+                    constructorArguments[i] = ((parameter.ArgumentIndex != -1)
+                        // Throws an NullReferenceException if arguments is null. Consistent with expression-based factory.
+                        ? arguments![parameter.ArgumentIndex]
+                        : GetService(
+                            serviceProvider,
+                            parameter.ParameterType,
+                            declaringType,
+                            parameter.HasDefaultValue)) ?? parameter.DefaultValue;
                     }
-                }
 
                 return constructor.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, constructorArguments, culture: null);
             };
