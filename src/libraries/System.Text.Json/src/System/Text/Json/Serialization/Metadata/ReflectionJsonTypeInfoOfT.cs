@@ -10,88 +10,87 @@ using System.Text.Json.Reflection;
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
-    /// Provides JSON serialization-related metadata about a type.
+    /// Provides factory methods for constructing reflection-derived metadata.
     /// </summary>
-    internal sealed class ReflectionJsonTypeInfo<T> : JsonTypeInfo<T>
+    [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+    internal static class ReflectionJsonTypeInfo
     {
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        internal ReflectionJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
-            : base(converter, options)
+        internal static JsonTypeInfo Create(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
-            NumberHandling = GetNumberHandlingForType(Type);
-            if (Kind == JsonTypeInfoKind.Object)
+            JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, converter, options);
+            typeInfo.NumberHandling = GetNumberHandlingForType(typeInfo.Type);
+            if (typeInfo.Kind == JsonTypeInfoKind.Object)
             {
-                UnmappedMemberHandling = GetUnmappedMemberHandling(Type);
+                typeInfo.UnmappedMemberHandling = GetUnmappedMemberHandling(typeInfo.Type);
             }
 
-            PopulatePolymorphismMetadata();
-            MapInterfaceTypesToCallbacks();
+            typeInfo.PopulatePolymorphismMetadata();
+            typeInfo.MapInterfaceTypesToCallbacks();
 
-            Func<object>? createObject = JsonSerializerOptions.MemberAccessorStrategy.CreateConstructor(typeof(T));
-            SetCreateObjectIfCompatible(createObject);
-            CreateObjectForExtensionDataProperty = createObject;
+            Func<object>? createObject = JsonSerializerOptions.MemberAccessorStrategy.CreateConstructor(typeInfo.Type);
+            typeInfo.SetCreateObjectIfCompatible(createObject);
+            typeInfo.CreateObjectForExtensionDataProperty = createObject;
+
+            if (typeInfo.Kind is JsonTypeInfoKind.Object)
+            {
+                PopulateProperties(typeInfo);
+
+                if (converter.ConstructorIsParameterized)
+                {
+                    PopulateParameterInfoValues(typeInfo);
+                }
+            }
 
             // Plug in any converter configuration -- should be run last.
-            converter.ConfigureJsonTypeInfo(this, options);
-            converter.ConfigureJsonTypeInfoUsingReflection(this, options);
+            converter.ConfigureJsonTypeInfo(typeInfo, options);
+            converter.ConfigureJsonTypeInfoUsingReflection(typeInfo, options);
+            return typeInfo;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        internal override void LateAddProperties()
+        private static void PopulateProperties(JsonTypeInfo typeInfo)
         {
-            Debug.Assert(!IsConfigured);
-            Debug.Assert(PropertyCache is null);
-
-            if (Kind != JsonTypeInfoKind.Object)
-            {
-                return;
-            }
+            Debug.Assert(!typeInfo.IsReadOnly);
+            Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.Object);
 
             // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
             // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
             bool shouldCheckMembersForRequiredMemberAttribute =
-                typeof(T).HasRequiredMemberAttribute()
-                && !(Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false);
+                typeInfo.Type.HasRequiredMemberAttribute()
+                && !(typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false);
 
-            bool propertyOrderSpecified = false;
-            Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
+            JsonTypeInfo.PropertyHierarchyResolutionState state = new();
 
             // Walk the type hierarchy starting from the current type up to the base type(s)
-            foreach (Type currentType in Type.GetSortedTypeHierarchy())
+            foreach (Type currentType in typeInfo.Type.GetSortedTypeHierarchy())
             {
-                if (currentType == ObjectType)
+                if (currentType == JsonTypeInfo.ObjectType)
                 {
                     // Don't process any members for typeof(object)
                     break;
                 }
 
                 AddMembersDeclaredBySuperType(
+                    typeInfo,
                     currentType,
                     shouldCheckMembersForRequiredMemberAttribute,
-                    ref propertyOrderSpecified,
-                    ref ignoredMembers);
+                    ref state);
             }
 
-            Debug.Assert(PropertyCache != null);
-
-            if (propertyOrderSpecified)
+            if (state.IsPropertyOrderSpecified)
             {
-                PropertyCache.List.StableSortByKey(static p => p.Value.Order);
+                typeInfo.SortProperties();
             }
         }
 
-        [UnconditionalSuppressMessage("Trimming", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        private void AddMembersDeclaredBySuperType(
+        private static void AddMembersDeclaredBySuperType(
+            JsonTypeInfo typeInfo,
             Type currentType,
             bool shouldCheckMembersForRequiredMemberAttribute,
-            ref bool propertyOrderSpecified,
-            ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
+            ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
-            Debug.Assert(!IsConfigured);
-            Debug.Assert(currentType.IsAssignableFrom(Type));
+            Debug.Assert(!typeInfo.IsReadOnly);
+            Debug.Assert(currentType.IsAssignableFrom(typeInfo.Type));
 
             const BindingFlags BindingFlags =
                 BindingFlags.Instance |
@@ -101,18 +100,13 @@ namespace System.Text.Json.Serialization.Metadata
 
             PropertyInfo[] properties = currentType.GetProperties(BindingFlags);
 
-            // PropertyCache is not accessed by other threads until the current JsonTypeInfo instance
-            // is finished initializing and added to the cache in JsonSerializerOptions.
-            // Default 'capacity' to the common non-polymorphic + property case.
-            PropertyCache ??= CreatePropertyCache(capacity: properties.Length);
-
             foreach (PropertyInfo propertyInfo in properties)
             {
                 string propertyName = propertyInfo.Name;
 
                 // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
                 if (propertyInfo.GetIndexParameters().Length > 0 ||
-                    PropertyIsOverriddenAndIgnored(propertyName, propertyInfo.PropertyType, propertyInfo.IsVirtual(), ignoredMembers))
+                    PropertyIsOverriddenAndIgnored(propertyName, propertyInfo.PropertyType, propertyInfo.IsVirtual(), state.IgnoredProperties))
                 {
                     continue;
                 }
@@ -121,12 +115,12 @@ namespace System.Text.Json.Serialization.Metadata
                 if (propertyInfo.GetMethod?.IsPublic == true ||
                     propertyInfo.SetMethod?.IsPublic == true)
                 {
-                    CacheMember(
+                    AddMember(
+                        typeInfo,
                         typeToConvert: propertyInfo.PropertyType,
                         memberInfo: propertyInfo,
-                        ref propertyOrderSpecified,
-                        ref ignoredMembers,
-                        shouldCheckMembersForRequiredMemberAttribute);
+                        shouldCheckMembersForRequiredMemberAttribute,
+                        ref state);
                 }
                 else
                 {
@@ -143,7 +137,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 string fieldName = fieldInfo.Name;
 
-                if (PropertyIsOverriddenAndIgnored(fieldName, fieldInfo.FieldType, currentMemberIsVirtual: false, ignoredMembers))
+                if (PropertyIsOverriddenAndIgnored(fieldName, fieldInfo.FieldType, currentMemberIsVirtual: false, state.IgnoredProperties))
                 {
                     continue;
                 }
@@ -152,14 +146,14 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (fieldInfo.IsPublic)
                 {
-                    if (hasJsonInclude || Options.IncludeFields)
+                    if (hasJsonInclude || typeInfo.Options.IncludeFields)
                     {
-                        CacheMember(
+                        AddMember(
+                            typeInfo,
                             typeToConvert: fieldInfo.FieldType,
                             memberInfo: fieldInfo,
-                            ref propertyOrderSpecified,
-                            ref ignoredMembers,
-                            shouldCheckMembersForRequiredMemberAttribute);
+                            shouldCheckMembersForRequiredMemberAttribute,
+                            ref state);
                     }
                 }
                 else
@@ -174,14 +168,14 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private void CacheMember(
+        private static void AddMember(
+            JsonTypeInfo typeInfo,
             Type typeToConvert,
             MemberInfo memberInfo,
-            ref bool propertyOrderSpecified,
-            ref Dictionary<string, JsonPropertyInfo>? ignoredMembers,
-            bool shouldCheckForRequiredKeyword)
+            bool shouldCheckForRequiredKeyword,
+            ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
-            JsonPropertyInfo? jsonPropertyInfo = CreateProperty(typeToConvert, memberInfo, Options, shouldCheckForRequiredKeyword);
+            JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, typeInfo.Options, shouldCheckForRequiredKeyword);
             if (jsonPropertyInfo == null)
             {
                 // ignored invalid property
@@ -189,16 +183,11 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             Debug.Assert(jsonPropertyInfo.Name != null);
-            Debug.Assert(PropertyCache != null);
-            CacheMember(jsonPropertyInfo, PropertyCache, ref ignoredMembers);
-            propertyOrderSpecified |= jsonPropertyInfo.Order != 0;
+            typeInfo.AddProperty(jsonPropertyInfo, ref state);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked as RequiresUnreferencedCode")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is marked RequiresDynamicCode.")]
-        private JsonPropertyInfo? CreateProperty(
+        private static JsonPropertyInfo? CreatePropertyInfo(
+            JsonTypeInfo typeInfo,
             Type typeToConvert,
             MemberInfo memberInfo,
             JsonSerializerOptions options,
@@ -206,7 +195,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonIgnoreCondition? ignoreCondition = memberInfo.GetCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
 
-            if (IsInvalidForSerialization(typeToConvert))
+            if (JsonTypeInfo.IsInvalidForSerialization(typeToConvert))
             {
                 if (ignoreCondition == JsonIgnoreCondition.Always)
                     return null;
@@ -226,7 +215,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return null;
             }
 
-            JsonPropertyInfo jsonPropertyInfo = CreatePropertyUsingReflection(typeToConvert);
+            JsonPropertyInfo jsonPropertyInfo = typeInfo.CreatePropertyUsingReflection(typeToConvert);
             jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition, shouldCheckForRequiredKeyword);
             return jsonPropertyInfo;
         }
@@ -259,10 +248,10 @@ namespace System.Text.Json.Serialization.Metadata
                 ignoredMember.IsVirtual;
         }
 
-        internal override JsonParameterInfoValues[] GetParameterInfoValues()
+        private static void PopulateParameterInfoValues(JsonTypeInfo typeInfo)
         {
-            Debug.Assert(Converter.ConstructorInfo != null);
-            ParameterInfo[] parameters = Converter.ConstructorInfo.GetParameters();
+            Debug.Assert(typeInfo.Converter.ConstructorInfo != null);
+            ParameterInfo[] parameters = typeInfo.Converter.ConstructorInfo.GetParameters();
             int parameterCount = parameters.Length;
             JsonParameterInfoValues[] jsonParameters = new JsonParameterInfoValues[parameterCount];
 
@@ -273,8 +262,8 @@ namespace System.Text.Json.Serialization.Metadata
                 // Trimmed parameter names are reported as null in CoreCLR or "" in Mono.
                 if (string.IsNullOrEmpty(reflectionInfo.Name))
                 {
-                    Debug.Assert(Converter.ConstructorInfo.DeclaringType != null);
-                    ThrowHelper.ThrowNotSupportedException_ConstructorContainsNullParameterNames(Converter.ConstructorInfo.DeclaringType);
+                    Debug.Assert(typeInfo.Converter.ConstructorInfo.DeclaringType != null);
+                    ThrowHelper.ThrowNotSupportedException_ConstructorContainsNullParameterNames(typeInfo.Converter.ConstructorInfo.DeclaringType);
                 }
 
                 JsonParameterInfoValues jsonInfo = new()
@@ -289,7 +278,7 @@ namespace System.Text.Json.Serialization.Metadata
                 jsonParameters[i] = jsonInfo;
             }
 
-            return jsonParameters;
+            typeInfo.ParameterInfoValues = jsonParameters;
         }
     }
 }

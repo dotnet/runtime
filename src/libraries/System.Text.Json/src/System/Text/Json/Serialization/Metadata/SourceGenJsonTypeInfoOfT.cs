@@ -9,82 +9,87 @@ using System.Text.Json.Serialization.Converters;
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
-    /// Creates and initializes serialization metadata for a type.
+    ///Provides factory methods for constructing reflection-derived metadata.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    internal sealed class SourceGenJsonTypeInfo<T> : JsonTypeInfo<T>
+    internal static class SourceGenJsonTypeInfo
     {
         /// <summary>
         /// Creates serialization metadata for a type using a simple converter.
         /// </summary>
-        public SourceGenJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
-            : base(converter, options)
+        public static JsonTypeInfo<T> Create<T>(JsonConverter converter, JsonSerializerOptions options)
         {
-            PopulatePolymorphismMetadata();
-            MapInterfaceTypesToCallbacks();
+            JsonTypeInfo<T> typeInfo = new JsonTypeInfo<T>(converter, options);
+            typeInfo.PopulatePolymorphismMetadata();
+            typeInfo.MapInterfaceTypesToCallbacks();
 
             // Plug in any converter configuration -- should be run last.
-            converter.ConfigureJsonTypeInfo(this, options);
+            converter.ConfigureJsonTypeInfo(typeInfo, options);
+            return typeInfo;
         }
 
         /// <summary>
         /// Creates serialization metadata for an object.
         /// </summary>
-        public SourceGenJsonTypeInfo(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) : base(GetConverter(objectInfo), options)
+        public static JsonTypeInfo<T> Create<T>(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo)
         {
+            JsonConverter converter = GetConverter(objectInfo);
+            JsonTypeInfo<T> typeInfo = new JsonTypeInfo<T>(converter, options);
             if (objectInfo.ObjectWithParameterizedConstructorCreator != null)
             {
-                CreateObjectWithArgs = objectInfo.ObjectWithParameterizedConstructorCreator;
-                CtorParamInitFunc = objectInfo.ConstructorParameterMetadataInitializer;
+                typeInfo.CreateObjectWithArgs = objectInfo.ObjectWithParameterizedConstructorCreator;
+                PopulateParameterInfoValues(typeInfo, objectInfo.ConstructorParameterMetadataInitializer);
             }
             else
             {
-                SetCreateObjectIfCompatible(objectInfo.ObjectCreator);
-                CreateObjectForExtensionDataProperty = ((JsonTypeInfo)this).CreateObject;
+                typeInfo.SetCreateObjectIfCompatible(objectInfo.ObjectCreator);
+                typeInfo.CreateObjectForExtensionDataProperty = ((JsonTypeInfo)typeInfo).CreateObject;
             }
 
-            PropInitFunc = objectInfo.PropertyMetadataInitializer;
-            SerializeHandler = objectInfo.SerializeHandler;
-            NumberHandling = objectInfo.NumberHandling;
-            PopulatePolymorphismMetadata();
-            MapInterfaceTypesToCallbacks();
+            PopulateProperties(typeInfo, objectInfo.PropertyMetadataInitializer);
+            typeInfo.SerializeHandler = objectInfo.SerializeHandler;
+            typeInfo.NumberHandling = objectInfo.NumberHandling;
+            typeInfo.PopulatePolymorphismMetadata();
+            typeInfo.MapInterfaceTypesToCallbacks();
 
             // Plug in any converter configuration -- should be run last.
-            Converter.ConfigureJsonTypeInfo(this, options);
+            converter.ConfigureJsonTypeInfo(typeInfo, options);
+            return typeInfo;
         }
 
         /// <summary>
         /// Creates serialization metadata for a collection.
         /// </summary>
-        public SourceGenJsonTypeInfo(
+        public static JsonTypeInfo<T> Create<T>(
             JsonSerializerOptions options,
             JsonCollectionInfoValues<T> collectionInfo,
             Func<JsonConverter<T>> converterCreator,
             object? createObjectWithArgs = null,
             object? addFunc = null)
-            : base(new JsonMetadataServicesConverter<T>(converterCreator()), options)
         {
+            JsonConverter converter = new JsonMetadataServicesConverter<T>(converterCreator());
+            JsonTypeInfo<T> typeInfo = new JsonTypeInfo<T>(converter, options);
             if (collectionInfo is null)
             {
                 ThrowHelper.ThrowArgumentNullException(nameof(collectionInfo));
             }
 
-            KeyTypeInfo = collectionInfo.KeyInfo;
-            ElementTypeInfo = collectionInfo.ElementInfo;
-            Debug.Assert(Kind != JsonTypeInfoKind.None);
-            NumberHandling = collectionInfo.NumberHandling;
-            SerializeHandler = collectionInfo.SerializeHandler;
-            CreateObjectWithArgs = createObjectWithArgs;
-            AddMethodDelegate = addFunc;
-            SetCreateObjectIfCompatible(collectionInfo.ObjectCreator);
-            PopulatePolymorphismMetadata();
-            MapInterfaceTypesToCallbacks();
+            typeInfo.KeyTypeInfo = collectionInfo.KeyInfo;
+            typeInfo.ElementTypeInfo = collectionInfo.ElementInfo;
+            Debug.Assert(typeInfo.Kind != JsonTypeInfoKind.None);
+            typeInfo.NumberHandling = collectionInfo.NumberHandling;
+            typeInfo.SerializeHandler = collectionInfo.SerializeHandler;
+            typeInfo.CreateObjectWithArgs = createObjectWithArgs;
+            typeInfo.AddMethodDelegate = addFunc;
+            typeInfo.SetCreateObjectIfCompatible(collectionInfo.ObjectCreator);
+            typeInfo.PopulatePolymorphismMetadata();
+            typeInfo.MapInterfaceTypesToCallbacks();
 
             // Plug in any converter configuration -- should be run last.
-            Converter.ConfigureJsonTypeInfo(this, options);
+            converter.ConfigureJsonTypeInfo(typeInfo, options);
+            return typeInfo;
         }
 
-        private static JsonMetadataServicesConverter<T> GetConverter(JsonObjectInfoValues<T> objectInfo)
+        private static JsonMetadataServicesConverter<T> GetConverter<T>(JsonObjectInfoValues<T> objectInfo)
         {
 #pragma warning disable CS8714
             // The type cannot be used as type parameter in the generic type or method.
@@ -102,58 +107,51 @@ namespace System.Text.Json.Serialization.Metadata
 #pragma warning restore CS8714
         }
 
-        internal override JsonParameterInfoValues[] GetParameterInfoValues()
+        private static void PopulateParameterInfoValues(JsonTypeInfo typeInfo, Func<JsonParameterInfoValues[]?>? paramFactory)
         {
-            JsonParameterInfoValues[] array;
-            if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
-            {
-                array = Array.Empty<JsonParameterInfoValues>();
-                MetadataSerializationNotSupported = true;
-            }
+            Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.Object);
+            Debug.Assert(!typeInfo.IsReadOnly);
 
-            return array;
+            if (paramFactory?.Invoke() is JsonParameterInfoValues[] array)
+            {
+                typeInfo.ParameterInfoValues = array;
+            }
+            else
+            {
+                typeInfo.MetadataSerializationNotSupported = true;
+            }
         }
 
-        internal override void LateAddProperties()
+        private static void PopulateProperties(JsonTypeInfo typeInfo, Func<JsonSerializerContext, JsonPropertyInfo[]?>? propInitFunc)
         {
-            Debug.Assert(!IsConfigured);
-            Debug.Assert(PropertyCache is null);
+            Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.Object);
+            Debug.Assert(!typeInfo.IsReadOnly);
 
-            if (Kind != JsonTypeInfoKind.Object)
+            JsonSerializerContext? context = typeInfo.Options.TypeInfoResolver as JsonSerializerContext;
+            if (propInitFunc?.Invoke(context!) is not JsonPropertyInfo[] properties)
             {
-                return;
-            }
-
-            JsonSerializerContext? context = Options.TypeInfoResolver as JsonSerializerContext;
-            JsonPropertyInfo[] array;
-            if (PropInitFunc == null || (array = PropInitFunc(context!)) == null)
-            {
-                if (typeof(T) == typeof(object))
+                if (typeInfo.Type == JsonTypeInfo.ObjectType)
                 {
                     return;
                 }
 
-                if (Converter.ElementType != null)
+                if (typeInfo.Converter.ElementType != null)
                 {
-                    // Nullable<> or F# optional converter's strategy is set to element's strategy
+                    // Nullable<> or F# optional converter strategy is set to element strategy
                     return;
                 }
 
-                MetadataSerializationNotSupported = true;
+                typeInfo.MetadataSerializationNotSupported = true;
                 return;
             }
 
-            Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
-            JsonPropertyDictionary<JsonPropertyInfo> propertyCache = CreatePropertyCache(capacity: array.Length);
+            JsonTypeInfo.PropertyHierarchyResolutionState state = new();
 
-            for (int i = 0; i < array.Length; i++)
+            foreach (JsonPropertyInfo jsonPropertyInfo in properties)
             {
-                JsonPropertyInfo jsonPropertyInfo = array[i];
-                bool hasJsonInclude = jsonPropertyInfo.SrcGen_HasJsonInclude;
-
                 if (!jsonPropertyInfo.SrcGen_IsPublic)
                 {
-                    if (hasJsonInclude)
+                    if (jsonPropertyInfo.SrcGen_HasJsonInclude)
                     {
                         Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName is not set by source gen");
                         ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
@@ -162,15 +160,15 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
-                if (jsonPropertyInfo.MemberType == MemberTypes.Field && !hasJsonInclude && !Options.IncludeFields)
+                if (jsonPropertyInfo.MemberType == MemberTypes.Field && !jsonPropertyInfo.SrcGen_HasJsonInclude && !typeInfo.Options.IncludeFields)
                 {
                     continue;
                 }
 
-                CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
+                typeInfo.AddProperty(jsonPropertyInfo, ref state);
             }
 
-            PropertyCache = propertyCache;
+            // NB we don't need to sort source gen properties here since they were already sorted at compile time.
         }
     }
 }

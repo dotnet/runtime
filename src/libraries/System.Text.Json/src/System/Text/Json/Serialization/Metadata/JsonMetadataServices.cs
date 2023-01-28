@@ -71,7 +71,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(objectInfo));
             }
 
-            return new SourceGenJsonTypeInfo<T>(options, objectInfo);
+            return SourceGenJsonTypeInfo.Create(options, objectInfo);
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(converter));
             }
 
-            JsonTypeInfo<T> info = new SourceGenJsonTypeInfo<T>(converter, options);
+            JsonTypeInfo<T> info = SourceGenJsonTypeInfo.Create<T>(converter, options);
             return info;
         }
     }

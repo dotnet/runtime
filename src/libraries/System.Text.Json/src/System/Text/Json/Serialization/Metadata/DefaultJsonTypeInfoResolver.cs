@@ -85,25 +85,8 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
         {
-            JsonTypeInfo jsonTypeInfo;
             JsonConverter converter = GetConverterForType(type, options);
-
-            if (converter.TypeToConvert == type)
-            {
-                // For performance, avoid doing a reflection-based instantiation
-                // if the converter type matches that of the declared type.
-                jsonTypeInfo = converter.CreateReflectionJsonTypeInfo(options);
-            }
-            else
-            {
-                Type jsonTypeInfoType = typeof(ReflectionJsonTypeInfo<>).MakeGenericType(type);
-                jsonTypeInfo = (JsonTypeInfo)jsonTypeInfoType.CreateInstanceNoWrapExceptions(
-                    parameterTypes: new Type[] { typeof(JsonConverter), typeof(JsonSerializerOptions) },
-                    parameters: new object[] { converter, options })!;
-            }
-
-            Debug.Assert(jsonTypeInfo.Type == type);
-            return jsonTypeInfo;
+            return ReflectionJsonTypeInfo.Create(type, converter, options);
         }
 
         /// <summary>
