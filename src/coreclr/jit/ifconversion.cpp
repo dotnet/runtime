@@ -250,6 +250,15 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                         return false;
                     }
 
+#ifndef TARGET_64BIT
+                    // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
+                    // handle contained relops efficiently after decomposition.
+                    if (varTypeIsLong(tree))
+                    {
+                        return false;
+                    }
+#endif
+
                     // Ensure it won't cause any additional side effects.
                     if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
                         (op2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
