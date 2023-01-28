@@ -947,9 +947,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                         /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Quaternion_Negate:
                 case NI_Quaternion_op_UnaryNegation:
+                case NI_Vector2_Negate:
                 case NI_Vector2_op_UnaryNegation:
+                case NI_Vector3_Negate:
                 case NI_Vector3_op_UnaryNegation:
+                case NI_Vector4_Negate:
                 case NI_Vector4_op_UnaryNegation:
                 case NI_VectorT128_Negate:
                 case NI_VectorT128_op_UnaryNegation:
@@ -1136,9 +1140,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             switch (intrinsic)
             {
+                case NI_Quaternion_Add:
                 case NI_Quaternion_op_Addition:
+                case NI_Vector2_Add:
                 case NI_Vector2_op_Addition:
+                case NI_Vector3_Add:
                 case NI_Vector3_op_Addition:
+                case NI_Vector4_Add:
                 case NI_Vector4_op_Addition:
                 case NI_VectorT128_Add:
                 case NI_VectorT128_op_Addition:
@@ -1198,8 +1206,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
 
+                case NI_Vector2_Divide:
                 case NI_Vector2_op_Division:
+                case NI_Vector3_Divide:
                 case NI_Vector3_op_Division:
+                case NI_Vector4_Divide:
                 case NI_Vector4_op_Division:
                 case NI_VectorT128_Divide:
                 case NI_VectorT128_op_Division:
@@ -1452,9 +1463,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                             /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Quaternion_Multiply:
                 case NI_Quaternion_op_Multiply:
+                case NI_Vector2_Multiply:
                 case NI_Vector2_op_Multiply:
+                case NI_Vector3_Multiply:
                 case NI_Vector3_op_Multiply:
+                case NI_Vector4_Multiply:
                 case NI_Vector4_op_Multiply:
                 case NI_VectorT128_Multiply:
                 case NI_VectorT128_op_Multiply:
@@ -1562,9 +1577,13 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                                          /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Quaternion_Subtract:
                 case NI_Quaternion_op_Subtraction:
+                case NI_Vector2_Subtract:
                 case NI_Vector2_op_Subtraction:
+                case NI_Vector3_Subtract:
                 case NI_Vector3_op_Subtraction:
+                case NI_Vector4_Subtract:
                 case NI_Vector4_op_Subtraction:
                 case NI_VectorT128_Subtract:
                 case NI_VectorT128_op_Subtraction:

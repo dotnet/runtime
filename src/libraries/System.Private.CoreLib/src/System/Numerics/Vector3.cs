@@ -275,6 +275,7 @@ namespace System.Numerics
         /// <param name="left">The first vector to add.</param>
         /// <param name="right">The second vector to add.</param>
         /// <returns>The summed vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Add(Vector3 left, Vector3 right)
         {
@@ -333,6 +334,7 @@ namespace System.Numerics
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The vector resulting from the division.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Divide(Vector3 left, Vector3 right)
         {
@@ -343,6 +345,7 @@ namespace System.Numerics
         /// <param name="left">The vector.</param>
         /// <param name="divisor">The scalar value.</param>
         /// <returns>The vector that results from the division.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Divide(Vector3 left, float divisor)
         {
@@ -407,6 +410,7 @@ namespace System.Numerics
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The element-wise product vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Multiply(Vector3 left, Vector3 right)
         {
@@ -417,6 +421,7 @@ namespace System.Numerics
         /// <param name="left">The vector to multiply.</param>
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Multiply(Vector3 left, float right)
         {
@@ -427,6 +432,7 @@ namespace System.Numerics
         /// <param name="left">The scaled value.</param>
         /// <param name="right">The vector.</param>
         /// <returns>The scaled vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Multiply(float left, Vector3 right)
         {
@@ -436,6 +442,7 @@ namespace System.Numerics
         /// <summary>Negates a specified vector.</summary>
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Negate(Vector3 value)
         {
@@ -480,6 +487,7 @@ namespace System.Numerics
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The difference vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Subtract(Vector3 left, Vector3 right)
         {

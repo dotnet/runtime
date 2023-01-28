@@ -264,6 +264,7 @@ namespace System.Numerics
         /// <param name="value1">The first quaternion.</param>
         /// <param name="value2">The second quaternion.</param>
         /// <returns>The quaternion that contains the summed values of <paramref name="value1" /> and <paramref name="value2" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Add(Quaternion value1, Quaternion value2)
         {
@@ -528,6 +529,7 @@ namespace System.Numerics
         /// <param name="value1">The source quaternion.</param>
         /// <param name="value2">The scalar value.</param>
         /// <returns>The scaled quaternion.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Multiply(Quaternion value1, float value2)
         {
@@ -537,6 +539,7 @@ namespace System.Numerics
         /// <summary>Reverses the sign of each component of the quaternion.</summary>
         /// <param name="value">The quaternion to negate.</param>
         /// <returns>The negated quaternion.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Negate(Quaternion value)
         {
@@ -615,6 +618,7 @@ namespace System.Numerics
         /// <param name="value1">The first quaternion.</param>
         /// <param name="value2">The second quaternion.</param>
         /// <returns>The quaternion containing the values that result from subtracting each element in <paramref name="value2" /> from its corresponding element in <paramref name="value1" />.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Subtract(Quaternion value1, Quaternion value2)
         {
