@@ -9,14 +9,11 @@ using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
-    /// <summary>
-    /// Provides factory methods for constructing reflection-derived metadata.
-    /// </summary>
-    [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-    internal static class ReflectionJsonTypeInfo
+    public partial class DefaultJsonTypeInfoResolver
     {
-        internal static JsonTypeInfo Create(Type type, JsonConverter converter, JsonSerializerOptions options)
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static JsonTypeInfo CreateCore(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, converter, options);
             typeInfo.NumberHandling = GetNumberHandlingForType(typeInfo.Type);
@@ -48,6 +45,8 @@ namespace System.Text.Json.Serialization.Metadata
             return typeInfo;
         }
 
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static void PopulateProperties(JsonTypeInfo typeInfo)
         {
             Debug.Assert(!typeInfo.IsReadOnly);
@@ -83,6 +82,8 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static void AddMembersDeclaredBySuperType(
             JsonTypeInfo typeInfo,
             Type currentType,
@@ -168,6 +169,8 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static void AddMember(
             JsonTypeInfo typeInfo,
             Type typeToConvert,
@@ -186,6 +189,8 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.AddProperty(jsonPropertyInfo, ref state);
         }
 
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonPropertyInfo? CreatePropertyInfo(
             JsonTypeInfo typeInfo,
             Type typeToConvert,

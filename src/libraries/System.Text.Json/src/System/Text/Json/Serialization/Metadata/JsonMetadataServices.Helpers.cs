@@ -8,15 +8,12 @@ using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization.Metadata
 {
-    /// <summary>
-    ///Provides factory methods for constructing reflection-derived metadata.
-    /// </summary>
-    internal static class SourceGenJsonTypeInfo
+    public static partial class JsonMetadataServices
     {
         /// <summary>
         /// Creates serialization metadata for a type using a simple converter.
         /// </summary>
-        public static JsonTypeInfo<T> Create<T>(JsonConverter converter, JsonSerializerOptions options)
+        private static JsonTypeInfo<T> CreateCore<T>(JsonConverter converter, JsonSerializerOptions options)
         {
             JsonTypeInfo<T> typeInfo = new JsonTypeInfo<T>(converter, options);
             typeInfo.PopulatePolymorphismMetadata();
@@ -30,7 +27,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates serialization metadata for an object.
         /// </summary>
-        public static JsonTypeInfo<T> Create<T>(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo)
+        private static JsonTypeInfo<T> CreateCore<T>(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo)
         {
             JsonConverter converter = GetConverter(objectInfo);
             JsonTypeInfo<T> typeInfo = new JsonTypeInfo<T>(converter, options);
@@ -59,7 +56,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Creates serialization metadata for a collection.
         /// </summary>
-        public static JsonTypeInfo<T> Create<T>(
+        private static JsonTypeInfo<T> CreateCore<T>(
             JsonSerializerOptions options,
             JsonCollectionInfoValues<T> collectionInfo,
             Func<JsonConverter<T>> converterCreator,

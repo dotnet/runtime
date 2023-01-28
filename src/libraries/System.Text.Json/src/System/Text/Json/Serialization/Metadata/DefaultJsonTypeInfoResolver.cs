@@ -86,7 +86,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
         {
             JsonConverter converter = GetConverterForType(type, options);
-            return ReflectionJsonTypeInfo.Create(type, converter, options);
+            return CreateCore(type, converter, options);
         }
 
         /// <summary>
