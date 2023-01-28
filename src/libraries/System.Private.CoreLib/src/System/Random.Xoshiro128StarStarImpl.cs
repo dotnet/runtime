@@ -16,7 +16,7 @@ namespace System
         /// As such, we are free to implement however we see fit, without back compat concerns around
         /// the sequence of numbers generated or what methods call what other methods.
         /// </summary>
-        internal sealed class XoshiroImpl : ImplBase
+        internal sealed class XoshiroImpl : LemireImpl
         {
             // NextUInt32 is based on the algorithm from http://prng.di.unimi.it/xoshiro128starstar.c:
             //
@@ -27,11 +27,6 @@ namespace System
             //     worldwide. This software is distributed without any warranty.
             //
             //     See <http://creativecommons.org/publicdomain/zero/1.0/>.
-
-            // Next(int maxValue), Next(int minValue, int maxValue), NextInt64(long maxValue) and NextInt64(int minValue, int maxValue)
-            // are based on the algorithm from https://arxiv.org/pdf/1805.10941.pdf and https://github.com/lemire/fastrange:
-            //
-            //     Written in 2018 by Daniel Lemire
 
             private uint _s0, _s1, _s2, _s3;
 
@@ -51,7 +46,7 @@ namespace System
 
             /// <summary>Produces a value in the range [0, uint.MaxValue].</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // small-ish hot path used by a handful of "next" methods
-            internal uint NextUInt32()
+            internal override uint NextUInt32()
             {
                 uint s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;
 
@@ -76,7 +71,7 @@ namespace System
 
             /// <summary>Produces a value in the range [0, ulong.MaxValue].</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // small-ish hot path used by a handful of "next" methods
-            internal ulong NextUInt64() => (((ulong)NextUInt32()) << 32) | NextUInt32();
+            internal override ulong NextUInt64() => (((ulong)NextUInt32()) << 32) | NextUInt32();
 
             public override int Next()
             {
@@ -97,44 +92,14 @@ namespace System
             {
                 Debug.Assert(maxValue >= 0);
 
-                ulong randomProduct = (ulong)(uint)maxValue * NextUInt32();
-                uint lowPart = (uint)randomProduct;
-
-                if (lowPart < (uint)maxValue)
-                {
-                    uint remainder = (0u - (uint)maxValue) % (uint)maxValue;
-
-                    while (lowPart < remainder)
-                    {
-                        randomProduct = (ulong)(uint)maxValue * NextUInt32();
-                        lowPart = (uint)randomProduct;
-                    }
-                }
-
-                return (int)(randomProduct >> 32);
+                return (int)NextBoundedUint((uint)maxValue);
             }
 
             public override int Next(int minValue, int maxValue)
             {
                 Debug.Assert(minValue <= maxValue);
 
-                uint exclusiveRange = (uint)(maxValue - minValue);
-
-                ulong randomProduct = (ulong)exclusiveRange * NextUInt32();
-                uint lowPart = (uint)randomProduct;
-
-                if (lowPart < exclusiveRange)
-                {
-                    uint remainder = (0u - exclusiveRange) % exclusiveRange;
-
-                    while (lowPart < remainder)
-                    {
-                        randomProduct = (ulong)exclusiveRange * NextUInt32();
-                        lowPart = (uint)randomProduct;
-                    }
-                }
-
-                return (int)(randomProduct >> 32) + minValue;
+                return (int)NextBoundedUint((uint)(maxValue - minValue)) + minValue;
             }
 
             public override long NextInt64()
@@ -156,44 +121,14 @@ namespace System
             {
                 Debug.Assert(maxValue >= 0);
 
-                UInt128 randomProduct = (UInt128)(ulong)maxValue * NextUInt64();
-                ulong lowPart = (ulong)randomProduct;
-
-                if (lowPart < (ulong)maxValue)
-                {
-                    ulong remainder = (0ul - (ulong)maxValue) % (ulong)maxValue;
-
-                    while (lowPart < remainder)
-                    {
-                        randomProduct = (UInt128)(ulong)maxValue * NextUInt64();
-                        lowPart = (ulong)randomProduct;
-                    }
-                }
-
-                return (long)(randomProduct >> 64);
+                return (long)NextBoundedUlong((uint)maxValue);
             }
 
             public override long NextInt64(long minValue, long maxValue)
             {
                 Debug.Assert(minValue <= maxValue);
 
-                ulong exclusiveRange = (ulong)(maxValue - minValue);
-
-                UInt128 randomProduct = (UInt128)exclusiveRange * NextUInt64();
-                ulong lowPart = (ulong)randomProduct;
-
-                if (lowPart < exclusiveRange)
-                {
-                    ulong remainder = (0ul - exclusiveRange) % exclusiveRange;
-
-                    while (lowPart < remainder)
-                    {
-                        randomProduct = (UInt128)exclusiveRange * NextUInt64();
-                        lowPart = (ulong)randomProduct;
-                    }
-                }
-
-                return (long)(randomProduct >> 64) + minValue;
+                return (long)NextBoundedUlong((ulong)(maxValue - minValue)) + minValue;
             }
 
             public override void NextBytes(byte[] buffer) => NextBytes((Span<byte>)buffer);

@@ -584,6 +584,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Progress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Random.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Random.ImplBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Random.LemireImpl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Random.Net5CompatImpl.cs" />
     <Compile Condition="'$(Is64Bit)' != 'true'" Include="$(MSBuildThisFileDirectory)System\Random.Xoshiro128StarStarImpl.cs" />
     <Compile Condition="'$(Is64Bit)' == 'true'" Include="$(MSBuildThisFileDirectory)System\Random.Xoshiro256StarStarImpl.cs" />
