@@ -5945,9 +5945,9 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
                 MakeSrcContained(select, op2);
             }
         }
-        else if (IsSafeToContainMem(select, op1))
+        else if (IsSafeToContainMem(select, op2))
         {
-            MakeSrcRegOptional(select, op1);
+            MakeSrcRegOptional(select, op2);
         }
     }
 }
