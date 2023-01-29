@@ -653,6 +653,7 @@ namespace System.Numerics
         /// <summary>Returns the length of the vector.</summary>
         /// <returns>The vector's length.</returns>
         /// <altmember cref="LengthSquared"/>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float Length()
         {
@@ -664,6 +665,7 @@ namespace System.Numerics
         /// <returns>The vector's length squared.</returns>
         /// <remarks>This operation offers better performance than a call to the <see cref="Length" /> method.</remarks>
         /// <altmember cref="Length"/>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float LengthSquared()
         {

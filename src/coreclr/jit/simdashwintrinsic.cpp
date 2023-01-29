@@ -943,6 +943,35 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdFloorNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Quaternion_Length:
+                case NI_Vector2_Length:
+                case NI_Vector3_Length:
+                case NI_Vector4_Length:
+                {
+                    GenTree* clonedOp1;
+                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone op1 for vector length"));
+
+                    op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ true);
+
+                    return new (this, GT_INTRINSIC) GenTreeIntrinsic(simdBaseType, op1, NI_System_Math_Sqrt,
+                                                                     NO_METHOD_HANDLE);
+                }
+
+                case NI_Quaternion_LengthSquared:
+                case NI_Vector2_LengthSquared:
+                case NI_Vector3_LengthSquared:
+                case NI_Vector4_LengthSquared:
+                {
+                    GenTree* clonedOp1;
+                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone op1 for vector length squared"));
+
+                    return gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize,
+                                                /* isSimdAsHWIntrinsic */ true);
+                }
+
                 case NI_VectorT128_Load:
                 case NI_VectorT128_LoadUnsafe:
 #if defined(TARGET_XARCH)

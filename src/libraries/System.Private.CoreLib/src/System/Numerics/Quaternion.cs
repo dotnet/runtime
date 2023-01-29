@@ -669,6 +669,7 @@ namespace System.Numerics
 
         /// <summary>Calculates the length of the quaternion.</summary>
         /// <returns>The computed length of the quaternion.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float Length()
         {
@@ -678,6 +679,7 @@ namespace System.Numerics
 
         /// <summary>Calculates the squared length of the quaternion.</summary>
         /// <returns>The length squared of the quaternion.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly float LengthSquared()
         {
