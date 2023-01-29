@@ -529,8 +529,8 @@ namespace System.Numerics
         }
 
         /// <summary>Returns a new quaternion whose values are the product of each pair of elements in specified quaternion and vector.</summary>
-        /// <param name="left">The quaternion.</param>
-        /// <param name="right">The vector.</param>
+        /// <param name="value1">The quaternion.</param>
+        /// <param name="value2">The vector.</param>
         /// <returns>The element-wise product vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

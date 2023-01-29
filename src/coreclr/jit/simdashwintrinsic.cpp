@@ -962,8 +962,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize,
                                                /* isSimdAsHWIntrinsic */ true);
 
-                    return new (this, GT_INTRINSIC) GenTreeIntrinsic(simdBaseType, op1, NI_System_Math_Sqrt,
-                                                                     NO_METHOD_HANDLE);
+                    return new (this, GT_INTRINSIC)
+                        GenTreeIntrinsic(simdBaseType, op1, NI_System_Math_Sqrt, NO_METHOD_HANDLE);
                 }
 
                 case NI_Vector2_DistanceSquared:
@@ -1030,8 +1030,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize,
                                                /* isSimdAsHWIntrinsic */ true);
 
-                    return new (this, GT_INTRINSIC) GenTreeIntrinsic(simdBaseType, op1, NI_System_Math_Sqrt,
-                                                                     NO_METHOD_HANDLE);
+                    return new (this, GT_INTRINSIC)
+                        GenTreeIntrinsic(simdBaseType, op1, NI_System_Math_Sqrt, NO_METHOD_HANDLE);
                 }
 
                 case NI_Quaternion_LengthSquared:
@@ -1871,12 +1871,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #if defined(TARGET_XARCH)
                     // op3 = 1.0f - op3
                     GenTree* oneCon = gtNewOneConNode(retType, simdBaseType);
-                    op3 = gtNewSimdBinOpNode(GT_SUB, retType, oneCon, op3, simdBaseJitType, simdSize,
+                    op3             = gtNewSimdBinOpNode(GT_SUB, retType, oneCon, op3, simdBaseJitType, simdSize,
                                              /* isSimdAsHWIntrinsic */ true);
 #elif defined(TARGET_ARM64)
                     // op3 = 1.0f - op3
                     GenTree* oneCon = gtNewOneConNode(simdBaseType);
-                    op3 = gtNewOperNode(GT_SUB, TYP_FLOAT, oneCon, op3);
+                    op3             = gtNewOperNode(GT_SUB, TYP_FLOAT, oneCon, op3);
 #else
 #error Unsupported platform
 #endif
@@ -1950,7 +1950,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         copyBlkSrc = gtNewSimdHWIntrinsicNode(TYP_SIMD8, std::move(nodeBuilder), NI_Vector128_Create,
                                                               simdBaseJitType, 16, /* isSimdAsHWIntrinsic */ true);
 #elif defined(TARGET_ARM64)
-                        copyBlkSrc = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op2, op3, NI_Vector64_Create, simdBaseJitType,
+                        copyBlkSrc  = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op2, op3, NI_Vector64_Create, simdBaseJitType,
                                                               8, /* isSimdAsHWIntrinsic */ true);
 #else
 #error Unsupported platform
