@@ -8,6 +8,8 @@
 
 ## Build
 
+> `git submodule init`
+
 > `cmake -S . -B artifacts`
 
 > `cmake --build artifacts --target install`

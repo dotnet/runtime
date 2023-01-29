@@ -1006,9 +1006,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMember(
 {
     HRESULT hr = FindMethod(td, szName, pvSigBlob, cbSigBlob, (mdMethodDef*)pmb);
     if (hr == CLDB_E_RECORD_NOTFOUND)
-    {
         hr = FindField(td, szName, pvSigBlob, cbSigBlob, (mdFieldDef*)pmb);
-    }
     return hr;
 }
 
@@ -1150,6 +1148,18 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMemberRef(
     ULONG       cbSigBlob,
     mdMemberRef* pmr)
 {
+    if (TypeFromToken(td) != mdtTypeRef
+        && TypeFromToken(td) != mdtMethodDef
+        && TypeFromToken(td) != mdtModuleRef
+        && TypeFromToken(td) != mdtTypeDef
+        && TypeFromToken(td) != mdtTypeSpec)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (szName == nullptr || pmr == nullptr)
+        return CLDB_E_RECORD_NOTFOUND;
+
     if (IsNilToken(td))
         td = MD_GLOBAL_PARENT_TOKEN;
 

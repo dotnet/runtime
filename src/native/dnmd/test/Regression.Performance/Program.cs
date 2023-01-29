@@ -53,7 +53,7 @@ namespace Regression.Performance
                 });
             }
 
-            int hr = _Initialize(_metadataBlock.Pointer, _metadataBlock.Length, Dispensers.BaselineRaw);
+            int hr = _Initialize(_metadataBlock.Pointer, _metadataBlock.Length, Dispensers.Baseline);
             if (hr < 0)
             {
                 throw new Exception($"Initialization failed: 0x{hr:x}");
@@ -85,20 +85,20 @@ namespace Regression.Performance
     {
         public static void Main(string[] args)
         {
-            string regperfPath;
+            string regnativePath;
             if (args.Length > 0)
             {
-                regperfPath = args[0];
+                regnativePath = args[0];
             }
             else
             {
-                regperfPath =
+                regnativePath =
                     OperatingSystem.IsWindows() ? "regnative.dll"
                     : OperatingSystem.IsMacOS() ? "libregnative.dylib"
                     : "libregnative.so";
             }
 
-            var test = new Compare(regperfPath);
+            var test = new Compare(regnativePath);
 
             Console.WriteLine("Warm-up");
             test.Run(100);

@@ -6,3 +6,4 @@ set(CMAKE_INSTALL_PREFIX ./)
 
 add_subdirectory(src/)
 add_subdirectory(test/)
+add_subdirectory(external/dncp)
