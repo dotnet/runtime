@@ -935,6 +935,39 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdCeilNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Vector2_Distance:
+                case NI_Vector3_Distance:
+                case NI_Vector4_Distance:
+                {
+                    op1 = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ true);
+
+                    GenTree* clonedOp1;
+                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone diff for vector distance"));
+
+                    op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ true);
+
+                    return new (this, GT_INTRINSIC) GenTreeIntrinsic(simdBaseType, op1, NI_System_Math_Sqrt,
+                                                                     NO_METHOD_HANDLE);
+                }
+
+                case NI_Vector2_DistanceSquared:
+                case NI_Vector3_DistanceSquared:
+                case NI_Vector4_DistanceSquared:
+                {
+                    op1 = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ true);
+
+                    GenTree* clonedOp1;
+                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone diff for vector distance squared"));
+
+                    return gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize,
+                                                /* isSimdAsHWIntrinsic */ true);
+                }
+
                 case NI_VectorT128_Floor:
 #if defined(TARGET_XARCH)
                 case NI_VectorT256_Floor:

@@ -272,6 +272,7 @@ namespace System.Numerics
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
         /// <returns>The distance.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Distance(Vector2 value1, Vector2 value2)
         {
@@ -283,6 +284,7 @@ namespace System.Numerics
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
         /// <returns>The distance squared.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float DistanceSquared(Vector2 value1, Vector2 value2)
         {
