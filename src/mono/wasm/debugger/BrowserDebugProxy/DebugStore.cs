@@ -124,7 +124,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             Assembly = sourceFile.AssemblyName;
             File = sourceFile.FilePath;
             Line = line.Value;
-            Column = column.Value;
+            Column = column;
             return true;
         }
 
