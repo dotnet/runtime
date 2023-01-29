@@ -1012,8 +1012,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     op1 = gtNewSimdDotProdNode(retType, clonedOp1, clonedOp2, simdBaseJitType, simdSize,
                                                /* isSimdAsHWIntrinsic */ true);
 
-                    op1 = gtNewSimdSqrtNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
-
                     return gtNewSimdBinOpNode(GT_DIV, retType, conjugate, op1, simdBaseJitType, simdSize,
                                               /* isSimdAsHWIntrinsic */ true);
                 }

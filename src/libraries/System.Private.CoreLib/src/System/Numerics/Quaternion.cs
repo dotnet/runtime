@@ -473,7 +473,7 @@ namespace System.Numerics
             // q   = ( -------------   ------------- )
             //       (  a^2 + |v|^2  ,  a^2 + |v|^2  )
 
-            return Divide(Conjugate(value), value.Length());
+            return Divide(Conjugate(value), value.LengthSquared());
         }
 
         /// <summary>Performs a linear interpolation between two quaternions based on a value that specifies the weighting of the second quaternion.</summary>
