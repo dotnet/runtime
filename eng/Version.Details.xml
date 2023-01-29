@@ -8,10 +8,6 @@
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>dc012a715ceb9b5d5258f2fda77520586af5a36a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-alpha.1" Version="8.0.0-alpha.1.23077.1">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>93f95eea76ca8b74ffffb6cb2581fae0a35272ed</Sha>
-    </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
       <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
@@ -91,6 +87,10 @@
     <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.23073.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
       <Sha>92aae1ebe9760194a38f74e903757fc42c612b94</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-alpha.1" Version="8.0.0-alpha.1.23077.4">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>0fe864fc71191ff4ee18e59ef0af2929ca367a11</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
