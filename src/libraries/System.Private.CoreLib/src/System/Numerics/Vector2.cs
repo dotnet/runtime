@@ -430,7 +430,7 @@ namespace System.Numerics
         public static Vector2 Reflect(Vector2 vector, Vector2 normal)
         {
             float dot = Dot(vector, normal);
-            return vector - (2.0f * dot * normal);
+            return vector - (2.0f * (dot * normal));
         }
 
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
@@ -464,10 +464,18 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Transform(Vector2 position, Matrix3x2 matrix)
         {
-            return new Vector2(
-                (position.X * matrix.M11) + (position.Y * matrix.M21) + matrix.M31,
-                (position.X * matrix.M12) + (position.Y * matrix.M22) + matrix.M32
-            );
+            return Transform(position, in matrix.AsImpl());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector2 Transform(Vector2 position, in Matrix3x2.Impl matrix)
+        {
+            Vector2 result = matrix.X * position.X;
+
+            result += matrix.Y * position.Y;
+            result += matrix.Z;
+
+            return result;
         }
 
         /// <summary>Transforms a vector by a specified 4x4 matrix.</summary>
@@ -477,10 +485,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Transform(Vector2 position, Matrix4x4 matrix)
         {
-            return new Vector2(
-                (position.X * matrix.M11) + (position.Y * matrix.M21) + matrix.M41,
-                (position.X * matrix.M12) + (position.Y * matrix.M22) + matrix.M42
-            );
+            return Vector4.Transform(position, in matrix.AsImpl()).AsVector128().AsVector2();
         }
 
         /// <summary>Transforms a vector by the specified Quaternion rotation value.</summary>
@@ -513,10 +518,17 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 TransformNormal(Vector2 normal, Matrix3x2 matrix)
         {
-            return new Vector2(
-                (normal.X * matrix.M11) + (normal.Y * matrix.M21),
-                (normal.X * matrix.M12) + (normal.Y * matrix.M22)
-            );
+            return TransformNormal(normal, in matrix.AsImpl());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector2 TransformNormal(Vector2 normal, in Matrix3x2.Impl matrix)
+        {
+            Vector2 result = matrix.X * normal.X;
+
+            result += matrix.Y * normal.Y;
+
+            return result;
         }
 
         /// <summary>Transforms a vector normal by the given 4x4 matrix.</summary>
@@ -526,10 +538,17 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 TransformNormal(Vector2 normal, Matrix4x4 matrix)
         {
-            return new Vector2(
-                (normal.X * matrix.M11) + (normal.Y * matrix.M21),
-                (normal.X * matrix.M12) + (normal.Y * matrix.M22)
-            );
+            return TransformNormal(normal, in matrix.AsImpl());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector2 TransformNormal(Vector2 normal, in Matrix4x4.Impl matrix)
+        {
+            Vector4 result = matrix.X * normal.X;
+
+            result += matrix.Y * normal.Y;
+
+            return result.AsVector128().AsVector2();
         }
 
         /// <summary>Copies the elements of the vector to a specified array.</summary>

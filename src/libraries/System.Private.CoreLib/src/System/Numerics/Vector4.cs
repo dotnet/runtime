@@ -516,13 +516,17 @@ namespace System.Numerics
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Transform(Vector2 position, Matrix4x4 matrix)
+            => Transform(position, in matrix.AsImpl());
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector4 Transform(Vector2 position, in Matrix4x4.Impl matrix)
         {
-            return new Vector4(
-                (position.X * matrix.M11) + (position.Y * matrix.M21) + matrix.M41,
-                (position.X * matrix.M12) + (position.Y * matrix.M22) + matrix.M42,
-                (position.X * matrix.M13) + (position.Y * matrix.M23) + matrix.M43,
-                (position.X * matrix.M14) + (position.Y * matrix.M24) + matrix.M44
-            );
+            Vector4 result = matrix.X * position.X;
+
+            result += matrix.Y * position.Y;
+            result += matrix.W;
+
+            return result;
         }
 
         /// <summary>Transforms a two-dimensional vector by the specified Quaternion rotation value.</summary>
@@ -560,13 +564,18 @@ namespace System.Numerics
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Transform(Vector3 position, Matrix4x4 matrix)
+            => Transform(position, in matrix.AsImpl());
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector4 Transform(Vector3 position, in Matrix4x4.Impl matrix)
         {
-            return new Vector4(
-                (position.X * matrix.M11) + (position.Y * matrix.M21) + (position.Z * matrix.M31) + matrix.M41,
-                (position.X * matrix.M12) + (position.Y * matrix.M22) + (position.Z * matrix.M32) + matrix.M42,
-                (position.X * matrix.M13) + (position.Y * matrix.M23) + (position.Z * matrix.M33) + matrix.M43,
-                (position.X * matrix.M14) + (position.Y * matrix.M24) + (position.Z * matrix.M34) + matrix.M44
-            );
+            Vector4 result = matrix.X * position.X;
+
+            result += matrix.Y * position.Y;
+            result += matrix.Z * position.Z;
+            result += matrix.W;
+
+            return result;
         }
 
         /// <summary>Transforms a three-dimensional vector by the specified Quaternion rotation value.</summary>

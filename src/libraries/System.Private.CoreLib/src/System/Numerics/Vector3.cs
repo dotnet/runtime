@@ -471,7 +471,7 @@ namespace System.Numerics
         public static Vector3 Reflect(Vector3 vector, Vector3 normal)
         {
             float dot = Dot(vector, normal);
-            return vector - (2.0f * dot * normal);
+            return vector - (2.0f * (dot * normal));
         }
 
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
@@ -506,11 +506,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Transform(Vector3 position, Matrix4x4 matrix)
         {
-            return new Vector3(
-                (position.X * matrix.M11) + (position.Y * matrix.M21) + (position.Z * matrix.M31) + matrix.M41,
-                (position.X * matrix.M12) + (position.Y * matrix.M22) + (position.Z * matrix.M32) + matrix.M42,
-                (position.X * matrix.M13) + (position.Y * matrix.M23) + (position.Z * matrix.M33) + matrix.M43
-            );
+            return Vector4.Transform(position, in matrix.AsImpl()).AsVector128().AsVector3();
         }
 
         /// <summary>Transforms a vector by the specified Quaternion rotation value.</summary>
@@ -548,11 +544,18 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 TransformNormal(Vector3 normal, Matrix4x4 matrix)
         {
-            return new Vector3(
-                (normal.X * matrix.M11) + (normal.Y * matrix.M21) + (normal.Z * matrix.M31),
-                (normal.X * matrix.M12) + (normal.Y * matrix.M22) + (normal.Z * matrix.M32),
-                (normal.X * matrix.M13) + (normal.Y * matrix.M23) + (normal.Z * matrix.M33)
-            );
+            return TransformNormal(normal, in matrix.AsImpl());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector3 TransformNormal(Vector3 normal, in Matrix4x4.Impl matrix)
+        {
+            Vector4 result = matrix.X * normal.X;
+
+            result += matrix.Y * normal.Y;
+            result += matrix.Z * normal.Z;
+
+            return result.AsVector128().AsVector3();
         }
 
         /// <summary>Copies the elements of the vector to a specified array.</summary>
