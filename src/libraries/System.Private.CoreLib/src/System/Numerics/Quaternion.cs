@@ -309,16 +309,11 @@ namespace System.Numerics
         /// <summary>Returns the conjugate of a specified quaternion.</summary>
         /// <param name="value">The quaternion.</param>
         /// <returns>A new quaternion that is the conjugate of <see langword="value" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Conjugate(Quaternion value)
         {
-            Quaternion ans;
-
-            ans.X = -value.X;
-            ans.Y = -value.Y;
-            ans.Z = -value.Z;
-            ans.W = value.W;
-
-            return ans;
+            return Multiply(value, new Vector4(-1.0f, -1.0f, -1.0f, 1.0f));
         }
 
         /// <summary>Creates a quaternion from a unit vector and an angle to rotate around the vector.</summary>
@@ -470,23 +465,15 @@ namespace System.Numerics
         /// <summary>Returns the inverse of a quaternion.</summary>
         /// <param name="value">The quaternion.</param>
         /// <returns>The inverted quaternion.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Inverse(Quaternion value)
         {
             //  -1   (       a              -v       )
             // q   = ( -------------   ------------- )
             //       (  a^2 + |v|^2  ,  a^2 + |v|^2  )
 
-            Quaternion ans;
-
-            float ls = value.X * value.X + value.Y * value.Y + value.Z * value.Z + value.W * value.W;
-            float invNorm = 1.0f / ls;
-
-            ans.X = -value.X * invNorm;
-            ans.Y = -value.Y * invNorm;
-            ans.Z = -value.Z * invNorm;
-            ans.W = value.W * invNorm;
-
-            return ans;
+            return Divide(Conjugate(value), value.Length());
         }
 
         /// <summary>Performs a linear interpolation between two quaternions based on a value that specifies the weighting of the second quaternion.</summary>
@@ -539,6 +526,22 @@ namespace System.Numerics
         public static Quaternion Multiply(Quaternion value1, Quaternion value2)
         {
             return value1 * value2;
+        }
+
+        /// <summary>Returns a new quaternion whose values are the product of each pair of elements in specified quaternion and vector.</summary>
+        /// <param name="left">The quaternion.</param>
+        /// <param name="right">The vector.</param>
+        /// <returns>The element-wise product vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Quaternion Multiply(Quaternion value1, Vector4 value2)
+        {
+            return new Quaternion(
+                value1.X * value2.X,
+                value1.Y * value2.Y,
+                value1.Z * value2.Z,
+                value1.W * value2.W
+            );
         }
 
         /// <summary>Returns the quaternion that results from scaling all the components of a specified quaternion by a scalar factor.</summary>

@@ -935,6 +935,19 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdCeilNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Quaternion_Conjugate:
+                {
+                    GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+                    vecCon->gtSimd16Val.f32[0] = -1.0f;
+                    vecCon->gtSimd16Val.f32[1] = -1.0f;
+                    vecCon->gtSimd16Val.f32[2] = -1.0f;
+                    vecCon->gtSimd16Val.f32[3] = +1.0f;
+
+                    return gtNewSimdBinOpNode(GT_MUL, retType, op1, vecCon, simdBaseJitType, simdSize,
+                                              /* isSimdAsHWIntrinsic */ true);
+                }
+
                 case NI_Vector2_Distance:
                 case NI_Vector3_Distance:
                 case NI_Vector4_Distance:
@@ -974,6 +987,35 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #endif // TARGET_XARCH
                 {
                     return gtNewSimdFloorNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_Quaternion_Inverse:
+                {
+                    GenTree* clonedOp1;
+                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone op1 for quaternion inverse (1)"));
+
+                    GenTree* clonedOp2;
+                    clonedOp1 = impCloneExpr(clonedOp1, &clonedOp2, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                             nullptr DEBUGARG("Clone op1 for quaternion inverse (2)"));
+
+                    GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+                    vecCon->gtSimd16Val.f32[0] = -1.0f;
+                    vecCon->gtSimd16Val.f32[1] = -1.0f;
+                    vecCon->gtSimd16Val.f32[2] = -1.0f;
+                    vecCon->gtSimd16Val.f32[3] = +1.0f;
+
+                    GenTree* conjugate = gtNewSimdBinOpNode(GT_MUL, retType, op1, vecCon, simdBaseJitType, simdSize,
+                                                            /* isSimdAsHWIntrinsic */ true);
+
+                    op1 = gtNewSimdDotProdNode(retType, clonedOp1, clonedOp2, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ true);
+
+                    op1 = gtNewSimdSqrtNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
+
+                    return gtNewSimdBinOpNode(GT_DIV, retType, conjugate, op1, simdBaseJitType, simdSize,
+                                              /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_Quaternion_Length:
