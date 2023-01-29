@@ -121,7 +121,7 @@ namespace System
             {
                 Debug.Assert(maxValue >= 0);
 
-                return (long)NextBoundedUlong((uint)maxValue);
+                return (long)NextBoundedUlong((ulong)maxValue);
             }
 
             public override long NextInt64(long minValue, long maxValue)
