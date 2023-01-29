@@ -36,7 +36,7 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _timerCounter;
         private PollingCounter? _fragmentationCounter;
 
-#if !NATIVEAOT // TODO
+#if !NATIVEAOT // TODO shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
         private PollingCounter? _committedCounter;
         private IncrementingPollingCounter? _exceptionCounter;
         private PollingCounter? _gcTimeCounter;

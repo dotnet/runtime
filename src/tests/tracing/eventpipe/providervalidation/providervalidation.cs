@@ -44,19 +44,29 @@ namespace Tracing.Tests.ProviderValidation
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
         {
+#if EnableNativeEventPipe
+            { "MyEventSource", 1 },
+            { "Microsoft-DotNETCore-EventPipe", 1}
+#else
             { "MyEventSource", new ExpectedEventCount(100_000, 0.30f) },
             { "Microsoft-Windows-DotNETRuntimeRundown", -1 },
             { "Microsoft-DotNETCore-SampleProfiler", -1 }
+#endif
         };
 
         private static Action _eventGeneratingAction = () => 
         {
+#if EnableNativeEventPipe
+            Logger.logger.Log($"Firing an event...");
+            MyEventSource.Log.MyEvent();
+#else
             for (int i = 0; i < 100_000; i++)
             {
                 if (i % 10_000 == 0)
                     Logger.logger.Log($"Fired MyEvent {i:N0}/100,000 times...");
                 MyEventSource.Log.MyEvent();
             }
+#endif
         };
     }
 }

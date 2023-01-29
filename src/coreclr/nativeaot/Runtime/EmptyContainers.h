@@ -5,6 +5,7 @@
 #define __EmptyContainers_h__
 
 // This header file will contains minimal containers that are needed for EventPipe library implementation
+// shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
 // @TODO - this will likely be replaced by the common container classes to be added to the EventPipe library
 // Hence initially, the bare boned implementation focus is on unblocking HW/Simple Trace bring up
 

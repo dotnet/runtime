@@ -24,7 +24,6 @@
 #ifdef _INC_WINDOWS
 #include <sysinfoapi.h>
 #endif
-// @TODO - temp, lakshanf. This is not used in NativeAOT
 #define STATIC_CONTRACT_NOTHROW
 
 #undef EP_INFINITE_WAIT
@@ -45,6 +44,7 @@
 #undef EP_ALIGN_UP
 #define EP_ALIGN_UP(val,align) _rt_aot_align_up(val,align)
 
+// shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
 // TODO: The NativeAOT ALIGN_UP is defined in a tangled manner that generates linker errors if
 // it is used here; instead, define a version tailored to the existing usage in the shared
 // EventPipe code.
@@ -616,7 +616,6 @@ _rt_aot_hash_map_free (HASH_MAP_TYPE *hash_map)
     EP_ASSERT (HASH_MAP_TYPE::table_type_t::s_NoThrow);
     EP_ASSERT (hash_map != NULL);
 
-    // @TODO - LakshanF: 10/21/22 - Need to understand more on value_free_func, specifically how iterator->Value () gets called 
     if (hash_map->table) {
         if (hash_map->callbacks.value_free_func) {
             for (typename HASH_MAP_TYPE::table_type_t::Iterator iterator = hash_map->table->Begin (); iterator != hash_map->table->End (); ++iterator)
@@ -1136,6 +1135,7 @@ inline
 ep_rt_lock_handle_t *
 ep_rt_aot_config_lock_get (void)
 {
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe locking for NativeAOT
     return nullptr;
 }
@@ -1147,6 +1147,7 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 { 
     STATIC_CONTRACT_NOTHROW;
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe assembly name - return filename in nativeaot?
     PalDebugBreak();
 
@@ -1160,6 +1161,7 @@ const ep_char8_t *
 ep_rt_runtime_version_get_utf8 (void) { 
     STATIC_CONTRACT_NOTHROW;
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Find a way to use CoreCLR runtime_version.h here if a more exact version is needed
     return reinterpret_cast<const ep_char8_t*>("8.0.0");
 }
@@ -1271,6 +1273,7 @@ ep_rt_atomic_inc_int64_t (volatile int64_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Consider replacing with a new PalInterlockedIncrement64 service
     int64_t currentValue;
     do {
@@ -1287,6 +1290,7 @@ int64_t
 ep_rt_atomic_dec_int64_t (volatile int64_t *value) { 
     STATIC_CONTRACT_NOTHROW;
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Consider replacing with a new PalInterlockedDecrement64 service
     int64_t currentValue;
     do {
@@ -1331,6 +1335,7 @@ static
 void
 ep_rt_init (void) 
 {
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe locking for NativeAOT
 }
 
@@ -1355,6 +1360,7 @@ inline
 bool
 ep_rt_config_acquire (void)
 {
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe locking for NativeAOT
     return true;   
 }
@@ -1364,6 +1370,7 @@ inline
 bool
 ep_rt_config_release (void)
 {
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe locking for NativeAOT
     return true;
 }
@@ -1374,6 +1381,7 @@ inline
 void
 ep_rt_config_requires_lock_held (void)
 {
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe locking for NativeAOT
     return;
 }
@@ -1383,6 +1391,7 @@ inline
 void
 ep_rt_config_requires_lock_not_held (void)
 {
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe locking for NativeAOT
     return;
 }
@@ -1410,6 +1419,7 @@ ep_rt_method_get_simple_assembly_name (
 {
     STATIC_CONTRACT_NOTHROW;
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Design MethodDesc and method name services if/when needed
     PalDebugBreak();
 
@@ -1424,6 +1434,7 @@ ep_rt_method_get_full_name (
     ep_char8_t *name,
     size_t name_len)
 {
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Design MethodDesc and method name services if/when needed
     PalDebugBreak();
 
@@ -1449,6 +1460,7 @@ static
 void
 ep_rt_init_providers_and_events (void)
 {
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: auto-generated fn, no op for now
     // InitProvidersAndEvents ();
 }
@@ -1459,6 +1471,7 @@ bool
 ep_rt_providers_validate_all_disabled (void)
 {
     STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context and MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context are not available in NativeAOT
     return true;
 }
@@ -1580,6 +1593,7 @@ inline
 bool
 ep_rt_config_value_get_enable (void)
 {
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EnableEventPipe) != 0
     // If EventPipe environment variables are specified, parse them and start a session.
@@ -1593,6 +1607,7 @@ ep_char8_t *
 ep_rt_config_value_get_config (void)
 {
     STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeConfig)
     PalDebugBreak();
@@ -1606,6 +1621,7 @@ ep_char8_t *
 ep_rt_config_value_get_output_path (void)
 {
     STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeOutputPath)
     PalDebugBreak();
@@ -1618,6 +1634,7 @@ uint32_t
 ep_rt_config_value_get_circular_mb (void)
 {
     STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeCircularMB)
     PalDebugBreak();
@@ -1630,6 +1647,7 @@ bool
 ep_rt_config_value_get_output_streaming (void)
 {
     STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeOutputStreaming)
     PalDebugBreak();
@@ -1824,6 +1842,7 @@ ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: NativeAOT CLREventStatic doesn't have GetHandleUNHOSTED
     PalDebugBreak();
     return 0;
@@ -1886,9 +1905,11 @@ ep_rt_create_activity_id (
     EP_ASSERT (activity_id != NULL);
     EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement a way to generate a real Guid
     // CoCreateGuid (reinterpret_cast<GUID *>(activity_id));
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Using roughly Mono's implementation but Mono randomly generates this, hardcoding for now
     uint8_t data1[] = {0x67,0xac,0x33,0xf1,0x8d,0xed,0x41,0x01,0xb4,0x26,0xc9,0xb7,0x94,0x35,0xf7,0x8a};
     memcpy (activity_id, data1, EP_ACTIVITY_ID_SIZE);
@@ -1923,6 +1944,7 @@ bool
 ep_rt_is_running (void)
 {
     STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Does NativeAot have the concept of EEStarted
     PalDebugBreak();
 
@@ -1937,6 +1959,7 @@ ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints
     STATIC_CONTRACT_NOTHROW;
 
     //TODO: Write execution checkpoint rundown events.
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeCircularMB)
     PalDebugBreak();
@@ -1975,6 +1998,7 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_aot_start_session_or_sampling_thread)
 
     ep_rt_thread_params_t* thread_params = reinterpret_cast<ep_rt_thread_params_t *>(data);
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed.
     // The session and sampling threads both assert that the incoming thread handle is
     // non-null, but do not necessarily rely on it otherwise; just pass a meaningless non-null
@@ -1997,6 +2021,7 @@ ep_rt_thread_create (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (thread_func != NULL);
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Fill in the outgoing id if any callers ever need it
     if (id)
         *reinterpret_cast<DWORD*>(id) = 0xffffffff;
@@ -2027,48 +2052,6 @@ ep_rt_thread_create (
         return true;
     }
 
-
-    // Mono implementation
-/**
-    rt_mono_thread_params_internal_t *thread_params = g_new0 (rt_mono_thread_params_internal_t, 1);
-    if (thread_params) {
-        thread_params->thread_params.thread_type = thread_type;
-        thread_params->thread_params.thread_func = (ep_rt_thread_start_func)thread_func;
-        thread_params->thread_params.thread_params = params;
-        thread_params->background_thread = true;
-        return (mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) == TRUE) ? true : false;
-    }
-
-    return false;
-
- * */
-
-    // CoreCLR implementation
-
-    // if (thread_params) {
-    //     thread_params->thread_params.thread_type = thread_type;
-    //     if (thread_type == EP_THREAD_TYPE_SESSION || thread_type == EP_THREAD_TYPE_SAMPLING) {
-    //         thread_params->thread_params.thread = SetupUnstartedThread ();
-    //         thread_params->thread_params.thread_func = reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func);
-    //         thread_params->thread_params.thread_params = params;
-    //         if (thread_params->thread_params.thread->CreateNewThread (0, ep_rt_thread_aot_start_func, thread_params)) {
-    //             thread_params->thread_params.thread->SetBackground (TRUE);
-    //             thread_params->thread_params.thread->StartThread ();
-    //             if (id)
-    //                 *reinterpret_cast<DWORD *>(id) = thread_params->thread_params.thread->GetThreadId ();
-    //             result = true;
-    //         }
-    //     } else if (thread_type == EP_THREAD_TYPE_SERVER) {
-    //         DWORD thread_id = 0;
-    //         HANDLE server_thread = ::CreateThread (nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func), nullptr, 0, &thread_id);
-    //         if (server_thread != NULL) {
-    //             ::CloseHandle (server_thread);
-    //             if (id)
-    //                 *reinterpret_cast<DWORD *>(id) = thread_id;
-    //             result = true;
-    //         }
-    //     }
-    // }
 }
 
 static
@@ -2076,6 +2059,7 @@ inline
 void
 ep_rt_set_server_name(void)
 {
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Need to set name for  the thread
     // ::SetThreadName(GetCurrentThread(), W(".NET EventPipe"));
 }
@@ -2142,6 +2126,7 @@ ep_rt_current_thread_get_id (void)
     STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: AOT doesn't have PAL_GetCurrentOSThreadId, as CoreCLR does.
     PalDebugBreak();    
     return static_cast<ep_rt_thread_id_t>(0);
@@ -2191,6 +2176,7 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
     	value.wSecond,
     	value.wMilliseconds);
 #else
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Get System time
     PalDebugBreak();
 #endif
@@ -2239,6 +2225,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
     ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
     ep_return_null_if_nok (path_utf16 != NULL);
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Find out the way to open a file in native
     PalDebugBreak();
 
@@ -2252,6 +2239,7 @@ ep_rt_file_close (ep_rt_file_handle_t file_handle)
 {
     STATIC_CONTRACT_NOTHROW;
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Find out the way to close a file in native
     PalDebugBreak();
     return true;
@@ -2269,6 +2257,7 @@ ep_rt_file_write (
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (buffer != NULL);
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Find out the way to write to a file in native
     PalDebugBreak();
     
@@ -2320,15 +2309,6 @@ ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (env_array != NULL);
 
-    // LPWSTR envs = GetEnvironmentStringsW ();
-    // if (envs) {
-    // 	LPWSTR next = envs;
-    //	while (*next) {
-    //		ep_rt_env_array_utf16_append (env_array, ep_rt_utf16_string_dup (reinterpret_cast<const ep_char16_t *>(next)));
-    //		next += ep_rt_utf16_string_len (reinterpret_cast<const ep_char16_t *>(next)) + 1;
-    //	}
-    //	FreeEnvironmentStringsW (envs);
-    // }
     PalDebugBreak();
 }
 
@@ -2343,6 +2323,7 @@ ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
     STATIC_CONTRACT_NOTHROW;
 
     bool result = true;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe locking for NativeAOT	
 
     return result;
@@ -2355,6 +2336,7 @@ ep_rt_lock_release (ep_rt_lock_handle_t *lock)
     STATIC_CONTRACT_NOTHROW;
 
     bool result = true;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe locking for NativeAOT	
 
     return result;
@@ -2415,6 +2397,7 @@ ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement locking (maybe by making the manual Lock and Unlock functions public)
     // SpinLock::Lock (*(spin_lock->lock));
     return true;
@@ -2428,6 +2411,7 @@ ep_rt_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement locking (maybe by making the manual Lock and Unlock functions public)
     // SpinLock::Unlock (*(spin_lock->lock));
     return true;
@@ -2610,6 +2594,7 @@ ep_rt_utf8_to_utf16le_string (
     if (!str)
         return NULL;
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implementation would just use strlen and malloc to make a new buffer, and would then copy the string chars one by one
     size_t len_utf8 = strlen(str);        
     if (len_utf8 == 0)
@@ -2678,6 +2663,7 @@ ep_rt_utf16_to_utf8_string (
     if (!str)
         return NULL;
     
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Temp implementation that is the reverse of ep_rt_utf8_to_utf16le_string
     size_t len_utf16 = len;
     if(len_utf16 == -1)
@@ -2737,6 +2723,7 @@ ep_rt_diagnostics_command_line_get (void)
 
     STATIC_CONTRACT_NOTHROW;
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: revisit commandline for AOT
     // return reinterpret_cast<const ep_char8_t *>(::GetCommandLineA());
 
@@ -2819,6 +2806,7 @@ ep_rt_thread_setup (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed
     // Thread* thread_handle = SetupThreadNoThrow ();
     // EP_ASSERT (thread_handle != NULL);
@@ -2855,6 +2843,7 @@ ep_rt_thread_handle_t
 ep_rt_thread_get_handle (void)
 {
     STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed
     // return GetThreadNULLOk ();
     return NULL;
@@ -2868,6 +2857,7 @@ ep_rt_thread_get_id (ep_rt_thread_handle_t thread_handle)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (thread_handle != NULL);
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed
     // return ep_rt_uint64_t_to_thread_id_t (thread_handle->GetOSThreadId64 ());
     PalDebugBreak();
@@ -2896,6 +2886,7 @@ bool
 ep_rt_thread_has_started (ep_rt_thread_handle_t thread_handle)
 {
     STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed
     // return thread_handle != NULL && thread_handle->HasStarted ();
     return true;
@@ -2907,6 +2898,7 @@ ep_rt_thread_activity_id_handle_t
 ep_rt_thread_get_activity_id_handle (void)
 {
     STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed
     // return GetThread ();
     PalDebugBreak();
@@ -2921,6 +2913,7 @@ ep_rt_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (activity_id_handle != NULL);
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed
     // return reinterpret_cast<const uint8_t *>(activity_id_handle->GetActivityId ());
     PalDebugBreak();
@@ -2956,6 +2949,7 @@ ep_rt_thread_set_activity_id (
     EP_ASSERT (activity_id != NULL);
     EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed
     // activity_id_handle->SetActivityId (reinterpret_cast<LPCGUID>(activity_id));
     PalDebugBreak();

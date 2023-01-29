@@ -140,6 +140,7 @@ ds_rt_config_value_get_enable (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     return true;
 }
@@ -149,6 +150,7 @@ inline
 ep_char8_t *
 ds_rt_config_value_get_ports (void)
 {
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     return nullptr;
 }
@@ -159,6 +161,7 @@ uint32_t
 ds_rt_config_value_get_default_port_suspend (void)
 {
     STATIC_CONTRACT_NOTHROW;
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     return 0;
 }
@@ -179,6 +182,7 @@ ds_rt_generate_core_dump (
 
     ds_ipc_result_t result = DS_IPC_E_FAIL;
     uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Generate an exception dump
     PalDebugBreak();
 
@@ -202,10 +206,8 @@ ds_rt_transport_get_default_name (
 {
     STATIC_CONTRACT_NOTHROW;
     
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: PAL_GetTransportName is defined in coreclr\pal\inc\pal.h
-// #ifdef TARGET_UNIX
-//     PAL_GetTransportName (name_len, name, prefix, id, group_id, suffix);
-// #endif
     return true;
 }
 
@@ -308,6 +310,7 @@ ds_rt_server_log_pause_message (void)
     STATIC_CONTRACT_NOTHROW;
 
     const char diagPortsName[] = "DOTNET_DiagnosticPorts";
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Cannot find nocache versions of RhConfig
     PalDebugBreak();
 }

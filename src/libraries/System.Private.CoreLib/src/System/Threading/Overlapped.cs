@@ -185,7 +185,7 @@ namespace System.Threading
 
 #if FEATURE_PERFTRACING
 #if !((TARGET_BROWSER || TARGET_WASI) && !FEATURE_WASM_THREADS)
-#if !NATIVEAOT
+#if !NATIVEAOT // TODO shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
                 if (NativeRuntimeEventSource.Log.IsEnabled())
                     NativeRuntimeEventSource.Log.ThreadPoolIOPack(pNativeOverlapped);
 #endif

@@ -212,7 +212,11 @@ namespace Tracing.Tests.Common
                 Logger.logger.Log("Connecting to EventPipe...");
                 try
                 {
+#if EnableNativeEventPipe
+                    _eventPipeSession = client.StartEventPipeSession(_testProviders.Concat(_sentinelProviders), false);
+#else
                     _eventPipeSession = client.StartEventPipeSession(_testProviders.Concat(_sentinelProviders));
+#endif                    
                 }
                 catch (DiagnosticsClientException ex)
                 {

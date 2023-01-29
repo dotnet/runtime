@@ -7,6 +7,7 @@ project(Runtime)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_definitions(-DFEATURE_RX_THUNKS)
+add_definitions(-DFEATURE_PERFTRACING)
 
 if (CLR_CMAKE_TARGET_WIN32)
   if (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
@@ -75,8 +76,6 @@ if(CLR_CMAKE_HOST_UNIX)
     set_source_files_properties(${SHARED_DIAGNOSTIC_SERVER_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
   endif()
 endif(CLR_CMAKE_HOST_UNIX)
-
-add_definitions(-DFEATURE_PERFTRACING)
 
 if (WIN32)
     set_source_files_properties(${SHARED_EVENTPIPE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")

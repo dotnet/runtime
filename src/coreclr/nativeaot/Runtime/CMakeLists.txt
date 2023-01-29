@@ -11,67 +11,12 @@ include_directories(${SHARED_EVENTPIPE_SOURCE_DIR})
 set (AOT_EVENTPIPE_SHIM_SOURCES "")
 set (AOT_EVENTPIPE_SHIM_HEADERS "")
 set (AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES "")
-set (SHARED_EVENTPIPE_SOURCES "")
-set (SHARED_EVENTPIPE_HEADERS "")
 set (SHARED_DIAGNOSTIC_SERVER_SOURCES "")
 set (SHARED_DIAGNOSTIC_SERVER_HEADERS "")
 set (AOT_EVENTPIPE_DISABLED_SOURCES "")
 
-list(APPEND SHARED_EVENTPIPE_SOURCES
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-sources.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-block.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-buffer.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-buffer-manager.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-config.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-event.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-event-instance.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-event-payload.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-event-source.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-file.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-json-file.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-metadata-generator.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-provider.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-sample-profiler.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-session.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-session-provider.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-stack-contents.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-stream.c
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-thread.c
-)
-
-list(APPEND SHARED_EVENTPIPE_HEADERS
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-block.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-buffer.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-buffer-manager.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-config.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-config-internals.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-event.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-event-instance.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-event-payload.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-event-source.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-file.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-getter-setter.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-ipc-pal-types.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-ipc-pal-types-forward.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-ipc-stream.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-json-file.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-metadata-generator.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-provider.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-provider-internals.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-rt.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-rt-config.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-rt-types.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-sample-profiler.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-session.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-session-provider.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-stack-contents.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-stream.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-thread.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-types.h
-    ${SHARED_EVENTPIPE_SOURCE_DIR}/ep-types-forward.h
-)
+set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
+include (${SHARED_EVENTPIPE_SOURCE_PATH}/CMakeLists.txt)
 
 list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
     ${SHARED_EVENTPIPE_SOURCE_DIR}/ds-sources.c
