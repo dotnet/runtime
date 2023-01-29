@@ -437,6 +437,22 @@ namespace System.Numerics
             return value1 / value2;
         }
 
+        /// <summary>Divides the specified quaternion by a specified scalar value.</summary>
+        /// <param name="left">The quaternion.</param>
+        /// <param name="divisor">The scalar value.</param>
+        /// <returns>The quaternion that results from the division.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Quaternion Divide(Quaternion left, float divisor)
+        {
+            return new Quaternion(
+                left.X / divisor,
+                left.Y / divisor,
+                left.Z / divisor,
+                left.W / divisor
+            );
+        }
+
         /// <summary>Calculates the dot product of two quaternions.</summary>
         /// <param name="quaternion1">The first quaternion.</param>
         /// <param name="quaternion2">The second quaternion.</param>
@@ -549,20 +565,11 @@ namespace System.Numerics
         /// <summary>Divides each component of a specified <see cref="Quaternion" /> by its length.</summary>
         /// <param name="value">The quaternion to normalize.</param>
         /// <returns>The normalized quaternion.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Normalize(Quaternion value)
         {
-            Quaternion ans;
-
-            float ls = value.X * value.X + value.Y * value.Y + value.Z * value.Z + value.W * value.W;
-
-            float invNorm = 1.0f / MathF.Sqrt(ls);
-
-            ans.X = value.X * invNorm;
-            ans.Y = value.Y * invNorm;
-            ans.Z = value.Z * invNorm;
-            ans.W = value.W * invNorm;
-
-            return ans;
+            return Divide(value, value.Length());
         }
 
         /// <summary>Interpolates between two quaternions, using spherical linear interpolation.</summary>

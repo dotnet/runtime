@@ -1037,6 +1037,28 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                              /* isSimdAsHWIntrinsic */ true);
                 }
 
+                case NI_Quaternion_Normalize:
+                case NI_Vector2_Normalize:
+                case NI_Vector3_Normalize:
+                case NI_Vector4_Normalize:
+                {
+                    GenTree* clonedOp1;
+                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone op1 for vector normalize (1)"));
+
+                    GenTree* clonedOp2;
+                    clonedOp1 = impCloneExpr(clonedOp1, &clonedOp2, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                             nullptr DEBUGARG("Clone op1 for vector normalize (2)"));
+
+                    op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ true);
+
+                    op1 = gtNewSimdSqrtNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ true);
+
+                    return gtNewSimdBinOpNode(GT_DIV, retType, clonedOp2, op1, simdBaseJitType, simdSize,
+                                              /* isSimdAsHWIntrinsic */ true);
+                }
+
                 case NI_VectorT128_OnesComplement:
                 case NI_VectorT128_op_OnesComplement:
 #if defined(TARGET_XARCH)
@@ -1289,6 +1311,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     break;
                 }
 
+                case NI_Quaternion_Divide:
                 case NI_Vector2_Divide:
                 case NI_Vector2_op_Division:
                 case NI_Vector3_Divide:

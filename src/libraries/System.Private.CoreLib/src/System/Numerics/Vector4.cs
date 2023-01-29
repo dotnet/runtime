@@ -475,6 +475,7 @@ namespace System.Numerics
         /// <summary>Returns a vector with the same direction as the specified vector, but with a length of one.</summary>
         /// <param name="vector">The vector to normalize.</param>
         /// <returns>The normalized vector.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Normalize(Vector4 vector)
         {
