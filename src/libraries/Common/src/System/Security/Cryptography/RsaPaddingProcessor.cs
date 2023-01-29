@@ -510,14 +510,10 @@ namespace System.Security.Cryptography
                 RandomNumberGenerator.Fill(data);
 
                 // Find the first zero in the remaining portion.
-                int indexOfFirst0Byte = data.Length;
-                for (int i = 0; i < data.Length; i++)
+                int indexOfFirst0Byte = data.IndexOf((byte)0);
+                if (indexOfFirst0Byte < 0)
                 {
-                    if (data[i] == 0)
-                    {
-                        indexOfFirst0Byte = i;
-                        break;
-                    }
+                    break;
                 }
 
                 // If there were any zeros, shift down all non-zeros.
