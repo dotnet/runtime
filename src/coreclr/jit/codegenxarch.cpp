@@ -1412,18 +1412,8 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
         cc = GenCondition::Reverse(cc);
     }
 
-    // The next conditions are constraints from the instruction's side. Lowering ensures that the constraints are
-    // satisfied
-    // - For contained constants, they must not end up in the cmov
-    // - We must ensure no interference between the cmov's op and the destination
-    //
-    if (trueVal->isContained() && trueVal->IsCnsIntOrI())
-    {
-        // cmov instruction cannot handle contained constants, so swap it to the mov
-        std::swap(trueVal, falseVal);
-        cc = GenCondition::Reverse(cc);
-    }
-
+    // If there is a conflict then swap the condition anyway. LSRA should have
+    // ensured the other way around has no conflict.
     if ((trueVal->gtGetContainedRegMask() & genRegMask(dstReg)) != 0)
     {
         std::swap(trueVal, falseVal);
@@ -1432,14 +1422,26 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
 
     GenConditionDesc desc = GenConditionDesc::Get(cc);
 
+    // There may also be a conflict with the falseVal in case this is an AND
+    // condition. Once again, after swapping there should be no conflict as
+    // ensured by LSRA.
+    if ((desc.oper == GT_AND) && (falseVal->gtGetContainedRegMask() & genRegMask(dstReg)) != 0)
+    {
+        std::swap(trueVal, falseVal);
+        cc   = GenCondition::Reverse(cc);
+        desc = GenConditionDesc::Get(cc);
+    }
+
     inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
 
     assert(!trueVal->isContained() || trueVal->isUsedFromMemory());
+    assert((trueVal->gtGetContainedRegMask() & genRegMask(dstReg)) == 0);
     inst_RV_TT(JumpKindToCmov(desc.jumpKind1), emitTypeSize(select), dstReg, trueVal);
 
     if (desc.oper == GT_AND)
     {
         assert(falseVal->isUsedFromReg());
+        assert((falseVal->gtGetContainedRegMask() & genRegMask(dstReg)) == 0);
         inst_RV_TT(JumpKindToCmov(emitter::emitReverseJumpKind(desc.jumpKind2)), emitTypeSize(select), dstReg,
                    falseVal);
     }

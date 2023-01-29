@@ -910,6 +910,7 @@ int LinearScan::BuildSelect(GenTreeOp* select)
 {
     int srcCount = 0;
 
+    GenCondition cc = GenCondition::NE;
     if (select->OperIs(GT_SELECT))
     {
         GenTree* cond = select->AsConditional()->gtCond;
@@ -917,6 +918,7 @@ int LinearScan::BuildSelect(GenTreeOp* select)
         {
             assert(cond->OperIsCompare());
             srcCount += BuildCmpOperands(cond);
+            cc = GenCondition::FromRelop(cond);
         }
         else
         {
@@ -928,56 +930,113 @@ int LinearScan::BuildSelect(GenTreeOp* select)
     GenTree* trueVal  = select->gtOp1;
     GenTree* falseVal = select->gtOp2;
 
-    // cmov family of instructions are special in that they only conditionally
-    // define the destination register, so when generating code for GT_SELECT
-    // we normally need to preface it by a move into the destination with one
-    // of the operands. I.e. the codegen ends up being:
-    //
-    // mov dstReg, op1/2
-    // cmov dstReg, op2/1
-    //
-    // The backend will elide the first move if one of the operands end up
-    // being in the dstReg already (by swapping the operands and reversing the
-    // sense of the cmov). So we can try to prefer that.
-    //
-    // In additional, the first move will kill dstReg. That means the operand
-    // that ends up in the cmov needs to be delay freed. There's a few cases to
-    // consider:
-    // - Lowering may have contained up to one constant operand. That operand
-    // can only go in the 'mov', so if the other operand is also contained then
-    // it is required to be delay freed.
-    //
+    RefPositionIterator op1UsesPrev = refPositions.backPosition();
+    assert(op1UsesPrev != refPositions.end());
+
+    RefPosition* uncontainedTrueRP = nullptr;
     if (trueVal->isContained())
     {
-        // If we allocate an interfering register here then codegen will
-        // ensure this operand ends up in the 'mov' before the dstReg is
-        // killed.
         srcCount += BuildOperandUses(trueVal);
     }
     else
     {
-        tgtPrefUse = BuildUse(trueVal);
+        tgtPrefUse = uncontainedTrueRP = BuildUse(trueVal);
         srcCount++;
     }
 
+    RefPositionIterator op2UsesPrev = refPositions.backPosition();
+
+    RefPosition* uncontainedFalseRP = nullptr;
     if (falseVal->isContained())
     {
-        // If both operands are contained then one needs to be delay reg freed
-        // to we're sure one can go in the 'cmov' without interfering with the
-        // destination register.
-        if (trueVal->isContained())
-        {
-            srcCount += BuildDelayFreeUses(falseVal);
-        }
-        else
-        {
-            srcCount += BuildOperandUses(falseVal);
-        }
+        srcCount += BuildOperandUses(falseVal);
     }
     else
     {
-        tgtPrefUse2 = BuildUse(falseVal);
+        tgtPrefUse2 = uncontainedFalseRP = BuildUse(falseVal);
         srcCount++;
+    }
+
+    // Codegen will emit something like:
+    //
+    // mov dstReg, falseVal
+    // cmov dstReg, trueVal
+    //
+    // We need to ensure that dstReg does not interfere with any register that
+    // appears in the second instruction. At the same time we want to
+    // preference the dstReg to be the same register as either falseVal/trueVal
+    // to be able to elide the mov whenever possible.
+    //
+    // While we could resolve the situation with either an internal register or
+    // by marking the uses as delay free unconditionally, this is a node used
+    // for very basic code patterns, so the logic here tries to be smarter to
+    // avoid the extra register pressure/potential copies.
+    //
+    // We have some flexibility as codegen can swap falseVal/trueVal as needed
+    // to avoid the conflict by reversing the sense of the cmov. If we can
+    // guarantee that the dstReg is used only in one of falseVal/trueVal, then
+    // we are good.
+    //
+    // To ensure the above we have some bespoke interference logic here on
+    // intervals for the ref positions we built above. It marks one of the uses
+    // as delay freed when it finds interference (almost never).
+    //
+    RefPositionIterator op1Use = op1UsesPrev;
+    while (op1Use != op2UsesPrev)
+    {
+        ++op1Use;
+
+        if (op1Use->refType != RefTypeUse)
+        {
+            continue;
+        }
+
+        RefPositionIterator op2Use = op2UsesPrev;
+        ++op2Use;
+        while (op2Use != refPositions.end())
+        {
+            if (op2Use->refType == RefTypeUse)
+            {
+                if (op1Use->getInterval() == op2Use->getInterval())
+                {
+                    setDelayFree(&*op1Use);
+                    break;
+                }
+
+                ++op2Use;
+            }
+        }
+    }
+
+    // Certain FP conditions are special and require multiple cmovs. These may
+    // introduce additional uses of either trueVal or falseVal after the first
+    // mov. In these cases we need additional delay-free marking. We do not
+    // support any containment for these currently (we do not want to incur
+    // multiple memory accesses, but we could contain the operand in the 'mov'
+    // instruction with some more care taken for marking things delay reg freed
+    // correctly).
+    switch (cc.GetCode())
+    {
+        case GenCondition::FEQ:
+        case GenCondition::FLT:
+        case GenCondition::FLE:
+            // Normally these require an 'AND' conditional and cmovs with
+            // both the true and false values as sources. However, after
+            // swapping these into an 'OR' conditional the cmovs require
+            // only the original falseVal, so we need only to mark that as
+            // delay-reg freed to allow codegen to resolve this.
+            assert(uncontainedFalseRP != nullptr);
+            setDelayFree(uncontainedFalseRP);
+            break;
+        case GenCondition::FNEU:
+        case GenCondition::FGEU:
+        case GenCondition::FGTU:
+            // These require an 'OR' conditional and only access 'trueVal'.
+            assert(uncontainedTrueRP != nullptr);
+            setDelayFree(uncontainedTrueRP);
+            break;
+        default:
+            break;
     }
 
     BuildDef(select);
