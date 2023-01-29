@@ -1691,6 +1691,16 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             switch (intrinsic)
             {
+                case NI_Vector2_Clamp:
+                case NI_Vector3_Clamp:
+                case NI_Vector4_Clamp:
+                {
+                    GenTree* maxNode = gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                                        /* isSimdAsHWIntrinsic */ true);
+                    return gtNewSimdMinNode(retType, maxNode, op3, simdBaseJitType, simdSize,
+                                            /* isSimdAsHWIntrinsic */ true);
+                }
+
                 case NI_VectorT128_ConditionalSelect:
 #if defined(TARGET_XARCH)
                 case NI_VectorT256_ConditionalSelect:
