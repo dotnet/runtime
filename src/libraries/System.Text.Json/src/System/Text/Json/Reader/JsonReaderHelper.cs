@@ -27,7 +27,7 @@ namespace System.Text.Json
                 while ((pos = data.IndexOf(JsonConstants.LineFeed)) >= 0)
                 {
                     newLines++;
-                    data = data.Slice(pos);
+                    data = data.Slice(pos + 1);
                 }
 #endif
             }
