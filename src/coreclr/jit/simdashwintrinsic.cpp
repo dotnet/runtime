@@ -374,6 +374,8 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
                                              2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
+            assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
+
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
@@ -1158,6 +1160,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                              2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
+            assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
+
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
@@ -1664,6 +1668,12 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                              3 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
             }
 
+            if (SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic) && (newobjThis == nullptr))
+            {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op2 side effects for SimdAsHWIntrinsic"));
+            }
+
             CORINFO_ARG_LIST_HANDLE arg2 = isInstanceMethod ? argList : info.compCompHnd->getArgNext(argList);
             CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
 
@@ -1708,6 +1718,53 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     return gtNewSimdCndSelNode(retType, op1, op2, op3, simdBaseJitType, simdSize,
                                                /* isSimdAsHWIntrinsic */ true);
+                }
+
+                case NI_Vector2_Lerp:
+                case NI_Vector3_Lerp:
+                case NI_Vector4_Lerp:
+                {
+                    // We generate nodes equivalent to `(op1 * (1.0f - op3)) + (op2 * op3)`
+                    // optimizing for xarch by doing a single broadcast and for arm64 by
+                    // using multiply by scalar
+
+                    assert(simdBaseType == TYP_FLOAT);
+
+#if defined(TARGET_XARCH)
+                    // op3 = broadcast(op3)
+                    op3 = gtNewSimdCreateBroadcastNode(retType, op3, simdBaseJitType, simdSize,
+                                                       /* isSimdAsHWIntrinsic */ true);
+#endif // TARGET_XARCH
+
+                    // clonedOp3 = op3
+                    GenTree* clonedOp3;
+                    op3 = impCloneExpr(op3, &clonedOp3, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone op3 for vector lerp"));
+
+#if defined(TARGET_XARCH)
+                    // op3 = 1.0f - op3
+                    GenTree* oneCon = gtNewOneConNode(retType, simdBaseType);
+                    op3 = gtNewSimdBinOpNode(GT_SUB, retType, oneCon, op3, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ true);
+#elif defined(TARGET_ARM64)
+                    // op3 = 1.0f - op3
+                    GenTree* oneCon = gtNewOneConNode(simdBaseType);
+                    op3 = gtNewOperNode(GT_SUB, TYP_FLOAT, oneCon, op3);
+#else
+#error Unsupported platform
+#endif
+
+                    // op1 *= op3
+                    op1 = gtNewSimdBinOpNode(GT_MUL, retType, op1, op3, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ true);
+
+                    // op2 *= clonedOp3
+                    op2 = gtNewSimdBinOpNode(GT_MUL, retType, op2, clonedOp3, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ true);
+
+                    // return op1 + op2
+                    return gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize,
+                                              /* isSimdAsHWIntrinsic */ true);
                 }
 
                 case NI_VectorT128_StoreUnsafeIndex:
@@ -1839,6 +1896,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             assert(isInstanceMethod);
             assert(SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic));
+            assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
 
             if (newobjThis == nullptr)
             {
@@ -1959,6 +2017,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             assert(isInstanceMethod);
             assert(SimdAsHWIntrinsicInfo::SpillSideEffectsOp1(intrinsic));
+            assert(!SimdAsHWIntrinsicInfo::SpillSideEffectsOp2(intrinsic));
 
             if (newobjThis == nullptr)
             {

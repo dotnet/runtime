@@ -36,6 +36,9 @@ enum class SimdAsHWIntrinsicFlag : unsigned int
 
     // Indicates that side effects need to be spilled for op1
     SpillSideEffectsOp1 = 0x20,
+
+    // Indicates that side effects need to be spilled for op2
+    SpillSideEffectsOp2 = 0x40,
 };
 
 inline SimdAsHWIntrinsicFlag operator~(SimdAsHWIntrinsicFlag value)
@@ -146,6 +149,12 @@ struct SimdAsHWIntrinsicInfo
     {
         SimdAsHWIntrinsicFlag flags = lookupFlags(id);
         return (flags & SimdAsHWIntrinsicFlag::SpillSideEffectsOp1) == SimdAsHWIntrinsicFlag::SpillSideEffectsOp1;
+    }
+
+    static bool SpillSideEffectsOp2(NamedIntrinsic id)
+    {
+        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & SimdAsHWIntrinsicFlag::SpillSideEffectsOp2) == SimdAsHWIntrinsicFlag::SpillSideEffectsOp2;
     }
 };
 
