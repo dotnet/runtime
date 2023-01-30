@@ -6,10 +6,9 @@
 #endif // !_MSC_VER
 #endif // DNMD_BUILD_SHARED
 
-#include <platform.h>
-#include <dnmd_interfaces.hpp>
-
 #include "impl.hpp"
+
+#include <dnmd_interfaces.hpp>
 
 namespace
 {

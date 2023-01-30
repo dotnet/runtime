@@ -7,7 +7,18 @@
 #include <assert.h>
 #include <string.h>
 
-#include <platform.h>
+// Reused Win32 data types
+typedef uint16_t WCHAR;
+typedef struct _GUID
+{
+    uint32_t Data1;
+    uint16_t Data2;
+    uint16_t Data3;
+    uint8_t  Data4[8];
+} GUID;
+
+#include <corhdr.h>
+
 #include <dnmd.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))

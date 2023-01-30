@@ -79,7 +79,7 @@ HRESULT HCORENUMImpl::CreateDynamicEnum(_Out_ HCORENUMImpl** impl, _In_ uint32_t
 
     enumImpl->_type = HCORENUMType::Dynamic;
     // The page must be a multiple of the entrySpan for reading to be efficient.
-    assert(ARRAYSIZE(enumImpl->_data.Dynamic.Page) % entrySpan == 0);
+    assert(ARRAY_SIZE(enumImpl->_data.Dynamic.Page) % entrySpan == 0);
     enumImpl->_entrySpan = entrySpan;
     ::memset(&enumImpl->_data, 0, sizeof(enumImpl->_data));
     enumImpl->_curr = &enumImpl->_data;
@@ -93,7 +93,7 @@ HRESULT HCORENUMImpl::AddToDynamicEnum(_Inout_ HCORENUMImpl& impl, uint32_t valu
 
     // Check if we have exhausted the last page
     EnumData* currData = impl._last;
-    if (currData->Total >= ARRAYSIZE(currData->Dynamic.Page))
+    if (currData->Total >= ARRAY_SIZE(currData->Dynamic.Page))
     {
         EnumData* newData = (EnumData*)::malloc(sizeof(EnumData));
         if (newData == nullptr)

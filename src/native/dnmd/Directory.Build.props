@@ -15,6 +15,7 @@
         <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
         <OutputPath>$(BaseOutputPath)</OutputPath>
         <NativeOutputPath>$(BaseArtifactsPath)/bin</NativeOutputPath>
+        <NativeOutputPath>$(BaseArtifactsPath)/lib</NativeOutputPath>
 
         <TargetFrameworkLatest>net7.0</TargetFrameworkLatest>
     </PropertyGroup>

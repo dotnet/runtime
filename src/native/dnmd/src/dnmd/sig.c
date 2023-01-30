@@ -253,16 +253,16 @@ bool md_create_methoddefsig_from_methodrefsig(uint8_t const* ref_sig, size_t ref
         size_t len = def_sig_buffer_len;
         uint8_t* buffer = def_sig_buffer;
         buffer[0] = call_conv;
-        (void)advance_stream(&buffer, &len, 1);
+        (void)advance_stream((uint8_t const**)&buffer, &len, 1);
 
         if (call_conv & IMAGE_CEE_CS_CALLCONV_GENERIC)
         {
             size_t used_len;
             (void)compress_u32(generic_param_count, buffer, &used_len);
-            (void)advance_stream(&buffer, &len, used_len);
+            (void)advance_stream((uint8_t const**)&buffer, &len, used_len);
         }
         memcpy(buffer, encoded_def_param_count, encoded_def_param_count_length);
-        (void)advance_stream(&buffer, &len, encoded_def_param_count_length);
+        (void)advance_stream((uint8_t const**)&buffer, &len, encoded_def_param_count_length);
 
         // Now that we've re-written the parameter count, we can copy the rest of the signature directly from the MethodRefSig
         memcpy(buffer, return_and_parameter_start, len);

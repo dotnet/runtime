@@ -9,9 +9,6 @@
 
 namespace
 {
-    void const* g_data;
-    uint32_t g_dataLen;
-
     IMetaDataDispenser* g_baselineDisp;
     IMetaDataDispenser* g_currentDisp;
 
@@ -39,12 +36,12 @@ namespace
                 _message = ss.str();
             }
 
-            std::string const& message() const
+            std::string const& message() const noexcept
             {
                 return _message;
             }
 
-            virtual char const* what() const override
+            virtual char const* what() const noexcept override
             {
                 return _message.c_str();
             }
@@ -74,7 +71,7 @@ namespace
 
 #define ASSERT_TRUE(e) Assert::_True((e), __FILE__, __LINE__, __func__)
 #define ASSERT_EQUAL(e, a) Assert::_Equal((e), (a), __FILE__, __LINE__, __func__)
-#define ASSERT_AND_RETURN(e, a) Assert::_Equal(std::move(e), (a), __FILE__, __LINE__, __func__)
+#define ASSERT_AND_RETURN(e, a) Assert::_Equal((e), (a), __FILE__, __LINE__, __func__)
 
     enum class TestState : uint32_t
     {

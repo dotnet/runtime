@@ -9,7 +9,6 @@ set(SOURCES
 
 set(HEADERS
   ../inc/dnmd.h
-  ../inc/platform.h
   ./internal.h
 )
 
@@ -20,6 +19,7 @@ add_library(dnmd
 )
 
 target_include_directories(dnmd PUBLIC ../inc)
+target_include_directories(dnmd PUBLIC ../inc/external) # Hiding the "external" subdirectory due to uses of <...> in cor.h.
 
 set_target_properties(dnmd PROPERTIES
   PUBLIC_HEADER ../inc/dnmd.h

@@ -2,7 +2,8 @@
 #define _SRC_INTERFACES_PAL_HPP_
 
 #include <cstdint>
-#include <platform.h>
+#include <dncp.h>
+#include <corhdr.h>
 #include <dnmd.hpp>
 
 namespace pal
@@ -105,10 +106,10 @@ namespace pal
     };
 }
 
-#ifdef BUILD_WINDOWS
-#define W(str) L##str
-#else
-#define W(str) u##str
-#endif
+// Implementations for missing bounds checking APIs.
+// See https://en.cppreference.com/w/c/error#Bounds_checking
+#ifndef __STDC_LIB_EXT1__
+errno_t strcat_s(char* dest, rsize_t destsz, char const* src);
+#endif // !__STDC_LIB_EXT1__
 
 #endif // _SRC_INTERFACES_PAL_HPP_

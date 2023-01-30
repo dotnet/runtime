@@ -313,7 +313,10 @@ int32_t md_get_column_value_as_cursor(mdcursor_t c, col_index_t col_idx, uint32_
 }
 
 // Forward declaration
+//#define DNMD_DEBUG_FIND_TOKEN_OF_RANGE_ELEMENT
+#ifdef DNMD_DEBUG_FIND_TOKEN_OF_RANGE_ELEMENT
 static bool _validate_md_find_token_of_range_element(mdcursor_t expected, mdcursor_t begin, uint32_t count);
+#endif // DNMD_DEBUG_FIND_TOKEN_OF_RANGE_ELEMENT
 
 bool md_get_column_value_as_range(mdcursor_t c, col_index_t col_idx, mdcursor_t* cursor, uint32_t* count)
 {
@@ -361,10 +364,9 @@ bool md_get_column_value_as_range(mdcursor_t c, col_index_t col_idx, mdcursor_t*
     }
 
     // Use the results of this function to validate md_find_token_of_range_element()
-//#define DNMD_DEBUG_FIND_TOKEN_OF_RANGE_ELEMENT
 #ifdef DNMD_DEBUG_FIND_TOKEN_OF_RANGE_ELEMENT
     (void)_validate_md_find_token_of_range_element(c, *cursor, *count);
-#endif
+#endif // DNMD_DEBUG_FIND_TOKEN_OF_RANGE_ELEMENT
 
     return true;
 }
@@ -778,6 +780,7 @@ static int32_t mdtable_bsearch_closest(
     return res;
 }
 
+#ifdef DNMD_DEBUG_FIND_TOKEN_OF_RANGE_ELEMENT
 // This function is used to validate the mapping logic between
 // md_find_token_of_range_element() and md_get_column_value_as_range().
 static bool _validate_md_find_token_of_range_element(mdcursor_t expected, mdcursor_t begin, uint32_t count)
@@ -817,6 +820,7 @@ static bool _validate_md_find_token_of_range_element(mdcursor_t expected, mdcurs
 
     return true;
 }
+#endif // DNMD_DEBUG_FIND_TOKEN_OF_RANGE_ELEMENT
 
 static bool find_range_element(mdcursor_t element, mdcursor_t* tgt_cursor)
 {

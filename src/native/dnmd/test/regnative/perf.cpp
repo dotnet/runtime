@@ -29,7 +29,7 @@ namespace
         HCORENUM hcorenum = {};
         uint32_t buffer[1];
         uint32_t count;
-        while (S_OK == (hr = import->EnumTypeDefs(&hcorenum, buffer, ARRAYSIZE(buffer), (ULONG*)&count))
+        while (S_OK == (hr = import->EnumTypeDefs(&hcorenum, buffer, ARRAY_SIZE(buffer), (ULONG*)&count))
             && count != 0)
         {
         }
@@ -42,7 +42,7 @@ namespace
         WCHAR name[512];
         ULONG nameLen;
         GUID mvid;
-        return import->GetScopeProps(name, ARRAYSIZE(name), &nameLen, &mvid);
+        return import->GetScopeProps(name, ARRAY_SIZE(name), &nameLen, &mvid);
     }
 
     HRESULT EnumUserStrings(IMetaDataImport* import)
@@ -52,7 +52,7 @@ namespace
         HCORENUM hcorenum = {};
         uint32_t buffer[1];
         uint32_t count;
-        while (S_OK == (hr = import->EnumUserStrings(&hcorenum, buffer, ARRAYSIZE(buffer), (ULONG*)&count))
+        while (S_OK == (hr = import->EnumUserStrings(&hcorenum, buffer, ARRAY_SIZE(buffer), (ULONG*)&count))
             && count != 0)
         {
         }

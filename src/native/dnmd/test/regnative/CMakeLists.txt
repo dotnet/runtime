@@ -3,12 +3,26 @@ set(SOURCES
   unit.cpp
 )
 
+if(NOT MSVC)
+  # Define for DNCP
+  add_compile_definitions(
+      DNCP_TYPEDEFS
+      DNCP_WINHDRS
+  )
+endif()
+
 add_library(regnative
   SHARED
   ${SOURCES}
 )
 
-target_link_libraries(regnative dnmd_interfaces)
-target_link_libraries(regnative dncp)
+target_link_libraries(regnative
+  dnmd_interfaces
+  dncp)
 
-install(TARGETS regnative)
+if(NOT MSVC)
+  target_link_libraries(regnative dncp_winhdrs)
+endif()
+
+install(TARGETS regnative
+  DESTINATION bin)

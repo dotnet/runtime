@@ -7,7 +7,14 @@
 #include <memory>
 #include <array>
 
-#include <platform.h>
+#ifndef BUILD_WINDOWS
+#include <sys/stat.h>
+#endif // !BUILD_WINDOWS
+
+#include <peimage.h>
+
+#include <dncp.h>
+#include <corhdr.h>
 #include <dnmd.hpp>
 
 template<typename T>

@@ -8,7 +8,7 @@
 
 ## Build
 
-> `git submodule init`
+> `git submodule update --init --recursive`
 
 > `cmake -S . -B artifacts`
 

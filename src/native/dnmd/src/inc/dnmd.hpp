@@ -21,7 +21,7 @@ struct cotaskmem_deleter_t
     using pointer = void*;
     void operator()(void* mem)
     {
-        ::CoTaskMemFree(mem);
+        ::PAL_CoTaskMemFree(mem);
     }
 };
 
@@ -40,6 +40,6 @@ struct malloc_deleter_t
 
 // C++ lifetime wrapper for malloc'd memory
 template<typename T>
-using malloc_ptr = std::unique_ptr<T, typename malloc_deleter_t<T>>;
+using malloc_ptr = std::unique_ptr<T, malloc_deleter_t<T>>;
 
 #endif // _SRC_INC_DNMD_HPP_

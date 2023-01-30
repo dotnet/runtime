@@ -35,7 +35,7 @@ namespace Common
 #else
             var runtimeName =
                 OperatingSystem.IsWindows() ? "coreclr.dll"
-                : OperatingSystem.IsMacOS() ? "libcorclr.dylib"
+                : OperatingSystem.IsMacOS() ? "libcoreclr.dylib"
                 : "libcoreclr.so";
 
             var baseline = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, runtimeName);
@@ -58,6 +58,11 @@ namespace Common
         [SupportedOSPlatform("windows")]
         private static string GetNetFx20Install()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return string.Empty;
+            }
+
             using var key = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Microsoft\\.NETFramework")!;
             return Path.Combine((string)key.GetValue("InstallRoot")!, "v2.0.50727");
         }
@@ -65,6 +70,11 @@ namespace Common
         [SupportedOSPlatform("windows")]
         private static string GetNetFx40Install()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return string.Empty;
+            }
+
             using var key = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Microsoft\\.NETFramework")!;
             return Path.Combine((string)key.GetValue("InstallRoot")!, "v4.0.30319");
         }

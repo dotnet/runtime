@@ -278,6 +278,8 @@ bool initialize_table_details(
 
 #define CODED_INDEX_ARGS(x) all_table_row_counts, x
 #define TABLE_INDEX_ARGS(x) all_table_row_counts, x
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wswitch"
 #pragma warning(push)
 #pragma warning(disable:4063)
     switch (id)
@@ -605,6 +607,7 @@ bool initialize_table_details(
         return false;
     }
 #pragma warning(pop)
+#pragma clang diagnostic pop
 #undef TABLE_INDEX_ARGS
 #undef CODED_INDEX_ARGS
 

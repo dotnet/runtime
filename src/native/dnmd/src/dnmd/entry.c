@@ -187,9 +187,9 @@ bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle)
     if (pcxt == NULL)
         return false;
 
-#ifdef DEBUG
+#ifndef NDEBUG
     memset(&cxt, 0xcc, sizeof(cxt));
-#endif //DEBUG
+#endif // NDEBUG
 
     // Initialize the tables in the new context.
     if (!initialize_tables(pcxt))
