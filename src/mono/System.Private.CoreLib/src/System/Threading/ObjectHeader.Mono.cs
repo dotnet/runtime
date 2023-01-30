@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -30,6 +31,26 @@ internal static class ObjectHeader
         public int hash_code;
         // Note: more fields after here
 #endregion // keep in sync with monitor.h
+    }
+
+    // <summary>
+    // Manipulate the MonoThreadSync:status field
+    // </summary>
+    private static class MonitorStatus
+    {
+#region Keep in sync with monitor.h
+        private const uint OwnerMask = 0x0000ffffu;
+        private const uint EntryCountMask = 0xffff0000u;
+        //private const uint EntryCountWaiters = 0x80000000u;
+        //private const uint EntryCountZero = 0x7fff0000u;
+        //private const int EntryCountShift = 16;
+#endregion // keep in sync with monitor.h
+
+        public static int GetOwner(uint status) => (int)(status & OwnerMask);
+        public static uint SetOwner (uint status, int owner)
+        {
+            return (status & EntryCountMask) | (uint)owner;
+        }
     }
 
     // <summary>
@@ -153,6 +174,11 @@ internal static class ObjectHeader
         }
 
         public IntPtr AsIntPtr => _lock_word;
+
+        internal void SetFromIntPtr (IntPtr new_lw)
+        {
+            _lock_word = new_lw;
+        }
     }
 
     private static LockWord GetLockWord(ref object obj)
@@ -194,7 +220,80 @@ internal static class ObjectHeader
         return false;
     }
 
-#if false // WIP
+#if false // need to implement alloc_mon/discard_mon
+    private static void Inflate(object o)
+    {
+        unsafe {
+            MonoThreadsSync *mon = alloc_mon();
+            LockWord nlw = LockWord.NewInflated (mon);
+            LockWord old_lw = GetLockWord (ref o);
+            while (true)
+            {
+                if (old_lw.IsInflated)
+                    break;
+                else if (old_lw.HasHash)
+                {
+                    mon->hash_code = old_lw.FlatHash;
+                    mon->status = SyncSetOwner (mon->status, 0);
+                    nlw = nlw.SetHasHash();
+                    
+                }
+                else if (old_lw.IsFree)
+                {
+                    mon->status = SyncSetOwner (mon->status, old_lw.GetOwner());
+                    mon->nest = old_lw.FlatNest;
+                }
+                Interlocked.MemoryBarrier();
+                IntPtr prev = LockWordCompareExchange(ref o, nlw, old_lw);
+                if (prev == old_lw.AsIntPtr)
+                    return; // success
+                old_lw.SetFromIntPtr(prev); // go around one more time
+            }
+            // someone else inflated it first
+            discard_mon (mon);
+        }
+    }
+#endif
+
+    private static bool TryEnterInflatedFast(object o, ref bool lockTaken)
+    {
+        LockWord lw = GetLockWord (ref o);
+        int small_id = Thread.CurrentThread.GetSmallId();
+        unsafe {
+            MonoThreadsSync *mon = lw.GetInflatedLock();
+            while (true)
+            {
+                uint old_status = mon->status;
+                if (MonitorStatus.GetOwner(old_status) == 0)
+                {
+                    uint new_status = MonitorStatus.SetOwner(old_status, small_id);
+                    uint prev_status = Interlocked.CompareExchange (ref mon->status, new_status, old_status);
+                    if (prev_status == old_status)
+                    {
+                        lockTaken = true;
+                        return true;
+                    }
+                    // someone else changed the status, go around the loop again
+                }
+                if (MonitorStatus.GetOwner(old_status) == small_id)
+                {
+                    // we own it
+                    mon->nest++;
+                    lockTaken = true;
+                    return true;
+                }
+                else
+                {
+                    // someone else owns it, fall back to slow path
+                    return false;
+                }
+            }
+        }
+    }
+
+    // returns false if we should fall back to the slow path
+    // returns true if we tried to enter
+    // sets lockTaken to true if the lock was taken
     public static bool TryEnterFast(object? o, ref bool lockTaken)
     {
         if (lockTaken || o == null)
@@ -205,27 +304,34 @@ internal static class ObjectHeader
         {
             int owner = Thread.CurrentThread.GetSmallId();
             LockWord nlw = LockWord.NewFlat(owner);
-            if (LockWordCompareExchnage (ref o, nlw, lw) == lw.AsIntPtr)
+            if (LockWordCompareExchange (ref o, nlw, lw) == lw.AsIntPtr)
             {
                 lockTaken = true;
                 return true;
             } else {
+                return false;
+#if false
                 // someone acquired it in the meantime or put in a hash
                 Inflate(o);
-                return TryEnterInflated(o, ref lockTaken);
+                return TryEnterInflatedFast(o, ref lockTaken);
+#endif
             }
         }
         else if (lw.IsInflated)
-            return TryEnterInflated(o, ref lockTaken);
+        {
+            return TryEnterInflatedFast(o, ref lockTaken);
+        }
         else if (lw.IsFlat)
         {
+            return false;
+#if false
             int owner = Thread.CurrentThread.GetSmallId();
             if (lw.GetOwner() == owner)
             {
                 if (lw.IsMaxNest)
                 {
                     InflateOwned(o);
-                    return TryEnterInflated(o, ref lockTaken);
+                    return TryEnterInflatedFast(o, ref lockTaken);
                 }
                 else
                 {
@@ -234,17 +340,19 @@ internal static class ObjectHeader
                     if (prev != lw.AsIntPtr)
                     {
                         // Someone else inflated it in the meantime
-                        return TryEnterInflated(o, ref lockTaken);
+                        return TryEnterInflatedFast(o, ref lockTaken);
                     }
                     lockTaken = true;
                     return true;
                 }
             }
+#endif
         }
         Debug.Assert (lw.HasHash);
+        return false;
+#if false
         Inflate(o);
-        return TryEnterInflated(o, ref lockTaken);
-    }
+        return TryEnterInflatedFast(o, ref lockTaken);
 #endif
-
+    }
 }

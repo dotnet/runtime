@@ -351,6 +351,6 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void SetPriority(Thread thread, int priority);
 
-        private int GetSmallId() => small_id;
+        internal int GetSmallId() => small_id;
     }
 }

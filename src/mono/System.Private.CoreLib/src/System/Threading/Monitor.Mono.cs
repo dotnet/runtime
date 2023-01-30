@@ -19,6 +19,10 @@ namespace System.Threading
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
+            // fast path
+            if (ObjectHeader.TryEnterFast(obj, ref lockTaken))
+                    return;
+
             ReliableEnterTimeout(obj, (int)Timeout.Infinite, ref lockTaken);
         }
 
@@ -36,6 +40,9 @@ namespace System.Threading
         {
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
+
+            if (ObjectHeader.TryEnterFast(obj, ref lockTaken))
+                    return;
 
             ReliableEnterTimeout(obj, 0, ref lockTaken);
         }
