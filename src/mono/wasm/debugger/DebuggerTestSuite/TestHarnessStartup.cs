@@ -82,7 +82,6 @@ namespace DebuggerTests
             TestHarnessOptions options = optionsContainer.Value;
 
             app.UseWebSockets();
-            app.UseStaticFiles();
 
             var provider = new FileExtensionContentTypeProvider();
             provider.Mappings[".wasm"] = "application/wasm";

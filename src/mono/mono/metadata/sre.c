@@ -87,8 +87,6 @@ static gboolean is_sre_byref (MonoClass *klass);
 static gboolean is_sre_pointer (MonoClass *klass);
 static gboolean is_sre_generic_instance (MonoClass *klass);
 static gboolean is_sre_type_builder (MonoClass *klass);
-static gboolean is_sre_method_builder (MonoClass *klass);
-static gboolean is_sre_field_builder (MonoClass *klass);
 static gboolean is_sre_gparam_builder (MonoClass *klass);
 static gboolean is_sre_enum_builder (MonoClass *klass);
 static gboolean is_sr_mono_method (MonoClass *klass);
@@ -1022,7 +1020,7 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObjectHandle obj
 		g_assert (!MONO_HANDLE_IS_NULL (opt_param_types) && (mono_method_signature_internal (method)->sentinelpos >= 0));
 		token = create_method_token (assembly, method, opt_param_types, error);
 		goto_if_nok (error, fail);
-	} else if (strcmp (klass->name, "RuntimeMethodBuilder") == 0) {
+	} else if (mono_is_sre_method_builder (klass)) {
 		g_assert_not_reached ();
 	} else {
 		g_error ("requested method token for %s\n", klass->name);
@@ -1476,8 +1474,8 @@ is_sre_type_builder (MonoClass *klass)
 	check_corlib_type_cached (klass, "System.Reflection.Emit", "RuntimeTypeBuilder");
 }
 
-static gboolean
-is_sre_method_builder (MonoClass *klass)
+gboolean
+mono_is_sre_method_builder (MonoClass *klass)
 {
 	check_corlib_type_cached (klass, "System.Reflection.Emit", "RuntimeMethodBuilder");
 }
@@ -1488,10 +1486,28 @@ mono_is_sre_ctor_builder (MonoClass *klass)
 	check_corlib_type_cached (klass, "System.Reflection.Emit", "RuntimeConstructorBuilder");
 }
 
-static gboolean
-is_sre_field_builder (MonoClass *klass)
+gboolean
+mono_is_sre_field_builder (MonoClass *klass)
 {
 	check_corlib_type_cached (klass, "System.Reflection.Emit", "RuntimeFieldBuilder");
+}
+
+gboolean
+mono_is_sre_property_builder (MonoClass *klass)
+{
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "RuntimePropertyBuilder");
+}
+
+gboolean
+mono_is_sre_assembly_builder (MonoClass *klass)
+{
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "RuntimeAssemblyBuilder");
+}
+
+gboolean
+mono_is_sre_module_builder (MonoClass *klass)
+{
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "RuntimeModuleBuilder");
 }
 
 static gboolean
@@ -1872,7 +1888,7 @@ get_prop_name_and_type (MonoObject *prop, char **name, MonoType **type, MonoErro
 {
 	error_init (error);
 	MonoClass *klass = mono_object_class (prop);
-	if (strcmp (klass->name, "RuntimePropertyBuilder") == 0) {
+	if (mono_is_sre_property_builder (klass)) {
 		MonoReflectionPropertyBuilder *pb = (MonoReflectionPropertyBuilder *)prop;
 		*name = mono_string_to_utf8_checked_internal (pb->name, error);
 		return_if_nok (error);
@@ -1892,7 +1908,7 @@ get_field_name_and_type (MonoObject *field, char **name, MonoType **type, MonoEr
 {
 	error_init (error);
 	MonoClass *klass = mono_object_class (field);
-	if (strcmp (klass->name, "RuntimeFieldBuilder") == 0) {
+	if (mono_is_sre_field_builder (klass)) {
 		MonoReflectionFieldBuilder *fb = (MonoReflectionFieldBuilder *)field;
 		*name = mono_string_to_utf8_checked_internal (fb->name, error);
 		return_if_nok (error);
@@ -3379,7 +3395,7 @@ mono_reflection_method_get_handle (MonoObject *method, MonoError *error)
 		MonoReflectionMethod *sr_method = (MonoReflectionMethod*)method;
 		return sr_method->method;
 	}
-	if (is_sre_method_builder (klass)) {
+	if (mono_is_sre_method_builder (klass)) {
 		MonoReflectionMethodBuilder *mb = (MonoReflectionMethodBuilder*)method;
 		return mb->mhandle;
 	}
@@ -3413,7 +3429,7 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 		return;
 
 	tb = mono_class_get_ref_info_raw (klass); /* FIXME use handles */
-	g_assert (strcmp (mono_object_class (tb)->name, "RuntimeTypeBuilder") == 0);
+	g_assert (is_sre_type_builder (mono_object_class (tb)));
 
 	onum = 0;
 	if (tb->methods) {
@@ -4198,7 +4214,7 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 		}
 		*handle_class = mono_defaults.fieldhandle_class;
 		g_assert (result);
-	} else if (strcmp (oklass->name, "RuntimeTypeBuilder") == 0) {
+	} else if (is_sre_type_builder (oklass)) {
 		MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_NEW (MonoReflectionTypeBuilder, (MonoReflectionTypeBuilder*)obj);
 		MonoType *type = mono_reflection_type_get_handle (&MONO_HANDLE_RAW (tb)->type, error);
 		goto_if_nok (error, return_null);
@@ -4285,9 +4301,9 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 
 		result = method;
 		*handle_class = mono_defaults.methodhandle_class;
-	} else if (is_sre_method_builder (oklass) ||
+	} else if (mono_is_sre_method_builder (oklass) ||
 			   mono_is_sre_ctor_builder (oklass) ||
-			   is_sre_field_builder (oklass) ||
+			   mono_is_sre_field_builder (oklass) ||
 			   is_sre_gparam_builder (oklass) ||
 			   is_sre_generic_instance (oklass) ||
 			   is_sre_array (oklass) ||

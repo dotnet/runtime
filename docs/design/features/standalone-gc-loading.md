@@ -110,7 +110,7 @@ struct VersionInfo {
   const char* Name;
 };
 
-extern "C" void GC_VersionInfo(
+extern "C" void LOCALGC_CALLCONV GC_VersionInfo(
   /* Out */ VersionInfo*
 );
 ```
@@ -142,7 +142,7 @@ Once the EE has verified that the version of the candidate GC is valid, it then 
 GC. It does so by loading (via `GetProcAddress`) and executing a function with this signature:
 
 ```c++
-extern "C" HRESULT GC_Initialize(
+extern "C" HRESULT LOCALGC_CALLCONV GC_Initialize(
   /* In  */ IGCToCLR*,
   /* Out */ IGCHeap**.
   /* Out */ IGCHandleManager**,

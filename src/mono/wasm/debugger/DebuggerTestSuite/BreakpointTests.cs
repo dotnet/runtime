@@ -171,6 +171,18 @@ namespace DebuggerTests
             );
         }
 
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task CreateGoodBreakpointWithoutColumnAndHit()
+        {
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, -1);
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "Math.IntAdd"
+            );
+        }
+
         public static TheoryData<string, string, string, bool> FalseConditions = new TheoryData<string, string, string, bool>
         {
             { "invoke_add()", "IntAdd", "0.0", false },

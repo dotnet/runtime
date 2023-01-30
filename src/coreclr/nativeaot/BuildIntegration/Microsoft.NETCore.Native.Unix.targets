@@ -184,7 +184,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
     </Exec>
 
-    <Exec Command="command -v &quot;$(ObjCopyNameAlternative)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' != 'osx' and '$(CppCompilerAndLinkerAlternative)' != '' and '$(StripSymbols)' == 'true'">
+    <Exec Command="command -v &quot;$(ObjCopyNameAlternative)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' != 'osx' and '$(ObjCopyNameAlternative)' != '' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripperAlt" />
     </Exec>
 

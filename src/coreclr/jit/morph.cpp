@@ -3307,8 +3307,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     if (argObj->OperIsIndir())
                     {
                         assert(argObj->AsIndir()->Size() == genTypeSize(structBaseType));
-                        argObj->ChangeType(structBaseType);
                         argObj->SetOper(GT_IND);
+                        // Use ChangeType over argx to update types in COMMAs as well
+                        argx->ChangeType(structBaseType);
                     }
                     else if (argObj->OperIsLocalRead())
                     {

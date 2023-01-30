@@ -1,16 +1,12 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="8.0.0-alpha.1.23076.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="8.0.0-alpha.1.23077.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>4d409481005a9f503eadc3a2cd7ba3d8d86e71f0</Sha>
+      <Sha>bbece397a0e34038291cc7f48ea5095d384dc2ae</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="7.0.0-alpha.1.22406.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>dc012a715ceb9b5d5258f2fda77520586af5a36a</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.net7.Manifest-8.0.100" Version="8.0.0-alpha.1.23073.2">
-      <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>ff2362091c3ce19e09606a7de927670ba5d1cb81</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
@@ -91,6 +87,10 @@
     <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.23073.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
       <Sha>92aae1ebe9760194a38f74e903757fc42c612b94</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-alpha.1" Version="8.0.0-alpha.1.23077.4">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>0fe864fc71191ff4ee18e59ef0af2929ca367a11</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
@@ -326,13 +326,13 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>6acaa7b7c0efea8ea292ca26888c0346fbf8b0c1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.3.5-beta1.23076.1">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.3.5-beta1.23076.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>f025dc539b99ba064e337c26c7c249e13bd1823d</Sha>
+      <Sha>9dd3c12b2244e67c0b9c7aa922ec4ac74d977f59</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0-preview1.23076.1">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="8.0.0-preview1.23076.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>f025dc539b99ba064e337c26c7c249e13bd1823d</Sha>
+      <Sha>9dd3c12b2244e67c0b9c7aa922ec4ac74d977f59</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-alpha.1.22511.23">
       <Uri>https://github.com/dotnet/sdk</Uri>
