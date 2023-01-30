@@ -131,6 +131,16 @@ public:
     {
     }
 
+    emitLocation(insGroup* _ig, unsigned _codePos)
+    {
+        SetLocation(_ig, _codePos);
+    }
+
+    emitLocation(emitter* emit)
+    {
+        CaptureLocation(emit);
+    }
+
     emitLocation(void* emitCookie) : ig((insGroup*)emitCookie), codePos(0)
     {
     }
@@ -142,6 +152,8 @@ public:
     }
 
     void CaptureLocation(emitter* emit);
+    void SetLocation(insGroup* _ig, unsigned _codePos);
+    void SetLocation(emitLocation newLocation);
 
     bool IsCurrentLocation(emitter* emit) const;
 
@@ -160,6 +172,7 @@ public:
     }
 
     int GetInsNum() const;
+    int GetInsOffset() const;
 
     bool operator!=(const emitLocation& other) const
     {
@@ -250,6 +263,7 @@ struct insGroup
 #ifdef DEBUG
     BasicBlock*               lastGeneratedBlock; // The last block that generated code into this insGroup.
     jitstd::list<BasicBlock*> igBlocks;           // All the blocks that generated code into this insGroup.
+    size_t                    igDataSize;         // size of instrDesc data pointed to by 'igData'
 #endif
 
     UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
@@ -280,6 +294,9 @@ struct insGroup
 #define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
                                   // without updating the IG's size/offsets.
 #define IGF_HAS_REMOVABLE_JMP 0x1000 // this group ends with an unconditional jump which is a candidate for removal
+#ifdef TARGET_ARM64
+#define IGF_HAS_REMOVED_INSTR 0x2000 // this group has an instruction that was removed.
+#endif
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -2170,6 +2187,10 @@ private:
     insGroup* emitSavIG(bool emitAdd = false);
     void emitNxtIG(bool extend = false);
 
+#ifdef TARGET_ARM64
+    void emitRemoveLastInstruction();
+#endif
+
     bool emitCurIGnonEmpty()
     {
         return (emitCurIG && emitCurIGfreeNext > emitCurIGfreeBase);
@@ -2823,12 +2844,15 @@ inline unsigned emitGetInsOfsFromCodePos(unsigned codePos)
 
 inline unsigned emitter::emitCurOffset()
 {
-    unsigned codePos = emitCurIGinsCnt + (emitCurIGsize << 16);
+    return emitSpecifiedOffset(emitCurIGinsCnt, emitCurIGsize);
+}
 
-    assert(emitGetInsOfsFromCodePos(codePos) == emitCurIGsize);
-    assert(emitGetInsNumFromCodePos(codePos) == emitCurIGinsCnt);
+inline unsigned emitter::emitSpecifiedOffset(unsigned insCount, unsigned igSize)
+{
+    unsigned codePos = insCount + (igSize << 16);
 
-    // printf("[IG=%02u;ID=%03u;OF=%04X] => %08X\n", emitCurIG->igNum, emitCurIGinsCnt, emitCurIGsize, codePos);
+    assert(emitGetInsOfsFromCodePos(codePos) == igSize);
+    assert(emitGetInsNumFromCodePos(codePos) == insCount);
 
     return codePos;
 }

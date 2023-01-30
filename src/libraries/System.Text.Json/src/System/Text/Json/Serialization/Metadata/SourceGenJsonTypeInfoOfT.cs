@@ -107,11 +107,6 @@ namespace System.Text.Json.Serialization.Metadata
             JsonParameterInfoValues[] array;
             if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
             {
-                if (SerializeHandler == null)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(Options.TypeInfoResolver, Type);
-                }
-
                 array = Array.Empty<JsonParameterInfoValues>();
                 MetadataSerializationNotSupported = true;
             }
@@ -142,11 +137,6 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     // Nullable<> or F# optional converter's strategy is set to element's strategy
                     return;
-                }
-
-                if (SerializeHandler == null)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
                 }
 
                 MetadataSerializationNotSupported = true;
