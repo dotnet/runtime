@@ -35,7 +35,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ItemGroup>
       <NativeLibrary Include="$(IlcSdkPath)$(BootstrapperName)$(LibrarySuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName)$(LibrarySuffix)" />
-      <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
     </ItemGroup>
 
