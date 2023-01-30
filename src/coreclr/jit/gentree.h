@@ -910,12 +910,14 @@ public:
         return isContained() && IsCnsIntOrI() && !isUsedFromSpillTemp();
     }
 
+#if defined(TARGET_ARM64)
     // Node and its child in isolation form a contained compare chain.
     bool isContainedCompareChainSegment(GenTree* child) const
     {
         return ((OperIs(GT_AND) || OperIs(GT_ANDFLAGS)) && child->isContained() &&
                 (child->OperIs(GT_AND) || child->OperIsCmpCompare()));
     }
+#endif
 
     bool isContainedFltOrDblImmed() const
     {
