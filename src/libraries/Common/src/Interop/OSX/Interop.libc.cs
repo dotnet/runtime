@@ -47,5 +47,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.libc, EntryPoint = "clonefile", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static unsafe partial int clonefile(string from, string to, int flags);
+        internal const int CLONE_ACL = 0x0004;
     }
 }

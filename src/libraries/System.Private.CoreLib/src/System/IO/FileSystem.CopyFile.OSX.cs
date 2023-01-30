@@ -100,7 +100,7 @@ namespace System.IO
                 // Try clonefile:
                 tryCloneFile:
                 {
-                    if (Interop.@libc.clonefile(sourceFullPath, destFullPath, 0) == 0)
+                    if (Interop.@libc.clonefile(sourceFullPath, destFullPath, Interop.@libc.CLONE_ACL) == 0)
                     {
                         // Success
                         return;

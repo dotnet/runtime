@@ -352,7 +352,7 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream, overwrite: true));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void CopyOntoLockedFile()
         {
             string testFileSource = GetTestFilePath();
