@@ -314,7 +314,16 @@ namespace Microsoft.Extensions.Configuration
                     return;
                 }
 
-                // for sets and read-only set interfaces, we clone what's there into a new collection, if we can
+                // Handle ISet<T> and IReadOnlySet<T> cases.
+                // if we have ISet<T>:
+                //      - if bindingPoint.Value is not null, we'll use this instance to populate the configuration items to it.
+                //      - if bindingPoint.Value is null and bindingPoint.IsReadOnly is false (i.e. there is a property setter). we'll create
+                //        a HashSet<T> and populate the configuration items to it.
+                //      - otherwise nothing will happen.
+                // if we have IReadOnlySet<T>:
+                //      - if bindingPoint.Value is not null and bindingPoint.IsReadOnly is false, we'll create a new HashSet<T> and
+                //        populate the stored items to the new instance in addition to the items we populate from the configuration.
+                //      - otherwise nothing will happen.
                 if (TypeIsASetInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly || bindingPoint.Value is not null)
@@ -329,15 +338,25 @@ namespace Microsoft.Extensions.Configuration
                     return;
                 }
 
-                // For other mutable interfaces like ICollection<>, IDictionary<,> and ISet<>, we prefer copying values and setting them
-                // on a new instance of the interface over populating the existing instance implementing the interface.
-                // This has already been done, so there's not need to check again.
-                if (TypeIsADictionaryInterface(type) && !bindingPoint.IsReadOnly)
+                // Handle IDictionary<TKey, TValue> and IReadOnlyDictionary<TKey, TValue> cases.
+                // if we have IDictionary<TKey, TValue>:
+                //      - if bindingPoint.Value is not null, we'll use this instance to populate the configuration items to it.
+                //      - if bindingPoint.Value is null and bindingPoint.IsReadOnly is false (i.e. there is a property setter). we'll create
+                //        a Dictionary<TKey, TValue> and populate the configuration items to it.
+                //      - otherwise nothing will happen.
+                // if we have IReadOnlyDictionary<TKey, TValue>:
+                //      - if bindingPoint.Value is not null and bindingPoint.IsReadOnly is false, we'll create a new Dictionary<TKey, TValue> and
+                //        populate the stored items to the new instance in addition to the items we populate from the configuration.
+                //      - otherwise nothing will happen.
+                if (TypeIsADictionaryInterface(type))
                 {
-                    object? newValue = BindDictionaryInterface(bindingPoint.Value, type, config, options);
-                    if (newValue != null)
+                    if (!bindingPoint.IsReadOnly || bindingPoint.Value is not null)
                     {
-                        bindingPoint.SetValue(newValue);
+                        object? newValue = BindDictionaryInterface(bindingPoint.Value, type, config, options);
+                        if (!bindingPoint.IsReadOnly && newValue != null)
+                        {
+                            bindingPoint.SetValue(newValue);
+                        }
                     }
 
                     return;
@@ -538,7 +557,7 @@ namespace Microsoft.Extensions.Configuration
             if (addMethod is null || source is null)
             {
                 dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
-                var dictionary = Activator.CreateInstance(dictionaryType);
+                object? dictionary = Activator.CreateInstance(dictionaryType);
                 addMethod = dictionaryType.GetMethod("Add", DeclaredOnlyLookup);
 
                 var orig = source as IEnumerable;
@@ -748,9 +767,9 @@ namespace Microsoft.Extensions.Configuration
         {
             Type elementType = type.GetGenericArguments()[0];
 
-            bool keyTypeIsEnum = elementType.IsEnum;
+            bool elementTypeIsEnum  = elementType.IsEnum;
 
-            if (elementType != typeof(string) && !keyTypeIsEnum)
+            if (elementType != typeof(string) && !elementTypeIsEnum)
             {
                 // We only support string and enum keys
                 return null;
