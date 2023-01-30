@@ -15,7 +15,6 @@
     <DOTNETVariables>
       DOTNET_TieredCompilation;
       DOTNET_DbgEnableMiniDump;
-      DOTNET_EnableCrashReport;
       DOTNET_DbgEnableElfDumpOnMacOS;
       DOTNET_DbgMiniDumpName;
       DOTNET_EnableAES;
@@ -84,8 +83,8 @@
     <TestEnvironment>
       <TieredCompilation>0</TieredCompilation>
       <DbgEnableMiniDump Condition="'$(TargetsWindows)' != 'true'">1</DbgEnableMiniDump> <!-- Enable minidumps for all scenarios -->
+      <DbgEnableElfDumpOnMacOS Condition="'$(TargetsOSX)' == 'true'">1</DbgEnableElfDumpOnMacOS> <!-- Enable minidumps for OSX -->
       <DbgMiniDumpName Condition="'$(TargetsWindows)' != 'true'">$HELIX_DUMP_FOLDER/coredump.%d.dmp</DbgMiniDumpName>
-      <EnableCrashReport Condition="'$(TargetsWindows)' != 'true'">1</EnableCrashReport>
     </TestEnvironment>
   </ItemDefinitionGroup>
 
