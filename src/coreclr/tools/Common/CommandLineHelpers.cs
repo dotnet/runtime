@@ -305,12 +305,12 @@ namespace System.CommandLine
 
                     string simpleName = Path.GetFileNameWithoutExtension(fileName);
 
-                    if (dictionary.ContainsKey(simpleName))
+                    if (dictionary.TryGetValue(simpleName, out string otherFullFileName))
                     {
                         if (strict)
                         {
                             throw new CommandLineException("Multiple input files matching same simple name " +
-                                fullFileName + " " + dictionary[simpleName]);
+                                fullFileName + " " + otherFullFileName);
                         }
                     }
                     else

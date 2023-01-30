@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace System.Collections.Frozen
 {
@@ -11,12 +12,13 @@ namespace System.Collections.Frozen
     {
         private readonly FrozenHashTable _hashTable;
 
-        internal Int32FrozenSet(int[] entries) : base(EqualityComparer<int>.Default)
+        internal Int32FrozenSet(HashSet<int> source) : base(EqualityComparer<int>.Default)
         {
-            Debug.Assert(entries.Length != 0);
+            Debug.Assert(source.Count != 0);
+            Debug.Assert(ReferenceEquals(source.Comparer, EqualityComparer<int>.Default));
 
             _hashTable = FrozenHashTable.Create(
-                entries,
+                source.ToArray(),
                 item => item,
                 (_, _) => { });
         }

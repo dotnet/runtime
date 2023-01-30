@@ -146,7 +146,7 @@ function preInit(userPreInit: (() => void)[]) {
     Module.addRunDependency("mono_pre_init");
     const mark = startMeasure();
     try {
-        mono_wasm_pre_init_essential();
+        mono_wasm_pre_init_essential(false);
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preInit");
         beforePreInit.promise_control.resolve();
         // all user Module.preInit callbacks
@@ -183,7 +183,7 @@ async function preInitWorkerAsync() {
     try {
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preInitWorker");
         beforePreInit.promise_control.resolve();
-        mono_wasm_pre_init_essential();
+        mono_wasm_pre_init_essential(true);
         await init_polyfills_async();
         afterPreInit.promise_control.resolve();
         endMeasure(mark, MeasuredBlock.preInitWorker);
@@ -302,8 +302,9 @@ export function abort_startup(reason: any, should_exit: boolean): void {
 }
 
 // runs in both blazor and non-blazor
-function mono_wasm_pre_init_essential(): void {
-    Module.addRunDependency("mono_wasm_pre_init_essential");
+function mono_wasm_pre_init_essential(isWorker: boolean): void {
+    if (!isWorker)
+        Module.addRunDependency("mono_wasm_pre_init_essential");
 
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential");
 
@@ -313,7 +314,13 @@ function mono_wasm_pre_init_essential(): void {
     cwraps_mono_api(MONO);
     cwraps_binding_api(BINDING);
 
-    Module.removeRunDependency("mono_wasm_pre_init_essential");
+    // removeRunDependency triggers the dependenciesFulfilled callback (runCaller) in
+    // emscripten - on a worker since we don't have any other dependencies that causes run() to get
+    // called too soon; and then it will get called a second time when dotnet.js calls it directly.
+    // on a worker run() short-cirtcuits and just calls   readyPromiseResolve, initRuntime and postMessage.
+    // sending postMessage twice will break instantiateWasmPThreadWorkerPool on the main thread.
+    if (!isWorker)
+        Module.removeRunDependency("mono_wasm_pre_init_essential");
 }
 
 // runs in both blazor and non-blazor

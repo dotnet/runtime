@@ -746,12 +746,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_NoMetadataForTypeCtorParams(IJsonTypeInfoResolver? resolver, Type type)
-        {
-            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeCtorParams, resolver?.GetType().FullName ?? "<null>", type));
-        }
-
-        [DoesNotReturn]
         public static void ThrowMissingMemberException_MissingFSharpCoreMember(string missingFsharpCoreMember)
         {
             throw new MissingMemberException(SR.Format(SR.MissingFSharpCoreMember, missingFsharpCoreMember));

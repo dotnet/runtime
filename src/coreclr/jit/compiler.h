@@ -3873,6 +3873,7 @@ protected:
                               NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    NamedIntrinsic lookupPrimitiveNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -3882,6 +3883,11 @@ protected:
                                     CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,
                                     CORINFO_SIG_INFO*     sig);
+
+    GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
+                                        CORINFO_CLASS_HANDLE  clsHnd,
+                                        CORINFO_METHOD_HANDLE method,
+                                        CORINFO_SIG_INFO*     sig);
 
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
@@ -5830,7 +5836,9 @@ private:
     GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
 #if FEATURE_FASTTAILCALL
-    bool fgCallHasMustCopyByrefParameter(GenTreeCall* callee);
+    bool fgCallHasMustCopyByrefParameter(GenTreeCall* call);
+    bool fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg);
+
 #endif
     bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
@@ -9122,6 +9130,7 @@ public:
     bool fgLocalVarLivenessChanged;
     bool fgIsDoingEarlyLiveness;
     bool fgDidEarlyLiveness;
+    bool compPostImportationCleanupDone;
     bool compLSRADone;
     bool compRationalIRForm;
 
@@ -9423,8 +9432,8 @@ public:
 // likely complicated enough that loop alignment will not impact performance.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
-// By default only single iteration loops will be unrolled
-#define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 1
+// By default only loops with a constant iteration count less than or equal to this will be unrolled
+#define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 4
 
 #ifdef DEBUG
         // Loop alignment variables
