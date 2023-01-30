@@ -216,7 +216,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             await SendCommand(id, "Debugger.resume", new JObject(), token);
         }
-        protected async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
+        protected virtual async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
         {
             if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
                 return true;
