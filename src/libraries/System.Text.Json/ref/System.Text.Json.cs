@@ -583,6 +583,7 @@ namespace System.Text.Json
         public void WritePropertyName(string propertyName) { }
         public void WritePropertyName(System.Text.Json.JsonEncodedText propertyName) { }
         public void WriteRawValue(System.ReadOnlySpan<byte> utf8Json, bool skipInputValidation = false) { }
+        public void WriteRawValue(System.Buffers.ReadOnlySequence<byte> utf8Json, bool skipInputValidation = false) { }
         public void WriteRawValue([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Json")] System.ReadOnlySpan<char> json, bool skipInputValidation = false) { }
         public void WriteRawValue([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Json")] string json, bool skipInputValidation = false) { }
         public void WriteStartArray() { }

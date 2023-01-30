@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace System.Collections.Frozen
 {
@@ -15,13 +16,15 @@ namespace System.Collections.Frozen
         private readonly int[] _items;
         private readonly int _max;
 
-        // this assumes the entries are sorted
-        internal SmallInt32FrozenSet(int[] entries)
-            : base(EqualityComparer<int>.Default)
+        internal SmallInt32FrozenSet(HashSet<int> source) : base(EqualityComparer<int>.Default)
         {
-            Debug.Assert(entries.Length != 0);
+            Debug.Assert(source.Count != 0);
+            Debug.Assert(ReferenceEquals(source.Comparer, EqualityComparer<int>.Default));
 
-            _items = entries;
+            int[] items = source.ToArray();
+            Array.Sort(items);
+
+            _items = items;
             _max = _items[_items.Length - 1];
         }
 

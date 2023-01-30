@@ -3307,8 +3307,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     if (argObj->OperIsIndir())
                     {
                         assert(argObj->AsIndir()->Size() == genTypeSize(structBaseType));
-                        argObj->ChangeType(structBaseType);
                         argObj->SetOper(GT_IND);
+                        // Use ChangeType over argx to update types in COMMAs as well
+                        argx->ChangeType(structBaseType);
                     }
                     else if (argObj->OperIsLocalRead())
                     {
@@ -5367,202 +5368,6 @@ GenTree* Compiler::fgMorphExpandTlsFieldAddr(GenTree* tree)
     return tree;
 }
 
-//------------------------------------------------------------------------------
-// fgMorphCallInline: attempt to inline a call
-//
-// Arguments:
-//    call         - call expression to inline, inline candidate
-//    inlineResult - result tracking and reporting
-//
-// Notes:
-//    Attempts to inline the call.
-//
-//    If successful, callee's IR is inserted in place of the call, and
-//    is marked with an InlineContext.
-//
-//    If unsuccessful, the transformations done in anticipation of a
-//    possible inline are undone, and the candidate flag on the call
-//    is cleared.
-//
-void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
-{
-    bool inliningFailed = false;
-
-    InlineCandidateInfo* inlCandInfo = call->gtInlineCandidateInfo;
-
-    // Is this call an inline candidate?
-    if (call->IsInlineCandidate())
-    {
-        InlineContext* createdContext = nullptr;
-        // Attempt the inline
-        fgMorphCallInlineHelper(call, inlineResult, &createdContext);
-
-        // We should have made up our minds one way or another....
-        assert(inlineResult->IsDecided());
-
-        // If we failed to inline, we have a bit of work to do to cleanup
-        if (inlineResult->IsFailure())
-        {
-            if (createdContext != nullptr)
-            {
-                // We created a context before we got to the failure, so mark
-                // it as failed in the tree.
-                createdContext->SetFailed(inlineResult);
-            }
-            else
-            {
-#ifdef DEBUG
-                // In debug we always put all inline attempts into the inline tree.
-                InlineContext* ctx =
-                    m_inlineStrategy->NewContext(call->gtInlineCandidateInfo->inlinersContext, fgMorphStmt, call);
-                ctx->SetFailed(inlineResult);
-#endif
-            }
-
-            inliningFailed = true;
-
-            // Clear the Inline Candidate flag so we can ensure later we tried
-            // inlining all candidates.
-            //
-            call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
-        }
-    }
-    else
-    {
-        // This wasn't an inline candidate. So it must be a GDV candidate.
-        assert(call->IsGuardedDevirtualizationCandidate());
-
-        // We already know we can't inline this call, so don't even bother to try.
-        inliningFailed = true;
-    }
-
-    // If we failed to inline (or didn't even try), do some cleanup.
-    if (inliningFailed)
-    {
-        if (call->gtReturnType != TYP_VOID)
-        {
-            JITDUMP("Inlining [%06u] failed, so bashing " FMT_STMT " to NOP\n", dspTreeID(call), fgMorphStmt->GetID());
-
-            // Detach the GT_CALL tree from the original statement by
-            // hanging a "nothing" node to it. Later the "nothing" node will be removed
-            // and the original GT_CALL tree will be picked up by the GT_RET_EXPR node.
-            inlCandInfo->retExpr->gtSubstExpr = call;
-            inlCandInfo->retExpr->gtSubstBB   = compCurBB;
-
-            noway_assert(fgMorphStmt->GetRootNode() == call);
-            fgMorphStmt->SetRootNode(gtNewNothingNode());
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-// fgMorphCallInlineHelper: Helper to attempt to inline a call
-//
-// Arguments:
-//    call           - call expression to inline, inline candidate
-//    result         - result to set to success or failure
-//    createdContext - The context that was created if the inline attempt got to the inliner.
-//
-// Notes:
-//    Attempts to inline the call.
-//
-//    If successful, callee's IR is inserted in place of the call, and
-//    is marked with an InlineContext.
-//
-//    If unsuccessful, the transformations done in anticipation of a
-//    possible inline are undone, and the candidate flag on the call
-//    is cleared.
-//
-//    If a context was created because we got to the importer then it is output by this function.
-//    If the inline succeeded, this context will already be marked as successful. If it failed and
-//    a context is returned, then it will not have been marked as success or failed.
-//
-void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, InlineContext** createdContext)
-{
-    // Don't expect any surprises here.
-    assert(result->IsCandidate());
-
-    if (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
-    {
-        // For now, attributing this to call site, though it's really
-        // more of a budget issue (lvaCount currently includes all
-        // caller and prospective callee locals). We still might be
-        // able to inline other callees into this caller, or inline
-        // this callee in other callers.
-        result->NoteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
-        return;
-    }
-
-    if (call->IsVirtual())
-    {
-        result->NoteFatal(InlineObservation::CALLSITE_IS_VIRTUAL);
-        return;
-    }
-
-    // Re-check this because guarded devirtualization may allow these through.
-    if (gtIsRecursiveCall(call) && call->IsImplicitTailCall())
-    {
-        result->NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
-        return;
-    }
-
-    // impMarkInlineCandidate() is expected not to mark tail prefixed calls
-    // and recursive tail calls as inline candidates.
-    noway_assert(!call->IsTailPrefixedCall());
-    noway_assert(!call->IsImplicitTailCall() || !gtIsRecursiveCall(call));
-
-    //
-    // Calling inlinee's compiler to inline the method.
-    //
-
-    unsigned const startVars     = lvaCount;
-    unsigned const startBBNumMax = fgBBNumMax;
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("Expanding INLINE_CANDIDATE in statement ");
-        printStmtID(fgMorphStmt);
-        printf(" in " FMT_BB ":\n", compCurBB->bbNum);
-        gtDispStmt(fgMorphStmt);
-        if (call->IsImplicitTailCall())
-        {
-            printf("Note: candidate is implicit tail call\n");
-        }
-    }
-#endif
-
-    impInlineRoot()->m_inlineStrategy->NoteAttempt(result);
-
-    //
-    // Invoke the compiler to inline the call.
-    //
-
-    fgInvokeInlineeCompiler(call, result, createdContext);
-
-    if (result->IsFailure())
-    {
-        // Undo some changes made during the inlining attempt.
-        // Zero out the used locals
-        memset((void*)(lvaTable + startVars), 0, (lvaCount - startVars) * sizeof(*lvaTable));
-        for (unsigned i = startVars; i < lvaCount; i++)
-        {
-            new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
-        }
-
-        // Reset local var count and max bb num
-        lvaCount   = startVars;
-        fgBBNumMax = startBBNumMax;
-
-#ifdef DEBUG
-        for (BasicBlock* block : Blocks())
-        {
-            assert(block->bbNum <= fgBBNumMax);
-        }
-#endif
-    }
-}
-
 //------------------------------------------------------------------------
 // fgCanFastTailCall: Check to see if this tail call can be optimized as epilog+jmp.
 //
@@ -5891,264 +5696,108 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #endif
 }
 
+#if FEATURE_FASTTAILCALL
 //------------------------------------------------------------------------
 // fgCallHasMustCopyByrefParameter: Check to see if this call has a byref parameter that
 //                                  requires a struct copy in the caller.
 //
 // Arguments:
-//    callee - The callee to check
+//    call - The call to check
 //
 // Return Value:
 //    Returns true or false based on whether this call has a byref parameter that
 //    requires a struct copy in the caller.
-
-#if FEATURE_FASTTAILCALL
-bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
+//
+bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* call)
 {
-    bool hasMustCopyByrefParameter = false;
-
-    unsigned argCount = callee->gtArgs.CountArgs();
-    for (CallArg& arg : callee->gtArgs.Args())
+#if FEATURE_IMPLICIT_BYREFS
+    for (CallArg& arg : call->gtArgs.Args())
     {
-        if (arg.AbiInfo.IsStruct)
+        if (fgCallArgWillPointIntoLocalFrame(call, arg))
         {
-            if (arg.AbiInfo.PassedByRef)
-            {
-                // Generally a byref arg will block tail calling, as we have to
-                // make a local copy of the struct for the callee.
-                hasMustCopyByrefParameter = true;
-
-                // If we're optimizing, we may be able to pass our caller's byref to our callee,
-                // and so still be able to avoid a struct copy.
-                if (opts.OptimizationEnabled())
-                {
-                    // First, see if this is an arg off of an implicit byref param.
-                    GenTreeLclVarCommon* const lcl = arg.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
-
-                    if (lcl != nullptr)
-                    {
-                        // Yes, the arg is an implicit byref param.
-                        const unsigned   lclNum = lcl->GetLclNum();
-                        LclVarDsc* const varDsc = lvaGetDesc(lcl);
-
-                        // The param must not be promoted; if we've promoted, then the arg will be
-                        // a local struct assembled from the promoted fields.
-                        if (varDsc->lvPromoted)
-                        {
-                            JITDUMP("Arg [%06u] is promoted implicit byref V%02u, so no tail call\n",
-                                    dspTreeID(arg.GetNode()), lclNum);
-                        }
-                        else
-                        {
-                            JITDUMP("Arg [%06u] is unpromoted implicit byref V%02u, seeing if we can still tail call\n",
-                                    dspTreeID(arg.GetNode()), lclNum);
-
-                            // We have to worry about introducing aliases if we bypass copying
-                            // the struct at the call. We'll do some limited analysis to see if we
-                            // can rule this out.
-                            const unsigned argLimit = 6;
-
-                            // If this is the only appearance of the byref in the method, then
-                            // aliasing is not possible.
-                            //
-                            // If no other call arg refers to this byref, and no other arg is
-                            // a pointer which could refer to this byref, we can optimize.
-                            //
-                            // We only check this for calls with small numbers of arguments,
-                            // as the analysis cost will be quadratic.
-                            //
-                            const unsigned totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
-                            const unsigned callAppearances  = (unsigned)varDsc->lvRefCntWtd(RCS_EARLY);
-                            assert(totalAppearances >= callAppearances);
-
-                            if (totalAppearances == 1)
-                            {
-                                JITDUMP("... yes, arg is the only appearance of V%02u\n", lclNum);
-                                hasMustCopyByrefParameter = false;
-                            }
-                            else if (totalAppearances > callAppearances)
-                            {
-                                // lvRefCntWtd tracks the number of appearances of the arg at call sites.
-                                // If this number doesn't match the regular ref count, there is
-                                // a non-call appearance, and we must be conservative.
-                                //
-                                JITDUMP("... no, arg has %u non-call appearance(s)\n",
-                                        totalAppearances - callAppearances);
-                            }
-                            else if (argCount <= argLimit)
-                            {
-                                JITDUMP("... all %u appearance(s) are as implicit byref args to calls.\n"
-                                        "... Running alias analysis on this call's args\n",
-                                        totalAppearances);
-                                GenTree* interferingArg = nullptr;
-                                for (CallArg& arg2 : callee->gtArgs.Args())
-                                {
-                                    if (&arg2 == &arg)
-                                    {
-                                        continue;
-                                    }
-
-                                    JITDUMP("... checking other arg [%06u]...\n", dspTreeID(arg2.GetNode()));
-                                    DISPTREE(arg2.GetNode());
-
-                                    // Do we pass 'lcl' more than once to the callee?
-                                    if (arg2.AbiInfo.IsStruct && arg2.AbiInfo.PassedByRef)
-                                    {
-                                        GenTreeLclVarCommon* const lcl2 =
-                                            arg2.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
-
-                                        if ((lcl2 != nullptr) && (lclNum == lcl2->GetLclNum()))
-                                        {
-                                            // not copying would introduce aliased implicit byref structs
-                                            // in the callee ... we can't optimize.
-                                            interferingArg = arg2.GetNode();
-                                            break;
-                                        }
-                                        else
-                                        {
-                                            JITDUMP("... arg refers to different implicit byref V%02u\n",
-                                                    lcl2->GetLclNum());
-                                            continue;
-                                        }
-                                    }
-
-                                    // Do we pass a byref pointer which might point within 'lcl'?
-                                    //
-                                    // We can assume the 'lcl' is unaliased on entry to the
-                                    // method, so the only way we can have an aliasing byref pointer at
-                                    // the call is if 'lcl' is address taken/exposed in the method.
-                                    //
-                                    // Note even though 'lcl' is not promoted, we are in the middle
-                                    // of the promote->rewrite->undo->(morph)->demote cycle, and so
-                                    // might see references to promoted fields of 'lcl' that haven't yet
-                                    // been demoted (see fgMarkDemotedImplicitByRefArgs).
-                                    //
-                                    // So, we also need to scan all 'lcl's fields, if any, to see if they
-                                    // are exposed.
-                                    //
-                                    // When looking for aliases from other args, we check for both TYP_BYREF
-                                    // and TYP_I_IMPL typed args here. Conceptually anything that points into
-                                    // an implicit byref parameter should be TYP_BYREF, as these parameters could
-                                    // refer to boxed heap locations (say if the method is invoked by reflection)
-                                    // but there are some stack only structs (like typed references) where
-                                    // the importer/runtime code uses TYP_I_IMPL, and AddFinalArgsAndDetermineABIInfo
-                                    // will transiently retype all simple address-of implicit parameter args as
-                                    // TYP_I_IMPL.
-                                    //
-                                    if ((arg2.AbiInfo.ArgType == TYP_BYREF) || (arg2.AbiInfo.ArgType == TYP_I_IMPL))
-                                    {
-                                        JITDUMP("...arg is a byref, must run an alias check\n");
-                                        bool checkExposure = true;
-                                        bool hasExposure   = false;
-
-                                        // See if there is any way arg could refer to a parameter struct.
-                                        GenTree* arg2Node = arg2.GetNode();
-                                        if (arg2Node->OperIs(GT_LCL_VAR))
-                                        {
-                                            GenTreeLclVarCommon* arg2LclNode = arg2Node->AsLclVarCommon();
-                                            assert(arg2LclNode->GetLclNum() != lclNum);
-                                            LclVarDsc* arg2Dsc = lvaGetDesc(arg2LclNode);
-
-                                            // Other params can't alias implicit byref params
-                                            if (arg2Dsc->lvIsParam)
-                                            {
-                                                checkExposure = false;
-                                            }
-                                        }
-                                        // Because we're checking TYP_I_IMPL above, at least
-                                        // screen out obvious things that can't cause aliases.
-                                        else if (arg2Node->IsIntegralConst())
-                                        {
-                                            checkExposure = false;
-                                        }
-
-                                        if (checkExposure)
-                                        {
-                                            JITDUMP(
-                                                "... not sure where byref arg points, checking if V%02u is exposed\n",
-                                                lclNum);
-                                            // arg2 might alias arg, see if we've exposed
-                                            // arg somewhere in the method.
-                                            if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
-                                            {
-                                                // Struct as a whole is exposed, can't optimize
-                                                JITDUMP("... V%02u is exposed\n", lclNum);
-                                                hasExposure = true;
-                                            }
-                                            else if (varDsc->lvFieldLclStart != 0)
-                                            {
-                                                // This is the promoted/undone struct case.
-                                                //
-                                                // The field start is actually the local number of the promoted local,
-                                                // use it to enumerate the fields.
-                                                const unsigned   promotedLcl    = varDsc->lvFieldLclStart;
-                                                LclVarDsc* const promotedVarDsc = lvaGetDesc(promotedLcl);
-                                                JITDUMP("...promoted-unpromoted case -- also checking exposure of "
-                                                        "fields of V%02u\n",
-                                                        promotedLcl);
-
-                                                for (unsigned fieldIndex = 0; fieldIndex < promotedVarDsc->lvFieldCnt;
-                                                     fieldIndex++)
-                                                {
-                                                    LclVarDsc* fieldDsc =
-                                                        lvaGetDesc(promotedVarDsc->lvFieldLclStart + fieldIndex);
-
-                                                    if (fieldDsc->lvHasLdAddrOp || fieldDsc->IsAddressExposed())
-                                                    {
-                                                        // Promoted and not yet demoted field is exposed, can't optimize
-                                                        JITDUMP("... field V%02u is exposed\n",
-                                                                promotedVarDsc->lvFieldLclStart + fieldIndex);
-                                                        hasExposure = true;
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        if (hasExposure)
-                                        {
-                                            interferingArg = arg2.GetNode();
-                                            break;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        JITDUMP("...arg is not a byref or implicit byref (%s)\n",
-                                                varTypeName(arg2.GetNode()->TypeGet()));
-                                    }
-                                }
-
-                                if (interferingArg != nullptr)
-                                {
-                                    JITDUMP("... no, arg [%06u] may alias with V%02u\n", dspTreeID(interferingArg),
-                                            lclNum);
-                                }
-                                else
-                                {
-                                    JITDUMP("... yes, no other arg in call can alias V%02u\n", lclNum);
-                                    hasMustCopyByrefParameter = false;
-                                }
-                            }
-                            else
-                            {
-                                JITDUMP(" ... no, call has %u > %u args, alias analysis deemed too costly\n", argCount,
-                                        argLimit);
-                            }
-                        }
-                    }
-                }
-
-                if (hasMustCopyByrefParameter)
-                {
-                    // This arg requires a struct copy. No reason to keep scanning the remaining args.
-                    break;
-                }
-            }
+            return true;
         }
     }
+#endif
 
-    return hasMustCopyByrefParameter;
+    return false;
 }
+
+//------------------------------------------------------------------------
+// fgCallArgWillPointIntoLocalFrame:
+//    Check to see if a call arg will end up pointing into the local frame after morph.
+//
+// Arguments:
+//    call - The call to check
+//
+// Return Value:
+//    True if the arg will be passed as an implicit byref pointing to a local
+//    on this function's frame; otherwise false.
+//
+// Remarks:
+//    The logic here runs before relevant nodes have been morphed.
+//
+bool Compiler::fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg)
+{
+    if (!arg.AbiInfo.PassedByRef)
+    {
+        return false;
+    }
+
+    // If we're optimizing, we may be able to pass our caller's byref to our callee,
+    // and so still be able to avoid a struct copy.
+    if (opts.OptimizationDisabled())
+    {
+        return true;
+    }
+
+    // First, see if this arg is an implicit byref param.
+    GenTreeLclVarCommon* const lcl = arg.GetNode()->IsImplicitByrefParameterValuePreMorph(this);
+
+    if (lcl == nullptr)
+    {
+        return true;
+    }
+
+    // Yes, the arg is an implicit byref param.
+    const unsigned   lclNum = lcl->GetLclNum();
+    LclVarDsc* const varDsc = lvaGetDesc(lcl);
+
+    // The param must not be promoted; if we've promoted, then the arg will be
+    // a local struct assembled from the promoted fields.
+    if (varDsc->lvPromoted)
+    {
+        JITDUMP("Arg [%06u] is promoted implicit byref V%02u, so no tail call\n", dspTreeID(arg.GetNode()), lclNum);
+
+        return true;
+    }
+
+    assert(!varDsc->lvIsStructField);
+
+    JITDUMP("Arg [%06u] is unpromoted implicit byref V%02u, seeing if we can still tail call\n",
+            dspTreeID(arg.GetNode()), lclNum);
+
+    GenTreeFlags deathFlags;
+    if (varDsc->lvFieldLclStart != 0)
+    {
+        // Undone promotion case.
+        deathFlags = lvaGetDesc(varDsc->lvFieldLclStart)->AllFieldDeathFlags();
+    }
+    else
+    {
+        deathFlags = GTF_VAR_DEATH;
+    }
+
+    if ((lcl->gtFlags & deathFlags) == deathFlags)
+    {
+        JITDUMP("... yes, arg is a last use\n");
+        return false;
+    }
+
+    JITDUMP("... no, arg is not a last use\n");
+    return true;
+}
+
 #endif
 
 //------------------------------------------------------------------------
@@ -7866,9 +7515,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // Liveness phase will remove unnecessary initializations.
     if (info.compInitMem || compSuppressedZeroInit)
     {
-        unsigned   varNum;
-        LclVarDsc* varDsc;
-        for (varNum = 0, varDsc = lvaTable; varNum < lvaCount; varNum++, varDsc++)
+        for (unsigned varNum = 0; varNum < lvaCount; varNum++)
         {
 #if FEATURE_FIXED_OUT_ARGS
             if (varNum == lvaOutgoingArgSpaceVar)
@@ -7876,29 +7523,55 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                 continue;
             }
 #endif // FEATURE_FIXED_OUT_ARGS
-            if (!varDsc->lvIsParam)
+
+            LclVarDsc* varDsc = lvaGetDesc(varNum);
+
+            if (varDsc->lvIsParam)
             {
-                var_types lclType            = varDsc->TypeGet();
-                bool      isUserLocal        = (varNum < info.compLocalsCount);
-                bool      structWithGCFields = ((lclType == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr());
-                bool      hadSuppressedInit  = varDsc->lvSuppressedZeroInit;
-                if ((info.compInitMem && (isUserLocal || structWithGCFields)) || hadSuppressedInit)
+                continue;
+            }
+
+#if FEATURE_IMPLICIT_BYREFS
+            if (varDsc->lvPromoted)
+            {
+                LclVarDsc* firstField = lvaGetDesc(varDsc->lvFieldLclStart);
+                if (firstField->lvParentLcl != varNum)
                 {
-                    GenTree* lcl  = gtNewLclvNode(varNum, lclType);
-                    GenTree* init = nullptr;
-                    if (varTypeIsStruct(lclType))
-                    {
-                        init = gtNewBlkOpNode(lcl, gtNewIconNode(0));
-                        init = fgMorphInitBlock(init);
-                    }
-                    else
-                    {
-                        GenTree* zero = gtNewZeroConNode(lclType);
-                        init          = gtNewAssignNode(lcl, zero);
-                    }
-                    Statement* initStmt = gtNewStmt(init, callDI);
-                    fgInsertStmtBefore(block, lastStmt, initStmt);
+                    // Local copy for implicit byref promotion that was undone. Do
+                    // not introduce new references to it, all uses have been
+                    // morphed to access the parameter.
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef DEBUG
+                    LclVarDsc* param = lvaGetDesc(firstField->lvParentLcl);
+                    assert(param->lvIsImplicitByRef && !param->lvPromoted);
+                    assert(param->lvFieldLclStart == varNum);
+#endif
+                    continue;
                 }
+            }
+#endif
+
+            var_types lclType            = varDsc->TypeGet();
+            bool      isUserLocal        = (varNum < info.compLocalsCount);
+            bool      structWithGCFields = ((lclType == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr());
+            bool      hadSuppressedInit  = varDsc->lvSuppressedZeroInit;
+            if ((info.compInitMem && (isUserLocal || structWithGCFields)) || hadSuppressedInit)
+            {
+                GenTree* lcl  = gtNewLclvNode(varNum, lclType);
+                GenTree* init = nullptr;
+                if (varTypeIsStruct(lclType))
+                {
+                    init = gtNewBlkOpNode(lcl, gtNewIconNode(0));
+                    init = fgMorphInitBlock(init);
+                }
+                else
+                {
+                    GenTree* zero = gtNewZeroConNode(lclType);
+                    init          = gtNewAssignNode(lcl, zero);
+                }
+                Statement* initStmt = gtNewStmt(init, callDI);
+                fgInsertStmtBefore(block, lastStmt, initStmt);
             }
         }
     }

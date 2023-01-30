@@ -540,13 +540,11 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 //
 // Notes:
 // 1. Only branches are changed: BBJ_ALWAYS, the non-fallthrough path of BBJ_COND, BBJ_SWITCH, etc.
-//    We ignore other block types.
+//    We assert for other jump kinds.
 // 2. All branch targets found are updated. If there are multiple ways for a block
 //    to reach 'oldTarget' (e.g., multiple arms of a switch), all of them are changed.
-// 3. The predecessor lists are not changed.
+// 3. The predecessor lists are updated, if they've been built.
 // 4. If any switch table entry was updated, the switch table "unique successor" cache is invalidated.
-//
-// This function is most useful early, before the full predecessor lists have been computed.
 //
 void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, BasicBlock* oldTarget)
 {
@@ -559,18 +557,18 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-        case BBJ_LEAVE: // This function will be called before import, so we still have BBJ_LEAVE
+        case BBJ_LEAVE: // This function can be called before import, so we still have BBJ_LEAVE
 
             if (block->bbJumpDest == oldTarget)
             {
                 block->bbJumpDest = newTarget;
-            }
-            break;
 
-        case BBJ_NONE:
-        case BBJ_EHFINALLYRET:
-        case BBJ_THROW:
-        case BBJ_RETURN:
+                if (fgComputePredsDone)
+                {
+                    fgRemoveRefPred(oldTarget, block);
+                    fgAddRefPred(newTarget, block);
+                }
+            }
             break;
 
         case BBJ_SWITCH:
@@ -585,6 +583,12 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
                 {
                     jumpTab[i] = newTarget;
                     changed    = true;
+
+                    if (fgComputePredsDone)
+                    {
+                        fgRemoveRefPred(oldTarget, block);
+                        fgAddRefPred(newTarget, block);
+                    }
                 }
             }
 
@@ -596,7 +600,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
         }
 
         default:
-            assert(!"Block doesn't have a valid bbJumpKind!!!!");
+            assert(!"Block doesn't have a jump target!");
             unreached();
             break;
     }
@@ -1164,6 +1168,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
 
                             // These are foldable if the first argument is a constant
+                            case NI_PRIMITIVE_LeadingZeroCount:
+                            case NI_PRIMITIVE_Log2:
+                            case NI_PRIMITIVE_PopCount:
+                            case NI_PRIMITIVE_TrailingZeroCount:
                             case NI_System_Type_get_IsEnum:
                             case NI_System_Type_GetEnumUnderlyingType:
                             case NI_System_Type_get_IsValueType:
@@ -1171,9 +1179,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_Type_GetTypeFromHandle:
                             case NI_System_String_get_Length:
                             case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
-                            case NI_System_Numerics_BitOperations_PopCount:
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_ARM64)
+                            case NI_ArmBase_Arm64_LeadingZeroCount:
+                            case NI_ArmBase_Arm64_ReverseElementBits:
+                            case NI_ArmBase_LeadingZeroCount:
+                            case NI_ArmBase_ReverseElementBits:
                             case NI_Vector64_Create:
                             case NI_Vector64_CreateScalar:
                             case NI_Vector64_CreateScalarUnsafe:
@@ -1192,10 +1203,20 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_CreateScalarUnsafe:
                             case NI_VectorT128_CreateBroadcast:
 #if defined(TARGET_XARCH)
+                            case NI_BMI1_TrailingZeroCount:
+                            case NI_BMI1_X64_TrailingZeroCount:
+                            case NI_LZCNT_LeadingZeroCount:
+                            case NI_LZCNT_X64_LeadingZeroCount:
+                            case NI_POPCNT_PopCount:
+                            case NI_POPCNT_X64_PopCount:
                             case NI_Vector256_Create:
                             case NI_Vector256_CreateScalar:
                             case NI_Vector256_CreateScalarUnsafe:
                             case NI_VectorT256_CreateBroadcast:
+                            case NI_X86Base_BitScanForward:
+                            case NI_X86Base_X64_BitScanForward:
+                            case NI_X86Base_BitScanReverse:
+                            case NI_X86Base_X64_BitScanReverse:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
                             {
@@ -1208,6 +1229,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             }
 
                             // These are foldable if two arguments are constants
+                            case NI_PRIMITIVE_RotateLeft:
+                            case NI_PRIMITIVE_RotateRight:
                             case NI_System_Type_op_Equality:
                             case NI_System_Type_op_Inequality:
                             case NI_System_String_get_Chars:

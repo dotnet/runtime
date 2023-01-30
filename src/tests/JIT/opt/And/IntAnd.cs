@@ -61,6 +61,15 @@ namespace CodeGenTests
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static uint Test_And_UInt32_MaxValue(uint i)
+        {
+            // X64: mov
+            
+            // X64-NOT: and
+            return i & UInt32.MaxValue;
+        }
+
         static int Main()
         {
             // No CastByte
@@ -163,6 +172,9 @@ namespace CodeGenTests
                 return 0;
 
             if (Test_UInt32_UInt32_CastByte_CastByte_And(0b1000_0000_0000_0000_0000_0000_0000_0010, 0b0010_0000_0000_0000_0000_0000_0000_0010))
+                return 0;
+                
+            if (Test_And_UInt32_MaxValue(1234) != 1234)
                 return 0;
 
             return 100;
