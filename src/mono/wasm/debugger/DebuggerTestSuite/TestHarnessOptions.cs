@@ -15,5 +15,6 @@ namespace DebuggerTests
         public string NodeApp { get; set; }
         public string BrowserParms { get; set; }
         public Func<string, ILogger<TestHarnessProxy>, Task<string>> ExtractConnUrl { get; set; }
+        public string Locale { get; set; }
     }
 }

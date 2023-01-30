@@ -8,8 +8,6 @@
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
     <OutputType>library</OutputType>
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
-    <!-- some test require full ICU data, force it -->
-    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>

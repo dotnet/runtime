@@ -75,7 +75,12 @@ namespace DebuggerTests
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IOptionsMonitor<TestHarnessOptions> optionsAccessor, IWebHostEnvironment env, ILogger<TestHarnessProxy> logger, ILoggerFactory loggerFactory)
+        public void Configure(
+            IApplicationBuilder app,
+            IOptionsMonitor<TestHarnessOptions> optionsAccessor,
+            IWebHostEnvironment env,
+            ILogger<TestHarnessProxy> logger,
+            ILoggerFactory loggerFactory)
         {
             this.Logger = logger;
             this._loggerFactory = loggerFactory;
@@ -135,7 +140,8 @@ namespace DebuggerTests
                                                 browserPort,
                                                 message_prefix,
                                                 _loggerFactory,
-                                                cts).ConfigureAwait(false);
+                                                cts,
+                                                locale: options.Locale).ConfigureAwait(false);
                         }
                         else if (host == WasmHost.Firefox)
                         {
@@ -147,7 +153,8 @@ namespace DebuggerTests
                                                 firefox_proxy_port,
                                                 message_prefix,
                                                 _loggerFactory,
-                                                cts).ConfigureAwait(false);
+                                                cts,
+                                                locale: options.Locale).ConfigureAwait(false);
                         }
                         Logger.LogDebug($"{message_prefix} TestHarnessStartup done");
                     }

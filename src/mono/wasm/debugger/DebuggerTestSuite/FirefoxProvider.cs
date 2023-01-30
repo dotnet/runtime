@@ -38,14 +38,15 @@ internal class FirefoxProvider : WasmHostProvider
                                                 string messagePrefix,
                                                 ILoggerFactory loggerFactory,
                                                 CancellationTokenSource cts,
-                                                int browserReadyTimeoutMs = 20000)
+                                                int browserReadyTimeoutMs = 20000,
+                                                string locale = "en-US")
     {
         if (_isDisposed)
             throw new ObjectDisposedException(nameof(FirefoxProvider));
 
         try
         {
-            string args = $"-profile {GetProfilePath(Id)} -headless -new-instance -private -start-debugger-server {remoteDebuggingPort}";
+            string args = $"-profile {GetProfilePath(Id)} -headless -new-instance -private -start-debugger-server {remoteDebuggingPort} -UILocale {locale}";
             ProcessStartInfo? psi = GetProcessStartInfo(s_browserPath.Value, args, targetUrl);
             string? line = await LaunchHostAsync(
                                     psi,
