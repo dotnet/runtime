@@ -3080,6 +3080,9 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 
     assert(castOp->OperIsSimple());
 
+    if (opts.OptimizationDisabled())
+        return false;
+
     if (cast->gtOverflow())
         return false;
 
