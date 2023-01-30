@@ -52,17 +52,11 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void Div_SmallType_Correctness()
+    static void Div_SmallType_Correctness(int i, int j)
     {
-        for (int i = 0; i < ushort.MaxValue + 1; i++)
+        if ((byte)(i / j) != (byte)((byte)i / (byte)j))
         {
-            for (int j = 1; j < ushort.MaxValue + 1; j++)
-            {
-                if ((byte)(i / j) != (byte)((byte)i / (byte)j))
-                {
-                    throw new Exception();
-                }
-            }
+            throw new Exception();
         }
     }
 
@@ -74,7 +68,7 @@ public class Program
 
         try
         {
-            Div_SmallType_Correctness();
+            Div_SmallType_Correctness(2, 256);
         }
         catch(DivideByZeroException) {}
 

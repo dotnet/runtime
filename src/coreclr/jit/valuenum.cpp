@@ -8403,19 +8403,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             // This means that there is an implicit cast on the rhs value
             // We will add a cast function to reflect the possible narrowing of the rhs value
             rhsVNPair = vnStore->VNPairForCast(rhsVNPair, lhs->TypeGet(), rhs->TypeGet());
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("N%03u ", rhs->gtSeqNum);
-                printTreeID(rhs);
-                printf(" ");
-                gtDispNodeName(rhs);
-                printf(" (implicit cast) => ");
-                vnpPrint(rhsVNPair, 1);
-                printf("\n");
-            }
-#endif // DEBUG
         }
     }
 
