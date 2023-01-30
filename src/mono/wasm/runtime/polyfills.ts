@@ -162,13 +162,10 @@ export function init_polyfills(replacements: EarlyReplacements): void {
         runtimeHelpers.locateFile = anyModule.locateFile;
     }
 
-    // fetch poly
-    if (imports.fetch) {
-        replacements.fetch = runtimeHelpers.fetch_like = imports.fetch;
-    }
-    else {
-        replacements.fetch = runtimeHelpers.fetch_like = fetch_like;
-    }
+    // fetch poly with fetch_like if there is no global fetch or fetch in imports
+    runtimeHelpers.fetch = imports.fetch || globalThis.fetch || fetch_like;
+    // prefer fetch_like over global fetch for assets
+    replacements.fetch = runtimeHelpers.fetch_like = imports.fetch || fetch_like;
 
     // misc
     replacements.noExitRuntime = ENVIRONMENT_IS_WEB;

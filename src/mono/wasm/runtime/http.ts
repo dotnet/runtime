@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { MemoryViewType, Span } from "./marshal";
-import { fetch_like } from "./polyfills";
-import { DotnetModuleConfigImports, mono_assert } from "./types";
+import { mono_assert } from "./types";
 import { VoidPtr } from "./types/emscripten";
 
 export function http_wasm_supports_streaming_response(): boolean {
@@ -40,7 +39,7 @@ export function http_wasm_fetch_bytes(url: string, header_names: string[], heade
 }
 
 export function http_wasm_fetch(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: string | Uint8Array | null): Promise<ResponseExtension> {
-    const imports = (Module.imports || {}) as DotnetModuleConfigImports;
+    mono_assert(runtimeHelpers.fetch, "No fetch implementation available");
     mono_assert(url && typeof url === "string", "expected url string");
     mono_assert(header_names && header_values && Array.isArray(header_names) && Array.isArray(header_values) && header_names.length === header_values.length, "expected headerNames and headerValues arrays");
     mono_assert(option_names && option_values && Array.isArray(option_names) && Array.isArray(option_values) && option_names.length === option_values.length, "expected headerNames and headerValues arrays");
@@ -58,8 +57,7 @@ export function http_wasm_fetch(url: string, header_names: string[], header_valu
     }
 
     return wrap_as_cancelable_promise(async () => {
-        const fetch = imports.fetch || globalThis.fetch || fetch_like;
-        const res = await fetch(url, options) as ResponseExtension;
+        const res = await runtimeHelpers.fetch(url, options) as ResponseExtension;
         res.__abort_controller = abort_controller;
         return res;
     });
