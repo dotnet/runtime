@@ -63,7 +63,7 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
     console.debug("MONO_WASM: got message from main on the dedicated channel", event.data);
 }
 
-export function setupTempChannelToMainThread() {
+export function setupPreloadChannelToMainThread() {
     const channel = new MessageChannel();
     const workerPort = channel.port1;
     const mainPort = channel.port2;
@@ -72,6 +72,7 @@ export function setupTempChannelToMainThread() {
         console.debug("MONO_WASM: applying mono config from main", event.data.config);
         onMonoConfigReceived(config);
         workerPort.close();
+        mainPort.close();
     }, { once: true });
     workerPort.start();
     self.postMessage(makePreloadMonoMessage(mainPort), [mainPort]);
