@@ -216,12 +216,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             await SendCommand(id, "Debugger.resume", new JObject(), token);
         }
-        protected virtual async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
+        protected async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
         {
             if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
                 return true;
 
             Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(RuntimeId), token);
+            if (!res.IsOk || res.Value?["result"]?["value"]?.Type != JTokenType.Boolean) //if runtime is not ready this may be the response
+                return false;
             return res.Value?["result"]?["value"]?.Value<bool>() ?? false;
         }
         private static PauseOnExceptionsKind GetPauseOnExceptionsStatusFromString(string state)

@@ -794,19 +794,6 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return variables;
     }
 
-    protected override async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
-    {
-        if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
-            return true;
-
-        Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(RuntimeId), token);
-        if (!res.IsOk) //if runtime is not ready this may be the response
-            return false;
-        if (res.Value?["result"]?["value"] is JObject) //if runtime is not ready this may be the response
-            return false;
-        return res.Value?["result"]?["value"]?.Value<bool>() ?? false;
-    }
-
     protected override async Task SendResume(SessionId id, CancellationToken token)
     {
         var ctx = GetContextFixefox(id);
