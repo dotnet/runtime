@@ -223,7 +223,6 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
     WriteValue64("stack_pointer", frame.StackPointer());
     WriteValue64("native_address", frame.InstructionPointer());
     WriteValue64("native_offset", frame.NativeOffset());
-    WriteValue64("native_image_offset", (frame.InstructionPointer() - frame.ModuleAddress()));
     if (frame.IsManaged())
     {
         WriteValue32("token", frame.Token());
