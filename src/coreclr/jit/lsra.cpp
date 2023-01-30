@@ -8249,7 +8249,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     {
 #ifdef TARGET_ARM
         // Try to reserve a double register for TYP_DOUBLE and use it for TYP_FLOAT too if available.
-        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE, liveSet);
+        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE, terminatorConsumedRegs, liveSet);
         if (tempRegDbl != REG_NA)
         {
             tempRegFlt = tempRegDbl;
