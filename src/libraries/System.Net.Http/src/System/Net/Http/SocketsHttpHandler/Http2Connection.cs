@@ -1528,11 +1528,11 @@ namespace System.Net.Http
 
             if (request.HasHeaders)
             {
-                if (request.Headers.Protocol != null)
+                if (request.Headers.Protocol is string protocol)
                 {
                     WriteBytes(ProtocolLiteralHeaderBytes, ref headerBuffer);
                     Encoding? protocolEncoding = _pool.Settings._requestHeaderEncodingSelector?.Invoke(":protocol", request);
-                    WriteLiteralHeaderValue(request.Headers.Protocol, protocolEncoding, ref headerBuffer);
+                    WriteLiteralHeaderValue(protocol, protocolEncoding, ref headerBuffer);
                     headerListSize += HeaderField.RfcOverhead;
                 }
 

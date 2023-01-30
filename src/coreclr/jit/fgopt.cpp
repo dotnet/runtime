@@ -2010,37 +2010,35 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     /* both or none must have an exception handler */
     noway_assert(block->hasTryIndex() == bNext->hasTryIndex());
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nCompacting blocks " FMT_BB " and " FMT_BB ":\n", block->bbNum, bNext->bbNum);
-    }
-#endif
+    JITDUMP("\nCompacting " FMT_BB " into " FMT_BB ":\n", bNext->bbNum, block->bbNum);
+    fgRemoveRefPred(bNext, block);
 
-    if (bNext->countOfInEdges() > 1)
+    if (bNext->countOfInEdges() > 0)
     {
-        JITDUMP("Second block has multiple incoming edges\n");
+        JITDUMP("Second block has %u other incoming edges\n", bNext->countOfInEdges());
         assert(block->isEmpty());
 
+        // `block` can no longer be a loop pre-header (if it was before).
+        //
+        block->bbFlags &= ~BBF_LOOP_PREHEADER;
+
+        // Retarget all the other edges incident on bNext. Do this
+        // in two passes as we can't both walk and modify the pred list.
+        //
+        ArrayStack<BasicBlock*> preds(getAllocator(CMK_BasicBlock), bNext->countOfInEdges());
         for (BasicBlock* const predBlock : bNext->PredBlocks())
         {
-            fgReplaceJumpTarget(predBlock, block, bNext);
-
-            if (predBlock != block)
-            {
-                fgAddRefPred(block, predBlock);
-            }
+            preds.Push(predBlock);
         }
-        bNext->bbPreds = nullptr;
+        while (preds.Height() > 0)
+        {
+            BasicBlock* const predBlock = preds.Pop();
+            fgReplaceJumpTarget(predBlock, block, bNext);
+        }
+    }
 
-        // `block` can no longer be a loop pre-header (if it was before).
-        block->bbFlags &= ~BBF_LOOP_PREHEADER;
-    }
-    else
-    {
-        noway_assert(bNext->bbPreds->flNext == nullptr);
-        noway_assert(bNext->bbPreds->getBlock() == block);
-    }
+    assert(bNext->countOfInEdges() == 0);
+    assert(bNext->bbPreds == nullptr);
 
     /* Start compacting - move all the statements in the second block to the first block */
 
