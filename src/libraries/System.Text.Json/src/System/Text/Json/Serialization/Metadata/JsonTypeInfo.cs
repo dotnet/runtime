@@ -8,6 +8,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Reflection;
+using System.Text.Json.Serialization.Converters;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -40,31 +41,10 @@ namespace System.Text.Json.Serialization.Metadata
             Type = type;
             Options = options;
             Converter = converter;
+            Kind = GetTypeInfoKind(type, converter);
             PropertyInfoForTypeInfo = CreatePropertyInfoForTypeInfo();
             ElementType = converter.ElementType;
-
-            switch (converter.ConverterStrategy)
-            {
-                case ConverterStrategy.Dictionary:
-                    {
-                        KeyType = converter.KeyType;
-                    }
-                    break;
-                case ConverterStrategy.Object:
-                case ConverterStrategy.Enumerable:
-                case ConverterStrategy.Value:
-                    break;
-                case ConverterStrategy.None:
-                    {
-                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(type);
-                    }
-                    break;
-                default:
-                    Debug.Fail($"Unexpected class type: {converter.ConverterStrategy}");
-                    throw new InvalidOperationException();
-            }
-
-            Kind = GetTypeInfoKind(type, converter.ConverterStrategy);
+            KeyType = converter.KeyType;
         }
 
         /// <summary>
@@ -1174,21 +1154,29 @@ namespace System.Text.Json.Serialization.Metadata
             return jsonParameterInfo;
         }
 
-        private static JsonTypeInfoKind GetTypeInfoKind(Type type, ConverterStrategy converterStrategy)
+        private static JsonTypeInfoKind GetTypeInfoKind(Type type, JsonConverter converter)
         {
-            // System.Object is polymorphic and will not respect Properties
-            if (type == typeof(object))
+            if (type == typeof(object) && converter.CanBePolymorphic)
             {
+                // System.Object is polymorphic and will not respect Properties
+                Debug.Assert(converter is ObjectConverter);
                 return JsonTypeInfoKind.None;
             }
 
-            return converterStrategy switch
+            switch (converter.ConverterStrategy)
             {
-                ConverterStrategy.Object => JsonTypeInfoKind.Object,
-                ConverterStrategy.Enumerable => JsonTypeInfoKind.Enumerable,
-                ConverterStrategy.Dictionary => JsonTypeInfoKind.Dictionary,
-                _ => JsonTypeInfoKind.None
-            };
+                case ConverterStrategy.Value: return JsonTypeInfoKind.None;
+                case ConverterStrategy.Object: return JsonTypeInfoKind.Object;
+                case ConverterStrategy.Enumerable: return JsonTypeInfoKind.Enumerable;
+                case ConverterStrategy.Dictionary: return JsonTypeInfoKind.Dictionary;
+                case ConverterStrategy.None:
+                    Debug.Assert(converter is JsonConverterFactory);
+                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(type);
+                    return default;
+                default:
+                    Debug.Fail($"Unexpected class type: {converter.ConverterStrategy}");
+                    throw new InvalidOperationException();
+            }
         }
 
         private sealed class JsonPropertyInfoList : ConfigurationList<JsonPropertyInfo>
