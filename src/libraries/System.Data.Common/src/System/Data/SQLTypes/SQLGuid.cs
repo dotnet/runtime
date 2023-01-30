@@ -51,7 +51,7 @@ namespace System.Data.SqlTypes
         {
         }
 
-        // Maintains legacy binary serialization behaviour
+        // Maintains backwards-compatible binary serialization for the `private byte[] m_value` field
         // see src/libraries/System.Runtime.Serialization.Formatters/tests/BinaryFormatterTestData.cs
         // for test data
         private SqlGuid(SerializationInfo info, StreamingContext context)
