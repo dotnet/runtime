@@ -43,6 +43,7 @@ namespace System.Threading
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
             bool lockTaken = false;
+
             TryEnter(obj, millisecondsTimeout, ref lockTaken);
             return lockTaken;
         }

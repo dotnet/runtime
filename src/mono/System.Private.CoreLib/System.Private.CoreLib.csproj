@@ -266,6 +266,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
   </ItemGroup>

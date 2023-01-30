@@ -41,6 +41,8 @@ namespace System.Runtime.CompilerServices
 
         public static int GetHashCode(object? o)
         {
+            if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
+                return hash;
             return InternalGetHashCode(o);
         }
 
@@ -57,6 +59,8 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         internal static int TryGetHashCode(object? o)
         {
+            if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
+                return hash;
             return InternalTryGetHashCode(o);
         }
 
