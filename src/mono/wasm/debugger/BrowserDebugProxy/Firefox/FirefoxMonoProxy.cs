@@ -677,7 +677,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                 }
             case "DotnetDebugger.runTests":
                 {
-                    await RuntimeReady(sessionId, token);
+                     await RuntimeReady(sessionId, token);
                     return true;
                 }
             default:
@@ -800,9 +800,11 @@ internal sealed class FirefoxMonoProxy : MonoProxy
             return true;
 
         Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(RuntimeId), token);
-        if (res.Value?["result"]?["value"]?["type"]?.Value<string>()?.Equals("boolean") == true) //if runtime is not ready undefined is the expected response
-            return res.Value?["result"]?["value"]?.Value<bool>() ?? false;
-        return false;
+        if (!res.IsOk) //if runtime is not ready this may be the response
+            return false;
+        if (res.Value?["result"]?["value"] is JObject) //if runtime is not ready this may be the response
+            return false;
+        return res.Value?["result"]?["value"]?.Value<bool>() ?? false;
     }
 
     protected override async Task SendResume(SessionId id, CancellationToken token)
