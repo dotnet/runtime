@@ -35,6 +35,7 @@
     <Compile Include="..\Common\JsonKebabCaseUpperNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKebabCaseUpperNamingPolicy.cs" />
     <Compile Include="..\Common\JsonKnownNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKnownNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNumberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonNumberHandling.cs" />
+    <Compile Include="..\Common\JsonObjectCreationHandling.cs" Link="Common\System\Text\Json\Serialization\JsonObjectCreationHandling.cs" />
     <Compile Include="..\Common\JsonSeparatorNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSeparatorNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSerializableAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSerializableAttribute.cs" />
     <Compile Include="..\Common\JsonSnakeCaseLowerNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSnakeCaseLowerNamingPolicy.cs" />

@@ -32,6 +32,7 @@ namespace System.Text.Json.SourceGeneration
             internal const string JsonContextVarName = "jsonContext";
             private const string NumberHandlingPropName = "NumberHandling";
             private const string UnmappedMemberHandlingPropName = "UnmappedMemberHandling";
+            private const string PreferredPropertyObjectCreationHandlingPropName = "PreferredPropertyObjectCreationHandling";
             private const string ObjectCreatorPropName = "ObjectCreator";
             private const string OptionsInstanceVariableName = "Options";
             private const string JsonTypeInfoReturnValueLocalVariableName = "jsonTypeInfo";
@@ -65,6 +66,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonCollectionInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues";
             private const string JsonIgnoreConditionTypeRef = "global::System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonNumberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonNumberHandling";
+            private const string JsonObjectCreationHandlingTypeRef = "global::System.Text.Json.Serialization.JsonObjectCreationHandling";
             private const string JsonUnmappedMemberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonUnmappedMemberHandling";
             private const string JsonMetadataServicesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonMetadataServices";
             private const string JsonObjectInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonObjectInfoValues";
@@ -657,6 +659,14 @@ namespace {{@namespace}}
 """;
                 }
 
+                if (typeMetadata.PreferredPropertyObjectCreationHandling != null)
+                {
+                    objectInfoInitSource += $"""
+
+        {JsonTypeInfoReturnValueLocalVariableName}.{PreferredPropertyObjectCreationHandlingPropName} = {GetObjectCreationHandlingAsStr(typeMetadata.PreferredPropertyObjectCreationHandling.Value)};
+""";
+                }
+
                 string additionalSource = @$"{propMetadataInitFuncSource}{serializeFuncSource}{ctorParamMetadataInitFuncSource}";
 
                 return GenerateForType(typeMetadata, objectInfoInitSource, additionalSource);
@@ -760,6 +770,12 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
                     {
                         sb.Append($@"
     {propertyInfoVarName}.IsRequired = true;");
+                    }
+
+                    if (memberMetadata.ObjectCreationHandling != null)
+                    {
+                        sb.Append($@"
+    {propertyInfoVarName}.ObjectCreationHandling = {GetObjectCreationHandlingAsStr(memberMetadata.ObjectCreationHandling.Value)};");
                     }
 
                     sb.Append($@"
@@ -1161,7 +1177,7 @@ private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonS
     {typeInfoPropertyTypeRef}? {JsonTypeInfoReturnValueLocalVariableName} = null;
     {WrapWithCheckForCustomConverter(metadataInitSource, typeCompilableName)}
 
-    { /* NB OriginatingResolver should be the last property set by the source generator. */ ""}
+    // OriginatingResolver should be the last property set by the source generator.
     {JsonTypeInfoReturnValueLocalVariableName}.{OriginatingResolverPropertyName} = this;
 
     return {JsonTypeInfoReturnValueLocalVariableName};
@@ -1389,6 +1405,9 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
                  numberHandling.HasValue
                     ? $"({JsonNumberHandlingTypeRef}){(int)numberHandling.Value}"
                     : "default";
+
+            private static string GetObjectCreationHandlingAsStr(JsonObjectCreationHandling creationHandling) =>
+                $"({JsonObjectCreationHandlingTypeRef}){(int)creationHandling}";
 
             private static string GetUnmappedMemberHandlingAsStr(JsonUnmappedMemberHandling unmappedMemberHandling) =>
                 $"({JsonUnmappedMemberHandlingTypeRef}){(int)unmappedMemberHandling}";

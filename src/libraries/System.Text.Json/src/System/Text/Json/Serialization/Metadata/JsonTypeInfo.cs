@@ -494,6 +494,46 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonUnmappedMemberHandling EffectiveUnmappedMemberHandling { get; private set; }
 
+        private JsonObjectCreationHandling? _preferredPropertyObjectCreationHandling;
+
+        /// <summary>
+        /// Gets or sets the preferred value for properties for <see cref="JsonObjectCreationHandling"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
+        ///
+        /// -or-
+        ///
+        /// Unmapped member handling only supported for <see cref="JsonTypeInfoKind.Object"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Specified an invalid <see cref="JsonObjectCreationHandling"/> value.
+        /// </exception>
+        /// <remarks>
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this callback will be mapped from <see cref="JsonObjectCreationHandlingAttribute"/> annotations on types.
+        /// </remarks>
+        public JsonObjectCreationHandling? PreferredPropertyObjectCreationHandling
+        {
+            get => _preferredPropertyObjectCreationHandling;
+            set
+            {
+                VerifyMutable();
+
+                if (Kind != JsonTypeInfoKind.Object)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
+                }
+
+                if (value is not null && !JsonSerializer.IsValidCreationHandlingValue(value.Value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                _preferredPropertyObjectCreationHandling = value;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the <see cref="IJsonTypeInfoResolver"/> from which this metadata instance originated.
         /// </summary>
@@ -598,6 +638,13 @@ namespace System.Text.Json.Serialization.Metadata
 
             PropertyInfoForTypeInfo.Configure();
 
+            if (PolymorphismOptions != null)
+            {
+                // This needs to be done before ConfigureProperties() is called
+                // JsonPropertyInfo.Configure() must have this value available in order to detect Polymoprhic + cyclic class case
+                PolymorphicTypeResolver = new PolymorphicTypeResolver(Options, PolymorphismOptions, Type, Converter.CanHaveMetadata);
+            }
+
             if (Kind == JsonTypeInfoKind.Object)
             {
                 ConfigureProperties();
@@ -622,11 +669,6 @@ namespace System.Text.Json.Serialization.Metadata
 
             DetermineIsCompatibleWithCurrentOptions();
             CanUseSerializeHandler = HasSerializeHandler && IsCompatibleWithCurrentOptions;
-
-            if (PolymorphismOptions != null)
-            {
-                PolymorphicTypeResolver = new PolymorphicTypeResolver(this);
-            }
         }
 
         /// <summary>
@@ -1252,6 +1294,15 @@ namespace System.Text.Json.Serialization.Metadata
 
             return false;
 #endif
+        }
+
+        internal bool SupportsPolymorphicDeserialization
+        {
+            get
+            {
+                Debug.Assert(IsConfigurationStarted);
+                return PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
+            }
         }
 
         internal static bool IsValidExtensionDataProperty(Type propertyType)

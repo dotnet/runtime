@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            if (jsonTypeInfo.CreateObject != null)
+            if (jsonTypeInfo.CreateObject != null || state.Current.IsPopulating)
             {
                 // Contract customization: fall back to default object converter if user has set a default constructor delegate.
                 return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
@@ -41,6 +41,14 @@ namespace System.Text.Json.Serialization.Converters
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                }
+
+                if (state.Current.ParentProperty?.TryPopulate(ref state) == true)
+                {
+                    object populatedObject = state.Current.ReturnValue!;
+                    PopulatePropertiesFastPath(populatedObject, jsonTypeInfo, options, ref reader, ref state);
+                    value = (T)populatedObject;
+                    return true;
                 }
 
                 ReadOnlySpan<byte> originalSpan = reader.OriginalSpan;
@@ -141,6 +149,16 @@ namespace System.Text.Json.Serialization.Converters
                     value = (T)objectResult!;
                     state.ExitPolymorphicConverter(success);
                     return success;
+                }
+
+                if (state.Current.ParentProperty?.TryPopulate(ref state) == true)
+                {
+                    object populatedObject = state.Current.ReturnValue!;
+
+                    jsonTypeInfo.OnDeserializing?.Invoke(populatedObject);
+                    state.Current.ObjectState = StackFrameObjectState.CreatedObject;
+                    state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
+                    return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
                 }
 
                 // Handle metadata post polymorphic dispatch

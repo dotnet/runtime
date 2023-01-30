@@ -1764,5 +1764,50 @@ namespace System.Text.Json.Serialization.Tests
         {
             public ReadOnlySpan<byte> Span => Array.Empty<byte>();
         }
+
+        [Fact]
+        public static void JsonCreationHandlingAttributeIsShownInMetadata()
+        {
+            bool typeResolved = false;
+            DefaultJsonTypeInfoResolver resolver = new()
+            {
+                Modifiers =
+                {
+                    (ti) =>
+                    {
+                        if (ti.Type == typeof(TestClassWithJsonCreationHandlingOnProperty))
+                        {
+                            Assert.Equal(3, ti.Properties.Count);
+                            Assert.Null(ti.Properties[0].ObjectCreationHandling);
+                            Assert.Equal(JsonObjectCreationHandling.Replace, ti.Properties[1].ObjectCreationHandling);
+                            Assert.Equal(JsonObjectCreationHandling.Populate, ti.Properties[2].ObjectCreationHandling);
+                            typeResolved = true;
+                        }
+                    }
+                }
+            };
+
+            JsonSerializerOptions o = new()
+            {
+                TypeInfoResolver = resolver
+            };
+
+            var deserialized = JsonSerializer.Deserialize<TestClassWithJsonCreationHandlingOnProperty>("{}", o);
+            Assert.True(typeResolved);
+        }
+
+        private class TestClassWithJsonCreationHandlingOnProperty
+        {
+            [JsonPropertyOrder(0)]
+            public Poco PropertyWitoutAttribute { get; set; }
+
+            [JsonPropertyOrder(1)]
+            [JsonObjectCreationHandling(JsonObjectCreationHandling.Replace)]
+            public Poco PropertyWithReplace { get; set; }
+
+            [JsonPropertyOrder(2)]
+            [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+            public Poco PropertyWithPopulate { get; set; }
+        }
     }
 }
