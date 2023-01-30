@@ -281,15 +281,16 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     }
     else
     {
-        ssize_t imm3 = imm & 0x800;
-        ssize_t imm2 = imm + imm3;
+        // ssize_t imm3 = imm & 0x800;
+        // ssize_t imm2 = imm + imm3;
 
         assert(isValidSimm20((imm + 0x800) >> 12));
         emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm + 0x800) >> 12);
 
         emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2);
-        imm2 = imm2 & 0x7ff;
-        imm  = imm3 ? imm2 - imm3 : imm2;
+        // imm2 = imm2 & 0x7ff;
+        // imm  = imm3 ? imm2 - imm3 : imm2;
+        imm  = imm & 0xfff;
         reg2 = REG_RA;
     }
 
@@ -480,6 +481,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     {
         case INS_lui:
         case INS_auipc:
+            assert(reg != REG_R0);
             assert(isGeneralRegister(reg));
             assert((((size_t)imm) >> 20) == 0);
 
@@ -1102,28 +1104,28 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
     }
     else
     {
-        UINT32 upper = (imm >> 32) & 0xffffffff;
-        if (((upper + 0x800) >> 12) != 0)
+        UINT32 high = (imm >> 32) & 0xffffffff;
+        if (((high + 0x800) >> 12) != 0)
         {
-            emitIns_R_I(INS_lui, size, reg, ((upper + 0x800) >> 12));
-            if ((upper & 0xFFF) != 0)
+            emitIns_R_I(INS_lui, size, reg, ((high + 0x800) >> 12));
+            if ((high & 0xFFF) != 0)
             {
-                emitIns_R_R_I(INS_addi, size, reg, reg, upper & 0xFFF);
+                emitIns_R_R_I(INS_addi, size, reg, reg, high & 0xFFF);
             }
         }
-        else if ((upper & 0xFFF) != 0)
+        else if ((high & 0xFFF) != 0)
         {
-            emitIns_R_R_I(INS_addi, size, reg, REG_R0, upper & 0xFFF);
+            emitIns_R_R_I(INS_addi, size, reg, REG_R0, high & 0xFFF);
         }
-        UINT32 lower = imm & 0xffffffff;
+        UINT32 low = imm & 0xffffffff;
         emitIns_R_R_I(INS_slli, size, reg, reg, 11);
-        emitIns_R_R_I(INS_addi, size, reg, reg, (lower >> 21) & 0x7FF);
+        emitIns_R_R_I(INS_addi, size, reg, reg, (low >> 21) & 0x7FF);
 
         emitIns_R_R_I(INS_slli, size, reg, reg, 11);
-        emitIns_R_R_I(INS_addi, size, reg, reg, (lower >> 10) & 0x7FF);
+        emitIns_R_R_I(INS_addi, size, reg, reg, (low >> 10) & 0x7FF);
 
         emitIns_R_R_I(INS_slli, size, reg, reg, 10);
-        emitIns_R_R_I(INS_addi, size, reg, reg, lower & 0x3FF);
+        emitIns_R_R_I(INS_addi, size, reg, reg, low & 0x3FF);
     }
 }
 
@@ -1425,10 +1427,10 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         int reg2 = (int)(imm & 1);
         imm -= reg2;
 
-        UINT32 upper = imm >> 32;
+        UINT32 high = imm >> 32;
         code = emitInsCode(INS_lui);
         code |= (code_t)REG_T2 << 7;
-        code |= ((code_t)((upper + 0x800) >> 12) & 0xfffff) << 12;
+        code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
         emitOutput_Instr(dst, code);
         dst += 4;
 
@@ -1437,7 +1439,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         code = emitInsCode(INS_addi);
         code |= (code_t)REG_T2 << 7;
         code |= (code_t)REG_T2 << 15;
-        code |= (code_t)(upper & 0xfff) << 20;
+        code |= (code_t)(high & 0xfff) << 20;
         emitOutput_Instr(dst, code);
         dst += 4;
 
@@ -1448,12 +1450,12 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         emitOutput_Instr(dst, code);
         dst += 4;
 
-        UINT32 lower = imm & 0xffffffff;
+        UINT32 low = imm & 0xffffffff;
 
         code = emitInsCode(INS_addi);
         code |= (code_t)REG_T2 << 7;
         code |= (code_t)REG_T2 << 15;
-        code |= ((lower >> 21) & 0x7ff) << 20;
+        code |= ((low >> 21) & 0x7ff) << 20;
         emitOutput_Instr(dst, code);
         dst += 4;
 
@@ -1467,7 +1469,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         code = emitInsCode(INS_addi);
         code |= (code_t)REG_T2 << 7;
         code |= (code_t)REG_T2 << 15;
-        code |= ((lower >> 10) & 0x7ff) << 20;
+        code |= ((low >> 10) & 0x7ff) << 20;
         emitOutput_Instr(dst, code);
         dst += 4;
 
@@ -1481,7 +1483,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         code = emitInsCode(INS_jalr);
         code |= (code_t)reg2 << 7;
         code |= (code_t)REG_T2 << 15;
-        code |= (lower & 0x3ff) << 20;
+        code |= (low & 0x3ff) << 20;
         // the offset default is 0;
         emitOutput_Instr(dst, code);
     }
@@ -2189,18 +2191,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert(imm > 0);
                 assert(!(imm & 3));
 
-                doff = (int)(imm & 0x800);
-                imm += doff;
-                assert(isValidSimm20(imm >> 12));
 
-                doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
+                doff = (int)(imm & 0xfff);
+                assert(isValidSimm20((imm + 0x800) >> 12));
 
 #ifdef DEBUG
                 code = emitInsCode(INS_auipc);
                 assert(code == 0x00000017);
 #endif
                 code            = 0x00000017 | (1 << 7); // TODO R21 => RA
-                *(code_t*)dstRW = code | (((code_t)imm & 0xfffff000));
+                *(code_t*)dstRW = code | ((code_t)((imm + 0x800) & 0xfffff000));
                 dstRW += 4;
 
                 if (ins == INS_jal)
@@ -2234,7 +2234,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     assert((imm >> 40) == 0);
 
-                    doff = (int)(imm + 0x800) >> 12;
+                    doff = (int)((imm + 0x800) >> 12);
                     code |= (code_t)REG_RA << 7; // TODO R21 => RA
                     code |= (code_t)(doff & 0xfffff) << 12;
 
@@ -2271,44 +2271,34 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else
                 {
-                    // doff = (int)(imm & 0x800);
-                    // imm += doff;
-                    // doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
-                    imm += 0x800;
-                    doff = imm & 0xfff;
-
+                    doff = imm & 0x7ff;
                     assert((imm >> 40) == 0);
 
-                    dataOffs = (unsigned)(imm >> 12); // addr-hi-20bits.
-                    code |= (code_t)REG_RA << 7; // TODO CHECK R21 => RA
-                    code |= ((code_t)dataOffs & 0xfffff) << 12;
+                    UINT32 high = imm >> 11;
+
+                    code |= (code_t)(REG_RA << 7); // TODO CHECK R21 => RA
+                    code |= (code_t)(((high + 0x800) >> 12) << 12);
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
-                    code = emitInsCode(INS_lui);
-                    code |= (code_t)reg1 << 7;
-                    code |= ((imm >> 32) & 0xff) << 12;
+                    code = emitInsCode(INS_addi);
+                    code |= (code_t)REG_RA << 7;
+                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)(high & 0xFFF);
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
                     code = emitInsCode(INS_slli);
-                    code |= (code_t)reg1 << 7;
-                    code |= (code_t)reg1 << 15;
-                    code |= (code_t)32 << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_add);
                     code |= (code_t)REG_RA << 7;
-                    code |= (code_t)reg1 << 15;
-                    code |= (code_t)REG_RA << 20;
+                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)11 << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
                     code = emitInsCode(ins);
                     code |= (code_t)(reg1 & 0x1f) << 7;
                     code |= (code_t)REG_RA << 15;
-                    code |= (code_t)(doff & 0xfff) << 20;
+                    code |= (code_t)doff << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
                 }
@@ -2332,14 +2322,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 imm         = (ssize_t)emitCodeBlock + imm - (ssize_t)(dstRW - writeableOffset);
                 assert((imm & 3) == 0);
 
-                int doff = (int)(imm & 0x800);
-                imm += doff;
-                assert(isValidSimm20(imm >> 12));
-
-                doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
+                int doff = (int)(imm & 0xfff);
+                assert(isValidSimm20((imm + 0x800) >> 12));
 
                 code            = 0x00000017;
-                *(code_t*)dstRW = code | (code_t)reg1 << 7 | (imm & 0xfffff000);
+                *(code_t*)dstRW = code | (code_t)reg1 << 7 | ((imm + 0x800)& 0xfffff000);
                 dstRW += 4;
 #ifdef DEBUG
                 code = emitInsCode(INS_auipc);
@@ -2372,7 +2359,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 code = emitInsCode(INS_addi);
                 code |= (code_t)reg1 << 7;
-                code |= (((imm + 0x80000800) >> 32) & 0xfffff) << 20;
+                code |= (((imm + 0x80000800) >> 32) & 0xfff) << 20;
                 *(code_t*)dstRW = code;
                 dstRW += 4;
 
@@ -3746,6 +3733,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             {
                 // Get a temp integer register to compute long address.
                 regNumber addrReg = indir->GetSingleTempReg();
+
                 emitIns_R_C(ins, attr, dataReg, addrReg, addr->AsClsVar()->gtClsVarHnd, 0);
             }
             else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
@@ -4052,7 +4040,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     assert(tmpReg != src1->GetRegNum());
                     assert(tmpReg != src2->GetRegNum());
                     size_t imm = (EA_SIZE(attr) == EA_8BYTE) ? 63 : 31;
-                    emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai : INS_srai, attr, tmpReg, dst->GetRegNum(),
+                    emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai : INS_sraiw, attr, tmpReg, dst->GetRegNum(),
                                   imm);
                     codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_RA, nullptr, tmpReg);
                 }

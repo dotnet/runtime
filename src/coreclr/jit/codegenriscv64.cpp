@@ -386,7 +386,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
         {
             // Currently this is the case for varargs only
             // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
-            genStackPointerAdjustment(spDelta, REG_RA, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => RA
+            genStackPointerAdjustment(spDelta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => T6
         }
         return;
     }
@@ -459,7 +459,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
         {
             // Currently this is the case for varargs only
             // whose size is MAX_REG_ARG * REGSIZE_BYTES = 64 bytes.
-            genStackPointerAdjustment(spDelta, REG_RA, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => RA
+            genStackPointerAdjustment(spDelta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => T6
         }
         return;
     }
@@ -552,7 +552,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         assert(frameSize >= -2048);
 
         assert(genFuncletInfo.fiSP_to_FPRA_save_delta < 2040);
-        genStackPointerAdjustment(frameSize, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6 
+        genStackPointerAdjustment(frameSize, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
 
         GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta);
         compiler->unwindSaveReg(REG_FP, genFuncletInfo.fiSP_to_FPRA_save_delta);
@@ -4977,30 +4977,30 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         else
         {
             // TODO-RISCV64: maybe optimize furtherk!
-            UINT32 upper = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) >> 32;
-            if (((upper + 0x800) >> 12) != 0)
+            UINT32 high = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) >> 32;
+            if (((high + 0x800) >> 12) != 0)
             {
                 GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, regGSConst,
-                                          (((upper + 0x800) >> 12) & 0xfffff));
+                                          (((high + 0x800) >> 12) & 0xfffff));
             }
-            if ((upper & 0xFFF) != 0)
+            if ((high & 0xFFF) != 0)
             {
                 GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst,
-                                            REG_R0, (upper & 0xfff));
+                                            REG_R0, (high & 0xfff));
             }
-            UINT32 lower = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) & 0xffffffff;
+            UINT32 low = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) & 0xffffffff;
             GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst,
                                         regGSConst, 11);
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst,
-                                        regGSConst, (lower >> 21) & 0x7FF);
+                                        regGSConst, (low >> 21) & 0x7FF);
             GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst,
                                         regGSConst, 11);
             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst,
-                                        regGSConst, (lower >> 10) & 0x7FF);
+                                        regGSConst, (low >> 10) & 0x7FF);
             GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst,
                                         regGSConst, 10);
             GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, regGSConst,
-                                        regGSConst, lower & 0x3FF);
+                                        regGSConst, low & 0x3FF);
         }
         regSet.verifyRegUsed(regGSConst);
     }
@@ -7162,7 +7162,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
             // Case #1.
             //
             // Generate:
-            //      daddiu sp, sp, -framesz
+            //      addi sp, sp, -framesz
             //      sd fp, outsz(sp)
             //      sd ra, outsz+8(sp)
             //
@@ -7227,7 +7227,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     if (compiler->info.compIsVarArgs)
     {
         JITDUMP("    compIsVarArgs=true\n");
-        NYI_LOONGARCH64("genPushCalleeSavedRegisters unsupports compIsVarArgs");
+        NYI_RISCV64("genPushCalleeSavedRegisters unsupports compIsVarArgs");
     }
 
 #ifdef DEBUG
@@ -7365,7 +7365,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 else
                 {
                     outSzAligned = compiler->lvaOutgoingArgSpaceSize & ~0xf;
-                    genStackPointerAdjustment(outSzAligned, REG_RA, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => RA
+                    genStackPointerAdjustment(outSzAligned, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => T6
                 }
 
                 regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
@@ -7376,7 +7376,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
                 compiler->unwindSaveReg(REG_FP, offset2);
 
-                genStackPointerAdjustment(calleeSaveSPDelta, REG_RA, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => RA
+                genStackPointerAdjustment(calleeSaveSPDelta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 =>T6
 
                 calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
                 calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDelta, STACK_ALIGN);
@@ -7403,8 +7403,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 calleeSaveSPDelta  = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
                 calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPOffset;
 
-                genStackPointerAdjustment(totalFrameSize - calleeSaveSPDelta, REG_RA, nullptr,
-                                          /* reportUnwindData */ true); // TODO CHECK R21 => RA
+                genStackPointerAdjustment(totalFrameSize - calleeSaveSPDelta, REG_T6, nullptr,
+                                          /* reportUnwindData */ true); // TODO CHECK R21 => T6
             }
         }
     }
