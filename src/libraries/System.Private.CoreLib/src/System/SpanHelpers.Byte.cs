@@ -424,7 +424,7 @@ namespace System
                         // with no upper bound e.g. String.strlen.
                         // Start with a check on Vector128 to align to Vector256, before moving to processing Vector256.
                         // This ensures we do not fault across memory pages while searching for an end of string.
-                        Vector128<byte> search = *(Vector128<byte>*)(searchSpace + offset);
+                        Vector128<byte> search = Vector128.Load(searchSpace + offset);
 
                         // Same method as below
                         uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
@@ -445,7 +445,7 @@ namespace System
                     {
                         do
                         {
-                            Vector256<byte> search = *(Vector256<byte>*)(searchSpace + offset);
+                            Vector256<byte> search = Vector256.Load(searchSpace + offset);
                             uint matches = Vector256.Equals(Vector256<byte>.Zero, search).ExtractMostSignificantBits();
                             // Note that MoveMask has converted the equal vector elements into a set of bit flags,
                             // So the bit position in 'matches' corresponds to the element offset.
@@ -464,7 +464,7 @@ namespace System
                     lengthToExamine = GetByteVector128SpanLength(offset, Length);
                     if (lengthToExamine > offset)
                     {
-                        Vector128<byte> search = *(Vector128<byte>*)(searchSpace + offset);
+                        Vector128<byte> search = Vector128.Load(searchSpace + offset);
 
                         // Same method as above
                         uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
@@ -495,7 +495,7 @@ namespace System
 
                     while (lengthToExamine > offset)
                     {
-                        Vector128<byte> search = *(Vector128<byte>*)(searchSpace + offset);
+                        Vector128<byte> search = Vector128.Load(searchSpace + offset);
 
                         // Same method as above
                         Vector128<byte> compareResult = Vector128.Equals(Vector128<byte>.Zero, search);
@@ -526,7 +526,7 @@ namespace System
 
                     while (lengthToExamine > offset)
                     {
-                        var matches = Vector.Equals(Vector<byte>.Zero, *(Vector<byte>*)(searchSpace + offset));
+                        Vector<byte> matches = Vector.Equals(Vector<byte>.Zero, Vector.Load(searchSpace + offset));
                         if (Vector<byte>.Zero.Equals(matches))
                         {
                             offset += (nuint)Vector<byte>.Count;
