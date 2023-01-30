@@ -919,6 +919,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/*">
             <Issue>https://github.com/dotnet/runtime/issues/62881</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/Casting/Functionpointer/**">
+            <Issue>https://github.com/dotnet/runtime/issues/81106</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All OSX targets on NativeAOT -->
