@@ -131,6 +131,8 @@ namespace Microsoft.Extensions.DependencyInjection
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
             if (!RuntimeFeature.IsDynamicCodeSupported)
             {
+                // Create a reflection-based factory when dynamic code isn't supported, e.g. app is published with NativeAOT.
+                // Reflection-based factory is faster than interpreted expressions and doesn't pull in System.Linq.Expressions dependency.
                 return CreateFactoryReflection(instanceType, argumentTypes);
             }
 #endif
@@ -163,8 +165,9 @@ namespace Microsoft.Extensions.DependencyInjection
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
             if (!RuntimeFeature.IsDynamicCodeSupported)
             {
+                // Create a reflection-based factory when dynamic code isn't supported, e.g. app is published with NativeAOT.
+                // Reflection-based factory is faster than interpreted expressions and doesn't pull in System.Linq.Expressions dependency.
                 var factory = CreateFactoryReflection(typeof(T), argumentTypes);
-
                 return (serviceProvider, arguments) => (T)factory(serviceProvider, arguments);
             }
 #endif
