@@ -677,7 +677,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                 }
             case "DotnetDebugger.runTests":
                 {
-                     await RuntimeReady(sessionId, token);
+                    await RuntimeReady(sessionId, token);
                     return true;
                 }
             default:
