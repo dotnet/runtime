@@ -7374,11 +7374,12 @@ void LinearScan::insertSwap(
 // getTempRegForResolution: Get a free register to use for resolution code.
 //
 // Arguments:
-//    fromBlock             - The "from" block on the edge being resolved.
-//    toBlock               - The "to" block on the edge. Can be null for shared critical edge resolution.
-//    type                  - the type of register required
-//    sharedCriticalLiveSet - The set of live vars that require shared critical resolution. Only used when toBlock is
-//    nullptr.
+//    fromBlock              - The "from" block on the edge being resolved.
+//    toBlock                - The "to" block on the edge. Can be null for shared critical edge resolution.
+//    type                   - The type of register required
+//    terminatorConsumedRegs - Registers consumed by 'fromBlock's terminating node.
+//    sharedCriticalLiveSet  - The set of live vars that require shared critical resolution. Only used when toBlock is
+//                             nullptr.
 //
 // Return Value:
 //    Returns a register that is free on the given edge, or REG_NA if none is available.
@@ -7391,6 +7392,7 @@ void LinearScan::insertSwap(
 regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
                                               BasicBlock*      toBlock,
                                               var_types        type,
+                                              regMaskTP        terminatorConsumedRegs,
                                               VARSET_VALARG_TP sharedCriticalLiveSet)
 {
     // TODO-Throughput: This would be much more efficient if we add RegToVarMaps instead of VarToRegMaps
@@ -7420,6 +7422,8 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     }
 #endif // DEBUG
     INDEBUG(freeRegs = stressLimitRegs(nullptr, freeRegs));
+
+    freeRegs &= ~terminatorConsumedRegs;
 
     // We are only interested in the variables that are live-in to the "to" block.
     VarSetOps::Iter iter(compiler, toBlock == nullptr ? fromBlock->bbLiveOut : toBlock->bbLiveIn);
@@ -7886,7 +7890,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         else
         {
             // For any vars in the sameResolutionSet, we can simply add the move at the end of "block".
-            resolveEdge(block, nullptr, ResolveSharedCritical, sameResolutionSet);
+            resolveEdge(block, nullptr, ResolveSharedCritical, sameResolutionSet, consumedRegs);
         }
     }
     if (!VarSetOps::IsEmpty(compiler, diffResolutionSet))
@@ -7942,7 +7946,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 }
                 else
                 {
-                    resolveEdge(block, succBlock, ResolveCritical, edgeResolutionSet);
+                    resolveEdge(block, succBlock, ResolveCritical, edgeResolutionSet, consumedRegs);
                 }
             }
         }
@@ -8032,7 +8036,7 @@ void LinearScan::resolveEdges()
                     uniquePredBlock = uniquePredBlock->GetUniquePred(compiler);
                     noway_assert(uniquePredBlock != nullptr);
                 }
-                resolveEdge(uniquePredBlock, block, ResolveSplit, inResolutionSet);
+                resolveEdge(uniquePredBlock, block, ResolveSplit, inResolutionSet, RBM_NONE);
             }
         }
 
@@ -8051,7 +8055,7 @@ void LinearScan::resolveEdges()
                     VarSetOps::Intersection(compiler, succBlock->bbLiveIn, resolutionCandidateVars));
                 if (!VarSetOps::IsEmpty(compiler, outResolutionSet))
                 {
-                    resolveEdge(block, succBlock, ResolveJoin, outResolutionSet);
+                    resolveEdge(block, succBlock, ResolveJoin, outResolutionSet, RBM_NONE);
                 }
             }
         }
@@ -8164,10 +8168,12 @@ void LinearScan::resolveEdges()
 // resolveEdge: Perform the specified type of resolution between two blocks.
 //
 // Arguments:
-//    fromBlock     - the block from which the edge originates
-//    toBlock       - the block at which the edge terminates
-//    resolveType   - the type of resolution to be performed
-//    liveSet       - the set of tracked lclVar indices which may require resolution
+//    fromBlock              - the block from which the edge originates
+//    toBlock                - the block at which the edge terminates
+//    resolveType            - the type of resolution to be performed
+//    liveSet                - the set of tracked lclVar indices which may require resolution
+//    terminatorConsumedRegs - the registers consumed by the terminator node.
+//                             These registers will be used after any resolution added to 'fromBlock'.
 //
 // Return Value:
 //    None.
@@ -8186,7 +8192,8 @@ void LinearScan::resolveEdges()
 void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                              BasicBlock*      toBlock,
                              ResolveType      resolveType,
-                             VARSET_VALARG_TP liveSet)
+                             VARSET_VALARG_TP liveSet,
+                             regMaskTP        terminatorConsumedRegs)
 {
     VarToRegMap fromVarToRegMap = getOutVarToRegMap(fromBlock->bbNum);
     VarToRegMap toVarToRegMap;
@@ -8233,7 +8240,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // TODO-Throughput: It would be better to determine the tempRegs on demand, but the code below
     // modifies the varToRegMaps so we don't have all the correct registers at the time
     // we need to get the tempReg.
-    regNumber tempRegInt = getTempRegForResolution(fromBlock, toBlock, TYP_INT, liveSet);
+    regNumber tempRegInt = getTempRegForResolution(fromBlock, toBlock, TYP_INT, terminatorConsumedRegs, liveSet);
     regNumber tempRegFlt = REG_NA;
 #ifdef TARGET_ARM
     regNumber tempRegDbl = REG_NA;
@@ -8250,7 +8257,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         else
 #endif // TARGET_ARM
         {
-            tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, liveSet);
+            tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, terminatorConsumedRegs, liveSet);
         }
     }
 

@@ -706,7 +706,11 @@ public:
 
     void handleOutgoingCriticalEdges(BasicBlock* block);
 
-    void resolveEdge(BasicBlock* fromBlock, BasicBlock* toBlock, ResolveType resolveType, VARSET_VALARG_TP liveSet);
+    void resolveEdge(BasicBlock*      fromBlock,
+                     BasicBlock*      toBlock,
+                     ResolveType      resolveType,
+                     VARSET_VALARG_TP liveSet,
+                     regMaskTP        terminatorConsumedRegs);
 
     void resolveEdges();
 
@@ -1355,6 +1359,7 @@ private:
     regNumber getTempRegForResolution(BasicBlock*      fromBlock,
                                       BasicBlock*      toBlock,
                                       var_types        type,
+                                      regMaskTP        terminatorConsumedRegs,
                                       VARSET_VALARG_TP sharedCriticalLiveSet);
 
 #ifdef DEBUG
