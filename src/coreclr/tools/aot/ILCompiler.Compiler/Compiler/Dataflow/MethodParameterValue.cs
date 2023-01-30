@@ -27,7 +27,5 @@ namespace ILLink.Shared.TrimAnalysis
         public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
         public TypeDesc? StaticType { get; }
-
-        internal ParameterOrigin ParameterOrigin => new ParameterOrigin(Parameter.Method.Method, (int)Parameter.Index);
     }
 }

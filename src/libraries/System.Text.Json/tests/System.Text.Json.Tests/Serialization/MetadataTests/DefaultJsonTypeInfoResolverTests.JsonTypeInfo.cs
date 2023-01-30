@@ -220,6 +220,16 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData((JsonNumberHandling)(-1))]
+        [InlineData((JsonNumberHandling)8)]
+        [InlineData((JsonNumberHandling)int.MaxValue)]
+        public static void NumberHandling_SetInvalidValue_ThrowsArgumentOutOfRangeException(JsonNumberHandling handling)
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), new());
+            Assert.Throws<ArgumentOutOfRangeException>(() => jsonTypeInfo.NumberHandling = handling);
+        }
+
+        [Theory]
         [InlineData(typeof(List<int>), JsonTypeInfoKind.Enumerable)]
         [InlineData(typeof(Dictionary<string, int>), JsonTypeInfoKind.Dictionary)]
         [InlineData(typeof(object), JsonTypeInfoKind.None)]
@@ -408,6 +418,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = typeInfo.CreateObject);
             Assert.Throws<InvalidOperationException>(() => typeInfo.NumberHandling = typeInfo.NumberHandling);
             Assert.Throws<InvalidOperationException>(() => typeInfo.CreateJsonPropertyInfo(typeof(string), "foo"));
+            Assert.Throws<InvalidOperationException>(() => typeInfo.UnmappedMemberHandling = typeInfo.UnmappedMemberHandling);
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
             Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = null);
             Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = new());
@@ -1385,6 +1396,40 @@ namespace System.Text.Json.Serialization.Tests
             public void OnSerialized() => IsOnSerializedInvocations++;
             public void OnDeserializing() => IsOnDeserializingInvocations++;
             public void OnDeserialized() => IsOnDeserializedInvocations++;
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(JsonUnmappedMemberHandling.Skip)]
+        [InlineData(JsonUnmappedMemberHandling.Disallow)]
+        public static void UnmappedMemberHandling_ShouldGetSetValue(JsonUnmappedMemberHandling? handling)
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), JsonSerializerOptions.Default);
+            jsonTypeInfo.UnmappedMemberHandling = handling;
+            Assert.Equal(handling, jsonTypeInfo.UnmappedMemberHandling);
+            JsonSerializer.Serialize(new Poco(), jsonTypeInfo);
+            Assert.Equal(handling, jsonTypeInfo.UnmappedMemberHandling);
+        }
+
+        [Theory]
+        [InlineData((JsonUnmappedMemberHandling)(-1))]
+        [InlineData((JsonUnmappedMemberHandling)2)]
+        [InlineData((JsonUnmappedMemberHandling)int.MaxValue)]
+        public static void UnmappedMemberHandling_SetInvalidValue_ThrowsArgumentOutOfRangeException(JsonUnmappedMemberHandling handling)
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(typeof(Poco), new());
+            Assert.Throws<ArgumentOutOfRangeException>(() => jsonTypeInfo.UnmappedMemberHandling = handling);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(Dictionary<int, string>))]
+        public static void UnmappedMemberHandling_InvalidMetadataKind_ThrowsInvalidOperationException(Type type)
+        {
+            JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, new());
+            Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip);
         }
     }
 }

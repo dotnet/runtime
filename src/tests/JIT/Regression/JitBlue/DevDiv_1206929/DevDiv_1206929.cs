@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace ReadMemBytes
 {
-    class Program
+    public class Program
     {
         static int Pass = 100;
         static int Fail = -1;
@@ -26,7 +26,7 @@ namespace ReadMemBytes
 
             return count;
         }
-        static unsafe int Main(string[] args)
+        public static unsafe int Main()
         {
             byte* buffer = stackalloc byte[4];
             buffer[0] = 0;

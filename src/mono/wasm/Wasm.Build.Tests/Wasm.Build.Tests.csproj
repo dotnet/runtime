@@ -16,7 +16,7 @@
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallChromeForTests>
 
     <!-- don't run any wasm build steps -->
-    <IsWasmProject>false</IsWasmProject>
+    <IsBrowserWasmProject>false</IsBrowserWasmProject>
     <UseDefaultTestHost>true</UseDefaultTestHost>
   </PropertyGroup>
 
@@ -65,6 +65,9 @@
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WEBCIL=$(TestUsingWebcil)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WEBCIL=$(TestUsingWebcil)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />

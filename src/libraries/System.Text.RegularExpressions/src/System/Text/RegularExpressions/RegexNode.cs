@@ -1428,10 +1428,10 @@ namespace System.Text.RegularExpressions
                 switch (node.Kind)
                 {
                     case RegexNodeKind.One or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy:
-                        return new StartingLiteralData(range: (node.Ch, node.Ch), @string: null, setChars: null, negated: false);
+                        return new StartingLiteralData(range: (node.Ch, node.Ch), negated: false);
 
                     case RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy:
-                        return new StartingLiteralData(range: (node.Ch, node.Ch), @string: null, setChars: null, negated: true);
+                        return new StartingLiteralData(range: (node.Ch, node.Ch), negated: true);
 
                     case RegexNodeKind.Set or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy:
                         Span<char> setChars = stackalloc char[maxSetCharacters];
@@ -1439,18 +1439,23 @@ namespace System.Text.RegularExpressions
                         if ((numChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0)
                         {
                             setChars = setChars.Slice(0, numChars);
-                            return new StartingLiteralData(range: default, @string: null, setChars: setChars.ToString(), negated: RegexCharClass.IsNegated(node.Str!));
+                            return new StartingLiteralData(setChars: setChars.ToString(), negated: RegexCharClass.IsNegated(node.Str!));
                         }
 
                         if (RegexCharClass.TryGetSingleRange(node.Str!, out char lowInclusive, out char highInclusive))
                         {
                             Debug.Assert(lowInclusive < highInclusive);
-                            return new StartingLiteralData(range: (lowInclusive, highInclusive), @string: null, setChars: null, negated: RegexCharClass.IsNegated(node.Str!));
+                            return new StartingLiteralData(range: (lowInclusive, highInclusive), negated: RegexCharClass.IsNegated(node.Str!));
+                        }
+
+                        if (RegexCharClass.TryGetAsciiSetChars(node.Str!, out char[]? asciiChars))
+                        {
+                            return new StartingLiteralData(asciiChars: asciiChars, negated: RegexCharClass.IsNegated(node.Str!));
                         }
                         break;
 
                     case RegexNodeKind.Multi:
-                        return new StartingLiteralData(range: default, @string: node.Str, setChars: null, negated: false);
+                        return new StartingLiteralData(@string: node.Str);
                 }
             }
 
@@ -1463,13 +1468,32 @@ namespace System.Text.RegularExpressions
             public readonly (char LowInclusive, char HighInclusive) Range;
             public readonly string? String;
             public readonly string? SetChars;
+            public readonly char[]? AsciiChars;
             public readonly bool Negated;
 
-            public StartingLiteralData((char LowInclusive, char HighInclusive) range, string? @string, string? setChars, bool negated)
+            public StartingLiteralData((char LowInclusive, char HighInclusive) range, bool negated)
             {
                 Range = range;
+                Negated = negated;
+            }
+
+            public StartingLiteralData(string? @string)
+            {
+                Debug.Assert(@string is not null);
                 String = @string;
+            }
+
+            public StartingLiteralData(string? setChars, bool negated)
+            {
+                Debug.Assert(setChars is not null);
                 SetChars = setChars;
+                Negated = negated;
+            }
+
+            public StartingLiteralData(char[]? asciiChars, bool negated)
+            {
+                Debug.Assert(asciiChars is not null);
+                AsciiChars = asciiChars;
                 Negated = negated;
             }
         }
@@ -2117,10 +2141,10 @@ namespace System.Text.RegularExpressions
                             case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && node.Ch != subsequent.Ch:
                             case RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic when subsequent.M == 0 && node.Ch == subsequent.Ch:
                             case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                            case RegexNodeKind.Boundary when RegexCharClass.IsBoundaryWordChar(node.Ch):
-                            case RegexNodeKind.NonBoundary when !RegexCharClass.IsBoundaryWordChar(node.Ch):
-                            case RegexNodeKind.ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
-                            case RegexNodeKind.NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
+                            case RegexNodeKind.Boundary when node.M > 0 && RegexCharClass.IsBoundaryWordChar(node.Ch):
+                            case RegexNodeKind.NonBoundary when node.M > 0 && !RegexCharClass.IsBoundaryWordChar(node.Ch):
+                            case RegexNodeKind.ECMABoundary when node.M > 0 && RegexCharClass.IsECMAWordChar(node.Ch):
+                            case RegexNodeKind.NonECMABoundary when node.M > 0 && !RegexCharClass.IsECMAWordChar(node.Ch):
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 
@@ -2163,10 +2187,10 @@ namespace System.Text.RegularExpressions
 
                             case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when subsequent.M == 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
                             case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when subsequent.M == 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                            case RegexNodeKind.Boundary when node.Str is RegexCharClass.WordClass or RegexCharClass.DigitClass:
-                            case RegexNodeKind.NonBoundary when node.Str is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass:
-                            case RegexNodeKind.ECMABoundary when node.Str is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass:
-                            case RegexNodeKind.NonECMABoundary when node.Str is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass:
+                            case RegexNodeKind.Boundary when node.M > 0 && node.Str is RegexCharClass.WordClass or RegexCharClass.DigitClass:
+                            case RegexNodeKind.NonBoundary when node.M > 0 && node.Str is RegexCharClass.NotWordClass or RegexCharClass.NotDigitClass:
+                            case RegexNodeKind.ECMABoundary when node.M > 0 && node.Str is RegexCharClass.ECMAWordClass or RegexCharClass.ECMADigitClass:
+                            case RegexNodeKind.NonECMABoundary when node.M > 0 && node.Str is RegexCharClass.NotECMAWordClass or RegexCharClass.NotDigitClass:
                                 // The loop can be made atomic based on this subsequent node, but we'll need to evaluate the next one as well.
                                 break;
 

@@ -20,7 +20,7 @@ using System;
 
 class Program
 {
-    static int Main(string[] args)
+    static int Main()
     {
         int result = new TestClass().DoTest();
         if (result != 100)

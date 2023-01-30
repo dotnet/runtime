@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -9,7 +9,7 @@ namespace Runtime_54466
 {
     public class Test
     {
-        static int Main()
+        public static int Main()
         {
             return t(1, 1, 1, 1, Vector2.One, Vector2.One, Vector2.One, Vector2.One);
         }

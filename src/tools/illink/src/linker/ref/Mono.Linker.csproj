@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>illink</AssemblyName>
+    <Description>IL Linker</Description>
+
+    <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
+    <!-- Crashes roslyn with InvalidOperationException: Cannot enqueue data after PromiseNotToEnqueue -->
+    <RunAnalyzers>false</RunAnalyzers>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
+  </ItemGroup>
+
+</Project>

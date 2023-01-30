@@ -27,9 +27,9 @@ namespace Test
         public static object m_xStatic1 = null;
     }
 
-    class App
+    public class App
     {
-        static int Main()
+        public static int Main()
         {
             try
             {

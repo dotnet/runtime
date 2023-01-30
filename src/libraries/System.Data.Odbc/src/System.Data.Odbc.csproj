@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-Solaris;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-FreeBSD;$(NetCoreAppMinimum)-Linux;$(NetCoreAppMinimum)-OSX;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)-freebsd;$(NetCoreAppPrevious)-illumos;$(NetCoreAppPrevious)-solaris;$(NetCoreAppPrevious)-linux;$(NetCoreAppPrevious)-osx;$(NetCoreAppPrevious)-ios;$(NetCoreAppPrevious)-tvos;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-freebsd;$(NetCoreAppMinimum)-linux;$(NetCoreAppMinimum)-osx;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);CA2249;CA1838;CA1846</NoWarn>
-    <!-- Suppress CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring' to avoid ifdefs. -->
-    <NoWarn>$(NoWarn);CA1845</NoWarn>
+    <NoWarn>$(NoWarn);CA2249;CA1838</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a collection of classes used to access an ODBC data source in the managed space
 
@@ -135,14 +133,18 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\HandleRefMarshaller.cs"
              Link="Common\System\Runtime\InteropServices\HandleRefMarshaller.cs" />
+    <ProjectReference Include="..\..\System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
+                  SetTargetFramework="TargetFramework=netstandard2.0"
+                  OutputItemType="Analyzer"
+                  ReferenceOutputAssembly="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Linux' or '$(TargetPlatformIdentifier)' == 'FreeBSD' or '$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'Solaris'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'solaris'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>

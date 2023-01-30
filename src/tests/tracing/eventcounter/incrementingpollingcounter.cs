@@ -111,7 +111,7 @@ namespace BasicEventSourceTests
             mockedCountCalled++;
             return mockedCountCalled;
         }
-        public static int Main(string[] args)
+        public static int Main()
         {
             // Create an EventListener.
             using (SimpleEventListener myListener = new SimpleEventListener("SimpleEventSource", EventLevel.Verbose))

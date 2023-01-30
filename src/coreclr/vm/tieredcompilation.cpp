@@ -302,6 +302,14 @@ void TieredCompilationManager::AsyncPromoteToTier1(
                 // 3) Unoptimized instrumented tier is faster to produce and wire up
                 nextTier = NativeCodeVersion::OptimizationTier0Instrumented;
 
+#if _DEBUG
+                if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentedTierAlwaysOptimized) != 0)
+                {
+                    // Override that behavior and always use optimizations.
+                    nextTier = NativeCodeVersion::OptimizationTier1Instrumented;
+                }
+#endif
+
                 // NOTE: we might consider using OptimizationTier1Instrumented if the previous Tier0
                 // made it to Tier1-OSR.
             }
@@ -639,10 +647,17 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
                 continue;
             }
 
+            PCODE codeEntryPoint = activeCodeVersion.GetNativeCode();
+            if (codeEntryPoint == NULL)
+            {
+                // The active IL/native code version has changed since the method was queued, and the currently active version
+                // doesn't have a code entry point yet
+                continue;
+            }
+
             EX_TRY
             {
-                bool wasSet =
-                    CallCountingManager::SetCodeEntryPoint(activeCodeVersion, activeCodeVersion.GetNativeCode(), false, nullptr);
+                bool wasSet = CallCountingManager::SetCodeEntryPoint(activeCodeVersion, codeEntryPoint, false, nullptr);
                 _ASSERTE(wasSet);
             }
             EX_CATCH

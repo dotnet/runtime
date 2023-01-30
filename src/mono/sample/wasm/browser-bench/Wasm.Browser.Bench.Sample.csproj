@@ -6,6 +6,10 @@
     <WasmMainJSPath>main.js</WasmMainJSPath>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <EnableAggressiveTrimming Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
+    <PublishTrimmed Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</PublishTrimmed>
+    <RunAOTCompilation Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</RunAOTCompilation>
+    <TrimMode>partial</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>

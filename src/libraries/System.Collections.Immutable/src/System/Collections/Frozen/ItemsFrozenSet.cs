@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace System.Collections.Frozen
@@ -14,7 +13,7 @@ namespace System.Collections.Frozen
         private protected readonly FrozenHashTable _hashTable;
         private protected readonly T[] _items;
 
-        protected ItemsFrozenSet(HashSet<T> source, IEqualityComparer<T> comparer) : base(comparer)
+        protected ItemsFrozenSet(HashSet<T> source, bool optimizeForReading = true) : base(source.Comparer)
         {
             Debug.Assert(source.Count != 0);
 
@@ -25,12 +24,13 @@ namespace System.Collections.Frozen
 
             _hashTable = FrozenHashTable.Create(
                 entries,
-                o => o is null ? 0 : comparer.GetHashCode(o),
-                (index, item) => _items[index] = item);
+                o => o is null ? 0 : Comparer.GetHashCode(o),
+                (index, item) => _items[index] = item,
+                optimizeForReading);
         }
 
         /// <inheritdoc />
-        private protected sealed override ImmutableArray<T> ItemsCore => new ImmutableArray<T>(_items);
+        private protected sealed override T[] ItemsCore => _items;
 
         /// <inheritdoc />
         private protected sealed override Enumerator GetEnumeratorCore() => new Enumerator(_items);

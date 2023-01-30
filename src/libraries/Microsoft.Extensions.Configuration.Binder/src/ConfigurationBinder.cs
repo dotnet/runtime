@@ -262,7 +262,10 @@ namespace Microsoft.Extensions.Configuration
                 config.GetSection(GetPropertyName(property)),
                 options);
 
-            if (propertyBindingPoint.HasNewValue)
+            // For property binding, there are some cases when HasNewValue is not set in BindingPoint while a non-null Value inside that object can be retrieved from the property getter.
+            // As example, when binding a property which not having a configuration entry matching this property and the getter can initialize the Value.
+            // It is important to call the property setter as the setters can have a logic adjusting the Value.
+            if (!propertyBindingPoint.IsReadOnly && propertyBindingPoint.Value is not null)
             {
                 property.SetValue(instance, propertyBindingPoint.Value);
             }
@@ -312,12 +315,15 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // for sets and read-only set interfaces, we clone what's there into a new collection, if we can
-                if (TypeIsASetInterface(type) && !bindingPoint.IsReadOnly)
+                if (TypeIsASetInterface(type))
                 {
-                    object? newValue = BindSet(type, (IEnumerable?)bindingPoint.Value, config, options);
-                    if (newValue != null)
+                    if (!bindingPoint.IsReadOnly || bindingPoint.Value is not null)
                     {
-                        bindingPoint.SetValue(newValue);
+                        object? newValue = BindSet(type, (IEnumerable?)bindingPoint.Value, config, options);
+                        if (!bindingPoint.IsReadOnly && newValue != null)
+                        {
+                            bindingPoint.SetValue(newValue);
+                        }
                     }
 
                     return;
@@ -361,24 +367,26 @@ namespace Microsoft.Extensions.Configuration
                     }
                 }
 
+                Debug.Assert(bindingPoint.Value is not null);
+
                 // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
                 // using the IDictionary<> or ICollection<> interfaces, or properties using reflection.
                 Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
 
                 if (dictionaryInterface != null)
                 {
-                    BindConcreteDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
+                    BindDictionary(bindingPoint.Value, dictionaryInterface, config, options);
                 }
                 else
                 {
                     Type? collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
                     if (collectionInterface != null)
                     {
-                        BindCollection(bindingPoint.Value!, collectionInterface, config, options);
+                        BindCollection(bindingPoint.Value, collectionInterface, config, options);
                     }
                     else
                     {
-                        BindProperties(bindingPoint.Value!, config, options);
+                        BindProperties(bindingPoint.Value, config, options);
                     }
                 }
             }
@@ -525,36 +533,44 @@ namespace Microsoft.Extensions.Configuration
                 return null;
             }
 
-            Type genericType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
-            MethodInfo addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup)!;
-
-            Type kvpType = typeof(KeyValuePair<,>).MakeGenericType(keyType, valueType);
-            PropertyInfo keyMethod = kvpType.GetProperty("Key", DeclaredOnlyLookup)!;
-            PropertyInfo valueMethod = kvpType.GetProperty("Value", DeclaredOnlyLookup)!;
-
-            object dictionary = Activator.CreateInstance(genericType)!;
-
-            var orig = source as IEnumerable;
-            object?[] arguments = new object?[2];
-
-            if (orig != null)
+            // addMethod can only be null if dictionaryType is IReadOnlyDictionary<TKey, TValue> rather than IDictionary<TKey, TValue>.
+            MethodInfo? addMethod = dictionaryType.GetMethod("Add", DeclaredOnlyLookup);
+            if (addMethod is null || source is null)
             {
-                foreach (object? item in orig)
+                dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+                var dictionary = Activator.CreateInstance(dictionaryType);
+                addMethod = dictionaryType.GetMethod("Add", DeclaredOnlyLookup);
+
+                var orig = source as IEnumerable;
+                if (orig is not null)
                 {
-                    object? k = keyMethod.GetMethod!.Invoke(item, null);
-                    object? v = valueMethod.GetMethod!.Invoke(item, null);
-                    arguments[0] = k;
-                    arguments[1] = v;
-                    addMethod.Invoke(dictionary, arguments);
+                    Type kvpType = typeof(KeyValuePair<,>).MakeGenericType(keyType, valueType);
+                    PropertyInfo keyMethod = kvpType.GetProperty("Key", DeclaredOnlyLookup)!;
+                    PropertyInfo valueMethod = kvpType.GetProperty("Value", DeclaredOnlyLookup)!;
+                    object?[] arguments = new object?[2];
+
+                    foreach (object? item in orig)
+                    {
+                        object? k = keyMethod.GetMethod!.Invoke(item, null);
+                        object? v = valueMethod.GetMethod!.Invoke(item, null);
+                        arguments[0] = k;
+                        arguments[1] = v;
+                        addMethod!.Invoke(dictionary, arguments);
+                    }
                 }
+
+                source = dictionary;
             }
 
-            BindConcreteDictionary(dictionary, dictionaryType, config, options);
+            Debug.Assert(source is not null);
+            Debug.Assert(addMethod is not null);
 
-            return dictionary;
+            BindDictionary(source, dictionaryType, config, options);
+
+            return source;
         }
 
-        // Binds and potentially overwrites a concrete dictionary.
+        // Binds and potentially overwrites a dictionary object.
         // This differs from BindDictionaryInterface because this method doesn't clone
         // the dictionary; it sets and/or overwrites values directly.
         // When a user specifies a concrete dictionary or a concrete class implementing IDictionary<,>
@@ -562,12 +578,15 @@ namespace Microsoft.Extensions.Configuration
         // in their config class, then it is cloned to a new dictionary, the same way as other collections.
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
-        private static void BindConcreteDictionary(
-            object? dictionary,
+        private static void BindDictionary(
+            object dictionary,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             Type dictionaryType,
             IConfiguration config, BinderOptions options)
         {
+            Debug.Assert(dictionaryType.IsGenericType &&
+                         (dictionaryType.GetGenericTypeDefinition() == typeof(IDictionary<,>) || dictionaryType.GetGenericTypeDefinition() == typeof(Dictionary<,>)));
+
             Type keyType = dictionaryType.GenericTypeArguments[0];
             Type valueType = dictionaryType.GenericTypeArguments[1];
             bool keyTypeIsEnum = keyType.IsEnum;
@@ -587,19 +606,8 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            Debug.Assert(dictionary is not null);
-
-            Type dictionaryObjectType = dictionary.GetType();
-
-            MethodInfo tryGetValue = dictionaryObjectType.GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance)!;
-
-            // dictionary should be of type Dictionary<,> or of type implementing IDictionary<,>
-            PropertyInfo? setter = dictionaryObjectType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
-            if (setter is null || !setter.CanWrite)
-            {
-                // Cannot set any item on the dictionary object.
-                return;
-            }
+            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
+            PropertyInfo indexerProperty = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
 
             foreach (IConfigurationSection child in config.GetChildren())
             {
@@ -623,7 +631,7 @@ namespace Microsoft.Extensions.Configuration
                         options: options);
                     if (valueBindingPoint.HasNewValue)
                     {
-                        setter.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
+                        indexerProperty.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                     }
                 }
                 catch(Exception ex)
@@ -694,7 +702,7 @@ namespace Microsoft.Extensions.Configuration
                 elementType = type.GetGenericArguments()[0];
             }
 
-            IList list = new List<object?>();
+            var list = new List<object?>();
 
             if (source != null)
             {
@@ -730,7 +738,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             Array result = Array.CreateInstance(elementType, list.Count);
-            list.CopyTo(result, 0);
+            ((IList)list).CopyTo(result, 0);
             return result;
         }
 
@@ -740,31 +748,37 @@ namespace Microsoft.Extensions.Configuration
         {
             Type elementType = type.GetGenericArguments()[0];
 
-            Type keyType = type.GenericTypeArguments[0];
+            bool keyTypeIsEnum = elementType.IsEnum;
 
-            bool keyTypeIsEnum = keyType.IsEnum;
-
-            if (keyType != typeof(string) && !keyTypeIsEnum)
+            if (elementType != typeof(string) && !keyTypeIsEnum)
             {
                 // We only support string and enum keys
                 return null;
             }
 
-            Type genericType = typeof(HashSet<>).MakeGenericType(keyType);
-            object instance = Activator.CreateInstance(genericType)!;
-
-            MethodInfo addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup)!;
-
             object?[] arguments = new object?[1];
-
-            if (source != null)
+            // addMethod can only be null if type is IReadOnlySet<T> rather than ISet<T>.
+            MethodInfo? addMethod = type.GetMethod("Add", DeclaredOnlyLookup);
+            if (addMethod is null || source is null)
             {
-                foreach (object? item in source)
+                Type genericType = typeof(HashSet<>).MakeGenericType(elementType);
+                object instance = Activator.CreateInstance(genericType)!;
+                addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup);
+
+                if (source != null)
                 {
-                    arguments[0] = item;
-                    addMethod.Invoke(instance, arguments);
+                    foreach (object? item in source)
+                    {
+                        arguments[0] = item;
+                        addMethod!.Invoke(instance, arguments);
+                    }
                 }
+
+                source = (IEnumerable)instance;
             }
+
+            Debug.Assert(source is not null);
+            Debug.Assert(addMethod is not null);
 
             foreach (IConfigurationSection section in config.GetChildren())
             {
@@ -780,7 +794,7 @@ namespace Microsoft.Extensions.Configuration
                     {
                         arguments[0] = itemBindingPoint.Value;
 
-                        addMethod.Invoke(instance, arguments);
+                        addMethod.Invoke(source, arguments);
                     }
                 }
                 catch (Exception ex)
@@ -793,7 +807,7 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            return instance;
+            return source;
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
@@ -979,7 +993,7 @@ namespace Microsoft.Extensions.Configuration
             return propertyBindingPoint.Value;
         }
 
-        private static string GetPropertyName(MemberInfo property)
+        private static string GetPropertyName(PropertyInfo property)
         {
             ThrowHelper.ThrowIfNull(property);
 

@@ -16,7 +16,7 @@ under the `<Project>` node of your project file.
 
 The Native AOT compiler supports the [documented options](https://docs.microsoft.com/en-us/dotnet/core/deploying/trim-self-contained) for removing unused code (trimming). By default, the compiler tries to very conservatively remove some of the unused code.
 
-🛈 Native AOT difference: The documented `PublishTrimmed` property is implied to be `true` when Native AOT is active.
+:information_source: Native AOT difference: The documented `PublishTrimmed` property is implied to be `true` when Native AOT is active.
 
 By default, the compiler tries to maximize compatibility with existing .NET code at the expense of compilation speed and size of the output executable. This allows people to use their existing code that worked well in a fully dynamic mode without hitting issues caused by trimming. To read more about reflection, see the [Reflection in AOT mode](reflection-in-aot-mode.md) document.
 

@@ -15,11 +15,12 @@ The .NET Foundation licenses this file to you under the MIT license.
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <CppCompilerAndLinkerAlternative />
-    <CppCompilerAndLinkerAlternative Condition="'$(CppCompilerAndLinker)' == '' and '$(TargetOS)' != 'OSX'">gcc</CppCompilerAndLinkerAlternative>
+    <CppCompilerAndLinkerAlternative Condition="'$(CppCompilerAndLinker)' == '' and '$(TargetOS)' != 'osx'">gcc</CppCompilerAndLinkerAlternative>
     <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
-    <DsymUtilOptions Condition="'$(TargetOS)' == 'OSX'">--flat</DsymUtilOptions>
+    <DsymUtilOptions Condition="'$(TargetOS)' == 'osx'">--flat</DsymUtilOptions>
+    <_SymbolPrefix Condition="'$(TargetOS)' == 'osx'">_</_SymbolPrefix>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
@@ -29,27 +30,30 @@ The .NET Foundation licenses this file to you under the MIT license.
       <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
       <CrossCompileRid />
-      <CrossCompileRid Condition="!$(RuntimeIdentifier.EndsWith('-$(OSHostArch)'))">$(RuntimeIdentifier)</CrossCompileRid>
+      <CrossCompileRid Condition="!$(RuntimeIdentifier.EndsWith('-$(IlcHostArch)'))">$(RuntimeIdentifier)</CrossCompileRid>
 
       <CrossCompileArch />
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
-      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(TargetOS)' != 'OSX'">aarch64</CrossCompileArch>
-      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(TargetOS)' == 'OSX'">arm64</CrossCompileArch>
+      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(TargetOS)' != 'osx'">aarch64</CrossCompileArch>
+      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(TargetOS)' == 'osx'">arm64</CrossCompileArch>
 
       <TargetTriple />
       <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-gnu</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('linux-musl')) or $(CrossCompileRid.StartsWith('alpine')))">$(CrossCompileArch)-alpine-linux-musl</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
 
-      <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' != 'OSX'">$ORIGIN</IlcRPath>
-      <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' == 'OSX'">@executable_path</IlcRPath>
+      <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' != 'osx'">$ORIGIN</IlcRPath>
+      <IlcRPath Condition="'$(IlcRPath)' == '' and '$(TargetOS)' == 'osx'">@executable_path</IlcRPath>
     </PropertyGroup>
 
     <ItemGroup>
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
-      <NativeLibrary Condition="$(NativeLib) == ''" Include="$(IlcSdkPath)libbootstrapper.a" />
-      <NativeLibrary Condition="$(NativeLib) != ''" Include="$(IlcSdkPath)libbootstrapperdll.a" />
+      <NativeLibrary Condition="'$(NativeLib)' == ''" Include="$(IlcSdkPath)libbootstrapper.a" />
+      <NativeLibrary Condition="'$(NativeLib)' != ''" Include="$(IlcSdkPath)libbootstrapperdll.a" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
-      <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
+      <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
+      <NativeLibrary Condition="'$(StaticNumaLinking)' == 'true'" Include="$(IlcSdkPath)libnumasupportstatic.a" />
+      <NativeLibrary Condition="'$(StaticNumaLinking)' != 'true'" Include="$(IlcSdkPath)libnumasupportdynamic.a" />
     </ItemGroup>
 
     <ItemGroup>
@@ -57,8 +61,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true'" />
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" />
-      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(TargetOS)' == 'OSX'" />
-      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.OpenSsl" />
+      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(TargetOS)' == 'osx'" />
+      <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.OpenSsl" Condition="'$(StaticOpenSslLinking)' != 'true'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -69,13 +73,29 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(StaticICULinking)' == 'true'">
-      <NativeLibrary Include="$(IntermediateOutputPath)/libs/System.Globalization.Native/build/libSystem.Globalization.Native.a"/>
-      <DirectPInvoke Include="libSystem.Globalization.Native" />
-      <StaticICULibs Include="-Wl,-Bstatic -licuio -licutu -licui18n -licuuc -licudata -Wl,-Bdynamic" />
+    <ItemGroup Condition="'$(StaticNumaLinking)' == 'true' and '$(NativeLib)' != 'Static'">
+      <StaticNumaLibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
+      <StaticNumaLibs Include="-lnuma" />
+      <StaticNumaLibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
+    <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static'">
+      <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Globalization.Native/build/libSystem.Globalization.Native.a" />
+      <DirectPInvoke Include="libSystem.Globalization.Native" />
+      <StaticICULibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
+      <StaticICULibs Include="-licuio -licutu -licui18n -licuuc -licudata -lstdc++" />
+      <StaticICULibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(StaticOpenSslLinking)' == 'true' and '$(NativeLib)' != 'Static'">
+      <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Security.Cryptography.Native/build/libSystem.Security.Cryptography.Native.OpenSsl.a" />
+      <DirectPInvoke Include="libSystem.Security.Cryptography.Native.OpenSsl" />
+      <StaticSslLibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
+      <StaticSslLibs Include="-lssl -lcrypto" />
+      <StaticSslLibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'osx'">
       <NativeFramework Include="CoreFoundation" />
       <NativeFramework Include="CryptoKit" />
       <NativeFramework Include="Foundation" />
@@ -83,43 +103,54 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeFramework Include="GSS" />
     </ItemGroup>
 
-    <Exec Command="$(IlcHostPackagePath)/native/src/libs/System.Globalization.Native/local_build.sh $(IlcHostPackagePath)/ $(IntermediateOutputPath)" Condition="'$(StaticICULinking)' == 'true'"/>
-
     <ItemGroup>
+      <LinkerArg Include="-fuse-ld=lld" Condition="'$(UseLLVMLinker)' == 'true'" />
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="--sysroot=$(SysRoot)" Condition="'$(SysRoot)' != ''" />
-      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetOS)' != 'OSX' and '$(TargetTriple)' != ''" />
-      <LinkerArg Include="-arch $(CrossCompileArch)" Condition="'$(TargetOS)' == 'OSX' and '$(CrossCompileArch)' != ''" />
+      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetOS)' != 'osx' and '$(TargetTriple)' != ''" />
+      <LinkerArg Include="-arch $(CrossCompileArch)" Condition="'$(TargetOS)' == 'osx' and '$(CrossCompileArch)' != ''" />
       <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
-      <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-Wl,-rpath,'$(IlcRPath)'" />
-      <LinkerArg Include="-Wl,--build-id=sha1" Condition="'$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-Wl,--as-needed" Condition="'$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-Wl,-e0x0" Condition="'$(NativeLib)' == 'Shared' and '$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-pthread" Condition="'$(TargetOS)' != 'OSX'" />
+      <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(TargetOS)' != 'osx'" />
+      <LinkerArg Include="-Wl,-rpath,'$(IlcRPath)'" Condition="'$(StaticExecutable)' != 'true'" />
+      <LinkerArg Include="-Wl,--build-id=sha1" Condition="'$(TargetOS)' != 'osx'" />
+      <LinkerArg Include="-Wl,--as-needed" Condition="'$(TargetOS)' != 'osx'" />
+      <LinkerArg Include="-Wl,-e0x0" Condition="'$(NativeLib)' == 'Shared' and '$(TargetOS)' != 'osx'" />
+      <LinkerArg Include="-pthread" Condition="'$(TargetOS)' != 'osx'" />
       <LinkerArg Include="-lstdc++" Condition="'$(LinkStandardCPlusPlusLibrary)' == 'true'" />
       <LinkerArg Include="-ldl" />
-      <LinkerArg Include="-lm" />
-      <LinkerArg Include="-lobjc" Condition="'$(TargetOS)' == 'OSX'" />
-      <LinkerArg Include="-lswiftCore" Condition="'$(TargetOS)' == 'OSX'" />
-      <LinkerArg Include="-lswiftFoundation" Condition="'$(TargetOS)' == 'OSX'" />
+      <LinkerArg Include="-lobjc" Condition="'$(TargetOS)' == 'osx'" />
+      <LinkerArg Include="-lswiftCore" Condition="'$(TargetOS)' == 'osx'" />
+      <LinkerArg Include="-lswiftFoundation" Condition="'$(TargetOS)' == 'osx'" />
       <LinkerArg Include="-lz" />
-      <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
-      <LinkerArg Include="-L/usr/lib/swift" Condition="'$(TargetOS)' == 'OSX'" />
+      <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'osx'" />
+      <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'osx'" />
+      <LinkerArg Include="-L/usr/lib/swift" Condition="'$(TargetOS)' == 'osx'" />
+      <LinkerArg Include="@(StaticNumaLibs)" Condition="'$(StaticNumaLinking)' == 'true'" />
       <LinkerArg Include="@(StaticICULibs)" Condition="'$(StaticICULinking)' == 'true'" />
-      <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
-      <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="@(StaticSslLibs)" Condition="'$(StaticOpenSslLinking)' == 'true'" />
+      <LinkerArg Include="-lm" />
+      <LinkerArg Include="-static" Condition="'$(StaticExecutable)' == 'true' and '$(PositionIndependentExecutable)' == 'false'" />
+      <LinkerArg Include="-static-pie" Condition="'$(StaticExecutable)' == 'true' and '$(PositionIndependentExecutable)' != 'false'" />
+      <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'osx' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'osx' and '$(NativeLib)' == 'Shared'" />
       <!-- binskim warning BA3001 PIE disabled on executable -->
-      <LinkerArg Include="-pie" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == '' and '$(PositionIndependentExecutable)' != 'false'" />
+      <LinkerArg Include="-pie" Condition="'$(TargetOS)' != 'osx' and '$(NativeLib)' == '' and '$(StaticExecutable)' != 'true' and '$(PositionIndependentExecutable)' != 'false'" />
       <!-- binskim warning BA3010 The GNU_RELRO segment is missing -->
-      <LinkerArg Include="-Wl,-z,relro" Condition="'$(TargetOS)' != 'OSX'" />
+      <LinkerArg Include="-Wl,-z,relro" Condition="'$(TargetOS)' != 'osx'" />
       <!-- binskim warning BA3011 The BIND_NOW flag is missing -->
-      <LinkerArg Include="-Wl,-z,now" Condition="'$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-Wl,-u,_NativeAOT_StaticInitialization" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
-      <LinkerArg Include="-Wl,--require-defined,NativeAOT_StaticInitialization" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-Wl,-z,now" Condition="'$(TargetOS)' != 'osx'" />
+      <LinkerArg Include="-Wl,-u,$(_SymbolPrefix)NativeAOT_StaticInitialization" Condition="('$(UseLLVMLinker)' == 'true' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'freebsd') and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-Wl,--require-defined,NativeAOT_StaticInitialization" Condition="'$(UseLLVMLinker)' != 'true' and '$(TargetOS)' == 'linux' and '$(NativeLib)' == 'Shared'" />
+      <!-- this workaround can be deleted once the minimum supported glibc version
+           (runtime's official build machine's glibc version) is at least 2.33
+           see https://github.com/bminor/glibc/commit/99468ed45f5a58f584bab60364af937eb6f8afda -->
+      <LinkerArg Include="-Wl,--defsym,__xmknod=mknod" Condition="'$(StaticExecutable)' == 'true'" />
+      <!-- FreeBSD has two versions of the GSSAPI it can use, but we only use the ports version (MIT version) here -->
+      <LinkerArg Include="-L/usr/local/lib -lgssapi_krb5" Condition="'$(TargetOS)' == 'freebsd'" />
+      <!-- FreeBSD's inotify is an installed package and not found in default libraries  -->
+      <LinkerArg Include="-L/usr/local/lib -linotify" Condition="'$(TargetOS)' == 'freebsd'" />
 
-      <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
+      <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'osx'" />
     </ItemGroup>
 
     <Exec Command="command -v &quot;$(CppLinker)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low">
@@ -136,24 +167,24 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_WhereLinker>0</_WhereLinker>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(ObjCopyName)' == '' and '$(TargetOS)' != 'OSX'">
-      <ObjCopyName Condition="'$(CppCompilerAndLinker)' != 'clang'">objcopy</ObjCopyName>
-      <ObjCopyName Condition="'$(CppCompilerAndLinker)' == 'clang'">llvm-objcopy</ObjCopyName>
+    <PropertyGroup Condition="'$(ObjCopyName)' == '' and '$(TargetOS)' != 'osx'">
+      <ObjCopyName Condition="!$(CppCompilerAndLinker.Contains('clang'))">objcopy</ObjCopyName>
+      <ObjCopyName Condition="$(CppCompilerAndLinker.Contains('clang'))">llvm-objcopy</ObjCopyName>
       <ObjCopyNameAlternative />
-      <ObjCopyNameAlternative Condition="'$(CppCompilerAndLinker)' == 'clang'">objcopy</ObjCopyNameAlternative>
+      <ObjCopyNameAlternative Condition="$(CppCompilerAndLinker.Contains('clang'))">objcopy</ObjCopyNameAlternative>
     </PropertyGroup>
 
-    <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found in PATH. Try installing Xcode to resolve the problem." />
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'osx'" Text="Platform linker ('$(CppLinker)') not found in PATH. Try installing Xcode to resolve the problem." />
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' != ''"
       Text="Platform linker ('$(CppLinker)' or '$(CppCompilerAndLinkerAlternative)') not found in PATH. Try installing appropriate package for $(CppLinker) or $(CppCompilerAndLinkerAlternative) to resolve the problem." />
-    <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(TargetOS)' != 'OSX'"
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(TargetOS)' != 'osx'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
 
-    <Exec Command="command -v &quot;$(ObjCopyName)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' != 'OSX' and '$(StripSymbols)' == 'true'">
+    <Exec Command="command -v &quot;$(ObjCopyName)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' != 'osx' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
     </Exec>
 
-    <Exec Command="command -v &quot;$(ObjCopyNameAlternative)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' != 'OSX' and '$(CppCompilerAndLinkerAlternative)' != '' and '$(StripSymbols)' == 'true'">
+    <Exec Command="command -v &quot;$(ObjCopyNameAlternative)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' != 'osx' and '$(ObjCopyNameAlternative)' != '' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripperAlt" />
     </Exec>
 
@@ -164,20 +195,26 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(ObjCopyNameAlternative)' != ''"
       Text="Symbol stripping tool ('$(ObjCopyName)' or '$(ObjCopyNameAlternative)') not found in PATH. Try installing appropriate package for $(ObjCopyName) or $(ObjCopyNameAlternative) to resolve the problem." />
-    <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(TargetOS)' != 'OSX'"
+    <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(TargetOS)' != 'osx'"
       Text="Symbol stripping tool ('$(ObjCopyName)') not found in PATH. Make sure '$(ObjCopyName)' is available in PATH" />
 
-    <Exec Command="command -v dsymutil &amp;&amp; command -v strip" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' == 'OSX' and '$(StripSymbols)' == 'true'">
+    <Exec Command="command -v dsymutil &amp;&amp; command -v strip" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' == 'osx' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
     </Exec>
-    <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(TargetOS)' != 'OSX'"
+    <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(TargetOS)' != 'osx'"
       Text="Symbol stripping tools ('dsymutil' and 'strip') not found in PATH. Make sure 'dsymutil' and 'strip' are available in PATH" />
 
-    <Exec Command="dsymutil --help" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' == 'OSX' and '$(StripSymbols)' == 'true'">
+    <Exec Command="dsymutil --help" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(TargetOS)' == 'osx' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_DsymUtilOutput" />
     </Exec>
 
-    <PropertyGroup Condition="'$(TargetOS)' == 'OSX' and '$(StripSymbols)' == 'true' and $(_DsymUtilOutput.Contains('--minimize'))">
+    <Exec Command="CC=&quot;$(CppLinker)&quot; &quot;$(IlcHostPackagePath)/native/src/libs/build-local.sh&quot; &quot;$(IlcHostPackagePath)/&quot; &quot;$(IntermediateOutputPath)&quot; System.Globalization.Native"
+        Condition="'$(StaticICULinking)' == 'true'" />
+
+    <Exec Command="CC=&quot;$(CppLinker)&quot; &quot;$(IlcHostPackagePath)/native/src/libs/build-local.sh&quot; &quot;$(IlcHostPackagePath)/&quot; &quot;$(IntermediateOutputPath)&quot; System.Security.Cryptography.Native"
+        Condition="'$(StaticOpenSslLinking)' == 'true'" />
+
+    <PropertyGroup Condition="'$(TargetOS)' == 'osx' and '$(StripSymbols)' == 'true' and $(_DsymUtilOutput.Contains('--minimize'))">
       <DsymUtilOptions>$(DsymUtilOptions) --minimize</DsymUtilOptions>
     </PropertyGroup>
   </Target>

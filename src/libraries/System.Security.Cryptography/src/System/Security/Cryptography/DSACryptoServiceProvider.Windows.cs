@@ -68,8 +68,7 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public DSACryptoServiceProvider(int dwKeySize, CspParameters? parameters)
         {
-            if (dwKeySize < 0)
-                throw new ArgumentOutOfRangeException(nameof(dwKeySize), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(dwKeySize);
 
             _parameters = CapiHelper.SaveCspParameters(
                 CapiHelper.CspAlgorithmType.Dss,

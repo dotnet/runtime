@@ -53,7 +53,7 @@ namespace System.Diagnostics
 
                 _traceState = ac.TraceState;
             }
-            else if (parent is string p && p != null)
+            else if (parent is string p)
             {
                 if (IdFormat != ActivityIdFormat.Hierarchical)
                 {
@@ -114,9 +114,6 @@ namespace System.Diagnostics
 
         public ActivityTagsCollection SamplingTags
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get
             {
                 if (_samplerTags == null)
@@ -131,9 +128,6 @@ namespace System.Diagnostics
 
         public ActivityTraceId TraceId
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get
             {
                 if (Parent is ActivityContext && IdFormat == ActivityIdFormat.W3C && _context == default)
@@ -154,14 +148,7 @@ namespace System.Diagnostics
         /// </summary>
         public string? TraceState
         {
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             get => _traceState;
-
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-            [System.Security.SecuritySafeCriticalAttribute]
-#endif
             init
             {
                 _traceState = value;
@@ -169,9 +156,6 @@ namespace System.Diagnostics
         }
 
         // SetTraceState is to set the _traceState without the need of copying the whole structure.
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         internal void SetTraceState(string? traceState) => Unsafe.AsRef(in _traceState) = traceState;
 
         /// <summary>

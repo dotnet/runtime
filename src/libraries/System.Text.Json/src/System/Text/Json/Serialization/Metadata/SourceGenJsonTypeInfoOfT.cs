@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization.Metadata
             Converter.ConfigureJsonTypeInfo(this, options);
         }
 
-        private static JsonConverter GetConverter(JsonObjectInfoValues<T> objectInfo)
+        private static JsonMetadataServicesConverter<T> GetConverter(JsonObjectInfoValues<T> objectInfo)
         {
 #pragma warning disable CS8714
             // The type cannot be used as type parameter in the generic type or method.
@@ -107,11 +107,6 @@ namespace System.Text.Json.Serialization.Metadata
             JsonParameterInfoValues[] array;
             if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
             {
-                if (SerializeHandler == null)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(Options.TypeInfoResolver, Type);
-                }
-
                 array = Array.Empty<JsonParameterInfoValues>();
                 MetadataSerializationNotSupported = true;
             }
@@ -129,7 +124,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            JsonSerializerContext? context = Options.SerializerContext;
+            JsonSerializerContext? context = Options.TypeInfoResolver as JsonSerializerContext;
             JsonPropertyInfo[] array;
             if (PropInitFunc == null || (array = PropInitFunc(context!)) == null)
             {
@@ -142,11 +137,6 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     // Nullable<> or F# optional converter's strategy is set to element's strategy
                     return;
-                }
-
-                if (SerializeHandler == null)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
                 }
 
                 MetadataSerializationNotSupported = true;

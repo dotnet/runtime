@@ -1,5 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+#ifndef __StackFrameIterator_h__
+#define __StackFrameIterator_h__
+
 #include "ICodeManager.h"
 
 struct ExInfo;
@@ -143,7 +147,10 @@ private:
         // The thread was interrupted in the current frame at the current IP by a signal, SuspendThread or similar.
         ActiveStackFrame = 0x40,
 
-        GcStackWalkFlags = (CollapseFunclets | RemapHardwareFaultsToSafePoint),
+        // When encountering a reverse P/Invoke, unwind directly to the P/Invoke frame using the saved transition frame.
+        SkipNativeFrames = 0x80,
+
+        GcStackWalkFlags = (CollapseFunclets | RemapHardwareFaultsToSafePoint | SkipNativeFrames),
         EHStackWalkFlags = ApplyReturnAddressAdjustment,
         StackTraceStackWalkFlags = GcStackWalkFlags
     };
@@ -205,7 +212,7 @@ protected:
     GCRefKind           m_HijackedReturnValueKind;
     PTR_UIntNative      m_pConservativeStackRangeLowerBound;
     PTR_UIntNative      m_pConservativeStackRangeUpperBound;
-    uint32_t              m_dwFlags;
+    uint32_t            m_dwFlags;
     PTR_ExInfo          m_pNextExInfo;
     PTR_VOID            m_pendingFuncletFramePointer;
     PreservedRegPtrs    m_funcletPtrs;  // @TODO: Placing the 'scratch space' in the StackFrameIterator is not
@@ -213,5 +220,7 @@ protected:
                                         // space.  However, the implementation simpler by doing it this way.
     bool                m_ShouldSkipRegularGcReporting;
     PTR_VOID            m_OriginalControlPC;
+    PTR_PInvokeTransitionFrame m_pPreviousTransitionFrame;
 };
 
+#endif // __StackFrameIterator_h__

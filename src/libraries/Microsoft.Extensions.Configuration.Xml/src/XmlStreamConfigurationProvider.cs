@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                                     var lineInfo = reader as IXmlLineInfo;
                                     var lineNumber = lineInfo?.LineNumber;
                                     var linePosition = lineInfo?.LinePosition;
-                                    parent.TextContent = new XmlConfigurationElementTextContent(string.Empty, lineNumber, linePosition);
+                                    parent.TextContent = new XmlConfigurationElementTextContent(string.Empty, linePosition, lineNumber);
                                 }
                             }
                             break;
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Configuration.Xml
 
                                 XmlConfigurationElement parent = currentPath.Peek();
 
-                                parent.TextContent = new XmlConfigurationElementTextContent(reader.Value, lineNumber, linePosition);
+                                parent.TextContent = new XmlConfigurationElementTextContent(reader.Value, linePosition, lineNumber);
                             }
                             break;
                         case XmlNodeType.XmlDeclaration:
@@ -245,7 +245,7 @@ namespace Microsoft.Extensions.Configuration.Xml
             return name;
         }
 
-        private static IDictionary<string, string?> ProvideConfiguration(XmlConfigurationElement? root)
+        private static Dictionary<string, string?> ProvideConfiguration(XmlConfigurationElement? root)
         {
             Dictionary<string, string?> configuration = new(StringComparer.OrdinalIgnoreCase);
 
@@ -352,7 +352,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                 var hasName = !string.IsNullOrEmpty(child.Name);
                 if (hasName)
                 {
-                    prefix.Push(child.Name);
+                    prefix.Push(child.Name!);
                 }
 
                 // Add index to the prefix

@@ -641,18 +641,6 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             break;
 
-        case GT_ADDR:
-        {
-            // For a GT_ADDR, the child node should not be evaluated into a register
-            GenTree* child = tree->gtGetOp1();
-            assert(!isCandidateLocalRef(child));
-            assert(child->isContained());
-            assert(dstCount == 1);
-            srcCount = 0;
-            BuildDef(tree);
-        }
-        break;
-
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:

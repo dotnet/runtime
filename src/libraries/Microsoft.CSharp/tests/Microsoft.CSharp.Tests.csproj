@@ -8,7 +8,7 @@
     -->
     <Features>$(Features.Replace('strict', '')</Features>
 
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />

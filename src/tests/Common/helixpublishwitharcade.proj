@@ -104,7 +104,7 @@
         SuperPmiCollect=$(_SuperPmiCollect)
       </_PropertiesToPass>
 
-      <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetsAndroid)' == 'true'">
+      <_PropertiesToPass Condition="'$(TargetOS)' == 'browser' Or '$(TargetsAndroid)' == 'true'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
@@ -115,6 +115,7 @@
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
     <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
+    <Message Importance="High" Text="TimeoutPerTestInMinutes: $(TimeoutPerTestInMinutes)" />
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
 
     <ItemGroup>
@@ -149,12 +150,12 @@
   <PropertyGroup Condition="'$(HelixRuntimeRid)' == ''">
     <TargetOSSpec>$(TargetOS)$(TargetOSSubgroup)</TargetOSSpec>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'windows'">win-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Browser'">browser-wasm</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Android'">android-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'iOSSimulator'">iossimulator-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'osx'">osx-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'browser'">browser-wasm</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'android'">android-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'iossimulator'">iossimulator-$(TargetArchitecture)</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -357,7 +358,7 @@
     <ItemGroup>
       <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
     </ItemGroup>
-    <PropertyGroup>
+    <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedWrapperDirectory>$([System.IO.Path]::GetDirectoryName('%(_MergedWrapperRunScript.Identity)'))</_MergedWrapperDirectory>
       <_MergedWrapperParentDirectory>$([System.IO.Path]::GetDirectoryName('$(_MergedWrapperDirectory)'))</_MergedWrapperParentDirectory>
       <_MergedWrapperName>%(_MergedWrapperRunScript.FileName)</_MergedWrapperName>
@@ -365,14 +366,11 @@
       <!-- On Windows, you need to "call" a script or else the cmd.exe instance it is running in will exit, and the HelixPostCommands will not execute. -->
       <_MergedWrapperRunScriptPrefix Condition="'$(TestWrapperTargetsWindows)' == 'true'">call </_MergedWrapperRunScriptPrefix>
     </PropertyGroup>
-    <ItemGroup>
+    <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedWrapperOutOfProcessTestMarkers Include="$(_MergedWrapperParentDirectory)/**/*.OutOfProcessTest" />
       <_MergedWrapperOutOfProcessTestFiles
         Include="%(_MergedWrapperOutOfProcessTestMarkers.RootDir)%(_MergedWrapperOutOfProcessTestMarkers.Directory)/**"
         Condition="'@(_MergedWrapperOutOfProcessTestMarkers)' != ''" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)/**" />
       <_MergedPayloadFiles Include="@(_MergedWrapperOutOfProcessTestFiles)" />
@@ -475,7 +473,8 @@
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
     <!-- Write the real test exclusion list instead of the placeholder. -->
     <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
-                      Lines="@(FilteredTestExclusionList)" />
+                      Lines="@(FilteredTestExclusionList)"
+                      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForAppleMobile"
@@ -513,7 +512,8 @@
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
     <!-- Write the real test exclusion list instead of the placeholder. -->
     <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
-      Lines="@(FilteredTestExclusionList)" />
+      Lines="@(FilteredTestExclusionList)"
+      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
     </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectory" DependsOnTargets="DiscoverMergedTestWrappers;PrepareMergedTestPayloadDirectoryForDesktop;PrepareMergedTestPayloadDirectoryForAndroid;PrepareMergedTestPayloadDirectoryForWasm;PrepareMergedTestPayloadDirectoryForAppleMobile" />
@@ -548,6 +548,7 @@
       DestinationFile="$(MergedPayloadsRootDirectory)\%(MergedPayloads.PayloadGroup).zip" />
   </Target>
 
+  
   <PropertyGroup>
     <EnableAzurePipelinesReporter>$(PublishTestResults)</EnableAzurePipelinesReporter>
     <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' == '' ">false</EnableAzurePipelinesReporter>

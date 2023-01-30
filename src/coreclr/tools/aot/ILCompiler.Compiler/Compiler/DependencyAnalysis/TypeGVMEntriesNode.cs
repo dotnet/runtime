@@ -103,10 +103,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var method in iface.GetVirtualMethods())
                 {
-                    if (!method.HasInstantiation || method.Signature.IsStatic)
+                    if (!method.HasInstantiation)
                         continue;
 
-                    MethodDesc slotDecl = type.ResolveInterfaceMethodTarget(method);
+                    MethodDesc slotDecl = method.Signature.IsStatic ?
+                        type.ResolveInterfaceMethodToStaticVirtualMethodOnType(method) : type.ResolveInterfaceMethodTarget(method);
                     if (slotDecl == null)
                     {
                         var resolution = type.ResolveInterfaceMethodToDefaultImplementationOnType(method, out slotDecl);
@@ -143,13 +144,12 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var method in iface.GetVirtualMethods())
                 {
-                    Debug.Assert(!method.Signature.IsStatic);
-
                     if (!method.HasInstantiation)
                         continue;
 
                     DefaultInterfaceMethodResolution resolution = DefaultInterfaceMethodResolution.None;
-                    MethodDesc slotDecl = _associatedType.ResolveInterfaceMethodTarget(method);
+                    MethodDesc slotDecl = method.Signature.IsStatic ?
+                        _associatedType.ResolveInterfaceMethodToStaticVirtualMethodOnType(method) : _associatedType.ResolveInterfaceMethodTarget(method);
                     if (slotDecl == null)
                     {
                         resolution = _associatedType.ResolveInterfaceMethodToDefaultImplementationOnType(method, out slotDecl);

@@ -5,7 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class GitHub_23739
+public class GitHub_23739
 {
     struct Struct1f
     {
@@ -186,7 +186,7 @@ class GitHub_23739
         Sink(ref l3);
     }
 
-    static int Main()
+    public static int Main()
     {
         Cls1f cls1f = new Cls1f();
         Test1f(cls1f);

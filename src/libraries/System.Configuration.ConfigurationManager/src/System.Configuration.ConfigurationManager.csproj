@@ -1,14 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
     <IsTrimmable>false</IsTrimmable>
-    <NoWarn>$(NoWarn);CA1847</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types that support using XML configuration files (app.config). This package exists only to support migrating existing .NET Framework code that already uses System.Configuration. When writing new code, use another configuration system instead, such as Microsoft.Extensions.Configuration.</PackageDescription>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -288,9 +286,5 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Configuration" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 </Project>

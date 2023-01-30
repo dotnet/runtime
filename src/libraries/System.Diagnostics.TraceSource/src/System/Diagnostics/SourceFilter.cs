@@ -33,8 +33,7 @@ namespace System.Diagnostics
             [MemberNotNull(nameof(_src))]
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(Source));
+                ArgumentNullException.ThrowIfNull(value, nameof(Source));
                 _src = value;
             }
         }

@@ -1065,7 +1065,7 @@ handle_dim_conflicts (MonoMethod **vtable, MonoClass *klass, GHashTable *conflic
 		int nentries = 0;
 		MonoMethod *impl = NULL;
 		for (l = entries; l; l = l->next) {
-			if (l->data) {
+			if (l->data && l->data != impl) {
 				nentries ++;
 				impl = (MonoMethod*)l->data;
 			}

@@ -46,7 +46,7 @@ public class Sensor
 	[ThreadStatic]
 	static String SSS = "Olden Polynice";
 
-	public static int Main(string[] args)
+	public static int Main()
 	{
 		Console.WriteLine("Hello NBA Fans!!");
 		Console.WriteLine("ThreadStatic test 2: Various reading and writing of Threadstatic variables.");

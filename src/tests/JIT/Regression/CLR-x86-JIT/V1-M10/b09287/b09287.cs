@@ -12,7 +12,7 @@ namespace Default
     //
     public class X
     {
-        public static int Main(String[] argv)
+        public static int Main()
         {
 
             Console.WriteLine("Entering Hello world");

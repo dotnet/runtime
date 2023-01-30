@@ -131,6 +131,16 @@ public:
     {
     }
 
+    emitLocation(insGroup* _ig, unsigned _codePos)
+    {
+        SetLocation(_ig, _codePos);
+    }
+
+    emitLocation(emitter* emit)
+    {
+        CaptureLocation(emit);
+    }
+
     emitLocation(void* emitCookie) : ig((insGroup*)emitCookie), codePos(0)
     {
     }
@@ -142,6 +152,8 @@ public:
     }
 
     void CaptureLocation(emitter* emit);
+    void SetLocation(insGroup* _ig, unsigned _codePos);
+    void SetLocation(emitLocation newLocation);
 
     bool IsCurrentLocation(emitter* emit) const;
 
@@ -160,6 +172,7 @@ public:
     }
 
     int GetInsNum() const;
+    int GetInsOffset() const;
 
     bool operator!=(const emitLocation& other) const
     {
@@ -250,6 +263,7 @@ struct insGroup
 #ifdef DEBUG
     BasicBlock*               lastGeneratedBlock; // The last block that generated code into this insGroup.
     jitstd::list<BasicBlock*> igBlocks;           // All the blocks that generated code into this insGroup.
+    size_t                    igDataSize;         // size of instrDesc data pointed to by 'igData'
 #endif
 
     UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
@@ -280,6 +294,9 @@ struct insGroup
 #define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
                                   // without updating the IG's size/offsets.
 #define IGF_HAS_REMOVABLE_JMP 0x1000 // this group ends with an unconditional jump which is a candidate for removal
+#ifdef TARGET_ARM64
+#define IGF_HAS_REMOVED_INSTR 0x2000 // this group has an instruction that was removed.
+#endif
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -564,7 +581,7 @@ protected:
         unsigned          idNum;
         size_t            idSize;        // size of the instruction descriptor
         unsigned          idVarRefOffs;  // IL offset for LclVar reference
-        size_t            idMemCookie;   // for display of method name  (also used by switch table)
+        size_t            idMemCookie;   // compile time handle (check idFlags)
         GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'
@@ -1693,7 +1710,6 @@ protected:
 #endif
 
     size_t emitGetInstrDescSize(const instrDesc* id);
-    size_t emitGetInstrDescSizeSC(const instrDesc* id);
 
 #ifdef TARGET_XARCH
 
@@ -1729,9 +1745,6 @@ protected:
     const char* emitRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
     const char* emitFloatRegName(regNumber reg, emitAttr size = EA_PTRSIZE, bool varName = true);
 
-    const char* emitFldName(CORINFO_FIELD_HANDLE fieldVal);
-    const char* emitFncName(CORINFO_METHOD_HANDLE callVal);
-
     // GC Info changes are not readily available at each instruction.
     // We use debug-only sets to track the per-instruction state, and to remember
     // what the state was at the last time it was output (instruction or label).
@@ -1748,8 +1761,11 @@ protected:
     void emitDispGCInfoDelta();
 
     void emitDispIGflags(unsigned flags);
-    void emitDispIG(insGroup* ig, insGroup* igPrev = nullptr, bool verbose = false);
-    void emitDispIGlist(bool verbose = false);
+    void emitDispIG(insGroup* ig,
+                    insGroup* igPrev              = nullptr,
+                    bool      displayInstructions = false,
+                    bool      displayLocation     = true);
+    void emitDispIGlist(bool displayInstructions = false);
     void emitDispGCinfo();
     void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
@@ -1938,8 +1954,6 @@ public:
 #ifdef PSEUDORANDOM_NOP_INSERTION
     bool emitInInstrumentation;
 #endif // PSEUDORANDOM_NOP_INSERTION
-
-    unsigned emitMaxTmpSize;
 
 #ifdef DEBUG
     bool emitChkAlign; // perform some alignment checks
@@ -2173,25 +2187,34 @@ private:
     insGroup* emitSavIG(bool emitAdd = false);
     void emitNxtIG(bool extend = false);
 
+#ifdef TARGET_ARM64
+    void emitRemoveLastInstruction();
+#endif
+
     bool emitCurIGnonEmpty()
     {
         return (emitCurIG && emitCurIGfreeNext > emitCurIGfreeBase);
     }
 
     instrDesc* emitLastIns;
+    insGroup*  emitLastInsIG;
 
     // Check if a peephole optimization involving emitLastIns is safe.
     //
-    // We must have a lastInstr to consult.
+    // We must have a non-null emitLastIns to consult.
     // The emitForceNewIG check here prevents peepholes from crossing nogc boundaries.
     // The final check prevents looking across an IG boundary unless we're in an extension IG.
     bool emitCanPeepholeLastIns()
     {
-        return (emitLastIns != nullptr) &&                 // there is an emitLastInstr
-               !emitForceNewIG &&                          // and we're not about to start a new IG
-               ((emitCurIGinsCnt > 0) ||                   // and we're not at the start of a new IG
-                ((emitCurIG->igFlags & IGF_EXTEND) != 0)); //    or we are at the start of a new IG,
-                                                           //    and it's an extension IG
+        assert((emitLastIns == nullptr) == (emitLastInsIG == nullptr));
+
+        return (emitLastIns != nullptr) &&                   // there is an emitLastInstr
+               !emitForceNewIG &&                            // and we're not about to start a new IG
+               ((emitCurIGinsCnt > 0) ||                     // and we're not at the start of a new IG
+                ((emitCurIG->igFlags & IGF_EXTEND) != 0)) && //    or we are at the start of a new IG,
+                                                             //    and it's an extension IG
+               ((emitLastInsIG->igFlags & IGF_NOGCINTERRUPT) == (emitCurIG->igFlags & IGF_NOGCINTERRUPT));
+        // and the last instr IG has the same GC interrupt status as the current IG
     }
 
 #ifdef TARGET_ARMARCH
@@ -2199,7 +2222,7 @@ private:
 #endif
 
 #ifdef DEBUG
-    void emitCheckIGoffsets();
+    void emitCheckIGList();
 #endif
 
     // Terminates any in-progress instruction group, making the current IG a new empty one.
@@ -2821,12 +2844,15 @@ inline unsigned emitGetInsOfsFromCodePos(unsigned codePos)
 
 inline unsigned emitter::emitCurOffset()
 {
-    unsigned codePos = emitCurIGinsCnt + (emitCurIGsize << 16);
+    return emitSpecifiedOffset(emitCurIGinsCnt, emitCurIGsize);
+}
 
-    assert(emitGetInsOfsFromCodePos(codePos) == emitCurIGsize);
-    assert(emitGetInsNumFromCodePos(codePos) == emitCurIGinsCnt);
+inline unsigned emitter::emitSpecifiedOffset(unsigned insCount, unsigned igSize)
+{
+    unsigned codePos = insCount + (igSize << 16);
 
-    // printf("[IG=%02u;ID=%03u;OF=%04X] => %08X\n", emitCurIG->igNum, emitCurIGinsCnt, emitCurIGsize, codePos);
+    assert(emitGetInsOfsFromCodePos(codePos) == igSize);
+    assert(emitGetInsNumFromCodePos(codePos) == insCount);
 
     return codePos;
 }
@@ -2999,13 +3025,14 @@ inline size_t emitter::emitGetInstrDescSize(const instrDesc* id)
     {
         return SMALL_IDSC_SIZE;
     }
-
-    if (id->idIsLargeCns())
+    else if (id->idIsLargeCns())
     {
         return sizeof(instrDescCns);
     }
-
-    return sizeof(instrDesc);
+    else
+    {
+        return sizeof(instrDesc);
+    }
 }
 
 /*****************************************************************************
@@ -3043,27 +3070,6 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
 #endif
 
         return id;
-    }
-}
-
-/*****************************************************************************
- *
- *  Get the instrDesc size for something that contains a constant
- */
-
-inline size_t emitter::emitGetInstrDescSizeSC(const instrDesc* id)
-{
-    if (id->idIsSmallDsc())
-    {
-        return SMALL_IDSC_SIZE;
-    }
-    else if (id->idIsLargeCns())
-    {
-        return sizeof(instrDescCns);
-    }
-    else
-    {
-        return sizeof(instrDesc);
     }
 }
 
@@ -3358,20 +3364,6 @@ inline BYTE* emitter::emitCodeWithInstructionSize(BYTE* codePtrBefore, BYTE* new
     assert(!callInstrSizeSafe.IsOverflow());
     *instrSize = callInstrSizeSafe.Value();
     return newCodePointer;
-}
-
-/*****************************************************************************
- *
- *  Add a new IG to the current list, and get it ready to receive code.
- */
-
-inline void emitter::emitNewIG()
-{
-    insGroup* ig = emitAllocAndLinkIG();
-
-    /* It's linked in. Now, set it up to accept code */
-
-    emitGenIG(ig);
 }
 
 /*****************************************************************************/

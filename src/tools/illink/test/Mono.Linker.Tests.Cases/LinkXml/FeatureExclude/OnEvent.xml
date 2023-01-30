@@ -1,0 +1,10 @@
+<linker>
+    <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.FeatureExclude.OnEvent">
+            <event signature="System.EventHandler`1&lt;System.EventArgs&gt; FeatureOne" feature="one"/>
+        </type>
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.FeatureExclude.OnEvent">
+            <event signature="System.EventHandler`1&lt;System.EventArgs&gt; FeatureTwo" feature="two"/>
+        </type>
+    </assembly>
+</linker>

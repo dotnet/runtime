@@ -6,7 +6,7 @@ import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, moduleExports, set_emscripten_entrypoint, set_environment, set_imports_exports } from "./imports";
+import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, moduleExports, set_emscripten_entrypoint, set_imports_exports } from "./imports";
 import { DotnetModule, is_nullish, EarlyImports, EarlyExports, EarlyReplacements, RuntimeAPI, CreateDotnetRuntimeType } from "./types";
 import { configure_emscripten_startup, mono_wasm_pthread_worker_init } from "./startup";
 import { mono_bind_static_method } from "./net6-legacy/method-calls";
@@ -133,19 +133,7 @@ function initializeImportsAndExports(
     list.registerRuntime(exportedRuntimeAPI);
 
     if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
-        // eslint-disable-next-line no-inner-declarations
-        async function workerInit(): Promise<DotnetModule> {
-            await mono_wasm_pthread_worker_init();
-
-            // HACK: Emscripten's dotnet.worker.js expects the exports of dotnet.js module to be Module object
-            // until we have our own fix for dotnet.worker.js file
-            // we also skip all emscripten startup event and configuration of worker's JS state
-            // note that emscripten events are not firing either
-
-            return exportedRuntimeAPI.Module;
-        }
-        // Emscripten pthread worker.js is ok with a Promise here.
-        return <any>workerInit();
+        return <any>mono_wasm_pthread_worker_init(module, exportedRuntimeAPI);
     }
 
     configure_emscripten_startup(module, exportedRuntimeAPI);
@@ -169,8 +157,7 @@ class RuntimeList {
     }
 }
 
-function setEmscriptenEntrypoint(emscriptenEntrypoint: CreateDotnetRuntimeType, env: any) {
-    set_environment(env);
+function setEmscriptenEntrypoint(emscriptenEntrypoint: CreateDotnetRuntimeType) {
     Object.assign(moduleExports, export_module());
     set_emscripten_entrypoint(emscriptenEntrypoint);
 }

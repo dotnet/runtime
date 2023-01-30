@@ -1,17 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Net.Cache;
 using System.Security;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace System.Net
 {
@@ -507,7 +508,12 @@ namespace System.Net
                         "Content-Type: " + contentType + "\r\n" +
                         "\r\n";
                     formHeaderBytes = Encoding.UTF8.GetBytes(formHeader);
-                    boundaryBytes = Encoding.ASCII.GetBytes("\r\n--" + boundary + "--\r\n");
+
+                    boundaryBytes = new byte["\r\n--".Length + boundary.Length + "--\r\n".Length];
+                    "\r\n--"u8.CopyTo(boundaryBytes);
+                    "--\r\n"u8.CopyTo(boundaryBytes.AsSpan("\r\n--".Length + boundary.Length));
+                    OperationStatus conversionStatus = Ascii.FromUtf16(boundary, boundaryBytes.AsSpan("\r\n--".Length), out _);
+                    Debug.Assert(conversionStatus == OperationStatus.Done);
                 }
                 else
                 {
@@ -935,7 +941,7 @@ namespace System.Net
         }
 
         private byte[] UploadBits(
-            WebRequest request, Stream? readStream, byte[] buffer, int chunkSize,
+            WebRequest request, FileStream? readStream, byte[] buffer, int chunkSize,
             byte[]? header, byte[]? footer)
         {
             try
@@ -996,7 +1002,7 @@ namespace System.Net
         }
 
         private async void UploadBitsAsync(
-            WebRequest request, Stream? readStream, byte[] buffer, int chunkSize,
+            WebRequest request, FileStream? readStream, byte[] buffer, int chunkSize,
             byte[]? header, byte[]? footer,
             AsyncOperation asyncOp, Action<byte[]?, Exception?, AsyncOperation> completionDelegate)
         {
@@ -1170,7 +1176,7 @@ namespace System.Net
         [return: NotNullIfNotNull(nameof(str))]
         private static string? UrlEncode(string? str) =>
             str is null ? null :
-            WebUtility.UrlEncode(str);
+            HttpUtility.UrlEncode(str);
 
         private void InvokeOperationCompleted(AsyncOperation asyncOp, SendOrPostCallback callback, AsyncCompletedEventArgs eventArgs)
         {

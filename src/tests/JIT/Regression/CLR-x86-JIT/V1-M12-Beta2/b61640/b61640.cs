@@ -14,7 +14,7 @@ namespace Test
             public bool b2;
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             foo(true, true);
             return 100;

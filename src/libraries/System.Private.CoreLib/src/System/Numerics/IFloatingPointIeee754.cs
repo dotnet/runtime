@@ -34,14 +34,14 @@ namespace System.Numerics
         /// <param name="y">The y-coordinate of a point.</param>
         /// <param name="x">The x-coordinate of a point.</param>
         /// <returns>The arc-tangent of <paramref name="y" /> divided-by <paramref name="x" />.</returns>
-        /// <remarks>This computes <c>arctan(y / x)</c> in the interval <c>[-π, +π]</c> radians.</remarks>
+        /// <remarks>This computes <c>arctan(y / x)</c> in the interval <c>[-PI, +PI]</c> radians.</remarks>
         static abstract TSelf Atan2(TSelf y, TSelf x);
 
         /// <summary>Computes the arc-tangent for the quotient of two values and divides the result by <c>pi</c>.</summary>
         /// <param name="y">The y-coordinate of a point.</param>
         /// <param name="x">The x-coordinate of a point.</param>
         /// <returns>The arc-tangent of <paramref name="y" /> divided-by <paramref name="x" />, divided by <c>pi</c>.</returns>
-        /// <remarks>This computes <c>arctan(y / x) / π</c> in the interval <c>[-1, +1]</c>.</remarks>
+        /// <remarks>This computes <c>arctan(y / x) / PI</c> in the interval <c>[-1, +1]</c>.</remarks>
         static abstract TSelf Atan2Pi(TSelf y, TSelf x);
 
         /// <summary>Decrements a value to the largest value that compares less than a given value.</summary>
@@ -71,6 +71,14 @@ namespace System.Numerics
         /// <param name="x">The value whose integer logarithm is to be computed.</param>
         /// <returns>The integer logarithm of <paramref name="x" />.</returns>
         static abstract int ILogB(TSelf x);
+
+        /// <summary>Performs a linear interpolation between two values based on the given weight.</summary>
+        /// <param name="value1">The first value, which is intended to be the lower bound.</param>
+        /// <param name="value2">The second value, which is intended to be the upper bound.</param>
+        /// <param name="amount">A value, intended to be between 0 and 1, that indicates the weight of the interpolation.</param>
+        /// <returns>The interpolated value.</returns>
+        /// <remarks>This method presumes inputs are well formed and does not validate that <c>value1 &lt; value2</c> nor that <c>0 &lt;= amount &lt;= 1</c>.</remarks>
+        static virtual TSelf Lerp(TSelf value1, TSelf value2, TSelf amount) => (value1 * (TSelf.One - amount)) + (value2 * amount);
 
         /// <summary>Computes an estimate of the reciprocal of a value.</summary>
         /// <param name="x">The value whose estimate of the reciprocal is to be computed.</param>

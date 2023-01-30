@@ -5,7 +5,7 @@
       To run a custom project specific target for adding/editing @(HelixWorkItem):
 
       - In the project add:
-        <HelixTargetsFile Condition="'$(TargetOS)' == 'Browser'">wasm.helix.targets</HelixTargetsFile>
+        <HelixTargetsFile Condition="'$(TargetOS)' == 'browser'">wasm.helix.targets</HelixTargetsFile>
         - This files gets copied next to the test archive as $(MSBuildProjectName).helix.targets
 
       - In this `wasm.helix.targets` file, add to $(HelixExtensionTargets) to run your custom target
@@ -22,8 +22,6 @@
     <_workItemTimeout Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
 
     <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
-    <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</TestEchoMiddleware>
-    <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</RemoteLoopMiddleware>
     <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
     <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
 
@@ -55,9 +53,11 @@
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
     <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
     <IncludeNodePayload Condition="'$(NeedsEMSDKNode)' == 'true' and '$(NeedsEMSDK)' != 'true'">true</IncludeNodePayload>
+
+    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
   </PropertyGroup>
 
-  <Import Project="$(TestArchiveTestsDir)*.helix.targets" />
+  <Import Project="$(TestArchiveRoot)**\*.helix.targets" />
 
   <PropertyGroup>
     <_HelixLocalNodePath Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' != 'true'">$HELIX_CORRELATION_PAYLOAD/build/emsdk-node</_HelixLocalNodePath>
@@ -139,7 +139,7 @@
     <When Condition="'$(NeedsEMSDK)' == 'true'">
       <PropertyGroup>
         <NeedsDotNetSdk>true</NeedsDotNetSdk>
-        <!-- <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson> -->
+        <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
         <IncludeXHarnessCli>true</IncludeXHarnessCli>
         <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
       </PropertyGroup>
@@ -184,11 +184,6 @@
     <!-- copy node separately only if EMSDK is not being included -->
     <ItemGroup Condition="'$(IncludeNodePayload)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)node"          Destination="build/emsdk-node" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJS'">
-      <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" Condition="Exists('$(TestEchoMiddleware)')" />
-      <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" Condition="Exists('$(RemoteLoopMiddleware)')" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsBuiltNugets)' == 'true'">
@@ -241,6 +236,7 @@
       <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(TestUsingWebcil)' == 'true'">$(WorkItemPrefix)Webcil-</WorkItemPrefix>
     </PropertyGroup>
 
     <ItemGroup>
@@ -265,7 +261,7 @@
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="NoWorkload-Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
+      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>

@@ -19,37 +19,39 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 extends:
-  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobs:
+    stages:
+    - stage: Build
+      jobs:
 
-    - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-      - template: /eng/pipelines/common/evaluate-paths-job.yml
+      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+        - template: /eng/pipelines/common/evaluate-paths-job.yml
+          parameters:
+            paths:
+            - subset: jiteeversionguid
+              include:
+              - src/coreclr/inc/jiteeversionguid.h
+
+      - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          paths:
-          - subset: jiteeversionguid
-            include:
-            - src/coreclr/inc/jiteeversionguid.h
+          jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          - windows_x86
+          jobParameters:
+            uploadAs: 'pipelineArtifacts'
+            condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
 
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
-        buildConfig: checked
-        platforms:
-        - windows_x64
-        - windows_x86
-        jobParameters:
-          uploadAs: 'pipelineArtifacts'
-          condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
-
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/coreclr/templates/superpmi-replay-job.yml
-        buildConfig: checked
-        platforms:
-        - windows_x64
-        - windows_x86
-        helixQueueGroup: ci
-        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-        jobParameters:
-          condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-replay-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          - windows_x86
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))

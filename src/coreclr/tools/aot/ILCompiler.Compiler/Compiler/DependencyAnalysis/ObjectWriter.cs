@@ -131,6 +131,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadOnly = 0x0000,
             Writeable = 0x0001,
             Executable = 0x0002,
+            Uninitialized = 0x0004,
         };
 
         /// <summary>
@@ -150,6 +151,9 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case SectionType.Writeable:
                     attributes |= CustomSectionAttributes.Writeable;
+                    break;
+                case SectionType.Uninitialized:
+                    attributes |= CustomSectionAttributes.Uninitialized | CustomSectionAttributes.Writeable;
                     break;
             }
 
@@ -762,12 +766,13 @@ namespace ILCompiler.DependencyAnalysis
             _offsetToDefName.Clear();
             foreach (ISymbolDefinitionNode n in definedSymbols)
             {
-                if (!_offsetToDefName.ContainsKey(n.Offset))
+                if (!_offsetToDefName.TryGetValue(n.Offset, out var nodes))
                 {
-                    _offsetToDefName[n.Offset] = new List<ISymbolDefinitionNode>();
+                    nodes = new List<ISymbolDefinitionNode>();
+                    _offsetToDefName[n.Offset] = nodes;
                 }
 
-                _offsetToDefName[n.Offset].Add(n);
+                nodes.Add(n);
                 _byteInterruptionOffsets[n.Offset] = true;
             }
 

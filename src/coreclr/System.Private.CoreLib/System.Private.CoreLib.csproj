@@ -159,26 +159,26 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInvoker.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilderInstantiation.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeAssemblyBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeConstructorBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeEnumBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeEventBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeFieldBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeGenericTypeParameterBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeMethodBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeModuleBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimePropertyBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeTypeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolMethod.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\XXXOnTypeBuilderInstantiation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.CoreCLR.cs" />
@@ -208,7 +208,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
@@ -229,7 +228,7 @@
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.ActivatorCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
@@ -237,7 +236,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ProcessorIdCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
@@ -339,17 +337,10 @@
 
     </PropertyGroup>
 
-    <Exec Command="$(PYTHON) -B $(_PythonWarningParameter) &quot;@(EventingGenerationScript)&quot; --man &quot;@(EventManifestFile)&quot; --intermediate &quot;$(_EventingSourceFileDirectory)&quot;" />
+    <Exec Command="&quot;$(PYTHON)&quot; -B $(_PythonWarningParameter) &quot;@(EventingGenerationScript)&quot; --man &quot;@(EventManifestFile)&quot; --intermediate &quot;$(_EventingSourceFileDirectory)&quot;" />
 
     <ItemGroup>
       <FileWrites Include="@(EventingSourceFile)" />
     </ItemGroup>
   </Target>
-
-  <!-- Import refererence assembly and ApiCompat logic -->
-  <PropertyGroup>
-    <IsSourceProject>true</IsSourceProject>
-  </PropertyGroup>
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
-  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 </Project>
