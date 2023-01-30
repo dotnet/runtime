@@ -75,7 +75,7 @@ async function getArgs() {
             console.debug(`could not load /runArgs.json: ${response.status}. Ignoring`);
         }
     }
-    let runArgs = initRunArgs(queryArguments.length > 0 ? processArguments(queryArguments, runArgsJson) : runArgsJson);
+    let runArgs = queryArguments.length > 0 ? processArguments(queryArguments, runArgsJson) : initRunArgs(runArgsJson);
     return runArgs;
 }
 
@@ -97,7 +97,7 @@ function initRunArgs(runArgs) {
 }
 
 function processArguments(incomingArguments, runArgsJson) {
-    const runArgs = runArgsJson ?? initRunArgs({});
+    const runArgs = initRunArgs(runArgsJson);
 
     console.log("Incoming arguments: " + incomingArguments.join(' '));
     while (incomingArguments && incomingArguments.length > 0) {
