@@ -11,7 +11,8 @@ set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
-for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
+:: normalize
+for %%i in ("%__RepoRootDir%") do set "__RepoRootDir=%%~fi"
 
 set "__TestDir=%__RepoRootDir%\src\tests"
 

@@ -68,6 +68,7 @@
       DOTNET_JitRandomEdgeCounts;
       DOTNET_JitRandomOnStackReplacement;
       DOTNET_JitRandomlyCollect64BitCounts;
+      DOTNET_TieredPGO_InstrumentedTierAlwaysOptimized;
       DOTNET_JitForceControlFlowGuard;
       DOTNET_JitCFGUseDispatcher;
       RunningIlasmRoundTrip
@@ -212,6 +213,7 @@
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
     <TestEnvironment Include="fullpgo_methodprofiling" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" />
+    <TestEnvironment Include="fullpgo_methodprofiling_always_optimized" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" TieredPGO_InstrumentedTierAlwaysOptimized="1" />
     <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="fullpgo_random_gdv_methodprofiling_only" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitClassProfiling="0" JitDelegateProfiling="1" JitVTableProfiling="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1" JitRandomlyCollect64BitCounts="1" />

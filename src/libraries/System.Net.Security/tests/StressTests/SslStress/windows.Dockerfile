@@ -9,7 +9,7 @@ WORKDIR /app
 COPY . .
 WORKDIR /app/System.Net.Security/tests/StressTests/SslStress
 
-ARG VERSION=7.0
+ARG VERSION=8.0
 ARG CONFIGURATION=Release
 
 RUN dotnet build -c $env:CONFIGURATION `

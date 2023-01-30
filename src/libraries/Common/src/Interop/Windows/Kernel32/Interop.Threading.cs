@@ -20,9 +20,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.Kernel32)]
         internal static partial uint SignalObjectAndWait(IntPtr hObjectToSignal, IntPtr hObjectToWaitOn, uint dwMilliseconds, BOOL bAlertable);
 
-        [LibraryImport(Libraries.Kernel32)]
-        internal static partial void Sleep(uint milliseconds);
-
         internal const uint CREATE_SUSPENDED = 0x00000004;
         internal const uint STACK_SIZE_PARAM_IS_A_RESERVATION = 0x00010000;
 

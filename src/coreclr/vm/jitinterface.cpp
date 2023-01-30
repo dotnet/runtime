@@ -1576,18 +1576,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 }
             }
         }
-
-        //
-        // Currently, we only this optimization for regular statics, but it
-        // looks like it may be permissible to do this optimization for
-        // thread statics as well.
-        //
-        if ((flags & CORINFO_ACCESS_ADDRESS) &&
-            !pField->IsThreadStatic() &&
-            (fieldAccessor != CORINFO_FIELD_STATIC_TLS))
-        {
-            fieldFlags |= CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
-        }
     }
     else
     {
