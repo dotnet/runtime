@@ -1507,10 +1507,11 @@ namespace System
                 // But we still need to post-process the results based on the caller-provided flags.
                 return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
-            // The TrimEntries flag must be left intact if we are constrained by count because we need to process last substring.
+
             if (separators.IsEmpty && count > Length)
             {
-                // Caller is already splitting on whitespace; no need for separate trim step
+                // Caller is already splitting on whitespace; no need for separate trim step if the count is sufficient
+                // to examine the whole input.
                 options &= ~StringSplitOptions.TrimEntries;
             }
 
