@@ -118,14 +118,15 @@ function instantiateWasm(
     return []; // No exports
 }
 
-function instantiateWasmWorker(
+async function instantiateWasmWorker(
     imports: WebAssembly.Imports,
     successCallback: InstantiateWasmSuccessCallback
-): any {
+): Promise<void> {
+    // wait for the config to arrive by message from the main thread
+    await afterConfigLoaded.promise;
+
     const anyModule = Module as any;
-
     normalizeConfig();
-
     replace_linker_placeholders(imports, export_linker());
 
     // Instantiate from the module posted from the main thread.
@@ -133,7 +134,6 @@ function instantiateWasmWorker(
     const instance = new WebAssembly.Instance(anyModule.wasmModule, imports);
     successCallback(instance, undefined);
     anyModule.wasmModule = null;
-    return instance.exports;
 }
 
 function preInit(userPreInit: (() => void)[]) {
@@ -173,6 +173,7 @@ function preInit(userPreInit: (() => void)[]) {
 }
 
 async function preInitWorkerAsync() {
+    console.debug("MONO_WASM: worker initializing essential C exports and APIs");
     const mark = startMeasure();
     try {
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preInitWorker");
@@ -682,8 +683,7 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 /// 2. Emscripten does not run any event but preInit in the workers.
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
 export async function mono_wasm_pthread_worker_init(module: DotnetModule, exportedAPI: RuntimeAPI): Promise<DotnetModule> {
-    console.debug("MONO_WASM: worker initializing essential C exports and APIs");
-
+    pthreads_worker.setupTempChannelToMainThread();
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
         console.debug("MONO_WASM: pthread created", ev.pthread_self.pthread_id);
