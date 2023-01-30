@@ -81,7 +81,6 @@ namespace DebuggerTests
             this._loggerFactory = loggerFactory;
 
             app.UseWebSockets();
-            app.UseStaticFiles();
 
             TestHarnessOptions options = optionsAccessor.CurrentValue;
 
