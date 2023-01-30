@@ -44,11 +44,6 @@ namespace System.IO
                 // Read filestatus of destination file to determine how we continue
                 int destError = Interop.Sys.Stat(destFullPath, out var destStat);
 
-                // Counter to count the amount of times we have repeated. Used in case EEXIST is thrown by clonefile, indicating the
-                // file was re-created before we copy. Not a problematic error, but we do not want to retry an infinite amount of times.
-                int repeats = 0;
-                tryAgain:
-
                 // Interpret the error from stat
                 if (destError != 0)
                 {
@@ -116,12 +111,6 @@ namespace System.IO
                         {
                             // Throw an error if we're not overriding
                             DestinationExistsError();
-                        }
-
-                        // Destination existed, try again (up a certain number of times).
-                        if (++repeats < 5)
-                        {
-                            goto tryAgain;
                         }
                     }
 
