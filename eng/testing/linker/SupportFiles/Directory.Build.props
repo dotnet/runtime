@@ -11,8 +11,6 @@
     <!-- Suppress analyzer and linker warnings as these are tests -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <NoWarn>$(NoWarn);IL2121</NoWarn>    
-    <!-- System.Runtime.TrimmingTests.InvariantGlobalizationFalse requires full ICU data, force it -->
-    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
+    <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 </Project>
