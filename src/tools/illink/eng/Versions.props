@@ -14,13 +14,11 @@
     <MicrosoftNETSdkILPackageVersion>7.0.0-rtm.22507.1</MicrosoftNETSdkILPackageVersion>
     <!-- see https://github.com/dotnet/runtime/issues/1338 -->
     <MicrosoftNETCoreILAsmVersion>$(MicrosoftNETSdkILPackageVersion)</MicrosoftNETCoreILAsmVersion>
-
     <!-- These should match the SDK versions at https://github.com/dotnet/sdk/blob/master/eng/Versions.props -->
     <SystemReflectionMetadataVersion>5.0.0</SystemReflectionMetadataVersion>
     <MicrosoftBuildFrameworkVersion>17.3.2</MicrosoftBuildFrameworkVersion>
     <MicrosoftBuildUtilitiesCoreVersion>17.3.2</MicrosoftBuildUtilitiesCoreVersion>
-
-    <MicrosoftDotNetApiCompatVersion>8.0.0-beta.23067.5</MicrosoftDotNetApiCompatVersion>
+    <MicrosoftDotNetApiCompatVersion>8.0.0-beta.23077.1</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetCodeAnalysisVersion>6.0.0-beta.21271.1</MicrosoftDotNetCodeAnalysisVersion>
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.10.0-2.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisVersion>4.5.0-1.22517.9</MicrosoftCodeAnalysisVersion>
