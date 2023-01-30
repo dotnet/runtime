@@ -127,7 +127,6 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(const char* classN
 
     if (enclosingClassName != nullptr)
     {
-        assert(!"Unrecognized SimdAsHWIntrinsic");
         return SimdAsHWIntrinsicClassId::Unknown;
     }
 
@@ -193,7 +192,6 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(const char* classN
         }
     }
 
-    assert(!"Unrecognized SimdAsHWIntrinsic");
     return SimdAsHWIntrinsicClassId::Unknown;
 }
 
