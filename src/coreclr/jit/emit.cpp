@@ -6448,7 +6448,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
-        // For NativeAOT, codeBlock will not be necessarily aligned, but it is aligned
+        // For prejit, codeBlock will not be necessarily aligned, but it is aligned
         // in final obj file.
         assert((((size_t)codeBlock & 31) == 0) || emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
     }

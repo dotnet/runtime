@@ -11237,7 +11237,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     // immediately preced the loop IG, we do not know in advance the offset of
     // IG having loop. For such cases, skip the padding calculation validation.
 
-    // For NativeAOT, `dst` is not aliged as requested, but the final assembly will have them aligned.
+    // For prejit, `dst` is not aliged as requested, but the final assembly will have them aligned.
     // So, just calculate the offset of the current `dst` from the start.
     size_t offset = emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) ? (dst - emitCodeBlock) : (size_t)dst;
     bool   validatePadding = !alignInstr->isPlacedAfterJmp;
