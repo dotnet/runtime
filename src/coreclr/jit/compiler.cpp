@@ -1910,8 +1910,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compGeneratingProlog = false;
     compGeneratingEpilog = false;
 
-    compLSRADone       = false;
-    compRationalIRForm = false;
+    compPostImportationCleanupDone = false;
+    compLSRADone                   = false;
+    compRationalIRForm             = false;
 
 #ifdef DEBUG
     compCodeGenDone        = false;
@@ -4407,12 +4408,46 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
+    // If this is a failed inline attempt, we're done.
+    //
+    if (compIsForInlining() && compInlineResult->IsFailure())
+    {
+#ifdef FEATURE_JIT_METHOD_PERF
+        if (pCompJitTimer != nullptr)
+        {
+#if MEASURE_CLRAPI_CALLS
+            EndPhase(PHASE_CLR_API);
+#endif
+            pCompJitTimer->Terminate(this, CompTimeSummaryInfo::s_compTimeSummary, false);
+        }
+#endif
+
+        return;
+    }
+
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
     {
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
+
+    // Compute bbNum, bbRefs and bbPreds
+    //
+    // This is the first time full (not cheap) preds will be computed.
+    // And, if we have profile data, we can now check integrity.
+    //
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated.
+    //
+    auto computePredsPhase = [this]() {
+        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
+        fgRenumberBlocks();
+        fgComputePreds();
+        // Enable flow graph checks
+        activePhaseChecks |= PhaseChecks::CHECK_FG;
+    };
+    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
     // Expand any patchpoints
     //
@@ -4466,24 +4501,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
-
-    // Compute bbNum, bbRefs and bbPreds
-    //
-    // This is the first time full (not cheap) preds will be computed.
-    // And, if we have profile data, we can now check integrity.
-    //
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated.
-    //
-    auto computePredsPhase = [this]() {
-        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
-        fgRenumberBlocks();
-        noway_assert(!fgComputePredsDone);
-        fgComputePreds();
-        // Enable flow graph checks
-        activePhaseChecks |= PhaseChecks::CHECK_FG;
-    };
-    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
     // local variable allocation on the stack.
@@ -4609,14 +4626,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     lvaRefCountState = RCS_EARLY;
 
-    // Figure out what locals are address-taken.
-    //
-    DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
-
     if (opts.OptimizationEnabled())
     {
         fgNodeThreading = NodeThreading::AllLocals;
     }
+
+    // Figure out what locals are address-taken.
+    //
+    DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
 
     // Do an early pass of liveness for forward sub and morph. This data is
     // valid until after morph.
@@ -9996,8 +10013,8 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 // gtChangeOperToNullCheck: helper to change tree oper to a NULLCHECK.
 //
 // Arguments:
-//    tree       - the node to change;
-//    basicBlock - basic block of the node.
+//    tree  - the node to change;
+//    block - basic block of the node.
 //
 // Notes:
 //    the function should not be called after lowering for platforms that do not support
@@ -10009,6 +10026,8 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
+    assert(fgAddrCouldBeNull(tree->gtGetOp1()));
+    tree->gtFlags |= GTF_EXCEPT;
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }

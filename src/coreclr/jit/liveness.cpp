@@ -498,7 +498,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
                     {
                         // Assigned local should be the very last local.
                         assert((dst == nullptr) ||
-                               ((stmt->GetRootNode()->gtPrev == dst) && ((dst->gtFlags & GTF_VAR_DEF) != 0)));
+                               ((stmt->GetTreeListEnd() == dst) && ((dst->gtFlags & GTF_VAR_DEF) != 0)));
 
                         // Conservatively ignore defs that may be conditional
                         // but would otherwise still interfere with the
@@ -1825,7 +1825,7 @@ GenTree* Compiler::fgTryRemoveDeadStoreEarly(Statement* stmt, GenTreeLclVarCommo
 
     JITDUMP("Store [%06u] is dead", dspTreeID(stmt->GetRootNode()));
     // The def ought to be the last thing.
-    assert(stmt->GetRootNode()->gtPrev == cur);
+    assert(stmt->GetTreeListEnd() == cur);
 
     GenTree* sideEffects = nullptr;
     gtExtractSideEffList(stmt->GetRootNode()->gtGetOp2(), &sideEffects);
@@ -1844,7 +1844,7 @@ GenTree* Compiler::fgTryRemoveDeadStoreEarly(Statement* stmt, GenTreeLclVarCommo
         DISPTREE(sideEffects);
         JITDUMP("\n");
         // continue at tail of the side effects
-        return stmt->GetRootNode()->gtPrev;
+        return stmt->GetTreeListEnd();
     }
 }
 
@@ -2820,7 +2820,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
                 if (qmark != nullptr)
                 {
-                    for (GenTree* cur = stmt->GetRootNode()->gtPrev; cur != nullptr;)
+                    for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
                         assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
                         bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0) && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
@@ -2846,7 +2846,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 }
                 else
                 {
-                    for (GenTree* cur = stmt->GetRootNode()->gtPrev; cur != nullptr;)
+                    for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
                         assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
                         if (!fgComputeLifeLocal(life, keepAliveVars, cur))

@@ -166,7 +166,7 @@
     <_runtimeOS Condition="'$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</_runtimeOS>
 
     <_portableOS>linux</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl'">linux-musl</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl' or $(_runtimeOS.StartsWith('alpine'))">linux-musl</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'linux-bionic'">linux-bionic</_portableOS>
     <_portableOS Condition="'$(_hostOS)' == 'osx'">osx</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
@@ -219,6 +219,7 @@
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
     <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
     <TargetsLinuxBionic Condition="$(OutputRid.StartsWith('linux-bionic'))">true</TargetsLinuxBionic>
+    <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOSName" Condition="'$(SkipInferTargetOSName)' != 'true'">
@@ -390,6 +391,11 @@
       <_Parameter1_IsLiteral>true</_Parameter1_IsLiteral>
     </AssemblyAttribute>
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
+    <!-- Must be defined in a props file as imports in Microsoft.DotNet.ApiCompat.Task.targets depend on it. -->
+    <ApiCompatValidateAssemblies>true</ApiCompatValidateAssemblies>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsGeneratorProject)' == 'true'">
     <!-- Unique assembly versions increases(3x) the compiler throughput during reference package updates. -->

@@ -1943,7 +1943,7 @@ namespace System.ComponentModel.Design
     }
     public partial interface ISelectionService
     {
-        object PrimarySelection { get; }
+        object? PrimarySelection { get; }
         int SelectionCount { get; }
         event System.EventHandler SelectionChanged;
         event System.EventHandler SelectionChanging;

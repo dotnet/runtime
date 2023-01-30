@@ -956,6 +956,12 @@ mono_jiterp_get_hashcode (MonoObject ** ppObj)
 	return mono_object_hash_internal (obj);
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_signature_has_this (MonoMethodSignature *sig)
+{
+	return sig->hasthis;
+}
+
 EMSCRIPTEN_KEEPALIVE MonoType *
 mono_jiterp_get_signature_return_type (MonoMethodSignature *sig)
 {

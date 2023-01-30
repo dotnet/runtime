@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Frozen
@@ -17,15 +18,16 @@ namespace System.Collections.Frozen
         private readonly TValue[] _values;
         private readonly int _max;
 
-        // assumes the keys are sorted
-        internal SmallInt32FrozenDictionary(int[] keys, TValue[] values)
-            : base(EqualityComparer<int>.Default)
+        internal SmallInt32FrozenDictionary(Dictionary<int, TValue> source) : base(EqualityComparer<int>.Default)
         {
-            Debug.Assert(keys.Length != 0);
+            Debug.Assert(source.Count != 0);
+            Debug.Assert(ReferenceEquals(source.Comparer, EqualityComparer<int>.Default));
 
-            _keys = keys;
-            _values = values;
-            _max = _keys[keys.Length - 1];
+            _keys = source.Keys.ToArray();
+            _values = source.Values.ToArray();
+            Array.Sort(_keys, _values);
+
+            _max = _keys[_keys.Length - 1];
         }
 
         private protected override int[] KeysCore => _keys;
