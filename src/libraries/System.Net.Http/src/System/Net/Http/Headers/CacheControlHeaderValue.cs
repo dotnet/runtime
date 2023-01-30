@@ -404,7 +404,8 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                nameValueList.Add((NameValueHeaderValue)nameValue!);
+                Debug.Assert(nameValue is not null);
+                nameValueList.Add((NameValueHeaderValue)nameValue);
             }
 
             // If we get here, we were able to successfully parse the string as list of name/value pairs. Now analyze
