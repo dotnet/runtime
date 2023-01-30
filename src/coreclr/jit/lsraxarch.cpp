@@ -957,6 +957,13 @@ int LinearScan::BuildSelect(GenTreeOp* select)
         srcCount++;
     }
 
+    if ((tgtPrefUse != nullptr) && (tgtPrefUse2 != nullptr))
+    {
+        // CQ analysis shows that it's best to always prefer only the 'true'
+        // val here.
+        tgtPrefUse2 = nullptr;
+    }
+
     // Codegen will emit something like:
     //
     // mov dstReg, falseVal

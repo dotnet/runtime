@@ -716,16 +716,12 @@ bool OptIfConversionDsc::optIfConvert()
         }
         else
         {
-            // Invert the condition (to help matching condition codes back to CIL).
-            GenTree* revCond = m_comp->gtReverseCond(m_cond);
-            assert(m_cond == revCond); // Ensure `gtReverseCond` did not create a new node.
-
             // Duplicate the destination of the Then assignment.
             assert(m_thenOperation.node->gtGetOp1()->IsLocal());
-            selectFalseInput = m_comp->gtCloneExpr(m_thenOperation.node->gtGetOp1());
-            selectFalseInput->gtFlags &= GTF_EMPTY;
+            selectTrueInput = m_comp->gtCloneExpr(m_thenOperation.node->gtGetOp1());
+            selectTrueInput->gtFlags &= GTF_EMPTY;
 
-            selectTrueInput = m_thenOperation.node->gtGetOp2();
+            selectFalseInput = m_thenOperation.node->gtGetOp2();
         }
 
         // Pick the type as the type of the local, which should always be compatible even for implicit coercions.
