@@ -70,12 +70,14 @@ async function getArgs() {
     {
         const response = await globalThis.fetch('./runArgs.json');
         if (response.ok) {
-            runArgsJson = await response.json();
+            runArgsJson = initRunArgs(await response.json());
         } else {
             console.debug(`could not load /runArgs.json: ${response.status}. Ignoring`);
         }
     }
-    let runArgs = queryArguments.length > 0 ? processArguments(queryArguments, runArgsJson) : initRunArgs(runArgsJson);
+    if (!runArgsJson)
+        runArgsJson = initRunArgs({});
+    let runArgs = queryArguments.length > 0 ? processArguments(queryArguments, runArgsJson) : runArgsJson;
     return runArgs;
 }
 
@@ -96,9 +98,7 @@ function initRunArgs(runArgs) {
     return runArgs;
 }
 
-function processArguments(incomingArguments, runArgsJson) {
-    const runArgs = initRunArgs(runArgsJson);
-
+function processArguments(incomingArguments, runArgs) {
     console.log("Incoming arguments: " + incomingArguments.join(' '));
     while (incomingArguments && incomingArguments.length > 0) {
         const currentArg = incomingArguments[0];
