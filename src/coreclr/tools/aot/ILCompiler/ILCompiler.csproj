@@ -10,13 +10,38 @@
   <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
-    <PublishAot>true</PublishAot>
+    <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
+    <PublishReadyToRun Condition="'$(NativeAotSupported)' != 'true'">true</PublishReadyToRun>
+    <PublishSingleFile Condition="'$(NativeAotSupported)' != 'true'">true</PublishSingleFile>
   </PropertyGroup>
 
   <Target Name="PublishCompiler"
           Condition="'$(BuildingInsideVisualStudio)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish" />
+          DependsOnTargets="Publish;StompSingleFileHostPath" />
 
+  <!--  HACK: liveBuilds stomps over SingleFileHostSourcePath, setting it to the host that we just built.
+        That's unfortunate because it's not the host we're supposed to use here. -->
+  <Target Name="StompSingleFileHostPath"
+          BeforeTargets="ResolveFrameworkReferences">
+    <PropertyGroup>
+      <SingleFileHostSourcePath></SingleFileHostSourcePath>
+    </PropertyGroup>
+  </Target>
   <!-- END: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
+
+  <Target Name="LocateNativeCompiler"
+          Condition="'$(NativeAotSupported)' == 'true' and '$(_IsPublishing)' == 'true' and '$(HostOS)' != 'windows'"
+          BeforeTargets="SetupOSSpecificProps">
+      <PropertyGroup>
+        <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+      </PropertyGroup>
+
+      <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
+            EchoOff="true"
+            ConsoleToMsBuild="true"
+            StandardOutputImportance="Low">
+        <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
+      </Exec>
+  </Target>
 </Project>
