@@ -102,12 +102,7 @@ function instantiateWasm(
     if (!Module.configSrc && !Module.config && !userInstantiateWasm) {
         Module.print("MONO_WASM: configSrc nor config was specified");
     }
-    if (Module.config) {
-        config = runtimeHelpers.config = Module.config as MonoConfig;
-    } else {
-        config = runtimeHelpers.config = Module.config = {} as any;
-    }
-    runtimeHelpers.diagnosticTracing = !!config.diagnosticTracing;
+    normalizeConfig();
 
     const mark = startMeasure();
     if (userInstantiateWasm) {
@@ -129,8 +124,7 @@ function instantiateWasmWorker(
 ): any {
     const anyModule = Module as any;
 
-    config = runtimeHelpers.config = Module.config = {} as any;
-    runtimeHelpers.diagnosticTracing = !!config.diagnosticTracing;
+    normalizeConfig();
 
     replace_linker_placeholders(imports, export_linker());
 
@@ -583,7 +577,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
     }
     configLoaded = true;
     if (!configFilePath) {
-        normalize();
+        normalizeConfig();
         afterConfigLoaded.promise_control.resolve(runtimeHelpers.config);
         return;
     }
@@ -591,21 +585,22 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
     try {
         const resolveSrc = runtimeHelpers.locateFile(configFilePath);
         const configResponse = await runtimeHelpers.fetch_like(resolveSrc);
-        const loadedConfig: MonoConfig = (await configResponse.json()) || {};
+        const loadedConfig: MonoConfigInternal = (await configResponse.json()) || {};
         if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
             throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
 
         // merge
         loadedConfig.assets = [...(loadedConfig.assets || []), ...(config.assets || [])];
         loadedConfig.environmentVariables = { ...(loadedConfig.environmentVariables || {}), ...(config.environmentVariables || {}) };
+        loadedConfig.runtimeOptions = [...(loadedConfig.runtimeOptions || []), ...(config.runtimeOptions || [])];
         config = runtimeHelpers.config = Module.config = Object.assign(Module.config as any, loadedConfig);
 
-        normalize();
+        normalizeConfig();
 
         if (Module.onConfigLoaded) {
             try {
                 await Module.onConfigLoaded(<MonoConfig>runtimeHelpers.config);
-                normalize();
+                normalizeConfig();
             }
             catch (err: any) {
                 _print_error("MONO_WASM: onConfigLoaded() failed", err);
@@ -620,25 +615,28 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
         throw err;
     }
 
-    function normalize() {
-        // normalize
-        config.environmentVariables = config.environmentVariables || {};
-        config.assets = config.assets || [];
-        config.runtimeOptions = config.runtimeOptions || [];
-        config.globalizationMode = config.globalizationMode || "auto";
-        if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
-            config.debugLevel = -1;
-        }
-        if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
-            config.diagnosticTracing = true;
-        }
-        runtimeHelpers.diagnosticTracing = !!runtimeHelpers.config.diagnosticTracing;
-
-        runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
-            && globalThis.performance
-            && typeof globalThis.performance.measure === "function";
-    }
 }
+
+function normalizeConfig() {
+    // normalize
+    Module.config = config = runtimeHelpers.config = Object.assign(runtimeHelpers.config, Module.config || {});
+    config.environmentVariables = config.environmentVariables || {};
+    config.assets = config.assets || [];
+    config.runtimeOptions = config.runtimeOptions || [];
+    config.globalizationMode = config.globalizationMode || "auto";
+    if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
+        config.debugLevel = -1;
+    }
+    if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
+        config.diagnosticTracing = true;
+    }
+    runtimeHelpers.diagnosticTracing = !!runtimeHelpers.config.diagnosticTracing;
+
+    runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
+        && globalThis.performance
+        && typeof globalThis.performance.measure === "function";
+}
+
 
 export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: number, assembly_len: number, pdb_ptr: number, pdb_len: number): void {
     // Only trigger this codepath for assemblies loaded after app is ready
