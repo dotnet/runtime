@@ -669,7 +669,7 @@ bool OptIfConversionDsc::optIfConvert()
         // The exception is for cases that can be transformed into TEST_EQ/TEST_NE.
         // TODO-CQ: Fix this.
         if (m_cond->OperIs(GT_EQ, GT_NE) && m_cond->gtGetOp2()->IsIntegralConst(0) &&
-            !m_cond->gtGetOp1()->OperIs(GT_AND) && m_cond->gtGetOp1()->CanSetZeroFlag())
+            !m_cond->gtGetOp1()->OperIs(GT_AND) && m_cond->gtGetOp1()->SupportsSettingZeroFlag())
         {
             JITDUMP("Skipping if-conversion where condition is EQ/NE 0 with operation that sets ZF");
             return false;

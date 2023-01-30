@@ -3108,7 +3108,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         // after op1 do not modify the flags so that it is safe to avoid generating a
         // test instruction.
 
-        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) && op1->CanSetZeroFlag()
+        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) && op1->SupportsSettingZeroFlag()
 #ifdef TARGET_ARM64
             // This happens in order to emit ARM64 'madd' and 'msub' instructions.
             // We cannot combine 'adds'/'subs' and 'mul'.

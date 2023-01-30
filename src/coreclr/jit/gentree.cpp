@@ -18721,17 +18721,22 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 }
 
 //------------------------------------------------------------------------
-// CanSetZeroFlag: Returns true if this is an arithmetic operation that can
-// set the "zero flag" as part of its operation.
+// SupportsSettingZeroFlag: Returns true if this is an arithmetic operation
+// whose codegen supports setting the "zero flag" as part of its operation.
 //
 // Return Value:
-//    True if so.
+//    True if so. A false return does not imply that codegen for the node will
+//    not trash the zero flag.
 //
 // Remarks:
-//    For example, for EQ (AND x y) 0, both xarch and arm64 can emit instructions
-//    that directly set the flags after the 'AND' and thus no comparison is needed.
+//    For example, for EQ (AND x y) 0, both xarch and arm64 can emit
+//    instructions that directly set the flags after the 'AND' and thus no
+//    comparison is needed.
 //
-bool GenTree::CanSetZeroFlag()
+//    The backend expects any node for which the flags will be consumed to be
+//    marked with GTF_SET_FLAGS.
+//
+bool GenTree::SupportsSettingZeroFlag()
 {
 #if defined(TARGET_XARCH)
     if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
