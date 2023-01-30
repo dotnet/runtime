@@ -16,7 +16,7 @@ namespace System
         /// As such, we are free to implement however we see fit, without back compat concerns around
         /// the sequence of numbers generated or what methods call what other methods.
         /// </summary>
-        internal sealed class XoshiroImpl : LemireImpl
+        internal sealed class XoshiroImpl : ImplBase
         {
             // NextUInt64 is based on the algorithm from http://prng.di.unimi.it/xoshiro256starstar.c:
             //
@@ -46,11 +46,11 @@ namespace System
 
             /// <summary>Produces a value in the range [0, uint.MaxValue].</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // small-ish hot path used by very few call sites
-            internal override uint NextUInt32() => (uint)(NextUInt64() >> 32);
+            internal uint NextUInt32() => (uint)(NextUInt64() >> 32);
 
             /// <summary>Produces a value in the range [0, ulong.MaxValue].</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // small-ish hot path used by a handful of "next" methods
-            internal override ulong NextUInt64()
+            internal ulong NextUInt64()
             {
                 ulong s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;
 
@@ -92,14 +92,14 @@ namespace System
             {
                 Debug.Assert(maxValue >= 0);
 
-                return (int)NextBoundedUint((uint)maxValue);
+                return (int)NextUInt32((uint)maxValue, this);
             }
 
             public override int Next(int minValue, int maxValue)
             {
                 Debug.Assert(minValue <= maxValue);
 
-                return (int)NextBoundedUint((uint)(maxValue - minValue)) + minValue;
+                return (int)NextUInt32((uint)(maxValue - minValue), this) + minValue;
             }
 
             public override long NextInt64()
@@ -121,14 +121,14 @@ namespace System
             {
                 Debug.Assert(maxValue >= 0);
 
-                return (long)NextBoundedUlong((ulong)maxValue);
+                return (long)NextUInt64((ulong)maxValue, this);
             }
 
             public override long NextInt64(long minValue, long maxValue)
             {
                 Debug.Assert(minValue <= maxValue);
 
-                return (long)NextBoundedUlong((ulong)(maxValue - minValue)) + minValue;
+                return (long)NextUInt64((ulong)(maxValue - minValue), this) + minValue;
             }
 
             public override void NextBytes(byte[] buffer) => NextBytes((Span<byte>)buffer);
