@@ -284,7 +284,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if (SimdAsHWIntrinsicInfo::BaseTypeFromThisArg(intrinsic))
         {
-            assert(simdBaseJitType == CORINFO_TYPE_UNDEF);
+            assert((simdBaseJitType == CORINFO_TYPE_UNDEF) || (simdBaseJitType == CORINFO_TYPE_VALUECLASS));
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &simdSize);
         }
     }

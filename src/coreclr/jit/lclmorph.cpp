@@ -1209,10 +1209,13 @@ private:
                     assert(elementType == TYP_SIMD12);
                     assert(varDsc->TypeGet() == TYP_SIMD16);
 
+                    // We inverse the operands here and take elementNode as the main value and simdLclNode[3] as the
+                    // new value. This gives us a new TYP_SIMD16 with all elements in the right spots
+
                     GenTree* indexNode = m_compiler->gtNewIconNode(3, TYP_INT);
-                    hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, simdLclNode, indexNode, elementNode,
-                                                                   CORINFO_TYPE_FLOAT, 16,
-                                                                   /* isSimdAsHWIntrinsic */ true);
+                    hwiNode =
+                        m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
+                                                             CORINFO_TYPE_FLOAT, 16, /* isSimdAsHWIntrinsic */ true);
                 }
 
                 user->AsOp()->gtOp2 = hwiNode;
