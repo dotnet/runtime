@@ -662,6 +662,38 @@ bool OptIfConversionDsc::optIfConvert()
             }
         }
 
+#ifdef TARGET_XARCH
+        // Currently the xarch backend does not handle SELECT (EQ/NE (arithmetic op that sets ZF) 0) ...
+        // as efficiently as JTRUE (EQ/NE (arithmetic op that sets ZF) 0). The support is complicated
+        // to add due to the destructive nature of xarch instructions.
+        // The exception is for cases that can be transformed into TEST_EQ/TEST_NE.
+        // TODO-CQ: Fix this.
+        if (m_cond->OperIs(GT_EQ, GT_NE) && m_cond->gtGetOp2()->IsIntegralConst(0) &&
+            !m_cond->gtGetOp1()->OperIs(GT_AND) && m_cond->gtGetOp1()->CanSetZeroFlag())
+        {
+            JITDUMP("Skipping if-conversion where condition is EQ/NE 0 with operation that sets ZF");
+            return false;
+        }
+
+        // However, in some cases bit tests can emit 'bt' when not going
+        // through the GT_SELECT path.
+        if (m_cond->OperIs(GT_EQ, GT_NE) && m_cond->gtGetOp1()->OperIs(GT_AND) &&
+            m_cond->gtGetOp2()->IsIntegralConst(0))
+        {
+            // A bit test that can be transformed into 'bt' will look like
+            // EQ/NE(AND(x, LSH(1, y)), 0)
+
+            GenTree* andOp1 = m_cond->gtGetOp1()->gtGetOp1();
+            GenTree* andOp2 = m_cond->gtGetOp1()->gtGetOp2();
+
+            if (andOp2->OperIs(GT_LSH) && andOp2->gtGetOp1()->IsIntegralConst(1))
+            {
+                JITDUMP("Skipping if-conversion where condition is amenable to be transformed to BT");
+                return false;
+            }
+        }
+#endif
+
         // Cost to allow for "x = cond ? a + b : c + d".
         if (thenCost > 7 || elseCost > 7)
         {

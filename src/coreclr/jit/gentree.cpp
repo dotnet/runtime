@@ -18721,6 +18721,41 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 }
 
 //------------------------------------------------------------------------
+// CanSetZeroFlag: Returns true if this is an arithmetic operation that can
+// set the "zero flag" as part of its operation.
+//
+// Return Value:
+//    True if so.
+//
+// Remarks:
+//    For example, for EQ (AND x y) 0, both xarch and arm64 can emit instructions
+//    that directly set the flags after the 'AND' and thus no comparison is needed.
+//
+bool GenTree::CanSetZeroFlag()
+{
+#if defined(TARGET_XARCH)
+    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
+    {
+        return true;
+    }
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIs(GT_HWINTRINSIC) && emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(AsHWIntrinsic())))
+    {
+        return true;
+    }
+#endif
+#elif defined(TARGET_ARM64)
+    if (OperIs(GT_AND, GT_ADD, GT_SUB))
+    {
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // Create: Create or retrieve a field sequence for the given field handle.
 //
 // The field sequence instance contains some cached information relevant to
