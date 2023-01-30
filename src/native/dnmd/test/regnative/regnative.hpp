@@ -1,8 +1,7 @@
 #include <cassert>
 #include <cstdint>
 
-#include <dncp.h>
-#include <cor.h>
+#include <internal/dnmd_platform.hpp>
 #include <dnmd_interfaces.hpp>
 
 #ifdef _MSC_VER
@@ -10,5 +9,3 @@
 #else
 #define EXPORT extern "C" __attribute__((__visibility__("default")))
 #endif // !_MSC_VER
-
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))

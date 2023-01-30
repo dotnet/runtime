@@ -109,7 +109,7 @@ HRESULT pal::StringConvert<char, WCHAR>::ConvertWorker(char const* c, WCHAR* buf
     return ConvertUtf8ToUtf16(c, buffer, bufferLength, &bufferLength);
 }
 
-#ifndef __STDC_LIB_EXT1__
+#if !defined(__STDC_LIB_EXT1__) && !defined(BUILD_WINDOWS)
 errno_t strcat_s(char* dest, rsize_t destsz, char const* src)
 {
     assert(dest != nullptr && src != nullptr);

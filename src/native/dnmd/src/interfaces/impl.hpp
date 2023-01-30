@@ -4,12 +4,7 @@
 #include <cstdint>
 #include <atomic>
 
-#include <dncp.h>
-#include <cor.h>
-
-#include <dnmd.hpp>
-
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
+#include <internal/dnmd_platform.hpp>
 
 class MetadataImportRO final : public IMetaDataImport2
 {

@@ -2,9 +2,7 @@
 #define _SRC_INTERFACES_PAL_HPP_
 
 #include <cstdint>
-#include <dncp.h>
-#include <corhdr.h>
-#include <dnmd.hpp>
+#include <internal/dnmd_platform.hpp>
 
 namespace pal
 {
@@ -108,7 +106,7 @@ namespace pal
 
 // Implementations for missing bounds checking APIs.
 // See https://en.cppreference.com/w/c/error#Bounds_checking
-#ifndef __STDC_LIB_EXT1__
+#if !defined(__STDC_LIB_EXT1__) && !defined(BUILD_WINDOWS)
 errno_t strcat_s(char* dest, rsize_t destsz, char const* src);
 #endif // !__STDC_LIB_EXT1__
 

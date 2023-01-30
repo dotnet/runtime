@@ -1,5 +1,5 @@
-#ifndef _SRC_INC_PEIMAGE_H_
-#define _SRC_INC_PEIMAGE_H_
+#ifndef _SRC_INC_INTERNAL_DNMD_PEIMAGE_H_
+#define _SRC_INC_INTERNAL_DNMD_PEIMAGE_H_
 
 //
 // PE image data structures
@@ -152,4 +152,4 @@ typedef struct _IMAGE_NT_HEADERS32 {
     IMAGE_OPTIONAL_HEADER32 OptionalHeader;
 } IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;
 
-#endif // _SRC_INC_PEIMAGE_H_
+#endif // _SRC_INC_INTERNAL_DNMD_PEIMAGE_H_

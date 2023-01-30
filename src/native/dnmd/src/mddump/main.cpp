@@ -7,15 +7,7 @@
 #include <memory>
 #include <array>
 
-#ifndef BUILD_WINDOWS
-#include <sys/stat.h>
-#endif // !BUILD_WINDOWS
-
-#include <peimage.h>
-
-#include <dncp.h>
-#include <corhdr.h>
-#include <dnmd.hpp>
+#include <internal/dnmd_platform.hpp>
 
 template<typename T>
 class span
