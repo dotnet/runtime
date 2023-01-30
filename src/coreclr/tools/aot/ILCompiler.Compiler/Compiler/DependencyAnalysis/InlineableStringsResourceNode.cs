@@ -41,7 +41,9 @@ namespace ILCompiler.DependencyAnalysis
             if (!resourceName.EndsWith(".resources", StringComparison.Ordinal))
                 return false;
 
-            // TODO: we should grab this name from the SR class
+            // Make a guess at the name of the resource Arcade tooling generated for the resource
+            // strings.
+            // https://github.com/dotnet/runtime/issues/81385 tracks not having to guess this.
             string simpleName = module.Assembly.GetName().Name;
             string resourceName1 = $"{simpleName}.Strings.resources";
             string resourceName2 = $"FxResources.{simpleName}.SR.resources";
