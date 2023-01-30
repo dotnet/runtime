@@ -53,8 +53,8 @@ namespace DebuggerTests
 
         [Theory]
         [InlineData("en-US", "dddd, MMMM d, yyyy h:mm:ss tt", "dddd, MMMM d, yyyy", "h:mm:ss tt", "M/d/yyyy", "h:mm tt")]
-        // [InlineData("es-ES", "dddd, d 'de' MMMM 'de' yyyy H:mm:ss", "dddd, d 'de' MMMM 'de' yyyy", "H:mm:ss", "d/M/yyyy", "H:mm")]
-        // [InlineData("de-DE", "dddd, d. MMMM yyyy HH:mm:ss", "dddd, d. MMMM yyyy", "HH:mm:ss", "dd.MM.yyyy", "HH:mm")]
+        [InlineData("es-ES", "dddd, d 'de' MMMM 'de' yyyy H:mm:ss", "dddd, d 'de' MMMM 'de' yyyy", "H:mm:ss", "d/M/yyyy", "H:mm")]
+        [InlineData("de-DE", "dddd, d. MMMM yyyy HH:mm:ss", "dddd, d. MMMM yyyy", "HH:mm:ss", "dd.MM.yyyy", "HH:mm")]
         public async Task CheckDateTimeLocale(string locale, string fdtp, string ldp, string ltp, string sdp, string stp)
         {
             var debugger_test_loc = "dotnet://debugger-test.dll/debugger-datetime-test.cs";

@@ -34,7 +34,7 @@ namespace DebuggerTests
         private static readonly ConcurrentDictionary<int, WeakReference<Action<RunLoopExitState>>> s_exitHandlers = new();
         private static readonly ConcurrentDictionary<string, RunLoopExitState> s_statusTable = new();
 
-        public static Task Start(string appPath, string pagePath, string url, ITestOutputHelper testOutput, string locale = "en-US")  // here pass locale
+        public static Task Start(string appPath, string pagePath, string url, ITestOutputHelper testOutput, string locale = "en-US")
         {
             lock (proxyLock)
             {
