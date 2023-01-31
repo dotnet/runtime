@@ -25,6 +25,11 @@ export function getBrowserThreadID(): pthread_ptr {
     return browser_thread_id_lazy;
 }
 
+const enum WorkerMonoCommandType {
+    channel_created = "channel_created",
+    preload = "preload",
+}
+
 /// Messages sent on the dedicated mono channel between a pthread and the browser thread
 
 // We use a namespacing scheme to avoid collisions: type/command should be unique.
@@ -69,7 +74,7 @@ export const monoSymbol = "__mono_message_please_dont_collide__"; //Symbol("mono
 /// We should just use this to establish a dedicated MessagePort for Mono's uses.
 export interface MonoWorkerMessage<TPort> {
     [monoSymbol]: {
-        mono_cmd: string;
+        mono_cmd: WorkerMonoCommandType;
         port: TPort;
     };
 }
@@ -77,7 +82,7 @@ export interface MonoWorkerMessage<TPort> {
 /// The message sent early during pthread creation to set up a dedicated MessagePort for Mono between the main thread and the pthread.
 export interface MonoWorkerMessageChannelCreated<TPort> extends MonoWorkerMessage<TPort> {
     [monoSymbol]: {
-        mono_cmd: "channel_created";
+        mono_cmd: WorkerMonoCommandType.channel_created;
         thread_id: pthread_ptr;
         port: TPort;
     };
@@ -85,7 +90,7 @@ export interface MonoWorkerMessageChannelCreated<TPort> extends MonoWorkerMessag
 
 export interface MonoWorkerMessagePreload<TPort> extends MonoWorkerMessage<TPort> {
     [monoSymbol]: {
-        mono_cmd: "preload";
+        mono_cmd: WorkerMonoCommandType.preload;
         port: TPort;
     };
 }
@@ -93,7 +98,7 @@ export interface MonoWorkerMessagePreload<TPort> extends MonoWorkerMessage<TPort
 export function makeChannelCreatedMonoMessage<TPort>(thread_id: pthread_ptr, port: TPort): MonoWorkerMessageChannelCreated<TPort> {
     return {
         [monoSymbol]: {
-            mono_cmd: "channel_created",
+            mono_cmd: WorkerMonoCommandType.channel_created,
             thread_id,
             port
         }
@@ -103,7 +108,7 @@ export function makeChannelCreatedMonoMessage<TPort>(thread_id: pthread_ptr, por
 export function makePreloadMonoMessage<TPort>(port: TPort): MonoWorkerMessagePreload<TPort> {
     return {
         [monoSymbol]: {
-            mono_cmd: "preload",
+            mono_cmd: WorkerMonoCommandType.preload,
             port
         }
     };
@@ -116,7 +121,7 @@ export function isMonoWorkerMessage(message: unknown): message is MonoWorkerMess
 export function isMonoWorkerMessageChannelCreated<TPort>(message: MonoWorkerMessage<TPort>): message is MonoWorkerMessageChannelCreated<TPort> {
     if (isMonoWorkerMessage(message)) {
         const monoMessage = message[monoSymbol];
-        if (monoMessage.mono_cmd === "channel_created") {
+        if (monoMessage.mono_cmd === WorkerMonoCommandType.channel_created) {
             return true;
         }
     }
@@ -126,7 +131,7 @@ export function isMonoWorkerMessageChannelCreated<TPort>(message: MonoWorkerMess
 export function isMonoWorkerMessagePreload<TPort>(message: MonoWorkerMessage<TPort>): message is MonoWorkerMessagePreload<TPort> {
     if (isMonoWorkerMessage(message)) {
         const monoMessage = message[monoSymbol];
-        if (monoMessage.mono_cmd === "preload") {
+        if (monoMessage.mono_cmd === WorkerMonoCommandType.preload) {
             return true;
         }
     }
