@@ -200,8 +200,7 @@ namespace System.Collections.Frozen
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
                 {
-                    if (default(TKey) is IEquatable<TKey> &&
-                        default(TKey) is IComparable<TKey> &&
+                    if (default(TKey) is IComparable<TKey> &&
                         source.Count <= Constants.MaxItemsInSmallComparableValueTypeFrozenCollection)
                     {
                         return (FrozenDictionary<TKey, TValue>)(object)new SmallComparableValueTypeFrozenDictionary<TKey, TValue>(source);

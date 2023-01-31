@@ -27,7 +27,6 @@ namespace System.Collections.Frozen
             // TKey is logically constrained to `where TKey : struct, IEquatable<TKey>, IComparable<TKey>`, but we can't actually write that
             // constraint currently and still have this be used from the calling context that has an unconstrained TKey.
             // So, we assert it here instead. The implementation relies on {Equality}Comparer<TKey>.Default to sort things out.
-            Debug.Assert(default(TKey) is IEquatable<TKey>);
             Debug.Assert(default(TKey) is IComparable<TKey>);
             Debug.Assert(default(TKey) is not null);
             Debug.Assert(typeof(TKey).IsValueType);
@@ -55,9 +54,10 @@ namespace System.Collections.Frozen
                 TKey[] keys = _keys;
                 for (int i = 0; i < keys.Length; i++)
                 {
-                    if (Comparer<TKey>.Default.Compare(key, keys[i]) <= 0)
+                    int c = Comparer<TKey>.Default.Compare(key, keys[i]);
+                    if (c <= 0)
                     {
-                        if (EqualityComparer<TKey>.Default.Equals(key, keys[i]))
+                        if (c == 0)
                         {
                             return ref _values[i];
                         }

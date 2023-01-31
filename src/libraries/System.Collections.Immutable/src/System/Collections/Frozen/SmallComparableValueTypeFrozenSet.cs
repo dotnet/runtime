@@ -25,7 +25,6 @@ namespace System.Collections.Frozen
             // T is logically constrained to `where T : struct, IEquatable<T>, IComparable<T>`, but we can't actually write that
             // constraint currently and still have this be used from the calling context that has an unconstrained T.
             // So, we assert it here instead. The implementation relies on {Equality}Comparer<T>.Default to sort things out.
-            Debug.Assert(default(T) is IEquatable<T>);
             Debug.Assert(default(T) is IComparable<T>);
             Debug.Assert(default(T) is not null);
             Debug.Assert(typeof(T).IsValueType);
@@ -50,9 +49,10 @@ namespace System.Collections.Frozen
                 T[] items = _items;
                 for (int i = 0; i < items.Length; i++)
                 {
-                    if (Comparer<T>.Default.Compare(item, items[i]) <= 0)
+                    int c = Comparer<T>.Default.Compare(item, items[i]);
+                    if (c <= 0)
                     {
-                        if (EqualityComparer<T>.Default.Equals(item, items[i]))
+                        if (c == 0)
                         {
                             return i;
                         }

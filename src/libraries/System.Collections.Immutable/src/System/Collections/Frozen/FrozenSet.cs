@@ -132,7 +132,6 @@ namespace System.Collections.Frozen
                 if (ReferenceEquals(comparer, EqualityComparer<T>.Default))
                 {
                     if (default(T) is IComparable<T> &&
-                        default(T) is IEquatable<T> &&
                         source.Count <= Constants.MaxItemsInSmallComparableValueTypeFrozenCollection)
                     {
                         return (FrozenSet<T>)(object)new SmallComparableValueTypeFrozenSet<T>(source);
