@@ -7344,8 +7344,8 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     if (!comp->fgAddrCouldBeNull(addr))
     {
         addr->SetUnusedValue();
-        ind->gtBashToNOP();
-        JITDUMP("bash an unused indir [%06u] to NOP.\n", comp->dspTreeID(ind));
+        LIR::AsRange(block).Remove(ind);
+        JITDUMP("Removing unused indir [%06u].\n", comp->dspTreeID(ind));
         return;
     }
 
