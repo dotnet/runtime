@@ -167,7 +167,7 @@ namespace Tracing.Tests.Common
             return -1;
         }
 
-        private int Validate()
+        private int Validate(bool enableRundownProvider = true)
         {
             // FIXME: This is a bandaid fix for a deadlock in EventPipeEventSource caused by
             // the lazy caching in the Regex library.  The caching creates a ConcurrentDictionary
@@ -212,11 +212,7 @@ namespace Tracing.Tests.Common
                 Logger.logger.Log("Connecting to EventPipe...");
                 try
                 {
-#if EnableNativeEventPipe
-                    _eventPipeSession = client.StartEventPipeSession(_testProviders.Concat(_sentinelProviders), false);
-#else
-                    _eventPipeSession = client.StartEventPipeSession(_testProviders.Concat(_sentinelProviders));
-#endif                    
+                    _eventPipeSession = client.StartEventPipeSession(_testProviders.Concat(_sentinelProviders), enableRundownProvider);
                 }
                 catch (DiagnosticsClientException ex)
                 {
@@ -396,13 +392,14 @@ namespace Tracing.Tests.Common
             Action eventGeneratingAction,
             List<EventPipeProvider> providers,
             int circularBufferMB=1024,
-            Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null)
+            Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null,
+            bool enableRundownProvider = true)
         {
             Logger.logger.Log("==TEST STARTING==");
             var test = new IpcTraceTest(expectedEventCounts, eventGeneratingAction, providers, circularBufferMB, optionalTraceValidator);
             try
             {
-                var ret = test.Validate();
+                var ret = test.Validate(enableRundownProvider);
                 if (ret == 100)
                     Logger.logger.Log("==TEST FINISHED: PASSED!==");
                 else

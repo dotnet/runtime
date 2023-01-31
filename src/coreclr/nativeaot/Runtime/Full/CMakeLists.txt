@@ -34,6 +34,10 @@ if (CLR_CMAKE_TARGET_WIN32)
   add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
   target_compile_definitions(Runtime.ServerGC.GuardCF PRIVATE -DFEATURE_SVR_GC)
   target_compile_options(Runtime.ServerGC.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
+
+  add_library(eventpipe-disabled.GuardCF STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
+  install_static_library(eventpipe-disabled.GuardCF aotsdk nativeaot)
+  target_compile_options(eventpipe-disabled.GuardCF PRIVATE $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:/guard:cf>)
 endif (CLR_CMAKE_TARGET_WIN32)
 
 # Get the current list of definitions
@@ -101,4 +105,5 @@ install_static_library(eventpipe-enabled aotsdk nativeaot)
 install_static_library(eventpipe-disabled aotsdk nativeaot)
 if (CLR_CMAKE_TARGET_WIN32)
   install_static_library(Runtime.ServerGC.GuardCF aotsdk nativeaot)
+  install_static_library(eventpipe-disabled.GuardCF aotsdk nativeaot)
 endif (CLR_CMAKE_TARGET_WIN32)

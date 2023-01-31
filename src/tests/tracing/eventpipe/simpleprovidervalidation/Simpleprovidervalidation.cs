@@ -12,7 +12,7 @@ using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
 
-namespace Tracing.Tests.ProviderValidation
+namespace Tracing.Tests.SimpleProviderValidation
 {
     public sealed class MyEventSource : EventSource
     {
@@ -35,7 +35,7 @@ namespace Tracing.Tests.ProviderValidation
                 new EventPipeProvider("Microsoft-DotNETCore-SampleProfiler", EventLevel.Verbose)
             };
 
-            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024);
+            var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, enableRundownProvider:false);
             if (ret < 0)
                 return ret;
             else
@@ -44,19 +44,14 @@ namespace Tracing.Tests.ProviderValidation
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
         {
-            { "MyEventSource", new ExpectedEventCount(100_000, 0.30f) },
-            { "Microsoft-Windows-DotNETRuntimeRundown", -1 },
-            { "Microsoft-DotNETCore-SampleProfiler", -1 }
+            { "MyEventSource", 1 },
+            { "Microsoft-DotNETCore-EventPipe", 1}
         };
 
         private static Action _eventGeneratingAction = () => 
         {
-            for (int i = 0; i < 100_000; i++)
-            {
-                if (i % 10_000 == 0)
-                    Logger.logger.Log($"Fired MyEvent {i:N0}/100,000 times...");
-                MyEventSource.Log.MyEvent();
-            }
+            Logger.logger.Log($"Firing an event...");
+            MyEventSource.Log.MyEvent();
         };
     }
 }
