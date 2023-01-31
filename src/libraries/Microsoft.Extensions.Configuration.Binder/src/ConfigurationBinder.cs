@@ -314,16 +314,16 @@ namespace Microsoft.Extensions.Configuration
                     return;
                 }
 
-                // Handle ISet<T> and IReadOnlySet<T> cases.
-                // if we have ISet<T>:
-                //      - if bindingPoint.Value is not null, we'll use this instance to populate the configuration items to it.
-                //      - if bindingPoint.Value is null and bindingPoint.IsReadOnly is false (i.e. there is a property setter). we'll create
-                //        a HashSet<T> and populate the configuration items to it.
-                //      - otherwise nothing will happen.
-                // if we have IReadOnlySet<T>:
-                //      - if bindingPoint.Value is not null and bindingPoint.IsReadOnly is false, we'll create a new HashSet<T> and
-                //        populate the stored items to the new instance in addition to the items we populate from the configuration.
-                //      - otherwise nothing will happen.
+                // -----------------------------------------------------------------------------------------------------------------------------
+                //                  |  bindingPoint |  bindingPoint |
+                //     Interface    |     Value     |   IsReadOnly  |  Behavior
+                // -----------------------------------------------------------------------------------------------------------------------------
+                //  ISet<T>         |   not null    |  true/false   | Use the Value instance to populate the configuration
+                //  ISet<T>         |     null      |     false     | Create HashSet<T> instance to populate the configuration
+                //  ISet<T>         |     null      |     true      | nothing
+                //  IReadOnlySet<T> | null/not null |     false     | Create HashSet<T> instance to populate the configuration
+                //  IReadOnlySet<T> | null/not null |     true      | nothing
+                // -----------------------------------------------------------------------------------------------------------------------------
                 if (TypeIsASetInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly || bindingPoint.Value is not null)
@@ -338,16 +338,16 @@ namespace Microsoft.Extensions.Configuration
                     return;
                 }
 
-                // Handle IDictionary<TKey, TValue> and IReadOnlyDictionary<TKey, TValue> cases.
-                // if we have IDictionary<TKey, TValue>:
-                //      - if bindingPoint.Value is not null, we'll use this instance to populate the configuration items to it.
-                //      - if bindingPoint.Value is null and bindingPoint.IsReadOnly is false (i.e. there is a property setter). we'll create
-                //        a Dictionary<TKey, TValue> and populate the configuration items to it.
-                //      - otherwise nothing will happen.
-                // if we have IReadOnlyDictionary<TKey, TValue>:
-                //      - if bindingPoint.Value is not null and bindingPoint.IsReadOnly is false, we'll create a new Dictionary<TKey, TValue> and
-                //        populate the stored items to the new instance in addition to the items we populate from the configuration.
-                //      - otherwise nothing will happen.
+                // -----------------------------------------------------------------------------------------------------------------------------
+                //                         |  bindingPoint |  bindingPoint |
+                //       Interface         |     Value     |   IsReadOnly  |  Behavior
+                // -----------------------------------------------------------------------------------------------------------------------------
+                //  IDictionary<T>         |   not null    |  true/false   | Use the Value instance to populate the configuration
+                //  IDictionary<T>         |     null      |     false     | Create Dictionary<T> instance to populate the configuration
+                //  IDictionary<T>         |     null      |     true      | nothing
+                //  IReadOnlyDictionary<T> | null/not null |     false     | Create Dictionary<T> instance to populate the configuration
+                //  IReadOnlyDictionary<T> | null/not null |     true      | nothing
+                // -----------------------------------------------------------------------------------------------------------------------------
                 if (TypeIsADictionaryInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly || bindingPoint.Value is not null)
