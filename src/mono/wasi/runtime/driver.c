@@ -569,63 +569,6 @@ mono_wasi_assembly_get_entry_point (MonoAssembly *assembly)
 	return method;
 }
 
-MonoMethod*
-mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
-{
-	MonoImage *image;
-	MonoMethod *method;
-
-	MONO_ENTER_GC_UNSAFE;
-	image = mono_assembly_get_image (assembly);
-	uint32_t entry = mono_image_get_entry_point (image);
-	if (!entry)
-		goto end;
-
-	mono_domain_ensure_entry_assembly (root_domain, assembly);
-	method = mono_get_method (image, entry, NULL);
-
-	/*
-	 * If the entry point looks like a compiler generated wrapper around
-	 * an async method in the form "<Name>" then try to look up the async methods
-	 * "<Name>$" and "Name" it could be wrapping.  We do this because the generated
-	 * sync wrapper will call task.GetAwaiter().GetResult() when we actually want
-	 * to yield to the host runtime.
-	 */
-	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */) {
-		const char *name = mono_method_get_name (method);
-		int name_length = strlen (name);
-
-		if ((*name != '<') || (name [name_length - 1] != '>'))
-			goto end;
-
-		MonoClass *klass = mono_method_get_class (method);
-		assert(klass);
-		char *async_name = malloc (name_length + 2);
-		snprintf (async_name, name_length + 2, "%s$", name);
-
-		// look for "<Name>$"
-		MonoMethodSignature *sig = mono_method_get_signature (method, image, mono_method_get_token (method));
-		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name, mono_signature_get_param_count (sig));
-		if (async_method != NULL) {
-			free (async_name);
-			method = async_method;
-			goto end;
-		}
-
-		// look for "Name" by trimming the first and last character of "<Name>"
-		async_name [name_length - 1] = '\0';
-		async_method = mono_class_get_method_from_name (klass, async_name + 1, mono_signature_get_param_count (sig));
-
-		free (async_name);
-		if (async_method != NULL)
-			method = async_method;
-	}
-
-	end:
-	MONO_EXIT_GC_UNSAFE;
-	return method;
-}
-
 int
 mono_unbox_int (MonoObject *obj)
 {
