@@ -30,7 +30,7 @@ namespace Microsoft.Interop
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => new PointerTypeInfo("void*", "void*", false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
-                TypeSyntax? unwrapperType = context is NativeToManagedStubCodeContext ctx ? ctx.UnwrapperType : null;
+                TypeSyntax? unwrapperType = (context as NativeToManagedStubCodeContext)?.UnwrapperType;
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
                 {
                     yield break;

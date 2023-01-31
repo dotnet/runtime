@@ -11,7 +11,7 @@ namespace Microsoft.Interop
     {
         public override bool SingleFrameSpansNativeContext => false;
 
-        public TypeSyntax UnwrapperType { get; private set; }
+        public TypeSyntax? UnwrapperType { get; private set; }
 
         public override bool AdditionalTemporaryStateLivesAcrossStages => false;
 
@@ -28,7 +28,7 @@ namespace Microsoft.Interop
             Version targetFrameworkVersion,
             string returnIdentifier,
             string nativeReturnIdentifier,
-            TypeSyntax unwrapperType)
+            TypeSyntax? unwrapperType = null)
         {
             _framework = targetFramework;
             _frameworkVersion = targetFrameworkVersion;
