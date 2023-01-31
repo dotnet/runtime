@@ -12,6 +12,9 @@
     <_SampleProject>Wasm.Console.V8.Sample.csproj</_SampleProject>
     <_SampleAssembly>Wasm.Console.V8.Sample.dll</_SampleAssembly>
   </PropertyGroup>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.mjs" />
+  </ItemGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />
 </Project>

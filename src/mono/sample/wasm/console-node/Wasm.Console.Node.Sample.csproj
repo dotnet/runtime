@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.mjs" />
     <WasmExtraFilesToDeploy Include="package.json" />
   </ItemGroup>
 

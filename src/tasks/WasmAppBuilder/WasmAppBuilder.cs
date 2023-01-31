@@ -19,10 +19,6 @@ public class WasmAppBuilder : Task
     [Required]
     public string? AppDir { get; set; }
 
-    [NotNull]
-    [Required]
-    public string? MainJS { get; set; }
-
     [Required]
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
@@ -45,7 +41,6 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? RemoteSources { get; set; }
     public bool InvariantGlobalization { get; set; }
     public ITaskItem[]? ExtraFilesToDeploy { get; set; }
-    public string? MainHTMLPath { get; set; }
     public bool IncludeThreadsWorker {get; set; }
     public int PThreadPoolSize {get; set; }
     public bool UseWebcil { get; set; }
@@ -160,8 +155,6 @@ public class WasmAppBuilder : Task
 
     private bool ExecuteInternal ()
     {
-        if (!File.Exists(MainJS))
-            throw new LogAsErrorException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
             throw new LogAsErrorException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
@@ -222,25 +215,6 @@ public class WasmAppBuilder : Task
             string dest = Path.Combine(AppDir!, Path.GetFileName(item.ItemSpec));
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
-        }
-        var mainFileName=Path.GetFileName(MainJS);
-        Log.LogMessage(MessageImportance.Low, $"MainJS path: '{MainJS}', fileName : '{mainFileName}', destination: '{Path.Combine(AppDir, mainFileName)}'");
-        FileCopyChecked(MainJS!, Path.Combine(AppDir, mainFileName), string.Empty);
-
-        string indexHtmlPath = Path.Combine(AppDir, "index.html");
-        if (string.IsNullOrEmpty(MainHTMLPath))
-        {
-            if (!File.Exists(indexHtmlPath))
-            {
-                var html = @"<html><body><script type=""module"" src=""" + mainFileName + @"""></script></body></html>";
-                File.WriteAllText(indexHtmlPath, html);
-            }
-        }
-        else
-        {
-            FileCopyChecked(MainHTMLPath, Path.Combine(AppDir, indexHtmlPath), "html");
-            //var html = @"<html><body><script type=""module"" src=""" + mainFileName + @"""></script></body></html>";
-            //File.WriteAllText(indexHtmlPath, html);
         }
 
         string packageJsonPath = Path.Combine(AppDir, "package.json");

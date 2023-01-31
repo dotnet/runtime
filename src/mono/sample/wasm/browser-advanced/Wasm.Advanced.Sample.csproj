@@ -12,6 +12,7 @@
     <WasmProfilers>browser;</WasmProfilers>
   </PropertyGroup>
   <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
     <!-- add export GL object from Module -->
     <EmccExportedRuntimeMethod Include="GL" />
     <NativeFileReference Include="fibonacci.c" />
