@@ -154,14 +154,21 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
         builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
 
+        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.yml""))");
+        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.yml"");");
+        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
+        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+
         builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
+        // builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new(TestCount.Count);");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
         builder.AppendLine("System.Console.SetOut(outputRecorder);");
 
-        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.templog.xml""))");
-        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.templog.xml"");");
+        builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.yml""))");
+        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
+        builder.AppendLine("statsCsvSw.WriteLine(TestCount.Count,0,0,0);");
 
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
@@ -182,14 +189,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     if (currentTestExecutor != 0)
                     {
                         testExecutorBuilder.AppendLine("}");
-                        testExecutorBuilder.AppendLine("}");
                     }
 
                     currentTestExecutor++;
-                    testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(){{");
-                    testExecutorBuilder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.templog.xml"")) {{");
-                    builder.AppendLine($"TestExecutor{currentTestExecutor}();");
-                    testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empircally seems to work well
+                    testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(System.IO.StreamWriter tempLogSw, System.IO.StreamWriter statsCsvSw) {{");
+                    builder.AppendLine($"TestExecutor{currentTestExecutor}(tempLogSw, statsCsvSw);");
+                    testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
                 }
 
                 testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
@@ -198,8 +203,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             }
 
             testExecutorBuilder.AppendLine("}");
-            testExecutorBuilder.AppendLine("}");
         }
+
+        // Closing the 'using' statements that stream the temporary files.
+        builder.AppendLine("}");
 
         builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
         builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");

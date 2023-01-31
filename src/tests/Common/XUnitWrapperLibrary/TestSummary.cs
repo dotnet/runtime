@@ -10,7 +10,6 @@ namespace XUnitWrapperLibrary;
 
 public class TestSummary
 {
-    // readonly record struct TestResult(string Name, string ContainingTypeName, string MethodName, TimeSpan Duration, Exception? Exception, string? SkipReason, string? Output);
     readonly record struct TestResult
     {
         readonly string Name;
@@ -21,7 +20,13 @@ public class TestSummary
         readonly string? SkipReason;
         readonly string? Output;
 
-        public TestResult(string name, string containingTypeName, string methodName, TimeSpan duration, Exception? exception, string? skipReason, string? output)
+        public TestResult(string name,
+                          string containingTypeName,
+                          string methodName,
+                          TimeSpan duration,
+                          Exception? exception,
+                          string? skipReason,
+                          string? output)
         {
             Name = name;
             ContainingTypeName = containingTypeName;
@@ -95,32 +100,58 @@ public class TestSummary
     public int PassedTests { get; private set; } = 0;
     public int FailedTests { get; private set; } = 0;
     public int SkippedTests { get; private set; } = 0;
+    public int TotalTests { get; private set; } = 0;
 
     private readonly List<TestResult> _testResults = new();
     private DateTime _testRunStart = DateTime.Now;
 
-    public void ReportPassedTest(string name, string containingTypeName, string methodName, TimeSpan duration, string output, StreamWriter tempLogSw)
+    public void ReportPassedTest(string name,
+                                 string containingTypeName,
+                                 string methodName,
+                                 TimeSpan duration,
+                                 string output,
+                                 StreamWriter tempLogSw,
+                                 StreamWriter statsCsvSw)
     {
         PassedTests++;
+        TotalTests++;
         var result = new TestResult(name, containingTypeName, methodName, duration, null, null, output);
         _testResults.Add(result);
-        tempLogSw.WriteLine(result.ToXmlString());
+        // tempLogSw.WriteLine(result.ToXmlString());
+        statsCsvSw.WriteLine(TotalTests, PassedTests, FailedTests, SkippedTests);
     }
 
-    public void ReportFailedTest(string name, string containingTypeName, string methodName, TimeSpan duration, Exception ex, string output, StreamWriter tempLogSw)
+    public void ReportFailedTest(string name,
+                                 string containingTypeName,
+                                 string methodName,
+                                 TimeSpan duration,
+                                 Exception ex,
+                                 string output,
+                                 StreamWriter tempLogSw,
+                                 StreamWriter statsCsvSw)
     {
         FailedTests++;
+        TotalTests++;
         var result = new TestResult(name, containingTypeName, methodName, duration, ex, null, output);
         _testResults.Add(result);
-        tempLogSw.WriteLine(result.ToXmlString());
+        // tempLogSw.WriteLine(result.ToXmlString());
+        statsCsvSw.WriteLine(TotalTests, PassedTests, FailedTests, SkippedTests);
     }
 
-    public void ReportSkippedTest(string name, string containingTypeName, string methodName, TimeSpan duration, string reason, StreamWriter tempLogSw)
+    public void ReportSkippedTest(string name,
+                                  string containingTypeName,
+                                  string methodName,
+                                  TimeSpan duration,
+                                  string reason,
+                                  StreamWriter tempLogSw,
+                                  StreamWriter statsCsvSw)
     {
         SkippedTests++;
+        TotalTests++;
         var result = new TestResult(name, containingTypeName, methodName, duration, null, reason, null);
         _testResults.Add(result);
-        tempLogSw.WriteLine(result.ToXmlString());
+        // tempLogSw.WriteLine(result.ToXmlString());
+        statsCsvSw.WriteLine(TotalTests, PassedTests, FailedTests, SkippedTests);
     }
 
     // NOTE: This will likely change or be removed altogether with the existence of the temp log.
