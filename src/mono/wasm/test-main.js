@@ -10,7 +10,7 @@
 /*****************************************************************************
  * Please don't use this as template for startup code.
  * There are simpler and better samples like src\mono\sample\wasm\browser\main.js
- * This one is not ES6 nor CJS, doesn't use top level await and has edge case polyfills. 
+ * This one is not ES6 nor CJS, doesn't use top level await and has edge case polyfills.
  * It handles strange things which happen with XHarness.
  ****************************************************************************/
 
@@ -63,19 +63,21 @@ async function getArgs() {
         queryArguments = Array.from(WScript.Arguments);
     }
 
-    let runArgs;
-    if (queryArguments.length > 0) {
-        runArgs = processArguments(queryArguments);
-    } else {
-        const response = fetch('/runArgs.json')
-        if (!response.ok) {
-            console.debug(`could not load /args.json: ${response.status}. Ignoring`);
+    let runArgsJson;
+    // ToDo: runArgs should be read for all kinds of hosts, but
+    // fetch is added to node>=18 and current Windows's emcc node<18
+    if (is_browser)
+    {
+        const response = await globalThis.fetch('./runArgs.json');
+        if (response.ok) {
+            runArgsJson = initRunArgs(await response.json());
+        } else {
+            console.debug(`could not load /runArgs.json: ${response.status}. Ignoring`);
         }
-        runArgs = await response.json();
     }
-    runArgs = initRunArgs(runArgs);
-
-    return runArgs;
+    if (!runArgsJson)
+        runArgsJson = initRunArgs({});
+    return processArguments(queryArguments, runArgsJson);
 }
 
 function initRunArgs(runArgs) {
@@ -95,9 +97,7 @@ function initRunArgs(runArgs) {
     return runArgs;
 }
 
-function processArguments(incomingArguments) {
-    const runArgs = initRunArgs({});
-
+function processArguments(incomingArguments, runArgs) {
     console.log("Incoming arguments: " + incomingArguments.join(' '));
     while (incomingArguments && incomingArguments.length > 0) {
         const currentArg = incomingArguments[0];
