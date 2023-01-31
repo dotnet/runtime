@@ -287,11 +287,6 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
             testRunNamePrefix: NativeAOT_Release
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isFullMatrix'], true))
 
       #
       # CoreCLR NativeAOT release build and libraries tests
