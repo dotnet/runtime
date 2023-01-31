@@ -373,7 +373,6 @@ extends:
         parameters:
           platforms:
             - browser_wasm
-          buildAndRunWasi: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
             - normal
@@ -456,12 +455,26 @@ extends:
           extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
           alwaysRun: ${{ variables.isRollingBuild }}
 
-      # BUILD ONLY - WASI/Wasm
-      - template: /eng/pipelines/common/templates/wasi-build-only.yml
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
             - wasi_wasm
-          alwaysRun: ${{ variables.isRollingBuild }}
+          nameSuffix: '_Smoke'
+          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
+          shouldRunSmokeOnly: true
+          alwaysRun: true
+          scenarios:
+            - normal
+
+      # run all wasi tests - FIXME: move to optional
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+          extraBuildArgs: /p:EnableAggressiveTrimming=true
+          alwaysRun: true
+          scenarios:
+            - normal
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
