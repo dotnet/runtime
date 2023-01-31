@@ -163,7 +163,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     }
 
     // fetch poly with fetch_like if there is no global fetch or fetch in imports
-    runtimeHelpers.fetch = imports.fetch || globalThis.fetch || fetch_like;
+    runtimeHelpers.fetch = imports.fetch || (globalThis.fetch ? globalThis.fetch.bind(globalThis) : fetch_like);
     // prefer fetch_like over global fetch for assets
     replacements.fetch = runtimeHelpers.fetch_like = imports.fetch || fetch_like;
 
