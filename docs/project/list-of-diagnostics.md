@@ -156,7 +156,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1042`__ | Invalid GeneratedRegex arguments |
 |  __`SYSLIB1043`__ | GeneratedRegex method must have a valid signature |
 |  __`SYSLIB1044`__ | GeneratedRegex only supports C# 11 and newer |
-|  __`SYSLIB1045`__ | _`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._ |
+|  __`SYSLIB1045`__ | Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time |
 |  __`SYSLIB1046`__ | _`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._ |
 |  __`SYSLIB1047`__ | _`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._ |
 |  __`SYSLIB1048`__ | _`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._ |
