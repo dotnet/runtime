@@ -4016,6 +4016,17 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
                     // Copy prop could allow creating another later use of lcl if there are live assertions about it.
                     fgKillDependentAssertions(varNum DEBUGARG(lcl));
+
+                    // We may have seen previous uses of this local already,
+                    // and those uses should now be marked as GTF_GLOB_REF
+                    // since otherwise they could be reordered with the call.
+                    // The only known issues are under stress mode and happen
+                    // in the same statement, so we only handle this case currently.
+                    // TODO: A more complete fix will likely entail identifying
+                    // these candidates before morph and address exposing them
+                    // at that point, which first requires ABI determination to
+                    // be moved earlier.
+                    fgMarkNewlyGlobalUses(compCurStmt, varNum);
                 }
 
                 JITDUMP("did not need to make outgoing copy for last use of V%02d\n", varNum);
@@ -4094,6 +4105,54 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     arg->SetEarlyNode(argNode);
+}
+
+//------------------------------------------------------------------------
+// fgMarkNewlyGlobalUses: Given a local that is newly address exposed, add
+// GTF_GLOB_REF whever necessary in the specified statement.
+//
+// Arguments:
+//    stmt   - The statement
+//    lclNum - The local that is newly address exposed
+//
+// Notes:
+//    See comment in fgMakeOutgoingStructArgCopy.
+//
+void Compiler::fgMarkNewlyGlobalUses(Statement* stmt, unsigned lclNum)
+{
+    struct Visitor : GenTreeVisitor<Visitor>
+    {
+        enum
+        {
+            DoPostOrder = true,
+        };
+
+        Visitor(Compiler* comp, unsigned lclNum) : GenTreeVisitor(comp), m_lclNum(lclNum)
+        {
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if (node->OperIsLocal() && (node->AsLclVarCommon()->GetLclNum() == m_lclNum))
+            {
+                node->gtFlags |= GTF_GLOB_REF;
+            }
+
+            if (user != nullptr)
+            {
+                user->gtFlags |= node->gtFlags & GTF_GLOB_REF;
+            }
+
+            return WALK_CONTINUE;
+        }
+
+    private:
+        unsigned m_lclNum;
+    };
+
+    Visitor visitor(this, lclNum);
+    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
 }
 
 /*****************************************************************************

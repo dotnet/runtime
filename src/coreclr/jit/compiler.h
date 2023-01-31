@@ -5818,6 +5818,7 @@ private:
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
+    void fgMarkNewlyGlobalUses(Statement* stmt, unsigned lclNum);
 
     GenTree* fgMorphLocal(GenTreeLclVarCommon* lclNode);
 #ifdef TARGET_X86
