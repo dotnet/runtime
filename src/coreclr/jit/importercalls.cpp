@@ -4769,7 +4769,8 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 op1 = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
 
                 hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
-                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+                baseType    = TYP_INT;
             }
 #endif // TARGET_*
 #endif // FEATURE_HW_INTRINSICS
