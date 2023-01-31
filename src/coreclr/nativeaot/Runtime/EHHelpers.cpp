@@ -92,14 +92,18 @@ COOP_PINVOKE_HELPER(int32_t, RhGetModuleFileName, (HANDLE moduleHandle, _Out_ co
 COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t cbOSContext, PAL_LIMITED_CONTEXT * pPalContext))
 {
     ASSERT((size_t)cbOSContext >= sizeof(CONTEXT));
+
+#ifndef HOST_WASM
+
     memset(pOSContext, 0, cbOSContext);
     CONTEXT* pContext = (CONTEXT *)pOSContext;
 
     // Fill in CONTEXT_CONTROL registers that were not captured in PAL_LIMITED_CONTEXT.
     PopulateControlSegmentRegisters(pContext);
 
-#if defined(UNIX_AMD64_ABI)
     pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+#if defined(UNIX_AMD64_ABI)
     pContext->Rip = pPalContext->IP;
     pContext->Rsp = pPalContext->Rsp;
     pContext->Rbp = pPalContext->Rbp;
@@ -111,7 +115,6 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t 
     pContext->R14 = pPalContext->R14;
     pContext->R15 = pPalContext->R15;
 #elif defined(HOST_AMD64)
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
     pContext->Rip = pPalContext->IP;
     pContext->Rsp = pPalContext->Rsp;
     pContext->Rbp = pPalContext->Rbp;
@@ -124,7 +127,6 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t 
     pContext->R14 = pPalContext->R14;
     pContext->R15 = pPalContext->R15;
 #elif defined(HOST_X86)
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
     pContext->Eip = pPalContext->IP;
     pContext->Esp = pPalContext->Rsp;
     pContext->Ebp = pPalContext->Rbp;
@@ -133,7 +135,6 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t 
     pContext->Eax = pPalContext->Rax;
     pContext->Ebx = pPalContext->Rbx;
 #elif defined(HOST_ARM)
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
     pContext->R0  = pPalContext->R0;
     pContext->R4  = pPalContext->R4;
     pContext->R5  = pPalContext->R5;
@@ -147,7 +148,6 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t 
     pContext->Lr  = pPalContext->LR;
     pContext->Pc  = pPalContext->IP;
 #elif defined(HOST_ARM64)
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
     pContext->X0 = pPalContext->X0;
     pContext->X1 = pPalContext->X1;
     // TODO: Copy registers X2-X7 when we start supporting HVA's
@@ -165,11 +165,11 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t 
     pContext->Sp = pPalContext->SP;
     pContext->Lr = pPalContext->LR;
     pContext->Pc = pPalContext->IP;
-#elif defined(HOST_WASM)
-    // No registers, no work to do yet
 #else
 #error Not Implemented for this architecture -- RhpCopyContextFromExInfo
 #endif
+
+#endif // !HOST_WASM
 }
 
 #if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64)
