@@ -7434,7 +7434,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
         assert(fromReg != REG_NA);
         if (fromReg != REG_STK)
         {
-            freeRegs &= ~genRegMask(fromReg, getIntervalForLocalVar(varIndex)->registerType);
+            freeRegs &= ~genRegMask(fromReg ARM_ARG(getIntervalForLocalVar(varIndex)->registerType));
         }
 
         if (toBlock != nullptr)
@@ -7443,7 +7443,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
             assert(toReg != REG_NA);
             if (toReg != REG_STK)
             {
-                freeRegs &= ~genRegMask(toReg, getIntervalForLocalVar(varIndex)->registerType);
+                freeRegs &= ~genRegMask(toReg ARM_ARG(getIntervalForLocalVar(varIndex)->registerType));
             }
         }
     }
@@ -7462,7 +7462,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
             assert(reg != REG_NA);
             if (reg != REG_STK)
             {
-                freeRegs &= ~genRegMask(reg, getIntervalForLocalVar(varIndex)->registerType);
+                freeRegs &= ~genRegMask(reg ARM_ARG(getIntervalForLocalVar(varIndex)->registerType));
             }
         }
     }
