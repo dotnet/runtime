@@ -870,5 +870,23 @@ namespace DebuggerTests
                props = await GetObjectOnFrame(frame, "this");
                CheckNumber(props, "a", 11);
            });
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateMethodAndCheckIsNotPausingOnBreakpoint()
+        {
+            var waitForScript = WaitForWarningMessage("console.warning: MONO_WASM: Adding an id (0) that already exists in commands_received");
+            await CheckInspectLocalsAtBreakpointSite(
+            "TestEvaluateDontPauseOnBreakpoint", "run", 3, "TestEvaluateDontPauseOnBreakpoint.run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] TestEvaluateDontPauseOnBreakpoint:run'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                await SetBreakpointInMethod("debugger-test.dll", "TestEvaluateDontPauseOnBreakpoint", "MyMethod2", 1);
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("myVar.MyMethod()", TString("Object 10")),
+                    ("myVar.MyMethod2()", TString("Object 11")));
+           });
+           Assert.False(waitForScript.IsCompleted);
+        }
     }
 }

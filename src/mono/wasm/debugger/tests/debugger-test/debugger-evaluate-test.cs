@@ -2123,3 +2123,20 @@ public static class NoNamespaceClass
         }
     }
 }
+
+public class TestEvaluateDontPauseOnBreakpoint
+{
+    public int count;
+    public static void run()
+    {
+        var myVar = new TestEvaluateDontPauseOnBreakpoint();
+        myVar.count = 10;
+    }
+    public string MyMethod() {
+        System.Diagnostics.Debugger.Break();
+        return string.Format("Object {0}", count);
+    }
+    public string MyMethod2() {
+        return string.Format("Object {0}", count + 1);
+    }
+}
