@@ -1,4 +1,4 @@
-<Project>
+<Project InitialTargets="VerifyAssemblySupportsDocsXmlGeneration">
 
   <PropertyGroup>
     <UseIntellisensePackageDocXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' == ''">true</UseIntellisensePackageDocXmlFile>
@@ -9,6 +9,11 @@
     <IntellisensePackageXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFileFromNetFolder))">$(IntellisensePackageXmlFileFromNetFolder)</IntellisensePackageXmlFile>
     <IntellisensePackageXmlFile Condition="'$(IntellisensePackageXmlFile)' == '' and '$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFileFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFileFromDotNetPlatExtFolder)</IntellisensePackageXmlFile>
   </PropertyGroup>
+
+  <Target Name="VerifyAssemblySupportsDocsXmlGeneration">
+    <Error Condition="'$(UseIntellisensePackageDocXmlFile)' == 'false' and '$(IsPartialFacadeAssembly)' == 'true'" Text="Cannot currently generate full xml documentation for an assembly that is a partial facade." />
+    <Error Condition="'$(UseIntellisensePackageDocXmlFile)' == 'false' and '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''" Text="Cannot currently generate full xml documentation for an assembly that generates PNSE." />
+  </Target>
 
   <ItemGroup>
     <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
