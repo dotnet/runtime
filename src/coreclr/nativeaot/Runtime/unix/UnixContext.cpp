@@ -183,7 +183,7 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 
 #ifdef HOST_64BIT
 
-#if defined(HOST_ARM64) and defined(TARGET_FREEBSD)
+#if defined(HOST_ARM64) && defined(TARGET_FREEBSD)
 
 #define MCREG_X0(mc)   (mc.mc_gpregs.gp_x[0])
 #define MCREG_X1(mc)   (mc.mc_gpregs.gp_x[1])
