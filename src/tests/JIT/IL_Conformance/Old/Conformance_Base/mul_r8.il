@@ -3,6 +3,8 @@
 
 .assembly extern legacy library mscorlib {}
 
+.namespace mul_r8
+{
 .class public _mul {
 .method public static	int32 _mul(float64,float64,float64) {
 .maxstack		5
@@ -10,13 +12,13 @@
 	ldarg	1
 	mul
 	dup
-	call	int32 _mul::checkfinite(float64)
+	call	int32 mul_r8._mul::checkfinite(float64)
 	ldc.i4		0x0
 	ceq
 	brtrue		COMPARE
-	call	int32 _mul::checkfinite(float64)
+	call	int32 mul_r8._mul::checkfinite(float64)
 	ldarg	2
-	call	int32 _mul::checkfinite(float64)
+	call	int32 mul_r8._mul::checkfinite(float64)
 	ceq
 	br			FINISH
 COMPARE:
@@ -75,511 +77,511 @@ FINISH:
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x3FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0xBFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0xBFF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0xBFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x3FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x3FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0xBFF0000000000000)
 	ldc.r8		float64(0xBFF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x0000000000000000)
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x3FF0000000000000)
 	ldc.r8		float64(0x3FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x3FF8000000000000)
 	ldc.r8		float64(0x4002000000000000)
-	call	int32 _mul::_mul(float64,float64,float64)
+	call	int32 mul_r8._mul::_mul(float64,float64,float64)
 	brfalse		FAIL
 
 
@@ -591,3 +593,4 @@ FAIL:
 }
 }
 .assembly mul_r8{}
+}

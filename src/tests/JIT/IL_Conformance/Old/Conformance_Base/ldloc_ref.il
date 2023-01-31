@@ -3,6 +3,8 @@
 
 .assembly extern legacy library mscorlib {}
 
+.namespace ldloc_ref
+{
 .class public _ldloc {
 .method public	void _ldloc() {
 .maxstack		0
@@ -12,8 +14,8 @@
 .method public static	int32 main() {
 .entrypoint
 .maxstack		2
-.locals	(class _ldloc)
-	newobj	instance 	void _ldloc::_ldloc()
+.locals	(class ldloc_ref._ldloc)
+	newobj	instance 	void ldloc_ref._ldloc::_ldloc()
 	dup
 	stloc		0
 
@@ -28,3 +30,4 @@ FAIL:
 }
 }
 .assembly ldloc_ref{}
+}

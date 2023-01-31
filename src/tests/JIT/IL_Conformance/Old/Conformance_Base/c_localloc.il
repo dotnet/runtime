@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace c_localloc
+{
 .class public _localloc {
 
 .method public static	int32 main() {
@@ -111,3 +113,4 @@ FAIL:
 }
 }
 .assembly c_localloc {}
+}

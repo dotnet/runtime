@@ -5,6 +5,8 @@
 
 .assembly 'brtrue'{}
 
+.namespace brtrue_
+{
 .class public _brtrue {
 
 .method public static int32 main() {
@@ -19,5 +21,6 @@ FAIL:
 PASS:
 	ldc.i4 100
 	ret
+}
 }
 }

@@ -3,6 +3,8 @@
 
 .assembly extern legacy library mscorlib {}
 
+.namespace rem_u8
+{
 .class public rem_un {
 .method public static	int64 _rem(int64,int64) {
 .locals		(class [mscorlib]System.Exception, unsigned int64)
@@ -38,222 +40,222 @@ END:
 .maxstack		20
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x0000000000000000
-	call		int64 rem_un::_rem(int64,int64)
+	call		int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x0000000000000001
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000000
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000000
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x5555555555555555
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000000
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x0000000000000000
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x0000000000000001
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x5555555555555555
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0x0000000000000000
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0x0000000000000001
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0x5555555555555555
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x5555555555555554
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x5555555555555554
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x0000000000000000
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x0000000000000001
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x5555555555555555
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x5555555555555555
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x0000000000000000
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x0000000000000001
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x5555555555555555
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x5555555555555555
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x5555555555555555
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x5555555555555555
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x0000000000000000
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x0000000000000001
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x5555555555555555
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 rem_un::_rem(int64,int64)
+	call	int64 rem_u8.rem_un::_rem(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
@@ -266,3 +268,4 @@ FAIL:
 }
 }
 .assembly rem_u8{}
+}

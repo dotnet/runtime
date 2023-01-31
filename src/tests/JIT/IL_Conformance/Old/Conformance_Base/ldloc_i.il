@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace ldloc_i
+{
 .class public _ldloc {
 
 
@@ -13,10 +15,10 @@
 .entrypoint
 .maxstack		10
 .locals	(int32*)
-	ldsflda		int32 _ldloc::LOADME
+	ldsflda		int32 ldloc_i._ldloc::LOADME
 	stloc		0
 
-	ldsflda		int32 _ldloc::LOADME
+	ldsflda		int32 ldloc_i._ldloc::LOADME
 	ldloc		0
 	ceq
 	brfalse		FAIL
@@ -28,3 +30,4 @@ FAIL:
 }
 }
 .assembly ldloc_i{}
+}

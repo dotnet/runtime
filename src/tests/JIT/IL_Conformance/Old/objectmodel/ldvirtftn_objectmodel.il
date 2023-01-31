@@ -6,50 +6,52 @@
 .assembly 'ldvirtftn_objectmodel'{
 }
 
+.namespace ldvirtftn_objectmodel
+{
 .class public auto ansi ldvirtftn_objectmodel {
 .method public static int32 main() {
-.locals	(int32, class _ldvirtftn)
+.locals	(int32, class ldvirtftn_objectmodel._ldvirtftn)
 .entrypoint
 .maxstack	4
 	ldc.i4	0x77
 	stloc		0x0
-	newobj	instance	void		_ldvirtftn::_ldvirtftn()
+	newobj	instance	void		ldvirtftn_objectmodel._ldvirtftn::_ldvirtftn()
 	stloc		0x1
 	ldloc		0x1
 	ldloc		0x0
 	ldloc		0x1
-	ldvirtftn	instance int32		_ldvirtftn::test(int32)
-	calli		default	int32 (class _ldvirtftn,int32)
+	ldvirtftn	instance int32		ldvirtftn_objectmodel._ldvirtftn::test(int32)
+	calli		default	int32 (class ldvirtftn_objectmodel._ldvirtftn,int32)
 	ldc.i4	0xEE
 	bne.un	FAIL
 
-	newobj	instance	void 		TestImplementation::TestImplementation()
+	newobj	instance	void 		ldvirtftn_objectmodel.TestImplementation::TestImplementation()
 	stloc		0x1
 	ldloc		0x1
 	ldloc		0x0
 	ldloc		0x1
-	ldvirtftn	instance int32		TestImplementation::TestMethod(int32)
-	calli		default	int32 (class TestInterface,int32)
+	ldvirtftn	instance int32		ldvirtftn_objectmodel.TestImplementation::TestMethod(int32)
+	calli		default	int32 (class ldvirtftn_objectmodel.TestInterface,int32)
 	ldc.i4	0xEE
 	bne.un	FAIL
 
-	newobj	instance	void 		TestImplementation::TestImplementation()
+	newobj	instance	void 		ldvirtftn_objectmodel.TestImplementation::TestImplementation()
 	stloc		0x1
 	ldloc		0x1
 	ldloc		0x0
 	ldloc		0x1
-	ldvirtftn	instance int32		TestInterface::TestMethod(int32)
-	calli		default	int32 (class TestInterface,int32)
+	ldvirtftn	instance int32		ldvirtftn_objectmodel.TestInterface::TestMethod(int32)
+	calli		default	int32 (class ldvirtftn_objectmodel.TestInterface,int32)
 	ldc.i4	0xEE
 	bne.un	FAIL
 
-	newobj	instance	void 		TestImplementation::TestImplementation()
+	newobj	instance	void 		ldvirtftn_objectmodel.TestImplementation::TestImplementation()
 	stloc		0x1
 	ldloc		0x1
 	ldloc		0x0
 	ldloc		0x1
-	ldvirtftn	instance int32		TestInterface::TestMethod(int32)
-	calli		default	int32 (class TestImplementation,int32)
+	ldvirtftn	instance int32		ldvirtftn_objectmodel.TestInterface::TestMethod(int32)
+	calli		default	int32 (class ldvirtftn_objectmodel.TestImplementation,int32)
 	ldc.i4	0xEE
 	bne.un	FAIL
 
@@ -85,7 +87,7 @@ ret
 }
 
 }
-.class public TestImplementation extends TestInterface {
+.class public TestImplementation extends ldvirtftn_objectmodel.TestInterface {
 
 .method public	void TestImplementation() {
 .maxstack	10
@@ -102,4 +104,5 @@ ret
 
 }
 
+}
 }

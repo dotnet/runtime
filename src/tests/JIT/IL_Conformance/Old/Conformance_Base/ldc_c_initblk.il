@@ -11,6 +11,8 @@
 
 
 //---- CLASS ----------------
+.namespace ldc_c_initblk
+{
 .class public          _initblk {
 
 //---- GLOBAL DATA ----------
@@ -33,12 +35,12 @@
 //====== begin testing ======
 
         // -- init a 4 byte block of memory to 0xAAAAAAAA
-        ldsflda		int32 _initblk::DATA
+        ldsflda		int32 ldc_c_initblk._initblk::DATA
         ldc.i4          0xAA
         ldc.i4          4
         initblk
         // -- load the 4 bytes of memory _and be sure it is 0xAAAAAAAA
-        ldsflda		int32 _initblk::DATA
+        ldsflda		int32 ldc_c_initblk._initblk::DATA
         ldind.i4
         ldc.i4          0xAAAAAAAA
         ceq
@@ -67,3 +69,4 @@ END:
 .assembly ldc_c_initblk {}
 
 
+}

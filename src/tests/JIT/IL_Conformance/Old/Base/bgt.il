@@ -6,6 +6,8 @@
 .assembly 'bgt'{}
 
 
+.namespace bgt_
+{
 .class public auto ansi _bgt {
 .method public	static int32 main() {
 .locals		(class [mscorlib]System.String)
@@ -82,3 +84,4 @@ end:
 }
 }
 
+}

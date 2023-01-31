@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace bne_u
+{
 .class public bne_un {
 
 
@@ -13,9 +15,9 @@
 .entrypoint
 .maxstack		10
 .locals	(int32*,int32*)
-	ldsflda		int32 bne_un::PTR
+	ldsflda		int32 bne_u.bne_un::PTR
 	stloc	0
-	ldsflda		int32 bne_un::PTR
+	ldsflda		int32 bne_u.bne_un::PTR
 	ldc.i4		0x2
 	add
 	stloc	1
@@ -45,3 +47,4 @@ FAIL:
 }
 }
 .assembly bne_u{}
+}

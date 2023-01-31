@@ -5,6 +5,8 @@
 
 .assembly 'beq'{}
 
+.namespace beq_
+{
 .class public auto ansi _beq {
 .method public	static int32 main() {
 .locals		(class [mscorlib]System.String)
@@ -57,3 +59,4 @@ end:
 }
 }
 
+}

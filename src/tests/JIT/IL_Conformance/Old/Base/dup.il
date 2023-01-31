@@ -6,6 +6,8 @@
 .assembly 'dup'{
 }
 
+.namespace dup_
+{
 .class public _dup {
 
 
@@ -36,13 +38,13 @@
 .entrypoint
 .maxstack	10
         ldc.i4          0xFAFAFAFA
-        call    int32 _dup::_dup(int32)
+        call    int32 dup_._dup::_dup(int32)
         brfalse         FAIL
         ldc.i8          0xFAFAFAFA
-        call    int32 _dup::_dup(int64)
+        call    int32 dup_._dup::_dup(int64)
         brfalse         FAIL
-        ldsflda		int32 _dup::PTR
-	call	int32 _dup::_dup(int32*)
+        ldsflda		int32 dup_._dup::PTR
+	call	int32 dup_._dup::_dup(int32*)
 	brfalse		FAIL
 
 PASS:
@@ -51,5 +53,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

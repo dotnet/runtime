@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.namespace c_nop
+{
 .class public          _nop {
 
 
@@ -22,7 +24,7 @@
 .maxstack               5
 
         ldc.i4  0xFF
-        call    int32 _nop::return(int32)
+        call    int32 c_nop._nop::return(int32)
         nop
         nop
         nop
@@ -51,7 +53,7 @@
         nop
         nop
         ldc.i4  0xFF
-        call    int32 _nop::return(int32)
+        call    int32 c_nop._nop::return(int32)
         ceq
         brfalse FAIL
 
@@ -70,3 +72,4 @@ END:
 
 .assembly c_nop {}
 
+}

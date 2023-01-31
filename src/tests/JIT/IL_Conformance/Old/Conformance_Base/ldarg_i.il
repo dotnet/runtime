@@ -6,6 +6,8 @@
 
 
 
+.namespace ldarg_i
+{
 .class public _ldarg {
 
 .field public static int32 FOO
@@ -21,11 +23,11 @@
 .method public static	int32 main() {
 .entrypoint
 .maxstack		10
-	ldsflda		int32 _ldarg::FOO
+	ldsflda		int32 ldarg_i._ldarg::FOO
 	ldc.i4		0x2
 	add
-	ldsflda		int32 _ldarg::FOO		
-	call	native int _ldarg::args(native int)
+	ldsflda		int32 ldarg_i._ldarg::FOO		
+	call	native int ldarg_i._ldarg::args(native int)
 	ceq
 	brfalse		FAIL
 
@@ -37,3 +39,4 @@ FAIL:
 }
 }
 .assembly ldarg_i{}
+}

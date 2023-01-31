@@ -7,6 +7,8 @@
     ret
 }
     
+.namespace call_Conformance
+{
 .class public _call {
 .method public static int32 main() {
 .entrypoint
@@ -30,3 +32,4 @@ FAIL:
 
 
 .assembly 'call_Conformance'{}
+}

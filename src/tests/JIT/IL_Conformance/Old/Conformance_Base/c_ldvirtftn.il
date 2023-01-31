@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace c_ldvirtftn
+{
 .class public Ldvirtftn {
 .method public static int32 main() {
 .entrypoint
@@ -24,3 +26,4 @@ FAIL:
 }
 }
 .assembly c_ldvirtftn {}
+}

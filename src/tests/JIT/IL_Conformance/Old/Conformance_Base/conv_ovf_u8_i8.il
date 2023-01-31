@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace conv_ovf_u8_i8
+{
 .class public		conv_ovf_i8 {
 
 
@@ -85,82 +87,82 @@ END:
 .maxstack		5
 	ldc.i8			0x8000000000000000
 	ldc.i8			0x8000000000000000
-	call		int32 conv_ovf_i8::conv(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0xFFFFFFFFFFFFFFFF
 	ldc.i8			0xFFFFFFFFFFFFFFFF
-	call		int32 conv_ovf_i8::conv(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x0000000000000000
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x0000000000000001
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_i8::conv(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x7FFFFFFFFFFFFFFE
 	ldc.i8			0x7FFFFFFFFFFFFFFE
-	call		int32 conv_ovf_i8::conv(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x7FFFFFFFFFFFFFFF
 	ldc.i8			0x7FFFFFFFFFFFFFFF
-	call		int32 conv_ovf_i8::conv(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 
 	ldc.i8			0x5555555555555555
 	ldc.i8			0x5555555555555555
-	call		int32 conv_ovf_i8::conv(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0xAAAAAAAAAAAAAAAA
 	ldc.i8			0xAAAAAAAAAAAAAAAA
-	call		int32 conv_ovf_i8::conv(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 
 	ldc.i8			0x0000000000000000
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv_un(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x0000000000000001
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_i8::conv_un(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv_un(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x7FFFFFFFFFFFFFFE
 	ldc.i8			0x7FFFFFFFFFFFFFFE
-	call		int32 conv_ovf_i8::conv_un(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv_un(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x7FFFFFFFFFFFFFFF
 	ldc.i8			0x7FFFFFFFFFFFFFFF
-	call		int32 conv_ovf_i8::conv_un(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv_un(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 
 	ldc.i8			0x5555555555555555
 	ldc.i8			0x5555555555555555
-	call		int32 conv_ovf_i8::conv_un(int64,int64)
+	call		int32 conv_ovf_u8_i8.conv_ovf_i8::conv_un(int64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -178,3 +180,4 @@ END:
 }
 
 .assembly conv_ovf_u8_i8{}
+}

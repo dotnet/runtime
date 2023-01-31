@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace stloc_ref
+{
 .class public _stloc {
 
 .method public	void _stloc() {
@@ -14,8 +16,8 @@
 .method public static	int32 main() {
 .entrypoint
 .maxstack		10
-.locals	(class _stloc)
-	newobj	instance	void _stloc::_stloc()
+.locals	(class stloc_ref._stloc)
+	newobj	instance	void stloc_ref._stloc::_stloc()
 	dup
 	stloc		0
 
@@ -30,3 +32,4 @@ FAIL:
 }
 }
 .assembly stloc_ref{}
+}

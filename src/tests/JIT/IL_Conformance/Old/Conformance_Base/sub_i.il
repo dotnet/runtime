@@ -5,6 +5,8 @@
 
 
 
+.namespace sub_i
+{
 .class public		_sub {
 
 
@@ -40,3 +42,4 @@ END:
 
 
 .assembly sub_i{}
+}

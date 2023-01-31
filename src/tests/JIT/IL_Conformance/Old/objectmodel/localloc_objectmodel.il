@@ -12,6 +12,8 @@
 .assembly 'localloc_objectmodel'{
 }
 
+.namespace localloc_objectmodel
+{
 .class public			_localloc {
 
 .method public void .ctor() {
@@ -132,5 +134,6 @@ Fail:
 End:
 	ret
 .try TryStart to TryEnd filter Filter handler Handler to EndHandler
+}
 }
 }

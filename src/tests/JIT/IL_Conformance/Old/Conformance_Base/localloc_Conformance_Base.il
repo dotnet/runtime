@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
+.namespace localloc_Conformance_Base
+{
 .class public _localloc {
 
 .method public static	int32 main() {
@@ -109,3 +111,4 @@ FAIL:
 }
 }
 .assembly 'localloc_Conformance_Base'{}
+}

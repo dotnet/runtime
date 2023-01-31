@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace starg_ref
+{
 .class public _starg {
 
 .method public	void _starg() {
@@ -14,8 +16,8 @@
 .method public static	int32 main() {
 .entrypoint
 .maxstack		10
-.locals	(class _starg)
-	newobj	instance	void _starg::_starg()
+.locals	(class starg_ref._starg)
+	newobj	instance	void starg_ref._starg::_starg()
 	dup
 	stloc		0
 
@@ -30,3 +32,4 @@ FAIL:
 }
 }
 .assembly starg_ref{}
+}

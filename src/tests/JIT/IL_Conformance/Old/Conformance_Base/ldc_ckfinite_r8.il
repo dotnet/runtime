@@ -13,6 +13,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_ckfinite_r8
+{
 .class public		_ckfinite {
 
 //---- GLOBAL DATA ----------
@@ -350,55 +352,55 @@ FAIL:
 //====== begin testing ======
 	//- 32 bit -inf
 	ldc.r8		float64(0xFFF0000000000000)
-	call	int32 _ckfinite::r8_0(float64)
+	call	int32 ldc_ckfinite_r8._ckfinite::r8_0(float64)
 	ldc.i4		0xEEEEEEEE
 	ceq
 	brfalse		FAIL
 	//- 32 bit -min
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _ckfinite::r8_1(float64)
+	call	int32 ldc_ckfinite_r8._ckfinite::r8_1(float64)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit -1
 	ldc.r8		float64(0xBFF0000000000000)
-	call	int32 _ckfinite::r8_2(float64)
+	call	int32 ldc_ckfinite_r8._ckfinite::r8_2(float64)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit -0
 	ldc.r8		float64(0x8000000000000000)
-	call	int32 _ckfinite::r8_3(float64)
+	call	int32 ldc_ckfinite_r8._ckfinite::r8_3(float64)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit +0
 	ldc.r8		float64(0x0000000000000000)
-	call	int32 _ckfinite::r8_4(float64)
+	call	int32 ldc_ckfinite_r8._ckfinite::r8_4(float64)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit +1
 	ldc.r8		float64(0x3FF0000000000000)
-	call	int32 _ckfinite::r8_5(float64)
+	call	int32 ldc_ckfinite_r8._ckfinite::r8_5(float64)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit +max
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _ckfinite::r8_6(float64)
+	call	int32 ldc_ckfinite_r8._ckfinite::r8_6(float64)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit +inf
 	ldc.r8		float64(0x7FF0000000000000)
-	call	int32 _ckfinite::r8_7(float64)
+	call	int32 ldc_ckfinite_r8._ckfinite::r8_7(float64)
 	ldc.i4		0xEEEEEEEE
 	ceq
 	brfalse		FAIL
 	//- 32 bit NaN
 	ldc.r8		float64(0x7FF8000000000000)
-	call	int32 _ckfinite::r8_8(float64)
+	call	int32 ldc_ckfinite_r8._ckfinite::r8_8(float64)
 	ldc.i4		0xEEEEEEEE
 	ceq
 	brfalse		FAIL
@@ -424,3 +426,4 @@ END:
 
 .assembly ldc_ckfinite_r8{}
 
+}

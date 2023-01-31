@@ -14,6 +14,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_sub_i
+{
 .class public		_sub {
 
 //---- GLOBAL DATA ----------
@@ -61,3 +63,4 @@ END:
 
 .assembly ldc_sub_i{}
 
+}

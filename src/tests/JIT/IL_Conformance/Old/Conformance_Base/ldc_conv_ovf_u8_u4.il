@@ -13,6 +13,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_conv_ovf_u8_u4
+{
 .class public		conv_ovf_u4 {
 
 //---- GLOBAL DATA ----------
@@ -736,28 +738,28 @@ END:
 //-- 0 u8 --
 	ldc.i8			0x0000000000000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_0(int64,int32)
+	call		int32 ldc_conv_ovf_u8_u4.conv_ovf_u4::conv_0(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 u8 --
 	ldc.i8			0x0000000000000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_u4::conv_1(int64,int32)
+	call		int32 ldc_conv_ovf_u8_u4.conv_ovf_u4::conv_1(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- (max - 1) u8 --
 	ldc.i8			0xFFFFFFFFFFFFFFFE
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_2(int64,int32)
+	call		int32 ldc_conv_ovf_u8_u4.conv_ovf_u4::conv_2(int64,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- max u8 --
 	ldc.i8			0xFFFFFFFFFFFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_3(int64,int32)
+	call		int32 ldc_conv_ovf_u8_u4.conv_ovf_u4::conv_3(int64,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
@@ -765,7 +767,7 @@ END:
 //-- max u4 --
 	ldc.i8			0xFFFFFFFF
 	ldc.i4			0xFFFFFFFF
-	call		int32 conv_ovf_u4::conv_4(int64,int32)
+	call		int32 ldc_conv_ovf_u8_u4.conv_ovf_u4::conv_4(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -774,28 +776,28 @@ END:
 //-- 0 u8 --
 	ldc.i8			0x0000000000000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_un_5(int64,int32)
+	call		int32 ldc_conv_ovf_u8_u4.conv_ovf_u4::conv_un_5(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 u8 --
 	ldc.i8			0x0000000000000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_u4::conv_un_6(int64,int32)
+	call		int32 ldc_conv_ovf_u8_u4.conv_ovf_u4::conv_un_6(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- (max - 1) u8 --
 	ldc.i8			0xFFFFFFFFFFFFFFFE
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_un_7(int64,int32)
+	call		int32 ldc_conv_ovf_u8_u4.conv_ovf_u4::conv_un_7(int64,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- max u8 --
 	ldc.i8			0xFFFFFFFFFFFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_un_8(int64,int32)
+	call		int32 ldc_conv_ovf_u8_u4.conv_ovf_u4::conv_un_8(int64,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
@@ -803,7 +805,7 @@ END:
 //-- max u4 --
 	ldc.i8			0xFFFFFFFF
 	ldc.i4			0xFFFFFFFF
-	call		int32 conv_ovf_u4::conv_un_9(int64,int32)
+	call		int32 ldc_conv_ovf_u8_u4.conv_ovf_u4::conv_un_9(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -828,3 +830,4 @@ END:
 
 .assembly ldc_conv_ovf_u8_u4{}
 
+}

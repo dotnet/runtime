@@ -5,6 +5,8 @@
 
 
 
+.namespace c_switch
+{
 .class public          _switch {
 
 
@@ -77,3 +79,4 @@ END:
 
 .assembly c_switch {}
 
+}

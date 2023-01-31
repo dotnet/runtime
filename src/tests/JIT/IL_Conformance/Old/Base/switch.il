@@ -5,6 +5,8 @@
 
 .assembly 'switch'{}
 
+.namespace switch_
+{
 .class public _switch {
 
 .method public static int32 main() {
@@ -58,5 +60,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

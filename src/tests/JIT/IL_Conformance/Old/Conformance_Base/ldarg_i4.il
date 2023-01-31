@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace ldarg_i4
+{
 .class public _ldarg {
 .method public static	int32 args(int32) {
 .maxstack	5
@@ -19,31 +21,31 @@
 .maxstack		10
 	ldc.i4		0x80000002
 	ldc.i4		0x80000000
-	call	int32 _ldarg::args(int32)
+	call	int32 ldarg_i4._ldarg::args(int32)
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x00000001
 	ldc.i4		0xFFFFFFFF
-	call	int32 _ldarg::args(int32)
+	call	int32 ldarg_i4._ldarg::args(int32)
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x00000002
 	ldc.i4		0x00000000
-	call	int32 _ldarg::args(int32)
+	call	int32 ldarg_i4._ldarg::args(int32)
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x00000003
 	ldc.i4		0x00000001
-	call	int32 _ldarg::args(int32)
+	call	int32 ldarg_i4._ldarg::args(int32)
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x80000001
 	ldc.i4		0x7FFFFFFF
-	call	int32 _ldarg::args(int32)
+	call	int32 ldarg_i4._ldarg::args(int32)
 	ceq
 	brfalse		FAIL
 
@@ -57,3 +59,4 @@ FAIL:
 }
 }
 .assembly ldarg_i4{}
+}

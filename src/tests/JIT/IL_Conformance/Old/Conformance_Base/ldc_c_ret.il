@@ -9,6 +9,8 @@
   .ver 4:0:0:0
 }
 //---- CLASS ----------------
+.namespace ldc_c_ret
+{
 .class public          _ret {
 
 //---- GLOBAL DATA ----------
@@ -63,13 +65,13 @@
 .maxstack               5
 //====== begin testing ======
         ldc.i4  0xFEFE
-        call    void _ret::ret_test_0()
-        call    void _ret::ret_test_1()
-        call    void _ret::ret_test_2()
-        call    void _ret::ret_test_3()
-        call    void _ret::ret_test_4()
-        call    void _ret::ret_test_5()
-        call    void _ret::ret_test_6()
+        call    void ldc_c_ret._ret::ret_test_0()
+        call    void ldc_c_ret._ret::ret_test_1()
+        call    void ldc_c_ret._ret::ret_test_2()
+        call    void ldc_c_ret._ret::ret_test_3()
+        call    void ldc_c_ret._ret::ret_test_4()
+        call    void ldc_c_ret._ret::ret_test_5()
+        call    void ldc_c_ret._ret::ret_test_6()
         ldc.i4  0xFEFE
         ceq
         brfalse FAIL
@@ -96,3 +98,4 @@ END:
 .assembly ldc_c_ret {}
 
 
+}

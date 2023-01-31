@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace neg_r4
+{
 .class public		_neg {
 
 
@@ -13,13 +15,13 @@
 	ldarg	0
 	neg
 	dup
-	call	int32 _neg::checkfinite(float32)
+	call	int32 neg_r4._neg::checkfinite(float32)
 	ldc.i4		0x0
 	ceq
 	brtrue		COMPARE
-	call	int32 _neg::checkfinite(float32)
+	call	int32 neg_r4._neg::checkfinite(float32)
 	ldarg	1
-	call	int32 _neg::checkfinite(float32)
+	call	int32 neg_r4._neg::checkfinite(float32)
 	ceq
 	br			END
 COMPARE:
@@ -83,39 +85,39 @@ FINISH:
 	
 	ldc.r4	float32(0xFF800000)
 	ldc.r4	float32(0x7F800000)
-	call	int32 _neg::r4(float32,float32)
+	call	int32 neg_r4._neg::r4(float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0x7F7FFFFF)
-	call	int32 _neg::r4(float32,float32)
+	call	int32 neg_r4._neg::r4(float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x3F800000)
-	call	int32 _neg::r4(float32,float32)
+	call	int32 neg_r4._neg::r4(float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x80000000)
 	ldc.r4	float32(0x00000000)
-	call	int32 _neg::r4(float32,float32)
+	call	int32 neg_r4._neg::r4(float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x00000000)
 	ldc.r4	float32(0x80000000)
-	call	int32 _neg::r4(float32,float32)
+	call	int32 neg_r4._neg::r4(float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x3F800000)
 	ldc.r4	float32(0xBF800000)
-	call	int32 _neg::r4(float32,float32)
+	call	int32 neg_r4._neg::r4(float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F7FFFFF)
 	ldc.r4	float32(0xFF7FFFFF)
-	call	int32 _neg::r4(float32,float32)
+	call	int32 neg_r4._neg::r4(float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7F800000)
 	ldc.r4	float32(0xFF800000)
-	call	int32 _neg::r4(float32,float32)
+	call	int32 neg_r4._neg::r4(float32,float32)
 	brfalse	FAIL
 	ldc.r4	float32(0x7FC00000)
 	ldc.r4	float32(0x7FC00000)
-	call	int32 _neg::r4(float32,float32)
+	call	int32 neg_r4._neg::r4(float32,float32)
 	brfalse	FAIL
 
 
@@ -134,3 +136,4 @@ END:
 
 
 .assembly neg_r4{}
+}

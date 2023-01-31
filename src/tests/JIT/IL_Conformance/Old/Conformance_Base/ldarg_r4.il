@@ -3,6 +3,8 @@
 
 .assembly extern legacy library mscorlib {}
 
+.namespace ldarg_r4
+{
 .class public _ldarg {
 
 .method public static	int32 args(float32,float32) {
@@ -19,42 +21,42 @@
 .maxstack		10
 	ldc.r4		float32(0xFF800000)
 	ldc.r4		float32(0xFF800000)
-	call	int32 _ldarg::args(float32,float32)
+	call	int32 ldarg_r4._ldarg::args(float32,float32)
 	brfalse		FAIL
 
 	ldc.r4		float32(0xFF7FFFFF)
 	ldc.r4		float32(0xFF7FFFFF)
-	call	int32 _ldarg::args(float32,float32)
+	call	int32 ldarg_r4._ldarg::args(float32,float32)
 	brfalse		FAIL
 
 	ldc.r4		float32(0xBF80000)
 	ldc.r4		float32(0xBF80000)
-	call	int32 _ldarg::args(float32,float32)
+	call	int32 ldarg_r4._ldarg::args(float32,float32)
 	brfalse		FAIL
 
 	ldc.r4		float32(0x80000000)
 	ldc.r4		float32(0x80000000)
-	call	int32 _ldarg::args(float32,float32)
+	call	int32 ldarg_r4._ldarg::args(float32,float32)
 	brfalse		FAIL
 
 	ldc.r4		float32(0x00000000)
 	ldc.r4		float32(0x00000000)
-	call	int32 _ldarg::args(float32,float32)	
+	call	int32 ldarg_r4._ldarg::args(float32,float32)	
 	brfalse		FAIL
 
 	ldc.r4		float32(0x3F800000)
 	ldc.r4		float32(0x3F800000)
-	call	int32 _ldarg::args(float32,float32)
+	call	int32 ldarg_r4._ldarg::args(float32,float32)
 	brfalse		FAIL
 
 	ldc.r4		float32(0x7F7FFFFF)
 	ldc.r4		float32(0x7F7FFFFF)
-	call	int32 _ldarg::args(float32,float32)
+	call	int32 ldarg_r4._ldarg::args(float32,float32)
 	brfalse		FAIL
 
 	ldc.r4		float32(0x7F800000)
 	ldc.r4		float32(0x7F800000)
-	call	int32 _ldarg::args(float32,float32)
+	call	int32 ldarg_r4._ldarg::args(float32,float32)
 	brfalse		FAIL
 
 
@@ -67,3 +69,4 @@ FAIL:
 }
 }
 .assembly ldarg_r4{}
+}

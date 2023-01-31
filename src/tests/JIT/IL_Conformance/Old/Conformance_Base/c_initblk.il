@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace c_initblk
+{
 .class public          _initblk {
 
 
@@ -20,11 +22,11 @@
 .entrypoint
 .maxstack               5
 
-        ldsflda		int32 _initblk::DATA
+        ldsflda		int32 c_initblk._initblk::DATA
         ldc.i4          0xAA
         ldc.i4          4
         initblk
-        ldsflda		int32 _initblk::DATA
+        ldsflda		int32 c_initblk._initblk::DATA
         ldind.i4
         ldc.i4          0xAAAAAAAA
         ceq
@@ -46,3 +48,4 @@ END:
 
 .assembly c_initblk {}
 
+}

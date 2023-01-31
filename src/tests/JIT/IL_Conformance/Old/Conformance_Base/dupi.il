@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace dupi
+{
 .class public _dup {
 
 
@@ -12,7 +14,7 @@
 .method public static	int32 main() {
 .entrypoint
 .maxstack		20
-	ldsflda		int32 _dup::FOO
+	ldsflda		int32 dupi._dup::FOO
 	dup
 	ceq
 	brfalse		FAIL
@@ -26,3 +28,4 @@ FAIL:
 }
 }
 .assembly dupi{}
+}

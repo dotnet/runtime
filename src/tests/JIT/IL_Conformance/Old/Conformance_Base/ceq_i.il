@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace ceq_i
+{
 .class public _ceq {
 
 
@@ -13,9 +15,9 @@
 .entrypoint
 .maxstack		10
 .locals	(int32*,int32*)
-	ldsflda		int32 _ceq::PTR
+	ldsflda		int32 ceq_i._ceq::PTR
 	stloc	0
-	ldsflda		int32 _ceq::PTR
+	ldsflda		int32 ceq_i._ceq::PTR
 	ldc.i4		0x2
 	add
 	stloc	1
@@ -45,3 +47,4 @@ FAIL:
 }
 }
 .assembly ceq_i{}
+}

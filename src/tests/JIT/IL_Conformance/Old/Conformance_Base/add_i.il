@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.namespace add_i
+{
 .class public _add {
 
 
@@ -11,24 +13,24 @@
 .entrypoint
 .maxstack		20
 	ldc.i4	0x000000FF
-	ldsflda	int32 _add::PTR
+	ldsflda	int32 add_i._add::PTR
 	add
 	conv.i4
 	ldc.i4	0x000000FF
-	ldsflda	int32 _add::PTR
+	ldsflda	int32 add_i._add::PTR
 	add
 	conv.i4
 	ceq
 	brfalse		FAIL
 
-	ldsflda	int32 _add::PTR
+	ldsflda	int32 add_i._add::PTR
 	conv.i4
-	ldsflda	int32 _add::PTR
+	ldsflda	int32 add_i._add::PTR
 	conv.i4
 	add
-	ldsflda	int32 _add::PTR
+	ldsflda	int32 add_i._add::PTR
 	conv.i4
-	ldsflda	int32 _add::PTR
+	ldsflda	int32 add_i._add::PTR
 	conv.i4
 	add
 	ceq
@@ -41,3 +43,4 @@ FAIL:
 }
 }
 .assembly add_i{}
+}

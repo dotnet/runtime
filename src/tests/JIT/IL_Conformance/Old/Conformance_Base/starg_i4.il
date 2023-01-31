@@ -3,6 +3,8 @@
 
 .assembly extern legacy library mscorlib {}
 
+.namespace starg_i4
+{
 .class public _starg {
 .method public static	int32 args(int32,int32) {
 .maxstack	10
@@ -31,27 +33,27 @@
 .maxstack		10
 	ldc.i4		0x80000001
 	ldc.i4		0x80000000
-	call	int32 _starg::args(int32,int32)
+	call	int32 starg_i4._starg::args(int32,int32)
 	brfalse		FAIL
 
 	ldc.i4		0x00000000
 	ldc.i4		0xFFFFFFFF
-	call	int32 _starg::args(int32,int32)
+	call	int32 starg_i4._starg::args(int32,int32)
 	brfalse		FAIL
 
 	ldc.i4		0x00000001
 	ldc.i4		0x00000000
-	call	int32 _starg::args(int32,int32)
+	call	int32 starg_i4._starg::args(int32,int32)
 	brfalse		FAIL
 
 	ldc.i4		0x00000002
 	ldc.i4		0x00000001
-	call	int32 _starg::args(int32,int32)
+	call	int32 starg_i4._starg::args(int32,int32)
 	brfalse		FAIL
 
 	ldc.i4		0x80000000
 	ldc.i4		0x7FFFFFFF
-	call	int32 _starg::args(int32,int32)
+	call	int32 starg_i4._starg::args(int32,int32)
 	brfalse		FAIL
 
 
@@ -64,3 +66,4 @@ FAIL:
 }
 }
 .assembly starg_i4{}
+}

@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace c_brtrue
+{
 .class public _brtrue {
 .method public static  int32 main() {
 .entrypoint
@@ -148,3 +150,4 @@ FAIL:
 }
 }
 .assembly c_brtrue {}
+}

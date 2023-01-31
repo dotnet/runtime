@@ -13,6 +13,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_ret_i4
+{
 .class public		_ret {
 
 //---- GLOBAL DATA ----------
@@ -75,7 +77,7 @@
 //====== begin testing ======
 // -- Even
 	ldc.i4		0xAAAAAAAA
-	call	int32 _ret::ret_test_0(int32)
+	call	int32 ldc_ret_i4._ret::ret_test_0(int32)
 	// -- Even
 	ldc.i4		0xAAAAAAAA
 	ceq
@@ -83,7 +85,7 @@
 
 // -- Odd
 	ldc.i4		0x55555555
-	call	int32 _ret::ret_test_1(int32)
+	call	int32 ldc_ret_i4._ret::ret_test_1(int32)
 	// -- Odd
 	ldc.i4		0x55555555
 	ceq
@@ -91,7 +93,7 @@
 
 // -- Max
 	ldc.i4		0x7FFFFFFF
-	call	int32 _ret::ret_test_2(int32)
+	call	int32 ldc_ret_i4._ret::ret_test_2(int32)
 	// -- Max
 	ldc.i4		0x7FFFFFFF
 	ceq
@@ -99,7 +101,7 @@
 
 // -- 1
 	ldc.i4		0x00000001
-	call	int32 _ret::ret_test_3(int32)
+	call	int32 ldc_ret_i4._ret::ret_test_3(int32)
 	// -- 1
 	ldc.i4		0x00000001
 	ceq
@@ -107,7 +109,7 @@
 
 // -- 0
 	ldc.i4		0x00000000
-	call	int32 _ret::ret_test_4(int32)
+	call	int32 ldc_ret_i4._ret::ret_test_4(int32)
 	// -- 0
 	ldc.i4		0x00000000
 	ceq
@@ -115,7 +117,7 @@
 
 // -- -1
 	ldc.i4		0xFFFFFFFF
-	call	int32 _ret::ret_test_5(int32)
+	call	int32 ldc_ret_i4._ret::ret_test_5(int32)
 	// -- -1
 	ldc.i4		0xFFFFFFFF
 	ceq
@@ -123,7 +125,7 @@
 
 // -- Min
 	ldc.i4		0x80000000
-	call	int32 _ret::ret_test_6(int32)
+	call	int32 ldc_ret_i4._ret::ret_test_6(int32)
 	// -- Min
 	ldc.i4		0x80000000
 	ceq
@@ -152,3 +154,4 @@ END:
 
 .assembly ldc_ret_i4{}
 
+}

@@ -6,6 +6,8 @@
 .assembly 'initblk'{
 }
 
+.namespace initblk_
+{
 .class public _initblk {
 
 
@@ -14,11 +16,11 @@
 .method public static int32 main() {
 .entrypoint
 .maxstack	10
-	ldsflda		int32 _initblk::DATA
+	ldsflda		int32 initblk_._initblk::DATA
 	ldc.i4		0xAA
 	ldc.i4		4
 	initblk
-	ldsflda		int32 _initblk::DATA
+	ldsflda		int32 initblk_._initblk::DATA
 	ldind.i4
 	ldc.i4		0xAAAAAAAA
 	ceq
@@ -30,5 +32,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

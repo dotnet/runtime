@@ -11,6 +11,8 @@
 
 
 //---- CLASS ----------------
+.namespace ldc_c_cpblk
+{
 .class public          _cpblk {
 
 //---- GLOBAL DATA ----------
@@ -22,24 +24,24 @@
 
 .method public static int32 initialize_0() {
         // -- init first 4 bytes to 0xAAAAAAAA
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 ldc_c_cpblk._cpblk::DATA
         ldc.i4          0xAA
         ldc.i4          4
         initblk
         // -- init next 4 bytes to 0xFFFFFFFF
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 ldc_c_cpblk._cpblk::DATA
         ldc.i4          4
         add
         ldc.i4          0xFF
         ldc.i4          4
         initblk
         //-- be sure memory is properly initialized --
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 ldc_c_cpblk._cpblk::DATA
         ldind.i4
         ldc.i4          0xAAAAAAAA
         ceq
         brfalse         FAIL
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 ldc_c_cpblk._cpblk::DATA
         ldc.i4          4
         add
         ldind.i4
@@ -66,18 +68,18 @@ FAIL:
 //----------------
 // initialize    -
 //----------------
-        call    int32 _cpblk::initialize_0()
+        call    int32 ldc_c_cpblk._cpblk::initialize_0()
         brfalse         FAIL
 
         // -- copy first chunk into second chunk
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 ldc_c_cpblk._cpblk::DATA
         ldc.i4          4
         add
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 ldc_c_cpblk._cpblk::DATA
         ldc.i4          4
         cpblk
         // -- Second chunk should now be 0xAAAAAAAA
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 ldc_c_cpblk._cpblk::DATA
         ldc.i4          4
         add
         ldind.i4
@@ -106,3 +108,4 @@ END:
 .assembly ldc_c_cpblk {}
 
 
+}

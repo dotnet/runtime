@@ -5,6 +5,8 @@
 
 .assembly 'blt'{}
 
+.namespace blt_
+{
 .class public auto ansi _blt {
 .method public	static int32 main() {
 .locals		(class [mscorlib]System.String)
@@ -81,3 +83,4 @@ end:
 }
 }
 
+}

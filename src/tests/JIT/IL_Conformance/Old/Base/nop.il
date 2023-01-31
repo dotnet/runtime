@@ -5,6 +5,8 @@
 
 .assembly 'nop'{}
 
+.namespace nop_
+{
 .class public _nop {
 
 .method public static int32 return(int32) {
@@ -17,7 +19,7 @@
 .entrypoint
 .maxstack	10
 	ldc.i4	0xFF
-	call	int32 _nop::return(int32)
+	call	int32 nop_._nop::return(int32)
 	nop
 	nop
 	nop
@@ -46,7 +48,7 @@
 	nop
 	nop
 	ldc.i4	0xFF
-	call	int32 _nop::return(int32)
+	call	int32 nop_._nop::return(int32)
 	ceq
 	brfalse	FAIL
 
@@ -56,5 +58,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

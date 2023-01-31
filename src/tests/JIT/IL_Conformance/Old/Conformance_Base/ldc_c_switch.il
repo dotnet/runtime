@@ -14,6 +14,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_c_switch
+{
 .class public          _switch {
 
 //---- GLOBAL DATA ----------
@@ -118,3 +120,4 @@ END:
 .assembly ldc_c_switch {}
 
 
+}

@@ -6,6 +6,8 @@
 .assembly 'callvirt'{}
 
 
+.namespace callvirt_
+{
 .class public TestClass {
 
 .method public void .ctor() {
@@ -32,9 +34,9 @@
 .entrypoint
 .maxstack	10
 
-	newobj	instance		void TestClass::.ctor() 
+	newobj	instance		void callvirt_.TestClass::.ctor() 
 	ldc.i4		0x2
-	callvirt	instance	int32 TestClass::TestMethod(int32)
+	callvirt	instance	int32 callvirt_.TestClass::TestMethod(int32)
 	ldc.i4		0x4
 	ceq
 	brfalse		FAIL
@@ -45,5 +47,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

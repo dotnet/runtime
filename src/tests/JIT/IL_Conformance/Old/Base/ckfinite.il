@@ -5,6 +5,8 @@
 
 .assembly 'ckfinite'{}
 
+.namespace ckfinite_
+{
 .class public _ckfinite {
 
 .method public static int32 _ckfinite(float32) {
@@ -51,29 +53,29 @@ done:
 .entrypoint
 .maxstack	10
 	ldc.r4		float32(0x7F800000)
-	call		int32 _ckfinite::_ckfinite(float32)
+	call		int32 ckfinite_._ckfinite::_ckfinite(float32)
 	brfalse		FAIL
 	ldc.r4		float32(0xFF800000)
-	call		int32 _ckfinite::_ckfinite(float32)
+	call		int32 ckfinite_._ckfinite::_ckfinite(float32)
 	brfalse		FAIL
 	ldc.r4		float32(0x7FC00000)
-	call		int32 _ckfinite::_ckfinite(float32)
+	call		int32 ckfinite_._ckfinite::_ckfinite(float32)
 	brfalse		FAIL
 	ldc.r4		float32(0xFF7FFFFF)
-	call		int32 _ckfinite::_ckfinite(float32)
+	call		int32 ckfinite_._ckfinite::_ckfinite(float32)
 	brtrue		FAIL
 
 	ldc.r8		float64(0x7FF0000000000000)
-	call		int32 _ckfinite::_ckfinite(float64)
+	call		int32 ckfinite_._ckfinite::_ckfinite(float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFF0000000000000)
-	call		int32 _ckfinite::_ckfinite(float64)
+	call		int32 ckfinite_._ckfinite::_ckfinite(float64)
 	brfalse		FAIL
 	ldc.r8		float64(0x7FF8000000000000)
-	call		int32 _ckfinite::_ckfinite(float64)
+	call		int32 ckfinite_._ckfinite::_ckfinite(float64)
 	brfalse		FAIL
 	ldc.r8		float64(0xFFEFFFFFFFFFFFFF)
-	call		int32 _ckfinite::_ckfinite(float64)
+	call		int32 ckfinite_._ckfinite::_ckfinite(float64)
 	brtrue		FAIL
 PASS:
 	ldc.i4 100
@@ -81,5 +83,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

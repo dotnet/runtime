@@ -6,6 +6,8 @@
 
 
 
+.namespace stloc_i
+{
 .class public _stloc {
 
 
@@ -15,10 +17,10 @@
 .entrypoint
 .maxstack		10
 .locals	(int32*)
-	ldsflda		int32 _stloc::LOADME
+	ldsflda		int32 stloc_i._stloc::LOADME
 	stloc	0
 
-	ldsflda		int32 _stloc::LOADME
+	ldsflda		int32 stloc_i._stloc::LOADME
 	ldloc	0
 	ceq
 	brfalse		FAIL
@@ -30,3 +32,4 @@ FAIL:
 }
 }
 .assembly stloc_i{}
+}

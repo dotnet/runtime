@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace bgt_u
+{
 .class public _bgt {
 
 
@@ -13,9 +15,9 @@
 .entrypoint
 .maxstack		10
 .locals	(int32*,int32*)
-	ldsflda		int32 _bgt::PTR
+	ldsflda		int32 bgt_u._bgt::PTR
 	stloc	0
-	ldsflda		int32 _bgt::PTR
+	ldsflda		int32 bgt_u._bgt::PTR
 	ldc.i4		0x2
 	add
 	stloc	1
@@ -52,3 +54,4 @@ FAIL:
 }
 }
 .assembly bgt_u{}
+}

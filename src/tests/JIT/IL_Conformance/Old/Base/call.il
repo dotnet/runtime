@@ -12,6 +12,8 @@
 	ret
 }
 
+.namespace call_
+{
 .class public _call {
 
 
@@ -34,3 +36,4 @@ FAIL:
 
 
 
+}

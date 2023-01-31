@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace ret_r8
+{
 .class public		_ret {
 
 
@@ -24,55 +26,55 @@
 .maxstack		12
 
 	ldc.r8	float64(0x7FF8000000000000)
-	call	float64 _ret::ret_test(float64)
+	call	float64 ret_r8._ret::ret_test(float64)
 	ldc.r8	float64(0x7FF8000000000000)
 	cgt.un
 	brfalse		FAIL
 
 	ldc.r8	float64(0x7FF0000000000000)
-	call	float64 _ret::ret_test(float64)
+	call	float64 ret_r8._ret::ret_test(float64)
 	ldc.r8	float64(0x7FF0000000000000)
 	ceq
 	brfalse		FAIL
 
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
-	call	float64 _ret::ret_test(float64)
+	call	float64 ret_r8._ret::ret_test(float64)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ceq
 	brfalse		FAIL
 
 	ldc.r8	float64(0x3FF0000000000000)
-	call	float64 _ret::ret_test(float64)
+	call	float64 ret_r8._ret::ret_test(float64)
 	ldc.r8	float64(0x3FF0000000000000)
 	ceq
 	brfalse		FAIL
 
 	ldc.r8	float64(0x0000000000000000)
-	call	float64 _ret::ret_test(float64)
+	call	float64 ret_r8._ret::ret_test(float64)
 	ldc.r8	float64(0x0000000000000000)
 	ceq
 	brfalse		FAIL
 
 	ldc.r8	float64(0x8000000000000000)
-	call	float64 _ret::ret_test(float64)
+	call	float64 ret_r8._ret::ret_test(float64)
 	ldc.r8	float64(0x8000000000000000)
 	ceq
 	brfalse		FAIL
 
 	ldc.r8	float64(0xBFF0000000000000)
-	call	float64 _ret::ret_test(float64)
+	call	float64 ret_r8._ret::ret_test(float64)
 	ldc.r8	float64(0xBFF0000000000000)
 	ceq
 	brfalse		FAIL
 
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
-	call	float64 _ret::ret_test(float64)
+	call	float64 ret_r8._ret::ret_test(float64)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ceq
 	brfalse		FAIL
 
 	ldc.r8	float64(0xFFF0000000000000)
-	call	float64 _ret::ret_test(float64)
+	call	float64 ret_r8._ret::ret_test(float64)
 	ldc.r8	float64(0xFFF0000000000000)
 	ceq
 	brfalse		FAIL
@@ -91,3 +93,4 @@ END:
 }
 
 .assembly ret_r8{}
+}

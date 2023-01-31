@@ -4,6 +4,8 @@
 .assembly extern mscorlib {}
 .assembly 'ret_Conformance'{}
 
+.namespace ret_Conformance
+{
 .class public		_ret {
 
 
@@ -22,13 +24,13 @@
 .entrypoint
 .maxstack		5
 	ldc.i4	0xFEFE
-	call	void _ret::ret_test()
-	call	void _ret::ret_test()
-	call	void _ret::ret_test()
-	call	void _ret::ret_test()
-	call	void _ret::ret_test()
-	call	void _ret::ret_test()
-	call	void _ret::ret_test()
+	call	void ret_Conformance._ret::ret_test()
+	call	void ret_Conformance._ret::ret_test()
+	call	void ret_Conformance._ret::ret_test()
+	call	void ret_Conformance._ret::ret_test()
+	call	void ret_Conformance._ret::ret_test()
+	call	void ret_Conformance._ret::ret_test()
+	call	void ret_Conformance._ret::ret_test()
 	ldc.i4	0xFEFE
 	ceq
 	brfalse	FAIL
@@ -45,3 +47,4 @@ END:
 }
 }
 
+}

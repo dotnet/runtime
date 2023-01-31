@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace beq_i
+{
 .class public _beq {
 
 
@@ -13,9 +15,9 @@
 .entrypoint
 .maxstack		10
 .locals	(int32*,int32*)
-	ldsflda		int32 _beq::PTR
+	ldsflda		int32 beq_i._beq::PTR
 	stloc	0
-	ldsflda		int32 _beq::PTR
+	ldsflda		int32 beq_i._beq::PTR
 	ldc.i4		0x2
 	add
 	stloc	1
@@ -44,3 +46,4 @@ FAIL:
 }
 }
 .assembly beq_i{}
+}

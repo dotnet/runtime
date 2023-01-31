@@ -13,6 +13,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_ret_r8
+{
 .class public		_ret {
 
 //---- GLOBAL DATA ----------
@@ -88,7 +90,7 @@
 
 // -- NaN
 	ldc.r8	float64(0x7FF8000000000000)
-	call	float64 _ret::ret_test_0(float64)
+	call	float64 ldc_ret_r8._ret::ret_test_0(float64)
 	// -- NaN
 	ldc.r8	float64(0x7FF8000000000000)
 	cgt.un
@@ -96,7 +98,7 @@
 
 // -- inf
 	ldc.r8	float64(0x7FF0000000000000)
-	call	float64 _ret::ret_test_1(float64)
+	call	float64 ldc_ret_r8._ret::ret_test_1(float64)
 	// -- inf
 	ldc.r8	float64(0x7FF0000000000000)
 	ceq
@@ -104,7 +106,7 @@
 
 // -- max
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
-	call	float64 _ret::ret_test_2(float64)
+	call	float64 ldc_ret_r8._ret::ret_test_2(float64)
 	// -- max
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ceq
@@ -112,7 +114,7 @@
 
 // -- 1
 	ldc.r8	float64(0x3FF0000000000000)
-	call	float64 _ret::ret_test_3(float64)
+	call	float64 ldc_ret_r8._ret::ret_test_3(float64)
 	// -- 1
 	ldc.r8	float64(0x3FF0000000000000)
 	ceq
@@ -120,7 +122,7 @@
 
 // -- 0
 	ldc.r8	float64(0x0000000000000000)
-	call	float64 _ret::ret_test_4(float64)
+	call	float64 ldc_ret_r8._ret::ret_test_4(float64)
 	// -- 0
 	ldc.r8	float64(0x0000000000000000)
 	ceq
@@ -128,7 +130,7 @@
 
 // -- -0
 	ldc.r8	float64(0x8000000000000000)
-	call	float64 _ret::ret_test_5(float64)
+	call	float64 ldc_ret_r8._ret::ret_test_5(float64)
 	// -- -0
 	ldc.r8	float64(0x8000000000000000)
 	ceq
@@ -136,7 +138,7 @@
 
 // -- -1
 	ldc.r8	float64(0xBFF0000000000000)
-	call	float64 _ret::ret_test_6(float64)
+	call	float64 ldc_ret_r8._ret::ret_test_6(float64)
 	// -- -1
 	ldc.r8	float64(0xBFF0000000000000)
 	ceq
@@ -144,7 +146,7 @@
 
 // -- min
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
-	call	float64 _ret::ret_test_7(float64)
+	call	float64 ldc_ret_r8._ret::ret_test_7(float64)
 	// -- min
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ceq
@@ -152,7 +154,7 @@
 
 // -- -inf
 	ldc.r8	float64(0xFFF0000000000000)
-	call	float64 _ret::ret_test_8(float64)
+	call	float64 ldc_ret_r8._ret::ret_test_8(float64)
 	// -- -inf
 	ldc.r8	float64(0xFFF0000000000000)
 	ceq
@@ -179,3 +181,4 @@ END:
 
 .assembly ldc_ret_r8{}
 
+}

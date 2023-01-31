@@ -3,6 +3,8 @@
 
 
 .assembly extern mscorlib {}
+.namespace ldvirtftn_Conformance_Base
+{
 .class public Ldvirtftn {
 .method public static int32 main() {
 .entrypoint
@@ -23,3 +25,4 @@ FAIL:
 }
 }
 .assembly 'ldvirtftn_Conformance_Base'{}
+}

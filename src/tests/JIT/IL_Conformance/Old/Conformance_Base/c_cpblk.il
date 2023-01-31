@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace c_cpblk
+{
 .class public          _cpblk {
 
 
@@ -11,22 +13,22 @@
 .field public static int32 DATA2
 
 .method public static int32 initialize() {
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 c_cpblk._cpblk::DATA
         ldc.i4          0xAA
         ldc.i4          4
         initblk
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 c_cpblk._cpblk::DATA
         ldc.i4          4
         add
         ldc.i4          0xFF
         ldc.i4          4
         initblk
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 c_cpblk._cpblk::DATA
         ldind.i4
         ldc.i4          0xAAAAAAAA
         ceq
         brfalse         FAIL
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 c_cpblk._cpblk::DATA
         ldc.i4          4
         add
         ldind.i4
@@ -48,16 +50,16 @@ FAIL:
 .method public static  int32 main() {
 .entrypoint
 .maxstack               5
-        call    int32 _cpblk::initialize()
+        call    int32 c_cpblk._cpblk::initialize()
         brfalse         FAIL
 
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 c_cpblk._cpblk::DATA
         ldc.i4          4
         add
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 c_cpblk._cpblk::DATA
         ldc.i4          4
         cpblk
-        ldsflda		int32 _cpblk::DATA
+        ldsflda		int32 c_cpblk._cpblk::DATA
         ldc.i4          4
         add
         ldind.i4
@@ -80,3 +82,4 @@ END:
 
 .assembly c_cpblk {}
 
+}

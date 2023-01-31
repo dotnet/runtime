@@ -13,6 +13,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_conv_ovf_i4_u4
+{
 .class public		conv_ovf_u4 {
 
 //---- GLOBAL DATA ----------
@@ -1043,35 +1045,35 @@ END2:
 //-- min i4 --
 	ldc.i4			0x80000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_0(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_0(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- -1 i4 --
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_1(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_1(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- 0 i4 --
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_2(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_2(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 i4 --
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_u4::conv_3(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_3(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- max i4 --
 	ldc.i4			0x7FFFFFFF
 	ldc.i4			0x7FFFFFFF
-	call		int32 conv_ovf_u4::conv_4(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_4(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -1079,14 +1081,14 @@ END2:
 //-- Odd u4 --
 	ldc.i4			0x55555555
 	ldc.i4			0x55555555
-	call		int32 conv_ovf_u4::conv_5(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_5(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- Even u4 --
 	ldc.i4			0xAAAAAAAA
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_6(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_6(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
@@ -1095,35 +1097,35 @@ END2:
 //-- min i4 --
 /*	ldc.i4			0x80000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_un_7(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_un_7(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- -1 i4 --
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_un_8(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_un_8(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 *///-- 0 i4 --
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_un_9(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_un_9(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 i4 --
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_u4::conv_un_10(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_un_10(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- max i4 --
 	ldc.i4			0x7FFFFFFF
 	ldc.i4			0x7FFFFFFF
-	call		int32 conv_ovf_u4::conv_un_11(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_un_11(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -1131,14 +1133,14 @@ END2:
 //-- Odd u4 --
 	ldc.i4			0x55555555
 	ldc.i4			0x55555555
-	call		int32 conv_ovf_u4::conv_un_12(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_un_12(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- Even u4 --
 /*	ldc.i4			0xAAAAAAAA
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u4::conv_un_13(int32,int32)
+	call		int32 ldc_conv_ovf_i4_u4.conv_ovf_u4::conv_un_13(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
@@ -1163,3 +1165,4 @@ END:
 
 .assembly ldc_conv_ovf_i4_u4{}
 
+}

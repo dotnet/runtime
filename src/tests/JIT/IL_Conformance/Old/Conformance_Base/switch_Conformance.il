@@ -4,6 +4,8 @@
 .assembly extern mscorlib {}
 .assembly 'switch_Conformance'{}
 
+.namespace switch_Conformance
+{
 .class public		_switch {
 
 
@@ -73,3 +75,4 @@ END:
 }
 }
 
+}

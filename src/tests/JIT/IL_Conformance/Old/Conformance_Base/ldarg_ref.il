@@ -5,6 +5,8 @@
 
 
 
+.namespace ldarg_ref
+{
 .class public _ldarg {
 
 .method public		void _ldarg() {
@@ -12,7 +14,7 @@
 	ret
 }
 
-.method public	class _ldarg args(class _ldarg) {
+.method public	class ldarg_ref._ldarg args(class ldarg_ref._ldarg) {
 .maxstack	5
 	ldarg	0
 	ret
@@ -21,13 +23,13 @@
 
 .method public static	int32 main() {
 .entrypoint
-.locals(class _ldarg)
+.locals(class ldarg_ref._ldarg)
 .maxstack		2
-	newobj		instance void _ldarg::_ldarg()
+	newobj		instance void ldarg_ref._ldarg::_ldarg()
 	stloc		0
 	ldloc		0
 	ldloc		0
-	call		instance class _ldarg _ldarg::args(class _ldarg)
+	call		instance class ldarg_ref._ldarg ldarg_ref._ldarg::args(class ldarg_ref._ldarg)
 	ldloc		0
 	ceq
 	brfalse		FAIL
@@ -41,3 +43,4 @@ FAIL:
 }
 
 .assembly ldarg_ref{}
+}

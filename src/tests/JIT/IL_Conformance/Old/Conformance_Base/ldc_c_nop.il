@@ -9,6 +9,8 @@
   .ver 4:0:0:0
 }
 //---- CLASS ----------------
+.namespace ldc_c_nop
+{
 .class public          _nop {
 
 //---- GLOBAL DATA ----------
@@ -40,7 +42,7 @@
 .maxstack               5
 
         ldc.i4  0xFF
-        call    int32 _nop::return_0(int32)
+        call    int32 ldc_c_nop._nop::return_0(int32)
         nop
         nop
         nop
@@ -69,7 +71,7 @@
         nop
         nop
         ldc.i4  0xFF
-        call    int32 _nop::return_1(int32)
+        call    int32 ldc_c_nop._nop::return_1(int32)
         ceq
         brfalse FAIL
 
@@ -94,3 +96,4 @@ END:
 .assembly ldc_c_nop {}
 
 
+}

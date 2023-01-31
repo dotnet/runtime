@@ -14,6 +14,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_ret_ref
+{
 .class public		_ret {
 
 //---- GLOBAL DATA ----------
@@ -22,37 +24,37 @@
 
 //---- METHODS --------------
 
-.method public static		class _ret ret_test_0(class _ret) {
+.method public static		class ldc_ret_ref._ret ret_test_0(class ldc_ret_ref._ret) {
 .maxstack	1
 	ldarg	0
 	ret
 
 }
-.method public static		class _ret ret_test_1(class _ret) {
+.method public static		class ldc_ret_ref._ret ret_test_1(class ldc_ret_ref._ret) {
 .maxstack	1
 	ldarg	0
 	ret
 
 }
-.method public static		class _ret ret_test_2(class _ret) {
+.method public static		class ldc_ret_ref._ret ret_test_2(class ldc_ret_ref._ret) {
 .maxstack	1
 	ldarg	0
 	ret
 
 }
-.method public static		class _ret ret_test_3(class _ret) {
+.method public static		class ldc_ret_ref._ret ret_test_3(class ldc_ret_ref._ret) {
 .maxstack	1
 	ldarg	0
 	ret
 
 }
-.method public static		class _ret ret_test_4(class _ret) {
+.method public static		class ldc_ret_ref._ret ret_test_4(class ldc_ret_ref._ret) {
 .maxstack	1
 	ldarg	0
 	ret
 
 }
-.method public static		class _ret ret_test_5(class _ret) {
+.method public static		class ldc_ret_ref._ret ret_test_5(class ldc_ret_ref._ret) {
 .maxstack	1
 	ldarg	0
 	ret
@@ -70,39 +72,39 @@
 .maxstack		5
 //====== begin testing ======
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ldc_ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test_0(class _ret)
+	call		class ldc_ret_ref._ret ldc_ret_ref._ret::ret_test_0(class ldc_ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ldc_ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test_1(class _ret)
+	call		class ldc_ret_ref._ret ldc_ret_ref._ret::ret_test_1(class ldc_ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ldc_ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test_2(class _ret)
+	call		class ldc_ret_ref._ret ldc_ret_ref._ret::ret_test_2(class ldc_ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ldc_ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test_3(class _ret)
+	call		class ldc_ret_ref._ret ldc_ret_ref._ret::ret_test_3(class ldc_ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ldc_ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test_4(class _ret)
+	call		class ldc_ret_ref._ret ldc_ret_ref._ret::ret_test_4(class ldc_ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
-	newobj	instance 	void _ret::_ret()
+	newobj	instance 	void ldc_ret_ref._ret::_ret()
 	dup
-	call		class _ret _ret::ret_test_5(class _ret)
+	call		class ldc_ret_ref._ret ldc_ret_ref._ret::ret_test_5(class ldc_ret_ref._ret)
 	ceq
 	brfalse		FAIL
 
@@ -130,3 +132,4 @@ END:
 
 .assembly ldc_ret_ref{}
 
+}

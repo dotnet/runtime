@@ -13,6 +13,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_conv_ovf_u4_u2
+{
 .class public		conv_ovf_u2 {
 
 //---- GLOBAL DATA ----------
@@ -597,21 +599,21 @@ END:
 //-- 0 u4 --
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u2::conv_0(int32,int32)
+	call		int32 ldc_conv_ovf_u4_u2.conv_ovf_u2::conv_0(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 u4 --
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_u2::conv_1(int32,int32)
+	call		int32 ldc_conv_ovf_u4_u2.conv_ovf_u2::conv_1(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- max u4 --
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u2::conv_2(int32,int32)
+	call		int32 ldc_conv_ovf_u4_u2.conv_ovf_u2::conv_2(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
@@ -619,7 +621,7 @@ END:
 //-- max u1 --
 	ldc.i4			0x0000FFFF
 	ldc.i4			0x0000FFFF
-	call		int32 conv_ovf_u2::conv_3(int32,int32)
+	call		int32 ldc_conv_ovf_u4_u2.conv_ovf_u2::conv_3(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -628,21 +630,21 @@ END:
 //-- 0 u4 --
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u2::conv_un_4(int32,int32)
+	call		int32 ldc_conv_ovf_u4_u2.conv_ovf_u2::conv_un_4(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 u4 --
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_u2::conv_un_5(int32,int32)
+	call		int32 ldc_conv_ovf_u4_u2.conv_ovf_u2::conv_un_5(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- max u4 --
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u2::conv_un_6(int32,int32)
+	call		int32 ldc_conv_ovf_u4_u2.conv_ovf_u2::conv_un_6(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
@@ -650,7 +652,7 @@ END:
 //-- max u1 --
 	ldc.i4			0x0000FFFF
 	ldc.i4			0x0000FFFF
-	call		int32 conv_ovf_u2::conv_un_7(int32,int32)
+	call		int32 ldc_conv_ovf_u4_u2.conv_ovf_u2::conv_un_7(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -675,3 +677,4 @@ END:
 
 .assembly ldc_conv_ovf_u4_u2{}
 
+}

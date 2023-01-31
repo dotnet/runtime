@@ -13,6 +13,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_ret_i
+{
 .class public		_ret {
 
 //---- GLOBAL DATA ----------
@@ -34,16 +36,16 @@
 //---- MAIN -----------------
 .method public static	int32 main() {
 .entrypoint
-.locals		(class _ret,int32)
+.locals		(class ldc_ret_i._ret,int32)
 .maxstack		5
 //====== begin testing ======
-	newobj		instance void _ret::_ret()
+	newobj		instance void ldc_ret_i._ret::_ret()
 	stloc		0
 	ldc.i4		0xFF
 	stloc		1
 	ldloc		0
 	ldloca		1
-	call		instance int32& _ret::ret_test_0(int32&)
+	call		instance int32& ldc_ret_i._ret::ret_test_0(int32&)
 	ldloca		1
 	ceq
 	brfalse	FAIL
@@ -70,3 +72,4 @@ END:
 
 .assembly ldc_ret_i{}
 
+}

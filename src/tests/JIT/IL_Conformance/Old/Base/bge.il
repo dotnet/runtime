@@ -5,6 +5,8 @@
 
 .assembly 'bge'{}
 
+.namespace bge_
+{
 .class public auto ansi _bge {
 .method public	static int32 main() {
 .locals		(class [mscorlib]System.String)
@@ -80,3 +82,4 @@ end:
 }
 }
 
+}

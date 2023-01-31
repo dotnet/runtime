@@ -3,6 +3,8 @@
 
 .assembly extern legacy library mscorlib {}
 
+.namespace starg_i8
+{
 .class public _starg {
 
 .method public static	int32 args(int64,int64) {
@@ -33,27 +35,27 @@
 
 	ldc.i8		0x8000000000000002
 	ldc.i8		0x8000000000000000
-	call	int32 _starg::args(int64,int64)
+	call	int32 starg_i8._starg::args(int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int32 _starg::args(int64,int64)
+	call	int32 starg_i8._starg::args(int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000002
 	ldc.i8		0x0000000000000000
-	call	int32 _starg::args(int64,int64)
+	call	int32 starg_i8._starg::args(int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000003
 	ldc.i8		0x0000000000000001
-	call	int32 _starg::args(int64,int64)
+	call	int32 starg_i8._starg::args(int64,int64)
 	brfalse		FAIL
 
 	ldc.i8		0x8000000000000001
 	ldc.i8		0x7FFFFFFFFFFFFFFF
-	call	int32 _starg::args(int64,int64)
+	call	int32 starg_i8._starg::args(int64,int64)
 	brfalse		FAIL
 
 	ldc.i4 100
@@ -64,3 +66,4 @@ FAIL:
 }
 }
 .assembly starg_i8{}
+}

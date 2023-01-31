@@ -5,6 +5,8 @@
 
 .assembly 'ble'{}
 
+.namespace ble_
+{
 .class public auto ansi _ble {
 .method public	static int32 main() {
 .locals		(class [mscorlib]System.String)
@@ -81,3 +83,4 @@ end:
 }
 }
 
+}

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.namespace c_ret
+{
 .class public          _ret {
 
 
@@ -20,13 +22,13 @@
 .entrypoint
 .maxstack               5
         ldc.i4  0xFEFE
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
-        call    void _ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
+        call    void c_ret._ret::ret_test()
         ldc.i4  0xFEFE
         ceq
         brfalse FAIL
@@ -46,3 +48,4 @@ END:
 
 .assembly c_ret {}
 
+}

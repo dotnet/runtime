@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace ldarga_i8
+{
 .class public _ldarga {
 
 .method public static	int64 args(int64) {
@@ -22,31 +24,31 @@
 
 	ldc.i8		0x8000000000000002
 	ldc.i8		0x8000000000000000
-	call	int64 _ldarga::args(int64)
+	call	int64 ldarga_i8._ldarga::args(int64)
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 _ldarga::args(int64)
+	call	int64 ldarga_i8._ldarga::args(int64)
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000002
 	ldc.i8		0x0000000000000000
-	call	int64 _ldarga::args(int64)
+	call	int64 ldarga_i8._ldarga::args(int64)
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000003
 	ldc.i8		0x0000000000000001
-	call	int64 _ldarga::args(int64)
+	call	int64 ldarga_i8._ldarga::args(int64)
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0x8000000000000001
 	ldc.i8		0x7FFFFFFFFFFFFFFF
-	call	int64 _ldarga::args(int64)
+	call	int64 ldarga_i8._ldarga::args(int64)
 	ceq
 	brfalse		FAIL
 
@@ -58,3 +60,4 @@ FAIL:
 }
 }
 .assembly ldarga_i8{}
+}

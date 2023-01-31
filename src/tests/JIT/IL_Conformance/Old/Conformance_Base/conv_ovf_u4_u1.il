@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace conv_ovf_u4_u1
+{
 .class public		conv_ovf_u1 {
 
 
@@ -86,52 +88,52 @@ END:
 .maxstack		5
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u1::conv(int32,int32)
+	call		int32 conv_ovf_u4_u1.conv_ovf_u1::conv(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_u1::conv(int32,int32)
+	call		int32 conv_ovf_u4_u1.conv_ovf_u1::conv(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u1::conv(int32,int32)
+	call		int32 conv_ovf_u4_u1.conv_ovf_u1::conv(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 
 	ldc.i4			0x000000FF
 	ldc.i4			0x000000FF
-	call		int32 conv_ovf_u1::conv(int32,int32)
+	call		int32 conv_ovf_u4_u1.conv_ovf_u1::conv(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u1::conv_un(int32,int32)
+	call		int32 conv_ovf_u4_u1.conv_ovf_u1::conv_un(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_u1::conv_un(int32,int32)
+	call		int32 conv_ovf_u4_u1.conv_ovf_u1::conv_un(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_u1::conv_un(int32,int32)
+	call		int32 conv_ovf_u4_u1.conv_ovf_u1::conv_un(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 
 	ldc.i4			0x000000FF
 	ldc.i4			0x000000FF
-	call		int32 conv_ovf_u1::conv_un(int32,int32)
+	call		int32 conv_ovf_u4_u1.conv_ovf_u1::conv_un(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -151,3 +153,4 @@ END:
 
 
 .assembly conv_ovf_u4_u1{}
+}

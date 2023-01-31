@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
+.namespace brtrue_Conformance
+{
 .class public _brtrue {
 .method public static	int32 main() {
 .entrypoint
@@ -146,3 +148,4 @@ FAIL:
 }
 }
 .assembly 'brtrue_Conformance'{}
+}

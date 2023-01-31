@@ -5,6 +5,8 @@
 
 .assembly 'ret'{}
 
+.namespace ret_
+{
 .class public _ret {
 
 
@@ -42,7 +44,7 @@
 	ret
 }
 
-.method public static		class _ret retref(class _ret) {
+.method public static		class ret_._ret retref(class ret_._ret) {
 .maxstack	5
 	ldarg	0
 	ret
@@ -58,42 +60,42 @@
 .method public static int32 main() {
 .entrypoint
 .maxstack	10
-.locals	(class _ret)
-	newobj	instance 	void _ret::.ctor()
+.locals	(class ret_._ret)
+	newobj	instance 	void ret_._ret::.ctor()
 	stloc	0	
 
         ldc.i4          0x1
-        call    int32 _ret::_rem(int32)
+        call    int32 ret_._ret::_rem(int32)
         ldc.i4          0x1
         ceq
         brfalse         FAIL
 
         ldc.i8          0x2
-        call    int64 _ret::reti8(int64)
+        call    int64 ret_._ret::reti8(int64)
         ldc.i8          0x2
         ceq
         brfalse         FAIL
         ldc.r4          1.1
-        call    float32 _ret::retr4(float32)
+        call    float32 ret_._ret::retr4(float32)
         ldc.r4          1.1
         ceq
         brfalse         FAIL
 
         ldc.r8          2.2
-        call    float64 _ret::retr8(float64)
+        call    float64 ret_._ret::retr8(float64)
         ldc.r8          2.2
         ceq
         brfalse         FAIL
 
         ldloc   0
-        call    class _ret _ret::retref(class _ret)
+        call    class ret_._ret ret_._ret::retref(class ret_._ret)
         ldloc   0
         ceq
         brfalse         FAIL
 
-        ldsflda		native int _ret::PTR
-        call    int32 _ret::retI(int32*)
-        ldsflda		native int _ret::PTR
+        ldsflda		native int ret_._ret::PTR
+        call    int32 ret_._ret::retI(int32*)
+        ldsflda		native int ret_._ret::PTR
 	conv.i4
         ceq
         brfalse         FAIL
@@ -104,5 +106,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

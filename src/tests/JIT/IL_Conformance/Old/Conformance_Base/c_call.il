@@ -9,6 +9,8 @@
     ret
 }
     
+.namespace c_call
+{
 .class public _call {
 .method public static int32 main() {
 .entrypoint
@@ -31,3 +33,4 @@ FAIL:
 .assembly c_call{}
 
 
+}

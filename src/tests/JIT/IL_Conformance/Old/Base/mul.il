@@ -5,6 +5,8 @@
 
 .assembly 'mul'{}
 
+.namespace mul_
+{
 .class public _mul {
 
 .method public static  int32 I4(int32,int32,int32) {
@@ -50,22 +52,22 @@
         ldc.i4  0x55555555
         ldc.i4  0x00000002
         ldc.i4  0xAAAAAAAA
-        call    int32 _mul::I4(int32,int32,int32)
+        call    int32 mul_._mul::I4(int32,int32,int32)
         brfalse FAIL
         ldc.i8  0x5555555555555555
         ldc.i8  0x0000000000000002
         ldc.i8  0xAAAAAAAAAAAAAAAA
-        call    int32 _mul::I8(int64,int64,int64)
+        call    int32 mul_._mul::I8(int64,int64,int64)
         brfalse FAIL
 	ldc.r4	float32(0xFF7FFFFF)
 	ldc.r4	float32(0xBF800000)
 	ldc.r4	float32(0x7F7FFFFF)
-	call	int32 _mul::R4(float32,float32,float32)
+	call	int32 mul_._mul::R4(float32,float32,float32)
 	brfalse	FAIL	
         ldc.r8  float64(0xFFEFFFFFFFFFFFFF)
         ldc.r8  float64(0xBFF0000000000000)
         ldc.r8  float64(0x7FEFFFFFFFFFFFFF)
-        call    int32 _mul::R8(float64,float64,float64)
+        call    int32 mul_._mul::R8(float64,float64,float64)
         brfalse FAIL
 
 PASS:
@@ -74,5 +76,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

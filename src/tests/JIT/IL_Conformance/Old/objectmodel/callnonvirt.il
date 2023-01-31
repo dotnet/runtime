@@ -6,6 +6,8 @@
 .assembly extern legacy library mscorlib {}
 .assembly callnonvirt{}
 
+.namespace callnonvirt
+{
 .class public TestClass {
 
 .method public void .ctor(){
@@ -34,9 +36,9 @@
 .entrypoint
 .maxstack	10
 
-	newobj	instance		void TestClass::.ctor()
+	newobj	instance		void callnonvirt.TestClass::.ctor()
 	ldc.i4		0x2
-	call		instance int32 TestClass::TestMethod(int32)
+	call		instance int32 callnonvirt.TestClass::TestMethod(int32)
 	ldc.i4		0x4
 	ceq
 	brfalse		FAIL
@@ -47,5 +49,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

@@ -4,6 +4,8 @@
 .assembly extern legacy library mscorlib {}
 
 
+.namespace dup4
+{
 .class public _dup {
 
 .field public static	int32 sentinel
@@ -13,33 +15,33 @@
 .method public static	void initialize() {
 .maxstack		20
 	ldc.i4		0x00000000
-	stsfld	int32 _dup::none
+	stsfld	int32 dup4._dup::none
 	ldc.i4		0xFFFFFFFF
-	stsfld	int32 _dup::all
+	stsfld	int32 dup4._dup::all
 	ldc.i4		0xFAFB0C0D
-	stsfld	int32 _dup::sentinel
+	stsfld	int32 dup4._dup::sentinel
 	ret
 }
 
 .method public static	int32 main() {
 .entrypoint
 .maxstack		20
-	call	void _dup::initialize()
+	call	void dup4._dup::initialize()
 
-	ldsfld	int32 _dup::sentinel
+	ldsfld	int32 dup4._dup::sentinel
 
-	ldsfld	int32 _dup::none
+	ldsfld	int32 dup4._dup::none
 	dup
 	ceq
 	brfalse		FAIL
 
-	ldsfld	int32 _dup::all
+	ldsfld	int32 dup4._dup::all
 	dup
 	ceq
 	brfalse		FAIL
 
 	dup
-	ldsfld	int32 _dup::sentinel
+	ldsfld	int32 dup4._dup::sentinel
 	ceq
 	brfalse		FAIL
 	pop
@@ -54,3 +56,4 @@ FAIL:
 }
 }
 .assembly dup4{}
+}

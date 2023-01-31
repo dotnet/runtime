@@ -5,6 +5,8 @@
 
 .assembly 'br'{}
 
+.namespace br_
+{
 .class public _br {
 
 
@@ -24,5 +26,6 @@ FAIL:
 PASS:
 	ldc.i4 100
 	ret
+}
 }
 }
