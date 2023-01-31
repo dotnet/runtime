@@ -11,23 +11,9 @@ using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Interop;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
-
-internal sealed record IncrementalMethodStubGenerationContext(
-    SignatureContext SignatureContext,
-    ContainingSyntaxContext ContainingSyntaxContext,
-    ContainingSyntax StubMethodSyntaxTemplate,
-    MethodSignatureDiagnosticLocations DiagnosticLocation,
-    SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
-    VirtualMethodIndexData VtableIndexData,
-    MarshallingInfo ExceptionMarshallingInfo,
-    MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> ManagedToUnmanagedGeneratorFactory,
-    MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
-    ManagedTypeInfo TypeKeyOwner,
-    SequenceEqualImmutableArray<Diagnostic> Diagnostics);
 
 namespace Microsoft.Interop
 {
