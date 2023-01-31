@@ -242,13 +242,9 @@
     <PlatformManifestFileEntry Include="dotnet.es6.post.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
-    <PlatformManifestFileEntry Include="main.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
-    <PlatformManifestFileEntry Include="driver.h" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
-    <PlatformManifestFileEntry Include="stubs.c" IsNative="true" />
-    <PlatformManifestFileEntry Include="synthetic-pthread.c" IsNative="true" />
     <PlatformManifestFileEntry Include="gc-common.h" IsNative="true" />
     <PlatformManifestFileEntry Include="wasm-config.h" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-default.rsp" IsNative="true" />
@@ -256,6 +252,11 @@
     <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
+    <!-- wasi specific -->
+    <PlatformManifestFileEntry Include="main.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="driver.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="stubs.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="synthetic-pthread.c" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
