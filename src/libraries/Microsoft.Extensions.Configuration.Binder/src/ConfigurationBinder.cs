@@ -321,7 +321,7 @@ namespace Microsoft.Extensions.Configuration
                 //  ISet<T>         |   not null    |  true/false   | Use the Value instance to populate the configuration
                 //  ISet<T>         |     null      |     false     | Create HashSet<T> instance to populate the configuration
                 //  ISet<T>         |     null      |     true      | nothing
-                //  IReadOnlySet<T> | null/not null |     false     | Create HashSet<T> instance to populate the configuration
+                //  IReadOnlySet<T> | null/not null |     false     | Create HashSet<T> instance, copy over existing values, and populate the configuration
                 //  IReadOnlySet<T> | null/not null |     true      | nothing
                 // -----------------------------------------------------------------------------------------------------------------------------
                 if (TypeIsASetInterface(type))
@@ -345,7 +345,7 @@ namespace Microsoft.Extensions.Configuration
                 //  IDictionary<T>         |   not null    |  true/false   | Use the Value instance to populate the configuration
                 //  IDictionary<T>         |     null      |     false     | Create Dictionary<T> instance to populate the configuration
                 //  IDictionary<T>         |     null      |     true      | nothing
-                //  IReadOnlyDictionary<T> | null/not null |     false     | Create Dictionary<T> instance to populate the configuration
+                //  IReadOnlyDictionary<T> | null/not null |     false     | Create Dictionary<K,V> instance, copy over existing values, and populate the configuration
                 //  IReadOnlyDictionary<T> | null/not null |     true      | nothing
                 // -----------------------------------------------------------------------------------------------------------------------------
                 if (TypeIsADictionaryInterface(type))
