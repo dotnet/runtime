@@ -149,7 +149,7 @@ jobs:
         value: '-portablebuild=false'
 
     - name: nativeSymbols
-        value: ''
+      value: ''
     - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
       - name: nativeSymbols
         value: '--keepnativesymbols'
