@@ -40,7 +40,7 @@ public class WasmResolveAssemblyDependencies : Microsoft.Build.Utilities.Task
         return true;
     }
 
-    private static IEnumerable<AssemblyEntry> ResolveRuntimeDependenciesCore(
+    private static List<AssemblyEntry> ResolveRuntimeDependenciesCore(
         string entryPointPath,
         IEnumerable<ITaskItem> applicationAssemblies,
         IEnumerable<ITaskItem> runtimePackAssemblies)
