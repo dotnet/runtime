@@ -415,7 +415,7 @@ namespace Internal.TypeSystem
             return FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType, reverseMethodSearch, nameSigMatchMethodIsValidCandidate: s_VerifyMethodsHaveTheSameVirtualSlot);
         }
 
-        private static Func<MethodDesc, MethodDesc, bool> s_VerifyMethodsHaveTheSameVirtualSlot = VerifyMethodsHaveTheSameVirtualSlot;
+        private static readonly Func<MethodDesc, MethodDesc, bool> s_VerifyMethodsHaveTheSameVirtualSlot = VerifyMethodsHaveTheSameVirtualSlot;
 
         // Return true if the slot that defines methodToVerify matches slotDefiningMethod
         private static bool VerifyMethodsHaveTheSameVirtualSlot(MethodDesc slotDefiningMethod, MethodDesc methodToVerify)
@@ -424,7 +424,7 @@ namespace Internal.TypeSystem
             return slotDefiningMethodOfMethodToVerify == slotDefiningMethod;
         }
 
-        private static Func<MethodDesc, MethodDesc, bool> s_VerifyMethodIsPublic = VerifyMethodIsPublic;
+        private static readonly Func<MethodDesc, MethodDesc, bool> s_VerifyMethodIsPublic = VerifyMethodIsPublic;
 
         // Return true if the method to verify is public
         private static bool VerifyMethodIsPublic(MethodDesc slotDefiningMethod, MethodDesc methodToVerify)
