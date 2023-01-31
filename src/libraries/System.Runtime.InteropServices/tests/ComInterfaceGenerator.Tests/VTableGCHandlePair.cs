@@ -13,7 +13,7 @@ namespace ComInterfaceGenerator.Tests
         {
             void** unmanaged = (void**)NativeMemory.Alloc((nuint)sizeof(void*) * 2);
             unmanaged[0] = TUnmanagedInterface.VirtualMethodTableManagedImplementation;
-            unmanaged[1] = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(obj, GCHandleType.Pinned));
+            unmanaged[1] = (void*)GCHandle.ToIntPtr(GCHandle.Alloc(obj));
             return unmanaged;
         }
 

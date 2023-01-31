@@ -8,18 +8,6 @@ using System.Runtime.InteropServices.Marshalling;
 using ComInterfaceGenerator.Tests;
 using Xunit;
 
-// ImplicitThisTests.ValidateImplicitThisUnmanagedToManagedFunctionCallsSucceed uses VTableGCHandlePair instead of comWrappers. Placing this type in this assembly allows the test to override the default ComWrapperUnwrapper.GetObjectForUnmanagedWrapper.
-// Once the test can be updated to use comWrappers, we won't need this
-namespace System.Runtime.InteropServices.Marshalling
-{
-    internal sealed unsafe class ComWrappersUnwrapper
-    {
-        public static object GetObjectForUnmanagedWrapper(void* ptr)
-        {
-            return VTableGCHandlePair<NativeExportsNE.ImplicitThis.INativeObject>.GetObject(ptr);
-        }
-    }
-}
 namespace ComInterfaceGenerator.Tests
 {
     internal unsafe partial class NativeExportsNE

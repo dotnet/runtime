@@ -23,7 +23,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
@@ -50,7 +50,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
@@ -77,7 +77,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
@@ -109,7 +109,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}

@@ -7,6 +7,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -38,27 +39,27 @@ namespace Microsoft.Interop
             const string ComWrappers = nameof(ComWrappers);
             const string GetIUnknownImpl = nameof(GetIUnknownImpl);
 
-            return SyntaxFactory.ClassDeclaration("IUnknownVTableComWrappers")
-                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AbstractKeyword),
-                              SyntaxFactory.Token(SyntaxKind.UnsafeKeyword),
-                              SyntaxFactory.Token(SyntaxKind.FileKeyword))
-                .AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName(ComWrappers)))
+            return ClassDeclaration("IUnknownVTableComWrappers")
+                .AddModifiers(Token(SyntaxKind.AbstractKeyword),
+                              Token(SyntaxKind.UnsafeKeyword),
+                              Token(SyntaxKind.FileKeyword))
+                .AddBaseListTypes(SimpleBaseType(ParseTypeName(ComWrappers)))
                 .AddMembers(
-                    SyntaxFactory.MethodDeclaration(
-                        SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)),
-                        SyntaxFactory.Identifier(GetIUnknownImpl))
-                    .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword),
-                                  SyntaxFactory.Token(SyntaxKind.StaticKeyword))
+                    MethodDeclaration(
+                        PredefinedType(Token(SyntaxKind.VoidKeyword)),
+                        Identifier(GetIUnknownImpl))
+                    .AddModifiers(Token(SyntaxKind.PublicKeyword),
+                                  Token(SyntaxKind.StaticKeyword))
                     .AddParameterListParameters(
-                        SyntaxFactory.Parameter(SyntaxFactory.Identifier(pQueryInterface))
-                            .WithType(SyntaxFactory.PointerType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))))
-                            .AddModifiers(SyntaxFactory.Token(SyntaxKind.OutKeyword)),
-                        SyntaxFactory.Parameter(SyntaxFactory.Identifier(pAddRef))
-                            .WithType(SyntaxFactory.PointerType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))))
-                            .AddModifiers(SyntaxFactory.Token(SyntaxKind.OutKeyword)),
-                        SyntaxFactory.Parameter(SyntaxFactory.Identifier(pRelease))
-                            .WithType(SyntaxFactory.PointerType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))))
-                            .AddModifiers(SyntaxFactory.Token(SyntaxKind.OutKeyword)))
+                        Parameter(Identifier(pQueryInterface))
+                            .WithType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))))
+                            .AddModifiers(Token(SyntaxKind.OutKeyword)),
+                        Parameter(Identifier(pAddRef))
+                            .WithType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))))
+                            .AddModifiers(Token(SyntaxKind.OutKeyword)),
+                        Parameter(Identifier(pRelease))
+                            .WithType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))))
+                            .AddModifiers(Token(SyntaxKind.OutKeyword)))
                     .WithBody(body: Body()));
 
             static BlockSyntax Body()
@@ -75,68 +76,60 @@ namespace Microsoft.Interop
                 const string release = nameof(release);
 
                 /// nint qi, addRef, release;
-                var declarations = SyntaxFactory.LocalDeclarationStatement(
-                        SyntaxFactory.VariableDeclaration(
-                            SyntaxFactory.IdentifierName("nint"))
+                var declarations = LocalDeclarationStatement(
+                        VariableDeclaration(
+                            IdentifierName("nint"))
                         .AddVariables(
-                            SyntaxFactory.VariableDeclarator(qi),
-                            SyntaxFactory.VariableDeclarator(addRef),
-                            SyntaxFactory.VariableDeclarator(release)));
+                            VariableDeclarator(qi),
+                            VariableDeclarator(addRef),
+                            VariableDeclarator(release)));
 
                 /// ComWrappers.GetIUnknownImpl(out qi, out addRef, out release);
-                var invocation = SyntaxFactory.ExpressionStatement(
-                                SyntaxFactory.InvocationExpression(
-                                    SyntaxFactory.MemberAccessExpression(
+                var invocation = ExpressionStatement(
+                                InvocationExpression(
+                                    MemberAccessExpression(
                                         SyntaxKind.SimpleMemberAccessExpression,
-                                        SyntaxFactory.IdentifierName(ComWrappers),
-                                        SyntaxFactory.IdentifierName("GetIUnknownImpl")))
+                                        IdentifierName(ComWrappers),
+                                        IdentifierName("GetIUnknownImpl")))
                                 .AddArgumentListArguments(
-                                    SyntaxFactory.Argument(
+                                    Argument(
                                         null,
-                                        SyntaxFactory.Token(SyntaxKind.OutKeyword),
-                                        SyntaxFactory.IdentifierName(qi)),
-                                    SyntaxFactory.Argument(
+                                        Token(SyntaxKind.OutKeyword),
+                                        IdentifierName(qi)),
+                                    Argument(
                                         null,
-                                        SyntaxFactory.Token(SyntaxKind.OutKeyword),
-                                        SyntaxFactory.IdentifierName(addRef)),
-                                    SyntaxFactory.Argument(
+                                        Token(SyntaxKind.OutKeyword),
+                                        IdentifierName(addRef)),
+                                    Argument(
                                         null,
-                                        SyntaxFactory.Token(SyntaxKind.OutKeyword),
-                                        SyntaxFactory.IdentifierName(release))));
+                                        Token(SyntaxKind.OutKeyword),
+                                        IdentifierName(release))));
 
-                /// pQueryInterface = (void*)qi;
-                var pQueryInterfaceAssignment = SyntaxFactory.ExpressionStatement(
-                    SyntaxFactory.AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        SyntaxFactory.IdentifierName(pQueryInterface),
-                        SyntaxFactory.CastExpression(
-                            SyntaxFactory.PointerType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))),
-                            SyntaxFactory.IdentifierName(qi))));
+                // pQueryInterface = (void*)qi;
+                var pQueryInterfaceAssignment = GenerateCastToVoidPtrAndAssign(target: pQueryInterface, source: qi);
 
-                /// pAddRef = (void*)addRef;
-                var pAddRefAssignment = SyntaxFactory.ExpressionStatement(
-                    SyntaxFactory.AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        SyntaxFactory.IdentifierName(pAddRef),
-                        SyntaxFactory.CastExpression(
-                            SyntaxFactory.PointerType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))),
-                            SyntaxFactory.IdentifierName(addRef))));
+                // pAddRef = (void*)addRef;
+                var pAddRefAssignment = GenerateCastToVoidPtrAndAssign(target: pAddRef, source: addRef);
 
-                /// pRelease = (void*)release;
-                var pReleaseAssignment = SyntaxFactory.ExpressionStatement(
-                    SyntaxFactory.AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        SyntaxFactory.IdentifierName(pRelease),
-                        SyntaxFactory.CastExpression(
-                            SyntaxFactory.PointerType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))),
-                            SyntaxFactory.IdentifierName(release))));
+                // pRelease = (void*)release;
+                var pReleaseAssignment = GenerateCastToVoidPtrAndAssign(target: pRelease, source: release);
 
-                return SyntaxFactory.Block(
+                return Block(
                         declarations,
                         invocation,
                         pQueryInterfaceAssignment,
                         pAddRefAssignment,
                         pReleaseAssignment);
+            }
+            static ExpressionStatementSyntax GenerateCastToVoidPtrAndAssign(string target, string source)
+            {
+                return ExpressionStatement(
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(target),
+                        CastExpression(
+                            PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
+                            IdentifierName(source))));
             }
         }
 
@@ -156,47 +149,47 @@ namespace Microsoft.Interop
 
         public static ClassDeclarationSyntax GetComWrappersUnwrapper()
         {
-            return SyntaxFactory.ClassDeclaration("ComWrappersUnwrapper")
-                .AddModifiers(SyntaxFactory.Token(SyntaxKind.SealedKeyword),
-                              SyntaxFactory.Token(SyntaxKind.UnsafeKeyword),
-                              SyntaxFactory.Token(SyntaxKind.StaticKeyword),
-                              SyntaxFactory.Token(SyntaxKind.FileKeyword))
+            return ClassDeclaration("ComWrappersUnwrapper")
+                .AddModifiers(Token(SyntaxKind.SealedKeyword),
+                              Token(SyntaxKind.UnsafeKeyword),
+                              Token(SyntaxKind.StaticKeyword),
+                              Token(SyntaxKind.FileKeyword))
                 .AddMembers(
-                    SyntaxFactory.MethodDeclaration(
-                        SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)),
-                        SyntaxFactory.Identifier("GetComObjectForUnmanagedWrapper"))
-                    .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword),
-                                  SyntaxFactory.Token(SyntaxKind.StaticKeyword))
+                    MethodDeclaration(
+                        PredefinedType(Token(SyntaxKind.ObjectKeyword)),
+                        Identifier("GetComObjectForUnmanagedWrapper"))
+                    .AddModifiers(Token(SyntaxKind.PublicKeyword),
+                                  Token(SyntaxKind.StaticKeyword))
                     .AddParameterListParameters(
-                        SyntaxFactory.Parameter(SyntaxFactory.Identifier("ptr"))
-                            .WithType(SyntaxFactory.PointerType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)))))
+                        Parameter(Identifier("ptr"))
+                            .WithType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))))
                     .WithBody(body: Body()));
 
             static BlockSyntax Body()
             {
-                var invocation = SyntaxFactory.InvocationExpression(
-                                    SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        SyntaxFactory.MemberAccessExpression(
+                var invocation = InvocationExpression(
+                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                        MemberAccessExpression(
                                             SyntaxKind.SimpleMemberAccessExpression,
-                                            SyntaxFactory.IdentifierName("ComWrappers"),
-                                            SyntaxFactory.IdentifierName("ComInterfaceDispatch")),
-                                        SyntaxFactory.GenericName(
-                                            SyntaxFactory.Identifier("GetInstance"),
-                                            SyntaxFactory.TypeArgumentList(
-                                                SyntaxFactory.SeparatedList<SyntaxNode>(
-                                                    new[] { SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)) })))))
+                                            IdentifierName("ComWrappers"),
+                                            IdentifierName("ComInterfaceDispatch")),
+                                        GenericName(
+                                            Identifier("GetInstance"),
+                                            TypeArgumentList(
+                                                SeparatedList<SyntaxNode>(
+                                                    new[] { PredefinedType(Token(SyntaxKind.ObjectKeyword)) })))))
                                 .AddArgumentListArguments(
-                                    SyntaxFactory.Argument(
+                                    Argument(
                                         null,
-                                        SyntaxFactory.Token(SyntaxKind.None),
-                                        SyntaxFactory.CastExpression(
-                                            SyntaxFactory.PointerType(
-                                                SyntaxFactory.QualifiedName(
-                                                    SyntaxFactory.IdentifierName("ComWrappers"),
-                                                    SyntaxFactory.IdentifierName("ComInterfaceDispatch"))),
-                                            SyntaxFactory.IdentifierName("ptr"))));
+                                        Token(SyntaxKind.None),
+                                        CastExpression(
+                                            PointerType(
+                                                QualifiedName(
+                                                    IdentifierName("ComWrappers"),
+                                                    IdentifierName("ComInterfaceDispatch"))),
+                                            IdentifierName("ptr"))));
 
-                return SyntaxFactory.Block(SyntaxFactory.ReturnStatement(invocation));
+                return Block(ReturnStatement(invocation));
             }
         }
 
@@ -216,37 +209,37 @@ namespace Microsoft.Interop
         private static ClassDeclarationSyntax GetUnmanagedObjectUnwrapper()
         {
             const string tUnwrapper = "TUnwrapper";
-            return SyntaxFactory.ClassDeclaration("UnmanagedObjectUnwrapper")
-                  .AddModifiers(SyntaxFactory.Token(SyntaxKind.FileKeyword),
-                                SyntaxFactory.Token(SyntaxKind.StaticKeyword))
+            return ClassDeclaration("UnmanagedObjectUnwrapper")
+                  .AddModifiers(Token(SyntaxKind.FileKeyword),
+                                Token(SyntaxKind.StaticKeyword))
                   .AddMembers(
-                      SyntaxFactory.MethodDeclaration(
-                          SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)),
-                          SyntaxFactory.Identifier("GetObjectForUnmanagedWrapper"))
-                      .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword),
-                                    SyntaxFactory.Token(SyntaxKind.StaticKeyword))
+                      MethodDeclaration(
+                          PredefinedType(Token(SyntaxKind.ObjectKeyword)),
+                          Identifier("GetObjectForUnmanagedWrapper"))
+                      .AddModifiers(Token(SyntaxKind.PublicKeyword),
+                                    Token(SyntaxKind.StaticKeyword))
                       .AddTypeParameterListParameters(
-                          SyntaxFactory.TypeParameter(SyntaxFactory.Identifier(tUnwrapper)))
+                          TypeParameter(Identifier(tUnwrapper)))
                       .AddParameterListParameters(
-                          SyntaxFactory.Parameter(SyntaxFactory.Identifier("ptr"))
-                              .WithType(SyntaxFactory.PointerType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword)))))
-                      .AddConstraintClauses(SyntaxFactory.TypeParameterConstraintClause(SyntaxFactory.IdentifierName(tUnwrapper))
-                           .AddConstraints(SyntaxFactory.TypeConstraint(SyntaxFactory.ParseTypeName(TypeNames.IUnmanagedObjectUnwrapper))))
+                          Parameter(Identifier("ptr"))
+                              .WithType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))))
+                      .AddConstraintClauses(TypeParameterConstraintClause(IdentifierName(tUnwrapper))
+                           .AddConstraints(TypeConstraint(ParseTypeName(TypeNames.IUnmanagedObjectUnwrapper))))
                       .WithBody(body: Body()));
 
             static BlockSyntax Body()
             {
-                var invocation = SyntaxFactory.InvocationExpression(
-                                    SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        SyntaxFactory.IdentifierName("T"),
-                                        SyntaxFactory.IdentifierName("GetObjectForUnmanagedWrapper")))
+                var invocation = InvocationExpression(
+                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                        IdentifierName("T"),
+                                        IdentifierName("GetObjectForUnmanagedWrapper")))
                                 .AddArgumentListArguments(
-                                    SyntaxFactory.Argument(
+                                    Argument(
                                         null,
-                                        SyntaxFactory.Token(SyntaxKind.None),
-                                        SyntaxFactory.IdentifierName("ptr")));
+                                        Token(SyntaxKind.None),
+                                        IdentifierName("ptr")));
 
-                return SyntaxFactory.Block(SyntaxFactory.ReturnStatement(invocation));
+                return Block(ReturnStatement(invocation));
             }
 
         }

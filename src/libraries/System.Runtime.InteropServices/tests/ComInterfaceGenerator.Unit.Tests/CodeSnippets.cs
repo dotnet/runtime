@@ -33,7 +33,7 @@ sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider, INativeAPI.Native
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
 partial interface INativeAPI : IUnmanagedInterfaceType
 {
     [VirtualMethodIndex(0)]
@@ -44,7 +44,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
 partial interface INativeAPI : IUnmanagedInterfaceType
 {
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
@@ -56,7 +56,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
 partial interface INativeAPI : IUnmanagedInterfaceType
 {
 
@@ -89,7 +89,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
 partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0)]
@@ -103,7 +103,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
 partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, Direction = MarshalDirection.ManagedToUnmanaged)]
@@ -118,7 +118,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
 partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0)]
@@ -129,7 +129,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
 partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
@@ -144,7 +144,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
-[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
 partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0)]
@@ -164,7 +164,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
 partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ExceptionMarshalling = ExceptionMarshalling.Com)]
@@ -177,7 +177,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.DummyUnwrapper>]
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
 partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, CustomExceptionMarshallingType = typeof({customExceptionType}))]

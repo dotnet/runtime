@@ -310,80 +310,76 @@ namespace Microsoft.Interop
             {
                 // Report missing or invalid index
             }
-            return SecondHalf();
-            IncrementalStubGenerationContext SecondHalf()
+
+            if (virtualMethodIndexData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
             {
-
-                if (virtualMethodIndexData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
+                // User specified StringMarshalling.Custom without specifying StringMarshallingCustomType
+                if (virtualMethodIndexData.StringMarshalling == StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is null)
                 {
-                    // User specified StringMarshalling.Custom without specifying StringMarshallingCustomType
-                    if (virtualMethodIndexData.StringMarshalling == StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is null)
-                    {
-                        generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
-                            virtualMethodIndexAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationMissingCustomType);
-                    }
-
-                    // User specified something other than StringMarshalling.Custom while specifying StringMarshallingCustomType
-                    if (virtualMethodIndexData.StringMarshalling != StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is not null)
-                    {
-                        generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
-                            virtualMethodIndexAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationNotCustom);
-                    }
+                    generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
+                        virtualMethodIndexAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationMissingCustomType);
                 }
 
-                if (!virtualMethodIndexData.ImplicitThisParameter && virtualMethodIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
+                // User specified something other than StringMarshalling.Custom while specifying StringMarshallingCustomType
+                if (virtualMethodIndexData.StringMarshalling != StringMarshalling.Custom && virtualMethodIndexData.StringMarshallingCustomType is not null)
                 {
-                    // Report invalid configuration
+                    generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
+                        virtualMethodIndexAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationNotCustom);
                 }
-
-                if (lcidConversionAttr is not null)
-                {
-                    // Using LCIDConversion with source-generated interop is not supported
-                    generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
-                }
-
-                // Create the stub.
-                var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, virtualMethodIndexData, virtualMethodIndexAttr), environment, typeof(VtableIndexStubGenerator).Assembly);
-
-                var containingSyntaxContext = new ContainingSyntaxContext(syntax);
-
-                var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
-
-                ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
-
-                var interfaceType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
-
-                INamedTypeSymbol expectedUnmanagedInterfaceType = iUnmanagedInterfaceTypeType;
-
-                bool implementsIUnmanagedInterfaceOfSelf = symbol.ContainingType.AllInterfaces.Any(iface => SymbolEqualityComparer.Default.Equals(iface, expectedUnmanagedInterfaceType));
-                if (!implementsIUnmanagedInterfaceOfSelf)
-                {
-                    // TODO: Report invalid configuration
-                }
-
-                var unmanagedObjectUnwrapper = symbol.ContainingType.GetAttributes().FirstOrDefault(att => att.AttributeClass.IsOfType(TypeNames.UnmanagedObjectUnwrapperAttribute));
-                if (unmanagedObjectUnwrapper is null)
-                {
-                    throw new ArgumentException("Found a method on a type without a UnmanagedObjectUnwrapperAttribute.");
-                }
-
-
-                MarshallingInfo exceptionMarshallingInfo = CreateExceptionMarshallingInfo(virtualMethodIndexAttr, symbol, environment.Compilation, generatorDiagnostics, virtualMethodIndexData);
-                var unwrapperSyntax = ParseTypeName(unmanagedObjectUnwrapper.AttributeClass.TypeArguments[0].ToDisplayString());
-                return new IncrementalStubGenerationContext(
-                    signatureContext,
-                    containingSyntaxContext,
-                    methodSyntaxTemplate,
-                    new MethodSignatureDiagnosticLocations(syntax),
-                    new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
-                    VirtualMethodIndexData.From(virtualMethodIndexData),
-                    exceptionMarshallingInfo,
-                    ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
-                    ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
-                    interfaceType,
-                    new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
-                    unwrapperSyntax);
             }
+
+            if (!virtualMethodIndexData.ImplicitThisParameter && virtualMethodIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
+            {
+                // Report invalid configuration
+            }
+
+            if (lcidConversionAttr is not null)
+            {
+                // Using LCIDConversion with source-generated interop is not supported
+                generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
+            }
+
+            // Create the stub.
+            var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, virtualMethodIndexData, virtualMethodIndexAttr), environment, typeof(VtableIndexStubGenerator).Assembly);
+
+            var containingSyntaxContext = new ContainingSyntaxContext(syntax);
+
+            var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
+
+            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
+
+            var interfaceType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
+
+            INamedTypeSymbol expectedUnmanagedInterfaceType = iUnmanagedInterfaceTypeType;
+
+            bool implementsIUnmanagedInterfaceOfSelf = symbol.ContainingType.AllInterfaces.Any(iface => SymbolEqualityComparer.Default.Equals(iface, expectedUnmanagedInterfaceType));
+            if (!implementsIUnmanagedInterfaceOfSelf)
+            {
+                // TODO: Report invalid configuration
+            }
+
+            var unmanagedObjectUnwrapper = symbol.ContainingType.GetAttributes().FirstOrDefault(att => att.AttributeClass.IsOfType(TypeNames.UnmanagedObjectUnwrapperAttribute));
+            if (unmanagedObjectUnwrapper is null)
+            {
+                // TODO: report invalid configuration - or ensure that this will never happen at this point
+            }
+            var unwrapperSyntax = ParseTypeName(unmanagedObjectUnwrapper.AttributeClass.TypeArguments[0].ToDisplayString());
+
+            MarshallingInfo exceptionMarshallingInfo = CreateExceptionMarshallingInfo(virtualMethodIndexAttr, symbol, environment.Compilation, generatorDiagnostics, virtualMethodIndexData);
+
+            return new IncrementalStubGenerationContext(
+                signatureContext,
+                containingSyntaxContext,
+                methodSyntaxTemplate,
+                new MethodSignatureDiagnosticLocations(syntax),
+                new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
+                VirtualMethodIndexData.From(virtualMethodIndexData),
+                exceptionMarshallingInfo,
+                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
+                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
+                interfaceType,
+                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
+                unwrapperSyntax);
         }
 
         private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnostics diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)

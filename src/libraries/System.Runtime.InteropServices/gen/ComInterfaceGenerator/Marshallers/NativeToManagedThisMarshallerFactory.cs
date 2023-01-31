@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -31,6 +32,7 @@ namespace Microsoft.Interop
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
                 TypeSyntax? unwrapperType = (context as NativeToManagedStubCodeContext)?.UnwrapperType;
+                Debug.Assert(unwrapperType != null);
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
                 {
                     yield break;
@@ -38,22 +40,22 @@ namespace Microsoft.Interop
 
                 (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
-                // <managed> = (<managedType>)VTableGCHandlePair<>.GetObjectForUnmanagedWrapper(<native>);
-                // TODO: Change to
                 // <managed> = (<managedType>)UnmanagedObjectUnwrapper.GetObjectFormUnmanagedWrapper<TUnmanagedUnwrapper>(<native>);
                 yield return ExpressionStatement(
-                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                    AssignmentExpression(
+                        SyntaxKind.SimpleAssignmentExpression,
                         IdentifierName(managedIdentifier),
                         CastExpression(
                             info.ManagedType.Syntax,
                             InvocationExpression(
-                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                   ParseTypeName(TypeNames.UnmanagedObjectUnwrapper),
-                                   GenericName(Identifier("GetObjectForUnmanagedWrapper"))
-                                    .WithTypeArgumentList(
-                                           TypeArgumentList(
-                                               SingletonSeparatedList(
-                                                   unwrapperType)))),
+                                MemberAccessExpression(
+                                    SyntaxKind.SimpleMemberAccessExpression,
+                                    ParseTypeName(TypeNames.UnmanagedObjectUnwrapper),
+                                    GenericName(Identifier("GetObjectForUnmanagedWrapper"))
+                                        .WithTypeArgumentList(
+                                            TypeArgumentList(
+                                                SingletonSeparatedList(
+                                                    unwrapperType)))),
                                 ArgumentList(
                                     SingletonSeparatedList(
                                         Argument(IdentifierName(nativeIdentifier))))))));
