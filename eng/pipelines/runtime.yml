@@ -258,6 +258,43 @@ extends:
                 eq(variables['isFullMatrix'], true))
 
       #
+      # CoreCLR NativeAOT debug build and smoke tests (helix)
+      # Only when CoreCLR is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: release
+          runtimeFlavor: coreclr
+          runtimeVariant: ''
+          testBuildMode: nativeaot
+          testFilter: tree nativeaot
+          platforms:
+          - linux_x64
+          - windows_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
+          jobParameters:
+            testGroup: innerloop
+            timeoutInMinutes: 120
+            nameSuffix: NativeAOT_Helix
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            timeoutInMinutes: 120
+            extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+            testRunNamePrefix: NativeAOT_Release
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isFullMatrix'], true))
+
+      #
       # CoreCLR NativeAOT release build and libraries tests
       # Only when CoreCLR or library is changed
       #

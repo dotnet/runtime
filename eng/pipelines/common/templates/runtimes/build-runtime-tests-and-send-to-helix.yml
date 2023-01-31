@@ -2,7 +2,7 @@ parameters:
   buildConfig: ''
   osSubgroup: ''
   container: ''
-  testGroup: ''
+  testFilter: ''
   crossBuild: false
   readyToRun: false
   liveLibrariesBuildConfig: ''
@@ -12,6 +12,7 @@ parameters:
   runInUnloadableContext: false
   runtimeFlavor: 'mono'
   runtimeVariant: 'monointerpreter'
+  testBuildMode: ''
   variables: {}
   pool: ''
   dependsOn: []
@@ -26,11 +27,11 @@ parameters:
 
 steps:
   - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=${{ parameters.runtimeVariant }} /p:LibrariesConfiguration=${{ parameters.buildConfig }} -mono -ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=${{ parameters.runtimeVariant }} '${{ parameters.testFilter }}' /p:LibrariesConfiguration=${{ parameters.buildConfig }} -mono -ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper)
       displayName: Build Tests
 
   - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ${{ parameters.testBuildMode }} '${{ parameters.testFilter }}' /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper)
       displayName: Build Tests
 
 
