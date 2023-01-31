@@ -4,6 +4,13 @@ This is Unity's fork of the .NET Runtime repository.
 
 The difference between this fork and the upstream repository should be as small as possible, with all of the differences specific to Unity. Our goal is to upstream as many changes made here as possible.
 
+
+## Environment requirements
+
+Please refer to [this page](https://github.com/dotnet/runtime/tree/main/docs/workflow/requirements) for environment requirements before build.
+
+
+
 ## Building, testing, and debugging locally
 
 The CoreCLR runtime and class libraries can be built and tested locally for Windows, macOS, and Linux.
