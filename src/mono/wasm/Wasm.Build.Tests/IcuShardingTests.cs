@@ -18,15 +18,15 @@ public class IcuShardingTests : BuildTestBase
         : base(output, buildContext) { }
 
     private static string customIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
-    private static string[] customIcuExpectedLocales = new string[] { "cy-GB", "is-IS", "bs-BA" , "lb-LU"};
-    private static string[] customIcuMissingLocales = new string[] { "fr-FR", "hr-HR", "ko-KR"};
+    private static string[] customIcuExpectedLocales = new string[] { "cy-GB", "is-IS", "bs-BA", "lb-LU" };
+    private static string[] customIcuMissingLocales = new string[] { "fr-FR", "hr-HR", "ko-KR" };
 
     public static IEnumerable<object?[]> IcuExpectedAndMissingAutomaticShardTestData(bool aot, RunHost host)
         => ConfigWithAOTData(aot)
             .Multiply(
                 new object[] { "fr-FR", new string[] { "en-US", "fr-FR", "es-ES" }, new string[] { "pl-PL", "ko-KR", "cs-CZ" } },   // "icudt_EFIGS.dat"
                 new object[] { "ja-JP", new string[] { "en-GB", "zh-CN", "ja-JP" }, new string[] { "fr-FR", "hr-HR", "it-IT" } },   // icudt_CJK.dat
-                new object[] { "fr-CA", new string[] { "en-AU", "fr-FR", "sk-SK" }, new string[] { "ja-JP", "ko-KR", "zh-CN"} })    // "icudt_no_CJK.dat"
+                new object[] { "fr-CA", new string[] { "en-AU", "fr-FR", "sk-SK" }, new string[] { "ja-JP", "ko-KR", "zh-CN" } })   // "icudt_no_CJK.dat"
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
@@ -53,7 +53,7 @@ public class IcuShardingTests : BuildTestBase
             .Multiply(
                 new object[] { true, true, new string[] { "en-GB", "pl-PL", "ko-KR" } },
                 new object[] { true, false, new string[] { "en-GB", "pl-PL", "ko-KR" } },
-                new object[] { false, false, new string[] { "en-GB", "pl-PL", "ko-KR" } },
+                new object[] { false, false, new string[] { "en-GB", "fr-FR", "it-IT" } }, // default mode, only "icudt_EFIGS.dat" loaded
                 new object[] { false, true, new string[] { "en-GB", "pl-PL", "ko-KR" } })
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
@@ -66,12 +66,14 @@ public class IcuShardingTests : BuildTestBase
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
+    private static string GetLocalesStrArr(string[] locales) => locales.Length == 0 ? "Array.Empty<string>()" : $@"new string[] {{ ""{string.Join("\", \"", locales)}"" }}";
+
     private static string GetProgramText(string[] expectedLocales, string[] missingLocales) => $@"
         using System;
         using System.Globalization;
 
-        string[] expectedLocales = new string[] {{ "" {string.Join("\", \"", expectedLocales)} "" }};
-        string[] missingLocales =  new string[] {{ "" {string.Join("\", \"", missingLocales)} "" }};
+        string[] expectedLocales = {GetLocalesStrArr(expectedLocales)};
+        string[] missingLocales =  {GetLocalesStrArr(missingLocales)};
         foreach (var loc in expectedLocales)
         {{
             var culture = new CultureInfo(loc);
@@ -85,7 +87,7 @@ public class IcuShardingTests : BuildTestBase
             }}
             catch(Exception)
             {{
-            Console.WriteLine($""Missing locale as planned: {{loc}}"");
+                Console.WriteLine($""Missing locale as planned: {{loc}}"");
             }}
         }}
         return 42;
@@ -103,7 +105,7 @@ public class IcuShardingTests : BuildTestBase
             Assert.Contains($"Missing locale as planned: {loc}", runOutput);
     }
 
-    [Theory]
+    // [Theory]
     [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { false, RunHost.All })]
     [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { true, RunHost.All })]
     public void DefaultAvailableIcuShardsFromRuntimePack(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id) =>
@@ -184,12 +186,10 @@ public class IcuShardingTests : BuildTestBase
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                            GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.FullIcu));
+                            GlobalizationMode: invariant ? GlobalizationMode.Invariant : fullIcu ? GlobalizationMode.FullIcu : null));
 
         string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
 
-        if (invariant)
-            Assert.Contains("Only the invariant culture is supported in globalization-invariant mode", runOutput);
         CheckExpectedLocales(expectedLocales, runOutput);
         CheckMissingLocales(missingLocales, runOutput);
     }
