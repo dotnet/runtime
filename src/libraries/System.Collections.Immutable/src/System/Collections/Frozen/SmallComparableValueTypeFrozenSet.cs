@@ -22,7 +22,7 @@ namespace System.Collections.Frozen
 
         internal SmallComparableValueTypeFrozenSet(HashSet<T> source) : base(EqualityComparer<T>.Default)
         {
-            // T is logically constrained to `where T : struct, IEquatable<T>, IComparable<T>`, but we can't actually write that
+            // T is logically constrained to `where T : struct, IComparable<T>`, but we can't actually write that
             // constraint currently and still have this be used from the calling context that has an unconstrained T.
             // So, we assert it here instead. The implementation relies on {Equality}Comparer<T>.Default to sort things out.
             Debug.Assert(default(T) is IComparable<T>);

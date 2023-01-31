@@ -24,7 +24,7 @@ namespace System.Collections.Frozen
 
         internal SmallComparableValueTypeFrozenDictionary(Dictionary<TKey, TValue> source) : base(EqualityComparer<TKey>.Default)
         {
-            // TKey is logically constrained to `where TKey : struct, IEquatable<TKey>, IComparable<TKey>`, but we can't actually write that
+            // TKey is logically constrained to `where TKey : struct, IComparable<TKey>`, but we can't actually write that
             // constraint currently and still have this be used from the calling context that has an unconstrained TKey.
             // So, we assert it here instead. The implementation relies on {Equality}Comparer<TKey>.Default to sort things out.
             Debug.Assert(default(TKey) is IComparable<TKey>);
