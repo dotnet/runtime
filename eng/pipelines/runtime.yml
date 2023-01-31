@@ -268,8 +268,6 @@ extends:
           buildConfig: release
           runtimeFlavor: coreclr
           runtimeVariant: ''
-          testBuildMode: nativeaot
-          testFilter: tree nativeaot
           platforms:
           - linux_x64
           - windows_x64
@@ -286,7 +284,9 @@ extends:
             extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
             extraStepsParameters:
               creator: dotnet-bot
-            testRunNamePrefix: NativeAOT_Release
+              testBuildMode: nativeaot
+              testFilter: tree nativeaot
+            testRunNamePrefixSuffix: NativeAOT_Release
 
       #
       # CoreCLR NativeAOT release build and libraries tests
