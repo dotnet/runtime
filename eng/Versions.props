@@ -9,7 +9,7 @@
     <SdkBandVersion>8.0.100</SdkBandVersion>
     <PackageVersionNet6>6.0.10</PackageVersionNet6>
     <PackageVersionNet7>7.0.0</PackageVersionNet7>
-    <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
+    <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
     <WorkloadVersionSuffix Condition="'$(PreReleaseVersionLabel)' != 'release'">-$(PreReleaseVersionLabel).$(PreReleaseVersionIteration)</WorkloadVersionSuffix>
     <SdkBandVersionForWorkload>$(SdkBandVersion)$(WorkloadVersionSuffix)</SdkBandVersionForWorkload>
