@@ -766,12 +766,13 @@ namespace ILCompiler.DependencyAnalysis
             _offsetToDefName.Clear();
             foreach (ISymbolDefinitionNode n in definedSymbols)
             {
-                if (!_offsetToDefName.ContainsKey(n.Offset))
+                if (!_offsetToDefName.TryGetValue(n.Offset, out var nodes))
                 {
-                    _offsetToDefName[n.Offset] = new List<ISymbolDefinitionNode>();
+                    nodes = new List<ISymbolDefinitionNode>();
+                    _offsetToDefName[n.Offset] = nodes;
                 }
 
-                _offsetToDefName[n.Offset].Add(n);
+                nodes.Add(n);
                 _byteInterruptionOffsets[n.Offset] = true;
             }
 

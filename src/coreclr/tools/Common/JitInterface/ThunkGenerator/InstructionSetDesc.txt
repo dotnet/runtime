@@ -43,6 +43,7 @@ instructionset     ,X86   ,Pclmulqdq ,        ,14 ,PCLMULQDQ,pclmul
 instructionset     ,X86   ,Popcnt    ,        ,15 ,POPCNT   ,popcnt
 instructionset     ,X86   ,          ,        ,   ,Vector128,
 instructionset     ,X86   ,          ,        ,   ,Vector256,
+instructionset     ,X86   ,          ,        ,   ,Vector512,
 instructionset     ,X86   ,AvxVnni   ,        ,25 ,AVXVNNI  ,avxvnni
 instructionset     ,X86   ,Movbe     ,        ,27 ,MOVBE    ,movbe
 instructionset     ,X86   ,X86Serialize ,     ,28 ,X86Serialize  ,serialize
@@ -85,6 +86,7 @@ instructionset64bit,X86   ,AVX512DQ_VL
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
+vectorinstructionset,X86  ,Vector512
 
 implication        ,X86   ,SSE       ,X86Base
 implication        ,X86   ,SSE2      ,SSE
@@ -103,6 +105,7 @@ implication        ,X86   ,PCLMULQDQ ,SSE2
 implication        ,X86   ,POPCNT    ,SSE42
 implication        ,X86   ,Vector128 ,SSE
 implication        ,X86   ,Vector256 ,AVX
+implication        ,X86   ,Vector512 ,AVX512F
 implication        ,X86   ,AVXVNNI   ,AVX2
 implication        ,X86   ,MOVBE     ,SSE42
 implication        ,X86   ,X86Serialize, X86Base

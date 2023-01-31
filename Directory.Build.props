@@ -166,7 +166,7 @@
     <_runtimeOS Condition="'$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</_runtimeOS>
 
     <_portableOS>linux</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl'">linux-musl</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl' or $(_runtimeOS.StartsWith('alpine'))">linux-musl</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'linux-bionic'">linux-bionic</_portableOS>
     <_portableOS Condition="'$(_hostOS)' == 'osx'">osx</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
@@ -219,6 +219,7 @@
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
     <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
     <TargetsLinuxBionic Condition="$(OutputRid.StartsWith('linux-bionic'))">true</TargetsLinuxBionic>
+    <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOSName" Condition="'$(SkipInferTargetOSName)' != 'true'">
@@ -342,6 +343,11 @@
     <!-- Treat test assemblies as non-shipping (do not publish or sign them). -->
     <IsShipping Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsPublishedAppTestProject)' == 'true'">false</IsShipping>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <EditorConfigFiles Remove="$(RepositoryEngineeringDir)CodeAnalysis.src.globalconfig" />
+    <EditorConfigFiles Include="$(RepositoryEngineeringDir)CodeAnalysis.test.globalconfig" />
+  </ItemGroup>
 
   <PropertyGroup>
     <!-- Treat as a generator project if either the parent or the parent parent directory is named gen. -->

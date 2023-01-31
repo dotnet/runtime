@@ -8433,6 +8433,11 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 #ifdef FEATURE_READYTORUN
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
 #endif
+
+                if (tree->AsField()->IsSpanLength())
+                {
+                    copy->AsField()->SetIsSpanLength(true);
+                }
             }
             else if (tree->OperIs(GT_ADD, GT_SUB))
             {
@@ -8628,13 +8633,17 @@ GenTree* Compiler::gtCloneExpr(
                 goto DONE;
 
             case GT_LCL_VAR_ADDR:
+            {
                 copy = new (this, oper) GenTreeLclVar(oper, tree->TypeGet(), tree->AsLclVar()->GetLclNum());
                 goto DONE;
+            }
 
             case GT_LCL_FLD_ADDR:
+            {
                 copy = new (this, oper)
                     GenTreeLclFld(oper, tree->TypeGet(), tree->AsLclFld()->GetLclNum(), tree->AsLclFld()->GetLclOffs());
                 goto DONE;
+            }
 
             default:
                 NO_WAY("Cloning of node not supported");
@@ -8772,6 +8781,11 @@ GenTree* Compiler::gtCloneExpr(
 #ifdef FEATURE_READYTORUN
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
 #endif
+
+                if ((oper == GT_FIELD) && tree->AsField()->IsSpanLength())
+                {
+                    copy->AsField()->SetIsSpanLength(true);
+                }
                 break;
 
             case GT_BOX:
@@ -12093,9 +12107,18 @@ void Compiler::gtDispTree(GenTree*     tree,
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
                     printf(" isKnownConst");
                     break;
-
+#if defined(FEATURE_SIMD)
+                case NI_SIMD_UpperRestore:
+                    printf(" simdUpperRestore");
+                    break;
+                case NI_SIMD_UpperSave:
+                    printf(" simdUpperSave");
+                    break;
+#endif // FEATURE_SIMD
                 default:
-                    unreached();
+                    printf("Unknown intrinsic: ");
+                    printTreeID(tree);
+                    break;
             }
         }
 
@@ -16168,11 +16191,24 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
             {
                 if (m_compiler->gtNodeHasSideEffects(node, m_flags))
                 {
-                    Append(node);
                     if (node->OperIsBlk() && !node->OperIsStoreBlk())
                     {
-                        JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
-                        m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
+                        // Check for a guaranteed non-faulting IND, and create a NOP node instead of a NULLCHECK in that
+                        // case.
+                        if (m_compiler->fgAddrCouldBeNull(node->AsBlk()->Addr()))
+                        {
+                            Append(node);
+                            JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                            m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
+                        }
+                        else
+                        {
+                            JITDUMP("Dropping non-faulting OBJ/BLK node [%06d]\n", dspTreeID(node));
+                        }
+                    }
+                    else
+                    {
+                        Append(node);
                     }
                     return Compiler::WALK_SKIP_SUBTREES;
                 }
@@ -24653,6 +24689,21 @@ ClassLayout* GenTreeLclVarCommon::GetLayout(Compiler* compiler) const
     return AsLclFld()->GetLayout();
 }
 
+//------------------------------------------------------------------------
+// GenTreeLclVar::IsNeverNegative: Gets true if the lcl var is never negative; otherwise false.
+//
+// Arguments:
+//    comp - the compiler instance
+//
+// Return Value:
+//    true if the lcl var is never negative; otherwise false.
+//
+bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
+{
+    assert(OperIs(GT_LCL_VAR));
+    return comp->lvaGetDesc(GetLclNum())->IsNeverNegative();
+}
+
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // GetResultOpNumForFMA: check if the result is written into one of the operands.
@@ -24746,6 +24797,24 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
     {
         return AsIntConCommon()->IntegralValue() >= 0;
     }
+
+    if (OperIs(GT_LCL_VAR))
+    {
+        if (AsLclVar()->IsNeverNegative(comp))
+        {
+            // This is an early exit, it doesn't cover all cases
+            return true;
+        }
+    }
+    else if (OperIs(GT_FIELD))
+    {
+        if (AsField()->IsSpanLength())
+        {
+            // This is an early exit, it doesn't cover all cases
+            return true;
+        }
+    }
+
     // TODO-Casts: extend IntegralRange to handle constants
     return IntegralRange::ForNode((GenTree*)this, comp).IsPositive();
 }

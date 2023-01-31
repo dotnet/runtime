@@ -19,6 +19,7 @@ namespace System.Collections.Frozen
 
         internal Int32FrozenDictionary(Dictionary<int, TValue> source) : base(EqualityComparer<int>.Default)
         {
+            Debug.Assert(ReferenceEquals(source.Comparer, EqualityComparer<int>.Default));
             Debug.Assert(source.Count != 0);
 
             KeyValuePair<int, TValue>[] entries = new KeyValuePair<int, TValue>[source.Count];

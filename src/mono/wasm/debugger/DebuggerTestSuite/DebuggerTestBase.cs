@@ -1155,9 +1155,19 @@ namespace DebuggerTests
 
         internal virtual async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
         {
-            var bp1_req = !use_regex ?
+            JObject bp1_req;
+            if (column != -1)
+            {
+                bp1_req = !use_regex ?
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], condition }) :
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, condition });
+            }
+            else
+            {
+                bp1_req = !use_regex ?
+                JObject.FromObject(new { lineNumber = line, url = dicFileToUrl[url_key], condition }) :
+                JObject.FromObject(new { lineNumber = line, urlRegex = url_key, condition });
+            }
 
             var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(expect_ok ? bp1_res.IsOk : !bp1_res.IsOk);
