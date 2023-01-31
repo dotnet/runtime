@@ -48,16 +48,20 @@ namespace System.Net.Http.Functional.Tests
             };
 
             TaskScheduler.UnobservedTaskException += eventHandler;
-
-            for (int i = 0; i < 3; i++)
+            try
             {
-                await MakeARequestWithoutDisposingTheHandlerAsync();
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                await Task.Delay(1000);
+                for (int i = 0; i < 3; i++)
+                {
+                    await MakeARequestWithoutDisposingTheHandlerAsync();
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    await Task.Delay(1000);
+                }
             }
-
-            TaskScheduler.UnobservedTaskException -= eventHandler;
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= eventHandler;
+            }
 
             Assert.False(seenUnobservedExceptions);
 

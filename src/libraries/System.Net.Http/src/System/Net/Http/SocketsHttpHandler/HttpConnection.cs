@@ -145,7 +145,7 @@ namespace System.Net.Http
 
             // We may already have a read-ahead task if we did a previous scavenge and haven't used the connection since.
             // If the read-ahead task is completed, then we've received either EOF or erroneous data the connection, so it's not usable.
-            if (ReadAheadTaskHasStarted())
+            if (ReadAheadTaskHasStarted)
             {
                 return TryOwnReadAheadTaskCompletion();
             }
@@ -207,7 +207,7 @@ namespace System.Net.Http
             return !_readAheadTask.IsCompleted;
         }
 
-        private bool ReadAheadTaskHasStarted() =>
+        private bool ReadAheadTaskHasStarted =>
             _readAheadTaskStatus != ReadAheadTask_NotStarted;
 
         private bool TryOwnReadAheadTaskCompletion() =>
@@ -582,7 +582,7 @@ namespace System.Net.Http
 
                 // When the connection was taken out of the pool, a pre-emptive read was performed
                 // into the read buffer. We need to consume that read prior to issuing another read.
-                if (ReadAheadTaskHasStarted())
+                if (ReadAheadTaskHasStarted)
                 {
                     // If the read-ahead task completed synchronously, it would have claimed ownership of its completion,
                     // meaning that PrepareForReuse would have failed, and we wouldn't have called SendAsync.
@@ -1593,7 +1593,7 @@ namespace System.Net.Http
         // Does not throw on EOF. Also assumes there is no buffered data.
         private async ValueTask InitialFillAsync(bool async)
         {
-            Debug.Assert(!ReadAheadTaskHasStarted());
+            Debug.Assert(!ReadAheadTaskHasStarted);
             Debug.Assert(_readBuffer.AvailableLength == _readBuffer.Capacity);
             Debug.Assert(_readBuffer.AvailableLength >= InitialReadBufferSize);
 
