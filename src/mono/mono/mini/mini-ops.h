@@ -796,6 +796,8 @@ MINI_OP(OP_DUMMY_USE, "dummy_use", NONE, IREG, NONE)
 MINI_OP(OP_NOT_REACHED, "not_reached", NONE, NONE, NONE)
 MINI_OP(OP_NOT_NULL, "not_null", NONE, IREG, NONE)
 
+MINI_OP(OP_LDTOKEN_FIELD, "ldtoken_field", IREG, IREG, NONE)
+
 /* SIMD opcodes. */
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM) || defined(TARGET_ARM64)

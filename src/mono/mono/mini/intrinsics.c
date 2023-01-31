@@ -1008,6 +1008,29 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			EMIT_NEW_UNALU (cfg, ins, OP_ICGT, dreg, -1);
 			ins->type = STACK_I4;
 			return ins;
+		} else if (!strcmp (cmethod->name, "CreateSpan") && fsig->param_count == 1) { //
+			MonoGenericContext *ctx = mono_method_get_context (cmethod);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			MonoType* arg_type = ctx->method_inst->type_argv [0];
+			MonoType* t = mini_get_underlying_type (arg_type);
+		
+			if (G_UNLIKELY (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_VALUETYPE)) {
+				MONO_INST_NEW (cfg, ins, OP_NOP);
+				MONO_ADD_INS (cfg->cbb, ins);
+			} else {
+				MonoClassField* field = (MonoClassField*) args [0]->inst_p1;
+				const char* data_ptr = mono_field_get_data (field);
+				
+				/*int dreg = alloc_preg (cfg);
+				mini_emit_init_rvar (cfg, dreg, fsig->ret);
+				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREP_MEMBASE_IMM, dreg, 0, data_ptr);
+				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, dreg, __SIZEOF_POINTER__, size); */
+				//EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADV_MEMBASE, dreg, 
+			}
+			
+			return ins;
 		} else
 			return NULL;
 	} else if (cmethod->klass == mono_class_try_get_memory_marshal_class ()) {

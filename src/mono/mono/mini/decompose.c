@@ -319,6 +319,15 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 	 * macros.
 	 */
 	switch (ins->opcode) {
+	case OP_LDTOKEN_FIELD: {
+		MonoInst* ins_pc = NULL;
+		MonoInst* ins_addr = NULL;
+		EMIT_NEW_PCONST (cfg, ins_pc, ins->inst_p1);
+		EMIT_NEW_TEMPLOADA (cfg, ins_addr, ins->inst_c0);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, ins_addr->dreg, 0, ins_pc->dreg);
+		EMIT_NEW_TEMPLOAD (cfg, ins, ins->inst_c0);
+		}
+		break;
 	/* this doesn't make sense on ppc and other architectures */
 #if !defined(MONO_ARCH_NO_IOV_CHECK)
 	case OP_IADD_OVF:
@@ -528,7 +537,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		if (!COMPILE_LLVM (cfg))
 			emulate = TRUE;
 #endif
-		break;
+	break;
 	default:
 		emulate = TRUE;
 		break;
