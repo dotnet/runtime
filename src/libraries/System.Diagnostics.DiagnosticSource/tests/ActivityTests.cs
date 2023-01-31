@@ -245,7 +245,14 @@ namespace System.Diagnostics.Tests
                 string parentId = a.ParentId;
                 a.SetParentId("00-6e76af18746bae4eadc3581338bbe8b1-2899ebfdbdce904b-00"); // Error does nothing
                 Assert.Equal(parentId, a.ParentId);
+            }
 
+            using (var a = new Activity("foo"))
+            {
+                a.Start();
+                string parentId = a.ParentId;
+                a.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom()); // Nothing will happen
+                Assert.Equal(parentId, a.ParentId);
             }
 
             using var parent = new Activity("parent");
@@ -739,14 +746,6 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void IdFormat_W3CWhenTraceIdAndSpanIdProvided()
         {
-            using (var a = new Activity("foo"))
-            {
-                a.Start();
-                string parentId = a.ParentId;
-                a.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom()); // Nothing will happen
-                Assert.Equal(parentId, a.ParentId);
-            }
-
             using Activity activity = new Activity("activity3");
             ActivityTraceId activityTraceId = ActivityTraceId.CreateRandom();
             activity.SetParentId(activityTraceId, ActivitySpanId.CreateRandom());
