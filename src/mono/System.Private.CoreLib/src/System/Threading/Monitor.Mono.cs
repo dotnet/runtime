@@ -59,13 +59,17 @@ namespace System.Threading
         {
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
+
+            if (ObjectHeader.TryEnterFast(obj, ref lockTaken))
+                return;
+
             ReliableEnterTimeout(obj, millisecondsTimeout, ref lockTaken);
         }
 
         public static bool IsEntered(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            return IsEnteredNative(obj);
+            return ObjectHeader.IsEntered(obj);
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -88,14 +92,11 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool Monitor_test_synchronised(object obj);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void Monitor_pulse(object obj);
 
         private static void ObjPulse(object obj)
         {
-            if (!Monitor_test_synchronised(obj))
+            if (!ObjectHeader.HasOwner(obj))
                 throw new SynchronizationLockException();
 
             Monitor_pulse(obj);
@@ -106,7 +107,7 @@ namespace System.Threading
 
         private static void ObjPulseAll(object obj)
         {
-            if (!Monitor_test_synchronised(obj))
+            if (!ObjectHeader.HasOwner(obj))
                 throw new SynchronizationLockException();
 
             Monitor_pulse_all(obj);
@@ -119,7 +120,7 @@ namespace System.Threading
         {
             if (millisecondsTimeout < 0 && millisecondsTimeout != (int)Timeout.Infinite)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
-            if (!Monitor_test_synchronised(obj))
+            if (!ObjectHeader.HasOwner(obj))
                 throw new SynchronizationLockException();
 
             return Monitor_wait(obj, millisecondsTimeout, true);
@@ -136,14 +137,6 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(timeout));
 
             try_enter_with_atomic_var(obj, timeout, true, ref lockTaken);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool Monitor_test_owner(object obj);
-
-        private static bool IsEnteredNative(object obj)
-        {
-            return Monitor_test_owner(obj);
         }
 
         public static extern long LockContentionCount

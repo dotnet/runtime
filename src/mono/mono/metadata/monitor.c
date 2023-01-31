@@ -1247,46 +1247,6 @@ mono_monitor_enter_v4_fast (MonoObject *obj, MonoBoolean *lock_taken)
 	return (guint32)res;
 }
 
-MonoBoolean
-ves_icall_System_Threading_Monitor_Monitor_test_owner (MonoObjectHandle obj_handle, MonoError* error)
-{
-	MonoObject* const obj = MONO_HANDLE_RAW (obj_handle);
-
-	LockWord lw;
-
-	LOCK_DEBUG (g_message ("%s: Testing if %p is owned by thread %d", __func__, obj, mono_thread_info_get_small_id()));
-
-	lw.sync = obj->synchronisation;
-
-	if (lock_word_is_flat (lw)) {
-		return lock_word_get_owner (lw) == mono_thread_info_get_small_id ();
-	} else if (lock_word_is_inflated (lw)) {
-		return mon_status_get_owner (lock_word_get_inflated_lock (lw)->status) == mono_thread_info_get_small_id ();
-	}
-
-	return FALSE;
-}
-
-MonoBoolean
-ves_icall_System_Threading_Monitor_Monitor_test_synchronised (MonoObjectHandle obj_handle, MonoError* error)
-{
-	MonoObject* const obj = MONO_HANDLE_RAW (obj_handle);
-
-	LockWord lw;
-
-	LOCK_DEBUG (g_message("%s: (%d) Testing if %p is owned by any thread", __func__, mono_thread_info_get_small_id (), obj));
-
-	lw.sync = obj->synchronisation;
-
-	if (lock_word_is_flat (lw)) {
-		return !lock_word_is_free (lw);
-	} else if (lock_word_is_inflated (lw)) {
-		return mon_status_get_owner (lock_word_get_inflated_lock (lw)->status) != 0;
-	}
-
-	return FALSE;
-}
-
 /* All wait list manipulation in the pulse, pulseall and wait
  * functions happens while the monitor lock is held, so we don't need
  * any extra struct locking
