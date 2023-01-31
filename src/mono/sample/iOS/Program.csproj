@@ -99,7 +99,7 @@
     </AppleAppBuilderTask>
 
     <Exec Condition="'$(StripDebugSymbols)' == 'true'"
-          Command="dsymutil $(AppBundlePath)/$(AppName)
+          Command="dsymutil $(AppBundlePath)/$(AppName) -o $(PublishDir)/$(AppName).dSYM
                    strip -no_code_signature_warning -i -s $(MSBuildThisFileDirectory)/symbols_to_keep.list $(AppBundlePath)/$(AppName)" />
 
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
