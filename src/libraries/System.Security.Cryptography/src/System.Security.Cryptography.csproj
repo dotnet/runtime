@@ -592,7 +592,7 @@
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\RSA.Create.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Managed.cs" />
-    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.netcoreapp.cs" />
+    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\SHAHashProvider.Browser.Managed.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.NotSupported.cs" />
@@ -834,7 +834,7 @@
     <Compile Include="System\Security\Cryptography\RSAWrapper.cs" />
     <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Managed.cs" />
-    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.netcoreapp.cs" />
+    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.OpenSsl.cs" />
     <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml" />
@@ -1044,7 +1044,7 @@
     <Compile Include="System\Security\Cryptography\RSA.Create.Android.cs" />
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.Unix.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Managed.cs" />
-<Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.netcoreapp.cs" />
+<Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AndroidCertificatePal.cs" />
@@ -1221,7 +1221,7 @@
     <Compile Include="System\Security\Cryptography\RSA.Create.SecurityTransforms.cs" />
     <Compile Include="System\Security\Cryptography\RSACryptoServiceProvider.Unix.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Managed.cs" />
-    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.netcoreapp.cs" />
+    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.Apple.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.cs" />
@@ -1822,7 +1822,7 @@
     <Compile Include="System\Security\Cryptography\RSACng.ImportExport.cs" />
     <Compile Include="System\Security\Cryptography\RSACng.Key.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Windows.cs" />
-    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.netcoreapp.cs" />
+    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCng.Windows.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.Windows.cs" />
