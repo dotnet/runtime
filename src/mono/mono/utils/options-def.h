@@ -67,7 +67,7 @@ DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assem
 //  and wasm modules between threads. before these can be enabled we need to implement all that
 #ifdef DISABLE_THREADS
 // traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
-DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", FALSE, "JIT interpreter opcode traces into WASM")
+DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", TRUE, "JIT interpreter opcode traces into WASM")
 // interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
 DEFINE_BOOL(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", TRUE, "JIT specialized WASM interp_entry wrappers")
 // jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
@@ -95,7 +95,7 @@ DEFINE_BOOL(jiterpreter_call_resume_enabled, "jiterpreter-call-resume-enabled", 
 //  stats for options like estimateHeat, but raises overhead.
 DEFINE_BOOL(jiterpreter_disable_heuristic, "jiterpreter-disable-heuristic", FALSE, "Always insert trace entry points for more accurate statistics")
 // Automatically prints stats at app exit or when jiterpreter_dump_stats is called
-DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", FALSE, "Automatically print jiterpreter statistics")
+DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", TRUE, "Automatically print jiterpreter statistics")
 // Continue counting hits for traces that fail to compile and use it to estimate
 //  the relative importance of the opcode that caused them to abort
 DEFINE_BOOL(jiterpreter_estimate_heat, "jiterpreter-estimate-heat", FALSE, "Maintain accurate hit count for all trace entry points")
