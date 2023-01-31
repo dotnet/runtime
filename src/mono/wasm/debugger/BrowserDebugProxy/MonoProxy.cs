@@ -1360,16 +1360,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await SendResume(sessionId, token);
             }
         }
-        private static Result AddCallStackInfoToException(Result _error, List<Frame> callStack, DebugStore store)
+        private static Result AddCallStackInfoToException(Result _error, ExecutionContext context)
         {
             var retStackTrace = new JArray();
-            foreach(var call in callStack)
+            foreach(var call in context.CallStack)
             {
                 retStackTrace.Add(JObject.FromObject(new
                 {
                     functionName = call.Method.Name,
                     scriptId = call.Location.Id.ToString(),
-                    url = store.ToUrl(call.Location),
+                    url = context.Store.ToUrl(call.Location),
                     lineNumber = call.Location.Line,
                     columnNumber = call.Location.Column
                 }));
@@ -1400,22 +1400,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else
                 {
-                    SendResponse(msg_id, AddCallStackInfoToException(Result.Err($"Unable to evaluate '{expression}'"), context.CallStack, context.store), token);
+                    SendResponse(msg_id, AddCallStackInfoToException(Result.Err($"Unable to evaluate '{expression}'"), context), token);
                 }
             }
             catch (ReturnAsErrorException ree)
             {
-                SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context.CallStack, context.store), token);
+                SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context), token);
             }
             catch (ExpressionEvaluationFailedException eefe)
             {
                 logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{eefe}.");
-                SendResponse(msg_id, AddCallStackInfoToException(Result.Exception(eefe), context.CallStack, context.store), token);
+                SendResponse(msg_id, AddCallStackInfoToException(Result.Exception(eefe), context), token);
             }
             catch (Exception e)
             {
                 logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{e}.");
-                SendResponse(msg_id, AddCallStackInfoToException(Result.Exception(e), context.CallStack, context.store), token);
+                SendResponse(msg_id, AddCallStackInfoToException(Result.Exception(e), context), token);
             }
 
             return true;
