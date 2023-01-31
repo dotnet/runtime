@@ -1227,7 +1227,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     if (EA_IS_RELOC(size))
     {
         assert(genIsValidIntReg(reg));
-        emit->emitIns_R_AI(INS_jalr, size, reg, reg, imm); // for example: EA_PTR_DSP_RELOC
+        emit->emitIns_R_AI(INS_jalr, size, reg, imm); // for example: EA_PTR_DSP_RELOC
     }
     else
     {
