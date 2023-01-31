@@ -1834,18 +1834,30 @@ static guint16 vector2_methods[] = {
 	SN_ctor,
 	SN_Abs,
 	SN_Add,
+	SN_Clamp,
 	SN_CopyTo,
+	SN_Distance,
+	SN_DistanceSquared,
 	SN_Divide,
 	SN_Dot,
 	SN_GetElement,
+	SN_Length,
+	SN_LengthSquared,
+	SN_Lerp,
 	SN_Max,
 	SN_Min,
 	SN_Multiply,
+	SN_Negate,
+	SN_Normalize,
 	SN_SquareRoot,
 	SN_Subtract,
 	SN_WithElement,
 	SN_get_Item,
 	SN_get_One,
+	SN_get_UnitX,
+	SN_get_UnitY,
+	SN_get_UnitZ,
+	SN_get_UnitW,
 	SN_get_Zero,
 	SN_op_Addition,
 	SN_op_Division,
@@ -1962,6 +1974,13 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	}
 	case SN_get_Zero:
 		return emit_xzero (cfg, klass);
+	case SN_get_UnitX:
+	case SN_get_UnitY:
+	case SN_get_UnitZ:
+	case SN_get_UnitW: {
+		// FIXME:
+		return NULL;
+	}
 	case SN_get_One: {
 		static const float r4_one = 1.0f;
 
@@ -2034,6 +2053,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		return NULL;
 #endif
 	}
+	case SN_Negate:
 	case SN_op_UnaryNegation: {
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		return emit_simd_ins (cfg, klass, OP_NEGATION, args [0]->dreg, -1);
@@ -2078,6 +2098,29 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_CopyTo:
 		// FIXME:
 		return NULL;
+	case SN_Clamp: {
+		if (!(!fsig->hasthis && fsig->param_count == 3 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type) && mono_metadata_type_equal (fsig->params [2], type)))
+			return NULL;
+
+		MonoInst *max = emit_simd_ins (cfg, klass, OP_XBINOP, args[0]->dreg, args[1]->dreg);
+		max->inst_c0 = OP_FMAX;
+		max->inst_c1 = MONO_TYPE_R4;
+
+		MonoInst *min = emit_simd_ins (cfg, klass, OP_XBINOP, max->dreg, args[2]->dreg);
+		min->inst_c0 = OP_FMIN;
+		min->inst_c1 = MONO_TYPE_R4;
+
+		return min;
+	}
+	case SN_Distance:
+	case SN_DistanceSquared:
+	case SN_Length:
+	case SN_LengthSquared:
+	case SN_Lerp:
+	case SN_Normalize: {
+		// FIXME:
+		return NULL;
+	}
 	default:
 		g_assert_not_reached ();
 	}
