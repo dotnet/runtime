@@ -512,6 +512,10 @@ if [[ "$os" == "wasi" ]]; then
     arch=wasm
 fi
 
+if [[ "$TreatWarningsAsErrors" == "false" ]]; then
+    arguments="$arguments -warnAsError 0"
+fi
+
 initDistroRid $os $arch $crossBuild $portableBuild
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
