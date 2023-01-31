@@ -1359,8 +1359,8 @@ private:
     regNumber getTempRegForResolution(BasicBlock*      fromBlock,
                                       BasicBlock*      toBlock,
                                       var_types        type,
-                                      regMaskTP        terminatorConsumedRegs,
-                                      VARSET_VALARG_TP sharedCriticalLiveSet);
+                                      VARSET_VALARG_TP sharedCriticalLiveSet,
+                                      regMaskTP        terminatorConsumedRegs);
 
 #ifdef DEBUG
     void dumpVarToRegMap(VarToRegMap map);

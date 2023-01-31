@@ -7377,9 +7377,9 @@ void LinearScan::insertSwap(
 //    fromBlock              - The "from" block on the edge being resolved.
 //    toBlock                - The "to" block on the edge. Can be null for shared critical edge resolution.
 //    type                   - The type of register required
-//    terminatorConsumedRegs - Registers consumed by 'fromBlock's terminating node.
 //    sharedCriticalLiveSet  - The set of live vars that require shared critical resolution. Only used when toBlock is
 //                             nullptr.
+//    terminatorConsumedRegs - Registers consumed by 'fromBlock's terminating node.
 //
 // Return Value:
 //    Returns a register that is free on the given edge, or REG_NA if none is available.
@@ -7392,8 +7392,8 @@ void LinearScan::insertSwap(
 regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
                                               BasicBlock*      toBlock,
                                               var_types        type,
-                                              regMaskTP        terminatorConsumedRegs,
-                                              VARSET_VALARG_TP sharedCriticalLiveSet)
+                                              VARSET_VALARG_TP sharedCriticalLiveSet,
+                                              regMaskTP        terminatorConsumedRegs)
 {
     // TODO-Throughput: This would be much more efficient if we add RegToVarMaps instead of VarToRegMaps
     // and they would be more space-efficient as well.
@@ -8173,7 +8173,7 @@ void LinearScan::resolveEdges()
 //    resolveType            - the type of resolution to be performed
 //    liveSet                - the set of tracked lclVar indices which may require resolution
 //    terminatorConsumedRegs - the registers consumed by the terminator node.
-//                             These registers will be used after any resolution added to 'fromBlock'.
+//                             These registers will be used after any resolution added at the end of the 'fromBlock'.
 //
 // Return Value:
 //    None.
@@ -8240,7 +8240,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // TODO-Throughput: It would be better to determine the tempRegs on demand, but the code below
     // modifies the varToRegMaps so we don't have all the correct registers at the time
     // we need to get the tempReg.
-    regNumber tempRegInt = getTempRegForResolution(fromBlock, toBlock, TYP_INT, terminatorConsumedRegs, liveSet);
+    regNumber tempRegInt = getTempRegForResolution(fromBlock, toBlock, TYP_INT, liveSet, terminatorConsumedRegs);
     regNumber tempRegFlt = REG_NA;
 #ifdef TARGET_ARM
     regNumber tempRegDbl = REG_NA;
@@ -8249,7 +8249,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     {
 #ifdef TARGET_ARM
         // Try to reserve a double register for TYP_DOUBLE and use it for TYP_FLOAT too if available.
-        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE, terminatorConsumedRegs, liveSet);
+        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE, liveSet, terminatorConsumedRegs);
         if (tempRegDbl != REG_NA)
         {
             tempRegFlt = tempRegDbl;
@@ -8257,7 +8257,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         else
 #endif // TARGET_ARM
         {
-            tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, terminatorConsumedRegs, liveSet);
+            tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, liveSet, terminatorConsumedRegs);
         }
     }
 
