@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> key,
             HashAlgorithmName hashAlgorithm)
         {
-            throw new NotImplementedException();
+            return new SP800108HmacCounterKdfImplementationManaged(key, hashAlgorithm);
         }
 
         private static partial byte[] DeriveBytesCore(
@@ -24,7 +24,11 @@ namespace System.Security.Cryptography
             byte[] context,
             int derivedKeyLengthInBytes)
         {
-            throw new NotImplementedException();
+            byte[] result = new byte[derivedKeyLengthInBytes];
+
+            SP800108HmacCounterKdfImplementationManaged.DeriveBytesOneShot(key, hashAlgorithm, label, context, result);
+
+            return result;
         }
 
         private static partial void DeriveBytesCore(
@@ -34,7 +38,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> context,
             Span<byte> destination)
         {
-            throw new NotImplementedException();
+            SP800108HmacCounterKdfImplementationManaged.DeriveBytesOneShot(key, hashAlgorithm, label, context, destination);
         }
 
         private static partial void DeriveBytesCore(
@@ -44,7 +48,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<char> context,
             Span<byte> destination)
         {
-            throw new NotImplementedException();
+            SP800108HmacCounterKdfImplementationManaged.DeriveBytesOneShot(key, hashAlgorithm, label, context, destination);
         }
     }
 }
