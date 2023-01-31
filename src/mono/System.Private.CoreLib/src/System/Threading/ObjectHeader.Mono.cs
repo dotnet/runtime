@@ -274,6 +274,7 @@ internal static class ObjectHeader
                         return true;
                     }
                     // someone else changed the status, go around the loop again
+                    continue;
                 }
                 if (MonitorStatus.GetOwner(old_status) == small_id)
                 {
@@ -298,6 +299,8 @@ internal static class ObjectHeader
     {
         if (lockTaken || o == null)
             return false;
+
+        lockTaken = false;
 
         LockWord lw = GetLockWord (ref o);
         if (lw.IsFree)
@@ -346,6 +349,8 @@ internal static class ObjectHeader
                     return true;
                 }
             }
+            Inflate(o);
+            return TryEnterInflatedFast(o, refLockTaken);
 #endif
         }
         Debug.Assert (lw.HasHash);
