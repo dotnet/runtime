@@ -9,8 +9,8 @@
     <SdkBandVersion>8.0.100</SdkBandVersion>
     <PackageVersionNet6>6.0.10</PackageVersionNet6>
     <PackageVersionNet7>7.0.0</PackageVersionNet7>
-    <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
+    <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
+    <PreReleaseVersionIteration>2</PreReleaseVersionIteration>
     <WorkloadVersionSuffix Condition="'$(PreReleaseVersionLabel)' != 'release'">-$(PreReleaseVersionLabel).$(PreReleaseVersionIteration)</WorkloadVersionSuffix>
     <SdkBandVersionForWorkload>$(SdkBandVersion)$(WorkloadVersionSuffix)</SdkBandVersionForWorkload>
     <!-- Set assembly version to align with major and minor version,
