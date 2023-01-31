@@ -36,6 +36,7 @@
     -->
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">true</WasmEmitSymbolMap>
+    <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
 
     <!-- Run only if previous command succeeded -->
     <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
@@ -47,8 +48,13 @@
     <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' == ''">true</WasmIgnoreNet6WorkloadInstallErrors>
     <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' != 'true'">false</WasmIgnoreNet6WorkloadInstallErrors>
     <InstallWorkloadUsingArtifactsDependsOn>_GetWorkloadsToInstall;$(InstallWorkloadUsingArtifactsDependsOn)</InstallWorkloadUsingArtifactsDependsOn>
+    <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and
+                                        ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv')) and
+                                        '$(Scenario)' == 'WasmTestOnBrowser'">true</InstallChromeForTests>
+    <_XHarnessTestsTimeout>00:30:00</_XHarnessTestsTimeout>
+    <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>
+  </PropertyGroup>
 
-    <!--<WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>-->
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
@@ -92,10 +98,10 @@
     <!--<BundleTestWasmAppDependsOn Condition="'$(IsBrowserWasmProject)' == 'true' and '$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>-->
     <!--<BundleTestWasmAppDependsOn Condition="'$(IsBrowserWasmProject)' == 'true' and '$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>-->
 
-    <RunCommand>$(WasmAppHostDir)/WasmAppHost</RunCommand>
     <!-- Use BundleDir here, since WasmAppDir is set in a target, and `dotnet run` reads
          $(Run*) without running any targets -->
-    <RunArguments>--runtime-config $(BundleDir)/WasmTestRunner.runtimeconfig.json $(WasmHostArguments) $(StartArguments) $(WasmXHarnessMonoArgs) $(_AppArgs)</RunArguments>
+    <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(BundleDir), 'WasmTestRunner.runtimeconfig.json'))</_RuntimeConfigJsonPath>
+    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments) $(StartArguments) $(WasmXHarnessMonoArgs) $(_AppArgs)</RunArguments>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
