@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization
 
         /// <summary>
         /// Gets the run time specified options of the context. If no options were passed
-        /// when instanciating the context, then a new instance is bound and returned.
+        /// when instantiating the context, then a new instance is bound and returned.
         /// </summary>
         /// <remarks>
         /// The options instance cannot be mutated once it is bound to the context instance.
@@ -34,14 +34,6 @@ namespace System.Text.Json.Serialization
                 }
 
                 return options;
-            }
-
-            internal set
-            {
-                Debug.Assert(!value.IsReadOnly);
-                value.TypeInfoResolver = this;
-                value.MakeReadOnly();
-                _options = value;
             }
         }
 
@@ -94,7 +86,9 @@ namespace System.Text.Json.Serialization
             if (options != null)
             {
                 options.VerifyMutable();
-                Options = options;
+                options.TypeInfoResolver = this;
+                options.MakeReadOnly();
+                _options = options;
             }
         }
 

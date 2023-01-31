@@ -24,10 +24,13 @@ namespace Wasm.Build.Tests
         public string                           WorkloadPacksDir              { get; init; }
         public string                           BuiltNuGetsPath               { get; init; }
 
+        public bool UseWebcil { get; init; }
+
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
         public static readonly string           TestDataPath = Path.Combine(AppContext.BaseDirectory, "data");
         public static readonly string           TmpPath = Path.Combine(AppContext.BaseDirectory, "wbt");
+
 
         private static readonly Dictionary<string, string> s_runtimePackVersions = new();
 
@@ -85,6 +88,8 @@ namespace Wasm.Build.Tests
                 DirectoryBuildPropsContents = s_directoryBuildPropsForLocal;
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
+
+            UseWebcil = EnvironmentVariables.UseWebcil;
 
             if (EnvironmentVariables.BuiltNuGetsPath is null || !Directory.Exists(EnvironmentVariables.BuiltNuGetsPath))
                 throw new Exception($"Cannot find 'BUILT_NUGETS_PATH={EnvironmentVariables.BuiltNuGetsPath}'");

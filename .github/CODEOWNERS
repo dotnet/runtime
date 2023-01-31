@@ -45,7 +45,7 @@
 /src/mono/mono/mini/*riscv* @vargaz @lambdageek
 /src/mono/mono/mini/*type-check* @lambdageek
 /src/mono/mono/mini/debugger-agent.c @vargaz @thaystg @lambdageek
-/src/mono/mono/mini/interp/* @BrzVlad @vargaz
+/src/mono/mono/mini/interp/* @BrzVlad @vargaz @kotlarmilos
 
 /src/mono/mono/profiler @BrzVlad @lambdageek
 /src/mono/mono/sgen @BrzVlad @lambdageek @naricc

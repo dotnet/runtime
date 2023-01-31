@@ -8,7 +8,11 @@ endmacro()
 
 if(EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv7-alpine-linux-musleabihf OR
    EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv6-alpine-linux-musleabihf OR
-   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/aarch64-alpine-linux-musl)
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/aarch64-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/s390x-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/ppc64le-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/i586-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/riscv64-alpine-linux-musl)
 
   set(ALPINE_LINUX 1)
 elseif(EXISTS ${CROSS_ROOTFS}/bin/freebsd-version)
@@ -102,6 +106,7 @@ elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s39
   set_cache_value(PTHREAD_CREATE_MODIFIES_ERRNO_EXITCODE 1)
   set_cache_value(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1)
   set_cache_value(SEM_INIT_MODIFIES_ERRNO_EXITCODE 1)
+  set_cache_value(HAVE_TERMIOS2_EXITCODE 0)
 
 
   if(ALPINE_LINUX)
@@ -128,6 +133,7 @@ elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s39
     set_cache_value(UNGETC_NOT_RETURN_EOF 0)
     set_cache_value(HAVE_COMPATIBLE_ILOGBNAN 1)
     set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
+    set_cache_value(HAVE_TERMIOS2_EXITCODE 1)
   elseif(ILLUMOS)
     set_cache_value(GETPWUID_R_SETS_ERRNO_EXITCODE 1)
     set_cache_value(HAVE_COMPATIBLE_ACOS_EXITCODE 1)
@@ -146,6 +152,7 @@ elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s39
     set_cache_value(HAVE_SET_MAX_VARIABLE 1)
     set_cache_value(HAVE_FULLY_FEATURED_PTHREAD_MUTEXES 1)
     set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
+    set_cache_value(HAVE_TERMIOS2_EXITCODE 1)
   elseif (TIZEN)
     set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
   endif()

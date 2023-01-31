@@ -140,23 +140,14 @@
     <Compile Include="System\Reflection\BinderBundle.cs" />
     <Compile Include="System\Reflection\DynamicInvokeInfo.cs" />
     <Compile Include="System\Reflection\Emit\AssemblyBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\ConstructorBuilder.cs" />
     <Compile Include="System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="System\Reflection\Emit\DynamicILInfo.cs" />
     <Compile Include="System\Reflection\Emit\DynamicMethod.cs" />
-    <Compile Include="System\Reflection\Emit\EnumBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\EventBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\FieldBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ILGenerator.cs" />
     <Compile Include="System\Reflection\Emit\LocalBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\MethodBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ParameterBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\PropertyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ReflectionEmitThrower.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
-    <Compile Include="System\Reflection\Emit\TypeBuilder.cs" />
     <Compile Include="System\Reflection\EnumInfo.cs" />
     <Compile Include="System\Reflection\FieldInfo.NativeAot.cs" />
     <Compile Include="System\Reflection\MethodBase.NativeAot.cs" />
@@ -290,9 +281,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetTickCount64.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetTickCount64.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetCurrentProcessorNumber.cs">
-      <Link>Interop\Windows\Kernel32\Interop.GetCurrentProcessorNumber.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPool.cs">
       <Link>Interop\Windows\Kernel32\Interop.ThreadPool.cs</Link>
     </Compile>
@@ -328,9 +316,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SchedGetCpu.cs">
-      <Link>Interop\Unix\System.Native\Interop.SchedGetCpu.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Threading.cs">
       <Link>Interop\Unix\System.Native\Interop.Threading.cs</Link>

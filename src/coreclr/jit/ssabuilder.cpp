@@ -1662,7 +1662,7 @@ void Compiler::DumpSsaSummary()
 
         if (numDefs == 0)
         {
-            printf("V%02u: in SSA but no defs\n");
+            printf("V%02u: in SSA but no defs\n", lclNum);
         }
         else
         {

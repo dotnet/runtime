@@ -62,8 +62,8 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
 export function mono_wasm_stringify_as_error_with_stack(err: Error | string): string {
     let errObj: any = err;
-    if (!(errObj instanceof Error)) {
-        errObj = new Error(errObj);
+    if (!errObj || !errObj.stack || !(errObj instanceof Error)) {
+        errObj = new Error(errObj || "Unknown error");
     }
 
     // Error

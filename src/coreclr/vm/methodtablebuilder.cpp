@@ -6860,9 +6860,15 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
     SIZE_T sizeOfMethodDescs = 0; // current running size of methodDesc chunk
     int startIndex = 0; // start of the current chunk (index into bmtMethod array)
 
+    // Limit the maximum MethodDescs per chunk by the number of precodes that can fit to a single memory page,
+    // since we allocate consecutive temporary entry points for all MethodDescs in the whole chunk.
+    DWORD maxPrecodesPerPage = Precode::GetMaxTemporaryEntryPointsCount();
+    DWORD methodDescCount = 0;
+
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
+        DWORD currentSlotMethodDescCount = 1;
         int tokenRange = GetTokenRange(it.Token());
 
         // This code assumes that iterator returns tokens in ascending order. If this assumption does not hold,
@@ -6885,6 +6891,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         // See comment in AllocAndInitMethodDescChunk
         if (NeedsTightlyBoundUnboxingStub(*it))
         {
+            currentSlotMethodDescCount = 2;
             size *= 2;
 
             if (bmtGenerics->GetNumGenericArgs() == 0) {
@@ -6896,7 +6903,8 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         }
 
         if (tokenRange != currentTokenRange ||
-            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs)
+            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs ||
+            methodDescCount + currentSlotMethodDescCount > maxPrecodesPerPage)
         {
             if (sizeOfMethodDescs != 0)
             {
@@ -6906,9 +6914,11 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
 
             currentTokenRange = tokenRange;
             sizeOfMethodDescs = 0;
+            methodDescCount = 0;
         }
 
         sizeOfMethodDescs += size;
+        methodDescCount += currentSlotMethodDescCount;
     }
 
     if (sizeOfMethodDescs != 0)
@@ -8732,29 +8742,30 @@ MethodTableBuilder::HandleExplicitLayout(
     if (pMT->IsByRefLike())
         return CheckByRefLikeValueClassLayout(pMT, pFieldLayout);
 
-    // This method assumes there is a GC desc associated with the MethodTable.
-    _ASSERTE(pMT->ContainsPointers());
-
     // Build a layout of the value class (vc). Don't know the sizes of all the fields easily, but
     // do know (a) vc is already consistent so don't need to check it's overlaps and
     // (b) size and location of all objectrefs. So build it by setting all non-oref
-    // then fill in the orefs later
+    // then fill in the orefs later if present.
     UINT fieldSize = pMT->GetNumInstanceFieldBytes();
 
     CQuickBytes qb;
     bmtFieldLayoutTag *vcLayout = (bmtFieldLayoutTag*) qb.AllocThrows(fieldSize * sizeof(bmtFieldLayoutTag));
     memset((void*)vcLayout, nonoref, fieldSize);
 
-    // use pointer series to locate the orefs
-    CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
-    CGCDescSeries *pSeries = map->GetLowestSeries();
-
-    for (SIZE_T j = 0; j < map->GetNumSeries(); j++)
+    // If the type contains pointers fill it out from the GC data
+    if (pMT->ContainsPointers())
     {
-        CONSISTENCY_CHECK(pSeries <= map->GetHighestSeries());
+        // use pointer series to locate the orefs
+        CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
+        CGCDescSeries *pSeries = map->GetLowestSeries();
 
-        memset((void*)&vcLayout[pSeries->GetSeriesOffset() - OBJECT_SIZE], oref, pSeries->GetSeriesSize() + pMT->GetBaseSize());
-        pSeries++;
+        for (SIZE_T j = 0; j < map->GetNumSeries(); j++)
+        {
+            CONSISTENCY_CHECK(pSeries <= map->GetHighestSeries());
+
+            memset((void*)&vcLayout[pSeries->GetSeriesOffset() - OBJECT_SIZE], oref, pSeries->GetSeriesSize() + pMT->GetBaseSize());
+            pSeries++;
+        }
     }
 
     ExplicitClassTrust explicitClassTrust;

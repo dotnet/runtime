@@ -6,6 +6,7 @@
     <ArchiveTests Condition="'$(WasmBuildingForNestedPublish)' == 'true'">false</ArchiveTests>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
+    <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
 
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
@@ -19,7 +20,7 @@
       - for AOT library tests, we use WasmNativeStrip=false, so we already have symbols
     -->
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
-    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
+    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">true</WasmEmitSymbolMap>
 
     <!-- Run only if previous command succeeded -->
     <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
@@ -35,6 +36,7 @@
                                         ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv')) and
                                         '$(Scenario)' == 'WasmTestOnBrowser'">true</InstallChromeForTests>
     <_XHarnessTestsTimeout>00:30:00</_XHarnessTestsTimeout>
+    <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>
   </PropertyGroup>
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
@@ -138,10 +140,10 @@
     <BundleTestWasmAppDependsOn Condition="'$(IsBrowserWasmProject)' == 'true' and '$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
     <BundleTestWasmAppDependsOn Condition="'$(IsBrowserWasmProject)' == 'true' and '$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
 
-    <RunCommand>$(WasmAppHostDir)/WasmAppHost</RunCommand>
     <!-- Use BundleDir here, since WasmAppDir is set in a target, and `dotnet run` reads
          $(Run*) without running any targets -->
-    <RunArguments>--runtime-config $(BundleDir)/WasmTestRunner.runtimeconfig.json $(WasmHostArguments) $(StartArguments) $(WasmXHarnessMonoArgs) $(_AppArgs)</RunArguments>
+    <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(BundleDir), 'WasmTestRunner.runtimeconfig.json'))</_RuntimeConfigJsonPath>
+    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments) $(StartArguments) $(WasmXHarnessMonoArgs) $(_AppArgs)</RunArguments>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
@@ -338,22 +340,22 @@
   <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersionForWorkloadsTesting" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
     <ItemGroup>
       <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
-                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
                             Variant="latest"
                             Version="$(PackageVersionForWorkloadManifests)"
-                            VersionBand="$(SdkBandVersion)" />
+                            VersionBand="$(SdkBandVersionForWorkload)" />
 
       <WorkloadIdForTesting Include="wasm-tools-net7;wasm-experimental-net7"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
                             Variant="net7"
                             Version="$(PackageVersionForWorkloadManifests)"
-                            VersionBand="$(SdkBandVersion)" />
+                            VersionBand="$(SdkBandVersionForWorkload)" />
 
       <WorkloadIdForTesting Include="wasm-tools-net6"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
                             Variant="net6"
                             Version="$(PackageVersionForWorkloadManifests)"
-                            VersionBand="$(SdkBandVersion)"
+                            VersionBand="$(SdkBandVersionForWorkload)"
                             IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)" />
 
       <WorkloadCombinationsToInstall Include="latest"   Variants="latest" />

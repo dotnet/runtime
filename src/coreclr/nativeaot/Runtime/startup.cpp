@@ -16,7 +16,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "event.h"
-#include "RWLock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "RuntimeInstance.h"

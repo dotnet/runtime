@@ -1617,5 +1617,43 @@ namespace System.Tests
             AssertExtensions.Equal(-expectedResult, double.TanPi(-value), allowedVariance);
             AssertExtensions.Equal(+expectedResult, double.TanPi(+value), allowedVariance);
         }
+
+        [Theory]
+        [InlineData(double.NegativeInfinity,    double.NegativeInfinity,    0.5,    double.NegativeInfinity)]
+        [InlineData(double.NegativeInfinity,    double.NaN,                 0.5,    double.NaN)]
+        [InlineData(double.NegativeInfinity,    double.PositiveInfinity,    0.5,    double.NaN)]
+        [InlineData(double.NegativeInfinity,    0.0,                        0.5,    double.NegativeInfinity)]
+        [InlineData(double.NegativeInfinity,    1.0,                        0.5,    double.NegativeInfinity)]
+        [InlineData(double.NaN,                 double.NegativeInfinity,    0.5,    double.NaN)]
+        [InlineData(double.NaN,                 double.NaN,                 0.5,    double.NaN)]
+        [InlineData(double.NaN,                 double.PositiveInfinity,    0.5,    double.NaN)]
+        [InlineData(double.NaN,                 0.0,                        0.5,    double.NaN)]
+        [InlineData(double.NaN,                 1.0,                        0.5,    double.NaN)]
+        [InlineData(double.PositiveInfinity,    double.NegativeInfinity,    0.5,    double.NaN)]
+        [InlineData(double.PositiveInfinity,    double.NaN,                 0.5,    double.NaN)]
+        [InlineData(double.PositiveInfinity,    double.PositiveInfinity,    0.5,    double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity,    0.0,                        0.5,    double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity,    1.0,                        0.5,    double.PositiveInfinity)]
+        [InlineData(1.0,                        3.0,                        0.0,    1.0)]
+        [InlineData(1.0,                        3.0,                        0.5,    2.0)]
+        [InlineData(1.0,                        3.0,                        1.0,    3.0)]
+        [InlineData(1.0,                        3.0,                        2.0,    5.0)]
+        [InlineData(2.0,                        4.0,                        0.0,    2.0)]
+        [InlineData(2.0,                        4.0,                        0.5,    3.0)]
+        [InlineData(2.0,                        4.0,                        1.0,    4.0)]
+        [InlineData(2.0,                        4.0,                        2.0,    6.0)]
+        [InlineData(3.0,                        1.0,                        0.0,    3.0)]
+        [InlineData(3.0,                        1.0,                        0.5,    2.0)]
+        [InlineData(3.0,                        1.0,                        1.0,    1.0)]
+        [InlineData(3.0,                        1.0,                        2.0,   -1.0)]
+        [InlineData(4.0,                        2.0,                        0.0,    4.0)]
+        [InlineData(4.0,                        2.0,                        0.5,    3.0)]
+        [InlineData(4.0,                        2.0,                        1.0,    2.0)]
+        [InlineData(4.0,                        2.0,                        2.0,    0.0)]
+        public static void LerpTest(double value1, double value2, double amount, double expectedResult)
+        {
+            AssertExtensions.Equal(+expectedResult, double.Lerp(+value1, +value2, amount), 0);
+            AssertExtensions.Equal((expectedResult == 0.0) ? expectedResult : -expectedResult, double.Lerp(-value1, -value2, amount), 0);
+        }
     }
 }

@@ -320,7 +320,7 @@ namespace ILCompiler
                 }
             }
 
-            private DictionaryLayoutNode GetPrecomputedLayout(TypeSystemEntity methodOrType)
+            private PrecomputedDictionaryLayoutNode GetPrecomputedLayout(TypeSystemEntity methodOrType)
             {
                 if (!_layouts.TryGetValue(methodOrType, out IEnumerable<GenericLookupResult> layout))
                 {
@@ -442,7 +442,9 @@ namespace ILCompiler
                             }
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                            _canonConstructedTypes.Add(canonType.GetClosestDefType());
+
+                            if (!canonType.IsDefType || !((MetadataType)canonType).IsAbstract)
+                                _canonConstructedTypes.Add(canonType.GetClosestDefType());
 
                             TypeDesc baseType = canonType.BaseType;
                             bool added = true;

@@ -87,10 +87,8 @@ namespace System.Security.AccessControl
             {
                 privilegeLock.EnterReadLock();
 
-                if (luids.ContainsKey(privilege))
+                if (luids.TryGetValue(privilege, out luid))
                 {
-                    luid = luids[privilege];
-
                     privilegeLock.ExitReadLock();
                 }
                 else
@@ -134,9 +132,8 @@ namespace System.Security.AccessControl
 
                 if (privilegeLock.IsWriteLockHeld)
                 {
-                    if (!luids.ContainsKey(privilege))
+                    if (luids.TryAdd(privilege, luid))
                     {
-                        luids[privilege] = luid;
                         privileges[luid] = privilege;
                     }
 

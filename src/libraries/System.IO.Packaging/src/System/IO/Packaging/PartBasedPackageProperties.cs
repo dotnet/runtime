@@ -343,9 +343,9 @@ namespace System.IO.Packaging
         {
             _package.ThrowIfWriteOnly();
 
-            if (!_propertyDictionary.ContainsKey(propertyName))
+            if (!_propertyDictionary.TryGetValue(propertyName, out object? value))
                 return null;
-            return _propertyDictionary[propertyName];
+            return value;
         }
 
         // Shim function to adequately cast the result of GetPropertyValue.
