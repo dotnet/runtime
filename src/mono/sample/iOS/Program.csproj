@@ -6,7 +6,7 @@
     <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
     <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iossimulator</TargetOS>
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
-    <IOSDedup Condition="'$(UseLLVM)' != 'true' and '$(TargetOS)' == 'ios' and $(Configuration) == 'Debug'">true</IOSDedup>
+    <IOSDedup Condition="'$(TargetOS)' == 'ios'">true</IOSDedup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
