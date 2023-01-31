@@ -13,7 +13,7 @@ namespace System
         // by default it returns the value of System.Resources.UseSystemResourceKeys AppContext switch or false if not specified.
         // Native code generators can replace the value this returns based on user input at the time of native code generation.
         // The Linker is also capable of replacing the value of this method when the application is being trimmed.
-        private static bool UsingResourceKeys() => s_usingResourceKeys;
+        internal static bool UsingResourceKeys() => s_usingResourceKeys;
 
         internal static string GetResourceString(string resourceKey)
         {

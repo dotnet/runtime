@@ -26,9 +26,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet7)' == 'true' and '$(WasmNativeWorkload7)' == 'true' and '$(WasmNativeWorkload)' != 'false'">true</WasmNativeWorkloadAvailable>
-    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true' and '$(WasmNativeWorkload8)' == 'true' and '$(WasmNativeWorkload)' != 'false'">true</WasmNativeWorkloadAvailable>
-    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet6)' == 'true' and '$(WasmNativeWorkload)' == 'true'">true</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet7)' == 'true'">$(WasmNativeWorkload7)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true'">$(WasmNativeWorkload8)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet6)' == 'true'">$(WasmNativeWorkload)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(WasmNativeWorkloadAvailable)' == '' or '$(WasmNativeWorkload)' == 'false'">false</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkload>$(WasmNativeWorkloadAvailable)</WasmNativeWorkload>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

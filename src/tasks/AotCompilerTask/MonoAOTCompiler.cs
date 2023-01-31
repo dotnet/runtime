@@ -558,7 +558,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 Log.LogMessage(MessageImportance.Low, $"Copying {asmPath} to {newPath}");
             _fileWrites.Add(newPath);
 
-            ITaskItem newAsm = new TaskItem(newPath);
+            var newAsm = new TaskItem(newPath);
             asmItem.CopyMetadataTo(newAsm);
             newAsm.SetMetadata(s_originalFullPathMetadataName, asmPath);
             newAssemblies.Add(newAsm);
