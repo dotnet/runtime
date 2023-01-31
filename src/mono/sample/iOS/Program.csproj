@@ -93,14 +93,11 @@
         RuntimeComponents="$(RuntimeComponents)"
         EnableAppSandbox="$(EnableAppSandbox)"
         DiagnosticPorts="$(DiagnosticPorts)"
+        StripSymbolTable="$(StripDebugSymbols)"
         AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
-
-    <Exec Condition="'$(StripDebugSymbols)' == 'true'"
-          Command="dsymutil $(AppBundlePath)/$(AppName) -o $(PublishDir)/$(AppName).dSYM
-                   strip -no_code_signature_warning -i -s $(MSBuildThisFileDirectory)/symbols_to_keep.list $(AppBundlePath)/$(AppName)" />
 
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App:   $(AppBundlePath)"/>
