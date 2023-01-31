@@ -105,7 +105,7 @@ public class IcuShardingTests : BuildTestBase
             Assert.Contains($"Missing locale as planned: {loc}", runOutput);
     }
 
-    // [Theory]
+    [Theory]
     [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { false, RunHost.All })]
     [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { true, RunHost.All })]
     public void DefaultAvailableIcuShardsFromRuntimePack(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id) =>
