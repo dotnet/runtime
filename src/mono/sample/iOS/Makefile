@@ -6,7 +6,7 @@ AOT?=false
 TARGET?=iossimulator
 DEPLOY_AND_RUN?=true
 APP_SANDBOX?=false
-STRIP_DEBUG_SYMBOLS?=true // only used when measuring SOD via build-appbundle make target
+STRIP_DEBUG_SYMBOLS?=false // only used when measuring SOD via build-appbundle make target
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
 #If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
