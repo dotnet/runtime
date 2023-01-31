@@ -150,7 +150,7 @@ namespace Wasm.Build.Tests
                 call();
                 return 42;
 
-                [DllImport(""undefined"")] static extern void call();
+                [DllImport(""undefined_xyz"")] static extern void call();
             ";
 
             string projectPath = CreateWasmTemplateProject(id);

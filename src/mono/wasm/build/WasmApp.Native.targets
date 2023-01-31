@@ -467,8 +467,8 @@
     <Message Text="Linking with emcc with $(EmccLinkOptimizationFlag). This may take a while ..." Importance="High" />
     <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
     <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccDefaultLinkFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMSBuild="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="_EmccConsoleOutput" />
-      <Output TaskParameter="ExitCode" PropertyName="_EmccExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_EmccLinkStepConsoleOutput" />
+      <Output TaskParameter="ExitCode" PropertyName="_EmccLinkStepExitCode" />
     </Exec>
     <ItemGroup>
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
@@ -487,11 +487,11 @@
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(EmscriptenEnvVars)" />
 
-    <OnError ExecuteTargets="_WasmLinkDotNetOnError" />
+    <OnError ExecuteTargets="_OnError_WasmLinkDotNet_UndefinedSymbols"
+             Condition="'$(WasmAllowUndefinedSymbols)' != 'true' and '$(_EmccLinkStepExitCode)' != '0' and $([System.Text.RegularExpressions.Regex]::IsMatch($(_EmccLinkStepConsoleOutput), 'wasm-ld *: *error *:.*undefined symbol:'))" />
   </Target>
-  <Target Name="_WasmLinkDotNetOnError">
-    <Error Text="Use '-p:WasmAllowUndefinedSymbols=true' to allow undefined symbols" 
-           Condition="'$(WasmAllowUndefinedSymbols)' != 'true' and '$(_EmccExitCode)' != '0' and $(_EmccConsoleOutput.Contains('wasm-ld: error:')) and $(_EmccConsoleOutput.Contains('undefined symbol'))" />
+  <Target Name="_OnError_WasmLinkDotNet_UndefinedSymbols">
+    <Error Text="Use '-p:WasmAllowUndefinedSymbols=true' to allow undefined symbols" />
   </Target>
 
   <Target Name="_CompleteWasmBuildNative">
