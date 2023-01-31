@@ -3777,7 +3777,9 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                     else
                     {
                         // We're producing a scalar result, so we only need the result in element 0
-                        idx->AsIntCon()->gtIconVal &= 0xF1;
+                        //
+                        // However, doing that would break/limit CSE and requires a partial write so
+                        // it's better to just broadcast the value to the entire vector
 
                         tmp3 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_SSE41_DotProduct,
                                                               simdBaseJitType, simdSize);
@@ -3829,7 +3831,9 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                     else
                     {
                         // We're producing a scalar result, so we only need the result in element 0
-                        idx->AsIntCon()->gtIconVal &= 0x31;
+                        //
+                        // However, doing that would break/limit CSE and requires a partial write so
+                        // it's better to just broadcast the value to the entire vector
 
                         tmp3 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_SSE41_DotProduct,
                                                               simdBaseJitType, simdSize);
