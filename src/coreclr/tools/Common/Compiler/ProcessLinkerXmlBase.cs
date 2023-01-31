@@ -55,6 +55,7 @@ namespace ILCompiler
         private readonly XPathNavigator _document;
         private readonly Logger _logger;
         protected readonly ModuleDesc? _owningModule;
+        protected readonly bool _globalAttributeRemoval;
         private readonly IReadOnlyDictionary<string, bool> _featureSwitchValues;
         protected readonly TypeSystemContext _context;
 
@@ -70,10 +71,11 @@ namespace ILCompiler
             _featureSwitchValues = featureSwitchValues;
         }
 
-        protected ProcessLinkerXmlBase(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        protected ProcessLinkerXmlBase(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues, bool globalAttributeRemoval = false)
             : this(logger, context, documentStream, xmlDocumentLocation, featureSwitchValues)
         {
             _owningModule = resourceAssembly;
+            _globalAttributeRemoval = globalAttributeRemoval;
         }
 
         protected virtual bool ShouldProcessElement(XPathNavigator nav) => FeatureSettings.ShouldProcessElement(nav, _featureSwitchValues);
@@ -160,10 +162,14 @@ namespace ILCompiler
                 if (!ShouldProcessElement(assemblyNav))
                     continue;
 
-                if (processAllAssemblies)
+                if (processAllAssemblies && _globalAttributeRemoval)
                 {
                     Debug.Assert(_owningModule != null);
                     ProcessAssembly(_owningModule, assemblyNav, warnOnUnresolvedTypes: false);
+                }
+                else if (processAllAssemblies ^ _globalAttributeRemoval)
+                {
+                    continue;
                 }
                 else
                 {

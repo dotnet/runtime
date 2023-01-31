@@ -1176,21 +1176,28 @@ namespace ILCompiler
         {
             private readonly HashSet<TypeDesc> _removedAttributes = new();
             private readonly ModuleDesc _resource;
-            private readonly bool _globalAttributeRemoval;
 
             public LinkAttributesReader(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues, bool globalAttributeRemoval)
-                : base(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
+                : base(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues, globalAttributeRemoval)
             {
                 _resource = resourceAssembly;
-                _globalAttributeRemoval = globalAttributeRemoval;
             }
+
+            private static bool IsRemoveAttributeInstances(string attributeName) => attributeName == "RemoveAttributeInstances" || attributeName == "RemoveAttributeInstancesAttribute";
 
             private void ProcessAttribute(TypeDesc type, XPathNavigator nav)
             {
                 string internalValue = GetAttribute(nav, "internal");
-                if (internalValue == "RemoveAttributeInstances" && nav.IsEmptyElement)
+                if (!string.IsNullOrEmpty(internalValue))
                 {
-                    _removedAttributes.Add(type);
+                    if (!IsRemoveAttributeInstances(internalValue) || !nav.IsEmptyElement)
+                    {
+                        LogWarning(nav, DiagnosticId.UnrecognizedInternalAttribute, internalValue);
+                    }
+                    if (IsRemoveAttributeInstances(internalValue) && nav.IsEmptyElement)
+                    {
+                        _removedAttributes.Add(type);
+                    }
                 }
             }
 
