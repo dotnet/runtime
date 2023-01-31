@@ -512,7 +512,7 @@ if [[ "$os" == "wasi" ]]; then
     arch=wasm
 fi
 
-if [[ "$TreatWarningsAsErrors" == "false" ]]; then
+if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError 0"
 fi
 
