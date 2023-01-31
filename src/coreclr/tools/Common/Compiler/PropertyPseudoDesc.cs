@@ -82,11 +82,12 @@ namespace ILCompiler
 
         public override TypeSystemContext Context => _type.Context;
 
-        #region Do not use these
         public override bool Equals(object obj) => obj is not PropertyPseudoDesc property ? false : this == property;
+
         public override int GetHashCode() => _type.GetHashCode() ^ _handle.GetHashCode();
+
         public static bool operator ==(PropertyPseudoDesc a, PropertyPseudoDesc b) => a._type == b._type && a._handle == b._handle;
+
         public static bool operator !=(PropertyPseudoDesc a, PropertyPseudoDesc b) => !(a == b);
-        #endregion
     }
 }

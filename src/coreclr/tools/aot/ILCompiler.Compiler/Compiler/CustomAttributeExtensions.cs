@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Reflection.Metadata;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -12,40 +10,6 @@ namespace ILCompiler
 {
     public static class CustomAttributeExtensions
     {
-        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributesForEntity(this TypeSystemEntity entity, string attributeNamespace, string attributeName)
-        {
-            switch (entity)
-            {
-                case MethodDesc method:
-                    var ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
-                    if (ecmaMethod == null)
-                        return Enumerable.Empty<CustomAttributeValue<TypeDesc>>();
-                    return ecmaMethod.GetDecodedCustomAttributes(attributeNamespace, attributeName);
-                case MetadataType type:
-                    var ecmaType = type.GetTypeDefinition() as EcmaType;
-                    if (ecmaType == null)
-                        return Enumerable.Empty<CustomAttributeValue<TypeDesc>>();
-                    return ecmaType.GetDecodedCustomAttributes(attributeNamespace, attributeName);
-                case FieldDesc field:
-                    var ecmaField = field.GetTypicalFieldDefinition() as EcmaField;
-                    if (ecmaField == null)
-                        return Enumerable.Empty<CustomAttributeValue<TypeDesc>>();
-                    return ecmaField.GetDecodedCustomAttributes(attributeNamespace, attributeName);
-                case PropertyPseudoDesc property:
-                    return property.GetDecodedCustomAttributes(attributeNamespace, attributeName);
-                case EventPseudoDesc @event:
-                    return @event.GetDecodedCustomAttributes(attributeNamespace, attributeName);
-                case ModuleDesc module:
-                    if (module is not EcmaAssembly ecmaAssembly)
-                        return Enumerable.Empty<CustomAttributeValue<TypeDesc>>();
-                    return ecmaAssembly.GetDecodedCustomAttributesForModule(attributeNamespace, attributeName)
-                        .Concat(ecmaAssembly.GetDecodedCustomAttributes(attributeNamespace, attributeName));
-                default:
-                    Debug.Fail("Trying to operate with unsupported TypeSystemEntity " + entity.GetType().ToString());
-                    return Enumerable.Empty<CustomAttributeValue<TypeDesc>>();
-            }
-        }
-
         public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this PropertyPseudoDesc prop, string attributeNamespace, string attributeName)
         {
             var ecmaType = prop.OwningType as EcmaType;

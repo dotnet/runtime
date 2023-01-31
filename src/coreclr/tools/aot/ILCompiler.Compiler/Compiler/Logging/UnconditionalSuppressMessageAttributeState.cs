@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Metadata;
 
@@ -42,36 +44,181 @@ namespace ILCompiler.Logging
             }
         }
 
-        private readonly Dictionary<TypeSystemEntity, Dictionary<int, Suppression>> _suppressions;
-        private HashSet<IAssemblyDesc> InitializedAssemblies { get; }
+        private sealed class EntitySuppressions
+        {
+            public readonly TypeSystemEntity Entity;
+            public readonly ImmutableDictionary<int, Suppression> Suppressions;
+
+            public EntitySuppressions(TypeSystemEntity entity, ImmutableDictionary<int, Suppression> suppressions)
+            {
+                Entity = entity;
+                Suppressions = suppressions;
+            }
+        }
+
+        private sealed class AssemblySuppressions : LockFreeReaderHashtable<TypeSystemEntity, EntitySuppressions>
+        {
+            public readonly EcmaAssembly Assembly;
+            private readonly Logger _logger;
+
+            public AssemblySuppressions(EcmaAssembly assembly, Logger logger)
+            {
+                Assembly = assembly;
+                _logger = logger;
+            }
+
+            protected override bool CompareKeyToValue(TypeSystemEntity key, EntitySuppressions value) => key == value.Entity;
+            protected override bool CompareValueToValue(EntitySuppressions value1, EntitySuppressions value2) => value1.Entity == value2.Entity;
+            protected override int GetKeyHashCode(TypeSystemEntity key) => key.GetHashCode();
+            protected override int GetValueHashCode(EntitySuppressions value) => value.Entity.GetHashCode();
+            protected override EntitySuppressions CreateValueFromKey(TypeSystemEntity key)
+            {
+                Debug.Fail("Do NOT call GetOrCreateValue, instead call TryGetSuppressions");
+                return new EntitySuppressions(key, null);
+            }
+
+            public bool TryGetSuppressions(TypeSystemEntity key, [NotNullWhen(true)] out IReadOnlyDictionary<int, Suppression>? suppressions)
+            {
+                if (TryGetValue(key, out var entitySuppressions))
+                {
+                    suppressions = entitySuppressions.Suppressions;
+                    return true;
+                }
+
+                suppressions = null;
+
+                // Assumes that all module/assembly level suppressions are already applied along with suppressions
+                // for the members they target. So we can only get here if the entity is not targeted by assembly/module
+                // level suppressions.
+
+                if (key is ModuleDesc)
+                {
+                    // If there are no module level suppressions already initialized, then there are none.
+                    return false;
+                }
+
+                IEnumerable<Suppression> decodedSuppressions = DecodeSuppressions(key);
+                ImmutableDictionary<int, Suppression>.Builder? builder = null;
+                foreach (Suppression suppression in decodedSuppressions)
+                {
+                    builder ??= ImmutableDictionary.CreateBuilder<int, Suppression>();
+                    AddSuppressionToBuilder(builder, suppression, _logger);
+                }
+
+                if (builder == null)
+                    return false;
+
+                entitySuppressions = new EntitySuppressions(key, builder.ToImmutable());
+                if (!TryAdd(entitySuppressions))
+                {
+                    // The value should be there (TryAdd failed above), so this should never call CreateValueFromKey
+                    entitySuppressions = GetOrCreateValue(key);
+                }
+
+                suppressions = entitySuppressions.Suppressions;
+                return true;
+            }
+        }
+
+        private sealed class SuppressionsHashTable : LockFreeReaderHashtable<EcmaAssembly, AssemblySuppressions>
+        {
+            private readonly Logger _logger;
+
+            public SuppressionsHashTable(Logger logger)
+            {
+                _logger = logger;
+            }
+
+            protected override bool CompareKeyToValue(EcmaAssembly key, AssemblySuppressions value) => key == value.Assembly;
+            protected override bool CompareValueToValue(AssemblySuppressions value1, AssemblySuppressions value2) => value1.Assembly == value2.Assembly;
+            protected override int GetKeyHashCode(EcmaAssembly key) => key.GetHashCode();
+            protected override int GetValueHashCode(AssemblySuppressions value) => value.Assembly.GetHashCode();
+
+            protected override AssemblySuppressions CreateValueFromKey(EcmaAssembly key)
+            {
+                Debug.Fail("Do NOT call GetOrCreateValue, instead call GetSuppressions");
+                return new AssemblySuppressions(key, _logger);
+            }
+
+            /// <summary>
+            /// Can't use GetOrCreateValue because of possible recursion where trying to populate the warnings
+            /// can itself produce warnings.
+            /// </summary>
+            public AssemblySuppressions GetSuppressions(EcmaAssembly key)
+            {
+                if (TryGetValue(key, out AssemblySuppressions assemblySuppressions))
+                    return assemblySuppressions;
+
+                // We have to populate all assembly/module level suppressions. But since those target some entities
+                // we also have to fully populate suppressions for those entities as suppressions per entity are
+                // immutable (we can only construct them once per entity)
+
+                assemblySuppressions = new(key, _logger);
+                List<(DiagnosticId, string?[])> warnings = new();
+
+                foreach (var entityGlobalSuppressions in DecodeAssemblyAndModuleSuppressions(key, warnings).GroupBy(suppression => suppression.Provider))
+                {
+                    ImmutableDictionary<int, Suppression>.Builder? builder = null;
+                    foreach (var suppression in entityGlobalSuppressions)
+                    {
+                        builder ??= ImmutableDictionary.CreateBuilder<int, Suppression>();
+                        AddSuppressionToBuilder(builder, suppression, _logger);
+                    }
+
+                    // Now add the suppressions on the entity itself
+                    if (entityGlobalSuppressions.Key is not EcmaModule)
+                    {
+                        foreach (var suppression in DecodeSuppressions(entityGlobalSuppressions.Key))
+                        {
+                            builder ??= ImmutableDictionary.CreateBuilder<int, Suppression>();
+                            AddSuppressionToBuilder(builder, suppression, _logger);
+                        }
+                    }
+
+                    if (builder is not null)
+                    {
+                        // This should always succeed - we didn't return the assembly suppressions to anyone so no races
+                        assemblySuppressions.TryAdd(new EntitySuppressions(entityGlobalSuppressions.Key, builder.ToImmutable()));
+                    }
+                }
+
+                if (TryAdd(assemblySuppressions))
+                {
+                    // It's OK to log warnings now because the suppressions for this assembly are already in the hashtable
+                    // so when this will perform the lookup, it will find them there.
+                    foreach (var warning in warnings)
+                    {
+                        _logger.LogWarning(key, warning.Item1, warning.Item2);
+                    }
+
+                    return assemblySuppressions;
+                }
+                else
+                {
+                    // The value should be there (TryAdd failed above), so this should never call CreateValueFromKey
+                    return GetOrCreateValue(key);
+                }
+            }
+        }
+
+        private static void AddSuppressionToBuilder(ImmutableDictionary<int, Suppression>.Builder builder, Suppression suppression, Logger logger)
+        {
+            if (!builder.TryAdd(suppression.SuppressMessageInfo.Id, suppression))
+            {
+                string? elementName = suppression.Provider.GetDisplayName() ?? suppression.Provider.ToString();
+                logger.LogMessage($"Element '{elementName}' has more than one unconditional suppression. Note that only one is used.");
+            }
+        }
+
+        private readonly SuppressionsHashTable _assemblySuppressions;
         private readonly CompilerGeneratedState? _compilerGeneratedState;
         private readonly Logger _logger;
 
         public UnconditionalSuppressMessageAttributeState(CompilerGeneratedState? compilerGeneratedState, Logger logger)
         {
-            _suppressions = new Dictionary<TypeSystemEntity, Dictionary<int, Suppression>>();
-            InitializedAssemblies = new HashSet<IAssemblyDesc>();
+            _assemblySuppressions = new SuppressionsHashTable(logger);
             _compilerGeneratedState = compilerGeneratedState;
             _logger = logger;
-        }
-
-        private void AddSuppression(Suppression suppression)
-        {
-            var used = false;
-            if (!_suppressions.TryGetValue(suppression.Provider, out var suppressions))
-            {
-                suppressions = new Dictionary<int, Suppression>();
-                _suppressions.Add(suppression.Provider, suppressions);
-            }
-            else if (suppressions.TryGetValue(suppression.SuppressMessageInfo.Id, out Suppression? value))
-            {
-                used = value.Used;
-                string? elementName = suppression.Provider.GetDisplayName() ?? suppression.Provider.ToString();
-                _logger.LogMessage($"Element '{elementName}' has more than one unconditional suppression. Note that only the last one is used.");
-            }
-
-            suppression.Used = used;
-            suppressions[suppression.SuppressMessageInfo.Id] = suppression;
         }
 
         public bool IsSuppressed(int id, MessageOrigin warningOrigin)
@@ -100,23 +247,6 @@ namespace ILCompiler.Logging
             }
 
             return false;
-        }
-
-        public void GatherSuppressions(TypeSystemEntity provider)
-        {
-            TryGetSuppressionsForProvider(provider, out _);
-        }
-
-        public IEnumerable<Suppression> GetUnusedSuppressions()
-        {
-            foreach (var (provider, suppressions) in _suppressions)
-            {
-                foreach (var (_, suppression) in suppressions)
-                {
-                    if (!suppression.Used)
-                        yield return suppression;
-                }
-            }
         }
 
         private bool IsSuppressed(int id, TypeSystemEntity? warningOrigin)
@@ -174,47 +304,17 @@ namespace ILCompiler.Logging
             return false;
         }
 
-        private bool TryGetSuppressionsForProvider(TypeSystemEntity? provider, out Dictionary<int, Suppression>? suppressions)
+        private bool TryGetSuppressionsForProvider(TypeSystemEntity? provider, out IReadOnlyDictionary<int, Suppression>? suppressions)
         {
             suppressions = null;
             if (provider == null)
                 return false;
 
-            if (_suppressions.TryGetValue(provider, out suppressions))
-                return true;
+            if (GetModuleFromProvider(provider) is not EcmaAssembly assembly)
+                return false;
 
-            // Populate the cache with suppressions for this member. We need to look for suppressions on the
-            // member itself, and on the assembly/module.
-
-            var membersToScan = new HashSet<TypeSystemEntity> { { provider } };
-
-            // Gather assembly-level suppressions if we haven't already. To ensure that we always cache
-            // complete information for a member, we will also scan for attributes on any other members
-            // targeted by the assembly-level suppressions.
-            if (GetModuleFromProvider(provider) is EcmaModule module)
-            {
-                var assembly = module.Assembly;
-                if (InitializedAssemblies.Add(assembly))
-                {
-                    foreach (var suppression in DecodeAssemblyAndModuleSuppressions(module))
-                    {
-                        AddSuppression(suppression);
-                        membersToScan.Add(suppression.Provider);
-                    }
-                }
-            }
-
-            // Populate the cache for this member, and for any members that were targeted by assembly-level
-            // suppressions to make sure the cached info is complete.
-            foreach (var member in membersToScan)
-            {
-                if (member is ModuleDesc)
-                    continue;
-                foreach (var suppression in DecodeSuppressions(member))
-                    AddSuppression(suppression);
-            }
-
-            return _suppressions.TryGetValue(provider, out suppressions);
+            var assemblySuppressions = _assemblySuppressions.GetSuppressions(assembly);
+            return assemblySuppressions.TryGetSuppressions(provider, out suppressions);
         }
 
         private static bool TryDecodeSuppressMessageAttributeData(CustomAttributeValue<TypeDesc> attribute, out SuppressMessageInfo info)
@@ -233,7 +333,7 @@ namespace ILCompiler.Logging
             // We only support warnings with code pattern IL####.
             if (!(attribute.FixedArguments[1].Value is string warningId) ||
                 warningId.Length < 6 ||
-                !warningId.StartsWith("IL") ||
+                !warningId.StartsWith("IL", StringComparison.Ordinal) ||
                 !int.TryParse(warningId.AsSpan(2, 4), out info.Id))
             {
                 return false;
@@ -278,7 +378,7 @@ namespace ILCompiler.Logging
         {
             Debug.Assert(provider is not ModuleDesc);
 
-            foreach (var ca in provider.GetDecodedCustomAttributesForEntity(UnconditionalSuppressMessageAttributeNamespace, UnconditionalSuppressMessageAttributeName))
+            foreach (CustomAttributeValue<TypeDesc> ca in GetDecodedCustomAttributes(provider, UnconditionalSuppressMessageAttributeNamespace, UnconditionalSuppressMessageAttributeName))
             {
                 if (!TryDecodeSuppressMessageAttributeData(ca, out var info))
                     continue;
@@ -287,36 +387,36 @@ namespace ILCompiler.Logging
             }
         }
 
-        private IEnumerable<Suppression> DecodeAssemblyAndModuleSuppressions(ModuleDesc module)
+        private static IEnumerable<Suppression> DecodeAssemblyAndModuleSuppressions(EcmaAssembly ecmaAssembly, List<(DiagnosticId, string?[])> warnings)
         {
-            if (module is not EcmaAssembly ecmaAssembly)
-                return Enumerable.Empty<Suppression>();
-
             return DecodeGlobalSuppressions(
                 ecmaAssembly,
-                ecmaAssembly.GetDecodedCustomAttributesForEntity(UnconditionalSuppressMessageAttributeNamespace, UnconditionalSuppressMessageAttributeName),
-                module);
+                ecmaAssembly.GetDecodedCustomAttributes(UnconditionalSuppressMessageAttributeNamespace, UnconditionalSuppressMessageAttributeName)
+                    .Concat(ecmaAssembly.GetDecodedCustomAttributesForModule(UnconditionalSuppressMessageAttributeNamespace, UnconditionalSuppressMessageAttributeName)),
+                warnings);
         }
 
-        private IEnumerable<Suppression> DecodeGlobalSuppressions(EcmaAssembly module, IEnumerable<CustomAttributeValue<TypeDesc>> attributes, TypeSystemEntity provider)
+        private static IEnumerable<Suppression> DecodeGlobalSuppressions(
+            EcmaAssembly module,
+            IEnumerable<CustomAttributeValue<TypeDesc>> attributes,
+            List<(DiagnosticId, string?[])> warnings)
         {
             foreach (CustomAttributeValue<TypeDesc> instance in attributes)
             {
-                SuppressMessageInfo info;
-                if (!TryDecodeSuppressMessageAttributeData(instance, out info))
+                if (!TryDecodeSuppressMessageAttributeData(instance, out SuppressMessageInfo info))
                     continue;
 
                 var scope = info.Scope?.ToLowerInvariant();
                 if (info.Target == null && (scope == "module" || scope == null))
                 {
-                    yield return new Suppression(info, originAttribute: instance, provider);
+                    yield return new Suppression(info, originAttribute: instance, module);
                     continue;
                 }
 
                 switch (scope)
                 {
                     case "module":
-                        yield return new Suppression(info, originAttribute: instance, provider);
+                        yield return new Suppression(info, originAttribute: instance, module);
                         break;
 
                     case "type":
@@ -329,9 +429,35 @@ namespace ILCompiler.Logging
 
                         break;
                     default:
-                        _logger.LogWarning(module, DiagnosticId.InvalidScopeInUnconditionalSuppressMessage, info.Scope ?? "", module.GetName().Name, info.Target ?? "");
+                        warnings.Add((DiagnosticId.InvalidScopeInUnconditionalSuppressMessage, new string?[] { info.Scope ?? "", module.GetName().Name, info.Target ?? "" }));
                         break;
                 }
+            }
+        }
+
+        private static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(TypeSystemEntity entity, string attributeNamespace, string attributeName)
+        {
+            switch (entity)
+            {
+                case MethodDesc method:
+                    if (method.GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod)
+                        return Enumerable.Empty<CustomAttributeValue<TypeDesc>>();
+                    return ecmaMethod.GetDecodedCustomAttributes(attributeNamespace, attributeName);
+                case MetadataType type:
+                    if (type.GetTypeDefinition() is not EcmaType ecmaType)
+                        return Enumerable.Empty<CustomAttributeValue<TypeDesc>>();
+                    return ecmaType.GetDecodedCustomAttributes(attributeNamespace, attributeName);
+                case FieldDesc field:
+                    if (field.GetTypicalFieldDefinition() is not EcmaField ecmaField)
+                        return Enumerable.Empty<CustomAttributeValue<TypeDesc>>();
+                    return ecmaField.GetDecodedCustomAttributes(attributeNamespace, attributeName);
+                case PropertyPseudoDesc property:
+                    return property.GetDecodedCustomAttributes(attributeNamespace, attributeName);
+                case EventPseudoDesc @event:
+                    return @event.GetDecodedCustomAttributes(attributeNamespace, attributeName);
+                default:
+                    Debug.Fail("Trying to operate with unsupported TypeSystemEntity " + entity.GetType().ToString());
+                    return Enumerable.Empty<CustomAttributeValue<TypeDesc>>();
             }
         }
     }
