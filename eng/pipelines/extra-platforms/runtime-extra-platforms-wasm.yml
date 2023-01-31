@@ -226,7 +226,6 @@ jobs:
       platforms:
         - wasi_wasm
       extraBuildArgs: /p:EnableAggressiveTrimming=true
-      #shouldRunSmokeOnly: true
-      alwaysRun: true
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
         - normal
