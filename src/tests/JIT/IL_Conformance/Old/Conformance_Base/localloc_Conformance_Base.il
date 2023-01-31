@@ -108,4 +108,4 @@ FAIL:
 
 }
 }
-.assembly 'localloc'{}
+.assembly 'localloc_Conformance_Base'{}

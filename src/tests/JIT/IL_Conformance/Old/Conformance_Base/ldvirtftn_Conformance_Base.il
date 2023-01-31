@@ -22,4 +22,4 @@ FAIL:
     ret
 }
 }
-.assembly 'ldvirtftn'{}
+.assembly 'ldvirtftn_Conformance_Base'{}

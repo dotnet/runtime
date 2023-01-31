@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly 'nop'{}
+.assembly 'nop_Conformance'{}
 
 .class public		_nop {
 

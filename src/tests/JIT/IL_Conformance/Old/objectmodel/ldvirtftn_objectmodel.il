@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly 'ldvirtftn'{
+.assembly 'ldvirtftn_objectmodel'{
 }
 
 .method public static int32 main() {
