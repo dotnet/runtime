@@ -9,7 +9,6 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <SkipSigning>true</SkipSigning>
   </PropertyGroup>
 
   <ItemGroup>
