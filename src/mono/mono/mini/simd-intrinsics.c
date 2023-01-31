@@ -1123,8 +1123,22 @@ is_create_from_half_vectors_overload (MonoMethodSignature *fsig)
 static gboolean
 is_element_type_primitive (MonoType *vector_type)
 {
-	MonoType *element_type = get_vector_t_elem_type (vector_type);
-	return MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type);
+	if (vector_type->type == MONO_TYPE_GENERICINST)
+	{
+		MonoType *element_type = get_vector_t_elem_type (vector_type);
+		return MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type);
+	}
+	else
+	{
+		MonoClass *klass = mono_class_from_mono_type_internal (vector_type);
+		g_assert (
+			!strcmp (m_class_get_name (klass), "Plane") ||
+			!strcmp (m_class_get_name (klass), "Quaternion") ||
+			!strcmp (m_class_get_name (klass), "Vector2") ||
+			!strcmp (m_class_get_name (klass), "Vector3") ||
+			!strcmp (m_class_get_name (klass), "Vector4"));
+		return TRUE;
+	}
 }
 
 static MonoInst*
@@ -1414,17 +1428,34 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_GetElement: {
+		int esize;
+		MonoType *etype;
+		
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
+		
 		int size = mono_class_value_size (arg_class, NULL);
-		int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+		
+		if (fsig->params [0]->type == MONO_TYPE_GENERICINST)
+		{
+			etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
+			esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+		}
+		else
+		{
+			// This exists to handle the static extension methods for Vector2/3/4 and Quaterion
+			// which live on System.Numerics.Vector
+
+			etype = m_class_get_byval_arg (mono_defaults.single_class);
+			esize = 4;
+		}
+
 		int elems = size / esize;
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		int extract_op = type_to_xextract_op (arg0_type);
-		return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
+		int extract_op = type_to_xextract_op (etype->type);
+		return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, etype->type, fsig, args);
 	}
 	case SN_GetLower:
 	case SN_GetUpper: {
@@ -1959,16 +1990,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		int opcode = type_to_xextract_op (ty);
 		int src1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
 		ins = emit_simd_ins (cfg, klass, opcode, src1, args [1]->dreg);
-		ins->inst_c1 = ty;
-		return ins;
-	}
-	case SN_GetElement: {
-		g_assert (!fsig->hasthis && fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && fsig->params [1]->type == MONO_TYPE_I4);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
-		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		MonoTypeEnum ty = etype->type;
-		int opcode = type_to_xextract_op (ty);
-		ins = emit_simd_ins (cfg, klass, opcode, args [0]->dreg, args [1]->dreg);
 		ins->inst_c1 = ty;
 		return ins;
 	}
