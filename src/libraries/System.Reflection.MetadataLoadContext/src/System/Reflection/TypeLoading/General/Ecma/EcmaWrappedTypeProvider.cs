@@ -16,7 +16,7 @@ namespace System.Reflection.TypeLoading.Ecma
     internal abstract class EcmaWrappedTypeProvider : ISignatureTypeProvider<RoType, TypeContext>
     {
         private readonly EcmaModule _module;
-        private readonly ISignatureTypeProvider<RoType, TypeContext> _typeProvider;
+        private readonly EcmaModule _typeProvider;
 
         protected EcmaWrappedTypeProvider(EcmaModule module)
         {

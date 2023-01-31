@@ -247,7 +247,7 @@ namespace System.Reflection.Emit
             num_types++;
         }
 
-        private TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
+        private RuntimeTypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
             ArgumentNullException.ThrowIfNull(name, "fullname");
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);

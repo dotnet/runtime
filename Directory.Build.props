@@ -344,6 +344,11 @@
     <IsShipping Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsPublishedAppTestProject)' == 'true'">false</IsShipping>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+    <EditorConfigFiles Remove="$(RepositoryEngineeringDir)CodeAnalysis.src.globalconfig" />
+    <EditorConfigFiles Include="$(RepositoryEngineeringDir)CodeAnalysis.test.globalconfig" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- Treat as a generator project if either the parent or the parent parent directory is named gen. -->
     <IsGeneratorProject Condition="$([System.IO.Path]::GetFileName('$(MSBuildProjectDirectory)')) == 'gen' or

@@ -137,7 +137,7 @@ namespace ILCompiler
             if (reflectedFieldNode != null)
             {
                 FieldDesc field = reflectedFieldNode.Field;
-                TypeDesc fieldOwningType = field.OwningType;
+                DefType fieldOwningType = field.OwningType;
 
                 // Filter out to those that make sense to have in the mapping tables
                 if (!fieldOwningType.IsGenericDefinition
@@ -734,7 +734,7 @@ namespace ILCompiler
                 FieldDesc fieldToReport = writtenField;
 
                 // The field could be on something odd like Foo<__Canon, object>. Normalize to Foo<__Canon, __Canon>.
-                TypeDesc fieldOwningType = writtenField.OwningType;
+                DefType fieldOwningType = writtenField.OwningType;
                 if (fieldOwningType.IsCanonicalSubtype(CanonicalFormKind.Specific))
                 {
                     TypeDesc fieldOwningTypeNormalized = fieldOwningType.NormalizeInstantiation();
