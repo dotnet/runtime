@@ -94,15 +94,11 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t 
     memset(pOSContext, 0, cbOSContext);
     CONTEXT* pContext = (CONTEXT *)pOSContext;
 
-#ifndef HOST_WASM
-    if (TryPopulateControlSegmentRegisters(pContext))
-    {
-        pContext->ContextFlags |= CONTEXT_CONTROL;
-    }
-    pContext->ContextFlags |= CONTEXT_INTEGER;
-#endif
+    // Fill in CONTEXT_CONTROL registers that were not captured in PAL_LIMITED_CONTEXT.
+    PopulateControlSegmentRegisters(pContext);
 
 #if defined(UNIX_AMD64_ABI)
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
     pContext->Rip = pPalContext->IP;
     pContext->Rsp = pPalContext->Rsp;
     pContext->Rbp = pPalContext->Rbp;
@@ -114,6 +110,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t 
     pContext->R14 = pPalContext->R14;
     pContext->R15 = pPalContext->R15;
 #elif defined(HOST_AMD64)
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
     pContext->Rip = pPalContext->IP;
     pContext->Rsp = pPalContext->Rsp;
     pContext->Rbp = pPalContext->Rbp;
@@ -126,6 +123,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t 
     pContext->R14 = pPalContext->R14;
     pContext->R15 = pPalContext->R15;
 #elif defined(HOST_X86)
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
     pContext->Eip = pPalContext->IP;
     pContext->Esp = pPalContext->Rsp;
     pContext->Ebp = pPalContext->Rbp;
@@ -134,6 +132,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t 
     pContext->Eax = pPalContext->Rax;
     pContext->Ebx = pPalContext->Rbx;
 #elif defined(HOST_ARM)
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
     pContext->R0  = pPalContext->R0;
     pContext->R4  = pPalContext->R4;
     pContext->R5  = pPalContext->R5;
@@ -147,6 +146,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t 
     pContext->Lr  = pPalContext->LR;
     pContext->Pc  = pPalContext->IP;
 #elif defined(HOST_ARM64)
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
     pContext->X0 = pPalContext->X0;
     pContext->X1 = pPalContext->X1;
     // TODO: Copy registers X2-X7 when we start supporting HVA's

@@ -446,7 +446,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
     RtlRestoreContext(pCtx, NULL);
 }
 
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI TryPopulateControlSegmentRegisters(CONTEXT* pContext)
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext)
 {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     CONTEXT ctx;
@@ -456,8 +456,6 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI TryPopulateControlSegmentRegisters(CONTEXT
     pContext->SegCs = ctx.SegCs;
     pContext->SegSs = ctx.SegSs;
 #endif //defined(TARGET_X86) || defined(TARGET_AMD64)
-
-    return true;
 }
 
 static PalHijackCallback g_pHijackCallback;

@@ -505,6 +505,8 @@ typedef enum _EXCEPTION_DISPOSITION {
 //#endif // !DACCESS_COMPILE
 #endif // !_INC_WINDOWS
 
+
+
 #ifndef DACCESS_COMPILE
 #ifndef _INC_WINDOWS
 
@@ -636,10 +638,7 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx);
 // For platforms that have segment registers in the CONTEXT_CONTROL set that
 // are not saved in PAL_LIMITED_CONTEXT, this captures them from the current
 // thread and saves them in `pContext`.
-// This function returns true if the current platform has no such registers or
-// if the registers are successfully saved in `pContext`.
-// Other false is returned.
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI TryPopulateControlSegmentRegisters(CONTEXT* pContext);
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext);
 
 REDHAWK_PALIMPORT int32_t REDHAWK_PALAPI PalGetProcessCpuCount();
 
