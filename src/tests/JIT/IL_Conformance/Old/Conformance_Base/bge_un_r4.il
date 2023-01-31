@@ -14,6 +14,7 @@
 #define POS_INF    "float32(0x7F800000)"
 #define NAN        "float32(0x7FC00000)"
 
+.class public auto ansi bge_un_r4 {
 .method public static	int32 main() {
 .entrypoint
 .maxstack 2
@@ -1084,5 +1085,6 @@ FAIL:
 	ldc.i4		0x0
 	ret
 
+}
 }
 .assembly bge_un_r4{}

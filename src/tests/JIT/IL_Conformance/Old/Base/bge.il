@@ -5,6 +5,7 @@
 
 .assembly 'bge'{}
 
+.class public auto ansi _bge {
 .method public	static int32 main() {
 .locals		(class [mscorlib]System.String)
 .entrypoint
@@ -76,5 +77,6 @@ fail:
 	br			end
 end:
 	ret
+}
 }
 

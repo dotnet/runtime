@@ -5,6 +5,7 @@
 
 .assembly 'ble'{}
 
+.class public auto ansi _ble {
 .method public	static int32 main() {
 .locals		(class [mscorlib]System.String)
 .entrypoint
@@ -77,5 +78,6 @@ fail:
 	br			end
 end:
 	ret
+}
 }
 

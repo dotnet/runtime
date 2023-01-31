@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.class ldarg_n {
+.class public ldarg_n {
 
 .method public static int32 I4_0(int32,int32,int32,int32) {
         ldarg.0

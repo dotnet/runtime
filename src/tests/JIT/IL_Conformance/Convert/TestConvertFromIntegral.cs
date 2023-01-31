@@ -15,7 +15,7 @@ using System.Reflection.Emit;
 
 namespace TestCasts
 {
-    class Program
+    public class Program
     {
         static int failedCount = 0;
 
@@ -1165,7 +1165,7 @@ namespace TestCasts
             GenerateTest<double, ulong>(Single.NaN, sourceOp, convOvfUn, ExpectException, 0);
         }
 
-        static int Main()
+        public static int Main()
         {
             TestConvertFromInt4();
             TestConvertFromInt8();

@@ -8,6 +8,7 @@
 
 .assembly extern ConvDLL{}
 
+.class public auto ansi beq_r4 {
 .method public static	int32 main() {
 .entrypoint
 .maxstack 2
@@ -539,5 +540,6 @@ FAIL:
 	ldc.i4		0x0
 	ret
 
+}
 }
 .assembly beq_r4{}

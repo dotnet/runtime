@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 //---- CLASS ----------------
-.class          _nop {
+.class public          _nop {
 
 //---- GLOBAL DATA ----------
 

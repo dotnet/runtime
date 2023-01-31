@@ -4,7 +4,7 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly ldloc_s_i4 {}
-.class ldloc_s_i4 {
+.class public ldloc_s_i4 {
 
 .method public static int32 test_int32()
 {

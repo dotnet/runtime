@@ -7,6 +7,7 @@
 
 
 
+.class public auto ansi _ldtoken {
 .method public static int32 main() {
 .entrypoint
 .locals	()
@@ -21,6 +22,7 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 
 

@@ -3,7 +3,7 @@
 
 .assembly extern mscorlib {}
 .class public ldnull_i {
-.method static	int32 main() {
+.method public static	int32 main() {
 .entrypoint
 .maxstack		20
 	ldc.i4.0

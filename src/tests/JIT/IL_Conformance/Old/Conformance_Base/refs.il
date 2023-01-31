@@ -4,6 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
+.class public auto ansi refs {
 .method public static int32 main() {
 .entrypoint
 .locals		(int32,int64,float32,float64)
@@ -57,6 +58,7 @@ FAIL:
 	ldc.i4 0
 	ret
 
+}
 }
 
 

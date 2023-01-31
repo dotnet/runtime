@@ -9,7 +9,7 @@
     ret
 }
     
-.class _call {
+.class public _call {
 .method public static int32 main() {
 .entrypoint
 .maxstack   10

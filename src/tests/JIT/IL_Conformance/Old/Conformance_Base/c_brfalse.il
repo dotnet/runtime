@@ -4,7 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
-.class _brfalse {
+.class public _brfalse {
 .method public static  int32 main() {
 .entrypoint
 .maxstack               20

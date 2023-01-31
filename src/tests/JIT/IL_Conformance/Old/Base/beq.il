@@ -5,6 +5,7 @@
 
 .assembly 'beq'{}
 
+.class public auto ansi _beq {
 .method public	static int32 main() {
 .locals		(class [mscorlib]System.String)
 .entrypoint
@@ -53,5 +54,6 @@ fail:
 	br			end
 end:
 	ret
+}
 }
 

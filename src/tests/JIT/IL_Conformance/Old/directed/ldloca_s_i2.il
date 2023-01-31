@@ -4,7 +4,7 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly ldloca_s_i2 {}
-.class ldloca_s_i2 {
+.class public ldloca_s_i2 {
 
 .method public static int32 test_int16()
 {

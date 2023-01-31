@@ -5,6 +5,7 @@
  
  
 
+.class public auto ansi Conv_R4 {
 .method public	static int32 main() {
 .entrypoint
 .locals	(class CConv,int32,float32)
@@ -375,6 +376,7 @@ FAIL:
 	br		END
 END:
 	ret
+}
 }
 
 .class public		CConv {

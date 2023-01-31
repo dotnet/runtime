@@ -4,7 +4,7 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly ldarg_s_r4 {}
-.class ldarg_s_r4 {
+.class public ldarg_s_r4 {
 
 .method public static int32 test_float32()
 {

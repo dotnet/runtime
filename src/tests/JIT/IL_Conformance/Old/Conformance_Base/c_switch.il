@@ -5,7 +5,7 @@
 
 
 
-.class          _switch {
+.class public          _switch {
 
 
 

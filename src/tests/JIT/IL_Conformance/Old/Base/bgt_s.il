@@ -5,6 +5,7 @@
 
 
 
+.class public auto ansi bgt_s {
 .method public static int32 main() {
 .locals         (class [mscorlib]System.String)
 .entrypoint
@@ -77,6 +78,7 @@ fail:
         br                      end
 end:
         ret
+}
 }
 
 

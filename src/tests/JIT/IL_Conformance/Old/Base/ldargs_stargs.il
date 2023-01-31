@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.class ldargs_stargs {
+.class public ldargs_stargs {
 
 
 .field public static int32 PTR

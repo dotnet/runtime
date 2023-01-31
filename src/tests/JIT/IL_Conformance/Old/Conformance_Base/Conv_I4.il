@@ -4,6 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
+.class public auto ansi Conv_I4 {
 .method public	static int32 main() {
 .entrypoint
 .locals	(class CConv,int32)
@@ -483,6 +484,7 @@ FAIL:
 	br		END
 END:
 	ret
+}
 }
 
 

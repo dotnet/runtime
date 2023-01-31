@@ -4,7 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
-.class Ldvirtftn {
+.class public Ldvirtftn {
 .method public static int32 main() {
 .entrypoint
 .maxstack       20

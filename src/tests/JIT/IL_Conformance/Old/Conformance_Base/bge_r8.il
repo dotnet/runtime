@@ -10,6 +10,7 @@
 .assembly extern ConvDLL{}
 
 
+.class public auto ansi bge_r8 {
 .method public static	int32 main() {
 .entrypoint
 .maxstack 2
@@ -597,5 +598,6 @@ FAIL:
 	ldc.i4		0x0
 	ret
 
+}
 }
 .assembly bge_r8{}

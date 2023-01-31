@@ -4,7 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
-.class _br_s {
+.class public _br_s {
 
 
 

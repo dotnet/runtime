@@ -4,7 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
-.class ldc_i4_n {
+.class public ldc_i4_n {
 .method public static int32 main() {
 .entrypoint
 .maxstack       10

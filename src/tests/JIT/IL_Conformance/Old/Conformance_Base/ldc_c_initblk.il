@@ -11,7 +11,7 @@
 
 
 //---- CLASS ----------------
-.class          _initblk {
+.class public          _initblk {
 
 //---- GLOBAL DATA ----------
 

@@ -6,6 +6,7 @@
 .assembly 'jmp'{
 }
 
+.class public auto ansi _jmp {
 .method public static int32 main() {
 .entrypoint
 .locals	()
@@ -14,6 +15,7 @@
 	newarr		[mscorlib]System.String
 	call		int32 _jmp::jmpTest1(class [mscorlib]System.String[])
 	ret
+}
 }
 
 

@@ -8,6 +8,7 @@
 
 .assembly tailcall{}
 
+.class public auto ansi tailcall {
 .method public static int32 main() {
 .locals     (class [mscorlib]System.IO.TextWriter,class _tailcall)
 .entrypoint
@@ -42,6 +43,7 @@ fail:
     br          end
 end:
     ret
+}
 }
 
 

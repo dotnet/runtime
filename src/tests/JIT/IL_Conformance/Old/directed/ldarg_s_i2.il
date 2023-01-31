@@ -4,7 +4,7 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly ldarg_s_i2 {}
-.class ldarg_s_i2 {
+.class public ldarg_s_i2 {
 
 .method public static int32 test_int16()
 {

@@ -6,6 +6,7 @@
 .assembly unaligned{
 }
 
+.class public auto ansi unaligned {
 .method public static int32 main() {
 .entrypoint
 .locals	(int32)
@@ -28,4 +29,5 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }

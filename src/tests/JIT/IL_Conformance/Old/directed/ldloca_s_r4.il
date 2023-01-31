@@ -4,7 +4,7 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly ldloca_s_r4 {}
-.class ldloca_s_r4 {
+.class public ldloca_s_r4 {
 
 .method public static int32 test_float32()
 {

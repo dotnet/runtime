@@ -4,6 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
+.class public auto ansi beq_s {
 .method public static int32 main() {
 .locals         (class [mscorlib]System.String)
 .entrypoint
@@ -52,6 +53,7 @@ fail:
         br                      end
 end:
         ret
+}
 }
 
 

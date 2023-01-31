@@ -4,7 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
-.class          _cpblk {
+.class public          _cpblk {
 
 
 .field public static int32 DATA

@@ -11,7 +11,7 @@
 
 
 //---- CLASS ----------------
-.class          _cpblk {
+.class public          _cpblk {
 
 //---- GLOBAL DATA ----------
 

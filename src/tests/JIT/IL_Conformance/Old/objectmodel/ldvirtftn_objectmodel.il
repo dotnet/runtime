@@ -6,6 +6,7 @@
 .assembly 'ldvirtftn_objectmodel'{
 }
 
+.class public auto ansi ldvirtftn_objectmodel {
 .method public static int32 main() {
 .locals	(int32, class _ldvirtftn)
 .entrypoint
@@ -59,6 +60,7 @@ FAIL:
 	ldc.i4	0x0
 END:
 	ret
+}
 }
 
 .class public	_ldvirtftn {

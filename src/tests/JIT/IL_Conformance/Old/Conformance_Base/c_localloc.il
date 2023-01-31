@@ -4,7 +4,7 @@
 .assembly extern legacy library mscorlib {}
 
 
-.class _localloc {
+.class public _localloc {
 
 .method public static	int32 main() {
 .entrypoint

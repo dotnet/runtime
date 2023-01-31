@@ -4,7 +4,7 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly ldloc_s_r8 {}
-.class ldloc_s_r8 {
+.class public ldloc_s_r8 {
 
 .method public static int32 test_float64()
 {

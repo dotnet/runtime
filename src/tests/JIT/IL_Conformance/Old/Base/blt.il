@@ -5,6 +5,7 @@
 
 .assembly 'blt'{}
 
+.class public auto ansi _blt {
 .method public	static int32 main() {
 .locals		(class [mscorlib]System.String)
 .entrypoint
@@ -77,5 +78,6 @@ fail:
 	br			end
 end:
 	ret
+}
 }
 

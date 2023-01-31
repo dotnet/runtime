@@ -5,6 +5,7 @@
 
 .assembly bne{}
 
+.class public auto ansi bne {
 .method public	static int32 main() {
 .locals		(class [mscorlib]System.String)
 .entrypoint
@@ -77,5 +78,6 @@ fail:
 	br			end
 end:
 	ret
+}
 }
 

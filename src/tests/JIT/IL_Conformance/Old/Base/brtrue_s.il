@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.class _brtrue_s {
+.class public _brtrue_s {
 
 .method public static int32 main() {
 .entrypoint
