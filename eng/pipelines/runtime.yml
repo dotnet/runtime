@@ -283,7 +283,6 @@ extends:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT_Helix
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
-            timeoutInMinutes: 120
             extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
             extraStepsParameters:
               creator: dotnet-bot
