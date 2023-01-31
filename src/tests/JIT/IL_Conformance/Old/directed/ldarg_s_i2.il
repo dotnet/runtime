@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly ldarg_s_i2 {}
 .class public ldarg_s_i2 {
 
@@ -1906,6 +1907,9 @@ FAIL:
 }
 
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack       2
         call            int32 ldarg_s_i2::test_int16()

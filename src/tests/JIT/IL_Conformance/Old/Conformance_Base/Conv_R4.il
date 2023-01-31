@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
  
  
 
@@ -9,6 +10,9 @@
 {
 .class public auto ansi Conv_R4 {
 .method public	static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .locals	(class Conv_R4.CConv,int32,float32)
 .maxstack	2

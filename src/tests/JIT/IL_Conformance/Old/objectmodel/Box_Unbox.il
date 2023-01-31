@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly 'Box_Unbox'{}
 
 .namespace Box_Unbox
@@ -38,6 +39,9 @@
 .class public Box_Unbox {
 .field public static	value class Box_Unbox.valClass vc
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
   	ldsflda 	value class Box_Unbox.valClass Box_Unbox.Box_Unbox::vc

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'x64'">true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm64'">true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'loongarch64'">true</CLRTestTargetUnsupported>

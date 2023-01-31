@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly 'isinst'{}
 
 .namespace isinst_
@@ -52,6 +53,9 @@
 .class public _isinst {
 
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
 	newobj	instance	void isinst_.Sub::.ctor() 

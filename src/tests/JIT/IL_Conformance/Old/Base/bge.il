@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 .assembly 'bge'{}
 
@@ -9,6 +10,9 @@
 {
 .class public auto ansi _bge {
 .method public	static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .locals		(class [mscorlib]System.String)
 .entrypoint
 	ldc.i4		0x55555555

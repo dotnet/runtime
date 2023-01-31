@@ -4,6 +4,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly 'initobj'{
 }
 
@@ -25,6 +26,9 @@
 .class public	_initoj {
 
 	.method public static int32 main() {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.locals	(value class initobj_.valClass, int32)
 	.maxstack	10

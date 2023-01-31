@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly 'ldvirtftn_objectmodel'{
 }
 
@@ -10,6 +11,9 @@
 {
 .class public auto ansi ldvirtftn_objectmodel {
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .locals	(int32, class ldvirtftn_objectmodel._ldvirtftn)
 .entrypoint
 .maxstack	4

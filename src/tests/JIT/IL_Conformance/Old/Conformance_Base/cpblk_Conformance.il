@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
 .namespace cpblk_Conformance
 {
 .class public		_cpblk {
@@ -47,6 +48,9 @@ FAIL:
 }
 
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 	call	int32 cpblk_Conformance._cpblk::initialize()

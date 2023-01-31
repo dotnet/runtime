@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
 .namespace div_i4
@@ -48,6 +49,9 @@ END:
 .try try_start to try_end catch [mscorlib]System.ArithmeticException handler arithmetic to AEEnd
 }
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		20
 	ldc.i4		0x80000000

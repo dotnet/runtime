@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern ConvDLL{}
 
 #define NEG_INF    "float32(0xFF800000)"
@@ -16,6 +17,9 @@
 
 .class public auto ansi bge_un_r4 {
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack 2
 .locals	(class [ConvDLL]ConvDLL)
