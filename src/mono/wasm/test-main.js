@@ -77,8 +77,7 @@ async function getArgs() {
     }
     if (!runArgsJson)
         runArgsJson = initRunArgs({});
-    let runArgs = queryArguments.length > 0 ? processArguments(queryArguments, runArgsJson) : runArgsJson;
-    return runArgs;
+    return processArguments(queryArguments, runArgsJson);
 }
 
 function initRunArgs(runArgs) {
