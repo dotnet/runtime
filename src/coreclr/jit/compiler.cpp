@@ -4425,13 +4425,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
-    // If instrumenting, add block and class probes.
-    //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-    {
-        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
-    }
-
     // Compute bbNum, bbRefs and bbPreds
     //
     // This is the first time full (not cheap) preds will be computed.
@@ -4448,6 +4441,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         activePhaseChecks |= PhaseChecks::CHECK_FG;
     };
     DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
+
+    // If instrumenting, add block and class probes.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
+    }
 
     // Expand any patchpoints
     //
@@ -10013,8 +10013,8 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 // gtChangeOperToNullCheck: helper to change tree oper to a NULLCHECK.
 //
 // Arguments:
-//    tree       - the node to change;
-//    basicBlock - basic block of the node.
+//    tree  - the node to change;
+//    block - basic block of the node.
 //
 // Notes:
 //    the function should not be called after lowering for platforms that do not support
@@ -10026,6 +10026,8 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
+    assert(fgAddrCouldBeNull(tree->gtGetOp1()));
+    tree->gtFlags |= GTF_EXCEPT;
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }

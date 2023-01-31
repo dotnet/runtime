@@ -734,8 +734,13 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
  * nor does the C++ overload fmod (mono_fmod instead). These functions therefore
  * must be extern "C".
  */
+#ifdef DISABLE_JIT
+#define register_icall(func, sig, avoid_wrapper) \
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (avoid_wrapper), NULL))
+#else
 #define register_icall(func, sig, avoid_wrapper) \
 	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (avoid_wrapper), #func))
+#endif
 
 #define register_icall_no_wrapper(func, sig) register_icall (func, sig, TRUE)
 #define register_icall_with_wrapper(func, sig) register_icall (func, sig, FALSE)
@@ -4571,6 +4576,8 @@ mini_init (const char *filename)
 	callbacks.get_jit_stats = get_jit_stats;
 	callbacks.get_exception_stats = get_exception_stats;
 	callbacks.init_class = init_class;
+	callbacks.get_trace = mono_get_trace;
+	callbacks.get_frame_info = mono_get_frame_info;
 
 	mono_install_callbacks (&callbacks);
 
@@ -4768,13 +4775,6 @@ mini_init (const char *filename)
 static void
 register_icalls (void)
 {
-	mono_add_internal_call_internal ("System.Diagnostics.StackFrame::get_frame_info",
-				ves_icall_get_frame_info);
-	mono_add_internal_call_internal ("System.Diagnostics.StackTrace::get_trace",
-				ves_icall_get_trace);
-	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_install_handlers",
-				mono_runtime_install_handlers);
-
 	/*
 	 * It's important that we pass `TRUE` as the last argument here, as
 	 * it causes the JIT to omit a wrapper for these icalls. If the JIT

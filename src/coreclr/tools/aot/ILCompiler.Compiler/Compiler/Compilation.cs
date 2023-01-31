@@ -513,7 +513,7 @@ namespace ILCompiler
             }
 
             // Normalize to the slot defining method
-            MethodDesc slotNormalizedMethod = TypeSystemContext.GetInstantiatedMethod(
+            InstantiatedMethod slotNormalizedMethod = TypeSystemContext.GetInstantiatedMethod(
                 slotNormalizedMethodDefinition,
                 targetMethod.Instantiation);
 
@@ -541,7 +541,7 @@ namespace ILCompiler
 
                 while (!slotNormalizedMethod.OwningType.HasSameTypeDefinition(runtimeDeterminedOwningType))
                 {
-                    TypeDesc runtimeDeterminedBaseTypeDefinition = runtimeDeterminedOwningType.GetTypeDefinition().BaseType;
+                    DefType runtimeDeterminedBaseTypeDefinition = runtimeDeterminedOwningType.GetTypeDefinition().BaseType;
                     if (runtimeDeterminedBaseTypeDefinition.HasInstantiation)
                     {
                         runtimeDeterminedOwningType = runtimeDeterminedBaseTypeDefinition.InstantiateSignature(runtimeDeterminedOwningType.Instantiation, default);

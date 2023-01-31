@@ -1334,7 +1334,7 @@
     <value>Type must be a runtime Type object.</value>
   </data>
   <data name="Argument_MustBeTypeBuilder" xml:space="preserve">
-    <value>'type' must contain a TypeBuilder as a generic argument.</value>
+    <value>'type' must be or must contain a TypeBuilder as a generic argument.</value>
   </data>
   <data name="Argument_MustHaveAttributeBaseClass" xml:space="preserve">
     <value>Type passed in must be derived from System.Attribute or System.Attribute itself.</value>
