@@ -23,24 +23,24 @@ class ILLinkLinkAttributes
     [TestRemoveAttribute]
     [AllowNullAttribute]
     private string _fieldWithCustomAttribute = "Hello world";
-    
+
     class TestDontRemoveAttribute : Attribute
-	{
-		public TestDontRemoveAttribute ()
-		{
-		}
-	}
+    {
+        public TestDontRemoveAttribute()
+        {
+        }
+    }
 
-	class TestRemoveAttribute : Attribute
-	{
-		public TestRemoveAttribute ()
-		{
-		}
-	}
+    class TestRemoveAttribute : Attribute
+    {
+        public TestRemoveAttribute()
+        {
+        }
+    }
 
-	class TestMarkAllRemoveAttribute : Attribute
-	{
-	}
+    class TestMarkAllRemoveAttribute : Attribute
+    {
+    }
 
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]

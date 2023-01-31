@@ -39,7 +39,7 @@ namespace ILCompiler
 
         internal readonly UsageBasedMetadataGenerationOptions _generationOptions;
 
-        private readonly LinkAttributesHashTable _featureSwitchHashtable;
+        private readonly LinkAttributesHashTable _linkAttributesHashTable;
 
         private static (string AttributeName, DiagnosticId Id)[] _requiresAttributeMismatchNameAndId = new[]
             {
@@ -91,7 +91,7 @@ namespace ILCompiler
             FlowAnnotations = flowAnnotations;
             Logger = logger;
 
-            _featureSwitchHashtable = new LinkAttributesHashTable(Logger, new Dictionary<string, bool>(featureSwitchValues));
+            _linkAttributesHashTable = new LinkAttributesHashTable(Logger, new Dictionary<string, bool>(featureSwitchValues));
             FeatureSwitches = new Dictionary<string, bool>(featureSwitchValues);
 
             _rootEntireAssembliesModules = new HashSet<string>(rootEntireAssembliesModules);
@@ -844,7 +844,7 @@ namespace ILCompiler
             var ecmaType = attributeType.GetTypeDefinition() as EcmaType;
             if (ecmaType != null)
             {
-                var moduleInfo = _featureSwitchHashtable.GetOrCreateValue(ecmaType.EcmaModule);
+                var moduleInfo = _linkAttributesHashTable.GetOrCreateValue(ecmaType.EcmaModule);
                 return !moduleInfo.RemovedAttributes.Contains(ecmaType);
             }
 
@@ -1134,9 +1134,9 @@ namespace ILCompiler
                 ParseLinkAttributesXml(module, logger, featureSwitchValues, globalAttributeRemoval: true);
             }
 
-            public void  ParseLinkAttributesXml(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues, bool globalAttributeRemoval)
+            public void ParseLinkAttributesXml(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues, bool globalAttributeRemoval)
             {
-                EcmaModule xmlModule = globalAttributeRemoval ? (EcmaModule) module.Context.SystemModule : module;
+                EcmaModule xmlModule = globalAttributeRemoval ? (EcmaModule)module.Context.SystemModule : module;
                 PEMemoryBlock resourceDirectory = xmlModule.PEReader.GetSectionData(xmlModule.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
 
                 foreach (var resourceHandle in xmlModule.MetadataReader.ManifestResources)
@@ -1167,20 +1167,13 @@ namespace ILCompiler
             }
         }
 
-        public static class PlatformAssemblies
-        {
-            public const string CoreLib = "System.Private.CoreLib";
-        }
-
         internal sealed class LinkAttributesReader : ProcessLinkerXmlBase
         {
             private readonly HashSet<TypeDesc> _removedAttributes = new();
-            private readonly ModuleDesc _resource;
 
             public LinkAttributesReader(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues, bool globalAttributeRemoval)
                 : base(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues, globalAttributeRemoval)
             {
-                _resource = resourceAssembly;
             }
 
             private static bool IsRemoveAttributeInstances(string attributeName) => attributeName == "RemoveAttributeInstances" || attributeName == "RemoveAttributeInstancesAttribute";
@@ -1212,11 +1205,11 @@ namespace ILCompiler
             {
                 get
                 {
-                    if (_resource?.Assembly == null)
+                    if (_owningModule?.Assembly == null)
                         return AllowedAssemblies.AllAssemblies;
 
                     // Corelib XML may contain assembly wildcard to support compiler-injected attribute types
-                    if (_resource?.Assembly.GetName().Name == PlatformAssemblies.CoreLib)
+                    if (_owningModule?.Assembly == _context.SystemModule)
                         return AllowedAssemblies.AllAssemblies;
 
                     return AllowedAssemblies.ContainingAssembly;

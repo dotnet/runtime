@@ -140,7 +140,9 @@ namespace ILCompiler
                 bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyName? name);
                 if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies)
                 {
+#if !READYTORUN
                     LogWarning(assemblyNav, DiagnosticId.XmlUnsuportedWildcard);
+#endif
                     continue;
                 }
 
@@ -471,8 +473,8 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (PropertyPseudoDesc property in type.GetPropertiesOnTypeHierarchy(p => p.Name == name))
                 {
-                   foundMatch = true;
-                   ProcessProperty(type, property, nav, customData, false);
+                    foundMatch = true;
+                    ProcessProperty(type, property, nav, customData, false);
                 }
 
                 if (!foundMatch)
