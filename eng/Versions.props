@@ -235,7 +235,7 @@
     <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>14.0.0-alpha.1.23074.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>14.0.0-alpha.1.23074.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100preview1Version>8.0.0-preview.1.23081.2</MicrosoftNETWorkloadEmscriptenCurrentManifest80100alpha1Version>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100preview1Version>8.0.0-preview.1.23081.2</MicrosoftNETWorkloadEmscriptenCurrentManifest80100preview1Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100preview1Version)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
