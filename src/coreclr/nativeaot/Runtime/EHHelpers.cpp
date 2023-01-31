@@ -91,16 +91,17 @@ COOP_PINVOKE_HELPER(int32_t, RhGetModuleFileName, (HANDLE moduleHandle, _Out_ co
 COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t cbOSContext, PAL_LIMITED_CONTEXT * pPalContext))
 {
     ASSERT((size_t)cbOSContext >= sizeof(CONTEXT));
+    CONTEXT* pContext = (CONTEXT *)pOSContext;
 
 #ifndef HOST_WASM
 
     memset(pOSContext, 0, cbOSContext);
-    CONTEXT* pContext = (CONTEXT *)pOSContext;
+    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
 
     // Fill in CONTEXT_CONTROL registers that were not captured in PAL_LIMITED_CONTEXT.
     PopulateControlSegmentRegisters(pContext);
 
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+#endif // !HOST_WASM
 
 #if defined(UNIX_AMD64_ABI)
     pContext->Rip = pPalContext->IP;
@@ -164,11 +165,11 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, int32_t 
     pContext->Sp = pPalContext->SP;
     pContext->Lr = pPalContext->LR;
     pContext->Pc = pPalContext->IP;
+#elif defined(HOST_WASM)
+    // No registers, no work to do yet
 #else
 #error Not Implemented for this architecture -- RhpCopyContextFromExInfo
 #endif
-
-#endif // !HOST_WASM
 }
 
 #if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64)
