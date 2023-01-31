@@ -3754,7 +3754,7 @@ namespace System
                 return EmptyTypes;
             }
 
-            return ModifiedType.CloneArray(parameters, 1);
+            return parameters.AsSpan(1).ToArray();
         }
 
         public override Type GetFunctionPointerReturnType()

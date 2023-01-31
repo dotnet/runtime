@@ -688,7 +688,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedFunctionPointerType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedGenericType.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedStandaloneType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModuleResolveEventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\NullabilityInfo.cs" />

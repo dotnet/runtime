@@ -441,10 +441,7 @@ namespace System.Reflection
         }
 
         public override Type GetModifiedParameterType() =>
-            ModifiedType.CreateRoot(
-                unmodifiedType: ParameterType,
-                m_signature,
-                rootSignatureParameterIndex: PositionImpl + 1);
+            ModifiedType.Create(unmodifiedType: ParameterType, m_signature, parameterIndex: PositionImpl + 1);
 
         #endregion
 

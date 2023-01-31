@@ -126,7 +126,7 @@ HRESULT SigParser::SkipExactlyOne()
 //
 HRESULT
 SigParser::SkipMethodHeaderSignature(
-    uint32_t * pcArgs)
+    uint32_t * pcArgs, bool skipReturnType /*= true*/)
 {
     CONTRACTL
     {
@@ -157,8 +157,11 @@ SigParser::SkipMethodHeaderSignature(
     // Get arg count;
     IfFailRet(GetData(pcArgs));
 
-    // Skip return type;
-    IfFailRet(SkipExactlyOne());
+    if (skipReturnType)
+    {
+        // Skip return type;
+        IfFailRet(SkipExactlyOne());
+    }
 
     return hr;
 } // SigParser::SkipMethodHeaderSignature
@@ -188,193 +191,6 @@ HRESULT SigParser::SkipSignature()
     while (cArgs) {
         IfFailRet(SkipExactlyOne());
         cArgs--;
-    }
-
-    return hr;
-}
-
-HRESULT SigParser::MoveToSignature(uint32_t indexToFind, CorElementType* pSignatureType)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    bool isFinished = false;
-    uint32_t currentIndex = 0;
-    HRESULT hr = MoveToSignature(indexToFind, &currentIndex, &isFinished, pSignatureType);
-    if (isFinished == false)
-    {
-        return META_E_BAD_SIGNATURE;
-    }
-
-    return hr;
-}
-
-HRESULT SigParser::MoveToSignature(uint32_t indexToFind, uint32_t* pCurrentIndex, bool* pIsFinished, CorElementType* pSignatureType)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    CorElementType typ;
-    HRESULT hr = GetElemType(&typ);
-    IfFailRet(hr);
-
-    if (!CorIsPrimitiveType(typ))
-    {
-        switch ((DWORD)typ)
-        {
-            default:
-                return META_E_BAD_SIGNATURE;
-                break;
-            case ELEMENT_TYPE_VAR:
-            case ELEMENT_TYPE_MVAR:
-                IfFailRet(GetData(NULL)); // Skip variable number
-                break;
-            case ELEMENT_TYPE_VAR_ZAPSIG:
-                IfFailRet(GetData(NULL)); // Skip RID
-                break;
-            case ELEMENT_TYPE_OBJECT:
-            case ELEMENT_TYPE_STRING:
-            case ELEMENT_TYPE_TYPEDBYREF:
-            case ELEMENT_TYPE_CANON_ZAPSIG:
-                break;
-
-            case ELEMENT_TYPE_BYREF: //fallthru
-            case ELEMENT_TYPE_PTR:
-            case ELEMENT_TYPE_PINNED:
-            case ELEMENT_TYPE_SZARRAY:
-            case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
-                IfFailRet(MoveToSignature(indexToFind, pCurrentIndex, pIsFinished, pSignatureType));
-
-                if (*pIsFinished)
-                    return S_OK;
-
-                break;
-
-            case ELEMENT_TYPE_VALUETYPE: //fallthru
-            case ELEMENT_TYPE_CLASS:
-                IfFailRet(GetToken(NULL)); // Skip RID
-                break;
-
-            case ELEMENT_TYPE_MODULE_ZAPSIG:
-                IfFailRet(GetData(NULL)); // Skip index
-                IfFailRet(SkipExactlyOne()); // Skip type
-                break;
-
-            case ELEMENT_TYPE_FNPTR:
-                if (indexToFind == *pCurrentIndex)
-                {
-                    *pIsFinished = TRUE;
-                    *pSignatureType = ELEMENT_TYPE_FNPTR;
-                    return S_OK;
-                }
-
-                (*pCurrentIndex)++;
-
-                // Skip calling convention
-                uint32_t uCallConv;
-                IfFailRet(GetCallingConvInfo(&uCallConv));
-                if ((uCallConv == IMAGE_CEE_CS_CALLCONV_FIELD) ||
-                    (uCallConv == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG))
-                {
-                    return META_E_BAD_SIGNATURE;
-                }
-
-                // Skip type parameter count
-                if (uCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
-                    IfFailRet(GetData(NULL));
-
-                // Get arg count;
-                uint32_t fpArgCnt;
-                IfFailRet(GetData(&fpArgCnt));
-
-                // Handle return type
-                IfFailRet(MoveToSignature(indexToFind, pCurrentIndex, pIsFinished, pSignatureType));
-                if (*pIsFinished)
-                    return S_OK;
-
-                // Handle args
-                while (fpArgCnt--)
-                {
-                    IfFailRet(MoveToSignature(indexToFind, pCurrentIndex, pIsFinished, pSignatureType));
-                    if (*pIsFinished)
-                        return S_OK;
-                }
-
-                break;
-
-            case ELEMENT_TYPE_ARRAY:
-                {
-                    IfFailRet(MoveToSignature(indexToFind, pCurrentIndex, pIsFinished, pSignatureType));
-                    if (*pIsFinished)
-                        return S_OK;
-
-                    uint32_t rank;
-                    IfFailRet(GetData(&rank)); // Get rank
-                    if (rank)
-                    {
-                        uint32_t nsizes;
-                        IfFailRet(GetData(&nsizes)); // Get # of sizes
-                        while (nsizes--)
-                        {
-                            IfFailRet(GetData(NULL)); // Skip size
-                        }
-
-                        uint32_t nlbounds;
-                        IfFailRet(GetData(&nlbounds)); // Get # of lower bounds
-                        while (nlbounds--)
-                        {
-                            IfFailRet(GetData(NULL)); // Skip lower bounds
-                        }
-                    }
-                }
-                break;
-
-            case ELEMENT_TYPE_SENTINEL:
-                // Should be unreachable since GetElem strips it
-                break;
-
-            case ELEMENT_TYPE_INTERNAL:
-                IfFailRet(GetPointer(NULL));
-                break;
-
-            case ELEMENT_TYPE_GENERICINST:
-                if (indexToFind == *pCurrentIndex)
-                {
-                    *pIsFinished = TRUE;
-                    *pSignatureType = ELEMENT_TYPE_GENERICINST;
-                    return S_OK;
-                }
-
-                (*pCurrentIndex)++;
-                
-                IfFailRet(SkipExactlyOne()); // Skip generic type
-
-                // Handle args
-                uint32_t argCnt;
-                IfFailRet(GetData(&argCnt));
-                while (argCnt--)
-                {
-                    IfFailRet(MoveToSignature(indexToFind, pCurrentIndex, pIsFinished, pSignatureType));
-                    if (*pIsFinished)
-                        return S_OK;
-                }
-
-                break;
-        }
     }
 
     return hr;

@@ -1820,17 +1820,160 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetSlot, MethodDesc *pMethod) {
 }
 FCIMPLEND
 
-FCIMPL5(Object *, SignatureNative::GetCustomModifiers,
-    SignatureNative* pSignatureUNSAFE,
-    INT32 rootSignatureParameterIndex,
-    CLR_BOOL fRequired,
-    INT32 nestedSignatureIndex,
-    INT32 nestedSignatureParameterIndex)
+FCIMPL2(INT32, SignatureNative::GetParameterOffset, SignatureNative* pSignatureUNSAFE, INT32 parameterIndex)
 {
-    CONTRACTL {
-        FCALL_CHECK;
+    FCALL_CONTRACT;
+
+    struct
+    {
+        SIGNATURENATIVEREF pSig;
+    } gc;
+
+    gc.pSig = (SIGNATURENATIVEREF)pSignatureUNSAFE;
+
+    INT32 offset = 0;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    {
+        SigPointer sp(gc.pSig->GetCorSig(), gc.pSig->GetCorSigSize());
+
+        uint32_t callConv = 0;
+        IfFailThrow(sp.GetCallingConvInfo(&callConv));
+
+        if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
+        {
+            if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+            {
+                IfFailThrow(sp.GetData(NULL));
+            }
+
+            uint32_t numArgs;
+            IfFailThrow(sp.GetData(&numArgs));
+            _ASSERTE((uint32_t)parameterIndex <= numArgs);
+
+            for (int i = 0; i < parameterIndex; i++)
+                IfFailThrow(sp.SkipExactlyOne());
+        }
+        else
+        {
+            _ASSERTE(parameterIndex == 0);
+        }
+
+        offset = (INT32)(sp.GetPtr() - gc.pSig->GetCorSig());
     }
-    CONTRACTL_END;
+    HELPER_METHOD_FRAME_END();
+
+    return offset;
+}
+FCIMPLEND
+
+FCIMPL3(INT32, SignatureNative::GetTypeParameterFromOffset, SignatureNative* pSignatureUNSAFE, INT32 offset, INT32 index)
+{
+    FCALL_CONTRACT;
+
+    struct
+    {
+        SIGNATURENATIVEREF pSig;
+    } gc;
+
+    if (offset < 0)
+    {
+        _ASSERTE(offset == -1);
+        return offset;
+    }
+
+    gc.pSig = (SIGNATURENATIVEREF)pSignatureUNSAFE;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    {
+        SigPointer sp(gc.pSig->GetCorSig() + offset, gc.pSig->GetCorSigSize() - offset);
+
+        CorElementType etype;
+        IfFailThrow(sp.GetElemType(&etype));
+
+        uint32_t argCnt;
+
+        switch (etype)
+        {
+        case ELEMENT_TYPE_FNPTR:
+            IfFailThrow(sp.SkipMethodHeaderSignature(&argCnt, /* skipReturnType */ false));
+            _ASSERTE((uint32_t)index <= argCnt);
+            break;
+        case ELEMENT_TYPE_GENERICINST:
+            IfFailThrow(sp.SkipExactlyOne());
+
+            IfFailThrow(sp.GetData(&argCnt));
+            _ASSERTE((uint32_t)index < argCnt);
+            break;
+        case ELEMENT_TYPE_ARRAY:
+        case ELEMENT_TYPE_SZARRAY:
+        case ELEMENT_TYPE_BYREF:
+        case ELEMENT_TYPE_PTR:
+            _ASSERTE(index == 0);
+            break;
+        case ELEMENT_TYPE_VAR:
+        case ELEMENT_TYPE_MVAR:
+            offset = -1; // Use offset -1 to signal method substituted method variable. We do not have full signature for those.
+            goto Done;
+        default:
+            _ASSERTE(false); // Unexpected element type
+            offset = -1;
+            goto Done;
+        }
+
+        for (int i = 0; i < index; i++)
+            IfFailThrow(sp.SkipExactlyOne());
+
+        offset = (INT32)(sp.GetPtr() - gc.pSig->GetCorSig());
+    Done: ;
+    }
+    HELPER_METHOD_FRAME_END();
+
+    return offset;
+}
+FCIMPLEND
+
+FCIMPL2(FC_INT8_RET, SignatureNative::GetCallingConventionFromFunctionPointerAtOffset, SignatureNative* pSignatureUNSAFE, INT32 offset)
+{
+    FCALL_CONTRACT;
+
+    struct
+    {
+        SIGNATURENATIVEREF pSig;
+    } gc;
+
+    if (offset < 0)
+    {
+        _ASSERTE(offset == -1);
+        return 0;
+    }
+
+    gc.pSig = (SIGNATURENATIVEREF)pSignatureUNSAFE;
+
+    uint32_t callConv = 0;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    {
+        SigPointer sp(gc.pSig->GetCorSig() + offset, gc.pSig->GetCorSigSize() - offset);
+
+        CorElementType etype;
+        IfFailThrow(sp.GetElemType(&etype));
+        _ASSERTE(etype == ELEMENT_TYPE_FNPTR);
+
+        IfFailThrow(sp.GetCallingConv(&callConv));
+    }
+    HELPER_METHOD_FRAME_END();
+
+    return (FC_INT8_RET)(callConv);
+}
+FCIMPLEND
+
+FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
+    SignatureNative* pSignatureUNSAFE,
+    INT32 offset,
+    CLR_BOOL fRequired)
+{
+    FCALL_CONTRACT;
 
     struct
     {
@@ -1843,56 +1986,13 @@ FCIMPL5(Object *, SignatureNative::GetCustomModifiers,
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
     {
-        BYTE callConv = *(BYTE*)gc.pSig->GetCorSig();
         SigTypeContext typeContext;
         gc.pSig->GetTypeContext(&typeContext);
-        MetaSig sig(gc.pSig->GetCorSig(),
-            gc.pSig->GetCorSigSize(),
-            gc.pSig->GetModule(),
-            &typeContext,
-            (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD ? MetaSig::sigField : MetaSig::sigMember);
 
-        _ASSERTE(callConv == sig.GetCallingConventionInfo());
-        PRECONDITION(sig.GetCallingConvention() != IMAGE_CEE_CS_CALLCONV_FIELD || rootSignatureParameterIndex == 1);            
-
-        SigPointer argument(NULL, 0);
-
-        if (rootSignatureParameterIndex == 0)
-        {
-            argument = sig.GetReturnProps();
-        }
-        else
-        {
-            for(INT32 i = 0; i < rootSignatureParameterIndex; i++)
-                sig.NextArg();
-
-            argument = sig.GetArgProps();
-        }
-
-        // Check if we need to move and\or switch to a function pointer or generic method signature.
-        if (nestedSignatureIndex >= 0)
-        {
-            sig.MoveToSignature(argument, nestedSignatureIndex);
-
-            if (nestedSignatureParameterIndex == 0)
-            {
-                argument = sig.GetReturnProps();
-            }
-            else
-            {
-                for(INT32 i = 0; i < nestedSignatureParameterIndex; i++)
-                    sig.NextArg();
-
-                argument = sig.GetArgProps();
-            }
-        }
-
-        // @todo: why is this commented out?
-        //if (parameter < 0 || parameter > (INT32)sig.NumFixedArgs())
-        //    FCThrowResVoid(kArgumentNullException, W("Arg_ArgumentOutOfRangeException"));
+        SigPointer argument(gc.pSig->GetCorSig() + offset, gc.pSig->GetCorSigSize() - offset);
 
         SigPointer sp = argument;
-        Module* pModule = sig.GetModule();
+        Module* pModule = gc.pSig->GetModule();
         INT32 cMods = 0;
         CorElementType cmodType;
 
@@ -1953,60 +2053,6 @@ FCIMPL5(Object *, SignatureNative::GetCustomModifiers,
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.retVal);
-}
-FCIMPLEND
-
-FCIMPL3(FC_INT8_RET, SignatureNative::GetCallingConventionFromFunctionPointer,
-    SignatureNative* pSignatureUNSAFE,
-    INT32 rootSignatureParameterIndex,
-    INT32 nestedSignatureIndex)
-{
-    struct
-    {
-        SIGNATURENATIVEREF pSig;
-    } gc;
-
-    gc.pSig = (SIGNATURENATIVEREF)pSignatureUNSAFE;
-    BYTE retVal = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    {
-        BYTE callConv = *(BYTE*)gc.pSig->GetCorSig();
-        SigTypeContext typeContext;
-        gc.pSig->GetTypeContext(&typeContext);
-        MetaSig sig = MetaSig(gc.pSig->GetCorSig(),
-            gc.pSig->GetCorSigSize(),
-            gc.pSig->GetModule(),
-            &typeContext,
-            (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD ? MetaSig::sigField : MetaSig::sigMember);
-
-        _ASSERTE(callConv == sig.GetCallingConventionInfo());
-        PRECONDITION(sig.GetCallingConvention() != IMAGE_CEE_CS_CALLCONV_FIELD || rootSignatureParameterIndex == 1);            
-
-        SigPointer argument(NULL, 0);
-
-        if (nestedSignatureIndex >= 0)
-        {
-            if (rootSignatureParameterIndex == 0)
-            {
-                argument = sig.GetReturnProps();
-            }
-            else
-            {
-                for(INT32 i = 0; i < rootSignatureParameterIndex; i++)
-                    sig.NextArg();
-
-                argument = sig.GetArgProps();
-            }
-
-            sig.MoveToSignature(argument, nestedSignatureIndex);
-        }
-
-        retVal = sig.GetCallingConventionInfo() & IMAGE_CEE_CS_CALLCONV_MASK;
-    }
-    HELPER_METHOD_FRAME_END();
-
-    return (FC_INT8_RET)(retVal);
 }
 FCIMPLEND
 

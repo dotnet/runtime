@@ -487,7 +487,6 @@ class MetaSig
             sigMember,
             sigLocalVars,
             sigField,
-            sigGeneric
             };
 
         //------------------------------------------------------------------
@@ -570,12 +569,6 @@ class MetaSig
         // This method updates m_pLastType
         //------------------------------------------------------------------
         void SkipArg();
-
-        //------------------------------------------------------------------
-        // Move to the specified new signature and re-initialize to the
-        // new signature type.
-        //------------------------------------------------------------------
-        HRESULT MoveToSignature(SigPointer start, INT32 index);
 
         //------------------------------------------------------------------
         // Returns a read-only SigPointer for the m_pLastType set by one

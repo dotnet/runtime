@@ -5,47 +5,31 @@ namespace System.Reflection
 {
     internal partial class ModifiedType
     {
-        /// <summary>
-        /// Called from FieldInfo, PropertyInfo and ParameterInfo to create a modified type tree.
-        /// </summary>
-        public static ModifiedType CreateRoot(
-            Type unmodifiedType,
-            object? signatureProvider,
-            int rootSignatureParameterIndex)
+        internal struct TypeSignature
         {
-            int nestedSignatureIndex = -1;
-            return Create(
-                unmodifiedType,
-                signatureProvider,
-                rootSignatureParameterIndex,
-                ref nestedSignatureIndex,
-                nestedSignatureParameterIndex: -1,
-                isRoot: true);
+            internal Signature? _signature;
+            internal int _offset;
         }
 
-        private Type[] GetCustomModifiers(bool required)
-        {
-            Type[] modifiers = EmptyTypes;
-            Signature? signature = GetSignature();
-            if (signature is not null)
+        internal Type GetTypeParameter(Type unmodifiedType, int index) =>
+            Create(unmodifiedType, new TypeSignature()
             {
-                if (IsRoot)
-                {
-                    // For a root node, which is the original field\parameter\property Type, get the root-level modifiers.
-                    modifiers = signature.GetCustomModifiers(RootSignatureParameterIndex, required);
-                }
-                else if (NestedSignatureParameterIndex >= 0)
-                {
-                    modifiers = signature.GetCustomModifiers(RootSignatureParameterIndex, required, NestedSignatureIndex, NestedSignatureParameterIndex);
-                }
-            }
+                _signature = _typeSignature._signature,
+                _offset = _typeSignature._signature?.GetTypeParameterFromOffset(_typeSignature._offset, index) ?? 0
+            });
 
-            return modifiers;
-        }
+        internal SignatureCallingConvention GetCallingConventionFromFunctionPointer() =>
+            _typeSignature._signature?.GetCallingConventionFromFunctionPointerAtOffset(_typeSignature._offset) ?? default;
 
-        internal Signature? GetSignature()
-        {
-            return (Signature?)SignatureProvider; // Signature is a CoreClr-specific class.
-        }
+        internal static Type Create(Type unmodifiedType, Signature? signature, int parameterIndex = 0) =>
+            Create(unmodifiedType, new TypeSignature()
+            {
+                _signature = signature,
+                _offset = signature?.GetParameterOffset(parameterIndex) ?? 0
+            });
+
+        private Type[] GetCustomModifiers(bool required) =>
+             (_typeSignature._signature != null) ?
+                _typeSignature._signature.GetCustomModifiersAtOffset(_typeSignature._offset, required) : Type.EmptyTypes;
     }
 }

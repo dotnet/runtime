@@ -713,7 +713,7 @@ class SigParser
         // the arguments.
         //------------------------------------------------------------------------
         __checkReturn
-        HRESULT SkipMethodHeaderSignature(uint32_t *pcArgs);
+        HRESULT SkipMethodHeaderSignature(uint32_t *pcArgs, bool skipReturnType = true);
 
         //------------------------------------------------------------------------
         // Skip a sub signature (as immediately follows an ELEMENT_TYPE_FNPTR).
@@ -721,18 +721,7 @@ class SigParser
         __checkReturn
         HRESULT SkipSignature();
 
-private:
-
-        __checkReturn
-        HRESULT MoveToSignature(uint32_t indexToFind, uint32_t* pCurrentIndex, bool* pIsFinished, CorElementType* pSignatureType);
-
 public:
-
-        //------------------------------------------------------------------------
-        // Move to the specified signature
-        //------------------------------------------------------------------------
-        __checkReturn
-        HRESULT MoveToSignature(uint32_t indexToFind, CorElementType* pSignatureType);
 
         //------------------------------------------------------------------------
         // Return pointer

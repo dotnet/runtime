@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Reflection
 {
@@ -11,57 +12,48 @@ namespace System.Reflection
     {
         private const string CallingConventionTypePrefix = "System.Runtime.CompilerServices.CallConv";
 
-        private readonly ModifiedType[] _parameterTypes;
-        private readonly ModifiedType _returnType;
+        private Type[]? _parameterTypes;
+        private Type? _returnType;
 
-        public ModifiedFunctionPointerType(
-            Type functionPointerType,
-            object? signatureProvider,
-            int rootSignatureParameterIndex,
-            ref int nestedSignatureIndex,
-            int nestedSignatureParameterIndex,
-            bool isRoot)
-            : base(
-                  functionPointerType,
-                  signatureProvider,
-                  rootSignatureParameterIndex,
-                  ++nestedSignatureIndex,
-                  nestedSignatureParameterIndex,
-                  isRoot)
+        internal ModifiedFunctionPointerType(Type unmodifiedType, TypeSignature typeSignature)
+            : base(unmodifiedType, typeSignature)
         {
-            Debug.Assert(functionPointerType.IsFunctionPointer);
-            _returnType = Create(
-                functionPointerType.GetFunctionPointerReturnType(),
-                signatureProvider,
-                rootSignatureParameterIndex,
-                ref nestedSignatureIndex,
-                nestedSignatureParameterIndex: 0);
-
-            Type[] parameters = functionPointerType.GetFunctionPointerParameterTypes();
-            int count = parameters.Length;
-            ModifiedType[] modifiedTypes = new ModifiedType[count];
-            for (int i = 0; i < count; i++)
-            {
-                modifiedTypes[i] = Create(
-                    parameters[i],
-                    signatureProvider,
-                    rootSignatureParameterIndex,
-                    ref nestedSignatureIndex,
-                    nestedSignatureParameterIndex: i + 1);
-            }
-
-            _parameterTypes = modifiedTypes;
+            Debug.Assert(unmodifiedType.IsFunctionPointer);
         }
 
-        public override Type GetFunctionPointerReturnType() => _returnType;
-        public override Type[] GetFunctionPointerParameterTypes() => CloneArray<Type>(_parameterTypes);
+        public override Type GetFunctionPointerReturnType()
+        {
+            return _returnType ?? Initialize();
+
+            Type Initialize()
+            {
+                Interlocked.CompareExchange(ref _returnType, GetTypeParameter(typeImpl.GetFunctionPointerReturnType(), 0), null);
+                return _returnType!;
+            }
+        }
+
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            return (Type[])(_parameterTypes ?? Initialize()).Clone();
+
+            Type[] Initialize()
+            {
+                Type[] parameterTypes = typeImpl.GetFunctionPointerParameterTypes();
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    parameterTypes[i] = GetTypeParameter(parameterTypes[i], i + 1);
+                }
+                Interlocked.CompareExchange(ref _parameterTypes, parameterTypes, null);
+                return _parameterTypes!;
+            }
+        }
 
         public override Type[] GetFunctionPointerCallingConventions()
         {
             ArrayBuilder<Type> builder = default;
 
             // Normalize the calling conventions by manufacturing a type.
-            switch (GetCallingConvention())
+            switch (GetCallingConventionFromFunctionPointer())
             {
                 case SignatureCallingConvention.Cdecl:
                     builder.Add(typeof(CallConvCdecl));

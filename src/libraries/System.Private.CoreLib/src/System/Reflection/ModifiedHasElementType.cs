@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Threading;
 
 namespace System.Reflection
 {
@@ -10,32 +11,23 @@ namespace System.Reflection
     /// </summary>
     internal sealed class ModifiedHasElementType : ModifiedType
     {
-        private readonly ModifiedType? _elementModifiedType;
+        private Type? _elementType;
 
-        public ModifiedHasElementType(
-            Type containerType,
-            object? signatureProvider,
-            int rootSignatureParameterIndex,
-            ref int nestedSignatureIndex,
-            int nestedSignatureParameterIndex,
-            bool isRoot)
-            : base(
-                  containerType,
-                  signatureProvider,
-                  rootSignatureParameterIndex,
-                  nestedSignatureIndex,
-                  nestedSignatureParameterIndex,
-                  isRoot)
+        internal ModifiedHasElementType(Type unmodifiedType, TypeSignature typeSignature)
+            : base(unmodifiedType, typeSignature)
         {
-            Debug.Assert(containerType.HasElementType);
-            _elementModifiedType = Create(
-                containerType.GetElementType()!,
-                signatureProvider,
-                rootSignatureParameterIndex,
-                ref nestedSignatureIndex,
-                nestedSignatureParameterIndex : -1);
+            Debug.Assert(unmodifiedType.HasElementType);
         }
 
-        public override Type? GetElementType() => _elementModifiedType;
+        public override Type? GetElementType()
+        {
+            return _elementType ?? Initialize();
+
+            Type Initialize()
+            {
+                Interlocked.CompareExchange(ref _elementType, GetTypeParameter(typeImpl.GetElementType()!, 0), null);
+                return _elementType!;
+            }
+        }
     }
 }

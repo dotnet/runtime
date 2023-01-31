@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -154,7 +154,6 @@
     <Compile Include="System\Reflection\Metadata\AssemblyExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataUpdater.cs" />
     <Compile Include="System\Reflection\ModifiedType.NativeAot.cs" />
-    <Compile Include="System\Reflection\ModifiedFunctionPointerType.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.NativeAot.cs" />
     <Compile Include="System\Activator.NativeAot.cs" />
     <Compile Include="System\AppContext.NativeAot.cs" />

@@ -2,47 +2,34 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Threading;
 
 namespace System.Reflection
 {
     internal sealed partial class ModifiedGenericType : ModifiedType
     {
-        private readonly ModifiedType[] _argumentTypes;
+        private Type[]? _genericArguments;
 
-        public ModifiedGenericType(
-            Type genericType,
-            object? signatureProvider,
-            int rootSignatureParameterIndex,
-            ref int nestedSignatureIndex,
-            int nestedSignatureParameterIndex,
-            bool isRoot)
-            : base(
-                  genericType,
-                  signatureProvider,
-                  rootSignatureParameterIndex,
-                  ++nestedSignatureIndex,
-                  nestedSignatureParameterIndex,
-                  isRoot)
+        internal ModifiedGenericType(Type unmodifiedType, TypeSignature typeSignature)
+            : base(unmodifiedType, typeSignature)
         {
-            Debug.Assert(genericType.IsGenericType);
-
-            Type[] genericArguments = genericType.GetGenericArguments();
-            int count = genericArguments.Length;
-            ModifiedType[] modifiedTypes = new ModifiedType[count];
-            for (int i = 0; i < count; i++)
-            {
-                modifiedTypes[i] = Create(
-                    genericArguments[i],
-                    signatureProvider,
-                    rootSignatureParameterIndex,
-                    ref nestedSignatureIndex,
-                    // Since generic signatures don't have a return type, we use +1 here.
-                    nestedSignatureParameterIndex: i + 1);
-            }
-
-            _argumentTypes = modifiedTypes;
+            Debug.Assert(unmodifiedType.IsGenericType);
         }
 
-        public override Type[] GetGenericArguments() => CloneArray<Type>(_argumentTypes);
+        public override Type[] GetGenericArguments()
+        {
+            return (Type[])(_genericArguments ?? Initialize()).Clone();
+
+            Type[] Initialize()
+            {
+                Type[] genericArguments = typeImpl.GetGenericArguments();
+                for (int i = 0; i < genericArguments.Length; i++)
+                {
+                    genericArguments[i] = GetTypeParameter(genericArguments[i], i);
+                }
+                Interlocked.CompareExchange(ref _genericArguments, genericArguments, null);
+                return _genericArguments!;
+            }
+        }
     }
 }

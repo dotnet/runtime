@@ -1634,14 +1634,20 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool CompareSig(Signature sig1, Signature sig2);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern Type[] GetCustomModifiers(int rootSignatureParameterIndex, bool required, int nestedSignatureIndex = -1, int nestedSignatureParameterIndex = -1);
+        internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
+            GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern byte GetCallingConventionFromFunctionPointer(int rootSignatureParameterIndex, int nestedSignatureIndex);
+        internal extern int GetParameterOffset(int parameterIndex);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern bool IsUnmanagedFunctionPointer();
+        internal extern int GetTypeParameterFromOffset(int offset, int index);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern SignatureCallingConvention GetCallingConventionFromFunctionPointerAtOffset(int offset);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern Type[] GetCustomModifiersAtOffset(int offset, bool required);
         #endregion
     }
 

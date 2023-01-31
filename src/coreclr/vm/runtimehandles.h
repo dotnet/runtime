@@ -375,19 +375,15 @@ public:
         FieldDesc *pFieldDesc, ReflectMethodObject *pMethodUNSAFE,
         ReflectClassBaseObject *pDeclaringType);
 
-    static FCDECL5(Object *, GetCustomModifiers,
-        SignatureNative* pSig,
-        INT32 rootSignatureParameterIndex,
-        CLR_BOOL fRequired,
-        INT32 nestedSignatureIndex,
-        INT32 nestedSignatureParameterIndex);
-
     static FCDECL2(FC_BOOL_RET, CompareSig, SignatureNative* pLhs, SignatureNative* pRhs);
-    
-    static FCDECL3(FC_INT8_RET, GetCallingConventionFromFunctionPointer,
-        SignatureNative* pSig,
-        INT32 rootSignatureParameterIndex,
-        INT32 nestedSignatureIndex);    
+
+    static FCDECL2(INT32, GetParameterOffset, SignatureNative* pSig, INT32 parameterIndex);
+
+    static FCDECL3(INT32, GetTypeParameterFromOffset, SignatureNative* pSig, INT32 offset, INT32 index);
+
+    static FCDECL2(FC_INT8_RET, GetCallingConventionFromFunctionPointerAtOffset, SignatureNative* pSig, INT32 offset);
+
+    static FCDECL3(Object *, GetCustomModifiersAtOffset, SignatureNative* pSig, INT32 offset, CLR_BOOL fRequired);
 
     BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (m_managedCallingConvention & CALLCONV_HasThis); }
     INT32 NumFixedArgs() { WRAPPER_NO_CONTRACT; return m_PtrArrayarguments->GetNumComponents(); }

@@ -608,15 +608,6 @@ void MetaSig::Init(
             m_pRetType = SigPointer(NULL, 0);
             break;
         }
-        case sigGeneric:
-        {
-            IfFailGo(psig.SkipExactlyOne()); // Skip generic type
-
-            uint32_t data = 0;
-            IfFailGo(psig.GetData(&data));  // Store number of arguments.
-            m_nArgs = data;
-            break;
-        }
         default:
         {
             UNREACHABLE();
@@ -870,60 +861,6 @@ MetaSig::SkipArg()
             m_iCurArg = m_nArgs;
         }
     }
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Move to the specified signature.
-HRESULT
-MetaSig::MoveToSignature(SigPointer start, INT32 index)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        MODE_ANY;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    m_pLastType = m_pWalk;
-
-    CorElementType signatureType = CorElementType::ELEMENT_TYPE_END;
-    HRESULT hr = start.MoveToSignature(index, &signatureType);
-    if (FAILED(hr))
-    {
-        m_pWalk = m_pLastType;
-        return hr;
-    }
-
-    SigTypeContext typeContext = m_typeContext;
-
-    PCCOR_SIGNATURE pSig;
-    uint32_t cbSigSize;
-    start.GetSignature(&pSig, &cbSigSize);
-
-    // Select the right signature type to re-initialize.
-    MetaSigKind kind;
-    if (signatureType == ELEMENT_TYPE_FNPTR)
-    {
-        kind = sigMember;
-    }
-    else if (signatureType == ELEMENT_TYPE_GENERICINST)
-    {
-        kind = sigGeneric;
-    }
-    else
-    {
-        UNREACHABLE();
-        m_pWalk = m_pLastType;
-        return BFA_INVALID_TOKEN_TYPE;
-    }
-
-    Init(pSig, cbSigSize, m_pModule, &typeContext, kind);
-    return hr;
 }
 
 //---------------------------------------------------------------------------------------
