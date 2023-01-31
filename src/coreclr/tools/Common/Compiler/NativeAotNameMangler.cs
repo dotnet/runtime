@@ -140,7 +140,7 @@ namespace ILCompiler
         /// <param name="origName">Name to check for uniqueness.</param>
         /// <param name="set">Set of names already used.</param>
         /// <returns>A name based on <param name="origName"/> that is not part of <param name="set"/>.</returns>
-        private static string DisambiguateName(string origName, ISet<string> set)
+        private static string DisambiguateName(string origName, HashSet<string> set)
         {
             int iter = 0;
             string result = origName;
