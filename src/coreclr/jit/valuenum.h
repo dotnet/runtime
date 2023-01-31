@@ -1126,6 +1126,14 @@ public:
     ValueNum EvalHWIntrinsicFunUnary(
         var_types type, NamedIntrinsic ni, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN);
 
+    ValueNum EvalHWIntrinsicFunBinary(var_types      type,
+                                      NamedIntrinsic ni,
+                                      VNFunc         func,
+                                      ValueNum       arg0VN,
+                                      ValueNum       arg1VN,
+                                      bool           encodeResultType,
+                                      ValueNum       resultTypeVN);
+
     // Returns "true" iff "vn" represents a function application.
     bool IsVNFunc(ValueNum vn);
 
