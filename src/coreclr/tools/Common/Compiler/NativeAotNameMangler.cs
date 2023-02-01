@@ -290,9 +290,8 @@ namespace ILCompiler
                     mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + NestMangledName("Pointer");
                     break;
                 case TypeFlags.FunctionPointer:
-                    // TODO: need to also encode calling convention (or all modopts?)
                     var fnPtrType = (FunctionPointerType)type;
-                    mangledName = "__FnPtr" + EnterNameScopeSequence;
+                    mangledName = "__FnPtr_" + ((int)fnPtrType.Signature.Flags).ToString("X2") + EnterNameScopeSequence;
                     mangledName += GetMangledTypeName(fnPtrType.Signature.ReturnType);
 
                     mangledName += EnterNameScopeSequence;

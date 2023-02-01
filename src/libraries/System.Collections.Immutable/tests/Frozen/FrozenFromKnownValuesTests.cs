@@ -114,6 +114,7 @@ namespace System.Collections.Frozen.Tests
 
                 // from https://raw.githubusercontent.com/dotnet/roslyn/0456b4adc6939e366e7c509318b3ac6a85cda496/src/Compilers/CSharp/Test/Emit2/CodeGen/CodeGenLengthBasedSwitchTests.cs
                 new[] { "", "a", "b", "c", "no", "yes", "four", "alice", "blurb", "hello", "lamps", "lambs", "lower", "names", "slurp", "towed", "words" },
+                new[] { "", "a", "b", "c", "no", "yes", "four", "alice", "blurb", "hello", "lamps", "lambs", "lower", "names", "slurp", "towed", "words", "\u03BB" }, // plus a non-ASCII char
                 new[] { "", "a", "b", "c", "no", "yes", "four", "alice", "blurb", "hello" },
                 new[] { "abcdefgh", "abcdefg", "abcdef", "abcde", "abcd", "abc", "ab", "a" },
                 Enumerable.Range(0, 100).Select(i => i.ToString("D2")).ToArray(),
@@ -142,6 +143,7 @@ namespace System.Collections.Frozen.Tests
                 Enumerable.Range(0, 10).Select(i => $"ABCDEFGH\U0001F600{i}").ToArray(), // right justified single char non-ascii
                 Enumerable.Range(0, 100).Select(i => $"{i:D2}ABCDEFGH\U0001F600").ToArray(), // left justified substring non-ascii
                 Enumerable.Range(0, 100).Select(i => $"ABCDEFGH\U0001F600{i:D2}").ToArray(), // right justified substring non-ascii
+                Enumerable.Range(0, 20).Select(i => i.ToString("D2")).Select(s => (char)(s[0] + 128) + "" + (char)(s[1] + 128)).ToArray(), // left-justified non-ascii
             }
             select new object[] { optimizeForReading, keys.ToDictionary(i => i, i => i, comparer) };
 
