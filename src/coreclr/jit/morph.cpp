@@ -3981,7 +3981,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             //
             bool omitCopy = call->IsTailCall();
 
-            if (!omitCopy && fgDidEarlyLiveness)
+            if (!omitCopy && fgGlobalMorph)
             {
                 omitCopy = !varDsc->lvPromoted && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
             }
@@ -4026,7 +4026,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
                     // these candidates before morph and address exposing them
                     // at that point, which first requires ABI determination to
                     // be moved earlier.
-                    fgMarkNewlyGlobalUses(compCurStmt, varNum);
+                    fgRemarkGlobalUses = true;
                 }
 
                 JITDUMP("did not need to make outgoing copy for last use of V%02d\n", varNum);
@@ -4118,7 +4118,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 // Notes:
 //    See comment in fgMakeOutgoingStructArgCopy.
 //
-void Compiler::fgMarkNewlyGlobalUses(Statement* stmt, unsigned lclNum)
+void Compiler::fgMarkGlobalUses(Statement* stmt)
 {
     struct Visitor : GenTreeVisitor<Visitor>
     {
@@ -4127,14 +4127,14 @@ void Compiler::fgMarkNewlyGlobalUses(Statement* stmt, unsigned lclNum)
             DoPostOrder = true,
         };
 
-        Visitor(Compiler* comp, unsigned lclNum) : GenTreeVisitor(comp), m_lclNum(lclNum)
+        Visitor(Compiler* comp) : GenTreeVisitor(comp)
         {
         }
 
         fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* node = *use;
-            if (node->OperIsLocal() && (node->AsLclVarCommon()->GetLclNum() == m_lclNum))
+            if (node->OperIsLocal() && m_compiler->lvaGetDesc(node->AsLclVarCommon()->GetLclNum())->IsAddressExposed())
             {
                 node->gtFlags |= GTF_GLOB_REF;
             }
@@ -4146,12 +4146,9 @@ void Compiler::fgMarkNewlyGlobalUses(Statement* stmt, unsigned lclNum)
 
             return WALK_CONTINUE;
         }
-
-    private:
-        unsigned m_lclNum;
     };
 
-    Visitor visitor(this, lclNum);
+    Visitor visitor(this);
     visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
 }
 
@@ -13408,6 +13405,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
 void Compiler::fgMorphStmts(BasicBlock* block)
 {
     fgRemoveRestOfBlock = false;
+    fgRemarkGlobalUses  = false;
 
     for (Statement* const stmt : block->Statements())
     {
@@ -13521,6 +13519,12 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         }
 
         stmt->SetRootNode(morphedTree);
+
+        if (fgRemarkGlobalUses)
+        {
+            fgMarkGlobalUses(stmt);
+            fgRemarkGlobalUses = false;
+        }
 
         if (fgRemoveRestOfBlock)
         {

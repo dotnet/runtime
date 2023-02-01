@@ -4534,6 +4534,7 @@ public:
 
     bool fgRemoveRestOfBlock; // true if we know that we will throw
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
+    bool fgRemarkGlobalUses;  // true if morph should remark global uses after processing a statement
 
     enum FlowGraphOrder
     {
@@ -5818,7 +5819,7 @@ private:
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
-    void fgMarkNewlyGlobalUses(Statement* stmt, unsigned lclNum);
+    void fgMarkGlobalUses(Statement* stmt);
 
     GenTree* fgMorphLocal(GenTreeLclVarCommon* lclNode);
 #ifdef TARGET_X86
