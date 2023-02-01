@@ -83,10 +83,12 @@
     <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23073.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
       <Sha>92aae1ebe9760194a38f74e903757fc42c612b94</Sha>
+      <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.23073.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
       <Sha>92aae1ebe9760194a38f74e903757fc42c612b94</Sha>
+      <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-preview.2" Version="8.0.0-preview.2.23081.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
