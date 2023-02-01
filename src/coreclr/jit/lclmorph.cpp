@@ -565,15 +565,15 @@ public:
 #endif // DEBUG
     }
 
-    GenTree* OptimizeIndir(GenTree* tree, GenTree* parent)
+    GenTree* TryOptimizeIndir(GenTree* tree, GenTree* parent)
     {
         assert(tree->OperIs(GT_IND));
 
         if (m_compiler->opts.OptimizationDisabled())
-            return tree;
+            return nullptr;
 
         if ((parent != nullptr) && parent->OperIs(GT_CAST))
-            return tree;
+            return nullptr;
 
         if (tree->gtGetOp1()->OperIs(GT_LCL_VAR_ADDR))
         {
@@ -589,7 +589,7 @@ public:
 
                 return lclVar;
             }
-            if ((lclType == TYP_INT) && varTypeIsSmall(tree))
+            else if ((lclType == TYP_INT) && varTypeIsSmall(tree))
             {
                 lclVar->ChangeOper(GT_LCL_VAR);
                 lclVar->ChangeType(lclType);
@@ -629,7 +629,7 @@ public:
             }
         }
 
-        return tree;
+        return nullptr;
     }
 
     // Morph promoted struct fields and count local occurrences.
@@ -644,7 +644,12 @@ public:
 
         if (node->OperIs(GT_IND))
         {
-            node = *use = OptimizeIndir(node, user);
+            GenTree* optimizedNode = TryOptimizeIndir(node, user);
+            if (optimizedNode != nullptr)
+            {
+                node = *use    = optimizedNode;
+                m_stmtModified = true;
+            }
         }
 
         if (node->OperIs(GT_IND, GT_FIELD, GT_FIELD_ADDR))
