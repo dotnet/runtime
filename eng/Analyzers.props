@@ -12,5 +12,6 @@
     <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="$(MicrosoftCodeAnalysisCSharpCodeStyleVersion)" PrivateAssets="all" />
     <PackageReference Include="StyleCop.Analyzers" Version="$(StyleCopAnalyzersVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NET.ILLink.Analyzers" Version="$(MicrosoftNETILLinkAnalyzerPackageVersion)" PrivateAssets="all" />
   </ItemGroup>
 </Project>
