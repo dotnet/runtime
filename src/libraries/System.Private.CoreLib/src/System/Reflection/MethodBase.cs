@@ -121,6 +121,22 @@ namespace System.Reflection
             }
         }
 
+        // helper method to construct the string representation of the parameter list
+        internal virtual Type[] GetParameterTypes()
+        {
+            ParameterInfo[] paramInfo = GetParametersNoCopy();
+            if (paramInfo.Length == 0)
+            {
+                return Type.EmptyTypes;
+            }
+
+            Type[] parameterTypes = new Type[paramInfo.Length];
+            for (int i = 0; i < paramInfo.Length; i++)
+                parameterTypes[i] = paramInfo[i].ParameterType;
+
+            return parameterTypes;
+        }
+
 #if !NATIVEAOT
         private protected void ValidateInvokeTarget(object? target)
         {

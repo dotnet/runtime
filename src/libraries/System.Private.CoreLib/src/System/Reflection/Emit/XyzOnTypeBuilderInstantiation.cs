@@ -1,15 +1,15 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace System.Reflection.Emit
 {
     internal sealed class MethodOnTypeBuilderInstantiation : MethodInfo
     {
-        #region Private Static Members
+        #region Internal Static Members
         internal static MethodInfo GetMethod(MethodInfo method, TypeBuilderInstantiation type)
         {
             return new MethodOnTypeBuilderInstantiation(method, type);
@@ -24,7 +24,12 @@ namespace System.Reflection.Emit
         #region Constructor
         internal MethodOnTypeBuilderInstantiation(MethodInfo method, TypeBuilderInstantiation type)
         {
-            Debug.Assert(method is MethodBuilder || method is RuntimeMethodInfo);
+            Debug.Assert(method is MethodBuilder || method is
+#if NATIVEAOT
+                Runtime.MethodInfos.RuntimeMethodInfo);
+#else
+                RuntimeMethodInfo);
+#endif
 
             m_method = method;
             m_type = type;
@@ -100,7 +105,12 @@ namespace System.Reflection.Emit
         #region Constructor
         internal ConstructorOnTypeBuilderInstantiation(ConstructorInfo constructor, TypeBuilderInstantiation type)
         {
-            Debug.Assert(constructor is ConstructorBuilder || constructor is RuntimeConstructorInfo);
+            Debug.Assert(constructor is ConstructorBuilder || constructor is
+#if NATIVEAOT
+                Runtime.MethodInfos.RuntimeConstructorInfo);
+#else
+                RuntimeConstructorInfo);
+#endif
 
             m_ctor = constructor;
             m_type = type;
@@ -110,11 +120,6 @@ namespace System.Reflection.Emit
         internal override Type[] GetParameterTypes()
         {
             return m_ctor.GetParameterTypes();
-        }
-
-        internal override Type GetReturnType()
-        {
-            return m_type;
         }
 
         #region MemberInfo Overrides
@@ -135,7 +140,9 @@ namespace System.Reflection.Emit
                     return cb.MetadataToken;
                 else
                 {
+#if !NATIVEAOT
                     Debug.Assert(m_ctor is RuntimeConstructorInfo);
+#endif
                     return m_ctor.MetadataToken;
                 }
             }
@@ -209,8 +216,12 @@ namespace System.Reflection.Emit
         #region Constructor
         internal FieldOnTypeBuilderInstantiation(FieldInfo field, TypeBuilderInstantiation type)
         {
-            Debug.Assert(field is FieldBuilder || field is RuntimeFieldInfo);
-
+            Debug.Assert(field is FieldBuilder || field is
+#if NATIVEAOT
+                Runtime.FieldInfos.RuntimeFieldInfo);
+#else
+                RuntimeFieldInfo);
+#endif
             m_field = field;
             m_type = type;
         }
@@ -236,7 +247,9 @@ namespace System.Reflection.Emit
                     return fb.MetadataToken;
                 else
                 {
+#if !NATIVEAOT
                     Debug.Assert(m_field is RuntimeFieldInfo);
+#endif
                     return m_field.MetadataToken;
                 }
             }

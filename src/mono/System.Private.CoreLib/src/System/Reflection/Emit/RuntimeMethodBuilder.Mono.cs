@@ -543,7 +543,7 @@ namespace System.Reflection.Emit
                 ArgumentNullException.ThrowIfNull(type, nameof(typeArguments));
             }
 
-            return new MethodOnTypeBuilderInst(this, typeArguments);
+            return MethodBuilderInstantiation.MakeGenericMethod(this, typeArguments);
         }
 
         public override bool IsGenericMethodDefinition

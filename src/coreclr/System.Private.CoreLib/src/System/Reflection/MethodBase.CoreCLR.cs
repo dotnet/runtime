@@ -48,24 +48,5 @@ namespace System.Reflection
 
         internal virtual ParameterInfo[] GetParametersNoCopy() { return GetParameters(); }
         #endregion
-
-        #region Internal Methods
-        // helper method to construct the string representation of the parameter list
-
-        internal virtual Type[] GetParameterTypes()
-        {
-            ParameterInfo[] paramInfo = GetParametersNoCopy();
-            if (paramInfo.Length == 0)
-            {
-                return Type.EmptyTypes;
-            }
-
-            Type[] parameterTypes = new Type[paramInfo.Length];
-            for (int i = 0; i < paramInfo.Length; i++)
-                parameterTypes[i] = paramInfo[i].ParameterType;
-
-            return parameterTypes;
-        }
-        #endregion
     }
 }

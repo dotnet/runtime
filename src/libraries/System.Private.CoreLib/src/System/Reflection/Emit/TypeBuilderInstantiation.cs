@@ -17,6 +17,12 @@ namespace System.Reflection.Emit
         internal Hashtable m_hashtable;
         #endregion
 
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
+        {
+            if (typeInfo == null) return false;
+            return IsAssignableFrom(typeInfo.AsType());
+        }
+
         #region Static Members
         internal static Type MakeGenericType(Type type, Type[] typeArguments)
         {
@@ -243,7 +249,6 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) { throw new NotSupportedException(); }
-        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo) { throw new NotSupportedException(); }
 
         public override bool IsSubclassOf(Type c)
         {

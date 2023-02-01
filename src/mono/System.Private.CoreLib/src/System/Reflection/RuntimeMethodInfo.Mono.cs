@@ -640,7 +640,7 @@ namespace System.Reflection
             if (hasUserType)
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
-                    return new MethodOnTypeBuilderInst(this, methodInstantiation);
+                    return MethodBuilderInstantiation.MakeGenericMethod(this, methodInstantiation);
 
                 throw new NotSupportedException("User types are not supported under full aot");
             }

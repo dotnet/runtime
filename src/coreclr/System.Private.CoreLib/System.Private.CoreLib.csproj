@@ -163,7 +163,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilderInstantiation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeAssemblyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeConstructorBuilder.cs" />
@@ -177,9 +176,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeTypeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolMethod.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\XXXOnTypeBuilderInstantiation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MdConstant.cs" />

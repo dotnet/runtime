@@ -643,6 +643,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Label.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodBuilderInstantiation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Opcode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodes.cs" />
@@ -652,8 +653,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PEFileKinds.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PropertyBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\StackBehaviour.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\SymbolType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeBuilderInstantiation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeNameBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\XyzOnTypeBuilderInstantiation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\EventInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ExceptionHandlingClause.cs" />

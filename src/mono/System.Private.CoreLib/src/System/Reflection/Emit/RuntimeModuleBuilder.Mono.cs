@@ -600,11 +600,11 @@ namespace System.Reflection.Emit
             // allocated by the runtime
             if (member is TypeBuilderInstantiation || member is SymbolType)
                 token = typespec_tokengen--;
-            else if (member is FieldOnTypeBuilderInst)
+            else if (member is FieldOnTypeBuilderInstantiation)
                 token = memberref_tokengen--;
-            else if (member is ConstructorOnTypeBuilderInst)
+            else if (member is ConstructorOnTypeBuilderInstantiation)
                 token = memberref_tokengen--;
-            else if (member is MethodOnTypeBuilderInst)
+            else if (member is MethodOnTypeBuilderInstantiation)
                 token = memberref_tokengen--;
             else if (member is FieldBuilder)
                 token = memberref_tokengen--;
@@ -659,8 +659,9 @@ namespace System.Reflection.Emit
 
         internal int GetToken(MemberInfo member, bool create_open_instance)
         {
-            if (member is TypeBuilderInstantiation || member is FieldOnTypeBuilderInst || member is ConstructorOnTypeBuilderInst || member is MethodOnTypeBuilderInst || member is SymbolType || member is FieldBuilder || member is TypeBuilder || member is ConstructorBuilder || member is MethodBuilder || member is GenericTypeParameterBuilder ||
-                member is EnumBuilder)
+            if (member is TypeBuilderInstantiation || member is FieldOnTypeBuilderInstantiation || member is ConstructorOnTypeBuilderInstantiation ||
+                member is MethodOnTypeBuilderInstantiation || member is SymbolType || member is FieldBuilder || member is TypeBuilder ||
+                member is ConstructorBuilder || member is MethodBuilder || member is GenericTypeParameterBuilder || member is EnumBuilder)
                 return GetPseudoToken(member, create_open_instance);
             return getToken(this, member, create_open_instance);
         }
@@ -715,12 +716,12 @@ namespace System.Reflection.Emit
                 return fb.RuntimeResolve();
             if (obj is RuntimeGenericTypeParameterBuilder gtpb)
                 return gtpb.RuntimeResolve();
-            if (obj is FieldOnTypeBuilderInst fotbi)
-                return fotbi.RuntimeResolve();
-            if (obj is MethodOnTypeBuilderInst motbi)
-                return motbi.RuntimeResolve();
-            if (obj is ConstructorOnTypeBuilderInst cotbi)
-                return cotbi.RuntimeResolve();
+            if (obj is FieldOnTypeBuilderInstantiation fotbi)
+                return fotbi.DeclaringType!.RuntimeResolve();
+            if (obj is MethodOnTypeBuilderInstantiation motbi)
+                return motbi.DeclaringType!.RuntimeResolve();
+            if (obj is ConstructorOnTypeBuilderInstantiation cotbi)
+                return cotbi.DeclaringType!.RuntimeResolve();
             if (obj is Type t)
                 return t.RuntimeResolve();
             throw new NotImplementedException(obj.GetType().FullName);

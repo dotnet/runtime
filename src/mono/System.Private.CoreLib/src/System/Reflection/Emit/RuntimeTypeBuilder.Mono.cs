@@ -137,7 +137,7 @@ namespace System.Reflection.Emit
             if (field.DeclaringType != type.GetGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
 
-            if (field is FieldOnTypeBuilderInst)
+            if (field is FieldOnTypeBuilderInstantiation)
                 throw new ArgumentException("The specified field must be declared on a generic type definition.", nameof(field));
 
             FieldInfo res = type.GetField(field);
@@ -1360,20 +1360,19 @@ namespace System.Reflection.Emit
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
-            return new ArrayType(this, 0);
+            return SymbolType.FormCompoundType("[]", this, 0)!;
         }
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
-            if (rank < 1)
-                throw new IndexOutOfRangeException();
-            return new ArrayType(this, rank);
+            string s = GetRankString(rank);
+            return SymbolType.FormCompoundType(s, this, 0)!;
         }
 
         public override Type MakeByRefType()
         {
-            return new ByRefType(this);
+            return SymbolType.FormCompoundType("&", this, 0)!;
         }
 
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
@@ -1401,7 +1400,7 @@ namespace System.Reflection.Emit
 
         public override Type MakePointerType()
         {
-            return new PointerType(this);
+            return SymbolType.FormCompoundType("*", this, 0)!;
         }
 
         public override RuntimeTypeHandle TypeHandle
