@@ -4801,31 +4801,29 @@ void CodeGen::genCodeForAndFlags(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    if (tree->isContainedCompareChainSegment(op2))
+    assert (tree->isContainedCompareChainSegment(op2));
+
+    GenCondition cond;
+    bool         chain = false;
+
+    JITDUMP("Generating compare chain:\n");
+    if (op1->isContained())
     {
-        GenCondition cond;
-        bool         chain = false;
-
-        JITDUMP("Generating compare chain:\n");
-        if (op1->isContained())
-        {
-            // Generate Op1 into flags.
-            genCodeForContainedCompareChain(op1, &chain, &cond);
-            assert(chain);
-        }
-        else
-        {
-            // Op1 is not contained, move it from a register into flags.
-            emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
-            cond  = GenCondition::NE;
-            chain = true;
-        }
-
-        // Gen Op2 into flags.
-        genCodeForContainedCompareChain(op2, &chain, &cond);
+        // Generate Op1 into flags.
+        genCodeForContainedCompareChain(op1, &chain, &cond);
         assert(chain);
-        return;
     }
+    else
+    {
+        // Op1 is not contained, move it from a register into flags.
+        emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op1->GetRegNum(), 0);
+        cond  = GenCondition::NE;
+        chain = true;
+    }
+
+    // Gen Op2 into flags.
+    genCodeForContainedCompareChain(op2, &chain, &cond);
+    assert(chain);
 }
 
 //------------------------------------------------------------------------

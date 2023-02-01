@@ -311,7 +311,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 0);
             assert((tree->gtFlags & GTF_SET_FLAGS) != 0);
-            assert(tree->TypeGet() == TYP_VOID);
+            assert(tree->TypeIs(TYP_VOID));
             break;
 
         case GT_BFIZ:

@@ -9335,7 +9335,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 //
 //      ------------ BB01 -> BB03 (cond), succs={BB02,BB03}
 //      *  JTRUE
-//      \--*  GE a,b
+//      \--*  GT a,b
 //
 //      ------------ BB02 -> BB04 (cond), preds={BB01} succs={BB03,BB04}
 //      *  JTRUE
@@ -9350,7 +9350,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 //      ------------ BB01 -> BB03 (cond), succs={BB03,BB04}
 //      *  JTRUE
 //      \--*  AND
-//         +--*  LT a,b
+//         +--*  LE a,b
 //         \--*  NE c,d
 //
 //      ------------ BB03, preds={BB01} succs={BB04}
@@ -9412,11 +9412,10 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     }
     Statement* s2 = m_b2->firstStmt();
 
-    assert(m_testInfo1.testTree->gtOper == GT_JTRUE);
-    GenTree* cond1 = m_testInfo1.testTree->AsOp()->gtOp1;
-
-    assert(m_testInfo2.testTree->gtOper == GT_JTRUE);
-    GenTree* cond2 = m_testInfo2.testTree->AsOp()->gtOp1;
+    assert(m_testInfo1.testTree->OperIs(GT_JTRUE));
+    GenTree* cond1 = m_testInfo1.testTree->gtGetOp1();
+    assert(m_testInfo2.testTree->OperIs(GT_JTRUE));
+    GenTree* cond2 = m_testInfo2.testTree->gtGetOp1();
 
     // Ensure both conditions are suitable.
     if (!cond1->OperIsCmpCompare())
