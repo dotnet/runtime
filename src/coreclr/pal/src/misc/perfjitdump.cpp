@@ -25,7 +25,7 @@
 #include <sys/uio.h>
 #include <time.h>
 #include <unistd.h>
-#include <linux/limits.h>
+#include <limits.h>
 
 #include "../inc/llvm/ELF.h"
 

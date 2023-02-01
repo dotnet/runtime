@@ -121,7 +121,7 @@ const linked_functions = [
 // -- this javascript file is evaluated by emcc during compilation! --
 // we generate simple proxy for each exported function so that emcc will include them in the final output
 for (let linked_function of linked_functions) {
-    DotnetSupportLib[linked_function] = new Function("");
+    DotnetSupportLib[linked_function] = new Function('throw new Error("unreachable");');
 }
 
 autoAddDeps(DotnetSupportLib, "$DOTNET");

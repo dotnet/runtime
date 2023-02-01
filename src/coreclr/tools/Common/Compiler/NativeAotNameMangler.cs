@@ -140,7 +140,7 @@ namespace ILCompiler
         /// <param name="origName">Name to check for uniqueness.</param>
         /// <param name="set">Set of names already used.</param>
         /// <returns>A name based on <param name="origName"/> that is not part of <param name="set"/>.</returns>
-        private static string DisambiguateName(string origName, ISet<string> set)
+        private static string DisambiguateName(string origName, HashSet<string> set)
         {
             int iter = 0;
             string result = origName;
@@ -290,9 +290,8 @@ namespace ILCompiler
                     mangledName = GetMangledTypeName(((PointerType)type).ParameterType) + NestMangledName("Pointer");
                     break;
                 case TypeFlags.FunctionPointer:
-                    // TODO: need to also encode calling convention (or all modopts?)
                     var fnPtrType = (FunctionPointerType)type;
-                    mangledName = "__FnPtr" + EnterNameScopeSequence;
+                    mangledName = "__FnPtr_" + ((int)fnPtrType.Signature.Flags).ToString("X2") + EnterNameScopeSequence;
                     mangledName += GetMangledTypeName(fnPtrType.Signature.ReturnType);
 
                     mangledName += EnterNameScopeSequence;
