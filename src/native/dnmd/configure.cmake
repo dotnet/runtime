@@ -12,14 +12,12 @@ if(MSVC)
   add_compile_options(/Zc:wchar_t-) # wchar_t is a built-in type.
   add_compile_options(/W4 /WX) # warning level 4 and warnings are errors.
   add_compile_options(/Zi) # enable debugging information.
-  add_compile_options(/wd4068) # unknown pragma
 
   add_link_options(/DEBUG) # enable debugging information.
 else()
   add_compile_options(-Wall -Werror) # All warnings and are errors.
   add_compile_options(-g) # enable debugging information.
 
-  add_compile_options(-Wno-unknown-pragmas) # Ignore Win32 pragmas
   add_compile_options(-Wno-pragma-pack) # cor.h controls pack pragmas via headers.
 endif()
 
