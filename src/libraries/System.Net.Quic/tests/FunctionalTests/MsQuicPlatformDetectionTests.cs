@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Diagnostics;
 using System.Net.Security;
 using System.Threading.Tasks;
 using Xunit;
@@ -34,6 +35,27 @@ namespace System.Net.Quic.Tests
                 // gets fixed and this test starts failing.
                 Assert.False(QuicListener.IsSupported);
                 Assert.False(QuicConnection.IsSupported);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
+        public async Task SupportedLinuxPlatforms_IsSupportedIsTrue()
+        {
+            using Process ldconfig = new Process();
+            ldconfig.StartInfo.FileName = "ldconfig";
+            ldconfig.StartInfo.Arguments = "-p";
+            ldconfig.StartInfo.RedirectStandardOutput = true;
+            ldconfig.Start();
+            string output = await ldconfig.StandardOutput.ReadToEndAsync();
+            await ldconfig.WaitForExitAsync();
+            if (output.Contains("libmsquic.so"))
+            {
+                Assert.True(QuicListener.IsSupported);
+                Assert.True(QuicConnection.IsSupported);
+            }
+            else
+            {
+                _output.WriteLine("No msquic library found.");
             }
         }
     }
