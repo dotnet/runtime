@@ -29,7 +29,11 @@ if [%XHARNESS_COMMAND%] == [] (
 )
 
 if [%XHARNESS_ARGS%] == [] (
-    set "XHARNESS_ARGS=%JS_ENGINE% %JS_ENGINE_ARGS% %BROWSER_PATH% %MAIN_JS%"
+    set "XHARNESS_ARGS=%ENGINE_ARGS%"
+)
+
+if [%PREPEND_PATH%] NEQ [] (
+    set "PATH=%PREPEND_PATH%:%PATH%"
 )
 
 if [%XUNIT_RANDOM_ORDER_SEED%] NEQ [] (
