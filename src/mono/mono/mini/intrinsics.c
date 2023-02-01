@@ -1022,12 +1022,41 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			} else {
 				MonoClassField* field = (MonoClassField*) args [0]->inst_p1;
 				const char* data_ptr = mono_field_get_data (field);
+				size_t element_bytes = 0;
+
+				switch(t->type) {
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1:
+					element_bytes = 1;
+					break;
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2:
+					element_bytes = 2;
+					break;
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+				case MONO_TYPE_R4:
+					element_bytes = 4;
+					break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+				case MONO_TYPE_R8:
+					element_bytes = 8;
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+
+				int num_elements = mono_sizeof_type(field->type) / element_bytes;
+
+				ins = mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
 				
-				/*int dreg = alloc_preg (cfg);
+				/*int dreg = alloc_dreg (cfg, STACK_VTYPE);
 				mini_emit_init_rvar (cfg, dreg, fsig->ret);
+				ins = cfg->cbb->last_ins;
 				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREP_MEMBASE_IMM, dreg, 0, data_ptr);
-				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, dreg, __SIZEOF_POINTER__, size); */
-				//EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADV_MEMBASE, dreg, 
+				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, dreg, __SIZEOF_POINTER__, num_elements);
+				EMIT_NEW_VARLOAD (cfg, ins, dreg, fsig->ret);*/
 			}
 			
 			return ins;

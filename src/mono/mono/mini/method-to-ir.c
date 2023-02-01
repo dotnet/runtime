@@ -10800,7 +10800,6 @@ field_access_end:
 					MonoInst *addr, *vtvar;
 
 					vtvar = mono_compile_create_var (cfg, m_class_get_byval_arg (handle_class), OP_LOCAL);
-					gboolean emit_ldtoken_field = FALSE;
 
 					if (context_used) {
 						if (handle_class == mono_defaults.typehandle_class) {
@@ -10818,26 +10817,24 @@ field_access_end:
 						}
 					} else if (cfg->compile_aot) {
 						EMIT_NEW_LDTOKENCONST (cfg, ins, image, n, generic_context);
-					} else if (strcmp (cmethod->name, "CreateSpan") == 0) {
-						MONO_INST_NEW (cfg, ins, OP_LDTOKEN_FIELD);
-						ins->type = STACK_VTYPE;
-						ins->inst_c0 = vtvar->inst_c0;
-						ins->inst_p1 = handle;
-						MONO_ADD_INS (cfg->cbb, ins);
-
-						cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
-						cfg->cbb->needs_decompose = TRUE;
-						emit_ldtoken_field = TRUE;
-
 					} else {
 						EMIT_NEW_PCONST (cfg, ins, handle);
 					}
 
-					if (!emit_ldtoken_field) {
-						EMIT_NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
-						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, ins->dreg);
-						EMIT_NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);	
-					}
+					EMIT_NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
+					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, ins->dreg);
+
+					MONO_INST_NEW (cfg, ins, OP_LDTOKEN_FIELD);
+					ins->type = STACK_VTYPE;
+					ins->inst_c0 = vtvar->inst_c0;
+					ins->inst_p1 = handle;
+					MONO_ADD_INS (cfg->cbb, ins);
+
+					cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+					cfg->cbb->needs_decompose = TRUE;
+			
+					// OP_LDTOKEN_FIELD will later decompose into:
+					// EMIT_NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 				}
 			}
 
