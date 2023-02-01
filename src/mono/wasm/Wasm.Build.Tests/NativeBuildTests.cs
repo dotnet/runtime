@@ -162,7 +162,7 @@ namespace Wasm.Build.Tests
             );
 
             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined.c"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined_xyz.c"));
 
             CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
                 .WithWorkingDirectory(_projectDir!)
