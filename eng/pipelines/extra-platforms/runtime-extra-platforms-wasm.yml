@@ -220,7 +220,7 @@ jobs:
         - Browser_wasm_win
       extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true
       nameSuffix: DebuggerTests_MultiThreaded
-      alwaysRun: true # always run when invoked manually
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
