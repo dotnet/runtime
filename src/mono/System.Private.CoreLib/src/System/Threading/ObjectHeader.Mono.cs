@@ -33,6 +33,18 @@ internal static class ObjectHeader
 #endregion // keep in sync with monitor.h
     }
 
+    private static class SyncBlock
+    {
+        public static ref int HashCode(ref MonoThreadsSync mon) => ref mon.hash_code;
+        public static ref uint Status (ref MonoThreadsSync mon) => ref mon.status;
+
+        // only call if current thread owns the lock
+        public static void IncrementNest (ref MonoThreadsSync mon)
+        {
+            mon.nest++;
+        }
+    }
+
     // <summary>
     // Manipulate the MonoThreadSync:status field
     // </summary>
@@ -201,7 +213,7 @@ internal static class ObjectHeader
         LockWord lw = GetLockWord (ref o);
         if (lw.HasHash) {
             if (lw.IsInflated) {
-                hash = lw.GetInflatedLock().hash_code;
+                hash = SyncBlock.HashCode(ref lw.GetInflatedLock());
                 return true;
             } else {
                 hash = lw.FlatHash;
@@ -218,11 +230,11 @@ internal static class ObjectHeader
         ref MonoThreadsSync mon = ref lw.GetInflatedLock();
         while (true)
         {
-            uint old_status = mon.status;
+            uint old_status = SyncBlock.Status (ref mon);
             if (MonitorStatus.GetOwner(old_status) == 0)
             {
                 uint new_status = MonitorStatus.SetOwner(old_status, small_id);
-                uint prev_status = Interlocked.CompareExchange (ref mon.status, new_status, old_status);
+                uint prev_status = Interlocked.CompareExchange (ref SyncBlock.Status (ref mon), new_status, old_status);
                 if (prev_status == old_status)
                 {
                     lockTaken = true;
@@ -234,7 +246,7 @@ internal static class ObjectHeader
             if (MonitorStatus.GetOwner(old_status) == small_id)
             {
                 // we own it
-                mon.nest++;
+                SyncBlock.IncrementNest (ref mon);
                 lockTaken = true;
                 return true;
             }
