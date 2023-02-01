@@ -8,6 +8,10 @@ using System.Linq;
 namespace System.Collections.Frozen
 {
     /// <summary>Provides a frozen set to use when the value is an <see cref="int"/> and the default comparer is used.</summary>
+    /// <remarks>
+    /// This set type is specialized as a memory optimization, as the frozen hash table already contains the array of all
+    /// int values, and we can thus use its array as the items rather than maintaining a duplicate copy.
+    /// </remarks>
     internal sealed class Int32FrozenSet : FrozenSetInternalBase<int, Int32FrozenSet.GSW>
     {
         private readonly FrozenHashTable _hashTable;

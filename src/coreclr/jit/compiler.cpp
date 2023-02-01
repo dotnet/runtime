@@ -3903,9 +3903,9 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 #endif
 
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            // The JIT doesn't currently support loop alignment for prejitted images.
+            // The JIT doesn't currently support loop alignment for prejitted images outside NativeAOT.
             // (The JIT doesn't know the final address of the code, hence
             // it can't align code based on unknown addresses.)
 
@@ -4425,13 +4425,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
-    // If instrumenting, add block and class probes.
-    //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-    {
-        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
-    }
-
     // Compute bbNum, bbRefs and bbPreds
     //
     // This is the first time full (not cheap) preds will be computed.
@@ -4448,6 +4441,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         activePhaseChecks |= PhaseChecks::CHECK_FG;
     };
     DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
+
+    // If instrumenting, add block and class probes.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
+    }
 
     // Expand any patchpoints
     //
