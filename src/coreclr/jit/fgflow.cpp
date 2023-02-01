@@ -752,7 +752,7 @@ void Compiler::fgComputePreds()
 
                 if (!block->hasHndIndex())
                 {
-                    NO_WAY("endfinally outside a finally/fault block.");
+                    BADCODE("endfinally outside a finally/fault block.");
                 }
 
                 unsigned  hndIndex = block->getHndIndex();
@@ -760,7 +760,7 @@ void Compiler::fgComputePreds()
 
                 if (!ehDsc->HasFinallyOrFaultHandler())
                 {
-                    NO_WAY("endfinally outside a finally/fault block.");
+                    BADCODE("endfinally outside a finally/fault block.");
                 }
 
                 if (ehDsc->HasFinallyHandler())
