@@ -320,7 +320,7 @@ namespace ILCompiler
                 }
             }
 
-            private DictionaryLayoutNode GetPrecomputedLayout(TypeSystemEntity methodOrType)
+            private PrecomputedDictionaryLayoutNode GetPrecomputedLayout(TypeSystemEntity methodOrType)
             {
                 if (!_layouts.TryGetValue(methodOrType, out IEnumerable<GenericLookupResult> layout))
                 {

@@ -62,7 +62,6 @@ namespace System.Text.Json
         public List<PropertyRef>? PropertyRefCache;
 
         // Holds relevant state when deserializing objects with parameterized constructors.
-        public int CtorArgumentStateIndex;
         public ArgumentState? CtorArgumentState;
 
         // Whether to use custom number handling.

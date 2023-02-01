@@ -61,7 +61,7 @@ const linked_functions = [
 
     // mini-wasm-debugger.c
     "mono_wasm_asm_loaded",
-    "mono_wasm_fire_debugger_agent_message",
+    "mono_wasm_fire_debugger_agent_message_with_data",
     "mono_wasm_debugger_log",
     "mono_wasm_add_dbg_command_received",
     "mono_wasm_set_entrypoint_breakpoint",
@@ -121,12 +121,7 @@ const linked_functions = [
 // -- this javascript file is evaluated by emcc during compilation! --
 // we generate simple proxy for each exported function so that emcc will include them in the final output
 for (let linked_function of linked_functions) {
-    #if USE_PTHREADS
-    const fn_template = `return __dotnet_runtime.__linker_exports.${linked_function}.apply(__dotnet_runtime, arguments)`;
-    DotnetSupportLib[linked_function] = new Function(fn_template);
-    #else
     DotnetSupportLib[linked_function] = new Function('throw new Error("unreachable");');
-    #endif
 }
 
 autoAddDeps(DotnetSupportLib, "$DOTNET");

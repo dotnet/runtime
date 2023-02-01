@@ -350,17 +350,17 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_MethodBaked);
         }
 
-        private static Exception not_supported()
+        private static NotSupportedException not_supported()
         {
             return new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
-        private static Exception not_after_created()
+        private static InvalidOperationException not_after_created()
         {
             return new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
         }
 
-        private static Exception not_created()
+        private static NotSupportedException not_created()
         {
             return new NotSupportedException(SR.InvalidOperation_TypeNotCreated);
         }
