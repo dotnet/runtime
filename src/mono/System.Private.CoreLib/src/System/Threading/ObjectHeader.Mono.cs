@@ -186,19 +186,32 @@ internal static class ObjectHeader
         }
     }
 
+    private static unsafe ref Header ObjectHeaderUNSAFE(ref object obj)
+    {
+        Header** hptr = (Header**)Unsafe.AsPointer(ref obj);
+        ref Header h = ref Unsafe.AsRef<Header>(*hptr);
+        return ref h;
+    }
+
     private static LockWord GetLockWord(ref object obj)
     {
-        ref Header h = ref Unsafe.As<object, Header>(ref obj);
-        DumpRef ("glw h", ref h);
-        LockWord lw = LockWord.FromObjectHeader(ref h);
+        LockWord lw;
+        unsafe
+        {
+            ref Header h = ref ObjectHeaderUNSAFE(ref obj);
+            DumpRef ("glw h", ref h);
+            lw = LockWord.FromObjectHeader(ref h);
+        }
         GC.KeepAlive(obj);
         return lw;
     }
 
     private static IntPtr LockWordCompareExchange (ref object obj, LockWord nlw, LockWord expected)
     {
-        ref Header h = ref Unsafe.As<object, Header>(ref obj);
-        return Interlocked.CompareExchange (ref h.synchronization, nlw.AsIntPtr, expected.AsIntPtr);
+        ref Header h = ref ObjectHeaderUNSAFE(ref obj);
+        IntPtr result = Interlocked.CompareExchange (ref h.synchronization, nlw.AsIntPtr, expected.AsIntPtr);
+        GC.KeepAlive (obj);
+        return result;
     }
 
     /// <summary>
@@ -333,10 +346,12 @@ internal static class ObjectHeader
 
     private static void DumpRef<T>(string desc, scoped ref T thing)
     {
+#if false
         unsafe
         {
             IntPtr p = (IntPtr)Unsafe.AsPointer (ref thing);
-            Debug.WriteLine ($"{desc} 0x{p:x}");
+            Internal.Console.Error.Write ($"{desc} 0x{p:x}\n");
         }
+#endif
     }
 }
