@@ -1428,7 +1428,7 @@ namespace ILCompiler
             return Status.Fail(methodIL.OwningMethod, "Control fell through");
         }
 
-        private static Value NewUninitializedLocationValue(TypeDesc locationType)
+        private static ValueTypeValue NewUninitializedLocationValue(TypeDesc locationType)
         {
             if (locationType.IsGCPointer || locationType.IsByRef)
             {

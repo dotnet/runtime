@@ -39,14 +39,12 @@ extends:
       # Localization build
       #
 
-      # TODO: Re-enable when https://github.com/dotnet/runtime/issues/80729 is fixed.
-
-      #- ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
-      #  - template: /eng/common/templates/job/onelocbuild.yml
-      #    parameters:
-      #      MirrorRepo: runtime
-      #      LclSource: lclFilesfromPackage
-      #      LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+        - template: /eng/common/templates/job/onelocbuild.yml
+          parameters:
+            MirrorRepo: runtime
+            LclSource: lclFilesfromPackage
+            LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
       #
       # Source Index Build

@@ -4400,7 +4400,7 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 
 		key = decode_uint_with_len (key_len, entry);
 		value = decode_uint_with_len (value_len, entry + key_len);
-		next = decode_uint_with_len (next_len, entry + key_len + next_len);
+		next = decode_uint_with_len (next_len, entry + key_len + value_len);
 
 		if (key == 0)
 			return 0xffffff;

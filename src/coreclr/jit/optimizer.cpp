@@ -4692,8 +4692,6 @@ bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
     // When we can determine this, then we can set BBF_GC_SAFE_POINT for
     // those helpers too.
 
-    noway_assert(topBB->bbNum <= botBB->bbNum);
-
     // We can always check topBB and botBB for any gc safe points and early out
 
     if ((topBB->bbFlags | botBB->bbFlags) & BBF_GC_SAFE_POINT)
@@ -4708,6 +4706,8 @@ bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
         // return a conservative answer of true when we don't have the dominator sets
         return true;
     }
+
+    noway_assert(topBB->bbNum <= botBB->bbNum);
 
     BasicBlock* curBB = topBB;
     for (;;)
@@ -5275,26 +5275,29 @@ PhaseStatus Compiler::optInvertLoops()
     }
 #endif // OPT_CONFIG
 
+    bool madeChanges = fgRenumberBlocks();
+
     if (compCodeOpt() == SMALL_CODE)
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        // do not invert any loops
     }
-
-    bool madeChanges = false; // Assume no changes made
-    for (BasicBlock* const block : Blocks())
+    else
     {
-        // Make sure the appropriate fields are initialized
-        //
-        if (block->bbWeight == BB_ZERO_WEIGHT)
+        for (BasicBlock* const block : Blocks())
         {
-            // Zero weighted block can't have a LOOP_HEAD flag
-            noway_assert(block->isLoopHead() == false);
-            continue;
-        }
+            // Make sure the appropriate fields are initialized
+            //
+            if (block->bbWeight == BB_ZERO_WEIGHT)
+            {
+                // Zero weighted block can't have a LOOP_HEAD flag
+                noway_assert(block->isLoopHead() == false);
+                continue;
+            }
 
-        if (optInvertWhileLoop(block))
-        {
-            madeChanges = true;
+            if (optInvertWhileLoop(block))
+            {
+                madeChanges = true;
+            }
         }
     }
 

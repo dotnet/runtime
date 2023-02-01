@@ -11,7 +11,7 @@ namespace ILLink.Shared.TypeSystemProxy
 	{
 		public ParameterProxy (IParameterSymbol parameter)
 		{
-			Method = (new ((IMethodSymbol) parameter.ContainingSymbol));
+			Method = new ((IMethodSymbol) parameter.ContainingSymbol);
 			Index = (ParameterIndex) parameter.Ordinal + (Method.HasImplicitThis () ? 1 : 0);
 		}
 

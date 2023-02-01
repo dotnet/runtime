@@ -486,6 +486,11 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
 
 bool emitter::AreUpper32BitsZero(regNumber reg)
 {
+    // Only allow GPRs.
+    // If not a valid register, then return false.
+    if (!genIsValidIntReg(reg))
+        return false;
+
     // Only consider if safe
     //
     if (!emitCanPeepholeLastIns())
@@ -496,26 +501,85 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
     instrDesc* id  = emitLastIns;
     insFormat  fmt = id->idInsFmt();
 
-    // This isn't meant to be a comprehensive check. Just look for what
-    // seems to be common.
     switch (fmt)
     {
+        case IF_RWR:
+        case IF_RRW:
+
         case IF_RWR_CNS:
         case IF_RRW_CNS:
         case IF_RRW_SHF:
+
         case IF_RWR_RRD:
         case IF_RRW_RRD:
-        case IF_RWR_MRD:
-        case IF_RWR_SRD:
-        case IF_RWR_ARD:
+        case IF_RRW_RRW:
+        case IF_RRW_RRW_CNS:
 
-            // Bail if not writing to the right register
+        case IF_RWR_RRD_RRD:
+        case IF_RWR_RRD_RRD_CNS:
+
+        case IF_RWR_RRD_RRD_RRD:
+
+        case IF_RWR_MRD:
+        case IF_RRW_MRD:
+        case IF_RRW_MRD_CNS:
+
+        case IF_RWR_RRD_MRD:
+        case IF_RWR_MRD_CNS:
+        case IF_RWR_RRD_MRD_CNS:
+        case IF_RWR_RRD_MRD_RRD:
+        case IF_RWR_MRD_OFF:
+
+        case IF_RWR_SRD:
+        case IF_RRW_SRD:
+        case IF_RRW_SRD_CNS:
+
+        case IF_RWR_RRD_SRD:
+        case IF_RWR_SRD_CNS:
+        case IF_RWR_RRD_SRD_CNS:
+        case IF_RWR_RRD_SRD_RRD:
+
+        case IF_RWR_ARD:
+        case IF_RRW_ARD:
+        case IF_RRW_ARD_CNS:
+
+        case IF_RWR_RRD_ARD:
+        case IF_RWR_ARD_CNS:
+        case IF_RWR_ARD_RRD:
+        case IF_RWR_RRD_ARD_CNS:
+        case IF_RWR_RRD_ARD_RRD:
+        {
             if (id->idReg1() != reg)
             {
+                switch (id->idInsFmt())
+                {
+                    // Handles instructions who write to two registers.
+                    case IF_RRW_RRW:
+                    case IF_RRW_RRW_CNS:
+                    {
+                        if (id->idReg2() == reg)
+                        {
+                            return (id->idOpSize() == EA_4BYTE);
+                        }
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                if (instrHasImplicitRegPairDest(id->idIns()))
+                {
+                    if (id->idReg2() == reg)
+                    {
+                        return (id->idOpSize() == EA_4BYTE);
+                    }
+                }
+
                 return false;
             }
 
-            // Bail if movsx, we always have movsx sign extend to 8 bytes
+            // movsx always sign extends to 8 bytes.
             if (id->idIns() == INS_movsx)
             {
                 return false;
@@ -534,8 +598,9 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                 return true;
             }
 
-            // Else rely on operation size.
+            // otherwise rely on operation size.
             return (id->idOpSize() == EA_4BYTE);
+        }
 
         default:
             break;
@@ -11171,7 +11236,11 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     // For cases where 'align' was placed behind a 'jmp' in an IG that does not
     // immediately preced the loop IG, we do not know in advance the offset of
     // IG having loop. For such cases, skip the padding calculation validation.
-    bool validatePadding = !alignInstr->isPlacedAfterJmp;
+
+    // For prejit, `dst` is not aliged as requested, but the final assembly will have them aligned.
+    // So, just calculate the offset of the current `dst` from the start.
+    size_t offset = emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) ? emitCurCodeOffs(dst) : (size_t)dst;
+    bool   validatePadding = !alignInstr->isPlacedAfterJmp;
 #endif
 
     // Candidate for loop alignment
@@ -11181,8 +11250,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     unsigned paddingToAdd = id->idCodeSize();
 
     // Either things are already aligned or align them here.
-    assert(!validatePadding || (paddingToAdd == 0) ||
-           (((size_t)dst & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
+    assert(!validatePadding || (paddingToAdd == 0) || ((offset & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
 
     // Padding amount should not exceed the alignment boundary
     assert(0 <= paddingToAdd && paddingToAdd < emitComp->opts.compJitAlignLoopBoundary);
@@ -11191,7 +11259,7 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     if (validatePadding)
     {
         unsigned paddingNeeded =
-            emitCalculatePaddingForLoopAlignment(((instrDescAlign*)id)->idaIG->igNext, (size_t)dst, true);
+            emitCalculatePaddingForLoopAlignment(((instrDescAlign*)id)->idaIG->igNext, offset, true);
 
         // For non-adaptive, padding size is spread in multiple instructions, so don't bother checking
         if (emitComp->opts.compJitAlignLoopAdaptive)

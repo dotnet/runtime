@@ -438,6 +438,14 @@ mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
 	return 0;
 }
 
+#define JITERP_CNE_UN_R4 (0xFFFF + 0)
+#define JITERP_CGE_UN_R4 (0xFFFF + 1)
+#define JITERP_CLE_UN_R4 (0xFFFF + 2)
+#define JITERP_CNE_UN_R8 (0xFFFF + 3)
+#define JITERP_CGE_UN_R8 (0xFFFF + 4)
+#define JITERP_CLE_UN_R8 (0xFFFF + 5)
+
+
 #define JITERP_RELOP(opcode, type, op, noorder) \
 	case opcode: \
 		{ \
@@ -455,10 +463,14 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 		JITERP_RELOP(MINT_CEQ_R8, double, ==, 0);
 		JITERP_RELOP(MINT_CNE_R4, float, !=, 1);
 		JITERP_RELOP(MINT_CNE_R8, double, !=, 1);
+		JITERP_RELOP(JITERP_CNE_UN_R4, float, !=, 1);
+		JITERP_RELOP(JITERP_CNE_UN_R8, double, !=, 1);
 		JITERP_RELOP(MINT_CGT_R4, float, >, 0);
 		JITERP_RELOP(MINT_CGT_R8, double, >, 0);
 		JITERP_RELOP(MINT_CGE_R4, float, >=, 0);
 		JITERP_RELOP(MINT_CGE_R8, double, >=, 0);
+		JITERP_RELOP(JITERP_CGE_UN_R4, float, >=, 1);
+		JITERP_RELOP(JITERP_CGE_UN_R8, double, >=, 1);
 		JITERP_RELOP(MINT_CGT_UN_R4, float, >, 1);
 		JITERP_RELOP(MINT_CGT_UN_R8, double, >, 1);
 		JITERP_RELOP(MINT_CLT_R4, float, <, 0);
@@ -467,6 +479,8 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 		JITERP_RELOP(MINT_CLT_UN_R8, double, <, 1);
 		JITERP_RELOP(MINT_CLE_R4, float, <=, 0);
 		JITERP_RELOP(MINT_CLE_R8, double, <=, 0);
+		JITERP_RELOP(JITERP_CLE_UN_R4, float, <=, 1);
+		JITERP_RELOP(JITERP_CLE_UN_R8, double, <=, 1);
 
 		default:
 			g_assert_not_reached();
@@ -954,6 +968,52 @@ mono_jiterp_get_hashcode (MonoObject ** ppObj)
 	MonoObject *obj = *ppObj;
 	g_assert (obj);
 	return mono_object_hash_internal (obj);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_signature_has_this (MonoMethodSignature *sig)
+{
+	return sig->hasthis;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoType *
+mono_jiterp_get_signature_return_type (MonoMethodSignature *sig)
+{
+	return sig->ret;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_signature_param_count (MonoMethodSignature *sig)
+{
+	return sig->param_count;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoType **
+mono_jiterp_get_signature_params (MonoMethodSignature *sig)
+{
+	return sig->params;
+}
+
+#define DUMMY_BYREF 0xFFFF
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_type_to_ldind (MonoType *type)
+{
+	if (!type)
+		return 0;
+	if (m_type_is_byref(type))
+		return DUMMY_BYREF;
+	return mono_type_to_ldind (type);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_type_to_stind (MonoType *type)
+{
+	if (!type)
+		return 0;
+	if (m_type_is_byref(type))
+		return 0;
+	return mono_type_to_stind (type);
 }
 
 // HACK: fix C4206

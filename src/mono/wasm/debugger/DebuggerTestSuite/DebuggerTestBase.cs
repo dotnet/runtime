@@ -54,6 +54,7 @@ namespace DebuggerTests
         private const int DefaultTestTimeoutMs = 1 * 60 * 1000;
         protected TimeSpan TestTimeout = TimeSpan.FromMilliseconds(DefaultTestTimeoutMs);
         protected ITestOutputHelper _testOutput;
+        protected readonly TestEnvironment _env;
 
         static string s_debuggerTestAppPath;
         static int s_idCounter = -1;
@@ -117,8 +118,16 @@ namespace DebuggerTests
             }
         }
 
+        public static string TempPath => Path.Combine(Path.GetTempPath(), "dbg-tests-tmp");
+        static DebuggerTestBase()
+        {
+            if (Directory.Exists(TempPath))
+                Directory.Delete(TempPath, recursive: true);
+        }
+
         public DebuggerTestBase(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
         {
+            _env = new TestEnvironment(testOutput);
             _testOutput = testOutput;
             Id = Interlocked.Increment(ref s_idCounter);
             // the debugger is working in locale of the debugged application. For example Datetime.ToString()
@@ -151,7 +160,11 @@ namespace DebuggerTests
             await insp.OpenSessionAsync(fn, TestTimeout);
         }
 
-        public virtual async Task DisposeAsync() => await insp.ShutdownAsync().ConfigureAwait(false);
+        public virtual async Task DisposeAsync()
+        {
+            await insp.ShutdownAsync().ConfigureAwait(false);
+            _env.Dispose();
+        }
 
         public Task Ready() => startTask;
 
@@ -275,7 +288,7 @@ namespace DebuggerTests
 
         // sets breakpoint by method name and line offset
         internal async Task CheckInspectLocalsAtBreakpointSite(string type, string method, int line_offset, string bp_function_name, string eval_expression,
-            Func<JToken, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
+            Func<JToken, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test", int col = 0)
         {
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -1142,9 +1155,19 @@ namespace DebuggerTests
 
         internal virtual async Task<Result> SetBreakpoint(string url_key, int line, int column, bool expect_ok = true, bool use_regex = false, string condition = "")
         {
-            var bp1_req = !use_regex ?
+            JObject bp1_req;
+            if (column != -1)
+            {
+                bp1_req = !use_regex ?
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, url = dicFileToUrl[url_key], condition }) :
                 JObject.FromObject(new { lineNumber = line, columnNumber = column, urlRegex = url_key, condition });
+            }
+            else
+            {
+                bp1_req = !use_regex ?
+                JObject.FromObject(new { lineNumber = line, url = dicFileToUrl[url_key], condition }) :
+                JObject.FromObject(new { lineNumber = line, urlRegex = url_key, condition });
+            }
 
             var bp1_res = await cli.SendCommand("Debugger.setBreakpointByUrl", bp1_req, token);
             Assert.True(expect_ok ? bp1_res.IsOk : !bp1_res.IsOk);
@@ -1506,6 +1529,13 @@ namespace DebuggerTests
             var res = await cli.SendCommand("DotnetDebugger.setDebuggerProperty", req, token);
             Assert.True(res.IsOk);
             Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
+        }
+
+
+        internal async Task SetSymbolOptions(JObject param)
+        {
+            var res = await cli.SendCommand("DotnetDebugger.setSymbolOptions", param, token);
+            Assert.True(res.IsOk);
         }
 
         internal async Task CheckEvaluateFail(string id, params (string expression, string message)[] args)
