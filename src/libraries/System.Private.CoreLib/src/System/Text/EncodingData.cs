@@ -237,6 +237,41 @@ namespace System.Text
             56
         };
 
+        //
+        // EnglishNames is the concatenation of the English names for each codepage.
+        // It is used in retrieving the value for System.Text.Encoding.EncodingName
+        // given System.Text.Encoding.CodePage.
+        // This is done rather than using a large readonly array of strings to avoid
+        // generating a large amount of code in the static constructor.
+        //
+        private const string EnglishNames =
+            "Unicode" + // 1200
+            "Unicode (Big-Endian)" + // 1201
+            "Unicode (UTF-32)" + // 12000
+            "Unicode (UTF-32 Big-Endian)" + // 12001
+            "US-ASCII" + // 20127
+            "Western European (ISO)" + // 28591
+            "Unicode (UTF-7)" + // 65000
+            "Unicode (UTF-8)"; // 65001
+
+        //
+        // EnglishNameIndices contains the start index of each code page's English
+        // name in the string EnglishNames. It is indexed by an index into
+        // MappedCodePages.
+        //
+        private static ReadOnlySpan<int> EnglishNameIndices => new int[]
+        {
+            0, // Unicode (1200)
+            7, // Unicode (Big-Endian) (1201)
+            27, // Unicode (UTF-32) (12000)
+            43, // Unicode (UTF-32 Big-Endian) (12001)
+            70, // US-ASCII (20127)
+            78, // Western European (ISO) (28591)
+            100, // Unicode (UTF-7) (65000)
+            115, // Unicode (UTF-8) (65001)
+            130
+        };
+
         // redeclaring these constants here for readability below
         private const uint MIMECONTF_MAILNEWS = Encoding.MIMECONTF_MAILNEWS;
         private const uint MIMECONTF_BROWSER = Encoding.MIMECONTF_BROWSER;

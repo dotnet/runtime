@@ -5,11 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Resources;
-
-using ILCompiler.DependencyAnalysis;
 
 using Internal.IL;
 using Internal.TypeSystem;
@@ -118,9 +114,6 @@ namespace ILCompiler
             // (Lets us avoid seeing lots of small basic blocks within eliminated chunks.)
             VisibleBasicBlockStart = 0x10,
 
-            // This is a potential SR.get_SomeResourceString call.
-            GetResourceStringCall = 0x20,
-
             // The instruction at this offset is reachable
             Mark = 0x80,
         }
@@ -146,16 +139,8 @@ namespace ILCompiler
             // Last step is a sweep - we replace the tail of all unreachable blocks with "br $-2"
             // and nop out the rest. If the basic block is smaller than 2 bytes, we don't touch it.
             // We also eliminate any EH records that correspond to the stubbed out basic block.
-            //
-            // We also attempt to rewrite calls to SR.SomeResourceString accessors with string
-            // literals looked up from the managed resources.
 
             Debug.Assert(method.GetMethodILDefinition() == method);
-
-            // Do not attempt to inline resource strings if we only want to use resource keys.
-            // The optimizations are not compatible.
-            bool shouldInlineResourceStrings =
-                !_hashtable._switchValues.TryGetValue("System.Resources.UseSystemResourceKeys", out bool useResourceKeys) || !useResourceKeys;
 
             ILExceptionRegion[] ehRegions = method.GetExceptionRegions();
             byte[] methodBytes = method.GetILBytes();
@@ -257,8 +242,6 @@ namespace ILCompiler
                     }
                 }
             }
-
-            bool hasGetResourceStringCall = false;
 
             // Mark all reachable basic blocks
             //
@@ -401,19 +384,6 @@ namespace ILCompiler
                         if (reader.HasNext)
                             flags[reader.Offset] |= OpcodeFlags.VisibleBasicBlockStart;
                     }
-                    else if (shouldInlineResourceStrings && opcode == ILOpcode.call)
-                    {
-                        var callee = method.GetObject(reader.ReadILToken(), NotFoundBehavior.ReturnNull) as EcmaMethod;
-                        if (callee != null && callee.IsSpecialName && callee.OwningType is EcmaType calleeType
-                            && calleeType.Name == InlineableStringsResourceNode.ResourceAccessorTypeName
-                            && calleeType.Namespace == InlineableStringsResourceNode.ResourceAccessorTypeNamespace
-                            && callee.Signature is { Length: 0, IsStatic: true }
-                            && callee.Name.StartsWith("get_", StringComparison.Ordinal))
-                        {
-                            flags[offset] |= OpcodeFlags.GetResourceStringCall;
-                            hasGetResourceStringCall = true;
-                        }
-                    }
                     else
                     {
                         reader.Skip(opcode);
@@ -435,7 +405,7 @@ namespace ILCompiler
                 }
             }
 
-            if (!hasUnmarkedInstruction && !hasGetResourceStringCall)
+            if (!hasUnmarkedInstruction)
                 return method;
 
             byte[] newBody = (byte[])methodBytes.Clone();
@@ -502,47 +472,7 @@ namespace ILCompiler
                 debugInfo = new SubstitutedDebugInformation(debugInfo, sequencePoints.ToArray());
             }
 
-            // We only optimize EcmaMethods because there we can find out the highest string token RID
-            // in use.
-            ArrayBuilder<string> newStrings = default;
-            if (hasGetResourceStringCall && method.GetMethodILDefinition() is EcmaMethodIL ecmaMethodIL)
-            {
-                // We're going to inject new string tokens. Start where the last token of the module left off.
-                // We don't need this token to be globally unique because all token resolution happens in the context
-                // of a MethodIL and we're making a new one here. It just has to be unique to the MethodIL.
-                int tokenRid = ecmaMethodIL.Module.MetadataReader.GetHeapSize(HeapIndex.UserString);
-
-                for (int offset = 0; offset < flags.Length; offset++)
-                {
-                    if ((flags[offset] & OpcodeFlags.GetResourceStringCall) == 0)
-                        continue;
-
-                    Debug.Assert(newBody[offset] == (byte)ILOpcode.call);
-                    var getter = (EcmaMethod)method.GetObject(new ILReader(newBody, offset + 1).ReadILToken());
-
-                    // If we can't get the string, this might be something else.
-                    string resourceString = GetResourceStringForAccessor(getter);
-                    if (resourceString == null)
-                        continue;
-
-                    // If we ran out of tokens, we can't optimize anymore.
-                    if (tokenRid > 0xFFFFFF)
-                        continue;
-
-                    newStrings.Add(resourceString);
-
-                    // call and ldstr are both 5-byte instructions: opcode followed by a token.
-                    newBody[offset] = (byte)ILOpcode.ldstr;
-                    newBody[offset + 1] = (byte)tokenRid;
-                    newBody[offset + 2] = (byte)(tokenRid >> 8);
-                    newBody[offset + 3] = (byte)(tokenRid >> 16);
-                    newBody[offset + 4] = TokenTypeString;
-
-                    tokenRid++;
-                }
-            }
-
-            return new SubstitutedMethodIL(method, newBody, newEHRegions.ToArray(), debugInfo, newStrings.ToArray());
+            return new SubstitutedMethodIL(method, newBody, newEHRegions.ToArray(), debugInfo);
         }
 
         private bool TryGetConstantArgument(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int argIndex, out int constant)
@@ -711,36 +641,19 @@ namespace ILCompiler
             return false;
         }
 
-        private string GetResourceStringForAccessor(EcmaMethod method)
-        {
-            Debug.Assert(method.Name.StartsWith("get_", StringComparison.Ordinal));
-            string resourceStringName = method.Name.Substring(4);
-
-            Dictionary<string, string> dict = _hashtable.GetOrCreateValue(method.Module).InlineableResourceStrings;
-            if (dict != null
-                && dict.TryGetValue(resourceStringName, out string result))
-            {
-                return result;
-            }
-
-            return null;
-        }
-
         private sealed class SubstitutedMethodIL : MethodIL
         {
             private readonly byte[] _body;
             private readonly ILExceptionRegion[] _ehRegions;
             private readonly MethodIL _wrappedMethodIL;
             private readonly MethodDebugInformation _debugInfo;
-            private readonly string[] _newStrings;
 
-            public SubstitutedMethodIL(MethodIL wrapped, byte[] body, ILExceptionRegion[] ehRegions, MethodDebugInformation debugInfo, string[] newStrings)
+            public SubstitutedMethodIL(MethodIL wrapped, byte[] body, ILExceptionRegion[] ehRegions, MethodDebugInformation debugInfo)
             {
                 _wrappedMethodIL = wrapped;
                 _body = body;
                 _ehRegions = ehRegions;
                 _debugInfo = debugInfo;
-                _newStrings = newStrings;
             }
 
             public override MethodDesc OwningMethod => _wrappedMethodIL.OwningMethod;
@@ -749,23 +662,7 @@ namespace ILCompiler
             public override ILExceptionRegion[] GetExceptionRegions() => _ehRegions;
             public override byte[] GetILBytes() => _body;
             public override LocalVariableDefinition[] GetLocals() => _wrappedMethodIL.GetLocals();
-            public override object GetObject(int token, NotFoundBehavior notFoundBehavior)
-            {
-                // If this is a string token, it could be one of the new string tokens we injected.
-                if ((token >>> 24) == TokenTypeString
-                    && _wrappedMethodIL.GetMethodILDefinition() is EcmaMethodIL ecmaMethodIL)
-                {
-                    int rid = token & 0xFFFFFF;
-                    int maxRealTokenRid = ecmaMethodIL.Module.MetadataReader.GetHeapSize(HeapIndex.UserString);
-                    if (rid >= maxRealTokenRid)
-                    {
-                        // Yep, string injected by us.
-                        return _newStrings[rid - maxRealTokenRid];
-                    }
-                }
-
-                return _wrappedMethodIL.GetObject(token, notFoundBehavior);
-            }
+            public override object GetObject(int token, NotFoundBehavior notFoundBehavior) => _wrappedMethodIL.GetObject(token, notFoundBehavior);
             public override MethodDebugInformation GetDebugInfo() => _debugInfo;
         }
 
@@ -785,11 +682,9 @@ namespace ILCompiler
             public override IEnumerable<ILSequencePoint> GetSequencePoints() => _sequencePoints;
         }
 
-        private const int TokenTypeString = 0x70; // CorTokenType for strings
-
         private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
-            internal readonly Dictionary<string, bool> _switchValues;
+            private readonly Dictionary<string, bool> _switchValues;
             private readonly Logger _logger;
 
             public FeatureSwitchHashtable(Logger logger, Dictionary<string, bool> switchValues)
@@ -815,7 +710,6 @@ namespace ILCompiler
 
             public Dictionary<MethodDesc, BodySubstitution> BodySubstitutions { get; }
             public Dictionary<FieldDesc, object> FieldSubstitutions { get; }
-            public Dictionary<string, string> InlineableResourceStrings { get; }
 
             public AssemblyFeatureInfo(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues)
             {
@@ -846,27 +740,6 @@ namespace ILCompiler
                         }
 
                         (BodySubstitutions, FieldSubstitutions) = BodySubstitutionsParser.GetSubstitutions(logger, module.Context, ms, resource, module, "name", featureSwitchValues);
-                    }
-                    else if (InlineableStringsResourceNode.IsInlineableStringsResource(module, resourceName))
-                    {
-                        BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
-                        int length = (int)reader.ReadUInt32();
-
-                        UnmanagedMemoryStream ms;
-                        unsafe
-                        {
-                            ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
-                        }
-
-                        InlineableResourceStrings = new Dictionary<string, string>();
-
-                        using var resReader = new ResourceReader(ms);
-                        var enumerator = resReader.GetEnumerator();
-                        while (enumerator.MoveNext())
-                        {
-                            if (enumerator.Key is string key && enumerator.Value is string value)
-                                InlineableResourceStrings[key] = value;
-                        }
                     }
                 }
             }

@@ -124,7 +124,7 @@ namespace System.Text
                 arrayEncodingInfo[arrayEncodingInfoIdx++] = new EncodingInfo(
                     codePage,
                     webNames[webNameIndices[i]..webNameIndices[i + 1]],
-                    GetDisplayName(codePage)
+                    GetDisplayName(codePage, i)
                     );
             }
 
@@ -151,7 +151,7 @@ namespace System.Text
                     if (codePage != Encoding.CodePageUTF7 || LocalAppContextSwitches.EnableUnsafeUTF7Encoding)
                     {
                         encodingInfoList[codePage] = new EncodingInfo(codePage, webNames[webNameIndices[i]..webNameIndices[i + 1]],
-                                                                                GetDisplayName(codePage));
+                                                                                GetDisplayName(codePage, i));
                     }
                 }
             }
@@ -229,28 +229,19 @@ namespace System.Text
             // All supported code pages have identical header names, and body names.
             string headerName = webName;
             string bodyName = webName;
-            string displayName = GetDisplayName(codePage);
+            string displayName = GetDisplayName(codePage, index);
             uint flags = Flags[index];
 
             return new CodePageDataItem(uiFamilyCodePage, webName, headerName, bodyName, displayName, flags);
         }
 
-        private static string GetDisplayName(int codePage)
+        private static string GetDisplayName(int codePage, int englishNameIndex)
         {
-            switch (codePage)
-            {
-                case 1200: return SR.Globalization_cp_1200;
-                case 1201: return SR.Globalization_cp_1201;
-                case 12000: return SR.Globalization_cp_12000;
-                case 12001: return SR.Globalization_cp_12001;
-                case 20127: return SR.Globalization_cp_20127;
-                case 28591: return SR.Globalization_cp_28591;
-                case 65000: return SR.Globalization_cp_65000;
-                case 65001: return SR.Globalization_cp_65001;
-            };
+            string? displayName = SR.GetResourceString("Globalization_cp_" + codePage.ToString());
+            if (string.IsNullOrEmpty(displayName))
+                displayName = EnglishNames[EnglishNameIndices[englishNameIndex]..EnglishNameIndices[englishNameIndex + 1]];
 
-            Debug.Fail("Unexpected code page");
-            return "";
+            return displayName;
         }
     }
 }
