@@ -3752,12 +3752,10 @@ public:
     {
         return ((gtFlags & GTF_VAR_MULTIREG) != 0);
     }
-
     void ClearMultiReg()
     {
         gtFlags &= ~GTF_VAR_MULTIREG;
     }
-
     void SetMultiReg()
     {
         gtFlags |= GTF_VAR_MULTIREG;

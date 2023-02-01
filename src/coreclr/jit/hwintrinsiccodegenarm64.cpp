@@ -424,19 +424,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         instruction ins = INS_invalid;
         switch (intrin.id)
         {
-            case NI_AdvSimd_VectorTableLookup_2:
-            case NI_AdvSimd_Arm64_VectorTableLookup_2:
-                ins = INS_tbl_2regs;
-                break;
-
-            case NI_AdvSimd_VectorTableLookup_3:
-            case NI_AdvSimd_Arm64_VectorTableLookup_3:
-                ins = INS_tbl_3regs;
-                break;
-
-            case NI_AdvSimd_VectorTableLookup_4:
-            case NI_AdvSimd_Arm64_VectorTableLookup_4:
-                ins = INS_tbl_4regs;
+            case NI_AdvSimd_VectorTableLookup:
+            case NI_AdvSimd_Arm64_VectorTableLookup:
+                ins = INS_tbl;
                 break;
 
             case NI_AdvSimd_AddWideningLower:
@@ -504,12 +494,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
         switch (intrin.id)
         {
-            case NI_AdvSimd_VectorTableLookup_2:
-            case NI_AdvSimd_Arm64_VectorTableLookup_2:
-            case NI_AdvSimd_VectorTableLookup_3:
-            case NI_AdvSimd_Arm64_VectorTableLookup_3:
-            case NI_AdvSimd_VectorTableLookup_4:
-            case NI_AdvSimd_Arm64_VectorTableLookup_4:
+            case NI_AdvSimd_VectorTableLookup:
+            case NI_AdvSimd_Arm64_VectorTableLookup:
             {
 
                 if (!intrin.op1->OperIsFieldList())
@@ -522,13 +508,36 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 op1Reg                       = firstField->GetRegNum();
 #ifdef DEBUG
                 regNumber argReg = op1Reg;
+#endif
+                unsigned regCount = 0;
                 for (GenTreeFieldList::Use& use : fieldList->Uses())
                 {
+                    regCount++;
+#ifdef DEBUG
+
                     GenTree* argNode = use.GetNode();
                     assert(argReg == argNode->GetRegNum());
                     argReg = (regNumber)(argReg + 1);
-                }
 #endif
+                }
+
+                switch (regCount)
+                {
+                    case 2:
+                        ins = INS_tbl_2regs;
+                        break;
+                    case 3:
+                        ins = INS_tbl_3regs;
+                        break;
+                    case 4:
+                        ins = INS_tbl_4regs;
+                        break;
+                    default:
+                        assert(regCount == 1);
+                        assert(ins == INS_tbl);
+                        break;
+                }
+
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
             }

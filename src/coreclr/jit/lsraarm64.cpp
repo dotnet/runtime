@@ -1046,57 +1046,47 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else
         {
-            unsigned     regCount      = 0;
-            RefPosition* useRefPos1    = nullptr;
-            RefPosition* nextUseRefPos = nullptr;
-            switch (intrin.id)
+            if ((intrin.id == NI_AdvSimd_VectorTableLookup) || (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup))
             {
-                case NI_AdvSimd_VectorTableLookup_2:
-                case NI_AdvSimd_Arm64_VectorTableLookup_2:
-                    regCount = 2;
-                    break;
-                case NI_AdvSimd_VectorTableLookup_3:
-                case NI_AdvSimd_Arm64_VectorTableLookup_3:
-                    regCount = 3;
-                    break;
-                case NI_AdvSimd_VectorTableLookup_4:
-                case NI_AdvSimd_Arm64_VectorTableLookup_4:
-                    regCount = 4;
-                    break;
-                default:
-                    regCount = 1;
-                    break;
-            }
-
-            if (regCount == 1)
-            {
-                srcCount += BuildOperandUses(intrin.op1);
-            }
-            else
-            {
-                RefPosition* lastRefPos = nullptr;
-                // consecutive registers
-
-                RefPosition* currRefPos = nullptr;
-                for (GenTreeFieldList::Use& use : intrin.op1->AsFieldList()->Uses())
+                if (intrin.op1->OperIsFieldList())
                 {
-                    currRefPos = BuildUse(use.GetNode(), RBM_NONE, 0 ARM64_ARG(/* needsConsecutive */ true));
-                    if (lastRefPos == nullptr)
+                    unsigned     regCount    = 0;
+                    RefPosition* currRefPos  = nullptr;
+                    RefPosition* firstRefPos = nullptr;
+                    RefPosition* lastRefPos  = nullptr;
+
+                    for (GenTreeFieldList::Use& use : intrin.op1->AsFieldList()->Uses())
                     {
-                        currRefPos->regCount = regCount;
-                    }
-                    else
-                    {
-                        // Explicitely set regCount=0 so we can identify that this is non-first refposition.
-                        currRefPos->regCount = 0;
+                        currRefPos                   = BuildUse(use.GetNode());
+                        currRefPos->needsConsecutive = true;
+                        currRefPos->regCount         = 0;
+
+                        if (firstRefPos == nullptr)
+                        {
+                            firstRefPos = currRefPos;
+                        }
 
                         getNextConsecutiveRefPositionsMap()->Set(lastRefPos, currRefPos,
                                                                  LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
                         getNextConsecutiveRefPositionsMap()->Set(currRefPos, nullptr);
+
+                        lastRefPos = currRefPos;
+                        regCount++;
                     }
-                    lastRefPos = currRefPos;
+
+                    // Just `regCount` to actual registers count for first ref-position.
+                    // For others, set 0 so we can identify that this is non-first refposition.
+                    firstRefPos->regCount = regCount;
+                    srcCount += regCount;
                 }
-                srcCount += regCount;
+                else
+                {
+                    srcCount += BuildOperandUses(intrin.op1);
+                }
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op1);
             }
         }
     }
