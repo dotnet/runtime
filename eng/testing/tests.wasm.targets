@@ -267,6 +267,7 @@
       <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />
 
       <WasmFilesToIncludeInFileSystem Include="@(_SatelliteAssemblies)" />
+      <WasmExtraFilesToDeploy Include="$(WasmMainJSPath)" />
     </ItemGroup>
 
     <ItemGroup>

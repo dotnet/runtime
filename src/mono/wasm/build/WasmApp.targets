@@ -381,7 +381,7 @@
     <WriteLinesToFile File="$(WasmAppDir)\.stamp" Lines="" Overwrite="true" />
   </Target>
 
-  <Target Name="_GenerateRunV8Script" Inputs="$(WasmMainJSPath)">
+  <Target Name="_GenerateRunV8Script">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
     <PropertyGroup>
