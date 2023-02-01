@@ -88,6 +88,25 @@
     
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
 
+    <PropertyGroup Condition="'$(iOSLikeDedup)' == 'true'">
+      <_iOSLikeDedupAssembly>$(_MobileIntermediateOutputPath)\aot-instances.dll</_iOSLikeDedupAssembly>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(iOSLikeDedup)' == 'true'" File="$(_MobileIntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
+    <Csc Condition="'$(iOSLikeDedup)' == 'true'"
+      Sources="$(_MobileIntermediateOutputPath)\aot-instances.cs"
+      OutputAssembly="$(_iOSLikeDedupAssembly)"
+      TargetType="library"
+      Deterministic="true"
+      References="@(ReferencePath)"
+      ToolExe="$(CscToolExe)"
+      ToolPath="$(CscToolPath)" />
+    <ItemGroup Condition="'$(iOSLikeDedup)' == 'true'">
+      <_AotInputAssemblies Include="$(_iOSLikeDedupAssembly)">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </_AotInputAssemblies>
+    </ItemGroup>
+
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
@@ -98,6 +117,7 @@
         AotModulesTableLanguage="ObjC"
         UseLLVM="$(MonoEnableLLVM)"
         LLVMPath="$(MonoAotCrossDir)"
+        DedupAssembly="$(_iOSLikeDedupAssembly)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AppleAssembliesInternal" />
     </MonoAOTCompiler>
