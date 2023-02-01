@@ -573,11 +573,36 @@ public:
     // to the visited node is encountered.
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        GenTree* const node = *use;
+        GenTree* node = *use;
 
         if (node->OperIs(GT_IND, GT_FIELD, GT_FIELD_ADDR))
         {
-            MorphStructField(node, user);
+            if (m_compiler->opts.OptimizationEnabled() && node->OperIs(GT_IND) &&
+                node->gtGetOp1()->OperIs(GT_LCL_VAR_ADDR))
+            {
+                GenTreeLclVar* lclVar = node->gtGetOp1()->AsLclVar();
+
+                var_types lclType = m_compiler->lvaGetDesc(lclVar)->lvType;
+
+                if ((lclType == TYP_INT) && varTypeIsSmall(node))
+                {
+                    lclVar->ChangeOper(GT_LCL_VAR);
+                    lclVar->ChangeType(lclType);
+
+                    GenTree* cast = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
+
+                    node = *use    = cast;
+                    m_stmtModified = true;
+                }
+                else
+                {
+                    MorphStructField(node, user);
+                }
+            }
+            else
+            {
+                MorphStructField(node, user);
+            }
         }
         else if (node->OperIs(GT_LCL_FLD))
         {
