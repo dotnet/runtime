@@ -4555,7 +4555,9 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 }
 #endif // DEBUG
                 // Change the bbJumpDest for bFilterLast from the old first 'block' to the new first 'bPrev'
+                fgRemoveRefPred(bFilterLast->bbJumpDest, bFilterLast);
                 bFilterLast->bbJumpDest = bPrev;
+                fgAddRefPred(bPrev, bFilterLast);
             }
         }
 
