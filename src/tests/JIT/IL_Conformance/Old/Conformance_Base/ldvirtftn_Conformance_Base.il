@@ -3,8 +3,14 @@
 
 
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
+.namespace ldvirtftn_Conformance_Base
+{
 .class public Ldvirtftn {
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack       20
 .locals ()
@@ -22,4 +28,5 @@ FAIL:
     ret
 }
 }
-.assembly 'ldvirtftn'{}
+.assembly 'ldvirtftn_Conformance_Base'{}
+}

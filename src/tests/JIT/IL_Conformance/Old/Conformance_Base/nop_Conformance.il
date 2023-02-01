@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly 'nop'{}
+.assembly extern xunit.core {}
+.assembly 'nop_Conformance'{}
 
+.namespace nop_Conformance
+{
 .class public		_nop {
 
 
@@ -20,11 +23,14 @@
 }
 
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 	
 	ldc.i4	0xFF
-	call	int32 _nop::return(int32)
+	call	int32 nop_Conformance._nop::return(int32)
 	nop
 	nop
 	nop
@@ -53,7 +59,7 @@
 	nop
 	nop
 	ldc.i4	0xFF
-	call	int32 _nop::return(int32)
+	call	int32 nop_Conformance._nop::return(int32)
 	ceq
 	brfalse	FAIL
 
@@ -66,5 +72,6 @@ FAIL:
 
 END:
 	ret
+}
 }
 }

@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly 'switch'{}
+.assembly extern xunit.core {}
+.assembly 'switch_Conformance'{}
 
+.namespace switch_Conformance
+{
 .class public		_switch {
 
 
@@ -16,6 +19,9 @@
 }
 
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 .locals	(int32)
@@ -73,3 +79,4 @@ END:
 }
 }
 
+}
