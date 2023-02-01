@@ -162,8 +162,6 @@ export function init_polyfills(replacements: EarlyReplacements): void {
         runtimeHelpers.locateFile = anyModule.locateFile;
     }
 
-    // fetch poly with fetch_like if there is no global fetch or fetch in imports
-    runtimeHelpers.fetch = imports.fetch || (globalThis.fetch ? globalThis.fetch.bind(globalThis) : fetch_like);
     // prefer fetch_like over global fetch for assets
     replacements.fetch = runtimeHelpers.fetch_like = imports.fetch || fetch_like;
 
@@ -229,14 +227,23 @@ const dummyPerformance = {
 };
 
 export async function fetch_like(url: string, init?: RequestInit): Promise<Response> {
+    const imports = Module.imports as DotnetModuleConfigImports;
+    const hasFetch = typeof (globalThis.fetch) === "function";
     try {
-        if (ENVIRONMENT_IS_NODE) {
+        if (typeof (imports.fetch) === "function") {
+            return imports.fetch(url, init || { credentials: "same-origin" });
+        }
+        else if (ENVIRONMENT_IS_NODE) {
+            const isFileUrl = url.startsWith("file://");
+            if (!isFileUrl && hasFetch) {
+                return globalThis.fetch(url, init || { credentials: "same-origin" });
+            }
             if (!node_fs) {
                 const node_require = await runtimeHelpers.requirePromise;
                 node_url = node_require("url");
                 node_fs = node_require("fs");
             }
-            if (url.startsWith("file://")) {
+            if (isFileUrl) {
                 url = node_url.fileURLToPath(url);
             }
 
@@ -249,7 +256,7 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
                 json: () => JSON.parse(arrayBuffer)
             };
         }
-        else if (typeof (globalThis.fetch) === "function") {
+        else if (hasFetch) {
             return globalThis.fetch(url, init || { credentials: "same-origin" });
         }
         else if (typeof (read) === "function") {

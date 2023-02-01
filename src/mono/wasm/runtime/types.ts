@@ -219,7 +219,6 @@ export type RuntimeHelpers = {
     enablePerfMeasure: boolean;
     waitForDebugger?: number;
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
-    fetch: (url: string, init?: RequestInit) => Promise<Response>;
     scriptDirectory: string
     requirePromise: Promise<Function>
     ExitStatus: ExitStatusError;
