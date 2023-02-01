@@ -26,7 +26,7 @@
 
     <RunScriptOutputName Condition="'$(RunScriptWindowsCmd)' != 'true'">RunTests.sh</RunScriptOutputName>
     <RunScriptOutputName Condition="'$(BuildTestsOnHelix)' == 'true' and '$(TargetsAppleMobile)' == 'true'">build-apple-app.sh</RunScriptOutputName>
-    <RunScriptOutputName Condition="'$(RunScriptWindowsCmd)' == 'true' or ('$(TargetOS)' == 'browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(RunScriptWindowsCmd)' == 'true' or (('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
     <InnerRunScriptOutputName>$(AssemblyName).sh</InnerRunScriptOutputName>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     <InnerRunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(InnerRunScriptOutputName)'))</InnerRunScriptOutputPath>
@@ -97,8 +97,8 @@
   <Target Name="GenerateRunScript">
     <PropertyGroup>
       <!-- RSP file support. -->
-      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' != 'true' and ('$(TargetOS)' != 'browser' or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
-      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' == 'true' or ('$(TargetOS)' == 'browser' and '$(OS)' == 'Windows_NT')">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
+      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' != 'true' and (('$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi') or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
+      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' == 'true' or (('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(OS)' == 'Windows_NT')">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
 
       <!-- Escape potential user input. -->
       <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>

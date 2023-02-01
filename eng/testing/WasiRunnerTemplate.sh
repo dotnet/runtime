@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# SetCommands defined in eng\testing\tests.wasm.targets
+# SetCommands defined in eng\testing\tests.wasi.targets
 [[SetCommands]]
 [[SetCommandsEcho]]
 
@@ -52,12 +52,12 @@ pushd $EXECUTION_DIR
 # ========================= BEGIN Test Execution ============================= 
 echo ----- start $(date) ===============  To repro directly: ===================================================== 
 echo pushd $EXECUTION_DIR
-# RunCommands defined in eng\testing\tests.wasm.targets
+# RunCommands defined in eng\testing\tests.wasi.targets
 [[RunCommandsEcho]]
 echo popd
 echo ===========================================================================================================
 pushd $EXECUTION_DIR
-# RunCommands defined in eng\testing\tests.wasm.targets
+# RunCommands defined in eng\testing\tests.wasi.targets
 [[RunCommands]]
 _exitCode=$?
 popd

@@ -159,8 +159,11 @@
       <_WasmCommonIncludePaths Include="$(_WasmRuntimePackIncludeDir)mono-2.0" />
       <_WasmCommonIncludePaths Include="$(_WasmRuntimePackIncludeDir)wasm" />
       <!-- Fixup on windows -->
-      <_WasmCommonIncludePaths Condition="'$(OS)' == 'Windows_NT'"
-                               Include="$([System.String]::new(%(_WasmCommonIncludePaths.Identity)).Replace('\', '/'))" />
+      <_WasmCommonIncludePathsFixedUp
+                Condition="'$(OS)' == 'Windows_NT'"
+                Include="$([System.String]::new(%(_WasmCommonIncludePaths.Identity)).Replace('\', '/'))" />
+      <_WasmCommonIncludePaths Remove="@(_WasmCommonIncludePaths)" />
+      <_WasmCommonIncludePaths Include="@(_WasmCommonIncludePathsFixedUp)" />
 
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
 
@@ -412,8 +415,8 @@
       <_WasiSdkClangArgs Include="@(_WasmCommonCFlags)" />
 
       <_WasiSdkClangArgs Include="&quot;-I%(_WasmCommonIncludePaths.Identity)&quot;" />
-      <_WasiSdkClangArgs Include="--sysroot=&quot;$(WasiSdkRoot)/share/wasi-sysroot&quot;" />
-      <_WasiSdkClangArgs Include="-I&quot;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include&quot;" />
+      <_WasiSdkClangArgs Include="--sysroot=&quot;$(WasiSdkRoot.Replace('\', '/'))/share/wasi-sysroot&quot;" />
+      <_WasiSdkClangArgs Include="-I&quot;$(MicrosoftNetCoreAppRuntimePackRidNativeDir.Replace('\', '/'))include&quot;" />
       <_WasiSdkClangArgs Include="-Wl,--export=malloc,--export=free,--export=__heap_base,--export=__data_end" />
       <!--<_WasiSdkClangArgs Include="-Wl,-z,stack-size=10485760,-lwasi-emulated-mman" />-->
       <_WasiSdkClangArgs Include="-Wl,-lwasi-emulated-mman" />
@@ -425,7 +428,7 @@
                          Include="-D WASI_AFTER_RUNTIME_LOADED_DECLARATIONS=&quot;@(WasiAfterRuntimeLoadedDeclarations, ' ')&quot;" />
       <_WasiSdkClangArgs Condition="'@(WasiAfterRuntimeLoadedCalls)' != ''"
                          Include="-D WASI_AFTER_RUNTIME_LOADED_CALLS=&quot;@(WasiAfterRuntimeLoadedCalls, ' ')&quot;" />
-      <_WasiSdkClangArgs Include="-o &quot;$(_WasmOutputFileName)&quot;" />
+      <_WasiSdkClangArgs Include="-o &quot;$(_WasmOutputFileName.Replace('\', '/'))&quot;" />
     </ItemGroup>
     <WriteLinesToFile Lines="@(_WasiSdkClangArgs)" File="$(_WasmIntermediateOutputPath)clang-compile.rsp" Overwrite="true" />
     <!--<Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; @(_WasiSdkClangArgs, ' ')" />-->
