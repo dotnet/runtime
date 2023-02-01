@@ -189,6 +189,7 @@
 
       <CMakeOptions Condition="'$(MonoVerboseBuild)' != ''">-v</CMakeOptions>
       <CMakeBuildRuntimeCmd>cmake --build . --config $(Configuration) $(CmakeOptions)</CMakeBuildRuntimeCmd>
+      <CMakeBuildRuntimeCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; $(CMakeBuildRuntimeCmd)</CMakeBuildRuntimeCmd>
     </PropertyGroup>
 
     <ItemGroup>
