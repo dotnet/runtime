@@ -57,6 +57,11 @@ macOS:
 > cp -r artifacts/bin/microsoft.netcore.app.runtime.osx-<your arch>/Debug/runtimes/osx-<your arch>/* <Unity player build directory>/Contents/Resources/Data/CoreCLR
 ```
 
+Linux:
+```
+> cp -r artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Debug/runtimes/linux-x64/* <Unity player build directory>/CoreCLR 
+```
+
 **Caveat:** It is _not_ possible to enable mixed mode debugging in Visual Studio and also debug the native code in coreclr.dll. Visual Studio blocks this workflow to prevent hangs. To debug in coreclr.dll in a Unity player, Native debugging must be selected in Visual Studio.
 
 ## Pulling changes from upstream
