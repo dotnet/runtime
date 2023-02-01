@@ -116,15 +116,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
 
             int? line = request?["lineNumber"]?.Value<int>();
-            int? column = request?["columnNumber"]?.Value<int>();
+            int column = request?["columnNumber"]?.Value<int>() ?? 0;
 
-            if (line == null || column == null)
+            if (line == null)
                 return false;
 
             Assembly = sourceFile.AssemblyName;
             File = sourceFile.FilePath;
             Line = line.Value;
-            Column = column.Value;
+            Column = column;
             return true;
         }
 

@@ -4783,6 +4783,8 @@ public:
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
     PhaseStatus fgSimpleLowering();
 
+    bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
+
 #if FEATURE_LOOP_ALIGN
     PhaseStatus placeLoopAlignInstructions();
 #endif
