@@ -204,9 +204,15 @@ namespace Microsoft.Extensions.Logging.Generators
                                         SkipEnabledCheck = skipEnabledCheck
                                     };
 
-                                    ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
-
                                     bool keepMethod = true;   // whether or not we want to keep the method definition or if it's got errors making it so we should discard it instead
+
+                                    bool success = ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
+                                    if (!success)
+                                    {
+                                        Diag(DiagnosticDescriptors.MalformedFormatStrings, method.Identifier.GetLocation(), method.Identifier.ToString());
+                                        keepMethod = false;
+                                    }
+
                                     if (lm.Name[0] == '_')
                                     {
                                         // can't have logging method names that start with _ since that can lead to conflicting symbol names
@@ -595,42 +601,56 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Finds the template arguments contained in the message string.
             /// </summary>
-            private static void ExtractTemplates(string? message, IDictionary<string, string> templateMap, List<string> templateList)
+            /// <returns>A value indicating whether the extraction was successful.</returns>
+            private static bool ExtractTemplates(string? message, IDictionary<string, string> templateMap, List<string> templateList)
             {
                 if (string.IsNullOrEmpty(message))
                 {
-                    return;
+                    return true;
                 }
 
                 int scanIndex = 0;
-                int endIndex = message!.Length;
+                int endIndex = message.Length;
 
+                bool success = true;
                 while (scanIndex < endIndex)
                 {
                     int openBraceIndex = FindBraceIndex(message, '{', scanIndex, endIndex);
-                    int closeBraceIndex = FindBraceIndex(message, '}', openBraceIndex, endIndex);
 
-                    if (closeBraceIndex == endIndex)
+                    if (openBraceIndex == -2) // found '}' instead of '{'
                     {
-                        scanIndex = endIndex;
+                        success = false;
+                        break;
                     }
-                    else
+                    else if (openBraceIndex == -1) // scanned the string and didn't find any remaining '{' or '}'
                     {
-                        // Format item syntax : { index[,alignment][ :formatString] }.
-                        int formatDelimiterIndex = FindIndexOfAny(message, _formatDelimiters, openBraceIndex, closeBraceIndex);
+                        break;
+                    }
 
-                        string templateName = message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
-                        templateMap[templateName] = templateName;
-                        templateList.Add(templateName);
-                        scanIndex = closeBraceIndex + 1;
+                    int closeBraceIndex = FindBraceIndex(message, '}', openBraceIndex + 1, endIndex);
+
+                    if (closeBraceIndex <= -1) // unclosed '{'
+                    {
+                        success = false;
+                        break;
                     }
+
+                    // Format item syntax : { index[,alignment][ :formatString] }.
+                    int formatDelimiterIndex = FindIndexOfAny(message, _formatDelimiters, openBraceIndex, closeBraceIndex);
+
+                    string templateName = message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
+                    templateMap[templateName] = templateName;
+                    templateList.Add(templateName);
+                    scanIndex = closeBraceIndex + 1;
                 }
+
+                return success;
             }
 
             private static int FindBraceIndex(string message, char brace, int startIndex, int endIndex)
             {
                 // Example: {{prefix{{{Argument}}}suffix}}.
-                int braceIndex = endIndex;
+                int braceIndex = -1;
                 int scanIndex = startIndex;
                 int braceOccurrenceCount = 0;
 
@@ -650,22 +670,29 @@ namespace Microsoft.Extensions.Logging.Generators
                             break;
                         }
                     }
-                    else if (message[scanIndex] == brace)
+                    else if (message[scanIndex] == '{')
                     {
-                        if (brace == '}')
+                        if (message[scanIndex] != brace)
                         {
-                            if (braceOccurrenceCount == 0)
-                            {
-                                // For '}' pick the first occurrence.
-                                braceIndex = scanIndex;
-                            }
-                        }
-                        else
-                        {
-                            // For '{' pick the last occurrence.
-                            braceIndex = scanIndex;
+                            return -2; // not expected
                         }
 
+                        // For '{' pick the last occurrence.
+                        braceIndex = scanIndex;
+                        braceOccurrenceCount++;
+                    }
+                    else if (message[scanIndex] == '}')
+                    {
+                        if (message[scanIndex] != brace)
+                        {
+                            return -2; // not expected
+                        }
+
+                        if (braceOccurrenceCount == 0)
+                        {
+                            // For '}' pick the first occurrence.
+                            braceIndex = scanIndex;
+                        }
                         braceOccurrenceCount++;
                     }
 
