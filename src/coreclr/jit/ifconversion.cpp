@@ -421,6 +421,7 @@ void OptIfConversionDsc::IfConvertDump()
 //
 bool OptIfConversionDsc::IsHWIntrinsicCC(GenTree* node)
 {
+#ifdef FEATURE_HW_INTRINSICS
     if (!node->OperIs(GT_HWINTRINSIC))
     {
         return false;
@@ -462,6 +463,9 @@ bool OptIfConversionDsc::IsHWIntrinsicCC(GenTree* node)
         default:
             return false;
     }
+#else
+    return false;
+#endif
 }
 #endif
 
