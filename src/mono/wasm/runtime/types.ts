@@ -236,6 +236,7 @@ export type GlobalizationMode =
 export type AOTProfilerOptions = {
     writeAt?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
     sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into INTERNAL.aotProfileData.)
+    verbose?: boolean
 }
 
 export type BrowserProfilerOptions = {

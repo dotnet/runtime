@@ -21,7 +21,10 @@ export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
         options.writeAt = "System.Runtime.InteropServices.JavaScript.JavaScriptExports::StopProfile";
     if (!("sendTo" in options))
         options.sendTo = "Interop/Runtime::DumpAotProfileData";
-    const arg = "aot:write-at-method=" + options.writeAt + ",send-to-method=" + options.sendTo;
+    let arg = "aot:write-at-method=" + options.writeAt + ",send-to-method=" + options.sendTo;
+    if (options.verbose) {
+        arg += ",verbose";
+    }
     cwraps.mono_wasm_profiler_init_aot(arg);
 }
 

@@ -26,7 +26,8 @@ try {
         .withConfig({
             aotProfilerOptions: {
                 writeAt: "Sample.Test::StopProfile",
-                sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
+                sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData",
+                verbose: true
             }
         })
         .create();

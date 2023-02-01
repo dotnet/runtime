@@ -618,7 +618,7 @@ add_method (MonoProfiler *prof, MonoMethod *m)
 	g_free (s);
 
 	if (prof->verbose)
-		mono_profiler_printf ("%s %d", mono_method_full_name (m, 1), id);
+		mono_profiler_printf ("aot-profiler | %s %d", mono_method_full_name (m, 1), id);
 }
 
 static void
