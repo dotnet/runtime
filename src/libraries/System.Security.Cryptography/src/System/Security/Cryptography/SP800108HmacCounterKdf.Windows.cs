@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class SP800108HmacCounterKdf : IDisposable
     {
-        private static bool s_isWindows8OrGreater = OperatingSystem.IsWindowsVersionAtLeast(6, 2);
+        private static readonly bool s_isWindows8OrGreater = OperatingSystem.IsWindowsVersionAtLeast(6, 2);
 
         private static partial SP800108HmacCounterKdfImplementationBase CreateImplementation(
             ReadOnlySpan<byte> key,

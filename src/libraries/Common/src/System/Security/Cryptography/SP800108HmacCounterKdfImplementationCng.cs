@@ -168,9 +168,7 @@ namespace System.Security.Cryptography
             return keyHandle;
         }
 
-        /// <summary>
-        /// Returns null if the platform ins Windows 10+ and psuedo handles should be used.
-        /// </summary>
+        // Returns null if the platform is Windows 10+ and psuedo handles should be used.
         private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()
         {
             if (!Interop.BCrypt.PseudoHandlesSupported)

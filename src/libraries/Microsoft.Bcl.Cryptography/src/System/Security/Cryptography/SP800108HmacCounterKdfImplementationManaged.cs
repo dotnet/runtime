@@ -26,6 +26,7 @@ namespace System.Security.Cryptography
                 return;
             }
 
+            // IncrementalHash needs an array of the correct size, so we can't rent for the key.
             byte[] keyBuffer = new byte[key.Length];
             byte[] labelBuffer = CryptoPool.Rent(label.Length);
             byte[] contextBuffer = CryptoPool.Rent(context.Length);

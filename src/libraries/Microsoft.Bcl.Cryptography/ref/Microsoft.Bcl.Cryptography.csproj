@@ -6,7 +6,7 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="Microsoft.Bcl.Cryptography.cs" />
   </ItemGroup>
-<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="Microsoft.Bcl.Cryptography.Forwards.cs" />
   </ItemGroup>
 

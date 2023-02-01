@@ -100,7 +100,6 @@ namespace System.Security.Cryptography
             {
                 ZeroKey();
             }
-
         }
 
         private void ZeroKey()
