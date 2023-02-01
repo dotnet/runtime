@@ -348,10 +348,13 @@ private:
     float GetConstantSingle(ValueNum argVN);
 
 #if defined(FEATURE_SIMD)
+public:
     simd8_t GetConstantSimd8(ValueNum argVN);
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
     simd32_t GetConstantSimd32(ValueNum argVN);
+
+private:
 #endif // FEATURE_SIMD
 
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
@@ -1123,10 +1126,16 @@ public:
                             EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));
     }
 
-    ValueNum EvalHWIntrinsicFunUnary(
-        var_types type, NamedIntrinsic ni, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN);
+    ValueNum EvalHWIntrinsicFunUnary(var_types      type,
+                                     var_types      baseType,
+                                     NamedIntrinsic ni,
+                                     VNFunc         func,
+                                     ValueNum       arg0VN,
+                                     bool           encodeResultType,
+                                     ValueNum       resultTypeVN);
 
     ValueNum EvalHWIntrinsicFunBinary(var_types      type,
+                                      var_types      baseType,
                                       NamedIntrinsic ni,
                                       VNFunc         func,
                                       ValueNum       arg0VN,
