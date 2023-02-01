@@ -26,7 +26,7 @@ namespace DebuggerTests
 
         ConcurrentDictionary<string, TaskCompletionSource<JObject>> notifications = new ();
         ConcurrentDictionary<string, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>> eventListeners = new ();
-        ConcurrentQueue<JObject> nextNotifications = new (); //in a multithreaded runtime we can receive more than one pause at same time
+        ConcurrentQueue<(string, JObject)> nextNotifications = new (); //in a multithreaded runtime we can receive more than one pause at same time
         public const string PAUSE = "pause";
         public const string APP_READY = "app-ready";
         public CancellationToken Token { get; }
@@ -88,11 +88,13 @@ namespace DebuggerTests
 
                 throw new Exception($"Invalid internal state, waiting for {what} while another wait is already setup");
             }
-            else if (nextNotifications.TryDequeue(out var notification))
+            else if (nextNotifications.TryDequeue(out (string what, JObject args) notification))
             {
                 var n = new TaskCompletionSource<JObject>();
-                Client.CurrentSessionId = new SessionId(notification["sessionId"]?.Value<string>());
-                n.SetResult(notification);
+                Client.CurrentSessionId = new SessionId(notification.args["sessionId"]?.Value<string>());
+                if (what != notification.what)
+                    throw new Exception($"Unexpected different notification type");
+                n.SetResult(notification.args);
                 return n.Task;
             }
             else
@@ -115,7 +117,7 @@ namespace DebuggerTests
             {
                 if (tcs.Task.IsCompleted)
                 {
-                    nextNotifications.Enqueue(args);
+                    nextNotifications.Enqueue((what, args));
                     return;
                     //throw new Exception($"Invalid internal state. Notifying for {what} again, but the previous one hasn't been read.");
                 }
