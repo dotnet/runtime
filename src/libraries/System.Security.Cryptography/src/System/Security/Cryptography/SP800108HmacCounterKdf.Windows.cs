@@ -33,11 +33,6 @@ namespace System.Security.Cryptography
             byte[] context,
             int derivedKeyLengthInBytes)
         {
-            if (!s_isWindows8OrGreater)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
             byte[] result = new byte[derivedKeyLengthInBytes];
 
             if (s_isWindows8OrGreater)
