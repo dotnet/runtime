@@ -78,6 +78,10 @@ namespace System.CommandLine
                 return TargetOS.OSX;
             else if (token.Equals("freebsd", StringComparison.OrdinalIgnoreCase))
                 return TargetOS.FreeBSD;
+            else if (token.Equals("ios", StringComparison.OrdinalIgnoreCase))
+                return TargetOS.iOS;
+            else if (token.Equals("iossimulator", StringComparison.OrdinalIgnoreCase))
+                return TargetOS.iOSSimulator;
 
             throw new CommandLineException($"Target OS '{token}' is not supported");
         }

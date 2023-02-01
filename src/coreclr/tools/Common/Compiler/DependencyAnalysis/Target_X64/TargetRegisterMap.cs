@@ -32,6 +32,7 @@ namespace ILCompiler.DependencyAnalysis.X64
 
                 case TargetOS.Linux:
                 case TargetOS.OSX:
+                // TODO: case TargetOS.iOSSimulator:
                 case TargetOS.FreeBSD:
                 case TargetOS.SunOS:
                 case TargetOS.NetBSD:
