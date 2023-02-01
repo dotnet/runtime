@@ -7,9 +7,11 @@
     <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
+  
   <ItemGroup>
     <Compile Include="Program.AdvSimd.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
+    <ProjectReference Include="VectorTableLookup.csproj" Aliases="CoreLib"  Private="false" />
   </ItemGroup>
 </Project>
