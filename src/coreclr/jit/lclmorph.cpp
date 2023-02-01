@@ -565,6 +565,73 @@ public:
 #endif // DEBUG
     }
 
+    GenTree* OptimizeIndir(GenTree* tree, GenTree* parent)
+    {
+        assert(tree->OperIs(GT_IND));
+
+        if (m_compiler->opts.OptimizationDisabled())
+            return tree;
+
+        if ((parent != nullptr) && parent->OperIs(GT_CAST))
+            return tree;
+
+        if (tree->gtGetOp1()->OperIs(GT_LCL_VAR_ADDR))
+        {
+            GenTreeLclVar* lclVar  = tree->gtGetOp1()->AsLclVar();
+            var_types      lclType = m_compiler->lvaGetDesc(lclVar)->lvType;
+
+            if (tree->TypeIs(lclType))
+            {
+                lclVar->ChangeOper(GT_LCL_VAR);
+                lclVar->ChangeType(lclType);
+
+                DEBUG_DESTROY_NODE(tree);
+
+                return lclVar;
+            }
+            if ((lclType == TYP_INT) && varTypeIsSmall(tree))
+            {
+                lclVar->ChangeOper(GT_LCL_VAR);
+                lclVar->ChangeType(lclType);
+
+                GenTree* newTree;
+                if ((parent != nullptr) && parent->OperIs(GT_ASG))
+                {
+                    newTree = lclVar;
+                }
+                else
+                {
+                    newTree = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, tree->TypeGet());
+                }
+
+                DEBUG_DESTROY_NODE(tree);
+
+                return newTree;
+            }
+            else if ((lclType == TYP_LONG) && varTypeIsSmall(tree))
+            {
+                lclVar->ChangeOper(GT_LCL_VAR);
+                lclVar->ChangeType(lclType);
+
+                GenTree* newTree;
+                if ((parent != nullptr) && parent->OperIs(GT_ASG))
+                {
+                   newTree = lclVar;
+                }
+                else
+                {
+                   newTree = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, tree->TypeGet());
+                }
+
+                DEBUG_DESTROY_NODE(tree);
+
+                return newTree;
+            }
+        }
+
+        return tree;
+    }
+
     // Morph promoted struct fields and count local occurrences.
     //
     // Also create and push the value produced by the visited node. This is done here
@@ -575,81 +642,14 @@ public:
     {
         GenTree* node = *use;
 
+        if (node->OperIs(GT_IND))
+        {
+            node = *use = OptimizeIndir(node, user);
+        }
+
         if (node->OperIs(GT_IND, GT_FIELD, GT_FIELD_ADDR))
         {
-            if (m_compiler->opts.OptimizationEnabled() && node->OperIs(GT_IND) &&
-                node->gtGetOp1()->OperIs(GT_LCL_VAR_ADDR))
-            {
-                GenTreeLclVar* lclVar = node->gtGetOp1()->AsLclVar();
-
-                var_types lclType = m_compiler->lvaGetDesc(lclVar)->lvType;
-
-                //if (node->TypeIs(lclType))
-                //{
-                //    lclVar->ChangeOper(GT_LCL_VAR);
-                //    lclVar->ChangeType(lclType);
-
-                //    *use = lclVar;
-
-                //    DEBUG_DESTROY_NODE(node);
-
-                //    node           = *use;
-                //    m_stmtModified = true;
-                //}
-                if ((lclType == TYP_INT) && varTypeIsSmall(node))
-                {
-                    lclVar->ChangeOper(GT_LCL_VAR);
-                    lclVar->ChangeType(lclType);
-
-                    if (user->OperIs(GT_ASG))
-                    {
-                        *use = lclVar;
-                    }
-                    else
-                    {
-                        *use = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
-                    }
-
-                    DEBUG_DESTROY_NODE(node);
-
-                    node           = *use;
-                    m_stmtModified = true;
-                }
-                else if ((lclType == TYP_LONG) && varTypeIsSmall(node))
-                {
-                    lclVar->ChangeOper(GT_LCL_VAR);
-                    lclVar->ChangeType(lclType);
-
-                    if (user->OperIs(GT_ASG))
-                    {
-                       *use = lclVar;
-                    }
-                    else if (user->OperIs(GT_CAST))
-                    {
-                       *use                       = lclVar;
-                       user->AsCast()->gtCastType = node->TypeGet();
-                       user->ClearUnsigned();
-                       user->ChangeType(TYP_INT);
-                    }
-                    else
-                    {
-                       *use = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
-                    }
-
-                    DEBUG_DESTROY_NODE(node);
-
-                    node           = *use;
-                    m_stmtModified = true;
-                }
-                else
-                {
-                    MorphStructField(node, user);
-                }
-            }
-            else
-            {
-                MorphStructField(node, user);
-            }
+            MorphStructField(node, user);
         }
         else if (node->OperIs(GT_LCL_FLD))
         {
