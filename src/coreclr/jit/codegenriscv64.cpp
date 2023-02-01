@@ -5367,7 +5367,71 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 //
 void CodeGen::genRangeCheck(GenTree* oper)
 {
-    NYI("unimplemented on RISCV64 yet");
+    noway_assert(oper->OperIs(GT_BOUNDS_CHECK));
+    GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
+
+    GenTree* arrLen    = bndsChk->GetArrayLength();
+    GenTree* arrIndex  = bndsChk->GetIndex();
+    GenTree* arrRef    = NULL;
+    int      lenOffset = 0;
+
+    GenTree*     src1;
+    GenTree*     src2;
+    regNumber    reg1;
+    regNumber    reg2;
+    emitJumpKind jmpKind = EJ_jmp;
+
+    genConsumeRegs(arrIndex);
+    genConsumeRegs(arrLen);
+
+    emitter*             emit     = GetEmitter();
+    GenTreeIntConCommon* intConst = nullptr;
+    if (arrIndex->isContainedIntOrIImmed())
+    {
+        src1 = arrLen;
+        src2 = arrIndex;
+        reg1 = REG_RA; // TODO CHECK R21 => RA
+        reg2 = src1->GetRegNum();
+
+        intConst    = src2->AsIntConCommon();
+        ssize_t imm = intConst->IconValue();
+        if (imm == INT64_MAX)
+        {
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, -1); // TODO CHECK R21 => RA
+            emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, REG_RA, REG_RA, 1); // TODO CHECK R21 => RA
+        }
+        else
+        {
+            emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm); // TODO CHECK R21 => RA
+        }
+    }
+    else
+    {
+        src1 = arrIndex;
+        src2 = arrLen;
+        reg1 = src1->GetRegNum();
+
+        if (src2->isContainedIntOrIImmed())
+        {
+            reg2        = REG_RA; // TODO CHECK R21 => RA
+            ssize_t imm = src2->AsIntConCommon()->IconValue();
+            emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm); // TODO CHECK R21 => RA
+        }
+        else
+        {
+            reg2 = src2->GetRegNum();
+        }
+    }
+
+#ifdef DEBUG
+    var_types bndsChkType = genActualType(src2->TypeGet());
+    var_types src1ChkType = genActualType(src1->TypeGet());
+    // Bounds checks can only be 32 or 64 bit sized comparisons.
+    assert(bndsChkType == TYP_INT || bndsChkType == TYP_LONG);
+    assert(src1ChkType == TYP_INT || src1ChkType == TYP_LONG);
+#endif // DEBUG
+
+    genJumpToThrowHlpBlk_la(bndsChk->gtThrowKind, INS_bgeu, reg1, bndsChk->gtIndRngFailBB, reg2);
 }
 
 //---------------------------------------------------------------------
