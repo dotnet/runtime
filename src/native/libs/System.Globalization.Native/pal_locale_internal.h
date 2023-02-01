@@ -64,14 +64,6 @@ char* DetectDefaultAppleLocaleName(void);
 
 /*
 Function:
-NativeGetSortHandle
-
-NativeGetSortHandle for Apple platforms
-*/
-//NSLocale* NativeGetSortHandle(void);
-
-/*
-Function:
 NativeGetLocaleName
 
 NativeGetLocaleName for Apple platforms

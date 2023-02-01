@@ -29,12 +29,6 @@ char* DetectDefaultAppleLocaleName()
     return strdup([localeName UTF8String]);
 }
 
-/*NSLocale * NativeGetSortHandle()
-{
-    NSLocale *currentLocale = [NSLocale currentLocale];
-    
-    return currentLocale;
-}*/
 int32_t NativeGetLocaleName(const UChar* localeName,
                                          UChar* value,
                                          int32_t valueLength)

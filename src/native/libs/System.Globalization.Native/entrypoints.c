@@ -24,7 +24,6 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_ChangeCaseTurkish)
     DllImportEntry(GlobalizationNative_CloseSortHandle)
     DllImportEntry(GlobalizationNative_CompareString)
-    //DllImportEntry(Native_CompareString)
     DllImportEntry(GlobalizationNative_EndsWith)
     DllImportEntry(GlobalizationNative_EnumCalendarInfo)
     DllImportEntry(GlobalizationNative_GetCalendarInfo)
