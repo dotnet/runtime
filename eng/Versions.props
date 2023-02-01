@@ -9,7 +9,7 @@
     <SdkBandVersion>8.0.100</SdkBandVersion>
     <PackageVersionNet6>6.0.10</PackageVersionNet6>
     <PackageVersionNet7>7.0.0</PackageVersionNet7>
-    <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
+    <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
     <WorkloadVersionSuffix Condition="'$(PreReleaseVersionLabel)' != 'release'">-$(PreReleaseVersionLabel).$(PreReleaseVersionIteration)</WorkloadVersionSuffix>
     <SdkBandVersionForWorkload>$(SdkBandVersion)$(WorkloadVersionSuffix)</SdkBandVersionForWorkload>
@@ -208,7 +208,7 @@
     <GrpcDotnetClientVersion>2.45.0</GrpcDotnetClientVersion>
     <GrpcToolsVersion>2.45.0</GrpcToolsVersion>
     <!-- Uncomment to set a fixed version, else the latest is used -->
-    <SdkVersionForWorkloadTesting>8.0.100-alpha.1.23077.3</SdkVersionForWorkloadTesting>
+    <!--<SdkVersionForWorkloadTesting>8.0.100-alpha.1.23077.3</SdkVersionForWorkloadTesting>-->
     <CompilerPlatformTestingVersion>1.1.2-beta1.22403.2</CompilerPlatformTestingVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20221010.1</MicrosoftPrivateIntellisenseVersion>
@@ -235,8 +235,8 @@
     <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>14.0.0-alpha.1.23074.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>14.0.0-alpha.1.23074.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100alpha1Version>8.0.0-alpha.1.23077.4</MicrosoftNETWorkloadEmscriptenCurrentManifest80100alpha1Version>
-    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100alpha1Version)</MicrosoftNETRuntimeEmscriptenVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100preview1Version>8.0.0-preview.1.23081.2</MicrosoftNETWorkloadEmscriptenCurrentManifest80100preview1Version>
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100preview1Version)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
