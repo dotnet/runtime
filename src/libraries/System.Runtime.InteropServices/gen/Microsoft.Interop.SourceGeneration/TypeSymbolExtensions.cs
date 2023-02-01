@@ -308,13 +308,13 @@ namespace Microsoft.Interop
         {
             if (typeName.Contains('<') || typeName.Contains('+') || typeName.Contains('/'))
                 throw new ArgumentException($"Cannot handle type name in the format provided: {typeName}");
-            var typeNameParts = typeName.Split('.').Reverse();
+            string[] typeNameParts = typeName.Split('.');
             INamespaceOrTypeSymbol current = type;
-            foreach(var name in typeNameParts)
+            for (int i = typeNameParts.Length - 1; i >= 0; i--)
             {
                 if (current == null)
                     return false;
-                if (current.MetadataName != name)
+                if (current.MetadataName != typeNameParts[i])
                     return false;
                 current = (INamespaceOrTypeSymbol)current.ContainingType ?? current.ContainingNamespace;
             }
