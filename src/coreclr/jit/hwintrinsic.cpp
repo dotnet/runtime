@@ -1148,72 +1148,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case 2:
                 op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
                 op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
+                op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
 
-#ifdef TARGET_ARM64
-                if ((intrinsic == NI_AdvSimd_VectorTableLookup) || (intrinsic == NI_AdvSimd_Arm64_VectorTableLookup))
-                {
-                    op1 = impPopStack().val;
-
-                    if (op1->TypeGet() == TYP_STRUCT)
-                    {
-                        assert(op1->OperIsLocal());
-
-                        LclVarDsc* op1VarDsc  = lvaGetDesc(op1->AsLclVar());
-                        unsigned   lclNum     = lvaGetLclNum(op1VarDsc);
-                        unsigned   fieldCount = info.compCompHnd->getClassNumInstanceFields(sigReader.op1ClsHnd);
-
-                        GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
-                        int               offset    = 0;
-                        for (unsigned fieldId = 0; fieldId < fieldCount; fieldId++)
-                        {
-                            GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, TYP_SIMD16, offset);
-                            fieldList->AddField(this, fldNode, offset, TYP_SIMD16);
-
-                            offset += op1VarDsc->lvSize() / fieldCount;
-                        }
-                        op1 = fieldList;
-
-                        switch (fieldCount)
-                        {
-                            case 1:
-                                // NI_AdvSimd_VectorTableLookup
-                                // NI_AdvSimd_Arm64_VectorTableLookup
-                                break;
-                            case 2:
-                                // NI_AdvSimd_VectorTableLookup_2
-                                // NI_AdvSimd_Arm64_VectorTableLookup_2
-                                intrinsic = (NamedIntrinsic)(intrinsic + 1);
-                                break;
-                            case 3:
-                                // NI_AdvSimd_VectorTableLookup_3
-                                // NI_AdvSimd_Arm64_VectorTableLookup_3
-                                intrinsic = (NamedIntrinsic)(intrinsic + 2);
-                                break;
-                            case 4:
-                                // NI_AdvSimd_VectorTableLookup_4
-                                // NI_AdvSimd_Arm64_VectorTableLookup_4
-                                intrinsic = (NamedIntrinsic)(intrinsic + 3);
-                                break;
-                            default:
-                                noway_assert("Unknown field count");
-                        }
-
-                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
-                    }
-                    else
-                    {
-                        assert(op1->TypeGet() == TYP_SIMD16);
-                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
-                    }
-                }
-                else
-#endif
-                {
-                    op1     = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
-                    retNode = isScalar
-                                  ? gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic)
-                                  : gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
-                }
+                retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic)
+                                   : gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
 
 #ifdef TARGET_XARCH
                 if ((intrinsic == NI_SSE42_Crc32) || (intrinsic == NI_SSE42_X64_Crc32))

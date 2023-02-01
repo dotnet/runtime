@@ -1860,9 +1860,8 @@ private:
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
     RefPosition* BuildUse(GenTree*  operand,
-                          regMaskTP candidates       = RBM_NONE,
-                          int       multiRegIdx      = 0,
-                          bool      needsConsecutive = false);
+                          regMaskTP candidates = RBM_NONE,
+                          int multiRegIdx = 0 ARM64_ARG(bool needsConsecutive = false));
 
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);

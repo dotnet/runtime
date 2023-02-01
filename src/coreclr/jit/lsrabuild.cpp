@@ -3025,9 +3025,10 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 //           the defList, and build a use RefPosition for the associated Interval.
 //
 // Arguments:
-//    operand      - The node of interest
-//    candidates   - The register candidates for the use
-//    multiRegIdx  - The index of the multireg def/use
+//    operand           - The node of interest
+//    candidates        - The register candidates for the use
+//    multiRegIdx       - The index of the multireg def/use
+//    needsConsecutive  - If the operand needs consecutive registers.
 //
 // Return Value:
 //    The newly created use RefPosition
@@ -3035,7 +3036,9 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 // Notes:
 //    The node must not be contained, and must have been processed by buildRefPositionsForNode().
 //
-RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int multiRegIdx, bool needsConsecutive)
+RefPosition* LinearScan::BuildUse(GenTree*  operand,
+                                  regMaskTP candidates,
+                                  int multiRegIdx ARM64_ARG(bool needsConsecutive))
 {
     assert(!operand->isContained());
     Interval* interval;

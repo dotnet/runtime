@@ -519,21 +519,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
                 GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
-
-                if (firstField->IsCopyOrReload())
+                op1Reg                       = firstField->GetRegNum();
+#ifdef DEBUG
+                regNumber argReg = op1Reg;
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
                 {
-                    // If value is copied in a register to satisfy the consecutive-register
-                    // requirement, make sure to get the source's register because these
-                    // instruction encoding takes only the 1st register and infer the rest
-                    // from that.
-                    GenTree* op1 = firstField->AsCopyOrReload()->gtGetOp1();
-                    assert(!op1->IsCopyOrReload());
-                    op1Reg = op1->GetRegNum();
+                    GenTree* argNode = use.GetNode();
+                    assert(argReg == argNode->GetRegNum());
+                    argReg = (regNumber)(argReg + 1);
                 }
-                else
-                {
-                    op1Reg = firstField->GetRegNum();
-                }
+#endif
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
             }

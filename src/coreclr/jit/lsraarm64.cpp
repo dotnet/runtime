@@ -64,7 +64,7 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     // should have at least one consecutive register requirement
     assert(consecutiveRefPosition != nullptr);
 
-    regNumber firstReg = genRegNumFromMask(firstRegAssigned);
+    regNumber firstReg    = genRegNumFromMask(firstRegAssigned);
     regNumber regToAssign = firstReg == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstReg);
 
 #ifdef DEBUG
@@ -1080,7 +1080,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 RefPosition* currRefPos = nullptr;
                 for (GenTreeFieldList::Use& use : intrin.op1->AsFieldList()->Uses())
                 {
-                    currRefPos = BuildUse(use.GetNode(), RBM_NONE, 0, /* needsConsecutive */ true);
+                    currRefPos = BuildUse(use.GetNode(), RBM_NONE, 0 ARM64_ARG(/* needsConsecutive */ true));
                     if (lastRefPos == nullptr)
                     {
                         currRefPos->regCount = regCount;

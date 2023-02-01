@@ -1876,6 +1876,85 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = impAssignMultiRegTypeToVar(op1, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }
+        case NI_AdvSimd_VectorTableLookup:
+        case NI_AdvSimd_Arm64_VectorTableLookup:
+        {
+            assert(sig->numArgs == 2);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = impPopStack().val;
+
+            if (!op1->OperIsLocal())
+            {
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookup temp tree"));
+
+                impAssignTempGen(tmp, op1, CHECK_SPILL_NONE);
+                op1 = gtNewLclvNode(tmp, argType);
+            }
+
+            if (argType == TYP_STRUCT)
+            {
+                assert(op1->OperIsLocal());
+
+                LclVarDsc* op1VarDsc  = lvaGetDesc(op1->AsLclVar());
+                unsigned   lclNum     = lvaGetLclNum(op1VarDsc);
+                unsigned   fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+                unsigned   fieldSize  = op1VarDsc->lvSize() / fieldCount;
+                var_types  fieldType  = TYP_SIMD16;
+
+                GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
+                int               offset    = 0;
+                for (unsigned fieldId = 0; fieldId < fieldCount; fieldId++)
+                {
+                    GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, fieldType, offset);
+                    fieldList->AddField(this, fldNode, offset, fieldType);
+
+                    offset += fieldSize;
+                }
+                op1 = fieldList;
+
+                switch (fieldCount)
+                {
+                    case 1:
+                        // NI_AdvSimd_VectorTableLookup
+                        // NI_AdvSimd_Arm64_VectorTableLookup
+                        break;
+                    case 2:
+                        // NI_AdvSimd_VectorTableLookup_2
+                        // NI_AdvSimd_Arm64_VectorTableLookup_2
+                        intrinsic = (NamedIntrinsic)(intrinsic + 1);
+                        break;
+                    case 3:
+                        // NI_AdvSimd_VectorTableLookup_3
+                        // NI_AdvSimd_Arm64_VectorTableLookup_3
+                        intrinsic = (NamedIntrinsic)(intrinsic + 2);
+                        break;
+                    case 4:
+                        // NI_AdvSimd_VectorTableLookup_4
+                        // NI_AdvSimd_Arm64_VectorTableLookup_4
+                        intrinsic = (NamedIntrinsic)(intrinsic + 3);
+                        break;
+                    default:
+                        noway_assert(!"Unknown field count");
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                assert(argType == TYP_SIMD16);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            }
+            break;
+        }
 
         default:
         {
