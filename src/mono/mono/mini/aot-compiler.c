@@ -6147,6 +6147,24 @@ method_is_externally_callable (MonoAotCompile *acfg, MonoMethod *method)
 	}
 }
 
+static void
+remove_module_so_suffix (char *module)
+{
+	if (!module)
+		return;
+
+	char *module_extension = strrchr (module, '.');
+	if (module_extension) {
+		const char **suffixes = mono_dl_get_so_suffixes ();
+		for (int i = 0; suffixes [i] && suffixes [i][0] != '\0'; i++) {
+			if (!strcmp (module_extension, suffixes [i])) {
+				*module_extension= '\0';
+				break;
+			}
+		}
+	}
+}
+
 #ifdef MONO_ARCH_AOT_SUPPORTED
 //---------------------------------------------------------------------------------------
 //
@@ -6182,7 +6200,6 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, const char **modul
 	char **scope_import;
 	guint32 scope_token;
 	char *module_ref_basename;
-	char *module_ref_basename_extension;
 
 	if (g_hash_table_lookup_extended (acfg->method_to_pinvoke_import, method, NULL, (gpointer *)&scope_import) && scope_import) {
 		if (module)
@@ -6204,16 +6221,6 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, const char **modul
 	scope_import = (char **) g_malloc0 (2 * sizeof (char *));
 	scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
 	module_ref_basename = g_path_get_basename (mono_metadata_string_heap (image, scope_token));
-	module_ref_basename_extension = strrchr (module_ref_basename, '.');
-	if (module_ref_basename_extension) {
-		const char **suffixes = mono_dl_get_so_suffixes ();
-		for (int i = 0; suffixes [i] && suffixes [i][0] != '\0'; i++) {
-			if (!strcmp (module_ref_basename_extension, suffixes [i])) {
-				*module_ref_basename_extension= '\0';
-				break;
-			}
-		}
-	}
 
 	scope_import [0] = module_ref_basename;
 	scope_import [1] = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
@@ -14495,8 +14502,23 @@ process_specified_direct_pinvokes (MonoAotCompile *acfg, const char *dpi)
 	if (direct_pinvoke && g_strstrip (direct_pinvoke)) {
 		if (is_direct_pinvoke_parsable (direct_pinvoke)) {
 			char *module, *entrypoint;
-			if (parsed_direct_pinvoke (acfg, direct_pinvoke, &module, &entrypoint))
-				result = add_direct_pinvoke (acfg, &module, &entrypoint);
+			if (parsed_direct_pinvoke (acfg, direct_pinvoke, &module, &entrypoint)) {
+				char *module_base = NULL;
+				size_t prlen = strlen (mono_dl_get_so_prefix ());
+				if (prlen && strncmp (module, mono_dl_get_so_prefix (), prlen) == 0)
+					module_base = g_strdup (module + prlen);
+				else
+					module_base = g_strdup (module);
+				remove_module_so_suffix (module_base);
+
+				if (strcmp (module, module_base)) {
+					char *entrypoint_dup = g_strdup (entrypoint);
+					result = add_direct_pinvoke (acfg, &module, &entrypoint) && add_direct_pinvoke (acfg, &module_base, &entrypoint_dup);
+				} else {
+					result = add_direct_pinvoke (acfg, &module, &entrypoint);
+					g_free (module_base);
+				}
+			}
 		} else {
 			result = TRUE;
 		}
