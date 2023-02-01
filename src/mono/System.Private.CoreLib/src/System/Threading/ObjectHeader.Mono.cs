@@ -220,6 +220,7 @@ internal static class ObjectHeader
     public static bool TryGetHashCode(object? o, out int hash)
     {
         hash = 0;
+#if false
         if (o == null)
             return true;
 
@@ -235,6 +236,7 @@ internal static class ObjectHeader
                 return true;
             }
         }
+#endif
         return false;
     }
 
