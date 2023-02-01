@@ -1893,9 +1893,11 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
 
+    GenTree* handleForResult                                         = fgInsertCommaFormTemp(&handleForNullCheck);
+    lvaTable[handleForResult->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
+
     // Check for null and possibly call helper
-    GenTree* nullCheck       = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
-    GenTree* handleForResult = gtCloneExpr(handleForNullCheck);
+    GenTree* nullCheck = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
 
     GenTree* result = nullptr;
 
