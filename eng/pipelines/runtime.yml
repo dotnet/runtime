@@ -258,7 +258,7 @@ extends:
                 eq(variables['isFullMatrix'], true))
 
       #
-      # CoreCLR NativeAOT debug build and smoke tests (helix)
+      # CoreCLR NativeAOT release build and smoke tests (helix)
       # Only when CoreCLR is changed
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -285,6 +285,7 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildMode: nativeaot
+              nativeAotTest: true
               testFilter: tree nativeaot
             testRunNamePrefixSuffix: NativeAOT_Release
 

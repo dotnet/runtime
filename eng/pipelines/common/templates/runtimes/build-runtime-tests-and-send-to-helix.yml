@@ -10,6 +10,7 @@ parameters:
   helixQueues: ''
   displayNameArgs: ''
   runInUnloadableContext: false
+  nativeAotTest: false
   runtimeFlavor: 'mono'
   runtimeVariant: 'monointerpreter'
   testBuildMode: ''
@@ -31,7 +32,7 @@ steps:
       displayName: Build Tests
 
   - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ${{ parameters.testBuildMode }} ${{ parameters.testFilter }} /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ${{ parameters.testBuildMode }} ${{ parameters.testFilter }} /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci ${{ parameters.archType }} $(buildConfigUpper)
       displayName: Build Tests
 
 
@@ -105,6 +106,7 @@ steps:
         runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+        nativeAotTest: ${{ parameters.nativeAotTest }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the
