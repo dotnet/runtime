@@ -1089,7 +1089,24 @@ void UnwindEpilogCodes::Dump(int indent)
 
 int UnwindEpilogInfo::Match(UnwindEpilogInfo* pEpi)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    if (Matches())
+    {
+        // We are already matched to someone else, and won't provide codes to the final layout
+        return -1;
+    }
+
+    if (Size() < pEpi->Size())
+    {
+        return -1;
+    }
+
+    int matchIndex = Size() - pEpi->Size();
+
+    if (0 == memcmp(GetCodes() + matchIndex, pEpi->GetCodes(), pEpi->Size()))
+    {
+        return matchIndex;
+    }
+
     return -1;
 }
 

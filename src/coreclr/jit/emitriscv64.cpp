@@ -154,7 +154,9 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
 {
     assert(ins != INS_invalid);
-    return (ins <= INS_remuw) && !(ins >= INS_jal && ins <= INS_bgeu && ins != INS_jalr) && (CodeGenInterface::instInfo[ins] & ST) == 0 ? true : false; // TODO CHECK
+    return (ins <= INS_remuw) && (ins >= INS_mov) &&
+           !(ins >= INS_jal && ins <= INS_bgeu && ins != INS_jalr) &&
+           (CodeGenInterface::instInfo[ins] & ST) == 0 ? true : false; // TODO CHECK
 }
 
 //------------------------------------------------------------------------
@@ -174,8 +176,11 @@ bool emitter::emitInsIsLoad(instruction ins)
 //
 bool emitter::emitInsIsStore(instruction ins)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return false;
+    // We have pseudo ins like lea which are not included in emitInsLdStTab.
+    if (ins < ArrLen(CodeGenInterface::instInfo))
+        return (CodeGenInterface::instInfo[ins] & ST) != 0;
+    else
+        return false;
 }
 
 //-------------------------------------------------------------------------
@@ -183,8 +188,11 @@ bool emitter::emitInsIsStore(instruction ins)
 //
 bool emitter::emitInsIsLoadOrStore(instruction ins)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
-    return false;
+    // We have pseudo ins like lea which are not included in emitInsLdStTab.
+    if (ins < ArrLen(CodeGenInterface::instInfo))
+        return (CodeGenInterface::instInfo[ins] & (LD | ST)) != 0;
+    else
+        return false;
 }
 
 /*****************************************************************************

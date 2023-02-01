@@ -4207,7 +4207,33 @@ void CodeGen::genEnregisterIncomingStackArgs()
             }
         }
 #elif defined(TARGET_RISCV64)
-         _ASSERTE(!"TODO RISCV64 NYI");
+        {
+            bool FPbased;
+            int  base = compiler->lvaFrameAddress(varNum, &FPbased);
+
+            if (emitter::isValidSimm12(base))
+            {
+                GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
+            }
+            else
+            {
+                if (tmp_reg == REG_NA)
+                {
+                    regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
+                    tmp_offset     = base;
+                    tmp_reg        = REG_RA; // TODO CHECK R21 => RA
+
+                    GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, base); // TODO CHECK R21 => RA
+                    GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2); // TODO CHECK R21 => RA
+                    GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, -8);
+                }
+                else
+                {
+                    int baseOffset = -(base - tmp_offset) - 8;
+                    GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, baseOffset);
+                }
+            }
+        }
 #else // !TARGET_LOONGARCH64
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
 #endif // !TARGET_LOONGARCH64

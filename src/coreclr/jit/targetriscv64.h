@@ -192,14 +192,14 @@
   #define REG_PREV(reg)           ((regNumber)((unsigned)(reg) - 1))
 
   // The following registers are used in emitting Enter/Leave/Tailcall profiler callbacks
-  #define REG_PROFILER_ENTER_ARG_FUNC_ID    REG_R10
-  #define RBM_PROFILER_ENTER_ARG_FUNC_ID    RBM_R10
-  #define REG_PROFILER_ENTER_ARG_CALLER_SP  REG_R11
-  #define RBM_PROFILER_ENTER_ARG_CALLER_SP  RBM_R11
-  #define REG_PROFILER_LEAVE_ARG_FUNC_ID    REG_R10
-  #define RBM_PROFILER_LEAVE_ARG_FUNC_ID    RBM_R10
-  #define REG_PROFILER_LEAVE_ARG_CALLER_SP  REG_R11
-  #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_R11
+  #define REG_PROFILER_ENTER_ARG_FUNC_ID    REG_R16
+  #define RBM_PROFILER_ENTER_ARG_FUNC_ID    RBM_R16
+  #define REG_PROFILER_ENTER_ARG_CALLER_SP  REG_R17
+  #define RBM_PROFILER_ENTER_ARG_CALLER_SP  RBM_R17
+  #define REG_PROFILER_LEAVE_ARG_FUNC_ID    REG_R16
+  #define RBM_PROFILER_LEAVE_ARG_FUNC_ID    RBM_R16
+  #define REG_PROFILER_LEAVE_ARG_CALLER_SP  REG_R17
+  #define RBM_PROFILER_LEAVE_ARG_CALLER_SP  RBM_R17
 
   // The registers trashed by profiler enter/leave/tailcall hook
   #define RBM_PROFILER_ENTER_TRASH     (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_FLTARG_REGS|RBM_FP))
