@@ -16,7 +16,7 @@ internal static class ObjectHeader
     private unsafe struct Header
     {
 #region Keep in sync with src/native/public/mono/metadata/details/object-types.h
-        public IntPtr vtable;
+        public void* vtable;
         public IntPtr synchronization; // really a LockWord
 #endregion // keep in sync with src/native/public/mono/metadata/details/object-types.h
     }
@@ -56,12 +56,11 @@ internal static class ObjectHeader
     // <summary>
     // A union that contains either an uninflated lockword, or a pointer to a synchronization struct
     // </summary>
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential)]
     private struct LockWord
     {
 #region Keep in sync with monitor.h
 
-        [FieldOffset(0)]
         private IntPtr _lock_word;
 
         private const int StatusBits = 2;
