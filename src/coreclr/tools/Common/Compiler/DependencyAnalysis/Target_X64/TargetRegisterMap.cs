@@ -20,31 +20,11 @@ namespace ILCompiler.DependencyAnalysis.X64
 
         public TargetRegisterMap(TargetOS os)
         {
-            switch (os)
-            {
-                case TargetOS.Windows:
-                    Arg0 = Register.RCX;
-                    Arg1 = Register.RDX;
-                    Arg2 = Register.R8;
-                    Arg3 = Register.R9;
-                    Result = Register.RAX;
-                    break;
-
-                case TargetOS.Linux:
-                case TargetOS.OSX:
-                // TODO: case TargetOS.iOSSimulator:
-                case TargetOS.FreeBSD:
-                case TargetOS.SunOS:
-                case TargetOS.NetBSD:
-                    Arg0 = Register.RDI;
-                    Arg1 = Register.RSI;
-                    Arg2 = Register.RDX;
-                    Arg3 = Register.RCX;
-                    Result = Register.RAX;
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
+            Arg0 = os == TargetOS.Windows ? Register.RCX : Register.RDI;
+            Arg1 = os == TargetOS.Windows ? Register.RDX : Register.RSI;
+            Arg2 = os == TargetOS.Windows ? Register.R8  : Register.RDX;
+            Arg3 = os == TargetOS.Windows ? Register.R9  : Register.RCX;
+            Result = Register.RAX;
         }
     }
 }
