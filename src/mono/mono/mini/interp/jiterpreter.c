@@ -438,6 +438,14 @@ mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
 	return 0;
 }
 
+#define JITERP_CNE_UN_R4 (0xFFFF + 0)
+#define JITERP_CGE_UN_R4 (0xFFFF + 1)
+#define JITERP_CLE_UN_R4 (0xFFFF + 2)
+#define JITERP_CNE_UN_R8 (0xFFFF + 3)
+#define JITERP_CGE_UN_R8 (0xFFFF + 4)
+#define JITERP_CLE_UN_R8 (0xFFFF + 5)
+
+
 #define JITERP_RELOP(opcode, type, op, noorder) \
 	case opcode: \
 		{ \
@@ -455,10 +463,14 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 		JITERP_RELOP(MINT_CEQ_R8, double, ==, 0);
 		JITERP_RELOP(MINT_CNE_R4, float, !=, 1);
 		JITERP_RELOP(MINT_CNE_R8, double, !=, 1);
+		JITERP_RELOP(JITERP_CNE_UN_R4, float, !=, 1);
+		JITERP_RELOP(JITERP_CNE_UN_R8, double, !=, 1);
 		JITERP_RELOP(MINT_CGT_R4, float, >, 0);
 		JITERP_RELOP(MINT_CGT_R8, double, >, 0);
 		JITERP_RELOP(MINT_CGE_R4, float, >=, 0);
 		JITERP_RELOP(MINT_CGE_R8, double, >=, 0);
+		JITERP_RELOP(JITERP_CGE_UN_R4, float, >=, 1);
+		JITERP_RELOP(JITERP_CGE_UN_R8, double, >=, 1);
 		JITERP_RELOP(MINT_CGT_UN_R4, float, >, 1);
 		JITERP_RELOP(MINT_CGT_UN_R8, double, >, 1);
 		JITERP_RELOP(MINT_CLT_R4, float, <, 0);
@@ -467,6 +479,8 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 		JITERP_RELOP(MINT_CLT_UN_R8, double, <, 1);
 		JITERP_RELOP(MINT_CLE_R4, float, <=, 0);
 		JITERP_RELOP(MINT_CLE_R8, double, <=, 0);
+		JITERP_RELOP(JITERP_CLE_UN_R4, float, <=, 1);
+		JITERP_RELOP(JITERP_CLE_UN_R8, double, <=, 1);
 
 		default:
 			g_assert_not_reached();
