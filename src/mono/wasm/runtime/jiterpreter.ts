@@ -128,6 +128,15 @@ struct InterpMethod {
        void **data_items;
 */
 
+const enum JiterpSpecialOpcode {
+    CNE_UN_R4 = 0xFFFF + 0,
+    CGE_UN_R4 = 0xFFFF + 1,
+    CLE_UN_R4 = 0xFFFF + 2,
+    CNE_UN_R8 = 0xFFFF + 3,
+    CGE_UN_R8 = 0xFFFF + 4,
+    CLE_UN_R8 = 0xFFFF + 5,
+}
+
 const enum BailoutReason {
     Unknown,
     InterpreterTiering,
@@ -1673,7 +1682,6 @@ function emit_fieldop (
         case MintOpcode.MINT_LDSFLD_I4:
             // default
             break;
-        // FIXME: These cause grisu3 to break?
         case MintOpcode.MINT_STFLD_R4:
         case MintOpcode.MINT_STSFLD_R4:
         case MintOpcode.MINT_LDFLD_R4:
@@ -1901,6 +1909,12 @@ const intrinsicFpBinops : { [opcode: number] : WasmOpcode } = {
     [MintOpcode.MINT_CLT_UN_R8]: WasmOpcode.nop,
     [MintOpcode.MINT_CLE_R4]: WasmOpcode.f64_promote_f32,
     [MintOpcode.MINT_CLE_R8]: WasmOpcode.nop,
+    [JiterpSpecialOpcode.CGE_UN_R4]: WasmOpcode.f64_promote_f32,
+    [JiterpSpecialOpcode.CLE_UN_R4]: WasmOpcode.f64_promote_f32,
+    [JiterpSpecialOpcode.CNE_UN_R4]: WasmOpcode.f64_promote_f32,
+    [JiterpSpecialOpcode.CGE_UN_R8]: WasmOpcode.nop,
+    [JiterpSpecialOpcode.CLE_UN_R8]: WasmOpcode.nop,
+    [JiterpSpecialOpcode.CNE_UN_R8]: WasmOpcode.nop,
 };
 
 const binopTable : { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
@@ -2021,7 +2035,8 @@ const relopbranchTable : { [opcode: number]: [comparisonOpcode: MintOpcode, imme
     [MintOpcode.MINT_BLE_UN_I8_S]:      MintOpcode.MINT_CLE_UN_I8,
 
     [MintOpcode.MINT_BEQ_I8_IMM_SP]:    [MintOpcode.MINT_CEQ_I8,    WasmOpcode.i64_const, true],
-    [MintOpcode.MINT_BNE_UN_I8_IMM_SP]: [MintOpcode.MINT_CNE_I8,    WasmOpcode.i64_const, true],
+    // FIXME: Missing compare opcode
+    // [MintOpcode.MINT_BNE_UN_I8_IMM_SP]: [MintOpcode.MINT_CNE_UN_I8, WasmOpcode.i64_const, true],
     [MintOpcode.MINT_BGT_I8_IMM_SP]:    [MintOpcode.MINT_CGT_I8,    WasmOpcode.i64_const, true],
     [MintOpcode.MINT_BGT_UN_I8_IMM_SP]: [MintOpcode.MINT_CGT_UN_I8, WasmOpcode.i64_const, true],
     [MintOpcode.MINT_BLT_I8_IMM_SP]:    [MintOpcode.MINT_CLT_I8,    WasmOpcode.i64_const, true],
@@ -2032,30 +2047,26 @@ const relopbranchTable : { [opcode: number]: [comparisonOpcode: MintOpcode, imme
     [MintOpcode.MINT_BLE_UN_I8_IMM_SP]: [MintOpcode.MINT_CLE_UN_I8, WasmOpcode.i64_const, true],
 
     [MintOpcode.MINT_BEQ_R4_S]:         MintOpcode.MINT_CEQ_R4,
-    [MintOpcode.MINT_BNE_UN_R4_S]:      MintOpcode.MINT_CNE_R4,
+    [MintOpcode.MINT_BNE_UN_R4_S]:      <any>JiterpSpecialOpcode.CNE_UN_R4,
     [MintOpcode.MINT_BGT_R4_S]:         MintOpcode.MINT_CGT_R4,
     [MintOpcode.MINT_BGT_UN_R4_S]:      MintOpcode.MINT_CGT_UN_R4,
     [MintOpcode.MINT_BLT_R4_S]:         MintOpcode.MINT_CLT_R4,
     [MintOpcode.MINT_BLT_UN_R4_S]:      MintOpcode.MINT_CLT_UN_R4,
     [MintOpcode.MINT_BGE_R4_S]:         MintOpcode.MINT_CGE_R4,
-    // FIXME: No compare opcode for this
-    [MintOpcode.MINT_BGE_UN_R4_S]:      MintOpcode.MINT_CGE_R4,
+    [MintOpcode.MINT_BGE_UN_R4_S]:      <any>JiterpSpecialOpcode.CGE_UN_R4,
     [MintOpcode.MINT_BLE_R4_S]:         MintOpcode.MINT_CLE_R4,
-    // FIXME: No compare opcode for this
-    [MintOpcode.MINT_BLE_UN_R4_S]:      MintOpcode.MINT_CLE_R4,
+    [MintOpcode.MINT_BLE_UN_R4_S]:      <any>JiterpSpecialOpcode.CLE_UN_R4,
 
     [MintOpcode.MINT_BEQ_R8_S]:         MintOpcode.MINT_CEQ_R8,
-    [MintOpcode.MINT_BNE_UN_R8_S]:      MintOpcode.MINT_CNE_R8,
+    [MintOpcode.MINT_BNE_UN_R8_S]:      <any>JiterpSpecialOpcode.CNE_UN_R8,
     [MintOpcode.MINT_BGT_R8_S]:         MintOpcode.MINT_CGT_R8,
     [MintOpcode.MINT_BGT_UN_R8_S]:      MintOpcode.MINT_CGT_UN_R8,
     [MintOpcode.MINT_BLT_R8_S]:         MintOpcode.MINT_CLT_R8,
     [MintOpcode.MINT_BLT_UN_R8_S]:      MintOpcode.MINT_CLT_UN_R8,
     [MintOpcode.MINT_BGE_R8_S]:         MintOpcode.MINT_CGE_R8,
-    // FIXME: No compare opcode for this
-    [MintOpcode.MINT_BGE_UN_R8_S]:      MintOpcode.MINT_CGE_R8,
+    [MintOpcode.MINT_BGE_UN_R8_S]:      <any>JiterpSpecialOpcode.CGE_UN_R8,
     [MintOpcode.MINT_BLE_R8_S]:         MintOpcode.MINT_CLE_R8,
-    // FIXME: No compare opcode for this
-    [MintOpcode.MINT_BLE_UN_R8_S]:      MintOpcode.MINT_CLE_R8,
+    [MintOpcode.MINT_BLE_UN_R8_S]:      <any>JiterpSpecialOpcode.CLE_UN_R8,
 };
 
 function emit_binop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
@@ -2466,14 +2477,14 @@ function emit_relop_branch (builder: WasmBuilder, ip: MintOpcodePtr, opcode: Min
     const operandLoadOp = relopInfo
         ? relopInfo[1]
         : (
-            intrinsicFpBinop == WasmOpcode.nop
+            intrinsicFpBinop === WasmOpcode.nop
                 ? WasmOpcode.f64_load
                 : WasmOpcode.f32_load
         );
 
     append_ldloc(builder, getArgU16(ip, 1), operandLoadOp);
     // Promote f32 lhs to f64 if necessary
-    if (!relopInfo && (intrinsicFpBinop != WasmOpcode.nop))
+    if (!relopInfo && (intrinsicFpBinop !== WasmOpcode.nop))
         builder.appendU8(intrinsicFpBinop);
 
     // Compare with immediate
@@ -3091,7 +3102,7 @@ export function jiterpreter_dump_stats (b?: boolean) {
     if (!mostRecentOptions.enableStats && (b !== undefined))
         return;
 
-    console.log(`// generated: ${counters.bytesGenerated} wasm bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls; ${counters.entryWrappersCompiled} interp_entries`);
+    console.log(`// generated: ${counters.bytesGenerated} wasm bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
     console.log(`// time spent: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm`);
     if (mostRecentOptions.countBailouts) {
         for (let i = 0; i < BailoutReasonNames.length; i++) {

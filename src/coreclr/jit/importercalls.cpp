@@ -2345,146 +2345,199 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // We specially support the following on all platforms to allow for dead
     // code optimization and to more generally support recursive intrinsics.
 
-    if (isIntrinsic)
+    if (isIntrinsic && (ni > NI_SPECIAL_IMPORT_START) && (ni < NI_PRIMITIVE_END))
     {
-        if (ni == NI_IsSupported_True)
-        {
-            assert(sig->numArgs == 0);
-            return gtNewIconNode(true);
-        }
+        static_assert_no_msg(NI_SPECIAL_IMPORT_START < NI_SPECIAL_IMPORT_END);
+        static_assert_no_msg(NI_SRCS_UNSAFE_START < NI_SRCS_UNSAFE_END);
+        static_assert_no_msg(NI_PRIMITIVE_START < NI_PRIMITIVE_END);
 
-        if (ni == NI_IsSupported_False)
-        {
-            assert(sig->numArgs == 0);
-            return gtNewIconNode(false);
-        }
+        static_assert_no_msg((NI_SPECIAL_IMPORT_END + 1) == NI_SRCS_UNSAFE_START);
+        static_assert_no_msg((NI_SRCS_UNSAFE_END + 1) == NI_PRIMITIVE_START);
 
-        if (ni == NI_IsSupported_Type)
+        if (ni < NI_SPECIAL_IMPORT_END)
         {
-            CORINFO_CLASS_HANDLE typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
-            CorInfoType          simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
+            assert(ni > NI_SPECIAL_IMPORT_START);
 
-            switch (simdBaseJitType)
+            switch (ni)
             {
-                case CORINFO_TYPE_BYTE:
-                case CORINFO_TYPE_UBYTE:
-                case CORINFO_TYPE_SHORT:
-                case CORINFO_TYPE_USHORT:
-                case CORINFO_TYPE_INT:
-                case CORINFO_TYPE_UINT:
-                case CORINFO_TYPE_LONG:
-                case CORINFO_TYPE_ULONG:
-                case CORINFO_TYPE_FLOAT:
-                case CORINFO_TYPE_DOUBLE:
-                case CORINFO_TYPE_NATIVEINT:
-                case CORINFO_TYPE_NATIVEUINT:
+                case NI_IsSupported_True:
                 {
+                    assert(sig->numArgs == 0);
                     return gtNewIconNode(true);
                 }
 
-                default:
+                case NI_IsSupported_False:
                 {
+                    assert(sig->numArgs == 0);
                     return gtNewIconNode(false);
                 }
-            }
-        }
 
-        if (ni == NI_Vector_GetCount)
-        {
-            CORINFO_CLASS_HANDLE typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
-            CorInfoType          simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
-            unsigned             simdSize        = info.compCompHnd->getClassSize(clsHnd);
-
-            switch (simdBaseJitType)
-            {
-                case CORINFO_TYPE_BYTE:
-                case CORINFO_TYPE_UBYTE:
-                case CORINFO_TYPE_SHORT:
-                case CORINFO_TYPE_USHORT:
-                case CORINFO_TYPE_INT:
-                case CORINFO_TYPE_UINT:
-                case CORINFO_TYPE_LONG:
-                case CORINFO_TYPE_ULONG:
-                case CORINFO_TYPE_FLOAT:
-                case CORINFO_TYPE_DOUBLE:
-                case CORINFO_TYPE_NATIVEINT:
-                case CORINFO_TYPE_NATIVEUINT:
+                case NI_IsSupported_Dynamic:
                 {
-                    var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-                    unsigned       elementSize  = genTypeSize(simdBaseType);
-                    GenTreeIntCon* countNode    = gtNewIconNode(simdSize / elementSize, TYP_INT);
+                    break;
+                }
+
+                case NI_IsSupported_Type:
+                {
+                    CORINFO_CLASS_HANDLE typeArgHnd;
+                    CorInfoType          simdBaseJitType;
+
+                    typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
+                    simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
+
+                    switch (simdBaseJitType)
+                    {
+                        case CORINFO_TYPE_BYTE:
+                        case CORINFO_TYPE_UBYTE:
+                        case CORINFO_TYPE_SHORT:
+                        case CORINFO_TYPE_USHORT:
+                        case CORINFO_TYPE_INT:
+                        case CORINFO_TYPE_UINT:
+                        case CORINFO_TYPE_LONG:
+                        case CORINFO_TYPE_ULONG:
+                        case CORINFO_TYPE_FLOAT:
+                        case CORINFO_TYPE_DOUBLE:
+                        case CORINFO_TYPE_NATIVEINT:
+                        case CORINFO_TYPE_NATIVEUINT:
+                        {
+                            return gtNewIconNode(true);
+                        }
+
+                        default:
+                        {
+                            return gtNewIconNode(false);
+                        }
+                    }
+                }
+
+                case NI_Throw_PlatformNotSupportedException:
+                {
+                    return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig,
+                                                        mustExpand);
+                }
+
+                case NI_Vector_GetCount:
+                {
+                    CORINFO_CLASS_HANDLE typeArgHnd;
+                    CorInfoType          simdBaseJitType;
+                    unsigned             simdSize;
+
+                    typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
+                    simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
+                    simdSize        = info.compCompHnd->getClassSize(clsHnd);
+
+                    switch (simdBaseJitType)
+                    {
+                        case CORINFO_TYPE_BYTE:
+                        case CORINFO_TYPE_UBYTE:
+                        case CORINFO_TYPE_SHORT:
+                        case CORINFO_TYPE_USHORT:
+                        case CORINFO_TYPE_INT:
+                        case CORINFO_TYPE_UINT:
+                        case CORINFO_TYPE_LONG:
+                        case CORINFO_TYPE_ULONG:
+                        case CORINFO_TYPE_FLOAT:
+                        case CORINFO_TYPE_DOUBLE:
+                        case CORINFO_TYPE_NATIVEINT:
+                        case CORINFO_TYPE_NATIVEUINT:
+                        {
+                            var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+                            unsigned       elementSize  = genTypeSize(simdBaseType);
+                            GenTreeIntCon* countNode    = gtNewIconNode(simdSize / elementSize, TYP_INT);
 
 #if defined(FEATURE_SIMD)
-                    countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+                            countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
 #endif // FEATURE_SIMD
 
-                    return countNode;
+                            return countNode;
+                        }
+
+                        default:
+                        {
+                            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig,
+                                                                mustExpand);
+                        }
+                    }
                 }
 
                 default:
                 {
-                    ni = NI_Throw_PlatformNotSupportedException;
-                    break;
+                    unreached();
                 }
             }
         }
-
-        if (ni == NI_Throw_PlatformNotSupportedException)
+        else if (ni < NI_SRCS_UNSAFE_END)
         {
-            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-        }
-
-        if ((ni > NI_SRCS_UNSAFE_START) && (ni < NI_SRCS_UNSAFE_END))
-        {
+            assert(ni > NI_SRCS_UNSAFE_START);
             assert(!mustExpand);
             return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
+        }
+        else
+        {
+            assert((ni > NI_PRIMITIVE_START) && (ni < NI_PRIMITIVE_END));
+            assert(!mustExpand);
+            return impPrimitiveNamedIntrinsic(ni, clsHnd, method, sig);
         }
     }
 
 #ifdef FEATURE_HW_INTRINSICS
-    if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
+    if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
     {
-        if (!isIntrinsic)
+        static_assert_no_msg(NI_HW_INTRINSIC_START < NI_HW_INTRINSIC_END);
+        static_assert_no_msg(NI_SIMD_AS_HWINTRINSIC_START < NI_SIMD_AS_HWINTRINSIC_END);
+
+        static_assert_no_msg((NI_HW_INTRINSIC_END + 1) == NI_SIMD_AS_HWINTRINSIC_START);
+
+        if (ni < NI_HW_INTRINSIC_END)
         {
+            assert(ni > NI_HW_INTRINSIC_START);
+
+            if (!isIntrinsic)
+            {
 #if defined(TARGET_XARCH)
-            // We can't guarantee that all overloads for the xplat intrinsics can be
-            // handled by the AltJit, so limit only the platform specific intrinsics
-            assert((NI_Vector256_Xor + 1) == NI_X86Base_BitScanForward);
+                // We can't guarantee that all overloads for the xplat intrinsics can be
+                // handled by the AltJit, so limit only the platform specific intrinsics
+                assert((NI_Vector256_Xor + 1) == NI_X86Base_BitScanForward);
 
-            if (ni < NI_Vector256_Xor)
+                if (ni < NI_Vector256_Xor)
 #elif defined(TARGET_ARM64)
-            // We can't guarantee that all overloads for the xplat intrinsics can be
-            // handled by the AltJit, so limit only the platform specific intrinsics
-            assert((NI_Vector128_Xor + 1) == NI_AdvSimd_Abs);
+                // We can't guarantee that all overloads for the xplat intrinsics can be
+                // handled by the AltJit, so limit only the platform specific intrinsics
+                assert((NI_Vector128_Xor + 1) == NI_AdvSimd_Abs);
 
-            if (ni < NI_Vector128_Xor)
+                if (ni < NI_Vector128_Xor)
 #else
 #error Unsupported platform
 #endif
+                {
+                    // Several of the NI_Vector64/128/256 APIs do not have
+                    // all overloads as intrinsic today so they will assert
+                    return nullptr;
+                }
+            }
+
+            GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
+
+            if (mustExpand && (hwintrinsic == nullptr))
             {
-                // Several of the NI_Vector64/128/256 APIs do not have
-                // all overloads as intrinsic today so they will assert
-                return nullptr;
+                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
+            }
+
+            return hwintrinsic;
+        }
+        else
+        {
+            assert((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END));
+
+            if (isIntrinsic)
+            {
+                // These intrinsics aren't defined recursively and so they will never be mustExpand
+                // Instead, they provide software fallbacks that will be executed instead.
+
+                assert(!mustExpand);
+                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
             }
         }
-
-        GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
-
-        if (mustExpand && (hwintrinsic == nullptr))
-        {
-            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
-        }
-
-        return hwintrinsic;
-    }
-
-    if (isIntrinsic && (ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
-    {
-        // These intrinsics aren't defined recursively and so they will never be mustExpand
-        // Instead, they provide software fallbacks that will be executed instead.
-
-        assert(!mustExpand);
-        return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -2781,7 +2834,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // Bounds check
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
-                GenTree*             length       = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
+
+                GenTreeField* length = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
+                length->SetIsSpanLength(true);
+
                 GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, length, SCK_RNGCHK_FAIL);
 
                 // Element access
@@ -2810,6 +2866,39 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
 
                 break;
+            }
+
+            case NI_System_Span_get_Length:
+            case NI_System_ReadOnlySpan_get_Length:
+            {
+                assert(sig->sigInst.classInstCount == 1);
+                assert(sig->numArgs == 0);
+
+                CORINFO_CLASS_HANDLE spanElemHnd = sig->sigInst.classInst[0];
+                const unsigned       elemSize    = info.compCompHnd->getClassSize(spanElemHnd);
+                assert(elemSize > 0);
+
+                const bool isReadOnly = (ni == NI_System_ReadOnlySpan_get_Length);
+
+                JITDUMP("\nimpIntrinsic: Expanding %sSpan<T>.get_Length, T=%s, sizeof(T)=%u\n",
+                        isReadOnly ? "ReadOnly" : "", eeGetClassName(spanElemHnd), elemSize);
+
+                GenTree* ptrToSpan = impPopStack().val;
+
+#if defined(DEBUG)
+                if (verbose)
+                {
+                    printf("with ptr-to-span\n");
+                    gtDispTree(ptrToSpan);
+                }
+#endif // defined(DEBUG)
+
+                CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
+                const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
+
+                GenTreeField* fieldRef = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
+                fieldRef->SetIsSpanLength(true);
+                return fieldRef;
             }
 
             case NI_System_RuntimeTypeHandle_GetValueInternal:
@@ -3635,27 +3724,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-            // Fold PopCount for constant input
-            case NI_System_Numerics_BitOperations_PopCount:
-            {
-                assert(sig->numArgs == 1);
-                if (impStackTop().val->IsIntegralConst())
-                {
-                    typeInfo argType = verParseArgSigToTypeInfo(sig, sig->args).NormaliseForStack();
-                    INT64    cns     = impPopStack().val->AsIntConCommon()->IntegralValue();
-                    if (argType.IsType(TI_LONG))
-                    {
-                        retNode = gtNewIconNode(genCountBits(cns), callType);
-                    }
-                    else
-                    {
-                        assert(argType.IsType(TI_INT));
-                        retNode = gtNewIconNode(genCountBits(static_cast<unsigned>(cns)), callType);
-                    }
-                }
-                break;
-            }
-
             case NI_System_GC_KeepAlive:
             {
                 retNode = impKeepAliveIntrinsic(impPopStack().val);
@@ -4167,6 +4235,563 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             unreached();
         }
     }
+}
+
+//------------------------------------------------------------------------
+// impPrimitiveNamedIntrinsic: import a NamedIntrinsic representing a primitive operation
+//
+// Arguments:
+//    intrinsic - the intrinsic being imported
+//    clsHnd    - handle for the intrinsic method's class
+//    method    - handle for the intrinsic method
+//    sig       - signature of the intrinsic method
+//
+// Returns:
+//    IR tree to use in place of the call, or nullptr if the jit should treat
+//    the intrinsic call like a normal call.
+//
+GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
+                                              CORINFO_CLASS_HANDLE  clsHnd,
+                                              CORINFO_METHOD_HANDLE method,
+                                              CORINFO_SIG_INFO*     sig)
+{
+    assert(sig->sigInst.classInstCount == 0);
+
+    var_types retType = JITtype2varType(sig->retType);
+    assert(varTypeIsArithmetic(retType));
+
+    NamedIntrinsic hwintrinsic = NI_Illegal;
+
+    CORINFO_ARG_LIST_HANDLE args = sig->args;
+
+    assert((sig->numArgs == 1) || (sig->numArgs == 2));
+
+    CORINFO_CLASS_HANDLE op1ClsHnd;
+    CorInfoType          baseJitType = strip(info.compCompHnd->getArgType(sig, args, &op1ClsHnd));
+    var_types            baseType    = JITtype2varType(baseJitType);
+
+    GenTree* result = nullptr;
+
+    switch (intrinsic)
+    {
+        case NI_PRIMITIVE_Crc32C:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType == TYP_INT);
+
+            // Crc32 needs the base type from op2
+
+            CORINFO_CLASS_HANDLE op2ClsHnd;
+            args = info.compCompHnd->getArgNext(args);
+
+            baseJitType = strip(info.compCompHnd->getArgType(sig, args, &op2ClsHnd));
+            baseType    = JITtype2varType(baseJitType);
+
+#if !defined(TARGET_64BIT)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-CQ: Adding long decomposition support is more complex
+                // and not supported today so early exit if we have a long and
+                // either input is not a constant.
+
+                break;
+            }
+#endif // !TARGET_64BIT
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+            if (compOpportunisticallyDependsOn(InstructionSet_SSE42))
+            {
+                GenTree* op2 = impPopStack().val;
+                GenTree* op1 = impPopStack().val;
+
+                if (varTypeIsLong(baseType))
+                {
+                    hwintrinsic = NI_SSE42_X64_Crc32;
+                    op1         = gtFoldExpr(gtNewCastNode(baseType, op1, /* unsigned */ true, baseType));
+                }
+                else
+                {
+                    hwintrinsic = NI_SSE42_Crc32;
+                    baseType    = genActualType(baseType);
+                }
+
+                result = gtNewScalarHWIntrinsicNode(baseType, op1, op2, hwintrinsic);
+
+                // We use the simdBaseJitType to bring the type of the second argument to codegen
+                result->AsHWIntrinsic()->SetSimdBaseJitType(baseJitType);
+            }
+#elif defined(TARGET_ARM64)
+            if (compOpportunisticallyDependsOn(InstructionSet_Crc32))
+            {
+                GenTree* op2 = impPopStack().val;
+                GenTree* op1 = impPopStack().val;
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_Crc32_Arm64_ComputeCrc32C : NI_Crc32_ComputeCrc32C;
+                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, op2, hwintrinsic);
+                baseType    = TYP_INT;
+
+                // We use the simdBaseJitType to bring the type of the second argument to codegen
+                result->AsHWIntrinsic()->SetSimdBaseJitType(baseJitType);
+            }
+#endif // TARGET_*
+#endif // FEATURE_HW_INTRINSICS
+
+            break;
+        }
+
+        case NI_PRIMITIVE_LeadingZeroCount:
+        {
+            assert(sig->numArgs == 1);
+            assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+            GenTree* op1 = impStackTop().val;
+
+            if (op1->IsIntegralConst())
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    result       = gtNewLconNode(BitOperations::LeadingZeroCount(cns));
+                }
+                else
+                {
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    result       = gtNewIconNode(BitOperations::LeadingZeroCount(cns), baseType);
+                }
+                break;
+            }
+
+#if !defined(TARGET_64BIT)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-CQ: Adding long decomposition support is more complex
+                // and not supported today so early exit if we have a long and
+                // either input is not a constant.
+
+                break;
+            }
+#endif // !TARGET_64BIT
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+            if (compOpportunisticallyDependsOn(InstructionSet_LZCNT))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_LZCNT_X64_LeadingZeroCount : NI_LZCNT_LeadingZeroCount;
+                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            }
+            else if (compOpportunisticallyDependsOn(InstructionSet_X86Base))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                // We're importing this as the following...
+                // * 32-bit lzcnt: (value == 0) ? 32 : (31 ^ BSR(value))
+                // * 64-bit lzcnt: (value == 0) ? 64 : (63 ^ BSR(value))
+
+                GenTree* op1Dup;
+                op1 = impCloneExpr(op1, &op1Dup, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                   nullptr DEBUGARG("Cloning op1 for LeadingZeroCount"));
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
+                op1Dup      = gtNewScalarHWIntrinsicNode(baseType, op1Dup, hwintrinsic);
+
+                GenTree* cond = gtFoldExpr(gtNewOperNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)));
+
+                GenTree* trueRes;
+                GenTree* icon;
+
+                if (varTypeIsLong(baseType))
+                {
+                    trueRes = gtNewLconNode(64);
+                    icon    = gtNewLconNode(63);
+                }
+                else
+                {
+                    trueRes = gtNewIconNode(32, baseType);
+                    icon    = gtNewIconNode(31, baseType);
+                }
+
+                GenTree*      falseRes = gtNewOperNode(GT_XOR, baseType, op1Dup, icon);
+                GenTreeColon* colon    = gtNewColonNode(baseType, trueRes, falseRes);
+
+                result = gtNewQmarkNode(baseType, cond, colon);
+
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for LeadingZeroCount Qmark"));
+                impAssignTempGen(tmp, result, CHECK_SPILL_NONE);
+                result = gtNewLclvNode(tmp, baseType);
+            }
+#elif defined(TARGET_ARM64)
+            if (compOpportunisticallyDependsOn(InstructionSet_ArmBase))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+                baseType    = TYP_INT;
+            }
+#endif // TARGET_*
+#endif // FEATURE_HW_INTRINSICS
+
+            break;
+        }
+
+        case NI_PRIMITIVE_Log2:
+        {
+            assert(sig->numArgs == 1);
+            assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+            GenTree* op1 = impStackTop().val;
+
+            if (op1->IsIntegralConst())
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+
+                    if (varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)) || (static_cast<int64_t>(cns) >= 0))
+                    {
+                        result = gtNewLconNode(BitOperations::Log2(cns));
+                    }
+                }
+                else
+                {
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+
+                    if (varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)) || (static_cast<int32_t>(cns) >= 0))
+                    {
+                        result = gtNewIconNode(BitOperations::Log2(cns), baseType);
+                    }
+                }
+                break;
+            }
+
+#if !defined(TARGET_64BIT)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-CQ: Adding long decomposition support is more complex
+                // and not supported today so early exit if we have a long and
+                // either input is not a constant.
+
+                break;
+            }
+#endif // !TARGET_64BIT
+
+            if (varTypeIsSigned(baseType))
+            {
+                // TODO-CQ: We should insert the `if (value < 0) { throw }` handling
+                break;
+            }
+
+#if defined(FEATURE_HW_INTRINSICS)
+            GenTree* lzcnt = impPrimitiveNamedIntrinsic(NI_PRIMITIVE_LeadingZeroCount, clsHnd, method, sig);
+
+            if (lzcnt != nullptr)
+            {
+                GenTree* icon;
+
+                if (varTypeIsLong(retType))
+                {
+                    icon = gtNewLconNode(63);
+                }
+                else
+                {
+                    icon = gtNewIconNode(31, retType);
+                }
+
+                result   = gtNewOperNode(GT_XOR, retType, lzcnt, icon);
+                baseType = retType;
+            }
+#endif // FEATURE_HW_INTRINSICS
+
+            break;
+        }
+
+        case NI_PRIMITIVE_PopCount:
+        {
+            assert(sig->numArgs == 1);
+            assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+            GenTree* op1 = impStackTop().val;
+
+            if (op1->IsIntegralConst())
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    result       = gtNewLconNode(BitOperations::PopCount(cns));
+                }
+                else
+                {
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    result       = gtNewIconNode(BitOperations::PopCount(cns), baseType);
+                }
+                break;
+            }
+
+#if !defined(TARGET_64BIT)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-CQ: Adding long decomposition support is more complex
+                // and not supported today so early exit if we have a long and
+                // either input is not a constant.
+
+                break;
+            }
+#endif // !TARGET_64BIT
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+            if (compOpportunisticallyDependsOn(InstructionSet_POPCNT))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_POPCNT_X64_PopCount : NI_POPCNT_PopCount;
+                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            }
+#elif defined(TARGET_ARM64)
+            if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
+            {
+                // TODO-ARM64-CQ: PopCount should be handled as an intrinsic for non-constant cases
+            }
+#endif // TARGET_*
+#endif // FEATURE_HW_INTRINSICS
+
+            break;
+        }
+
+        case NI_PRIMITIVE_RotateLeft:
+        {
+            assert(sig->numArgs == 2);
+            assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+            GenTree* op2 = impStackTop().val;
+
+            if (!op2->IsIntegralConst())
+            {
+                // TODO-CQ: ROL currently expects op2 to be a constant
+                break;
+            }
+
+            // Pop the value from the stack
+            impPopStack();
+
+            GenTree* op1  = impPopStack().val;
+            uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
+
+            // Mask the offset to ensure deterministic xplat behavior for overshifting
+            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
+            if (cns2 == 0)
+            {
+                // No rotation is a nop
+                return op1;
+            }
+
+            if (op1->IsIntegralConst())
+            {
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    result        = gtNewLconNode(BitOperations::RotateLeft(cns1, cns2));
+                }
+                else
+                {
+                    uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    result        = gtNewIconNode(BitOperations::RotateLeft(cns1, cns2), baseType);
+                }
+                break;
+            }
+
+            op2->AsIntConCommon()->SetIconValue(cns2);
+            result = gtFoldExpr(gtNewOperNode(GT_ROL, baseType, op1, op2));
+
+            break;
+        }
+
+        case NI_PRIMITIVE_RotateRight:
+        {
+            assert(sig->numArgs == 2);
+            assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+
+            GenTree* op2 = impStackTop().val;
+
+            if (!op2->IsIntegralConst())
+            {
+                // TODO-CQ: ROR currently expects op2 to be a constant
+                break;
+            }
+
+            // Pop the value from the stack
+            impPopStack();
+
+            GenTree* op1  = impPopStack().val;
+            uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
+
+            // Mask the offset to ensure deterministic xplat behavior for overshifting
+            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
+            if (cns2 == 0)
+            {
+                // No rotation is a nop
+                return op1;
+            }
+
+            if (op1->IsIntegralConst())
+            {
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    result        = gtNewLconNode(BitOperations::RotateRight(cns1, cns2));
+                }
+                else
+                {
+                    uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    result        = gtNewIconNode(BitOperations::RotateRight(cns1, cns2), baseType);
+                }
+                break;
+            }
+
+            op2->AsIntConCommon()->SetIconValue(cns2);
+            result = gtFoldExpr(gtNewOperNode(GT_ROR, baseType, op1, op2));
+
+            break;
+        }
+
+        case NI_PRIMITIVE_TrailingZeroCount:
+        {
+            assert(sig->numArgs == 1);
+            assert(!varTypeIsSmall(baseType));
+
+            GenTree* op1 = impStackTop().val;
+
+            if (op1->IsIntegralConst())
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                if (varTypeIsLong(baseType))
+                {
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    result       = gtNewLconNode(BitOperations::TrailingZeroCount(cns));
+                }
+                else
+                {
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    result       = gtNewIconNode(BitOperations::TrailingZeroCount(cns), baseType);
+                }
+
+                baseType = retType;
+                break;
+            }
+
+#if !defined(TARGET_64BIT)
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-CQ: Adding long decomposition support is more complex
+                // and not supported today so early exit if we have a long and
+                // either input is not a constant.
+
+                break;
+            }
+#endif // !TARGET_64BIT
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+            if (compOpportunisticallyDependsOn(InstructionSet_BMI1))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_BMI1_X64_TrailingZeroCount : NI_BMI1_TrailingZeroCount;
+                result      = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+            }
+            else if (compOpportunisticallyDependsOn(InstructionSet_X86Base))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                // We're importing this as the following...
+                // * 32-bit tzcnt: (value == 0) ? 32 : BSF(value)
+                // * 64-bit tzcnt: (value == 0) ? 64 : BSF(value)
+
+                GenTree* op1Dup;
+                op1 = impCloneExpr(op1, &op1Dup, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                   nullptr DEBUGARG("Cloning op1 for TrailingZeroCount"));
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanForward : NI_X86Base_BitScanForward;
+                op1Dup      = gtNewScalarHWIntrinsicNode(baseType, op1Dup, hwintrinsic);
+
+                GenTree* cond = gtFoldExpr(gtNewOperNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)));
+
+                GenTree* trueRes;
+
+                if (varTypeIsLong(baseType))
+                {
+                    trueRes = gtNewLconNode(64);
+                }
+                else
+                {
+                    trueRes = gtNewIconNode(32, baseType);
+                }
+
+                GenTree*      falseRes = op1Dup;
+                GenTreeColon* colon    = gtNewColonNode(baseType, trueRes, falseRes);
+
+                result = gtNewQmarkNode(baseType, cond, colon);
+
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for TrailingZeroCount Qmark"));
+                impAssignTempGen(tmp, result, CHECK_SPILL_NONE);
+                result = gtNewLclvNode(tmp, baseType);
+            }
+#elif defined(TARGET_ARM64)
+            if (compOpportunisticallyDependsOn(InstructionSet_ArmBase))
+            {
+                // Pop the value from the stack
+                impPopStack();
+
+                hwintrinsic =
+                    varTypeIsLong(baseType) ? NI_ArmBase_Arm64_ReverseElementBits : NI_ArmBase_ReverseElementBits;
+                op1 = gtNewScalarHWIntrinsicNode(baseType, op1, hwintrinsic);
+
+                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+                result      = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+                baseType    = TYP_INT;
+            }
+#endif // TARGET_*
+#endif // FEATURE_HW_INTRINSICS
+
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    if ((result != nullptr) && (retType != baseType))
+    {
+        // We're either LONG->INT or INT->LONG
+        assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
+        result = gtFoldExpr(gtNewCastNode(retType, result, /* unsigned */ true, retType));
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -6985,334 +7610,412 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         if (namespaceName[0] == '\0')
         {
-            if (strcmp(className, "Activator") == 0)
+            switch (className[0])
             {
-                if (strcmp(methodName, "AllocatorOf") == 0)
-                {
-                    result = NI_System_Activator_AllocatorOf;
-                }
-                else if (strcmp(methodName, "DefaultConstructorOf") == 0)
-                {
-                    result = NI_System_Activator_DefaultConstructorOf;
-                }
-            }
-            else if (strcmp(className, "Array") == 0)
-            {
-                if (strcmp(methodName, "Clone") == 0)
-                {
-                    result = NI_System_Array_Clone;
-                }
-                else if (strcmp(methodName, "GetLength") == 0)
-                {
-                    result = NI_System_Array_GetLength;
-                }
-                else if (strcmp(methodName, "GetLowerBound") == 0)
-                {
-                    result = NI_System_Array_GetLowerBound;
-                }
-                else if (strcmp(methodName, "GetUpperBound") == 0)
-                {
-                    result = NI_System_Array_GetUpperBound;
-                }
-            }
-            else if (strcmp(className, "BitConverter") == 0)
-            {
-                if (strcmp(methodName, "DoubleToInt64Bits") == 0)
-                {
-                    result = NI_System_BitConverter_DoubleToInt64Bits;
-                }
-                else if (strcmp(methodName, "DoubleToUInt64Bits") == 0)
-                {
-                    result = NI_System_BitConverter_DoubleToInt64Bits;
-                }
-                else if (strcmp(methodName, "Int32BitsToSingle") == 0)
-                {
-                    result = NI_System_BitConverter_Int32BitsToSingle;
-                }
-                else if (strcmp(methodName, "Int64BitsToDouble") == 0)
-                {
-                    result = NI_System_BitConverter_Int64BitsToDouble;
-                }
-                else if (strcmp(methodName, "SingleToInt32Bits") == 0)
-                {
-                    result = NI_System_BitConverter_SingleToInt32Bits;
-                }
-                else if (strcmp(methodName, "SingleToUInt32Bits") == 0)
-                {
-                    result = NI_System_BitConverter_SingleToInt32Bits;
-                }
-                else if (strcmp(methodName, "UInt32BitsToSingle") == 0)
-                {
-                    result = NI_System_BitConverter_Int32BitsToSingle;
-                }
-                else if (strcmp(methodName, "UInt64BitsToDouble") == 0)
-                {
-                    result = NI_System_BitConverter_Int64BitsToDouble;
-                }
-            }
-            else if (strcmp(className, "Enum") == 0)
-            {
-                if (strcmp(methodName, "HasFlag") == 0)
-                {
-                    result = NI_System_Enum_HasFlag;
-                }
-            }
-            else if (strcmp(className, "EETypePtr") == 0)
-            {
-                if (strcmp(methodName, "EETypePtrOf") == 0)
-                {
-                    result = NI_System_EETypePtr_EETypePtrOf;
-                }
-            }
-            else if (strcmp(className, "GC") == 0)
-            {
-                if (strcmp(methodName, "KeepAlive") == 0)
-                {
-                    result = NI_System_GC_KeepAlive;
-                }
-            }
-            else if (strcmp(className, "Math") == 0 || strcmp(className, "MathF") == 0)
-            {
-                if (strcmp(methodName, "Abs") == 0)
-                {
-                    result = NI_System_Math_Abs;
-                }
-                else if (strcmp(methodName, "Acos") == 0)
-                {
-                    result = NI_System_Math_Acos;
-                }
-                else if (strcmp(methodName, "Acosh") == 0)
-                {
-                    result = NI_System_Math_Acosh;
-                }
-                else if (strcmp(methodName, "Asin") == 0)
-                {
-                    result = NI_System_Math_Asin;
-                }
-                else if (strcmp(methodName, "Asinh") == 0)
-                {
-                    result = NI_System_Math_Asinh;
-                }
-                else if (strcmp(methodName, "Atan") == 0)
-                {
-                    result = NI_System_Math_Atan;
-                }
-                else if (strcmp(methodName, "Atanh") == 0)
-                {
-                    result = NI_System_Math_Atanh;
-                }
-                else if (strcmp(methodName, "Atan2") == 0)
-                {
-                    result = NI_System_Math_Atan2;
-                }
-                else if (strcmp(methodName, "Cbrt") == 0)
-                {
-                    result = NI_System_Math_Cbrt;
-                }
-                else if (strcmp(methodName, "Ceiling") == 0)
-                {
-                    result = NI_System_Math_Ceiling;
-                }
-                else if (strcmp(methodName, "Cos") == 0)
-                {
-                    result = NI_System_Math_Cos;
-                }
-                else if (strcmp(methodName, "Cosh") == 0)
-                {
-                    result = NI_System_Math_Cosh;
-                }
-                else if (strcmp(methodName, "Exp") == 0)
-                {
-                    result = NI_System_Math_Exp;
-                }
-                else if (strcmp(methodName, "Floor") == 0)
-                {
-                    result = NI_System_Math_Floor;
-                }
-                else if (strcmp(methodName, "FMod") == 0)
-                {
-                    result = NI_System_Math_FMod;
-                }
-                else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
-                {
-                    result = NI_System_Math_FusedMultiplyAdd;
-                }
-                else if (strcmp(methodName, "ILogB") == 0)
-                {
-                    result = NI_System_Math_ILogB;
-                }
-                else if (strcmp(methodName, "Log") == 0)
-                {
-                    result = NI_System_Math_Log;
-                }
-                else if (strcmp(methodName, "Log2") == 0)
-                {
-                    result = NI_System_Math_Log2;
-                }
-                else if (strcmp(methodName, "Log10") == 0)
-                {
-                    result = NI_System_Math_Log10;
-                }
-                else if (strcmp(methodName, "Max") == 0)
-                {
-                    result = NI_System_Math_Max;
-                }
-                else if (strcmp(methodName, "Min") == 0)
-                {
-                    result = NI_System_Math_Min;
-                }
-                else if (strcmp(methodName, "Pow") == 0)
-                {
-                    result = NI_System_Math_Pow;
-                }
-                else if (strcmp(methodName, "Round") == 0)
-                {
-                    result = NI_System_Math_Round;
-                }
-                else if (strcmp(methodName, "Sin") == 0)
-                {
-                    result = NI_System_Math_Sin;
-                }
-                else if (strcmp(methodName, "Sinh") == 0)
-                {
-                    result = NI_System_Math_Sinh;
-                }
-                else if (strcmp(methodName, "Sqrt") == 0)
-                {
-                    result = NI_System_Math_Sqrt;
-                }
-                else if (strcmp(methodName, "Tan") == 0)
-                {
-                    result = NI_System_Math_Tan;
-                }
-                else if (strcmp(methodName, "Tanh") == 0)
-                {
-                    result = NI_System_Math_Tanh;
-                }
-                else if (strcmp(methodName, "Truncate") == 0)
-                {
-                    result = NI_System_Math_Truncate;
-                }
-            }
-            else if (strcmp(className, "MemoryExtensions") == 0)
-            {
-                if (strcmp(methodName, "AsSpan") == 0)
-                {
-                    result = NI_System_MemoryExtensions_AsSpan;
-                }
-                else if (strcmp(methodName, "Equals") == 0)
-                {
-                    result = NI_System_MemoryExtensions_Equals;
-                }
-                else if (strcmp(methodName, "SequenceEqual") == 0)
-                {
-                    result = NI_System_MemoryExtensions_SequenceEqual;
-                }
-                else if (strcmp(methodName, "StartsWith") == 0)
-                {
-                    result = NI_System_MemoryExtensions_StartsWith;
-                }
-            }
-            else if (strcmp(className, "Object") == 0)
-            {
-                if (strcmp(methodName, "GetType") == 0)
-                {
-                    result = NI_System_Object_GetType;
-                }
-                else if (strcmp(methodName, "MemberwiseClone") == 0)
-                {
-                    result = NI_System_Object_MemberwiseClone;
-                }
-            }
-            else if (strcmp(className, "ReadOnlySpan`1") == 0)
-            {
-                if (strcmp(methodName, "get_Item") == 0)
-                {
-                    result = NI_System_ReadOnlySpan_get_Item;
-                }
-            }
-            else if (strcmp(className, "RuntimeType") == 0)
-            {
-                if (strcmp(methodName, "get_IsActualEnum") == 0)
-                {
-                    result = NI_System_Type_get_IsEnum;
-                }
-            }
-            else if (strcmp(className, "RuntimeTypeHandle") == 0)
-            {
-                if (strcmp(methodName, "GetValueInternal") == 0)
-                {
-                    result = NI_System_RuntimeTypeHandle_GetValueInternal;
-                }
-            }
-            else if (strcmp(className, "Span`1") == 0)
-            {
-                if (strcmp(methodName, "get_Item") == 0)
-                {
-                    result = NI_System_Span_get_Item;
-                }
-            }
-            else if (strcmp(className, "String") == 0)
-            {
-                if (strcmp(methodName, "Equals") == 0)
-                {
-                    result = NI_System_String_Equals;
-                }
-                else if (strcmp(methodName, "get_Chars") == 0)
-                {
-                    result = NI_System_String_get_Chars;
-                }
-                else if (strcmp(methodName, "get_Length") == 0)
-                {
-                    result = NI_System_String_get_Length;
-                }
-                else if (strcmp(methodName, "op_Implicit") == 0)
-                {
-                    result = NI_System_String_op_Implicit;
-                }
-                else if (strcmp(methodName, "StartsWith") == 0)
-                {
-                    result = NI_System_String_StartsWith;
-                }
-            }
-            else if (strcmp(className, "Type") == 0)
-            {
-                if (strcmp(methodName, "get_IsEnum") == 0)
-                {
-                    result = NI_System_Type_get_IsEnum;
-                }
-                else if (strcmp(methodName, "get_IsValueType") == 0)
-                {
-                    result = NI_System_Type_get_IsValueType;
-                }
-                else if (strcmp(methodName, "get_IsByRefLike") == 0)
-                {
-                    result = NI_System_Type_get_IsByRefLike;
-                }
-                else if (strcmp(methodName, "GetEnumUnderlyingType") == 0)
-                {
-                    result = NI_System_Type_GetEnumUnderlyingType;
-                }
-                else if (strcmp(methodName, "GetTypeFromHandle") == 0)
-                {
-                    result = NI_System_Type_GetTypeFromHandle;
-                }
-                else if (strcmp(methodName, "IsAssignableFrom") == 0)
-                {
-                    result = NI_System_Type_IsAssignableFrom;
-                }
-                else if (strcmp(methodName, "IsAssignableTo") == 0)
-                {
-                    result = NI_System_Type_IsAssignableTo;
-                }
-                else if (strcmp(methodName, "op_Equality") == 0)
-                {
-                    result = NI_System_Type_op_Equality;
-                }
-                else if (strcmp(methodName, "op_Inequality") == 0)
-                {
-                    result = NI_System_Type_op_Inequality;
-                }
+                case 'A':
+                {
+                    if (strcmp(className, "Activator") == 0)
+                    {
+                        if (strcmp(methodName, "AllocatorOf") == 0)
+                        {
+                            result = NI_System_Activator_AllocatorOf;
+                        }
+                        else if (strcmp(methodName, "DefaultConstructorOf") == 0)
+                        {
+                            result = NI_System_Activator_DefaultConstructorOf;
+                        }
+                    }
+                    else if (strcmp(className, "Array") == 0)
+                    {
+                        if (strcmp(methodName, "Clone") == 0)
+                        {
+                            result = NI_System_Array_Clone;
+                        }
+                        else if (strcmp(methodName, "GetLength") == 0)
+                        {
+                            result = NI_System_Array_GetLength;
+                        }
+                        else if (strcmp(methodName, "GetLowerBound") == 0)
+                        {
+                            result = NI_System_Array_GetLowerBound;
+                        }
+                        else if (strcmp(methodName, "GetUpperBound") == 0)
+                        {
+                            result = NI_System_Array_GetUpperBound;
+                        }
+                    }
+                    break;
+                }
+
+                case 'B':
+                {
+                    if (strcmp(className, "BitConverter") == 0)
+                    {
+                        if (strcmp(methodName, "DoubleToInt64Bits") == 0)
+                        {
+                            result = NI_System_BitConverter_DoubleToInt64Bits;
+                        }
+                        else if (strcmp(methodName, "DoubleToUInt64Bits") == 0)
+                        {
+                            result = NI_System_BitConverter_DoubleToInt64Bits;
+                        }
+                        else if (strcmp(methodName, "Int32BitsToSingle") == 0)
+                        {
+                            result = NI_System_BitConverter_Int32BitsToSingle;
+                        }
+                        else if (strcmp(methodName, "Int64BitsToDouble") == 0)
+                        {
+                            result = NI_System_BitConverter_Int64BitsToDouble;
+                        }
+                        else if (strcmp(methodName, "SingleToInt32Bits") == 0)
+                        {
+                            result = NI_System_BitConverter_SingleToInt32Bits;
+                        }
+                        else if (strcmp(methodName, "SingleToUInt32Bits") == 0)
+                        {
+                            result = NI_System_BitConverter_SingleToInt32Bits;
+                        }
+                        else if (strcmp(methodName, "UInt32BitsToSingle") == 0)
+                        {
+                            result = NI_System_BitConverter_Int32BitsToSingle;
+                        }
+                        else if (strcmp(methodName, "UInt64BitsToDouble") == 0)
+                        {
+                            result = NI_System_BitConverter_Int64BitsToDouble;
+                        }
+                    }
+                    break;
+                }
+
+                case 'E':
+                {
+                    if (strcmp(className, "Enum") == 0)
+                    {
+                        if (strcmp(methodName, "HasFlag") == 0)
+                        {
+                            result = NI_System_Enum_HasFlag;
+                        }
+                    }
+                    else if (strcmp(className, "EETypePtr") == 0)
+                    {
+                        if (strcmp(methodName, "EETypePtrOf") == 0)
+                        {
+                            result = NI_System_EETypePtr_EETypePtrOf;
+                        }
+                    }
+                    break;
+                }
+
+                case 'G':
+                {
+                    if (strcmp(className, "GC") == 0)
+                    {
+                        if (strcmp(methodName, "KeepAlive") == 0)
+                        {
+                            result = NI_System_GC_KeepAlive;
+                        }
+                    }
+                    break;
+                }
+
+                case 'I':
+                {
+                    if ((strcmp(className, "Int32") == 0) || (strcmp(className, "Int64") == 0) ||
+                        (strcmp(className, "IntPtr") == 0))
+                    {
+                        result = lookupPrimitiveNamedIntrinsic(method, methodName);
+                    }
+                    break;
+                }
+
+                case 'M':
+                {
+                    if ((strcmp(className, "Math") == 0) || (strcmp(className, "MathF") == 0))
+                    {
+                        if (strcmp(methodName, "Abs") == 0)
+                        {
+                            result = NI_System_Math_Abs;
+                        }
+                        else if (strcmp(methodName, "Acos") == 0)
+                        {
+                            result = NI_System_Math_Acos;
+                        }
+                        else if (strcmp(methodName, "Acosh") == 0)
+                        {
+                            result = NI_System_Math_Acosh;
+                        }
+                        else if (strcmp(methodName, "Asin") == 0)
+                        {
+                            result = NI_System_Math_Asin;
+                        }
+                        else if (strcmp(methodName, "Asinh") == 0)
+                        {
+                            result = NI_System_Math_Asinh;
+                        }
+                        else if (strcmp(methodName, "Atan") == 0)
+                        {
+                            result = NI_System_Math_Atan;
+                        }
+                        else if (strcmp(methodName, "Atanh") == 0)
+                        {
+                            result = NI_System_Math_Atanh;
+                        }
+                        else if (strcmp(methodName, "Atan2") == 0)
+                        {
+                            result = NI_System_Math_Atan2;
+                        }
+                        else if (strcmp(methodName, "Cbrt") == 0)
+                        {
+                            result = NI_System_Math_Cbrt;
+                        }
+                        else if (strcmp(methodName, "Ceiling") == 0)
+                        {
+                            result = NI_System_Math_Ceiling;
+                        }
+                        else if (strcmp(methodName, "Cos") == 0)
+                        {
+                            result = NI_System_Math_Cos;
+                        }
+                        else if (strcmp(methodName, "Cosh") == 0)
+                        {
+                            result = NI_System_Math_Cosh;
+                        }
+                        else if (strcmp(methodName, "Exp") == 0)
+                        {
+                            result = NI_System_Math_Exp;
+                        }
+                        else if (strcmp(methodName, "Floor") == 0)
+                        {
+                            result = NI_System_Math_Floor;
+                        }
+                        else if (strcmp(methodName, "FMod") == 0)
+                        {
+                            result = NI_System_Math_FMod;
+                        }
+                        else if (strcmp(methodName, "FusedMultiplyAdd") == 0)
+                        {
+                            result = NI_System_Math_FusedMultiplyAdd;
+                        }
+                        else if (strcmp(methodName, "ILogB") == 0)
+                        {
+                            result = NI_System_Math_ILogB;
+                        }
+                        else if (strcmp(methodName, "Log") == 0)
+                        {
+                            result = NI_System_Math_Log;
+                        }
+                        else if (strcmp(methodName, "Log2") == 0)
+                        {
+                            result = NI_System_Math_Log2;
+                        }
+                        else if (strcmp(methodName, "Log10") == 0)
+                        {
+                            result = NI_System_Math_Log10;
+                        }
+                        else if (strcmp(methodName, "Max") == 0)
+                        {
+                            result = NI_System_Math_Max;
+                        }
+                        else if (strcmp(methodName, "Min") == 0)
+                        {
+                            result = NI_System_Math_Min;
+                        }
+                        else if (strcmp(methodName, "Pow") == 0)
+                        {
+                            result = NI_System_Math_Pow;
+                        }
+                        else if (strcmp(methodName, "Round") == 0)
+                        {
+                            result = NI_System_Math_Round;
+                        }
+                        else if (strcmp(methodName, "Sin") == 0)
+                        {
+                            result = NI_System_Math_Sin;
+                        }
+                        else if (strcmp(methodName, "Sinh") == 0)
+                        {
+                            result = NI_System_Math_Sinh;
+                        }
+                        else if (strcmp(methodName, "Sqrt") == 0)
+                        {
+                            result = NI_System_Math_Sqrt;
+                        }
+                        else if (strcmp(methodName, "Tan") == 0)
+                        {
+                            result = NI_System_Math_Tan;
+                        }
+                        else if (strcmp(methodName, "Tanh") == 0)
+                        {
+                            result = NI_System_Math_Tanh;
+                        }
+                        else if (strcmp(methodName, "Truncate") == 0)
+                        {
+                            result = NI_System_Math_Truncate;
+                        }
+                    }
+                    else if (strcmp(className, "MemoryExtensions") == 0)
+                    {
+                        if (strcmp(methodName, "AsSpan") == 0)
+                        {
+                            result = NI_System_MemoryExtensions_AsSpan;
+                        }
+                        else if (strcmp(methodName, "Equals") == 0)
+                        {
+                            result = NI_System_MemoryExtensions_Equals;
+                        }
+                        else if (strcmp(methodName, "SequenceEqual") == 0)
+                        {
+                            result = NI_System_MemoryExtensions_SequenceEqual;
+                        }
+                        else if (strcmp(methodName, "StartsWith") == 0)
+                        {
+                            result = NI_System_MemoryExtensions_StartsWith;
+                        }
+                    }
+                    break;
+                }
+
+                case 'O':
+                {
+                    if (strcmp(className, "Object") == 0)
+                    {
+                        if (strcmp(methodName, "GetType") == 0)
+                        {
+                            result = NI_System_Object_GetType;
+                        }
+                        else if (strcmp(methodName, "MemberwiseClone") == 0)
+                        {
+                            result = NI_System_Object_MemberwiseClone;
+                        }
+                    }
+                    break;
+                }
+
+                case 'R':
+                {
+                    if (strcmp(className, "ReadOnlySpan`1") == 0)
+                    {
+                        if (strcmp(methodName, "get_Item") == 0)
+                        {
+                            result = NI_System_ReadOnlySpan_get_Item;
+                        }
+                        else if (strcmp(methodName, "get_Length") == 0)
+                        {
+                            result = NI_System_ReadOnlySpan_get_Length;
+                        }
+                    }
+                    else if (strcmp(className, "RuntimeType") == 0)
+                    {
+                        if (strcmp(methodName, "get_IsActualEnum") == 0)
+                        {
+                            result = NI_System_Type_get_IsEnum;
+                        }
+                    }
+                    else if (strcmp(className, "RuntimeTypeHandle") == 0)
+                    {
+                        if (strcmp(methodName, "GetValueInternal") == 0)
+                        {
+                            result = NI_System_RuntimeTypeHandle_GetValueInternal;
+                        }
+                    }
+                    break;
+                }
+
+                case 'S':
+                {
+                    if (strcmp(className, "Span`1") == 0)
+                    {
+                        if (strcmp(methodName, "get_Item") == 0)
+                        {
+                            result = NI_System_Span_get_Item;
+                        }
+                        else if (strcmp(methodName, "get_Length") == 0)
+                        {
+                            result = NI_System_Span_get_Length;
+                        }
+                    }
+                    else if (strcmp(className, "String") == 0)
+                    {
+                        if (strcmp(methodName, "Equals") == 0)
+                        {
+                            result = NI_System_String_Equals;
+                        }
+                        else if (strcmp(methodName, "get_Chars") == 0)
+                        {
+                            result = NI_System_String_get_Chars;
+                        }
+                        else if (strcmp(methodName, "get_Length") == 0)
+                        {
+                            result = NI_System_String_get_Length;
+                        }
+                        else if (strcmp(methodName, "op_Implicit") == 0)
+                        {
+                            result = NI_System_String_op_Implicit;
+                        }
+                        else if (strcmp(methodName, "StartsWith") == 0)
+                        {
+                            result = NI_System_String_StartsWith;
+                        }
+                    }
+                    break;
+                }
+
+                case 'T':
+                {
+                    if (strcmp(className, "Type") == 0)
+                    {
+                        if (strcmp(methodName, "get_IsEnum") == 0)
+                        {
+                            result = NI_System_Type_get_IsEnum;
+                        }
+                        else if (strcmp(methodName, "get_IsValueType") == 0)
+                        {
+                            result = NI_System_Type_get_IsValueType;
+                        }
+                        else if (strcmp(methodName, "get_IsByRefLike") == 0)
+                        {
+                            result = NI_System_Type_get_IsByRefLike;
+                        }
+                        else if (strcmp(methodName, "GetEnumUnderlyingType") == 0)
+                        {
+                            result = NI_System_Type_GetEnumUnderlyingType;
+                        }
+                        else if (strcmp(methodName, "GetTypeFromHandle") == 0)
+                        {
+                            result = NI_System_Type_GetTypeFromHandle;
+                        }
+                        else if (strcmp(methodName, "IsAssignableFrom") == 0)
+                        {
+                            result = NI_System_Type_IsAssignableFrom;
+                        }
+                        else if (strcmp(methodName, "IsAssignableTo") == 0)
+                        {
+                            result = NI_System_Type_IsAssignableTo;
+                        }
+                        else if (strcmp(methodName, "op_Equality") == 0)
+                        {
+                            result = NI_System_Type_op_Equality;
+                        }
+                        else if (strcmp(methodName, "op_Inequality") == 0)
+                        {
+                            result = NI_System_Type_op_Inequality;
+                        }
+                    }
+                    break;
+                }
+
+                case 'U':
+                {
+                    if ((strcmp(className, "UInt32") == 0) || (strcmp(className, "UInt64") == 0) ||
+                        (strcmp(className, "UIntPtr") == 0))
+                    {
+                        result = lookupPrimitiveNamedIntrinsic(method, methodName);
+                    }
+                    break;
+                }
+
+                default:
+                    break;
             }
         }
         else if (namespaceName[0] == '.')
@@ -7353,10 +8056,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             {
                 if (strcmp(className, "BitOperations") == 0)
                 {
-                    if (strcmp(methodName, "PopCount") == 0)
-                    {
-                        result = NI_System_Numerics_BitOperations_PopCount;
-                    }
+                    result = lookupPrimitiveNamedIntrinsic(method, methodName);
                 }
                 else
                 {
@@ -7712,6 +8412,55 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     {
         JITDUMP("Recognized\n");
     }
+    return result;
+}
+
+//------------------------------------------------------------------------
+// lookupPrimitiveNamedIntrinsic: map method to jit named intrinsic value
+//
+// Arguments:
+//    method -- method handle for method
+//
+// Return Value:
+//    Id for the named intrinsic, or Illegal if none.
+//
+// Notes:
+//    method should have CORINFO_FLG_INTRINSIC set in its attributes,
+//    otherwise it is not a named jit intrinsic.
+//
+NamedIntrinsic Compiler::lookupPrimitiveNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName)
+{
+    NamedIntrinsic result = NI_Illegal;
+
+    if (strcmp(methodName, "Crc32C") == 0)
+    {
+        result = NI_PRIMITIVE_Crc32C;
+    }
+    else if (strcmp(methodName, "LeadingZeroCount") == 0)
+    {
+        result = NI_PRIMITIVE_LeadingZeroCount;
+    }
+    else if (strcmp(methodName, "Log2") == 0)
+    {
+        result = NI_PRIMITIVE_Log2;
+    }
+    else if (strcmp(methodName, "PopCount") == 0)
+    {
+        result = NI_PRIMITIVE_PopCount;
+    }
+    else if (strcmp(methodName, "RotateLeft") == 0)
+    {
+        result = NI_PRIMITIVE_RotateLeft;
+    }
+    else if (strcmp(methodName, "RotateRight") == 0)
+    {
+        result = NI_PRIMITIVE_RotateRight;
+    }
+    else if (strcmp(methodName, "TrailingZeroCount") == 0)
+    {
+        result = NI_PRIMITIVE_TrailingZeroCount;
+    }
+
     return result;
 }
 

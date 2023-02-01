@@ -55,7 +55,7 @@ namespace System.Runtime.CompilerServices
         /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
         /// code to the object if it does not already have one.
         /// </remarks>
-        public static int TryGetHashCode(object? o)
+        internal static int TryGetHashCode(object? o)
         {
             return InternalTryGetHashCode(o);
         }
