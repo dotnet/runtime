@@ -90,7 +90,6 @@ The various task inputs correspond to properties as:
 
   AppDir                            : $(WasmAppDir)
   MainAssembly                      : $(WasmMainAssemblyPath)
-  MainJS                            : $(WasmMainJSPath)
   InvariantGlobalization            : $(WasmInvariantGlobalization)
   SatelliteAssemblies               : @(WasmSatelliteAssemblies)
   FilesToIncludeInFileSystem        : @(WasmFilesToIncludeInFileSystem)

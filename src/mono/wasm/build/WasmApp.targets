@@ -5,11 +5,10 @@
 
   <!--
       Required public items/properties:
-      - $(WasmMainJSPath)
-
       - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
       Public properties (optional):
+      - $(WasmMainJSPath)    - Main JavaScript for execution on V8/node
       - $(WasmAppDir)        - AppBundle dir (Defaults to `$(OutputPath)\$(Configuration)\AppBundle`)
       - $(WasmMainAssemblyFileName)- Defaults to $(TargetFileName)
       - $(WasmBuildNative)   - Whenever to build the native executable. Defaults to false.
@@ -339,11 +338,10 @@
   </Target>
 
   <Target Name="_WasmGenerateAppBundle"
-          Inputs="@(_WasmAssembliesInternal);$(WasmMainJSPath);$(WasmIcuDataFileName);@(WasmNativeAsset)"
+          Inputs="@(_WasmAssembliesInternal);$(WasmIcuDataFileName);@(WasmNativeAsset)"
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
           DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies">
-    <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
     <PropertyGroup>
       <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</_WasmAppIncludeThreadsWorker>
@@ -383,7 +381,9 @@
     <WriteLinesToFile File="$(WasmAppDir)\.stamp" Lines="" Overwrite="true" />
   </Target>
 
-  <Target Name="_GenerateRunV8Script">
+  <Target Name="_GenerateRunV8Script" Inputs="$(WasmMainJSPath)">
+    <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
+
     <PropertyGroup>
       <WasmRunV8ScriptPath Condition="'$(WasmRunV8ScriptPath)' == ''">$(WasmAppDir)run-v8.sh</WasmRunV8ScriptPath>
       <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>

@@ -6,7 +6,6 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
     <StartupHookSupport>true</StartupHookSupport>
   </PropertyGroup>
 
