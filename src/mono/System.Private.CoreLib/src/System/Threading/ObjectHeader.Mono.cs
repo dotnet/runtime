@@ -189,6 +189,7 @@ internal static class ObjectHeader
     private static LockWord GetLockWord(ref object obj)
     {
         ref Header h = ref Unsafe.As<object, Header>(ref obj);
+        DumpRef ("glw h", ref h);
         LockWord lw = LockWord.FromObjectHeader(ref h);
         GC.KeepAlive(obj);
         return lw;
@@ -210,10 +211,16 @@ internal static class ObjectHeader
         if (o == null)
             return true;
 
+        DumpRef ("tghc o", ref o);
+
         LockWord lw = GetLockWord (ref o);
         if (lw.HasHash) {
             if (lw.IsInflated) {
-                hash = SyncBlock.HashCode(ref lw.GetInflatedLock());
+                ref MonoThreadsSync mon = ref lw.GetInflatedLock();
+                DumpRef ("tghc mon", ref mon);
+                ref int hashRef = ref SyncBlock.HashCode(ref mon);
+                DumpRef ("tghc hashRef", ref hashRef);
+                hash = hashRef;
                 return true;
             } else {
                 hash = lw.FlatHash;
@@ -322,5 +329,14 @@ internal static class ObjectHeader
         }
 
         return false;
+    }
+
+    private static void DumpRef<T>(string desc, scoped ref T thing)
+    {
+        unsafe
+        {
+            IntPtr p = (IntPtr)Unsafe.AsPointer (ref thing);
+            Debug.WriteLine ($"{desc} 0x{p:x}");
+        }
     }
 }
