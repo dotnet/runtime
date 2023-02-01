@@ -1080,7 +1080,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             }
         }
 
-        oldMethodVarsSortedBase = new  (nothrow) ICorDebugInfo::NativeVarInfo[oldNumVars];
+        oldMethodVarsSortedBase = new (nothrow) ICorDebugInfo::NativeVarInfo[oldNumVars];
         if (!oldMethodVarsSortedBase)
         {
             hr = E_FAIL;
@@ -1160,12 +1160,9 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             if (pNewVar->startOffset <= newMethodOffset &&
                 pNewVar->endOffset   >  newMethodOffset)
             {
-                newMethodVarsSorted[(int)varNumber] = *pNewVar;
+                newMethodVarsSorted[varNumber] = *pNewVar;
             }
         }
-
-        _ASSERTE(newNumVars >= oldNumVars ||
-                 !"Not allowed to reduce the number of locals between versions!");
 
         LOG((LF_ENC, LL_INFO100, "EECM::FixContextForEnC: gathered info!\n"));
 
@@ -1190,8 +1187,9 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         memset(rgVal1, 0, sizeof(SIZE_T) * newNumVars);
         memset(rgVal2, 0, sizeof(SIZE_T) * newNumVars);
 
-        unsigned varsToGet = (oldNumVars > newNumVars) ? newNumVars
-                                                                 : oldNumVars;
+        unsigned varsToGet = (oldNumVars > newNumVars)
+                ? newNumVars
+                : oldNumVars;
 
          //  2) Get all the info about current variables, registers, etc.
 
