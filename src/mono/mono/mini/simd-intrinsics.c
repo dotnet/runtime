@@ -1428,34 +1428,33 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_GetElement: {
-		int esize;
-		MonoType *etype;
-		
+		int elems;
+
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		
-		int size = mono_class_value_size (arg_class, NULL);
-		
+
 		if (fsig->params [0]->type == MONO_TYPE_GENERICINST)
 		{
-			etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
-			esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+			MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
+			int size = mono_class_value_size (arg_class, NULL);
+			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+			elems = size / esize;
 		}
 		else
 		{
 			// This exists to handle the static extension methods for Vector2/3/4 and Quaterion
 			// which live on System.Numerics.Vector
 
-			etype = m_class_get_byval_arg (mono_defaults.single_class);
-			esize = 4;
+			arg0_type = MONO_TYPE_R4;
+			elems = 4;
 		}
 
-		int elems = size / esize;
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		int extract_op = type_to_xextract_op (etype->type);
-		return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, etype->type, fsig, args);
+		int extract_op = type_to_xextract_op (arg0_type);
+		return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
 	}
 	case SN_GetLower:
 	case SN_GetUpper: {
