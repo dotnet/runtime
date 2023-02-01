@@ -1,7 +1,9 @@
 #ifndef _SRC_INTERFACES_IMPL_HPP_
 #define _SRC_INTERFACES_IMPL_HPP_
 
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <atomic>
 
 #include <internal/dnmd_platform.hpp>

@@ -1,5 +1,7 @@
-#include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <cassert>
 
 #include <internal/dnmd_platform.hpp>
 #include <dnmd_interfaces.hpp>

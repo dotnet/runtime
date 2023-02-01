@@ -34,11 +34,11 @@ typedef enum
     mdtid_Module = 0x0,
     mdtid_TypeRef = 0x01,
     mdtid_TypeDef = 0x02,
-
+    mdtid_FieldPtr = 0x03,
     mdtid_Field = 0x04,
-
+    mdtid_MethodPtr = 0x05,
     mdtid_MethodDef = 0x06,
-
+    mdtid_ParamPtr = 0x07,
     mdtid_Param = 0x08,
     mdtid_InterfaceImpl = 0x09,
     mdtid_MemberRef = 0x0a,
@@ -50,10 +50,10 @@ typedef enum
     mdtid_FieldLayout = 0x10,
     mdtid_StandAloneSig = 0x11,
     mdtid_EventMap = 0x12,
-
+    mdtid_EventPtr = 0x13,
     mdtid_Event = 0x14,
     mdtid_PropertyMap = 0x15,
-
+    mdtid_PropertyPtr = 0x16,
     mdtid_Property = 0x17,
     mdtid_MethodSemantics = 0x18,
     mdtid_MethodImpl = 0x19,
@@ -61,7 +61,8 @@ typedef enum
     mdtid_TypeSpec = 0x1b,
     mdtid_ImplMap = 0x1c,
     mdtid_FieldRva = 0x1d,
-
+    mdtid_ENCLog = 0x1e,
+    mdtid_ENCMap = 0x1f,
     mdtid_Assembly = 0x20,
     mdtid_AssemblyProcessor = 0x21,
     mdtid_AssemblyOS = 0x22,

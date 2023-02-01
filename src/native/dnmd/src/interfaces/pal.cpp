@@ -1,5 +1,6 @@
-#include <assert.h>
 #include "pal.hpp"
+#include <cstring>
+#include <cassert>
 
 #ifdef BUILD_MACOS
 #include <unicode/ustring.h>
@@ -116,10 +117,10 @@ HRESULT pal::StringConvert<char, WCHAR>::ConvertWorker(char const* c, WCHAR* buf
 }
 
 #if !defined(__STDC_LIB_EXT1__) && !defined(BUILD_WINDOWS)
-errno_t strcat_s(char* dest, rsize_t destsz, char const* src)
+int strcat_s(char* dest, rsize_t destsz, char const* src)
 {
     assert(dest != nullptr && src != nullptr);
     ::strcat(dest, src);
     return 0;
 }
-#endif // !__STDC_LIB_EXT1__
+#endif // !defined(__STDC_LIB_EXT1__) && !defined(BUILD_WINDOWS)

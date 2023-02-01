@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstdint>
+#include <cstring>
 #include <cassert>
 #include <fstream>
 #include <stdexcept>
@@ -173,7 +174,7 @@ int main(int ac, char** av)
 
     // Process arguments
     span<char*> args{ &av[1], (size_t)ac - 1 };
-    for (int i = 0; i < args.size(); ++i)
+    for (size_t i = 0; i < args.size(); ++i)
     {
         char* arg = args[i];
         if (arg[0] != '-')

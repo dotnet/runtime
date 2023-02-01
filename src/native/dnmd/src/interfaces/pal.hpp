@@ -1,6 +1,7 @@
 #ifndef _SRC_INTERFACES_PAL_HPP_
 #define _SRC_INTERFACES_PAL_HPP_
 
+#include <cstddef>
 #include <cstdint>
 #include <internal/dnmd_platform.hpp>
 
@@ -111,7 +112,8 @@ namespace pal
 // Implementations for missing bounds checking APIs.
 // See https://en.cppreference.com/w/c/error#Bounds_checking
 #if !defined(__STDC_LIB_EXT1__) && !defined(BUILD_WINDOWS)
-errno_t strcat_s(char* dest, rsize_t destsz, char const* src);
-#endif // !__STDC_LIB_EXT1__
+using rsize_t = size_t;
+int strcat_s(char* dest, rsize_t destsz, char const* src);
+#endif // !defined(__STDC_LIB_EXT1__) && !defined(BUILD_WINDOWS)
 
 #endif // _SRC_INTERFACES_PAL_HPP_

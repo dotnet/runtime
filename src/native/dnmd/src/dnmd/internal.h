@@ -17,6 +17,12 @@ typedef struct _GUID
     uint8_t  Data4[8];
 } GUID;
 
+// Implementations for missing bounds checking APIs.
+// See https://en.cppreference.com/w/c/error#Bounds_checking
+#if !defined(__STDC_LIB_EXT1__) && !defined(BUILD_WINDOWS)
+typedef size_t rsize_t;
+#endif // !__STDC_LIB_EXT1__
+
 #include <corhdr.h>
 
 #include <dnmd.h>
