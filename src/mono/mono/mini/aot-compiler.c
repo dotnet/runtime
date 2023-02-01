@@ -6507,8 +6507,9 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						direct_call_target = symbol;
 						patch_info->type = MONO_PATCH_INFO_NONE;
 					} else if ((m_class_get_image (patch_info->data.method->klass) == acfg->image) && !got_only && is_direct_callable (acfg, method, patch_info)) {
-						MonoCompile *callee_cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, cmethod);
 #ifndef TARGET_APPLE_MOBILE
+						MonoCompile *callee_cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, cmethod);
+
 						// Don't compile inflated methods if we're doing dedup
 						if (acfg->aot_opts.dedup && !mono_aot_can_dedup (cmethod)) {
 							char *name = mono_aot_get_mangled_method_name (cmethod);
