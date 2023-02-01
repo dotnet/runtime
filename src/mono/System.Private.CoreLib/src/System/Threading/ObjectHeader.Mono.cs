@@ -117,7 +117,7 @@ internal static class ObjectHeader
 
         public bool IsNested => (_lock_word & NestMask) == NestMask;
 
-        public int FlatHash => (int)(_lock_word >> HashShift);
+        public int FlatHash => (int)(_lock_word >>> HashShift);
 
         public int FlatNest
         {
@@ -126,7 +126,7 @@ internal static class ObjectHeader
                 if (IsFree)
                     return 0;
                 /* Inword nest count starts from 0 */
-                return 1 + (int)((_lock_word & NestMask) >> NestShift);
+                return 1 + (int)((_lock_word & NestMask) >>> NestShift);
             }
         }
 
@@ -146,7 +146,7 @@ internal static class ObjectHeader
             return res;
         }
 
-        public int GetOwner() => (int)(_lock_word >> OwnerShift);
+        public int GetOwner() => (int)(_lock_word >>> OwnerShift);
 
         public static LockWord NewThinHash(int hash)
         {
