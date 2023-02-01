@@ -265,7 +265,7 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: release
+          buildConfig: Release
           runtimeFlavor: coreclr
           runtimeVariant: ''
           platforms:

@@ -19,7 +19,7 @@ steps:
     - script: $(Build.SourcesDirectory)/src/tests/build.cmd nativeaot $(buildConfigUpper) ${{ parameters.archType }} ${{ parameters.testFilter }} /p:BuildNativeAotFrameworkObjects=true
       displayName: Build tests
   - ${{ if ne(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build.sh nativeaot $(buildConfigUpper) ${{ parameters.archType }} '${{ parameters.testFilter }}'
+    - script: $(Build.SourcesDirectory)/src/tests/build.sh nativeaot $(buildConfigUpper) ${{ parameters.archType }} ${{ parameters.testFilter }}
       displayName: Build tests
 
   - ${{ if eq(parameters.runSingleFileTests, true) }}:
