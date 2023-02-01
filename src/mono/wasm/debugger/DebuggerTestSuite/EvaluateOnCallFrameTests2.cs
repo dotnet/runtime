@@ -197,12 +197,18 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var id_prev = pause_location["callFrames"][1]["callFrameId"].Value<string>();
 
                 var (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", expect_ok: false);
                 AssertEqual("Failed to resolve member access for DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
                 Assert.Equal("DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run", res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0]?["functionName"]?.Value<string>());
                 Assert.Equal(358, res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0]?["lineNumber"]?.Value<int>());
                 Assert.Equal(16, res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0]?["columnNumber"]?.Value<int>());
+                (_, res) = await EvaluateOnCallFrame(id_prev, "DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", expect_ok: false);
+                AssertEqual("Failed to resolve member access for DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
+                Assert.Equal("DebuggerTests.EvaluateMethodTestsClass.EvaluateMethods", res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0]?["functionName"]?.Value<string>());
+                Assert.Equal(422, res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0]?["lineNumber"]?.Value<int>());
+                Assert.Equal(12, res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0]?["columnNumber"]?.Value<int>());
                 (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", expect_ok: false);
                 AssertEqual("Failed to resolve member access for DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
             });
