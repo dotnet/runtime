@@ -584,6 +584,18 @@ public:
 
                 var_types lclType = m_compiler->lvaGetDesc(lclVar)->lvType;
 
+                //if (node->TypeIs(lclType))
+                //{
+                //    lclVar->ChangeOper(GT_LCL_VAR);
+                //    lclVar->ChangeType(lclType);
+
+                //    *use = lclVar;
+
+                //    DEBUG_DESTROY_NODE(node);
+
+                //    node           = *use;
+                //    m_stmtModified = true;
+                //}
                 if ((lclType == TYP_INT) && varTypeIsSmall(node))
                 {
                     lclVar->ChangeOper(GT_LCL_VAR);
@@ -591,13 +603,36 @@ public:
 
                     if (user->OperIs(GT_ASG))
                     {
-                        node = *use = lclVar;
+                        *use = lclVar;
                     }
                     else
                     {
-                        node = *use = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
+                        *use = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
                     }
 
+                    DEBUG_DESTROY_NODE(node);
+
+                    node           = *use;
+                    m_stmtModified = true;
+                }
+                else if ((lclType == TYP_LONG) && varTypeIsSmall(node))
+                {
+                    lclVar->ChangeOper(GT_LCL_VAR);
+                    lclVar->ChangeType(lclType);
+
+                    if (user->OperIs(GT_ASG))
+                    {
+                       *use = lclVar;
+                    }
+                    else
+                    {
+                       *use = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, TYP_UINT);
+                       *use = m_compiler->gtNewCastNode(TYP_LONG, *use, varTypeIsSigned(node), TYP_LONG);
+                    }
+
+                    DEBUG_DESTROY_NODE(node);
+
+                    node           = *use;
                     m_stmtModified = true;
                 }
                 else
