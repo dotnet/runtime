@@ -37,6 +37,7 @@ public class ApkBuilder
     public string? RuntimeComponents { get; set; }
     public string? DiagnosticPorts { get; set; }
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
+    public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
 
     private TaskLoggingHelper logger;
 
@@ -46,7 +47,7 @@ public class ApkBuilder
     }
 
     public (string apk, string packageId) BuildApk(
-        string abi,
+        string runtimeIdentifier,
         string mainLibraryFileName,
         string monoRuntimeHeaders)
     {
@@ -60,9 +61,9 @@ public class ApkBuilder
             throw new ArgumentException($"MainLibraryFileName='{mainLibraryFileName}' was not found in AppDir='{AppDir}'");
         }
 
-        if (string.IsNullOrEmpty(abi))
+        if (string.IsNullOrEmpty(runtimeIdentifier))
         {
-            throw new ArgumentException("abi should not be empty (e.g. x86, x86_64, armeabi-v7a or arm64-v8a");
+            throw new ArgumentException("RuntimeIdentifier should not be empty and should contain a valid android RID");
         }
 
         if (!string.IsNullOrEmpty(ProjectName) && ProjectName.Contains(' '))
@@ -231,7 +232,6 @@ public class ApkBuilder
         string androidJar = Path.Combine(AndroidSdk, "platforms", "android-" + BuildApiLevel, "android.jar");
         string androidToolchain = Path.Combine(AndroidNdk, "build", "cmake", "android.toolchain.cmake");
         string javac = "javac";
-        string cmake = "cmake";
         string zip = "zip";
 
         Utils.RunProcess(logger, zip, workingDir: assetsToZipDirectory, args: "-q -r ../assets/assets.zip .");
@@ -312,6 +312,12 @@ public class ApkBuilder
             nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
         }
 
+        StringBuilder extraLinkerArgs = new StringBuilder();
+        foreach (ITaskItem item in ExtraLinkerArguments)
+        {
+            extraLinkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
+        }
+
         nativeLibraries += assemblerFilesToLink.ToString();
 
         string aotSources = assemblerFiles.ToString();
@@ -321,7 +327,8 @@ public class ApkBuilder
             .Replace("%MonoInclude%", monoRuntimeHeaders)
             .Replace("%NativeLibrariesToLink%", nativeLibraries)
             .Replace("%AotSources%", aotSources)
-            .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c");
+            .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c")
+            .Replace("%APP_LINKER_ARGS%", extraLinkerArgs.ToString());
 
         var defines = new StringBuilder();
         if (ForceInterpreter)
@@ -353,25 +360,11 @@ public class ApkBuilder
 
         File.WriteAllText(Path.Combine(OutputDir, "monodroid.c"), Utils.GetEmbeddedResource("monodroid.c"));
 
-        string cmakeGenArgs = $"-DCMAKE_TOOLCHAIN_FILE={androidToolchain} -DANDROID_ABI=\"{abi}\" -DANDROID_STL=none " +
-            $"-DANDROID_PLATFORM=android-{MinApiLevel} -B monodroid";
+        AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
+        project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
+        project.BuildCMake(OutputDir, StripDebugSymbols);
 
-        string cmakeBuildArgs = "--build monodroid";
-
-        if (StripDebugSymbols)
-        {
-            // Use "-s" to strip debug symbols, it complains it's unused but it works
-            cmakeGenArgs+= " -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_C_FLAGS=\"-s -Wno-unused-command-line-argument\"";
-            cmakeBuildArgs += " --config MinSizeRel";
-        }
-        else
-        {
-            cmakeGenArgs += " -DCMAKE_BUILD_TYPE=Debug";
-            cmakeBuildArgs += " --config Debug";
-        }
-
-        Utils.RunProcess(logger, cmake, workingDir: OutputDir, args: cmakeGenArgs);
-        Utils.RunProcess(logger, cmake, workingDir: OutputDir, args: cmakeBuildArgs);
+        string abi = project.Abi;
 
         // 2. Compile Java files
 
@@ -439,7 +432,12 @@ public class ApkBuilder
 
         var dynamicLibs = new List<string>();
         dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
-        dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => Path.GetFileName(file) != "libmonodroid.so"));
+
+        // if library mode
+        dynamicLibs.AddRange(Directory.GetFiles(Path.Combine(OutputDir, "netlibrary"), "*.so"));
+
+        // if !library mode
+        //dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => Path.GetFileName(file) != "libmonodroid.so"));
 
         // add all *.so files to lib/%abi%/
 

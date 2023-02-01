@@ -5,6 +5,12 @@
              TaskName="ILStrip"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
+  <PropertyGroup>
+    <AppleGenerateAppBundle Condition="'$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AppleGenerateAppBundle>
+    <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == '' and '$(NativeLibrary)' != ''">false</AppleGenerateAppBundle>
+    <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == ''">true</AppleGenerateAppBundle>
+  </PropertyGroup>
+
   <Target Name="AppleBuildApp" AfterTargets="$(AppleBuildAppAfterThisTarget)" />
 
   <Target Name="_AppleCoreBuild" BeforeTargets="AppleBuildApp" DependsOnTargets="$(AppleBuildAppDependsOn)" />
@@ -72,7 +78,6 @@
       <_CommonLinkerArgs Include="-lz" />
       <_CommonLinkerArgs Include="-lc++" />
       <_CommonLinkerArgs Include="-liconv" />
-      <_CommonLinkerArgs Include="-Wl,-exported_symbols_list symbols.txt" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -210,7 +215,7 @@ _monovm_runtimeconfig_initialize
 
 
   <Target Name="_AppleGenerateAppBundle" 
-          Condition="'$(GenerateAppBundle)' == 'true'"
+          Condition="'$(AppleGenerateAppBundle)' == 'true'"
           DependsOnTargets="_AppleGenerateRuntimeConfig">
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
@@ -221,28 +226,33 @@ _monovm_runtimeconfig_initialize
 
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
+    <ItemGroup Condition="'$(NativeLibrary)' != ''">
+      <_ExtraAppLinkerArgs Include="$(LibraryOutputPath)" />
+    </ItemGroup>
+
     <AppleAppBuilderTask
-        TargetOS="$(TargetOS)"
-        Arch="$(TargetArchitecture)"
-        ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(_MonoHeaderPath)"
-        Assemblies="@(_AppleAssembliesInternal)"
-        MainLibraryFileName="$(MainLibraryFileName)"
-        ForceAOT="$(RunAOTCompilation)"
-        ForceInterpreter="$(MonoForceInterpreter)"
-        EnableAppSandbox="$(EnableAppSandbox)"
-        InvariantGlobalization="$(InvariantGlobalization)"
-        UseConsoleUITemplate="True"
-        GenerateXcodeProject="$(GenerateXcodeProject)"
-        GenerateCMakeProject="$(GenerateCMakeProject)"
-        BuildAppBundle="$(GenerateXcodeProject)"
-        Optimized="$(Optimized)"
-        DevTeamProvisioning="$(DevTeamProvisioning)"
-        RuntimeComponents="$(RuntimeComponents)"
-        DiagnosticPorts="$(DiagnosticPorts)"
-        OutputDirectory="$(AppleAppBundleDir)"
-        NativeMainSource="$(NativeMainSource)"
-        AppDir="$(AppleAppDir)">
+      AppDir="$(AppleAppDir)"
+      Arch="$(TargetArchitecture)"
+      Assemblies="@(_AppleAssembliesInternal)"
+      BuildAppBundle="$(GenerateXcodeProject)"
+      DevTeamProvisioning="$(DevTeamProvisioning)"
+      DiagnosticPorts="$(DiagnosticPorts)"
+      EnableAppSandbox="$(EnableAppSandbox)"
+      ExtraLinkerArguments="@(_ExtraAppLinkerArgs)"
+      ForceAOT="$(RunAOTCompilation)"
+      ForceInterpreter="$(MonoForceInterpreter)"
+      GenerateCMakeProject="$(GenerateCMakeProject)"
+      GenerateXcodeProject="$(GenerateXcodeProject)"
+      InvariantGlobalization="$(InvariantGlobalization)"
+      MainLibraryFileName="$(MainLibraryFileName)"
+      MonoRuntimeHeaders="$(_MonoHeaderPath)"
+      NativeMainSource="$(NativeMainSource)"
+      Optimized="$(Optimized)"
+      OutputDirectory="$(AppleAppBundleDir)"
+      ProjectName="$(AssemblyName)"
+      RuntimeComponents="$(RuntimeComponents)"
+      TargetOS="$(TargetOS)"
+      UseConsoleUITemplate="True">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>

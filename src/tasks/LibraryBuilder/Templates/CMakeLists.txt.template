@@ -1,3 +1,9 @@
+cmake_minimum_required(VERSION 3.10)
+
+project(%LIBRARY_NAME%)
+
+enable_language(%CMAKE_LANGS%)
+
 set(DOTNET_AOT_SOURCES
     %AotSources%
 )
@@ -6,7 +12,10 @@ set(DOTNET_AOT_OBJECTS
 )
 set(DOTNET_EXTRA_SOURCES
     %ExtraSources%
+    test.c
 )
+
+include_directories("%MonoInclude%")
 
 add_library(
     aot_library STATIC
@@ -18,11 +27,11 @@ target_link_libraries(
 )
 
 add_library(
-    lib-%LIBRARY_NAME% %LIBRARY_TYPE%
+    %LIBRARY_NAME% %LIBRARY_TYPE%
     ${DOTNET_EXTRA_SOURCES}
 )
 target_link_libraries(
-    lib-%LIBRARY_NAME%
+    %LIBRARY_NAME%
     aot_library
     %LIBRARY_LINKER_ARGS%
 )

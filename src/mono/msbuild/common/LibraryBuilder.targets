@@ -8,9 +8,11 @@
     <ItemGroup>
       <_ExtraLibrarySources Include="$(_AotModuleTablePath)" />
       <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
-      <_ExtraLinkerArgs Include="@(_RuntimeSymbolsToKeep)" />
     </ItemGroup>
 
+    <!-- 
+      Consider passing as items into library builder 
+    -->
     <WriteLinesToFile
       Condition="'$(_RuntimeSymbolsToKeep.Length)' &gt; 0" 
       File="$(BundleDir)mobile_symbols.txt" 
@@ -24,8 +26,11 @@
       Name="$(AssemblyName)"
       MonoRuntimeHeaders="$(_MonoHeaderPath)"
       OutputDirectory="$(BundleDir)"
+      RuntimeIdentifier="$(RuntimeIdentifier)"
       RuntimeLibraries="@(_RuntimeLibraries)"
-      TargetOS="$(TargetOS)" />
+      TargetOS="$(TargetOS)">
+      <Output TaskParameter="OutputPath" PropertyName="LibraryOutputPath" />
+    </LibraryBuilderTask>
   </Target>
 
 </Project>

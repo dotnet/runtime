@@ -40,6 +40,12 @@ public class AppBuilderTask : Task
     public string? OutputDirectory { get; set; }
 
     /// <summary>
+    /// OS + architecture runtime identifier
+    /// </summary>
+    [Required]
+    public string RuntimeIdentifier { get; set; } = ""!;
+
+    /// <summary>
     /// List of libraries to link against
     /// </summary>
     [Required]

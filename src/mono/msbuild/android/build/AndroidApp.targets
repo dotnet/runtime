@@ -4,6 +4,7 @@
 
   <PropertyGroup>
     <AndroidGenerateAppBundle Condition="'$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
+    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(NativeLibrary)' != ''">false</AndroidGenerateAppBundle>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
   </PropertyGroup>
 
@@ -238,23 +239,28 @@ mono_thread_interruption_request_flag
       <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(NativeLibrary)' != ''">
+      <_ExtraAppLinkerArgs Include="$(LibraryOutputPath)" />
+    </ItemGroup>
+
     <AndroidAppBuilderTask
-        RuntimeIdentifier="$(RuntimeIdentifier)"
-        ProjectName="$(AssemblyName)"
-        MonoRuntimeHeaders="$(_MonoHeaderPath)"
+        AppDir="$(AndroidAppDir)"
         Assemblies="@(_AndroidAssembliesInternal)"
-        MainLibraryFileName="$(MainLibraryFileName)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         EnvironmentVariables="@(AndroidEnv)"
+        ExtraLinkerArguments="@(_ExtraAppLinkerArgs)"
         ForceAOT="$(RunAOTCompilation)"
         ForceFullAOT="$(ForceFullAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"
-        StripDebugSymbols="False"
-        RuntimeComponents="$(RuntimeComponents)"
-        DiagnosticPorts="$(DiagnosticPorts)"
+        MainLibraryFileName="$(MainLibraryFileName)"
+        MonoRuntimeHeaders="$(_MonoHeaderPath)"
         OutputDir="$(AndroidAppBundleDir)"
-        AppDir="$(AndroidAppDir)">
-        <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
+        ProjectName="$(AssemblyName)"
+        RuntimeComponents="$(RuntimeComponents)"
+        RuntimeIdentifier="$(RuntimeIdentifier)"
+        StripDebugSymbols="False">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
+        <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
 
     <Message Importance="High" Text="PackageId:       $(ApkPackageId)"/>

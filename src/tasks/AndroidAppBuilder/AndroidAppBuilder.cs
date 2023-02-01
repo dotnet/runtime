@@ -34,6 +34,11 @@ public class AndroidAppBuilderTask : Task
     public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
+    /// Additional linker arguments that apply to the app being built
+    /// </summary>
+    public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// Prefer FullAOT mode for Emulator over JIT
     /// </summary>
     public bool ForceAOT { get; set; }
@@ -99,8 +104,6 @@ public class AndroidAppBuilderTask : Task
 
     public override bool Execute()
     {
-        string abi = DetermineAbi();
-
         var apkBuilder = new ApkBuilder(Log);
         apkBuilder.ProjectName = ProjectName;
         apkBuilder.AppDir = AppDir;
@@ -122,18 +125,9 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.RuntimeComponents = RuntimeComponents;
         apkBuilder.DiagnosticPorts = DiagnosticPorts;
         apkBuilder.Assemblies = Assemblies;
-        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(abi, MainLibraryFileName, MonoRuntimeHeaders);
+        apkBuilder.ExtraLinkerArguments = ExtraLinkerArguments;
+        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(RuntimeIdentifier, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;
     }
-
-    private string DetermineAbi() =>
-        RuntimeIdentifier switch
-        {
-            "android-x86" => "x86",
-            "android-x64" => "x86_64",
-            "android-arm" => "armeabi-v7a",
-            "android-arm64" => "arm64-v8a",
-            _ => throw new ArgumentException($"{RuntimeIdentifier} is not supported for Android"),
-        };
 }

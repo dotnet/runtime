@@ -8,12 +8,16 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
 public class LibraryBuilderTask : AppBuilderTask
 {
+    private bool isSharedLibrary = true;
     private string nativeLibraryType = "SHARED";
+
+    private string cmakeProjectLanguages = "";
     private string targetOS = "";
 
     /// <summary>
@@ -50,13 +54,19 @@ public class LibraryBuilderTask : AppBuilderTask
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
-    /// The type of native library being produced. Can be shared|static.
+    /// Determines if the library is static or shared
     /// </summary>
-    public string NativeLibrary
+    public bool IsSharedLibrary
     {
-        get => nativeLibraryType;
-        set => nativeLibraryType = value.ToUpperInvariant();
+        get => isSharedLibrary;
+        set
+        {
+            isSharedLibrary = value;
+            nativeLibraryType = (isSharedLibrary) ? "SHARED" : "STATIC";
+        }
     }
+
+    public bool StripDebugSymbols { get; set; }
 
     /// <summary>
     /// The location of the cmake file output
@@ -67,6 +77,19 @@ public class LibraryBuilderTask : AppBuilderTask
     private string MobileSymbolFileName
     {
         get => Path.Combine(OutputDirectory, "mobile_symbols.txt");
+    }
+
+    private string CMakeProjectLanguages
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(cmakeProjectLanguages))
+            {
+                cmakeProjectLanguages = (TargetOS == "android") ? "C ASM" : "OBJC ASM";
+            }
+
+            return cmakeProjectLanguages;
+        }
     }
 
     public override bool Execute()
@@ -86,6 +109,7 @@ public class LibraryBuilderTask : AppBuilderTask
         GatherLinkerArgs(linkerArgs);
 
         WriteCMakeFileFromTemplate(aotSources.ToString(), aotObjects.ToString(), extraSources.ToString(), linkerArgs.ToString());
+        OutputPath = BuildLibrary();
 
         return true;
     }
@@ -108,6 +132,7 @@ public class LibraryBuilderTask : AppBuilderTask
 
             if (!string.IsNullOrEmpty(compiledAssembly.ExportsFile))
             {
+                hasExports = true;
                 SpecifyExportedSymbols(compiledAssembly.ExportsFile, linkerArgs);
             }
         }
@@ -115,6 +140,10 @@ public class LibraryBuilderTask : AppBuilderTask
         if (hasExports && TargetOS == "android")
         {
             linkerArgs.AppendLine($"    \"-Wl,-retain-symbols-file {MobileSymbolFileName}\"");
+        }
+        else if (hasExports)
+        {
+            linkerArgs.AppendLine($"    \"-Wl,-exported_symbols_list {MobileSymbolFileName}\"");
         }
 
         foreach (ITaskItem item in ExtraSources)
@@ -163,13 +192,58 @@ public class LibraryBuilderTask : AppBuilderTask
     private void WriteCMakeFileFromTemplate(string aotSources, string aotObjects, string extraSources, string linkerArgs)
     {
         // BundleDir
-        File.WriteAllText(Path.Combine(OutputDirectory, "dotnet_library.cmake"),
-            Utils.GetEmbeddedResource("dotnet_library.cmake")
+        File.WriteAllText(Path.Combine(OutputDirectory, "CMakeLists.txt"),
+            Utils.GetEmbeddedResource("CMakeLists.txt.template")
                 .Replace("%LIBRARY_NAME%", Name)
-                .Replace("%LIBRARY_TYPE%", NativeLibrary)
+                .Replace("%LIBRARY_TYPE%", nativeLibraryType)
+                .Replace("%CMAKE_LANGS%", CMakeProjectLanguages)
+                .Replace("%MonoInclude%", MonoRuntimeHeaders)
                 .Replace("%AotSources%", aotSources)
                 .Replace("%AotObjects%", aotObjects)
                 .Replace("%ExtraSources%", extraSources)
                 .Replace("%LIBRARY_LINKER_ARGS%", linkerArgs));
+
+        File.WriteAllText(Path.Combine(OutputDirectory, "test.c"),
+            Utils.GetEmbeddedResource("test.c"));
+    }
+
+    private string BuildLibrary()
+    {
+        string libraryOutputPath;
+
+        if (TargetOS == "android")
+        {
+            AndroidProject project = new AndroidProject("netlibrary", RuntimeIdentifier, Log);
+            project.GenerateCMake(OutputDirectory, StripDebugSymbols);
+            libraryOutputPath = project.BuildCMake(OutputDirectory, StripDebugSymbols);
+        }
+        else
+        {
+            Xcode project = new Xcode(Log, RuntimeIdentifier);
+            project.CreateXcodeProject("netlibrary", OutputDirectory);
+
+            string xcodeProjectPath = Path.Combine(OutputDirectory, "netlibrary", $"{Name}.xcodeproj");
+            libraryOutputPath = project.BuildAppBundle(xcodeProjectPath, StripDebugSymbols, "-");
+        }
+
+        return Path.Combine(libraryOutputPath, GetLibraryName());
+    }
+
+    private string GetLibraryName()
+    {
+        string libPrefix, libExtension;
+
+        if (TargetOS == "android")
+        {
+            libPrefix = "lib";
+            libExtension = (isSharedLibrary) ? ".so" : ".a";
+        }
+        else
+        {
+            libPrefix = "lib";
+            libExtension = (isSharedLibrary) ? ".dylib" : ".a";
+        }
+
+        return $"{libPrefix}{Name}{libExtension}";
     }
 }

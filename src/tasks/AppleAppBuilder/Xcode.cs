@@ -118,12 +118,33 @@ internal sealed class Xcode
     private string XcodeArch { get; set; }
     private TaskLoggingHelper Logger { get; set; }
 
+    public Xcode(TaskLoggingHelper logger, string runtimeIdentifier)
+    {
+        Logger = logger;
+
+        string[] runtimeIds = runtimeIdentifier.Split('-');
+
+        if (runtimeIds.Length != 2)
+        {
+            throw new ArgumentException("A valid runtime identifier was not specified (os-arch)");
+        }
+
+        RuntimeIdentifier = runtimeIdentifier;
+        Target = runtimeIds[0];
+        XcodeArch = SetArch(runtimeIds[1]);
+    }
+
     public Xcode(TaskLoggingHelper logger, string target, string arch)
     {
         Logger = logger;
         Target = target;
         RuntimeIdentifier = $"{Target}-{arch}";
-        XcodeArch = arch switch {
+        XcodeArch = SetArch(arch);
+    }
+
+    private static string SetArch(string arch)
+    {
+        return arch switch {
             "x64" => "x86_64",
             "arm" => "armv7",
             _ => arch
@@ -136,6 +157,7 @@ internal sealed class Xcode
         IEnumerable<string> asmFiles,
         IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
+        IEnumerable<string> extraLinkerArgs,
         string workspace,
         string binDir,
         string monoInclude,
@@ -151,7 +173,7 @@ internal sealed class Xcode
         string? runtimeComponents=null,
         string? nativeMainSource = null)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -194,6 +216,7 @@ internal sealed class Xcode
         IEnumerable<string> asmFiles,
         IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
+        IEnumerable<string> extraLinkerArgs,
         string workspace,
         string binDir,
         string monoInclude,
@@ -206,7 +229,7 @@ internal sealed class Xcode
         bool enableRuntimeLogging,
         bool enableAppSandbox,
         string? diagnosticPorts,
-        string? runtimeComponents=null,
+        string? runtimeComponents = null,
         string? nativeMainSource = null)
     {
         // bundle everything as resources excluding native files
@@ -358,8 +381,15 @@ internal sealed class Xcode
             frameworks = "\"-framework GSS\"";
         }
 
+        string appLinkerArgs = "";
+        foreach(string linkerArg in extraLinkerArgs)
+        {
+            appLinkerArgs += $"    {linkerArg}{Environment.NewLine}";
+        }
+
         cmakeLists = cmakeLists.Replace("%FrameworksToLink%", frameworks);
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
+        cmakeLists = cmakeLists.Replace("%APP_LINKER_ARGS%", appLinkerArgs);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
         cmakeLists = cmakeLists.Replace("%AotTargetsList%", aotList);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
