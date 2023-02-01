@@ -1622,7 +1622,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
             {
                 GenTree* fieldNode = use.GetNode();
-                genConsumeReg(fieldNode);
+                genConsumeRegs(fieldNode);
             }
         }
 #endif
