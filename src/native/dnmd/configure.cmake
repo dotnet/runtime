@@ -12,6 +12,7 @@ if(MSVC)
   add_compile_options(/Zc:wchar_t-) # wchar_t is a built-in type.
   add_compile_options(/W4 /WX) # warning level 4 and warnings are errors.
   add_compile_options(/Zi) # enable debugging information.
+  add_compile_options(/wd4068) # unknown pragma
 
   add_link_options(/DEBUG) # enable debugging information.
 else()

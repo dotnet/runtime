@@ -27,21 +27,24 @@ HRESULT pal::ConvertUtf16ToUtf8(
         return E_FAIL;
     }
 #elif defined(BUILD_MACOS)
+    // Buffer lengths assume null terminator
+    if (bufferLength > 0)
+        bufferLength -= 1;
 	UErrorCode err = U_ZERO_ERROR;
     (void)::u_strToUTF8(buffer, bufferLength, &length, (UChar const*)str, -1, &err);
     if (U_FAILURE(err))
     {
-        if (err == U_BUFFER_OVERFLOW_ERROR)
+        if (err != U_BUFFER_OVERFLOW_ERROR)
+            return E_FAIL;
+
+        if (bufferLength != 0)
         {
             if (writtenOrNeeded != nullptr)
-            {
-                (void)::u_strToUTF8(nullptr, 0, &length, (UChar const*)str, -1, &err);
-                *writtenOrNeeded = (uint32_t)length;
-            }
+                *writtenOrNeeded = (uint32_t)length + 1; // Add null terminator
             return E_NOT_SUFFICIENT_BUFFER;
         }
-        return E_FAIL;
     }
+    length += 1; // Add null terminator
 #else
 #error Missing implementation
 #endif // !BUILD_WINDOWS
@@ -73,21 +76,24 @@ HRESULT pal::ConvertUtf8ToUtf16(
         return E_FAIL;
     }
 #elif defined(BUILD_MACOS)
+    // Buffer lengths assume null terminator
+    if (bufferLength > 0)
+        bufferLength -= 1;
 	UErrorCode err = U_ZERO_ERROR;
     (void)::u_strFromUTF8((UChar*)buffer, bufferLength, &length, str, -1, &err);
     if (U_FAILURE(err))
     {
-        if (err == U_BUFFER_OVERFLOW_ERROR)
+        if (err != U_BUFFER_OVERFLOW_ERROR)
+            return E_FAIL;
+
+        if (bufferLength != 0)
         {
             if (writtenOrNeeded != nullptr)
-            {
-                (void)::u_strFromUTF8(nullptr, 0, &length, str, -1, &err);
-                *writtenOrNeeded = (uint32_t)length;
-            }
+                *writtenOrNeeded = (uint32_t)length + 1; // Add null terminator
             return E_NOT_SUFFICIENT_BUFFER;
         }
-        return E_FAIL;
     }
+    length += 1; // Add null terminator
 #else
 #error Missing implementation
 #endif // !BUILD_WINDOWS

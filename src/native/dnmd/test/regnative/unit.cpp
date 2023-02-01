@@ -2,6 +2,7 @@
 
 #include <array>
 #include <vector>
+#include <algorithm>
 #include <functional>
 #include <exception>
 #include <string>
@@ -29,10 +30,10 @@ namespace
         {
             std::string _message;
         public:
-            Violation(char const* source, size_t line, char const* funcName)
+            Violation(char const* source, size_t line, char const* funcName, std::string const& msg)
             {
                 std::stringstream ss;
-                ss << source << "(" << line << "): Violation in " << funcName;
+                ss << source << "(" << line << "):'" << msg << "' in " << funcName << ".";
                 _message = ss.str();
             }
 
@@ -50,21 +51,63 @@ namespace
         void _True(bool result, char const* source, size_t line, char const* funcName)
         {
             if (!result)
-                throw Violation{ source, line, funcName };
+                throw Violation{ source, line, funcName, "false" };
         }
 
         template<typename T>
         void _Equal(T const& expected, T const& actual, char const* source, size_t line, char const* funcName)
         {
             if (expected != actual)
-                throw Violation{ source, line, funcName };
+            {
+                std::stringstream ss;
+                ss << std::hex << expected << " != " << actual << std::endl;
+                throw Violation{ source, line, funcName, ss.str() };
+            }
         }
 
         template<typename T>
         T _Equal(T&& expected, T const& actual, char const* source, size_t line, char const* funcName)
         {
+            _Equal(expected, actual, source, line, funcName);
+            return std::move(expected);
+        }
+
+        template<typename T>
+        std::vector<T> _Equal(std::vector<T>&& expected, std::vector<T> const& actual, char const* source, size_t line, char const* funcName)
+        {
             if (expected != actual)
-                throw Violation{ source, line, funcName };
+            {
+                std::stringstream ss;
+                if (expected.size() != actual.size())
+                {
+                    ss << "Size mismatch: " << expected.size() << " != " << actual.size() << "\n";
+                    ss << std::hex;
+                    char const* d = "Expect: ";
+                    for (auto e : expected)
+                    {
+                        ss << d << e;
+                        d = ", ";
+                    }
+                    ss << "\n";
+                    d = "Actual: ";
+                    for (auto a : actual)
+                    {
+                        ss << d << a;
+                        d = ", ";
+                    }
+                    ss << "\n";
+                }
+                else
+                {
+                    auto iters = std::mismatch(std::begin(expected), std::end(expected), std::begin(actual), std::end(actual));
+                    if (iters.first != std::end(expected) || iters.second != std::end(actual))
+                    {
+                        ss << "Element at " << std::distance(std::begin(expected), iters.first) << " mismatch: "
+                             << std::hex << *iters.first << " != " << *iters.second;
+                    }
+                }
+                throw Violation{ source, line, funcName, ss.str() };
+            }
             return std::move(expected);
         }
     }
@@ -133,7 +176,7 @@ namespace
     // default values recommended by http://isthe.com/chongo/tech/comp/fnv/
     uint32_t const Prime = 0x01000193; //   16777619
     uint32_t const Seed = 0x811C9DC5; // 2166136261
-    /// hash a single byte
+    // hash a single byte
     uint32_t fnv1a(uint8_t oneByte, uint32_t hash = Seed)
     {
         return (oneByte ^ hash) * Prime;

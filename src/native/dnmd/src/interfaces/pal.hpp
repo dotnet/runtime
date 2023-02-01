@@ -7,6 +7,8 @@
 namespace pal
 {
     // Convert the UTF-16 string into UTF-8
+    // Buffer length should include null terminator.
+    // Written length includes null terminator.
     HRESULT ConvertUtf16ToUtf8(
         WCHAR const* str,
         char* buffer,
@@ -14,6 +16,8 @@ namespace pal
         _Out_opt_ uint32_t* writtenOrNeeded);
 
     // Convert the UTF-8 string into UTF-16
+    // Buffer length should include null terminator.
+    // Written length includes null terminator.
     HRESULT ConvertUtf8ToUtf16(
         char const* str,
         WCHAR* buffer,

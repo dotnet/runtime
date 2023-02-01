@@ -11,6 +11,17 @@ using System.Text;
 
 namespace Regression.UnitTests
 {
+    public sealed class WindowsOnlyTheoryAttribute : TheoryAttribute
+    {
+        public WindowsOnlyTheoryAttribute()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Skip = "Only run on Windows";
+            }
+        }
+    }
+
     public unsafe class ImportTests
     {
         private delegate* unmanaged<void*, int, TestResult> _importAPIs;
@@ -33,7 +44,7 @@ namespace Regression.UnitTests
             {
                 throw new Exception($"Initialization failed: 0x{hr:x}");
             }
-            
+
             _importAPIs = (delegate* unmanaged<void*, int, TestResult>)NativeLibrary.GetExport(mod, "UnitImportAPIs");
             _longRunningAPIs = (delegate* unmanaged<void*, int, TestResult>)NativeLibrary.GetExport(mod, "UnitLongRunningAPIs");
             _findAPIs = (delegate* unmanaged<void*, int, TestResult>)NativeLibrary.GetExport(mod, "UnitFindAPIs");
@@ -116,11 +127,11 @@ namespace Regression.UnitTests
         [MemberData(nameof(CoreFrameworkLibraries))]
         public void ImportAPIs_Core(string filename, PEReader managedLibrary) => ImportAPIs(filename, managedLibrary);
 
-        [Theory]
+        [WindowsOnlyTheory]
         [MemberData(nameof(Net20FrameworkLibraries))]
         public void ImportAPIs_Net20(string filename, PEReader managedLibrary) => ImportAPIs(filename, managedLibrary);
 
-        [Theory]
+        [WindowsOnlyTheory]
         [MemberData(nameof(Net40FrameworkLibraries))]
         public void ImportAPIs_Net40(string filename, PEReader managedLibrary) => ImportAPIs(filename, managedLibrary);
 
@@ -130,6 +141,7 @@ namespace Regression.UnitTests
             Pass
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         private unsafe struct TestResult
         {
             public TestState State;
