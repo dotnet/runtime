@@ -6,7 +6,7 @@ uint32_t align_to(uint32_t val, uint32_t align)
     return (val + (align - 1)) & ~(align - 1);
 }
 
-// Brian Kernighan’s algorithm for counting bits
+// Brian Kernighan's algorithm for counting bits
 size_t count_set_bits(uint64_t val)
 {
     size_t count = 0;
@@ -155,5 +155,83 @@ bool decompress_u32(uint8_t const** data, size_t* data_len, uint32_t* o)
 
     *o = val;
     *data = s;
+    return true;
+}
+
+enum {
+    SIGN_MASK_ONEBYTE  = 0xffffffc0,        // Mask the same size as the missing bits.
+    SIGN_MASK_TWOBYTE  = 0xffffe000,        // Mask the same size as the missing bits.
+    SIGN_MASK_FOURBYTE = 0xf0000000,        // Mask the same size as the missing bits.
+};
+
+// II.23.2
+// This is a big-endian format in the physical form.
+bool decompress_i32(uint8_t const** data, size_t* data_len, int32_t* o)
+{
+    uint32_t unsigned_value;
+    size_t original_data_len = *data_len;
+    if (!decompress_u32(data, data_len, &unsigned_value))
+    {
+        return false;
+    }
+    bool is_signed = (unsigned_value & 1) != 0;
+    unsigned_value >>= 1;
+    if (is_signed)
+    {
+        switch (*data_len - original_data_len)
+        {
+            // Sign extend the value based on the number of bytes used.
+            case 1:
+            {
+                unsigned_value |= SIGN_MASK_ONEBYTE;
+            }
+            case 2:
+            {
+                unsigned_value |= SIGN_MASK_TWOBYTE;
+            }
+            default:
+            {
+                unsigned_value |= SIGN_MASK_FOURBYTE;
+            }
+        }
+    }
+    *o = (int32_t)unsigned_value;
+    return true;
+}
+
+// II.23.2
+// This is a big-endian format in the physical form.
+bool compress_u32(uint32_t data, uint8_t* compressed, size_t* compressed_len)
+{
+    assert(compressed != NULL && compressed_len != NULL);
+    if (data <= 0x7f)
+    {
+        if (*compressed_len < 1)
+            return false;
+        compressed[0] = (uint8_t)data;
+        *compressed_len = 1;
+    }
+    else if (data <= 0x3fff)
+    {
+        if (*compressed_len < 2)
+            return false;
+        compressed[0] = (uint8_t)((data >> 8) | 0x80);
+        compressed[1] = (uint8_t)data;
+        *compressed_len = 2;
+    }
+    else if (data <= 0x1fffffff)
+    {
+        if (*compressed_len < 4)
+            return false;
+        compressed[0] = (uint8_t)((data >> 24) | 0xc0);
+        compressed[1] = (uint8_t)(data >> 16);
+        compressed[2] = (uint8_t)(data >> 8);
+        compressed[3] = (uint8_t)data;
+        *compressed_len = 4;
+    }
+    else
+    {
+        return false;
+    }
     return true;
 }

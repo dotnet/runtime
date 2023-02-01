@@ -7,7 +7,24 @@
 #include <assert.h>
 #include <string.h>
 
-#include <platform.h>
+// Reused Win32 data types
+typedef uint16_t WCHAR;
+typedef struct _GUID
+{
+    uint32_t Data1;
+    uint16_t Data2;
+    uint16_t Data3;
+    uint8_t  Data4[8];
+} GUID;
+
+// Implementations for missing bounds checking APIs.
+// See https://en.cppreference.com/w/c/error#Bounds_checking
+#if !defined(__STDC_LIB_EXT1__) && !defined(BUILD_WINDOWS)
+typedef size_t rsize_t;
+#endif // !__STDC_LIB_EXT1__
+
+#include <corhdr.h>
+
 #include <dnmd.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
@@ -26,12 +43,17 @@ typedef struct _mdcdata_t
     size_t size;
 } mdcdata_t;
 
-// II.24.2.6
-#define MDTABLE_MAX_COUNT 64
+// II.24.2.6 - 64 is the maximum value
+#define MDTABLE_MAX_COUNT ((size_t)mdtid_End)
+static_assert(MDTABLE_MAX_COUNT <= 64, "Specification sets max table count to 64");
 
 #define MDTABLE_MAX_COLUMN_COUNT 9
 
-// Flags and mases used to embed column details for
+// Macros for computing token types.
+#define CreateTokenType(tk) (mdToken)(((uint32_t)tk << 24) & 0xff000000)
+#define ExtractTokenType(tk) ((tk >> 24) & 0xff)
+
+// Flags and masks used to embed column details for
 // interpreting table rows.
 typedef enum
 {
@@ -77,27 +99,27 @@ typedef enum
 #define InsertCodedIndex(s) ((s << 24) & mdtc_cimask)
 #define ExtractCodedIndex(s) ((s & mdtc_cimask) >> 24)
 
-// Foward declare.
+// Forward declare.
 struct _mdcxt_t;
 
 typedef struct _mdtable_t
 {
     mdcdata_t data;
     uint32_t row_count;
-    uint32_t row_size_bytes;
-    uint32_t column_count;
+    uint8_t row_size_bytes;
+    uint8_t column_count;
     bool is_sorted;
     uint8_t table_id;
     struct _mdcxt_t* cxt; // Non-null is indication of complete initialization
-    mdtcol_t column_details[MDTABLE_MAX_COLUMN_COUNT];
+    mdtcol_t* column_details;
 } mdtable_t;
 
-typedef mddata_t mdstream_t;
+typedef mdcdata_t mdstream_t;
 
 typedef struct _mdcxt_t
 {
     uint32_t magic; // mdlib magic
-    mddata_t data; // metadata raw bytes
+    mdcdata_t data; // metadata raw bytes
 
     // Metadata root details - II.24.2.1
     uint16_t major_ver;
@@ -117,7 +139,7 @@ typedef struct _mdcxt_t
 
     // Metadata tables - II.22
     uint8_t heap_sizes; // 1 = "#Strings", 2 = "#GUID", 4 = "#Blob"
-    mdtable_t tables[MDTABLE_MAX_COUNT];
+    mdtable_t* tables;
 } mdcxt_t;
 
 // Extract a context from the mdhandle_t.
@@ -132,7 +154,7 @@ bool try_get_string(mdcxt_t* cxt, size_t offset, char const** str);
 bool validate_strings_heap(mdcxt_t* cxt);
 
 // User strings heap, #US - II.24.2.4
-bool try_get_user_string(mdcxt_t* cxt, size_t offset, WCHAR const** str, uint32_t* str_wchars, uint8_t* final_byte);
+bool try_get_user_string(mdcxt_t* cxt, size_t offset, mduserstring_t* str, size_t* next_offset);
 bool validate_user_string_heap(mdcxt_t* cxt);
 
 // Blob heap, #Blob - II.24.2.4
@@ -164,9 +186,6 @@ bool try_get_pdb(mdcxt_t* cxt, md_pdb_t* pdb);
 //
 // Tables
 //
-
-// Validate the public table enumeration
-static_assert(mdtid_Last <= MDTABLE_MAX_COUNT, "Last ID cannot exceed max count");
 
 // Coded index collections - II.24.2.6
 typedef enum
@@ -200,7 +219,12 @@ typedef struct _coded_index_entry
     uint8_t const bit_encoding_size;
 } coded_index_entry;
 
-extern coded_index_entry const coded_index_map[mdci_Count];
+// Manipulators for coded indices - II.24.2.6
+bool compose_coded_index(mdToken tk, mdtcol_t col_details, uint32_t* coded_index);
+bool decompose_coded_index(uint32_t cidx, mdtcol_t col_details, mdtable_id_t* table_id, uint32_t* table_row);
+
+// Get the column count for a table.
+uint8_t get_table_column_count(mdtable_id_t id);
 
 // Initialize the supplied table details
 bool initialize_table_details(
@@ -241,5 +265,10 @@ bool read_i64(uint8_t const** data, size_t* data_len, int64_t* o);
 
 // II.23.2
 bool decompress_u32(uint8_t const** data, size_t* data_len, uint32_t* o);
+bool decompress_i32(uint8_t const** data, size_t* data_len, int32_t* o);
+// II.23.2
+// compressed_len is an in/out parameter. If compress_u32 returns true, then
+// compressed_len is set to the number of bytes written to compressed.
+bool compress_u32(uint32_t data, uint8_t* compressed, size_t* compressed_len);
 
 #endif // _SRC_DNMD_INTERNAL_H_

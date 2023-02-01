@@ -27,29 +27,37 @@ bool validate_strings_heap(mdcxt_t* cxt)
     return true;
 }
 
-bool try_get_user_string(mdcxt_t* cxt, size_t offset, WCHAR const** str, uint32_t* str_wchars, uint8_t* final_byte)
+bool try_get_user_string(mdcxt_t* cxt, size_t offset, mduserstring_t* str, size_t* next_offset)
 {
-    assert(cxt != NULL && str != NULL && str_wchars != NULL && final_byte != NULL);
-
+    assert(cxt != NULL && str != NULL && next_offset != NULL);
     mdstream_t* h = &cxt->user_string_heap;
     if (h->size <= offset)
         return false;
 
-    uint8_t const* ptr = (uint8_t const*)(h->ptr + offset);
+    uint8_t const* begin = (uint8_t const*)(h->ptr + offset);
 
     size_t data_len = h->size - offset;
     uint32_t byte_count;
-    if (!decompress_u32(&ptr, &data_len, &byte_count))
+    if (!decompress_u32(&begin, &data_len, &byte_count))
         return false;
 
-    // II.24.2.4
-    // The count on each string is the number of bytes in the string.
-    // There is an additional terminal byte which holds a 1 or 0.
-    // The 1 signifies Unicode characters that require handling beyond
-    // that normally provided for 8-bit encoding sets.
-    *str = (WCHAR const*)ptr;
-    *str_wchars = (byte_count - 1) / sizeof(WCHAR);
-    *final_byte = ptr[byte_count - 1];
+    if (byte_count == 0)
+    {
+        memset(str, 0, sizeof(*str));
+    }
+    else
+    {
+        // II.24.2.4
+        // The count on each string is the number of bytes in the string.
+        // There is an additional terminal byte which holds a 1 or 0.
+        // The 1 signifies Unicode characters that require handling beyond
+        // that normally provided for 8-bit encoding sets.
+        str->str = (WCHAR const*)begin;
+        str->str_bytes = byte_count;
+        str->final_byte = begin[byte_count - 1];
+    }
+
+    *next_offset = &begin[byte_count] - h->ptr;
     return true;
 }
 
@@ -198,12 +206,16 @@ bool initialize_tables(mdcxt_t* cxt)
 
 #ifdef DNMD_PORTABLE_PDB
     md_pdb_t pdb;
-    if (cxt->pdb.size != 0 && !try_get_pdb(cxt, &pdb))
+    if (try_get_pdb(cxt, &pdb))
+    {
+        // Merge in the PDB reference row counts
+        for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
+            row_counts[i] += pdb.type_system_table_rows[i];
+    }
+    else if (cxt->pdb.size != 0)
+    {
         return false;
-
-    // Merge in the PDB reference row counts
-    for (size_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
-        row_counts[i] += pdb.type_system_table_rows[i];
+    }
 #endif // DNMD_PORTABLE_PDB
 
     mdtable_t* table;
@@ -219,7 +231,7 @@ bool initialize_tables(mdcxt_t* cxt)
             if (!initialize_table_details(row_counts, cxt->heap_sizes, (mdtable_id_t)i, (bool)(sorted_tables & 1), table))
                 return false;
 
-            // Consume the date based on the table details
+            // Consume the data based on the table details
             if (!consume_table_rows(table, &curr, &curr_len))
                 return false;
 

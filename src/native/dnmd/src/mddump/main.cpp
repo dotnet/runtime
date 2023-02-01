@@ -1,14 +1,14 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstdint>
+#include <cstring>
 #include <cassert>
 #include <fstream>
 #include <stdexcept>
 #include <memory>
 #include <array>
 
-#include <platform.h>
-#include <dnmd.h>
+#include <internal/dnmd_platform.hpp>
 
 template<typename T>
 class span
@@ -36,6 +36,11 @@ public:
     }
 
     operator T* () noexcept
+    {
+        return _ptr;
+    }
+
+    operator T const* () const noexcept
     {
         return _ptr;
     }
@@ -103,24 +108,12 @@ struct free_deleter
 template<typename T>
 using malloc_span = owning_span<T, free_deleter>;
 
-struct mdhandle_deleter
-{
-    using pointer = mdhandle_t;
-    void operator()(mdhandle_t handle)
-    {
-        md_destroy_handle(handle);
-    }
-};
-
-using mdhandle_lifetime = std::unique_ptr<mdhandle_t, mdhandle_deleter>;
-
-bool create_mdhandle(malloc_span<uint8_t>& buffer, mdhandle_lifetime& handle)
+bool create_mdhandle(malloc_span<uint8_t> const& buffer, mdhandle_ptr& handle)
 {
     mdhandle_t h;
     if (!md_create_handle(buffer, buffer.size(), &h))
         return false;
     handle.reset(h);
-    (void)buffer.release();
     return true;
 }
 
@@ -128,12 +121,23 @@ bool read_in_file(char const* file, malloc_span<uint8_t>& b);
 bool get_metadata_from_pe(malloc_span<uint8_t>& b);
 bool get_metadata_from_file(malloc_span<uint8_t>& b);
 
-void dump(char const* p)
+struct dump_config_t
+{
+    dump_config_t()
+        : path{}
+        , table_id{ -1 }
+    { }
+
+    char const* path;
+    int32_t table_id;
+};
+
+void dump(dump_config_t cfg)
 {
     malloc_span<uint8_t> b;
-    if (!read_in_file(p, b))
+    if (!read_in_file(cfg.path, b))
     {
-        std::fprintf(stderr, "Failed to read in '%s'\n", p);
+        std::fprintf(stderr, "Failed to read in '%s'\n", cfg.path);
         return;
     }
 
@@ -143,27 +147,78 @@ void dump(char const* p)
         return;
     }
 
-    std::printf("%s = 0x%p, size %zu\n", p, &b, b.size());
+    std::printf("Loaded '%s'.\n    Metadata blog size %zu bytes\n", cfg.path, b.size());
+    if (cfg.table_id != -1)
+        std::printf("    Reading in table %d (0x%x)\n", cfg.table_id, cfg.table_id);
 
-    mdhandle_lifetime handle;
+    mdhandle_ptr handle;
     if (!create_mdhandle(b, handle)
         || !md_validate(handle.get())
-        || !md_dump_tables(handle.get()))
+        || !md_dump_tables(handle.get(), cfg.table_id))
     {
-        std::printf("invalid metadata!\n");
+        std::fprintf(stderr, "invalid metadata!\n");
     }
 }
+
+static char const* s_usage = "Syntax: mddump [-t <table_id>]? <path ecma-335 data>";
 
 int main(int ac, char** av)
 {
     if (ac <= 1)
     {
-        std::printf("Missing argument.\n\nSyntax: mddump <path ecma-335 assembly>\n");
+        std::fprintf(stderr, "Missing metadata file.\n\n%s\n", s_usage);
         return EXIT_FAILURE;
     }
 
+    dump_config_t cfg;
+
+    // Process arguments
     span<char*> args{ &av[1], (size_t)ac - 1 };
-    dump(args[0]);
+    for (size_t i = 0; i < args.size(); ++i)
+    {
+        char* arg = args[i];
+        if (arg[0] != '-')
+        {
+            cfg.path = arg;
+            continue;
+        }
+
+        size_t len = strlen(arg);
+        if (len >= 2)
+        {
+            switch (arg[1])
+            {
+            case 't':
+            {
+                i++;
+                if (i >= args.size())
+                {
+                    std::fprintf(stderr, "Missing table ID.\n");
+                    return EXIT_FAILURE;
+                }
+
+                cfg.table_id = ::strtoul(args[i], nullptr, 0);
+                if ((errno == ERANGE) || cfg.table_id >= 64)
+                {
+                    std::fprintf(stderr, "Invalid table ID: '%s'. Must be [0, 64)\n", args[i]);
+                    return EXIT_FAILURE;
+                }
+                continue;
+            }
+            case 'h':
+            case '?':
+                std::printf("%s\n", s_usage);
+                return EXIT_SUCCESS;
+            default:
+                break;
+            }
+        }
+
+        std::fprintf(stderr, "Invalid argument: '%s'\n\n%s\n", arg, s_usage);
+        return EXIT_FAILURE;
+    }
+
+    dump(cfg);
 
     return EXIT_SUCCESS;
 }
