@@ -2,22 +2,26 @@
 
   <PropertyGroup>
     <UseIntellisensePackageDocXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' == ''">true</UseIntellisensePackageDocXmlFile>
-    <NoWarn Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">$(NoWarn);1591</NoWarn>
-    <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
-    <IntellisensePackageXmlFileFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFileFromNetFolder>
-    <IntellisensePackageXmlFileFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFileFromDotNetPlatExtFolder>
-    <IntellisensePackageXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFileFromNetFolder))">$(IntellisensePackageXmlFileFromNetFolder)</IntellisensePackageXmlFile>
-    <IntellisensePackageXmlFile Condition="'$(IntellisensePackageXmlFile)' == '' and '$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFileFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFileFromDotNetPlatExtFolder)</IntellisensePackageXmlFile>
   </PropertyGroup>
 
-  <Target Name="VerifyAssemblySupportsDocsXmlGeneration">
+  <Target Name="VerifyAssemblySupportsDocsXmlGeneration"
+    Condition="'$(UseIntellisensePackageDocXmlFile)' != 'true'">
     <Error
-      Condition="'$(UseIntellisensePackageDocXmlFile)' == 'false' and '$(IsPartialFacadeAssembly)' == 'true'"
+      Condition="'$(IsPartialFacadeAssembly)' == 'true'"
       Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for partial facade assemblies: $(AssemblyName)" />
     <Error
-      Condition="'$(UseIntellisensePackageDocXmlFile)' == 'false' and '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''"
+      Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''"
       Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for assemblies that throw PlatformNotSupportedException: $(AssemblyName)" />
   </Target>
+
+  <PropertyGroup>
+    <NoWarn Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">$(NoWarn);1591</NoWarn>
+    <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
+    <IntellisensePackageXmlFilePathFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetFolder>
+    <IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>
+    <IntellisensePackageXmlFilePath Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>
+    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and '$(UseIntellisensePackageDocXmlFile)' == 'true' and Exists($(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder)</IntellisensePackageXmlFilePath>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
@@ -30,7 +34,7 @@
           Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">
     <ItemGroup>
       <DocFileItem Remove="@(DocFileItem)" />
-      <DocFileItem Include="$(IntellisensePackageXmlFile)" />
+      <DocFileItem Include="$(IntellisensePackageXmlFilePath)" />
     </ItemGroup>
   </Target>
 
