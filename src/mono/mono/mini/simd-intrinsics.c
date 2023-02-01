@@ -1123,13 +1123,10 @@ is_create_from_half_vectors_overload (MonoMethodSignature *fsig)
 static gboolean
 is_element_type_primitive (MonoType *vector_type)
 {
-	if (vector_type->type == MONO_TYPE_GENERICINST)
-	{
+	if (vector_type->type == MONO_TYPE_GENERICINST) {
 		MonoType *element_type = get_vector_t_elem_type (vector_type);
 		return MONO_TYPE_IS_VECTOR_PRIMITIVE (element_type);
-	}
-	else
-	{
+	} else {
 		MonoClass *klass = mono_class_from_mono_type_internal (vector_type);
 		g_assert (
 			!strcmp (m_class_get_name (klass), "Plane") ||
@@ -1435,15 +1432,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 
-		if (fsig->params [0]->type == MONO_TYPE_GENERICINST)
-		{
+		if (fsig->params [0]->type == MONO_TYPE_GENERICINST) {
 			MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
 			int size = mono_class_value_size (arg_class, NULL);
 			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 			elems = size / esize;
-		}
-		else
-		{
+		} else {
 			// This exists to handle the static extension methods for Vector2/3/4 and Quaterion
 			// which live on System.Numerics.Vector
 
@@ -1703,15 +1697,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 
-		if (fsig->params [0]->type == MONO_TYPE_GENERICINST)
-		{
+		if (fsig->params [0]->type == MONO_TYPE_GENERICINST) {
 			MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
 			int size = mono_class_value_size (arg_class, NULL);
 			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 			elems = size / esize;
-		}
-		else
-		{
+		} else {
 			// This exists to handle the static extension methods for Vector2/3/4 and Quaterion
 			// which live on System.Numerics.Vector
 
@@ -1886,7 +1877,6 @@ static guint16 vector2_methods[] = {
 	SN_DistanceSquared,
 	SN_Divide,
 	SN_Dot,
-	SN_GetElement,
 	SN_Length,
 	SN_LengthSquared,
 	SN_Lerp,
@@ -1897,7 +1887,6 @@ static guint16 vector2_methods[] = {
 	SN_Normalize,
 	SN_SquareRoot,
 	SN_Subtract,
-	SN_WithElement,
 	SN_get_Item,
 	SN_get_One,
 	SN_get_UnitW,
@@ -2040,15 +2029,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->sreg3 = args [1]->dreg;
 		ins->inst_c1 = MONO_TYPE_R4;
 		ins->dreg = dreg;
-		return ins;
-	}
-	case SN_WithElement: {
-		g_assert (!fsig->hasthis && fsig->param_count == 3 && fsig->params [1]->type == MONO_TYPE_I4 && fsig->params [2]->type == MONO_TYPE_R4);
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
-		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		ins = emit_simd_ins (cfg, klass, OP_XINSERT_R4, args [0]->dreg, args [2]->dreg);
-		ins->sreg3 = args [1]->dreg;
-		ins->inst_c1 = MONO_TYPE_R4;
 		return ins;
 	}
 	case SN_Add:
