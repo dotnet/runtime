@@ -41,15 +41,14 @@ jobs:
       alwaysRun: true
 
   # Wasm Debugger tests - firefox
-  #  - disabled from rolling builds
-  #- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-    #parameters:
-      #platforms:
-        #- browser_wasm_firefox
-      #browser: firefox
+  - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm_firefox
+      browser: firefox
       ## ff tests are unstable currently
-      #shouldContinueOnError: true
-      #alwaysRun: true
+      shouldContinueOnError: true
+      alwaysRun: true
 
   # Disabled for now
   #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
