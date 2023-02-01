@@ -159,7 +159,7 @@ namespace System.Runtime.Loader
         private static void MonoResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext, ref IntPtr dll)
         {
             AssemblyLoadContext context = GetAssemblyLoadContext(gchManagedAssemblyLoadContext);
-#if false
+#if true
             if (context == null)
                     return;
 #endif
