@@ -1374,7 +1374,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     columnNumber = call.Location.Column
                 }));
             }
-            _error.Value["exceptionDetails"]["stackTrace"] = retStackTrace;
+            _error.Value["exceptionDetails"]["stackTrace"] = JObject.FromObject(new {callFrames = retStackTrace});
             return _error;
         }
 
