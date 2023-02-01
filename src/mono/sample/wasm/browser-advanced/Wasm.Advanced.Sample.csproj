@@ -9,6 +9,7 @@
     <_ServeHeaders>$(_ServeHeaders) -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot;</_ServeHeaders>
     <!-- enable reporting to profiler in browser dev tools -->
     <WasmProfilers>browser;</WasmProfilers>
+    <WasmAotProfilePath>$(MSBuildThisFileDirectory)Wasm.Advanced.Sample.aotprofile</WasmAotProfilePath>
   </PropertyGroup>
   <ItemGroup>
     <!-- add export GL object from Module -->

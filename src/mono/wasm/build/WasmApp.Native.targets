@@ -595,7 +595,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <!--<AOTMode Condition="'$(AOTMode)' == '' and '$(AOTProfilePath)' != ''">LLVMOnlyInterp</AOTMode>-->
+      <!--<AOTMode Condition="'$(AOTMode)' == '' and '$(AotProfilePath)' != ''">LLVMOnlyInterp</AOTMode>-->
       <AOTMode Condition="'$(AOTMode)' == ''">LLVMOnlyInterp</AOTMode>
       <_AOTCompilerCacheFile>$(_WasmIntermediateOutputPath)aot_compiler_cache.json</_AOTCompilerCacheFile>
     </PropertyGroup>
@@ -631,7 +631,7 @@
       Assemblies="@(_AotInputAssemblies)"
       AdditionalAssemblySearchPaths="@(_WasmAOTSearchPaths)"
       UseAotDataFile="false"
-      AOTProfilePath="$(AOTProfilePath)"
+      AotProfilePath="@(AotProfilePath)"
       AotModulesTablePath="$(_DriverGenCPath)"
       UseLLVM="true"
       Profilers="$(WasmProfilers)"
@@ -641,7 +641,7 @@
       LLVMDebug="dwarfdebug"
       LLVMPath="$(EmscriptenUpstreamBinPath)"
       IntermediateOutputPath="$(_WasmIntermediateOutputPath)"
-      AotProfilePath="@(AotProfilePath)">
+      >
 
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssembliesInternal" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />

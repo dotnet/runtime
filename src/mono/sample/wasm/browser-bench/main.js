@@ -59,6 +59,22 @@ function importTargetThrows(value) {
     throw new Error("test" + value);
 }
 
+function saveAOTProfile(aotProfileData) {
+    if (!aotProfileData) {
+        throw new Error("aotProfileData not set")
+    }
+    const a = document.createElement('a');
+    const blob = new Blob([aotProfileData]);
+    a.href = URL.createObjectURL(blob);
+    a.download = "Wasm.Browser.Bench.Sample.aotprofile";
+    // Append anchor to body.
+    document.body.appendChild(a);
+    a.click();
+
+    // Remove anchor from body
+    document.body.removeChild(a);
+}
+
 class MainApp {
     async init({ getAssemblyExports, setModuleImports, BINDING, INTERNAL }) {
         const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
@@ -117,6 +133,8 @@ class MainApp {
             if (ret.length > 0) {
                 setTimeout(() => { this.yieldBench(); }, 0);
             } else {
+                // saveAOTProfile(INTERNAL.aotProfileData);
+
                 _jiterpreter_dump_stats();
                 document.getElementById("out").innerHTML += "Finished";
                 fetch("/results.json", {
@@ -183,6 +201,13 @@ try {
         .withRuntimeOptions(["--jiterpreter-stats-enabled"])
         .withElementOnExit()
         .withExitCodeLogging()
+        /*
+        .withConfig({
+            aotProfilerOptions: {
+                writeAt: "Sample.Test::ResultsSummary",
+                sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
+            }
+        })*/
         .create();
 
     await mainApp.init(runtime);

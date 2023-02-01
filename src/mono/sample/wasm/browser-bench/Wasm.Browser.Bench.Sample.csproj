@@ -9,6 +9,10 @@
     <EnableAggressiveTrimming Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</PublishTrimmed>
     <RunAOTCompilation Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</RunAOTCompilation>
+    <!--
+    <WasmProfilers>aot;</WasmProfilers>
+    -->
+    <WasmAotProfilePath>$(MSBuildThisFileDirectory)Wasm.Browser.Bench.Sample.aotprofile</WasmAotProfilePath>
     <TrimMode>partial</TrimMode>
   </PropertyGroup>
 

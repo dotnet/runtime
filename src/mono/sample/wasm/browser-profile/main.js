@@ -3,14 +3,14 @@
 
 import { dotnet, exit } from './dotnet.js'
 
-function saveProfile(aotProfileData) {
+function saveAOTProfile(aotProfileData) {
     if (!aotProfileData) {
         throw new Error("aotProfileData not set")
     }
     const a = document.createElement('a');
     const blob = new Blob([aotProfileData]);
     a.href = URL.createObjectURL(blob);
-    a.download = "data.aotprofile";
+    a.download = "Wasm.BrowserProfile.Sample.aotprofile";
     // Append anchor to body.
     document.body.appendChild(a);
     a.click();
@@ -18,6 +18,7 @@ function saveProfile(aotProfileData) {
     // Remove anchor from body
     document.body.removeChild(a);
 }
+
 try {
     const { INTERNAL, getAssemblyExports: getAssemblyExports } = await dotnet
         .withElementOnExit()
@@ -40,7 +41,7 @@ try {
     console.debug(`ret: ${ret}`);
 
     stopProfile();
-    saveProfile(INTERNAL.aotProfileData);
+    saveAOTProfile(INTERNAL.aotProfileData);
 
     let exit_code = ret == 42 ? 0 : 1;
     exit(exit_code);
