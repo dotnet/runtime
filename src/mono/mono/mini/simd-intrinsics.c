@@ -1696,13 +1696,29 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_WithElement: {
+		int elems;
+		
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
-		int size = mono_class_value_size (arg_class, NULL);
-		int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
-		int elems = size / esize;
+
+		if (fsig->params [0]->type == MONO_TYPE_GENERICINST)
+		{
+			MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
+			int size = mono_class_value_size (arg_class, NULL);
+			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+			elems = size / esize;
+		}
+		else
+		{
+			// This exists to handle the static extension methods for Vector2/3/4 and Quaterion
+			// which live on System.Numerics.Vector
+
+			arg0_type = MONO_TYPE_R4;
+			elems = 4;
+		}
+
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 		int insert_op = type_to_xinsert_op (arg0_type);
