@@ -504,7 +504,10 @@ namespace DebuggerTests
                Assert.Contains("No implementation of method 'CallMethodWithParm' matching 'this.CallMethodWithParm(\"1\")' found in type DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.", res.Error["result"]?["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
-               Assert.Equal("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["message"]?.Value<string>());
+               Assert.Equal("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["result"]?["description"]?.Value<string>());
+                Assert.Equal("DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run", res.Error["exceptionDetails"]?["stackTrace"]?[0]?["functionName"]?.Value<string>());
+                Assert.Equal(358, res.Error["exceptionDetails"]?["stackTrace"]?[0]?["lineNumber"]?.Value<int>());
+                Assert.Equal(16, res.Error["exceptionDetails"]?["stackTrace"]?[0]?["columnNumber"]?.Value<int>());;
 
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
                Assert.Equal("Method 'MyMethod' not found in type 'string'", res.Error["result"]?["description"]?.Value<string>());
@@ -578,9 +581,12 @@ namespace DebuggerTests
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 var (_, res) = await EvaluateOnCallFrame(id, "f.idx0[2]", expect_ok: false );
-                Assert.Equal("Unable to evaluate element access 'f.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["message"]?.Value<string>());
+                Assert.Equal("Unable to evaluate element access 'f.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["result"]?["description"]?.Value<string>());
+                Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", res.Error["exceptionDetails"]?["stackTrace"]?[0]?["functionName"]?.Value<string>());
+                Assert.Equal(556, res.Error["exceptionDetails"]?["stackTrace"]?[0]?["lineNumber"]?.Value<int>());
+                Assert.Equal(12, res.Error["exceptionDetails"]?["stackTrace"]?[0]?["columnNumber"]?.Value<int>());
                 (_, res) = await EvaluateOnCallFrame(id, "f[1]", expect_ok: false );
-                Assert.Equal( "Unable to evaluate element access 'f[1]': Cannot apply indexing with [] to an object of type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate'", res.Error["message"]?.Value<string>());
+                Assert.Equal( "Unable to evaluate element access 'f[1]': Cannot apply indexing with [] to an object of type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate'", res.Error["result"]?["description"]?.Value<string>());
            });
 
         [Fact]
@@ -711,7 +717,10 @@ namespace DebuggerTests
                 // indexing with expression of a wrong type
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 var (_, res) = await EvaluateOnCallFrame(id, "f.numList[\"a\" + 1]", expect_ok: false );
-                Assert.Equal("Unable to evaluate element access 'f.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["message"]?.Value<string>());
+                Assert.Equal("Unable to evaluate element access 'f.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["result"]?["description"]?.Value<string>());
+                Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", res.Error["exceptionDetails"]?["stackTrace"]?[0]?["functionName"]?.Value<string>());
+                Assert.Equal(556, res.Error["exceptionDetails"]?["stackTrace"]?[0]?["lineNumber"]?.Value<int>());
+                Assert.Equal(12, res.Error["exceptionDetails"]?["stackTrace"]?[0]?["columnNumber"]?.Value<int>());
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]

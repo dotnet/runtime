@@ -1407,15 +1407,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context), token);
             }
-            catch (ExpressionEvaluationFailedException eefe)
-            {
-                logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{eefe}.");
-                SendResponse(msg_id, AddCallStackInfoToException(Result.Exception(eefe), context), token);
-            }
             catch (Exception e)
             {
                 logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{e}.");
-                SendResponse(msg_id, AddCallStackInfoToException(Result.Exception(e), context), token);
+                var exc = new ReturnAsErrorException(e.Message, e.GetType().Name);
+                SendResponse(msg_id, AddCallStackInfoToException(exc.Error, context), token);
             }
 
             return true;

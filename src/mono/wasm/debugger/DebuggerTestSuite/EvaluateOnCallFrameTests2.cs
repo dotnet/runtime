@@ -200,9 +200,9 @@ namespace DebuggerTests
 
                 var (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", expect_ok: false);
                 AssertEqual("Failed to resolve member access for DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
-                AssertEqual(res.Error["exceptionDetails"]?["stackTrace"]?[0]?["functionName"]?.Value<string>(), "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run", "wrong functionName on stackTrace");
-                AssertEqual(res.Error["exceptionDetails"]?["stackTrace"]?[0]?["lineNumber"]?.Value<int>(), 358, "wrong lineNumber on stackTrace");
-                AssertEqual(res.Error["exceptionDetails"]?["stackTrace"]?[0]?["columnNumber"]?.Value<int>(), 16, "wrong columnNumber on stackTrace");
+                Assert.Equal("DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run", res.Error["exceptionDetails"]?["stackTrace"]?[0]?["functionName"]?.Value<string>());
+                Assert.Equal(358, res.Error["exceptionDetails"]?["stackTrace"]?[0]?["lineNumber"]?.Value<int>());
+                Assert.Equal(16, res.Error["exceptionDetails"]?["stackTrace"]?[0]?["columnNumber"]?.Value<int>());
                 (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", expect_ok: false);
                 AssertEqual("Failed to resolve member access for DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
             });
