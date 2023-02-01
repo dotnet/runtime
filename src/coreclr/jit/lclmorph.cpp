@@ -589,9 +589,17 @@ public:
                     lclVar->ChangeOper(GT_LCL_VAR);
                     lclVar->ChangeType(lclType);
 
-                    GenTree* cast = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
+                    if (user->OperIs(GT_ASG))
+                    {
+                        node = *use = lclVar;
+                    }
+                    else
+                    {
+                        GenTree* cast = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
 
-                    node = *use    = cast;
+                        node = *use = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
+                    }
+
                     m_stmtModified = true;
                 }
                 else
