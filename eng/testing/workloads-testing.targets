@@ -22,7 +22,7 @@
 
   <ItemGroup>
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
-    <_DefaultPropsForNuGetBuild Include="TargetOS=Browser" />
+    <_DefaultPropsForNuGetBuild Include="TargetOS=browser" />
     <_DefaultPropsForNuGetBuild Include="TargetArchitecture=wasm" />
     <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
   </ItemGroup>
@@ -75,6 +75,14 @@
 
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
+
+    <!-- HACK: Remove the now invalid manifest `microsoft.net.workload.mono.toolchain` as a workaround
+               till the sdk removes it completely. -->
+    <ItemGroup>
+      <_ManifestsToRemove Include="$(_SdkWithNoWorkloadPath)\sdk-manifests\8.0.100\microsoft.net.workload.mono.toolchain" />
+    </ItemGroup>
+    <Message Text="Removing @(_ManifestsToRemove)" Condition="Exists(%(_ManifestsToRemove.Identity))" Importance="High" />
+    <RemoveDir Directories="@(_ManifestsToRemove)" Condition="Exists(%(_ManifestsToRemove.Identity))" />
   </Target>
 
   <Target Name="_SetPackageVersionForWorkloadsTesting">
@@ -157,10 +165,10 @@
   <!-- For local builds, only one of the 3 required runtime packs might be available. In that case,
        build the other nugets with the *same runtime* but different names.
   -->
-  <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(TargetOS)' == 'Browser' and '$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
+  <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(TargetOS)' == 'browser' and '$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
     <PropertyGroup>
-      <_DefaultBuildVariant Condition="'$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread'">.multithread.</_DefaultBuildVariant>
-      <_DefaultBuildVariant Condition="'$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'perftrace'">.perftrace.</_DefaultBuildVariant>
+      <_DefaultBuildVariant Condition="'$(MonoWasmBuildVariant)' == 'multithread'">.multithread.</_DefaultBuildVariant>
+      <_DefaultBuildVariant Condition="'$(MonoWasmBuildVariant)' == 'perftrace'">.perftrace.</_DefaultBuildVariant>
       <_DefaultBuildVariant Condition="'$(_DefaultBuildVariant)' == ''">.</_DefaultBuildVariant>
 
       <_DefaultRuntimePackNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono$(_DefaultBuildVariant)browser-wasm.$(PackageVersionForWorkloadManifests).nupkg</_DefaultRuntimePackNuGetPath>
@@ -218,7 +226,7 @@
     <InstallWorkloadFromArtifacts
                      WorkloadIds="@(WorkloadIdForTesting)"
                      InstallTargets="@(_SdkWithWorkloadToInstall)"
-                     VersionBand="$(SdkBandVersion)"
+                     VersionBand="$(SdkBandVersionForWorkload)"
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"

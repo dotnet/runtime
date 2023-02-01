@@ -50,7 +50,10 @@ namespace System.Diagnostics.Tracing
 
         public static void Initialize()
         {
-            s_RuntimeEventSource = new RuntimeEventSource();
+            // initializing more than once may lead to missing events
+            Debug.Assert(s_RuntimeEventSource == null);
+            if (EventSource.IsSupported)
+                s_RuntimeEventSource = new RuntimeEventSource();
         }
 
         // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor

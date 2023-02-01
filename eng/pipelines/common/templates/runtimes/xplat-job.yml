@@ -54,11 +54,11 @@ jobs:
     workspace:
       clean: all
 
-    ${{ if eq(parameters.osGroup, 'Linux') }}:
+    ${{ if eq(parameters.osGroup, 'linux') }}:
       agentOs: Ubuntu
-    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+    ${{ if eq(parameters.osGroup, 'freebsd') }}:
       agentOs: FreeBSD
-    ${{ if in(parameters.osGroup, 'OSX', 'iOS') }}:
+    ${{ if in(parameters.osGroup, 'osx', 'ios') }}:
       agentOs: MacOS
     ${{ if eq(parameters.osGroup, 'windows') }}:
       agentOs: windows

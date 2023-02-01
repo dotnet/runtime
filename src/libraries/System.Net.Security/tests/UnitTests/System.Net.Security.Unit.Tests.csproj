@@ -11,7 +11,7 @@
     <!-- Disable: CLSCompliant attribute is not needed -->
     <NoWarn>$(NoWarn);3021</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-android</TargetFrameworks>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>

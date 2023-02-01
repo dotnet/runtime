@@ -2578,6 +2578,14 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
+    // If this is an OSR method and we haven't run post-importation cleanup, we may see a branch
+    // from fgFirstBB to the middle of a try. Those get fixed during cleanup. Tolerate.
+    //
+    if (comp->opts.IsOSR() && !comp->compPostImportationCleanupDone && (blockPred == comp->fgFirstBB))
+    {
+        return true;
+    }
+
     printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
@@ -2653,6 +2661,15 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
                 }
             }
             assert(!"SWITCH in the predecessor list with no jump label to BLOCK!");
+            break;
+
+        case BBJ_LEAVE:
+            // We may see BBJ_LEAVE preds in unimported blocks if we haven't done cleanup yet.
+            if (!comp->compPostImportationCleanupDone && ((blockPred->bbFlags & BBF_IMPORTED) == 0))
+            {
+                return true;
+            }
+            assert(!"Unexpected BBJ_LEAVE predecessor");
             break;
 
         default:
@@ -2759,12 +2776,19 @@ static volatile int bbTraverseLabel = 1;
 
 void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRefs /* = true  */)
 {
-#ifdef DEBUG
     if (verbose)
     {
-        printf("*************** In fgDebugCheckBBlist\n");
+        JITDUMP("*************** In fgDebugCheckBBlist\n");
     }
-#endif // DEBUG
+
+    // Don't bother checking a failed inlinee; we may have bailed
+    // out in the middle of importation.
+    //
+    if (compIsForInlining() && compInlineResult->IsFailure())
+    {
+        JITDUMP("... failed inline attempt, no checking needed\n");
+        return;
+    }
 
     fgDebugCheckBlockLinks();
     fgFirstBBisScratch();
@@ -2800,6 +2824,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         block->bbTraversalStamp = curTraversalStamp;
     }
 
+    bool allNodesLinked = (fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR);
+
     for (BasicBlock* const block : Blocks())
     {
         if (checkBBNum)
@@ -2811,15 +2837,22 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
         // lowered GT_SWITCH_TABLE node then make sure it
         // ends with a conditional jump or a GT_SWITCH
-
-        if (block->bbJumpKind == BBJ_COND)
+        //
+        // This may not be true for unimported blocks, if
+        // we haven't run post-importation cleanup yet.
+        //
+        if (compPostImportationCleanupDone || ((block->bbFlags & BBF_IMPORTED) != 0))
         {
-            assert(block->lastNode()->gtNext == nullptr && block->lastNode()->OperIsConditionalJump());
-        }
-        else if (block->bbJumpKind == BBJ_SWITCH)
-        {
-            assert(block->lastNode()->gtNext == nullptr &&
-                   (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
+            if (block->bbJumpKind == BBJ_COND)
+            {
+                assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
+                       block->lastNode()->OperIsConditionalJump());
+            }
+            else if (block->bbJumpKind == BBJ_SWITCH)
+            {
+                assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
+                       (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
+            }
         }
 
         if (block->bbCatchTyp == BBCT_FILTER)
@@ -2874,7 +2907,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         // Under OSR, if we also are keeping the original method entry around,
         // mark that as implicitly referenced as well.
-        if (opts.IsOSR() && (block == fgEntryBB))
+        if (opts.IsOSR() && (block == fgEntryBB) && ((block->bbFlags & BBF_IMPORTED) != 0))
         {
             blockRefs += 1;
         }
@@ -2969,6 +3002,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     if (genReturnBB != nullptr)
     {
         assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->bbStmtList != nullptr);
+    }
+
+    // If this is an inlinee, we're done checking.
+    if (compIsForInlining())
+    {
+        return;
     }
 
     // The general encoder/decoder (currently) only reports "this" as a generics context as a stack location,
@@ -3237,7 +3276,7 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
         // TODO: return?
     }
 
-    assert(fgStmtListThreaded);
+    assert(fgNodeThreading != NodeThreading::None);
 
     noway_assert(stmt->GetTreeList());
 
@@ -3323,6 +3362,146 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
 
         noway_assert(expectedPrevTree == nullptr ||     // No expectations about the prev node
                      tree->gtPrev == expectedPrevTree); // The "normal" case
+    }
+}
+
+//------------------------------------------------------------------------------
+// fgDebugCheckLinkedLocals: Check the linked list of locals.
+//
+void Compiler::fgDebugCheckLinkedLocals()
+{
+    if (fgNodeThreading != NodeThreading::AllLocals)
+    {
+        return;
+    }
+
+    class DebugLocalSequencer : public GenTreeVisitor<DebugLocalSequencer>
+    {
+        ArrayStack<GenTree*> m_locals;
+
+        bool ShouldLink(GenTree* node)
+        {
+            return node->OperIsLocal() || node->OperIsLocalAddr();
+        }
+
+    public:
+        enum
+        {
+            DoPostOrder       = true,
+            UseExecutionOrder = true,
+        };
+
+        DebugLocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_locals(comp->getAllocator(CMK_DebugOnly))
+        {
+        }
+
+        void Sequence(Statement* stmt)
+        {
+            m_locals.Reset();
+            WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        ArrayStack<GenTree*>* GetSequence()
+        {
+            return &m_locals;
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if (ShouldLink(node))
+            {
+                if ((user != nullptr) && user->OperIs(GT_ASG) && (node == user->gtGetOp1()))
+                {
+                }
+                else if ((user != nullptr) && user->IsCall() &&
+                         (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
+                {
+                }
+                else
+                {
+                    m_locals.Push(node);
+                }
+            }
+
+            if (node->OperIs(GT_ASG) && ShouldLink(node->gtGetOp1()))
+            {
+                m_locals.Push(node->gtGetOp1());
+            }
+
+            if (node->IsCall())
+            {
+                GenTree* defined = m_compiler->gtCallGetDefinedRetBufLclAddr(node->AsCall());
+                if (defined != nullptr)
+                {
+                    assert(ShouldLink(defined));
+                    m_locals.Push(defined);
+                }
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    DebugLocalSequencer seq(this);
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->Statements())
+        {
+            GenTree* first = stmt->GetTreeList();
+            CheckDoublyLinkedList<GenTree, &GenTree::gtPrev, &GenTree::gtNext>(first);
+
+            seq.Sequence(stmt);
+
+            ArrayStack<GenTree*>* expected = seq.GetSequence();
+
+            bool success = true;
+
+            if (expected->Height() > 0)
+            {
+                success &= (stmt->GetTreeList() == expected->Bottom(0)) && (stmt->GetTreeListEnd() == expected->Top(0));
+            }
+            else
+            {
+                success &= (stmt->GetTreeList() == nullptr) && (stmt->GetTreeListEnd() == nullptr);
+            }
+
+            int nodeIndex = 0;
+            for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
+            {
+                success &= cur->OperIsLocal() || cur->OperIsLocalAddr();
+                success &= (nodeIndex < expected->Height()) && (cur == expected->Bottom(nodeIndex));
+                nodeIndex++;
+            }
+
+            success &= nodeIndex == expected->Height();
+
+            if (!success && verbose)
+            {
+                printf("Locals are improperly linked in the following statement:\n");
+                DISPSTMT(stmt);
+
+                printf("\nExpected:\n");
+                const char* pref = "  ";
+                for (int i = 0; i < expected->Height(); i++)
+                {
+                    printf("%s[%06u]", pref, dspTreeID(expected->Bottom(i)));
+                    pref = " -> ";
+                }
+
+                printf("\n\nActual:\n");
+                pref = "  ";
+                for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
+                {
+                    printf("%s[%06u]", pref, dspTreeID(cur));
+                    pref = " -> ";
+                }
+
+                printf("\n");
+            }
+
+            assert(success && "Locals are improperly linked!");
+        }
     }
 }
 
@@ -3431,7 +3610,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         }
 
         // For each statement check that the nodes are threaded correctly - m_treeList.
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             fgDebugCheckNodeLinks(block, stmt);
         }

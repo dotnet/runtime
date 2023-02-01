@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_4)</RoslynApiVersion>
+    <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
+    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
+  </ItemGroup>
+
+  <Import Project="System.Text.Json.SourceGeneration.Unit.Tests.targets" />
+
+  <ItemGroup>
+    <!-- The Roslyn4.4 project uses multi-targeting to enable nullability annotations,
+         so we need to explicitly reference the ns2.0 TFM used by the production source generator -->
+    <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn4.4.csproj" SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+</Project>

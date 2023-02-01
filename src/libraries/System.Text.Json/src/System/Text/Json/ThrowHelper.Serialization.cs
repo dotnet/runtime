@@ -464,6 +464,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_ExtensionDataConflictsWithUnmappedMemberHandling(Type classType, JsonPropertyInfo jsonPropertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ExtensionDataConflictsWithUnmappedMemberHandling, classType, jsonPropertyInfo.MemberName));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(JsonPropertyInfo jsonPropertyInfo)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializationDataExtensionPropertyInvalid, jsonPropertyInfo.PropertyType, jsonPropertyInfo.MemberName));
@@ -588,6 +594,12 @@ namespace System.Text.Json
         {
             state.Current.JsonPropertyName = propertyName.ToArray();
             ThrowJsonException(SR.Format(SR.MetadataUnexpectedProperty));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnmappedJsonProperty(Type type, string unmappedPropertyName)
+        {
+            throw new JsonException(SR.Format(SR.UnmappedJsonProperty, type, unmappedPropertyName));
         }
 
         [DoesNotReturn]
@@ -731,12 +743,6 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(IJsonTypeInfoResolver? resolver, Type type)
         {
             throw GetInvalidOperationException_NoMetadataForTypeProperties(resolver, type);
-        }
-
-        [DoesNotReturn]
-        public static void ThrowInvalidOperationException_NoMetadataForTypeCtorParams(IJsonTypeInfoResolver? resolver, Type type)
-        {
-            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeCtorParams, resolver?.GetType().FullName ?? "<null>", type));
         }
 
         [DoesNotReturn]

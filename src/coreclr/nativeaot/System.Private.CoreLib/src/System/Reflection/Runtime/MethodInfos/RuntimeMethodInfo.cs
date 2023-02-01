@@ -72,8 +72,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         private Delegate CreateDelegateWorker(Type delegateType, object target, bool allowClosed)
         {
-            if (delegateType == null)
-                throw new ArgumentNullException(nameof(delegateType));
+            ArgumentNullException.ThrowIfNull(delegateType);
 
             if (!(delegateType is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
@@ -119,7 +118,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
             while (true)
             {
-                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember();
+                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
                 if (next == null)
                     return ((RuntimeMethodInfo)method).WithReflectedTypeSetToDeclaringType;
 
@@ -313,7 +312,7 @@ namespace System.Reflection.Runtime.MethodInfos
             Debug.Assert(runtimeDelegateType.IsDelegate);
 
             ExecutionEnvironment executionEnvironment = ReflectionCoreExecution.ExecutionEnvironment;
-            MethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
+            RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
 
             // Make sure the return type is assignment-compatible.
             Type expectedReturnType = ReturnParameter.ParameterType;

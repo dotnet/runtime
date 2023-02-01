@@ -269,7 +269,7 @@ namespace System.Runtime.Serialization
             WriteXmlnsAttribute(ns);
         }
 
-        private static Exception CreateInvalidPrimitiveTypeException(Type type)
+        private static InvalidDataContractException CreateInvalidPrimitiveTypeException(Type type)
         {
             return new InvalidDataContractException(SR.Format(SR.InvalidPrimitiveType_Serialization, DataContract.GetClrTypeFullName(type)));
         }

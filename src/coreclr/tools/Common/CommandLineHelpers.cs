@@ -76,6 +76,8 @@ namespace System.CommandLine
                 return TargetOS.Linux;
             else if (token.Equals("osx", StringComparison.OrdinalIgnoreCase))
                 return TargetOS.OSX;
+            else if (token.Equals("freebsd", StringComparison.OrdinalIgnoreCase))
+                return TargetOS.FreeBSD;
 
             throw new CommandLineException($"Target OS '{token}' is not supported");
         }
@@ -303,12 +305,12 @@ namespace System.CommandLine
 
                     string simpleName = Path.GetFileNameWithoutExtension(fileName);
 
-                    if (dictionary.ContainsKey(simpleName))
+                    if (dictionary.TryGetValue(simpleName, out string otherFullFileName))
                     {
                         if (strict)
                         {
                             throw new CommandLineException("Multiple input files matching same simple name " +
-                                fullFileName + " " + dictionary[simpleName]);
+                                fullFileName + " " + otherFullFileName);
                         }
                     }
                     else

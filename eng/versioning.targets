@@ -65,6 +65,9 @@
   <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == '' and !$(TargetFrameworks.Contains('$(TargetFramework)-browser'))">
     <CrossPlatformAndHasNoBrowserTarget>true</CrossPlatformAndHasNoBrowserTarget>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == '' and !$(TargetFrameworks.Contains('$(TargetFramework)-wasi'))">
+    <CrossPlatformAndHasNoWasiTarget>true</CrossPlatformAndHasNoWasiTarget>
+  </PropertyGroup>
 
   <!-- Enables warnings for Android, iOS, tvOS and macCatalyst for all builds -->
   <ItemGroup>
@@ -78,12 +81,14 @@
   <ItemGroup Condition="('$(TargetPlatformIdentifier)' == 'browser' or '$(CrossPlatformAndHasNoBrowserTarget)' == 'true') and '$(IsTestProject)' != 'true'">
     <SupportedPlatform Include="browser"/>
   </ItemGroup>
+  <ItemGroup Condition="('$(TargetPlatformIdentifier)' == 'wasi' or '$(CrossPlatformAndHasNoWasiTarget)' == 'true') and '$(IsTestProject)' != 'true'">
+    <SupportedPlatform Include="wasi"/>
+  </ItemGroup>
 
   <!-- Add target platforms into MSBuild SupportedPlatform list -->
   <ItemGroup Condition="'$(IsTestProject)' != 'true'">
     <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'illumos'" Include="illumos" />
     <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'solaris'" Include="Solaris" />
-    <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' == 'tvos'" Include="tvOS" />
     <SupportedPlatform Condition="'$(TargetPlatformIdentifier)' != '' and
                                   '$(TargetPlatformIdentifier)' != 'browser' and
                                   '$(TargetPlatformIdentifier)' != 'wasi' and

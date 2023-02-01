@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -838,6 +839,22 @@ namespace System.Text.RegularExpressions
             }
 
             return count;
+        }
+
+        public static bool TryGetAsciiSetChars(string set, [NotNullWhen(true)] out char[]? asciiChars)
+        {
+            Span<char> chars = stackalloc char[128];
+
+            chars = chars.Slice(0, GetSetChars(set, chars));
+
+            if (chars.IsEmpty || !IsAscii(chars))
+            {
+                asciiChars = null;
+                return false;
+            }
+
+            asciiChars = chars.ToArray();
+            return true;
         }
 
         /// <summary>
@@ -1756,7 +1773,8 @@ namespace System.Text.RegularExpressions
                 SR.Format(SR.MakeException, pattern, currentPos, SR.Format(SR.UnrecognizedUnicodeProperty, capname)));
         }
 
-        public static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
+#if DEBUG || !SYSTEM_TEXT_REGULAREXPRESSIONS
+        private static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
 
         private static string[] PopulateCategoryIdToName()
         {
@@ -1931,5 +1949,6 @@ namespace System.Text.RegularExpressions
                 < 0 => $"\\P{{{CategoryIdToName[-(short)ch - 1]}}}",
                 _ => $"\\p{{{CategoryIdToName[ch - 1]}}}",
             };
+#endif
     }
 }

@@ -127,6 +127,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #endif
 
 #define MONO_TYPE_IS_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+#define MONO_TYPE_IS_INT_32_64(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_I4 && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 #define MONO_TYPE_IS_VECTOR_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_I1 && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
 //XXX this ignores if t is byref
 #define MONO_TYPE_IS_PRIMITIVE_SCALAR(t) ((((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_U8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
@@ -2594,14 +2595,10 @@ gpointer mono_get_restore_context               (void);
 gpointer mono_get_throw_corlib_exception        (void);
 gpointer mono_get_throw_exception_addr          (void);
 gpointer mono_get_rethrow_preserve_exception_addr          (void);
-ICALL_EXPORT
-MonoArray *ves_icall_get_trace                  (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
-
-ICALL_EXPORT
-MonoBoolean ves_icall_get_frame_info            (gint32 skip, MonoBoolean need_file_info,
-						 MonoReflectionMethod **method,
-						 gint32 *iloffset, gint32 *native_offset,
-						 MonoString **file, gint32 *line, gint32 *column);
+MonoArray* mono_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
+MonoBoolean mono_get_frame_info            (gint32 skip, MonoMethod **out_method,
+											MonoDebugSourceLocation **out_location,
+											gint32 *iloffset, gint32 *native_offset);
 void mono_set_cast_details                      (MonoClass *from, MonoClass *to);
 
 void mono_decompose_typechecks (MonoCompile *cfg);

@@ -1196,7 +1196,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
     genTreeOps oper = structVal->gtOper;
 
     if (oper == GT_CALL || oper == GT_RET_EXPR || (oper == GT_OBJ && !willDeref) || oper == GT_MKREFANY ||
-        structVal->OperIsSimdOrHWintrinsic() || structVal->IsCnsVec())
+        structVal->OperIsHWIntrinsic() || structVal->IsCnsVec())
     {
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
@@ -1342,9 +1342,6 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
         case GT_BLK:
         case GT_FIELD:
         case GT_CNS_VEC:
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-#endif
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
 #endif
@@ -1355,7 +1352,7 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
 
         case GT_COMMA:
         {
-            // The second thing could either be a block node or a GT_FIELD or a GT_SIMD or a GT_COMMA node.
+            // The second thing could either be a block node or a GT_FIELD or a GT_COMMA node.
             GenTree* blockNode = structVal->AsOp()->gtOp2;
             assert(blockNode->gtType == structType);
 
@@ -1373,7 +1370,7 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
             }
 
 #ifdef FEATURE_SIMD
-            if (blockNode->OperIsSimdOrHWintrinsic() || blockNode->IsCnsVec())
+            if (blockNode->OperIsHWIntrinsic() || blockNode->IsCnsVec())
             {
                 parent->AsOp()->gtOp2 = impNormStructVal(blockNode, structHnd, curLevel);
             }
@@ -3945,6 +3942,31 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
             uint8_t buffer[MaxStructSize] = {0};
             if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
             {
+#ifdef FEATURE_SIMD
+                // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
+                int simdWidth = getSIMDTypeSizeInBytes(fieldClsHnd);
+                if (simdWidth > 0)
+                {
+                    assert((totalSize <= 32) && (totalSize <= MaxStructSize));
+                    var_types simdType = getSIMDTypeForSize(simdWidth);
+
+// SSE2 and AdvSimd are baselines so TYP_SIMD8-16 are always there
+// for TYP_SIMD32 we need to check AVX support on XARCH
+#ifdef TARGET_XARCH
+                    bool hwAccelerated = (simdType != TYP_SIMD32) || compOpportunisticallyDependsOn(InstructionSet_AVX);
+#else
+                    bool hwAccelerated = true;
+#endif
+
+                    if (hwAccelerated)
+                    {
+                        GenTreeVecCon* vec = gtNewVconNode(simdType);
+                        memcpy(&vec->gtSimd32Val, buffer, totalSize);
+                        return vec;
+                    }
+                }
+#endif
+
                 for (unsigned i = 0; i < totalSize; i++)
                 {
                     if (buffer[i] != 0)
@@ -4237,6 +4259,30 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
             break;
         }
+
+        case CORINFO_FIELD_STATIC_RELOCATABLE:
+        {
+#ifdef FEATURE_READYTORUN
+            assert(fieldKind == FieldSeq::FieldKind::SimpleStatic);
+            assert(innerFldSeq != nullptr);
+
+            size_t fldAddr = (size_t)pFieldInfo->fieldLookup.addr;
+            if (pFieldInfo->fieldLookup.accessType == IAT_VALUE)
+            {
+                op1 = gtNewIconHandleNode(fldAddr, GTF_ICON_STATIC_HDL);
+            }
+            else
+            {
+                assert(pFieldInfo->fieldLookup.accessType == IAT_PVALUE);
+                op1 = gtNewIndOfIconHandleNode(TYP_I_IMPL, fldAddr, GTF_ICON_STATIC_ADDR_PTR, true);
+            }
+            GenTree* offset = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
+            op1             = gtNewOperNode(GT_ADD, TYP_I_IMPL, op1, offset);
+#else
+            unreached();
+#endif // FEATURE_READYTORUN
+        }
+        break;
 
         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
         {
@@ -5719,7 +5765,30 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     // Check legality only if an inline expansion is desirable.
     if (shouldExpandInline)
     {
-        if (isCastClass)
+        CORINFO_CLASS_HANDLE actualImplCls = NO_CLASS_HANDLE;
+        if (this->IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&
+            ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_CHKCASTINTERFACE)) &&
+            (info.compCompHnd->getExactClasses(pResolvedToken->hClass, 1, &actualImplCls) == 1) &&
+            (actualImplCls != NO_CLASS_HANDLE) && impIsClassExact(actualImplCls))
+        {
+            // if an interface has a single implementation on NativeAOT where we won't load new types,
+            // we can assume that our object is always of that implementation's type, e.g.:
+            //
+            // var case1 = obj is IMyInterface;
+            // var case2 = (IMyInterface)obj;
+            //
+            //   can be optimized to:
+            //
+            // var case1 = o is not null && o.GetType() == typeof(MyInterfaceImpl);
+            // var case2 = (o is null || o.GetType() == typeof(MyInterfaceImpl)) ? o : HELPER_CALL(o);
+            //
+            canExpandInline = true;
+            exactCls        = actualImplCls;
+
+            JITDUMP("'%s' interface has a single implementation - '%s', using that to inline isinst/castclass.",
+                    eeGetClassName(pResolvedToken->hClass), eeGetClassName(actualImplCls));
+        }
+        else if (isCastClass)
         {
             // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
             canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
@@ -7542,8 +7611,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_BRFALSE_S:
 
                 /* Pop the comparand (now there's a neat term) from the stack */
+                op1 = gtFoldExpr(impPopStack().val);
 
-                op1  = impPopStack().val;
                 type = op1->TypeGet();
 
                 // Per Ecma-355, brfalse and brtrue are only specified for nint, ref, and byref.
@@ -8146,7 +8215,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // via an underlying address, just null check the address.
                             if (op1->OperIs(GT_FIELD, GT_IND, GT_OBJ))
                             {
-                                gtChangeOperToNullCheck(op1, block);
+                                GenTree* addr = op1->gtGetOp1();
+                                if ((addr != nullptr) && fgAddrCouldBeNull(addr))
+                                {
+                                    gtChangeOperToNullCheck(op1, block);
+                                }
+                                else
+                                {
+                                    op1 = gtNewNothingNode();
+                                }
                             }
                             else
                             {
@@ -9240,6 +9317,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_RELOCATABLE:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
@@ -9490,6 +9568,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_RELOCATABLE:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
@@ -10890,6 +10969,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     {
         assert(lvaInlineeReturnSpillTemp != BAD_VAR_NUM);
     }
+
+    if (!compIsForInlining() && ((prefixFlags & (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS)) == 0) &&
+        compStressCompile(STRESS_POISON_IMPLICIT_BYREFS, 25))
+    {
+        impPoisonImplicitByrefsBeforeReturn();
+    }
 #endif // DEBUG
 
     GenTree*             op2       = nullptr;
@@ -11206,6 +11291,90 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #endif
     return true;
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// impPoisonImplicitByrefsBeforeReturn:
+//   Spill the stack and insert IR that poisons all implicit byrefs.
+//
+// Remarks:
+//   The memory pointed to by implicit byrefs is owned by the callee but
+//   usually exists on the caller's frame (or on the heap for some reflection
+//   invoke scenarios). This function helps catch situations where the caller
+//   reads from the memory after the invocation, for example due to a bug in
+//   the JIT's own last-use copy elision for implicit byrefs.
+//
+void Compiler::impPoisonImplicitByrefsBeforeReturn()
+{
+    bool spilled = false;
+    for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
+    {
+        if (!lvaIsImplicitByRefLocal(lclNum))
+        {
+            continue;
+        }
+
+        compPoisoningAnyImplicitByrefs = true;
+
+        if (!spilled)
+        {
+            for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
+            {
+                impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(true) DEBUGARG("Stress poisoning byrefs before return"));
+            }
+
+            spilled = true;
+        }
+
+        LclVarDsc* dsc = lvaGetDesc(lclNum);
+        // Be conservative about this local to ensure we do not eliminate the poisoning.
+        lvaSetVarAddrExposed(lclNum, AddressExposedReason::STRESS_POISON_IMPLICIT_BYREFS);
+
+        assert(varTypeIsStruct(dsc));
+        ClassLayout* layout = dsc->GetLayout();
+        assert(layout != nullptr);
+
+        auto poisonBlock = [this, lclNum](unsigned start, unsigned count) {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            GenTreeLclFld* lhs =
+                new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, TYP_STRUCT, lclNum, start, typGetBlkLayout(count));
+            lhs->gtFlags |= GTF_GLOB_REF;
+
+            GenTree* asg = gtNewAssignNode(lhs, gtNewOperNode(GT_INIT_VAL, TYP_INT, gtNewIconNode(0xcd)));
+            impAppendTree(asg, CHECK_SPILL_NONE, DebugInfo());
+        };
+
+        unsigned startOffs = 0;
+        unsigned numSlots  = layout->GetSlotCount();
+        for (unsigned curSlot = 0; curSlot < numSlots; curSlot++)
+        {
+            unsigned  offs  = curSlot * TARGET_POINTER_SIZE;
+            var_types gcPtr = layout->GetGCPtrType(curSlot);
+            if (!varTypeIsGC(gcPtr))
+            {
+                continue;
+            }
+
+            poisonBlock(startOffs, offs - startOffs);
+
+            GenTree* gcField = gtNewLclFldNode(lclNum, gcPtr, offs);
+            gcField->gtFlags |= GTF_GLOB_REF;
+
+            GenTree* zeroField = gtNewAssignNode(gcField, gtNewZeroConNode(gcPtr));
+            impAppendTree(zeroField, CHECK_SPILL_NONE, DebugInfo());
+
+            startOffs = offs + TARGET_POINTER_SIZE;
+        }
+
+        assert(startOffs <= lvaLclExactSize(lclNum));
+        poisonBlock(startOffs, lvaLclExactSize(lclNum) - startOffs);
+    }
+}
+#endif
 
 /*****************************************************************************
  *  Mark the block as unimported.

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace System.Collections.Frozen
@@ -15,7 +14,7 @@ namespace System.Collections.Frozen
         private protected readonly TKey[] _keys;
         private protected readonly TValue[] _values;
 
-        protected KeysAndValuesFrozenDictionary(Dictionary<TKey, TValue> source, IEqualityComparer<TKey> comparer) : base(comparer)
+        protected KeysAndValuesFrozenDictionary(Dictionary<TKey, TValue> source, bool optimizeForReading = true) : base(source.Comparer)
         {
             Debug.Assert(source.Count != 0);
 
@@ -27,12 +26,13 @@ namespace System.Collections.Frozen
 
             _hashTable = FrozenHashTable.Create(
                 entries,
-                pair => comparer.GetHashCode(pair.Key),
+                pair => Comparer.GetHashCode(pair.Key),
                 (index, pair) =>
                 {
                     _keys[index] = pair.Key;
                     _values[index] = pair.Value;
-                });
+                },
+                optimizeForReading);
         }
 
         /// <inheritdoc />

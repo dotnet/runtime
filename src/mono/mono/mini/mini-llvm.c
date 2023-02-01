@@ -608,6 +608,12 @@ create_address (MonoLLVMModule *module, LLVMValueRef value, LLVMTypeRef type)
 	return res;
 }
 
+static void
+address_free (gpointer addr)
+{
+	g_free (addr);
+}
+
 typedef struct {
 	int32_t size;
 	uint32_t align;
@@ -646,7 +652,7 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		return LLVMVectorType (LLVMFloatType (), 4);
 	} else if (!strcmp (klass_name, "Vector4")) {
 		return LLVMVectorType (LLVMFloatType (), 4);
-	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1")) {
+	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
 		int size = mono_class_value_size (klass, NULL);
 		switch (etype->type) {
@@ -4410,6 +4416,13 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		set_failure (ctx, "non-default callconv");
 		return;
 	}
+
+#ifdef TARGET_WASM
+	if (sig->param_count >= 1000 - 10) {
+		set_failure (ctx, "param count");
+		return;
+	}
+#endif
 
 	cinfo = call->cinfo;
 	g_assert (cinfo);
@@ -11548,7 +11561,7 @@ MONO_RESTORE_WARNING
 				emit_volatile_store (ctx, ins->dreg);
 #ifdef TARGET_WASM
 			//if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
-			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE)
+			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE && ins->opcode != OP_AOTCONST)
 				emit_gc_pin (ctx, builder, ins->dreg);
 #endif
 		}
@@ -11582,6 +11595,12 @@ mono_llvm_check_method_supported (MonoCompile *cfg)
 #ifdef TARGET_WASM
 	if (mono_method_signature_internal (cfg->method)->call_convention == MONO_CALL_VARARG) {
 		cfg->exception_message = g_strdup ("vararg callconv");
+		cfg->disable_llvm = TRUE;
+		return;
+	}
+
+	if (mono_method_signature_internal (cfg->method)->param_count >= 1000 - 10) {
+		cfg->exception_message = g_strdup ("param count");
 		cfg->disable_llvm = TRUE;
 		return;
 	}
@@ -12983,11 +13002,6 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	gboolean llvm_only = (flags & LLVM_MODULE_FLAG_LLVM_ONLY) ? 1 : 0;
 	gboolean interp = (flags & LLVM_MODULE_FLAG_INTERP) ? 1 : 0;
 
-	/* Delete previous module */
-	g_hash_table_destroy (module->plt_entries);
-	if (module->lmodule)
-		LLVMDisposeModule (module->lmodule);
-
 	memset (module, 0, sizeof (aot_module));
 
 	module->lmodule = LLVMModuleCreateWithName ("aot");
@@ -13006,7 +13020,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->max_got_offset = initial_got_size;
 	module->context = LLVMGetGlobalContext ();
 	module->cfgs = g_ptr_array_new ();
-	module->aotconst_vars = g_hash_table_new (NULL, NULL);
+	module->aotconst_vars = g_hash_table_new_full (NULL, NULL, NULL, address_free);
 	module->llvm_types = g_hash_table_new (NULL, NULL);
 	module->plt_entries = g_hash_table_new (g_str_hash, g_str_equal);
 	module->plt_entries_ji = g_hash_table_new (NULL, NULL);
@@ -13126,6 +13140,29 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		LLVMSetLinkage (module->sentinel_exception, LLVMExternalLinkage);
 		mono_llvm_set_is_constant (module->sentinel_exception);
 	}
+}
+
+void
+mono_llvm_free_aot_module (void)
+{
+	MonoLLVMModule *module = &aot_module;
+
+	if (module->lmodule)
+		LLVMDisposeModule (module->lmodule);
+
+	g_hash_table_destroy (module->aotconst_vars);
+	g_hash_table_destroy (module->llvm_types);
+	g_hash_table_destroy (module->plt_entries);
+	g_hash_table_destroy (module->plt_entries_ji);
+	g_hash_table_destroy (module->direct_callables);
+	g_hash_table_destroy (module->idx_to_lmethod);
+	g_hash_table_destroy (module->method_to_lmethod);
+	g_hash_table_destroy (module->method_to_call_info);
+	g_hash_table_destroy (module->idx_to_unbox_tramp);
+	g_hash_table_destroy (module->no_method_table_lmethods);
+
+	g_ptr_array_free (module->cfgs, TRUE);
+	g_ptr_array_free (module->callsite_list, TRUE);
 }
 
 void

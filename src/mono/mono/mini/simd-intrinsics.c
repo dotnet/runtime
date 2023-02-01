@@ -682,7 +682,7 @@ is_intrinsics_vector_type (MonoType *vector_type)
 	if (vector_type->type != MONO_TYPE_GENERICINST) return FALSE;
 	MonoClass *klass = mono_class_from_mono_type_internal (vector_type);
 	const char *name = m_class_get_name (klass);
-	return !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1");
+	return !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1") || !strcmp (name, "Vector512`1");
 }
 
 static MonoType*
@@ -697,7 +697,8 @@ get_vector_t_elem_type (MonoType *vector_type)
 		!strcmp (m_class_get_name (klass), "Vector`1") ||
 		!strcmp (m_class_get_name (klass), "Vector64`1") ||
 		!strcmp (m_class_get_name (klass), "Vector128`1") ||
-		!strcmp (m_class_get_name (klass), "Vector256`1"));
+		!strcmp (m_class_get_name (klass), "Vector256`1") ||
+		!strcmp (m_class_get_name (klass), "Vector512`1"));
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	return etype;
 }
@@ -1852,6 +1853,7 @@ static guint16 vector2_methods[] = {
 	SN_op_Inequality,
 	SN_op_Multiply,
 	SN_op_Subtraction,
+	SN_op_UnaryNegation,
 	SN_set_Item,
 };
 
@@ -2008,7 +2010,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			return NULL;
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	case SN_Dot: {
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
 		int instc0 = OP_FMUL;
 		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, MONO_TYPE_R4, fsig, args);
 		return emit_sum_vector (cfg, fsig->params [0], MONO_TYPE_R4, pairwise_multiply);
@@ -2028,6 +2030,13 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->inst_c1 = MONO_TYPE_R4;
 		MONO_ADD_INS (cfg->cbb, ins);
 		return ins;
+#else
+		return NULL;
+#endif
+	}
+	case SN_op_UnaryNegation: {
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+		return emit_simd_ins (cfg, klass, OP_NEGATION, args [0]->dreg, -1);
 #else
 		return NULL;
 #endif
@@ -4373,6 +4382,8 @@ emit_wasm_bitoperations_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoM
 	switch (id) {
 		case SN_LeadingZeroCount:
 		case SN_TrailingZeroCount: {
+			if (!MONO_TYPE_IS_INT_32_64 (fsig->params [0]))
+				return NULL;
 			return emit_wasm_zero_count(cfg, fsig, args, cmethod->klass, id, arg0_type);
 		}
 	}
@@ -4393,13 +4404,16 @@ emit_wasm_supported_intrinsics (
 		switch (id) {
 			case SN_LeadingZeroCount:
 			case SN_TrailingZeroCount: {
+				if (!MONO_TYPE_IS_INT_32_64 (fsig->params [0]))
+					return NULL;
 				return emit_wasm_zero_count(cfg, fsig, args, klass, id, arg0_type);
 			}
 		}
 	}
 
 	if (feature == MONO_CPU_WASM_SIMD) {
-		if (!is_element_type_primitive (fsig->params [0]))
+		if (id != SN_Splat && !is_element_type_primitive (fsig->params [0]) ||
+		    id == SN_Splat && !MONO_TYPE_IS_VECTOR_PRIMITIVE(fsig->params [0]))
 			return NULL;
 
 		switch (id) {

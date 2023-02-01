@@ -1072,6 +1072,18 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoAr
 #endif
 }
 
+int
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalGetHashCode (MonoObjectHandle obj, MonoError* error)
+{
+	return mono_object_hash_internal (MONO_HANDLE_RAW (obj));
+}
+
+int
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalTryGetHashCode (MonoObjectHandle obj, MonoError* error)
+{
+	return mono_object_try_get_hash_internal (MONO_HANDLE_RAW (obj));
+}
+
 MonoObjectHandle
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue (MonoObjectHandle obj, MonoError *error)
 {
@@ -2976,6 +2988,12 @@ ves_icall_RuntimeType_GetNamespace (MonoQCallTypeHandle type_handle, MonoObjectH
 {
 	MonoType *type = type_handle.type;
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
+	
+	MonoClass *elem;
+	while (!m_class_is_enumtype (klass) && 
+		!mono_class_is_nullable (klass) &&
+		(klass != (elem = m_class_get_element_class (klass))))
+		klass = elem;
 
 	MonoClass *klass_nested_in;
 	while ((klass_nested_in = m_class_get_nested_in (klass)))
@@ -3557,7 +3575,6 @@ static guint64
 read_enum_value (const char *mem, int type)
 {
 	switch (type) {
-	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_U1:
 		return *(guint8*)mem;
 	case MONO_TYPE_I1:
@@ -3594,8 +3611,7 @@ write_enum_value (void *mem, int type, guint64 value)
 {
 	switch (type) {
 	case MONO_TYPE_U1:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_BOOLEAN: {
+	case MONO_TYPE_I1: {
 		guint8 *p = (guint8*)mem;
 		*p = GUINT64_TO_UINT8 (value);
 		break;
@@ -7286,6 +7302,59 @@ gint32
 ves_icall_System_Environment_get_ProcessorCount (void)
 {
 	return mono_cpu_limit ();
+}
+
+void
+ves_icall_System_Diagnostics_StackTrace_GetTrace (MonoObjectHandleOnStack ex_handle, MonoObjectHandleOnStack res, int skip_frames, MonoBoolean need_file_info)
+{
+	MonoArray *trace = mono_get_runtime_callbacks ()->get_trace ((MonoException*)*ex_handle, skip_frames, need_file_info);
+	HANDLE_ON_STACK_SET (res, trace);
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_StackFrame_GetFrameInfo (gint32 skip, MonoBoolean need_file_info,
+													  MonoObjectHandleOnStack out_method, MonoObjectHandleOnStack out_file,
+													  gint32 *iloffset, gint32 *native_offset,
+													  gint32 *line, gint32 *column)
+{
+	MonoMethod *method = NULL;
+	MonoDebugSourceLocation *location;
+	ERROR_DECL (error);
+
+	gboolean res = mono_get_runtime_callbacks ()->get_frame_info (skip, &method, &location, iloffset, native_offset);
+	if (!res)
+		return FALSE;
+
+	if (location)
+		*iloffset = location->il_offset;
+	else
+		*iloffset = 0;
+
+	if (need_file_info) {
+		if (location) {
+			MonoString *filename = mono_string_new_checked (location->source_file, error);
+			if (!is_ok (error)) {
+				mono_error_set_pending_exception (error);
+				return FALSE;
+			}
+			HANDLE_ON_STACK_SET (out_file, filename);
+			*line = location->row;
+			*column = location->column;
+		} else {
+			*line = *column = 0;
+		}
+	}
+
+	mono_debug_free_source_location (location);
+
+	MonoReflectionMethod *rm = mono_method_get_object_checked (method, NULL, error);
+	if (!is_ok (error)) {
+		mono_error_set_pending_exception (error);
+		return FALSE;
+	}
+	HANDLE_ON_STACK_SET (out_method, rm);
+
+	return TRUE;
 }
 
 // Generate wrappers.

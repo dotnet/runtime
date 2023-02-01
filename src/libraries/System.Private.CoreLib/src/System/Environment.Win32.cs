@@ -63,7 +63,7 @@ namespace System
             }
         }
 
-        private static IDictionary GetEnvironmentVariablesFromRegistry(bool fromMachine)
+        private static Hashtable GetEnvironmentVariablesFromRegistry(bool fromMachine)
         {
             var results = new Hashtable();
 

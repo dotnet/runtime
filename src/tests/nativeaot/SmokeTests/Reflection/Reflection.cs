@@ -64,6 +64,7 @@ internal static class ReflectionTest
         TestVTableOfNullableUnderlyingTypes.Run();
         TestInterfaceLists.Run();
         TestMethodConsistency.Run();
+        TestIsValueTypeWithoutTypeHandle.Run();
 
         //
         // Mostly functionality tests
@@ -81,7 +82,8 @@ internal static class ReflectionTest
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
 #endif
-		TestEntryPoint.Run();
+        TestBaseOnlyUsedFromCode.Run();
+        TestEntryPoint.Run();
         return 100;
     }
 
@@ -1508,6 +1510,33 @@ internal static class ReflectionTest
         }
     }
 
+    class TestBaseOnlyUsedFromCode
+    {
+        class SomeReferenceType { }
+
+        class SomeGenericClass<T>
+        {
+            public static string Cookie;
+        }
+
+        class OtherGenericClass<T>
+        {
+            public override string ToString() => SomeGenericClass<T>.Cookie;
+        }
+
+        public static void Run()
+        {
+            SomeGenericClass<SomeReferenceType>.Cookie = "Hello";
+
+            var inst = Activator.CreateInstance(typeof(OtherGenericClass<>).MakeGenericType(GetSomeReferenceType()));
+
+            if (inst.ToString() != "Hello")
+                throw new Exception();
+
+            static Type GetSomeReferenceType() => typeof(SomeReferenceType);
+        }
+    }
+
     class TestRuntimeLab929Regression
     {
         static Type s_atom = typeof(Atom);
@@ -2095,13 +2124,81 @@ internal static class ReflectionTest
         }
     }
 
+    class TestIsValueTypeWithoutTypeHandle
+    {
+        [Nothing(
+        ReferenceTypes = new[]
+        {
+            typeof(NonGenericType),
+            typeof(GenericType<int>),
+            typeof(ReferencedBaseType<int>),
+            typeof(GenericWithReferenceBaseType<int>)
+        },
+        ValueTypes = new[]
+        {
+            typeof(GenericStruct<int>),
+            typeof(NonGenericStruct),
+            typeof(Container<int>.GenericEnum)
+        })]
+        public static void Run()
+        {
+            var ps = MethodBase.GetCurrentMethod().GetCustomAttribute<NothingAttribute>();
+            foreach (var t in ps.ReferenceTypes)
+            {
+                AssertNoTypeHandle(t);
+                Console.WriteLine(t.IsValueType);
+            }
+            foreach (var t in ps.ValueTypes)
+            {
+                AssertNoTypeHandle(t);
+                Console.WriteLine(t.IsValueType);
+            }
+
+            if (!typeof(G<>).GetGenericArguments()[0].IsValueType)
+                throw new Exception();
+
+            static void AssertNoTypeHandle(Type t)
+            {
+                RuntimeTypeHandle h = default;
+                try
+                {
+                    h = t.TypeHandle;
+                }
+                catch (Exception) { }
+
+                if (!h.Equals(default(RuntimeTypeHandle)))
+                    throw new Exception();
+            }
+        }
+
+        public class GenericBaseType<T> { }
+        public class GenericType<T> : GenericBaseType<T> { }
+        public class NonGenericType : GenericBaseType<int> { }
+        public class ReferencedBaseType<T> { }
+        public class GenericWithReferenceBaseType<T> : ReferencedBaseType<T> { }
+        public struct GenericStruct<T> { }
+        public struct NonGenericStruct { }
+        public class Container<T>
+        {
+            public enum GenericEnum { }
+        }
+
+        class NothingAttribute : Attribute
+        {
+            public Type[] ReferenceTypes;
+            public Type[] ValueTypes;
+        }
+
+        class G<T> where T : struct { }
+    }
+
     class TestEntryPoint
     {
         public static void Run()
         {
             Console.WriteLine(nameof(TestEntryPoint));
-			if (Assembly.GetEntryAssembly().EntryPoint == null)
-				throw new Exception();
+            if (Assembly.GetEntryAssembly().EntryPoint == null)
+                throw new Exception();
         }
     }
 

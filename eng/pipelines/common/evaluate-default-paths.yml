@@ -170,16 +170,18 @@ jobs:
       - eng/Versions.props
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/workloads-testing.targets
+      - src/installer/pkg/sfx/Microsoft.NETCore.App/*
       - src/libraries/sendtohelix*
       - src/libraries/System.Net.WebSockets.Client/*
       - src/libraries/System.Runtime.InteropServices/*
       - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
+      - src/mono/monoaotcross.proj
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
-      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest/*
       - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest/*
       - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net7.Manifest/*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
