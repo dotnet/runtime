@@ -1315,7 +1315,53 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
 void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    assert(!treeNode->gtOverflowEx());
+
+    genConsumeOperands(treeNode);
+
+    regNumber targetReg  = treeNode->GetRegNum();
+    var_types targetType = treeNode->TypeGet();
+    emitter*  emit       = GetEmitter();
+    emitAttr  attr       = emitActualTypeSize(treeNode);
+    unsigned  isUnsigned = (treeNode->gtFlags & GTF_UNSIGNED);
+
+    GenTree* op1 = treeNode->gtGetOp1();
+    GenTree* op2 = treeNode->gtGetOp2();
+
+    assert(!varTypeIsFloating(targetType));
+
+    // op1 and op2 can only be a reg at present, will amend in the future.
+    assert(!op1->isContained());
+    assert(!op2->isContained());
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(targetReg != REG_NA);
+
+    if (EA_SIZE(attr) == EA_8BYTE)
+    {
+        instruction ins = isUnsigned ? INS_mulhu : INS_mulh;
+
+        emit->emitIns_R_R_R(ins, attr, targetReg, op1->GetRegNum(), op2->GetRegNum());
+    }
+    else
+    {
+        assert(EA_SIZE(attr) == EA_4BYTE);
+        if (isUnsigned)
+        {
+            emit->emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, op1->GetRegNum(), 32);
+            emit->emitIns_R_R_I(INS_slli, EA_8BYTE, targetReg, op2->GetRegNum(), 32);
+            emit->emitIns_R_R_R(INS_mulhu, EA_8BYTE, targetReg, REG_RA, targetReg);
+            emit->emitIns_R_R_I(INS_srai, attr, targetReg, targetReg, 32);
+        }
+        else
+        {
+            emit->emitIns_R_R_R(INS_mul, EA_8BYTE, targetReg, op1->GetRegNum(), op2->GetRegNum());
+            emit->emitIns_R_R_I(INS_srai, attr, targetReg, targetReg, 32);
+        }
+
+    }
+
+    genProduceReg(treeNode);
 }
 
 // Generate code for ADD, SUB, MUL, AND, AND_NOT, OR and XOR

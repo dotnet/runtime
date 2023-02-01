@@ -944,7 +944,7 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
     addi  a0, sp, __PWTB_TransitionBlock // TransitionBlock *
-    addi  a1, t1, 0 // stub-identifying token
+    addi  a1, t3, 0 // stub-identifying token
     call  C_FUNC(OnCallCountThresholdReached)
     addi  t4, a0, 0
 

@@ -775,7 +775,11 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(node->OperIs(GT_BOUNDS_CHECK));
+    if (!CheckImmedAndMakeContained(node, node->GetIndex()))
+    {
+        CheckImmedAndMakeContained(node, node->GetArrayLength());
+    }
 }
 
 #ifdef FEATURE_SIMD
