@@ -100,6 +100,7 @@ internal static class ObjectHeader
 
         public bool IsInflated => (_lock_word & (IntPtr)Status.Inflated) != 0;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref MonoThreadsSync GetInflatedLock()
         {
             unsafe
@@ -171,6 +172,7 @@ internal static class ObjectHeader
             return res;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LockWord FromObjectHeader(ref Header header)
         {
             LockWord lw;
@@ -186,6 +188,7 @@ internal static class ObjectHeader
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe ref Header ObjectHeaderUNSAFE(ref object obj)
     {
         Header** hptr = (Header**)Unsafe.AsPointer(ref obj);
@@ -193,6 +196,7 @@ internal static class ObjectHeader
         return ref h;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static LockWord GetLockWord(ref object obj)
     {
         LockWord lw;
@@ -217,6 +221,7 @@ internal static class ObjectHeader
     /// Tries to get the hash code from the object if it is
     /// already known and return true. Otherwise returns false.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryGetHashCode(object? o, out int hash)
     {
         hash = 0;
@@ -277,6 +282,7 @@ internal static class ObjectHeader
     // returns false if we should fall back to the slow path
     // returns true if we tried to enter
     // sets lockTaken to true if the lock was taken
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryEnterFast(object? o, ref bool lockTaken)
     {
         if (lockTaken || o == null)
@@ -310,6 +316,7 @@ internal static class ObjectHeader
     }
 
     // true if obj is owned by the current thread
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsEntered(object obj)
     {
         LockWord lw = GetLockWord(ref obj);
@@ -326,6 +333,7 @@ internal static class ObjectHeader
     }
 
     // true if obj is owned by any thread
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool HasOwner(object obj)
     {
         LockWord lw = GetLockWord(ref obj);
