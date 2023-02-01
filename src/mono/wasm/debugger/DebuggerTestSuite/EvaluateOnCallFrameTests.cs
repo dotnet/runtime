@@ -874,7 +874,7 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateMethodAndCheckIsNotPausingOnBreakpoint()
         {
-            var waitForScript = WaitForWarningMessage("console.warning: MONO_WASM: Adding an id (0) that already exists in commands_received");
+            var waitForScript = WaitForConsoleMessage("console.warning: MONO_WASM: Adding an id (0) that already exists in commands_received");
             await CheckInspectLocalsAtBreakpointSite(
             "TestEvaluateDontPauseOnBreakpoint", "run", 3, "TestEvaluateDontPauseOnBreakpoint.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] TestEvaluateDontPauseOnBreakpoint:run'); })",
@@ -884,7 +884,10 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
                     ("myVar.MyMethod()", TString("Object 10")),
-                    ("myVar.MyMethod2()", TString("Object 11")));
+                    ("myVar.MyMethod2()", TString("Object 11")),
+                    ("myVar.MyMethod3()", TString("Object 11")),
+                    ("myVar.MyCount", TString("Object 11")),
+                    ("myVar", TObject("TestEvaluateDontPauseOnBreakpoint", description: "Object 11")));
            });
            Assert.False(waitForScript.IsCompleted);
         }

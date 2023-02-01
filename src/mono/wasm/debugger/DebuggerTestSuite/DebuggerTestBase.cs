@@ -244,7 +244,7 @@ namespace DebuggerTests
         {
             return await insp.WaitFor(what);
         }
-        public async Task WaitForWarningMessage(string message)
+        public async Task WaitForConsoleMessage(string message)
         {
             object llock = new();
             var tcs = new TaskCompletionSource();

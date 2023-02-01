@@ -89,10 +89,10 @@ try_process_suspend (void *tls, MonoContext *ctx, gboolean from_breakpoint)
 	return FALSE;
 }
 
-static gboolean
+static bool
 begin_breakpoint_processing (void *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal)
 {
-	return TRUE;
+	return mono_begin_breakpoint_processing(tls, ctx, ji, from_signal);
 }
 
 static void

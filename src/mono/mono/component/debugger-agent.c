@@ -531,7 +531,6 @@ static void invalidate_frames (DebuggerTlsData *tls);
 /* Callbacks used by debugger-engine */
 static MonoContext* tls_get_restore_state (void *the_tls);
 static gboolean try_process_suspend (void *tls, MonoContext *ctx, gboolean from_breakpoint);
-static gboolean begin_breakpoint_processing (void *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal);
 static void begin_single_step_processing (MonoContext *ctx, gboolean from_signal);
 static gboolean ensure_jit (DbgEngineStackFrame* the_frame);
 static int ensure_runtime_is_suspended (void);
@@ -785,7 +784,7 @@ mono_debugger_agent_init_internal (void)
 	memset (&cbs, 0, sizeof (cbs));
 	cbs.tls_get_restore_state = tls_get_restore_state;
 	cbs.try_process_suspend = try_process_suspend;
-	cbs.begin_breakpoint_processing = begin_breakpoint_processing;
+	cbs.begin_breakpoint_processing = mono_begin_breakpoint_processing;
 	cbs.begin_single_step_processing = begin_single_step_processing;
 	cbs.ss_discard_frame_context = mono_ss_discard_frame_context;
 	cbs.ss_calculate_framecount = mono_ss_calculate_framecount;
@@ -4297,8 +4296,8 @@ mono_de_frame_async_id (DbgEngineStackFrame *frame)
 	return get_objid (obj);
 }
 
-static gboolean
-begin_breakpoint_processing (void *the_tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal)
+bool
+mono_begin_breakpoint_processing (void *the_tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal)
 {
 	DebuggerTlsData *tls = (DebuggerTlsData*)the_tls;
 

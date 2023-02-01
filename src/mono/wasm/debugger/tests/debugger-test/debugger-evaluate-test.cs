@@ -2123,7 +2123,7 @@ public static class NoNamespaceClass
         }
     }
 }
-
+[System.Diagnostics.DebuggerDisplay("{MyMethod2(),nq}")]
 public class TestEvaluateDontPauseOnBreakpoint
 {
     public int count;
@@ -2138,5 +2138,15 @@ public class TestEvaluateDontPauseOnBreakpoint
     }
     public string MyMethod2() {
         return string.Format("Object {0}", count + 1);
+    }
+    public string MyMethod3() {
+        return MyMethod2();
+    }
+    public string MyCount
+    {
+        get
+        {
+            return MyMethod2();
+        }
     }
 }
