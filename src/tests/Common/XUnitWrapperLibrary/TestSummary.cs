@@ -117,8 +117,11 @@ public class TestSummary
         TotalTests++;
         var result = new TestResult(name, containingTypeName, methodName, duration, null, null, output);
         _testResults.Add(result);
-        // tempLogSw.WriteLine(result.ToXmlString());
-        statsCsvSw.WriteLine(TotalTests, PassedTests, FailedTests, SkippedTests);
+
+        statsCsvSw.WriteLine($"{TotalTests},{PassedTests},{FailedTests},{SkippedTests}");
+        tempLogSw.WriteLine(result.ToXmlString());
+        statsCsvSw.Flush();
+        tempLogSw.Flush();
     }
 
     public void ReportFailedTest(string name,
@@ -134,8 +137,11 @@ public class TestSummary
         TotalTests++;
         var result = new TestResult(name, containingTypeName, methodName, duration, ex, null, output);
         _testResults.Add(result);
-        // tempLogSw.WriteLine(result.ToXmlString());
-        statsCsvSw.WriteLine(TotalTests, PassedTests, FailedTests, SkippedTests);
+
+        statsCsvSw.WriteLine($"{TotalTests},{PassedTests},{FailedTests},{SkippedTests}");
+        tempLogSw.WriteLine(result.ToXmlString());
+        statsCsvSw.Flush();
+        tempLogSw.Flush();
     }
 
     public void ReportSkippedTest(string name,
@@ -150,8 +156,11 @@ public class TestSummary
         TotalTests++;
         var result = new TestResult(name, containingTypeName, methodName, duration, null, reason, null);
         _testResults.Add(result);
-        // tempLogSw.WriteLine(result.ToXmlString());
-        statsCsvSw.WriteLine(TotalTests, PassedTests, FailedTests, SkippedTests);
+
+        statsCsvSw.WriteLine($"{TotalTests},{PassedTests},{FailedTests},{SkippedTests}");
+        tempLogSw.WriteLine(result.ToXmlString());
+        statsCsvSw.Flush();
+        tempLogSw.Flush();
     }
 
     // NOTE: This will likely change or be removed altogether with the existence of the temp log.

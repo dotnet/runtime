@@ -154,10 +154,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
         builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
 
-        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.yml""))");
-        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.yml"");");
+        builder.Append("\n"); // Make the FullRunner.g.cs file a bit more readable.
+        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
         builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
         builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+        builder.Append("\n");
 
         builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
         // builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new(TestCount.Count);");
@@ -166,9 +168,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
         builder.AppendLine("System.Console.SetOut(outputRecorder);");
 
-        builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.yml""))");
+        builder.Append("\n");
+        builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.xml""))");
         builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
-        builder.AppendLine("statsCsvSw.WriteLine(TestCount.Count,0,0,0);");
+        builder.AppendLine("statsCsvSw.WriteLine($\"{TestCount.Count},0,0,0\");");
 
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
@@ -206,7 +209,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
 
         // Closing the 'using' statements that stream the temporary files.
-        builder.AppendLine("}");
+        builder.AppendLine("}\n");
 
         builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
         builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
