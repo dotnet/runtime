@@ -157,7 +157,7 @@ namespace Wasm.Build.Tests
 
             AddItemsPropertiesToProject(
                 projectPath,
-                extraItems: @$"<NativeFileReference Include=""undefined.c"" />",
+                extraItems: @$"<NativeFileReference Include=""undefined_xyz.c"" />",
                 extraProperties: allowUndefined ? $"<WasmAllowUndefinedSymbols>true</WasmAllowUndefinedSymbols>" : null
             );
 
