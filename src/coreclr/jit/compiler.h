@@ -4783,6 +4783,8 @@ public:
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
     PhaseStatus fgSimpleLowering();
 
+    bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
+
 #if FEATURE_LOOP_ALIGN
     PhaseStatus placeLoopAlignInstructions();
 #endif
@@ -9496,7 +9498,7 @@ public:
 // likely complicated enough that loop alignment will not impact performance.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
-// By default only single iteration loops will be unrolled
+// By default only loops with a constant iteration count less than or equal to this will be unrolled
 #define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 4
 
 #ifdef DEBUG
