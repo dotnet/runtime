@@ -1541,7 +1541,9 @@ namespace System.Globalization
             {
                 if (_iFirstDayOfWeek == undef && !GlobalizationMode.Invariant)
                 {
-                    _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+                    _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek()
+                                                                    //: GlobalizationMode.Hybrid ? NativeGetLocaleInfo(LocaleNumberData.FirstDayOfWeek)
+                                                                    : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
                 }
                 return _iFirstDayOfWeek;
             }
@@ -2286,7 +2288,9 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return 0;
 
-            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type)
+                                            //: GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type)
+                                            : IcuGetLocaleInfo(type);
         }
 
         private int GetLocaleInfoCoreUserOverride(LocaleNumberData type)
@@ -2295,7 +2299,9 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return 0;
 
-            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type)
+                                                //: GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type)
+                                                : IcuGetLocaleInfo(type);
         }
 
         private string GetLocaleInfoCoreUserOverride(LocaleStringData type)
@@ -2304,7 +2310,9 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
-            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type)
+                                                : GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type)
+                                                : IcuGetLocaleInfo(type);
         }
 
         private string GetLocaleInfoCore(LocaleStringData type, string? uiCultureName = null)
@@ -2313,7 +2321,9 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
-            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type)
+                                            : GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type, uiCultureName)
+                                            : IcuGetLocaleInfo(type, uiCultureName);
         }
 
         private string GetLocaleInfoCore(string localeName, LocaleStringData type, string? uiCultureName = null)
@@ -2322,7 +2332,9 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
-            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type)
+                                            : GlobalizationMode.Hybrid ? NativeGetLocaleInfo(localeName, type, uiCultureName)
+                                            : IcuGetLocaleInfo(localeName, type, uiCultureName);
         }
 
         private int[] GetLocaleInfoCoreUserOverride(LocaleGroupingData type)
@@ -2331,7 +2343,9 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
-            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+            return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type)
+                                                //: GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type)
+                                                : IcuGetLocaleInfo(type);
         }
 
         /// <remarks>

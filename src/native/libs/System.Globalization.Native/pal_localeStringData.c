@@ -403,6 +403,30 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
 
 /*
 PAL Function:
+GetLocaleInfoString
+
+Obtains string locale information.
+Returns 1 for success, 0 otherwise
+*/
+int32_t Native_GetLocaleInfoString(const UChar* localeName,
+                                                LocaleStringData localeStringData,
+                                                UChar* value,
+                                                int32_t valueLength,
+                                                const UChar* uiLocaleName)
+{
+#ifdef __APPLE__
+    
+       return NativeGetLocaleInfoString(localeName,
+                                        localeStringData,
+                                        value,
+                                        valueLength,
+                                        uiLocaleName);
+#endif
+   
+}
+
+/*
+PAL Function:
 GetLocaleTimeFormat
 
 Obtains time format information (in ICU format, it needs to be converted to .NET's format).

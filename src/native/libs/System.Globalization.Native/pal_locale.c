@@ -212,6 +212,29 @@ int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value,
     return UErrorCodeToBool(status);
 }
 
+int32_t Native_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
+{
+    UErrorCode status = U_ZERO_ERROR;
+
+   /* char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
+    GetLocale(localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, true, &status);
+    u_charsToUChars_safe(localeNameBuffer, value, valueLength, &status);
+
+    if (U_SUCCESS(status))
+    {
+        FixupLocaleName(value, valueLength);
+    }*/
+
+#ifdef __APPLE__
+    
+       return NativeGetLocaleName(localeName,
+                                        value,
+                                        valueLength);
+#endif
+
+    return UErrorCodeToBool(status);
+}
+
 int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLength)
 {
     char localeNameBuffer[ULOC_FULLNAME_CAPACITY];

@@ -7,7 +7,7 @@ namespace System.Globalization
 {
     internal sealed partial class CultureData
     {
-        private bool InitCultureDataCore() => InitIcuCultureDataCore();
+        private bool InitCultureDataCore() => GlobalizationMode.Hybrid ? InitNativeCultureDataCore() : InitIcuCultureDataCore();
 
         // Unix doesn't support user overrides
         partial void InitUserOverride(bool useUserOverride);

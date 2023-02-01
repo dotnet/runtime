@@ -149,6 +149,11 @@ public class AppleAppBuilderTask : Task
     public bool InvariantGlobalization { get; set; }
 
     /// <summary>
+    /// Forces the runtime to use hybrid(icu files + native functions) mode
+    /// </summary>
+    public bool HybridGlobalization { get; set; }
+
+    /// <summary>
     /// Forces the runtime to use the interpreter
     /// </summary>
     public bool ForceInterpreter { get; set; }

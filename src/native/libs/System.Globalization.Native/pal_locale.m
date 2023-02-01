@@ -5,6 +5,7 @@
 #include "pal_locale_internal.h"
 
 #import <Foundation/Foundation.h>
+#include "pal_localeStringData.h"
 
 char* DetectDefaultAppleLocaleName()
 {
@@ -27,4 +28,183 @@ char* DetectDefaultAppleLocaleName()
     
     return strdup([localeName UTF8String]);
 }
+
+/*NSLocale * NativeGetSortHandle()
+{
+    NSLocale *currentLocale = [NSLocale currentLocale];
+    
+    return currentLocale;
+}*/
+int32_t NativeGetLocaleName(const UChar* localeName,
+                                         UChar* value,
+                                         int32_t valueLength)
+{
+     UErrorCode status = U_ZERO_ERROR;
+     NSLocale *currentLocale = [NSLocale currentLocale]; 
+     value = (UChar *)[currentLocale.localeIdentifier UTF8String]; 
+     return UErrorCodeToBool(status);
+}
+
+
+int32_t NativeGetLocaleInfoString(const UChar* localeName,
+                                                LocaleStringData localeStringData,
+                                                UChar* value,
+                                                int32_t valueLength,
+                                                const UChar* uiLocaleName)
+{
+    NSLocale *currentLocale = [NSLocale currentLocale];
+    
+     UErrorCode status = U_ZERO_ERROR;
+   // char locale[ULOC_FULLNAME_CAPACITY] = "";
+   // char uiLocale[ULOC_FULLNAME_CAPACITY] = "";
+// for icu
+   // GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
+
+    if (U_FAILURE(status))
+    {
+        return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
+    }
+
+    switch (localeStringData)
+    {
+        case LocaleString_LocalizedDisplayName:
+            value = (UChar *)[[currentLocale localizedStringForLocaleIdentifier:currentLocale.localeIdentifier] UTF8String];
+            break;
+        case LocaleString_EnglishDisplayName:
+            value = (UChar *)[currentLocale.localeIdentifier UTF8String];
+            break;
+        case LocaleString_NativeDisplayName:
+            value = (UChar *)[currentLocale.localeIdentifier UTF8String];
+            break;
+        case LocaleString_LocalizedLanguageName:
+            value = (UChar *)[[currentLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
+            break;
+        case LocaleString_EnglishLanguageName:
+            value = (UChar *)[[currentLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
+            break;
+        case LocaleString_NativeLanguageName:
+            value = (UChar *)[[currentLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
+            break;
+        case LocaleString_EnglishCountryName:
+            value = (UChar *)[[currentLocale localizedStringForCountryCode:currentLocale.countryCode] UTF8String];
+            break;
+        case LocaleString_NativeCountryName:
+            value = (UChar *)[[currentLocale localizedStringForCountryCode:currentLocale.countryCode] UTF8String];
+            break;
+        case LocaleString_ThousandSeparator:
+            value = (UChar *)[currentLocale.groupingSeparator UTF8String];
+            break;
+        case LocaleString_DecimalSeparator:
+            value = (UChar *)[currentLocale.decimalSeparator UTF8String];
+            break;
+        /*case LocaleString_Digits:
+            {
+                // Native digit can be more than one 16-bit character (e.g. ccp-Cakm-BD locale which using surrogate pairs to represent the native digit).
+                // We'll separate the native digits in the returned buffer by the character '\uFFFF'.
+                int32_t symbolLength = 0;
+                status = GetDigitSymbol(locale, status, UNUM_ZERO_DIGIT_SYMBOL, 0, value, valueLength, &symbolLength);
+
+                int32_t charIndex = symbolLength;
+
+                if (U_SUCCESS(status) && (uint32_t)charIndex < (uint32_t)valueLength)
+                {
+                    value[charIndex++] = 0xFFFF;
+
+                    // symbols UNUM_ONE_DIGIT to UNUM_NINE_DIGIT are contiguous
+                    for (int32_t symbol = UNUM_ONE_DIGIT_SYMBOL; symbol <= UNUM_NINE_DIGIT_SYMBOL && charIndex < valueLength - 3; symbol++)
+                    {
+                        status = GetDigitSymbol(locale, status, (UNumberFormatSymbol)symbol, charIndex, value, valueLength, &symbolLength);
+                        charIndex += symbolLength;
+                        if (!U_SUCCESS(status) || (uint32_t)charIndex >= (uint32_t)valueLength)
+                        {
+                            break;
+                        }
+
+                        value[charIndex++] = 0xFFFF;
+                    }
+
+                    if ((uint32_t)charIndex < (uint32_t)valueLength)
+                    {
+                        value[charIndex] = 0;
+                    }
+                }
+            }
+            break;
+        case LocaleString_MonetarySymbol:
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_CURRENCY_SYMBOL, value, valueLength, NULL);
+            break;
+        case LocaleString_Iso4217MonetarySymbol:
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INTL_CURRENCY_SYMBOL, value, valueLength, NULL);
+            break;
+        case LocaleString_CurrencyEnglishName:
+            status = GetLocaleCurrencyName(locale, false, value, valueLength);
+            break;
+        case LocaleString_CurrencyNativeName:
+            status = GetLocaleCurrencyName(locale, true, value, valueLength);
+            break;
+        case LocaleString_MonetaryDecimalSeparator:
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_SEPARATOR_SYMBOL, value, valueLength, NULL);
+            break;
+        case LocaleString_MonetaryThousandSeparator:
+            status =
+                GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_GROUPING_SEPARATOR_SYMBOL, value, valueLength, NULL);
+            break;
+        case LocaleString_AMDesignator:
+            status = GetLocaleInfoAmPm(locale, true, value, valueLength);
+            break;
+        case LocaleString_PMDesignator:
+            status = GetLocaleInfoAmPm(locale, false, value, valueLength);
+            break;
+        case LocaleString_PositiveSign:
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PLUS_SIGN_SYMBOL, value, valueLength, NULL);
+            break;
+        case LocaleString_NegativeSign:
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MINUS_SIGN_SYMBOL, value, valueLength, NULL);
+            break;
+        case LocaleString_Iso639LanguageTwoLetterName:
+            status = GetLocaleIso639LanguageTwoLetterName(locale, value, valueLength);
+            break;
+        case LocaleString_Iso639LanguageThreeLetterName:
+            status = GetLocaleIso639LanguageThreeLetterName(locale, value, valueLength);
+            break;
+        case LocaleString_Iso3166CountryName:
+            status = GetLocaleIso3166CountryName(locale, value, valueLength);
+            break;
+        case LocaleString_Iso3166CountryName2:
+            status = GetLocaleIso3166CountryCode(locale, value, valueLength);
+            break;
+        case LocaleString_NaNSymbol:
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_NAN_SYMBOL, value, valueLength, NULL);
+            break;
+        case LocaleString_PositiveInfinitySymbol:
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INFINITY_SYMBOL, value, valueLength, NULL);
+            break;
+        case LocaleString_ParentName:
+        {
+            // ICU supports lang[-script][-region][-variant] so up to 4 parents
+            // including invariant locale
+            char localeNameTemp[ULOC_FULLNAME_CAPACITY];
+
+            uloc_getParent(locale, localeNameTemp, ULOC_FULLNAME_CAPACITY, &status);
+            u_charsToUChars_safe(localeNameTemp, value, valueLength, &status);
+            if (U_SUCCESS(status))
+            {
+                FixupLocaleName(value, valueLength);
+            }
+            break;
+        }
+        case LocaleString_PercentSymbol:
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERCENT_SYMBOL, value, valueLength, NULL);
+            break;
+        case LocaleString_PerMilleSymbol:
+            status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERMILL_SYMBOL, value, valueLength, NULL);
+            break;*/
+        default:
+            status = U_UNSUPPORTED_ERROR;
+            break;
+    }
+
+    return UErrorCodeToBool(status);
+}
+
 

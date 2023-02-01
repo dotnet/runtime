@@ -6,6 +6,7 @@
 
 #include "pal_locale.h"
 #include "pal_compiler.h"
+#include "pal_localeStringData.h"
 
 // Enum that corresponds to managed enum CultureData.LocaleStringData.
 // The numeric values of the enum members match their Win32 counterparts.
@@ -48,6 +49,12 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeNam
                                                           UChar* value,
                                                           int32_t valueLength,
                                                           const UChar* uiLocaleName);
+
+PALEXPORT int32_t Native_GetLocaleInfoString(const UChar* localeName,
+                                                          LocaleStringData localeStringData,
+                                                          UChar* value,
+                                                          int32_t valueLength,
+                                                          const UChar* uiLocaleName);                                                          
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                           int shortFormat, UChar* value,

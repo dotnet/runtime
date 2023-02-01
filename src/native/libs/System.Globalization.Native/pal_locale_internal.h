@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pal_icushim_internal.h"
+#include "pal_localeStringData.h"
 
 /*
 Function:
@@ -60,4 +61,34 @@ DetectDefaultSystemLocaleName
 Detects the default locale string for Apple platforms
 */
 char* DetectDefaultAppleLocaleName(void);
+
+/*
+Function:
+NativeGetSortHandle
+
+NativeGetSortHandle for Apple platforms
+*/
+//NSLocale* NativeGetSortHandle(void);
+
+/*
+Function:
+NativeGetLocaleName
+
+NativeGetLocaleName for Apple platforms
+*/
+int32_t NativeGetLocaleName(const UChar* localeName,
+                                         UChar* value,
+                                         int32_t valueLength);
+
+/*
+Function:
+NativeGetLocaleInfoString
+
+NativeGetLocaleInfoString for Apple platforms
+*/
+int32_t NativeGetLocaleInfoString(const UChar* localeName,
+                                                LocaleStringData localeStringData,
+                                                UChar* value,
+                                                int32_t valueLength,
+                                                const UChar* uiLocaleName);
 #endif
