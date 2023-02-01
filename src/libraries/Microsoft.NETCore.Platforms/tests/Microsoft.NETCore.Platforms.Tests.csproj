@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net472</TargetFrameworks>
+    <!-- Don't build for NETFramework during source-build. -->
+    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
   </PropertyGroup>
 
