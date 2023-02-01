@@ -11,8 +11,12 @@
   </PropertyGroup>
 
   <Target Name="VerifyAssemblySupportsDocsXmlGeneration">
-    <Error Condition="'$(UseIntellisensePackageDocXmlFile)' == 'false' and '$(IsPartialFacadeAssembly)' == 'true'" Text="Cannot currently generate full xml documentation for an assembly that is a partial facade." />
-    <Error Condition="'$(UseIntellisensePackageDocXmlFile)' == 'false' and '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''" Text="Cannot currently generate full xml documentation for an assembly that generates PNSE." />
+    <Error
+      Condition="'$(UseIntellisensePackageDocXmlFile)' == 'false' and '$(IsPartialFacadeAssembly)' == 'true'"
+      Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for partial facade assemblies: $(AssemblyName)" />
+    <Error
+      Condition="'$(UseIntellisensePackageDocXmlFile)' == 'false' and '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''"
+      Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for assemblies that throw PlatformNotSupportedException: $(AssemblyName)" />
   </Target>
 
   <ItemGroup>
