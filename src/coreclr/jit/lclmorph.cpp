@@ -626,8 +626,8 @@ public:
                     }
                     else
                     {
-                       *use = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, TYP_UINT);
-                       *use = m_compiler->gtNewCastNode(TYP_LONG, *use, varTypeIsSigned(node), TYP_LONG);
+                       *use = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
+                       *use = m_compiler->gtNewCastNode(TYP_LONG, *use, varTypeIsUnsigned(node), TYP_LONG);
                     }
 
                     DEBUG_DESTROY_NODE(node);
