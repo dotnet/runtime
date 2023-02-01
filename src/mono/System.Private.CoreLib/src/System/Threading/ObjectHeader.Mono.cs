@@ -220,7 +220,6 @@ internal static class ObjectHeader
     public static bool TryGetHashCode(object? o, out int hash)
     {
         hash = 0;
-#if false
         if (o == null)
             return true;
 
@@ -230,13 +229,13 @@ internal static class ObjectHeader
                 ref MonoThreadsSync mon = ref lw.GetInflatedLock();
                 ref int hashRef = ref SyncBlock.HashCode(ref mon);
                 hash = hashRef;
-                return true;
+                return false;
             } else {
                 hash = lw.FlatHash;
                 return true;
             }
         }
-#endif
+        GC.KeepAlive (o);
         return false;
     }
 
