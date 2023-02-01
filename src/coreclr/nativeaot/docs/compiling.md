@@ -153,3 +153,7 @@ Alpine
 ```sh
 apk add numactl-dev
 ```
+
+## NativeAOT on NixOS
+
+NativeAOT relies on hard-coded paths, such as `/lib64/ld-linux-x86-64.so.2`, which do not exist on NixOS. [Here](https://nixos.wiki/wiki/DotNET#NativeAOT) is an instruction for NixOS. 
