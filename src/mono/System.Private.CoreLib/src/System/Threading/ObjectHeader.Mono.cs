@@ -211,42 +211,6 @@ internal static class ObjectHeader
         return false;
     }
 
-#if false // need to implement alloc_mon/discard_mon
-    private static void Inflate(object o)
-    {
-        unsafe
-        {
-            MonoThreadsSync *mon = alloc_mon();
-            LockWord nlw = LockWord.NewInflated (mon);
-            LockWord old_lw = GetLockWord (ref o);
-            while (true)
-            {
-                if (old_lw.IsInflated)
-                    break;
-                else if (old_lw.HasHash)
-                {
-                    mon->hash_code = old_lw.FlatHash;
-                    mon->status = SyncSetOwner (mon->status, 0);
-                    nlw = nlw.SetHasHash();
-                    
-                }
-                else if (old_lw.IsFree)
-                {
-                    mon->status = SyncSetOwner (mon->status, old_lw.GetOwner());
-                    mon->nest = old_lw.FlatNest;
-                }
-                Interlocked.MemoryBarrier();
-                IntPtr prev = LockWordCompareExchange(ref o, nlw, old_lw);
-                if (prev == old_lw.AsIntPtr)
-                    return; // success
-                old_lw.SetFromIntPtr(prev); // go around one more time
-            }
-            // someone else inflated it first
-            discard_mon (mon);
-        }
-    }
-#endif
-
     private static bool TryEnterInflatedFast(object o, ref bool lockTaken)
     {
         LockWord lw = GetLockWord (ref o);
@@ -303,11 +267,6 @@ internal static class ObjectHeader
                 return true;
             } else {
                 return false;
-#if false
-                // someone acquired it in the meantime or put in a hash
-                Inflate(o);
-                return TryEnterInflatedFast(o, ref lockTaken);
-#endif
             }
         }
         else if (lw.IsInflated)
@@ -317,38 +276,9 @@ internal static class ObjectHeader
         else if (lw.IsFlat)
         {
             return false;
-#if false
-            int owner = Thread.CurrentThread.GetSmallId();
-            if (lw.GetOwner() == owner)
-            {
-                if (lw.IsMaxNest)
-                {
-                    InflateOwned(o);
-                    return TryEnterInflatedFast(o, ref lockTaken);
-                }
-                else
-                {
-                    LockWord nlw = lw.IncrementNest();
-                    IntPtr prev = LockWordCompareExchange(ref o, nlw, lw);
-                    if (prev != lw.AsIntPtr)
-                    {
-                        // Someone else inflated it in the meantime
-                        return TryEnterInflatedFast(o, ref lockTaken);
-                    }
-                    lockTaken = true;
-                    return true;
-                }
-            }
-            Inflate(o);
-            return TryEnterInflatedFast(o, refLockTaken);
-#endif
         }
         Debug.Assert (lw.HasHash);
         return false;
-#if false
-        Inflate(o);
-        return TryEnterInflatedFast(o, ref lockTaken);
-#endif
     }
 
     // true if obj is owned by the current thread
