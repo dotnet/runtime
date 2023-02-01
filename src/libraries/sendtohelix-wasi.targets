@@ -25,7 +25,6 @@
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
     <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/wasmtime:$PATH" />
-    <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="find $HELIX_CORRELATION_PAYLOAD/wasmtime" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
