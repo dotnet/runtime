@@ -10,7 +10,8 @@
   <Target Name="BuildSampleInTree"
       Inputs="
       Program.cs;
-      $(_SampleProject)
+      $(_SampleProject);
+      $(MSBuildProjectFile)
       "
       Outputs="
       bin/publish/runtime/native/dotnet.wasm;
@@ -23,6 +24,7 @@
       <_ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</_ScriptExt>
       <_Dotnet>$(RepoRoot)dotnet$(_ScriptExt)</_Dotnet>
       <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
+      <_SampleProject Condition="'$(_SampleProject)' == ''">$(MSBuildProjectFile)</_SampleProject>
       <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
     </PropertyGroup>
     <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=wasi $(_AOTFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
