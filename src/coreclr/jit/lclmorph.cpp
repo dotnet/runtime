@@ -595,8 +595,6 @@ public:
                     }
                     else
                     {
-                        GenTree* cast = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
-
                         node = *use = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
                     }
 
