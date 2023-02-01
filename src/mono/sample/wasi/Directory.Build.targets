@@ -4,6 +4,8 @@
 
   <PropertyGroup>
     <InstallWasmtimeForTests>true</InstallWasmtimeForTests>
+    <_SampleProject Condition="'$(_SampleProject)' == ''">$(MSBuildProjectFile)</_SampleProject>
+      <_SampleAssembly Condition="'$(_SampleAssembly)' == ''">$(TargetFileName)</_SampleAssembly>
   </PropertyGroup>
 
   <Target Name="RunSampleWithWasmtime" DependsOnTargets="Build">
@@ -11,7 +13,7 @@
       TODOWASI - - tcplisten localhost:64000 - - env DEBUGGER_FD=4
     -->
     <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
-          Command="$(WasmtimeDir)wasmtime --dir . $([System.IO.Path]::ChangeExtension($(_SampleAssembly), '.wasm'))" IgnoreExitCode="true" />
+          Command="$(WasmtimeDir)wasmtime.exe --dir . $([System.IO.Path]::ChangeExtension($(_SampleAssembly), '.wasm'))" IgnoreExitCode="true" />
   </Target>
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
