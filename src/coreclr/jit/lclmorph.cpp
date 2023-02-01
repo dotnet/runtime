@@ -624,6 +624,13 @@ public:
                     {
                        *use = lclVar;
                     }
+                    else if (user->OperIs(GT_CAST))
+                    {
+                       *use                       = lclVar;
+                       user->AsCast()->gtCastType = node->TypeGet();
+                       user->ClearUnsigned();
+                       user->ChangeType(TYP_INT);
+                    }
                     else
                     {
                        *use = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, node->TypeGet());
