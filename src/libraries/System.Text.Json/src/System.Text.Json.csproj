@@ -127,6 +127,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\JsonSerializerContext.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonUnknownDerivedTypeHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.Converters.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.Helpers.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\DefaultJsonTypeInfoResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\IJsonTypeInfoResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonDerivedType.cs" />
@@ -135,7 +136,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.WriteHelpers.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoKind.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\CustomJsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriterCache.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />
@@ -249,6 +249,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonCollectionInfoValuesOfTCollection.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Converters.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Helpers.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonObjectInfoValuesOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonParameterInfoValues.cs" />
@@ -257,7 +258,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonPropertyInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonPropertyInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonPropertyInfoValuesOfT.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\SourceGenJsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.Cache.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.cs" />
@@ -265,7 +265,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\ParameterRef.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\PolymorphicTypeResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\PropertyRef.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionJsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionEmitCachingMemberAccessor.Cache.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionEmitCachingMemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionEmitMemberAccessor.cs" />
