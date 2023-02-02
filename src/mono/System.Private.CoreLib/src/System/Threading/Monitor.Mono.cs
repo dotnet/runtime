@@ -128,9 +128,9 @@ namespace System.Threading
 
             // fast path
             if (ObjectHeader.TryEnterFast(obj)) {
-		lockTaken = true;
+                lockTaken = true;
                 return;
-	    }
+            }
 
             try_enter_with_atomic_var(obj, timeout, true, ref lockTaken);
         }
