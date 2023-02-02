@@ -107,7 +107,7 @@ jobs:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs'
+        crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl x64
