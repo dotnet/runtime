@@ -344,7 +344,7 @@ TEST(mono_type_get_name_full_returns_assembly_qualified_name)
     MonoClass *klass = GetClassHelper(kTestDLLNameSpace, kTestClassName);
     GET_AND_CHECK(type, mono_class_get_type(klass));
     GET_AND_CHECK(name , mono_type_get_name_full(type, MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED));
-    CHECK(strcmp("TestDll.TestClass, coreclr-test, Version=7.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35", name) == 0);
+    CHECK(strcmp("TestDll.TestClass, coreclr-test, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", name) == 0);
     mono_unity_g_free(name);
 }
 
@@ -568,9 +568,9 @@ TEST(type_forwarder_lookup_results_in_identical_class)
 {
     MonoClass *directLookup = GetClassHelper(kTestDLLNameSpace, kTestClassName);
 #if defined(_DEBUG)
-    std::string testDllPath = abs_path_from_file("../../artifacts/bin/forwarder-test/Debug/net6.0/forwarder-test.dll");
+    std::string testDllPath = abs_path_from_file("../forwarder-test/bin/Debug/net7.0/forwarder-test.dll");
 #else
-    std::string testDllPath = abs_path_from_file("../../artifacts/bin/forwarder-test/Release/net6.0/forwarder-test.dll");
+    std::string testDllPath = abs_path_from_file("../forwarder-test/bin/Release/net7.0/forwarder-test.dll");
 #endif
     MonoAssembly *forwarderAssembly = mono_domain_assembly_open (g_domain, testDllPath.c_str());
     GET_AND_CHECK(forwarderImage, mono_assembly_get_image(forwarderAssembly));
@@ -2412,9 +2412,9 @@ void SetupMono(Mode mode)
 {
     g_Mode = mode;
 #if defined(_DEBUG)
-    std::string testDllPath = abs_path_from_file("../../artifacts/bin/coreclr-test/Debug/net6.0/coreclr-test.dll");
+    std::string testDllPath = abs_path_from_file("../coreclr-test/bin/Debug/net7.0/coreclr-test.dll");
 #else
-    std::string testDllPath = abs_path_from_file("../../artifacts/bin/coreclr-test/Release/net6.0/coreclr-test.dll");
+    std::string testDllPath = abs_path_from_file("../coreclr-test/bin/Release/net7.0/coreclr-test.dll");
 #endif
 
     std::string monoLibFolder;
@@ -2494,9 +2494,9 @@ void SetupMono(Mode mode)
     if (mode == CoreCLR)
     {
 #if defined(_DEBUG)
-        assembliesPaths = abs_path_from_file("../../artifacts/bin/unity-embed-host/Debug/net6.0");
+        assembliesPaths = abs_path_from_file("../unity-embed-hos/bin/Debug/net7.0");
 #else
-        assembliesPaths = abs_path_from_file("../../artifacts/bin/unity-embed-host/Release/net6.0");
+        assembliesPaths = abs_path_from_file("../unity-embed-hos/bin/Release/net7.0");
 #endif
         auto assembliesPathsChar = assembliesPaths.c_str();
         assembliesPathsNullTerm = new char[strlen(assembliesPathsChar) + 2];

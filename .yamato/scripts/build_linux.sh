@@ -59,8 +59,8 @@ echo "Unity: Copying built artifacts"
 echo "*******************************"
 echo
 cp unity/unitygc/$configuration/libunitygc.so artifacts/bin/microsoft.netcore.app.runtime.linux-x64/$configuration/runtimes/linux-x64/native
-cp artifacts/bin/unity-embed-host/$configuration/net6.0/unity-embed-host.dll artifacts/bin/microsoft.netcore.app.runtime.linux-x64/$configuration/runtimes/linux-x64/lib/net7.0
-cp artifacts/bin/unity-embed-host/$configuration/net6.0/unity-embed-host.dll artifacts/bin/microsoft.netcore.app.runtime.linux-x64/$configuration/runtimes/linux-x64/lib/net7.0
+cp unity/unity-embed-host/bin/$configuration/net7.0/unity-embed-host.dll artifacts/bin/microsoft.netcore.app.runtime.linux-x64/$configuration/runtimes/linux-x64/lib/net7.0
+cp unity/unity-embed-host/bin/$configuration/net7.0/unity-embed-host.dll artifacts/bin/microsoft.netcore.app.runtime.linux-x64/$configuration/runtimes/linux-x64/lib/net7.0
 cp LICENSE.md artifacts/bin/microsoft.netcore.app.runtime.linux-x64/$configuration/runtimes/linux-x64/.
 artifacts/7za-linux-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.linux-x64/$configuration/runtimes/linux-x64/*
 
