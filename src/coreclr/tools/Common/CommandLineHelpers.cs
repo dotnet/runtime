@@ -74,10 +74,10 @@ namespace System.CommandLine
                 return TargetOS.Windows;
             else if (token.Equals("linux", StringComparison.OrdinalIgnoreCase))
                 return TargetOS.Linux;
-            else if (token.Equals("osx", StringComparison.OrdinalIgnoreCase))
-                return TargetOS.OSX;
             else if (token.Equals("freebsd", StringComparison.OrdinalIgnoreCase))
                 return TargetOS.FreeBSD;
+            else if (token.Equals("osx", StringComparison.OrdinalIgnoreCase))
+                return TargetOS.OSX;
             else if (token.Equals("ios", StringComparison.OrdinalIgnoreCase))
                 return TargetOS.iOS;
             else if (token.Equals("iossimulator", StringComparison.OrdinalIgnoreCase))
