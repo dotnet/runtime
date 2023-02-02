@@ -1332,13 +1332,22 @@ function generate_wasm_body (
 
             case MintOpcode.MINT_ADD_MUL_I4_IMM:
             case MintOpcode.MINT_ADD_MUL_I8_IMM: {
+                const isI32 = opcode === MintOpcode.MINT_ADD_MUL_I4_IMM;
                 builder.local("pLocals");
-                append_ldloc(builder, getArgU16(ip, 2), opcode === MintOpcode.MINT_ADD_MUL_I4_IMM ? WasmOpcode.i32_load : WasmOpcode.i64_load);
-                builder.i32_const(getArgI16(ip, 3));
+                append_ldloc(builder, getArgU16(ip, 2), isI32 ? WasmOpcode.i32_load : WasmOpcode.i64_load);
+                const rhs = getArgI16(ip, 3),
+                    multiplier = getArgI16(ip, 4);
+                if (isI32)
+                    builder.i32_const(rhs);
+                else
+                    builder.i52_const(rhs);
                 builder.appendU8(WasmOpcode.i32_add);
-                builder.i32_const(getArgI16(ip, 4));
+                if (isI32)
+                    builder.i32_const(multiplier);
+                else
+                    builder.i52_const(multiplier);
                 builder.appendU8(WasmOpcode.i32_mul);
-                append_stloc_tail(builder, getArgU16(ip, 1), opcode === MintOpcode.MINT_ADD_MUL_I4_IMM ? WasmOpcode.i32_store : WasmOpcode.i64_store);
+                append_stloc_tail(builder, getArgU16(ip, 1), isI32 ? WasmOpcode.i32_store : WasmOpcode.i64_store);
                 break;
             }
 
