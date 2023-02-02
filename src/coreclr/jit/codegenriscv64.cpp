@@ -7631,7 +7631,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         if (genIsValidIntReg(varDsc->GetArgReg()))
                         {
-                            assert(varDsc->GetArgReg() >= REG_ARG_FIRST);
+                            assert(varDsc->GetArgReg() >= REG_ARG_FIRST && varDsc->GetArgReg() <= REG_ARG_LAST);
                             regArg[varDsc->GetArgReg() - REG_ARG_FIRST]     = varDsc->GetArgReg();
                             regArgInit[varDsc->GetArgReg() - REG_ARG_FIRST] = varDsc->GetArgInitReg();
                             if (varDsc->TypeGet() == TYP_INT)
@@ -7939,7 +7939,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
                     break;
                 }
-                else if (regArgInit[i] > regArg[i])
+                else if (regArgInit[i] > regArg[i] ||
+                         (regArgInit[i] >= REG_T0 && regArgInit[i] <= REG_S1)) // TODO NEED TO VERIFY
                 {
                     GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
                 }
@@ -8013,7 +8014,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                                                   true);
                         break;
                     }
-                    else if (regArgInit[i] > regArg[i])
+                    else if (regArgInit[i] > regArg[i] || (regArgInit[i] >= REG_F0 && regArgInit[i] <= REG_F9)) // TODO NEED TO VERIFY
                     {
                         GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[i],
                                                   (regNumber)regArg[i], (regNumber)regArg[i]);

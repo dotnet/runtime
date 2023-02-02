@@ -1102,12 +1102,12 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
             emitIns_R_I(INS_lui, size, reg, ((imm + 0x800) >> 12));
             if ((imm & 0xFFF) != 0)
             {
-                emitIns_R_R_I(INS_addi, size, reg, reg, imm & 0xFFF);
+                emitIns_R_R_I(INS_addiw, size, reg, reg, imm & 0xFFF);
             }
         }
         else
         {
-            emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
+            emitIns_R_R_I(INS_addiw, size, reg, REG_R0, imm & 0xFFF);
         }
     }
     else
