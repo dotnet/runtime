@@ -37,6 +37,11 @@ namespace DebuggerTests
 #else
             => WasmHost.Firefox;
 #endif
+
+        public static bool WasmMultiThreaded => EnvironmentVariables.WasmTestsUsingVariant == "multithreaded";
+
+        public static bool WasmSingleThreaded => !WasmMultiThreaded;
+
         public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
 
         public static bool RunningOnChromeAndLinux => RunningOn == WasmHost.Chrome && PlatformDetection.IsLinux;
@@ -144,15 +149,17 @@ namespace DebuggerTests
         {
             Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
              {
-                 Func<string, (string, Task<Result>)> getInitCmdFn = (cmd) => (cmd, client.SendCommand(cmd, null, token));
+                 Func<string, JObject, (string, Task<Result>)> getInitCmdFn = (cmd, args) => (cmd, client.SendCommand(cmd, args, token));
                  var init_cmds = new List<(string, Task<Result>)>
                  {
-                    getInitCmdFn("Profiler.enable"),
-                    getInitCmdFn("Runtime.enable"),
-                    getInitCmdFn("Debugger.enable"),
-                    getInitCmdFn("Runtime.runIfWaitingForDebugger")
+                    getInitCmdFn("Profiler.enable", null),
+                    getInitCmdFn("Runtime.enable", null),
+                    getInitCmdFn("Debugger.enable", null),
+                    getInitCmdFn("Runtime.runIfWaitingForDebugger", null),
+                    getInitCmdFn("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 })),
+                    getInitCmdFn("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }))
+                    //getInitCmdFn("ServiceWorker.enable", null)
                  };
-
                  return init_cmds;
              };
 
@@ -182,6 +189,7 @@ namespace DebuggerTests
         {
             var script_id = args?["scriptId"]?.Value<string>();
             var url = args["url"]?.Value<string>();
+            script_id += args["sessionId"]?.Value<string>();
             if (script_id.StartsWith("dotnet://"))
             {
                 var dbgUrl = args["dotNetUrl"]?.Value<string>();
@@ -322,7 +330,7 @@ namespace DebuggerTests
 
         internal virtual void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
         {
-            var loc_str = $"{ scripts[location["scriptId"].Value<string>()] }" +
+            var loc_str = $"{ scripts[location["scriptId"].Value<string>()+cli.CurrentSessionId.sessionId] }" +
                 $"#{ location["lineNumber"].Value<int>() }" +
                 $"#{ location["columnNumber"].Value<int>() }";
 

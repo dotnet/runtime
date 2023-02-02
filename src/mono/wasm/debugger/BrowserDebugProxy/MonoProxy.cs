@@ -13,6 +13,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using BrowserDebugProxy;
+using static System.Formats.Asn1.AsnWriter;
+using System.Reflection;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -152,9 +154,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Debugger.paused":
                     {
-                        // Don't process events from sessions we aren't tracking
-                        if (!contexts.ContainsKey(sessionId))
-                            return false;
+                        if (args["asyncStackTraceId"] != null)
+                        {
+                            if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                                return false;
+                            if (context.CopyDataFromParentContext())
+                            {
+                                var store = await LoadStore(sessionId, true, token);
+                                foreach (var source in store.AllSources())
+                                {
+                                    await OnSourceFileAdded(sessionId, source, context, token, false);
+                                }
+                            }
+                        }
 
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
                         string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
@@ -175,17 +187,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                                         await ReloadSymbolsFromSymbolServer(sessionId, GetContext(sessionId), token);
                                     return true;
                                 }
-                            case "mono_wasm_fire_debugger_agent_message":
-                            case "_mono_wasm_fire_debugger_agent_message":
+                            case "mono_wasm_fire_debugger_agent_message_with_data_to_pause":
+                            case "_mono_wasm_fire_debugger_agent_message_with_data_to_pause":
+                                try
                                 {
-                                    try {
-                                        return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
-                                    }
-                                    catch (Exception) //if the page is refreshed maybe it stops here.
-                                    {
-                                        await SendResume(sessionId, token);
-                                        return true;
-                                    }
+                                    return await OnReceiveDebuggerAgentEvent(sessionId, args, await GetLastDebuggerAgentBuffer(sessionId, args, token), token);
+                                }
+                                catch (Exception) //if the page is refreshed maybe it stops here.
+                                {
+                                    await SendResume(sessionId, token);
+                                    return true;
                                 }
                         }
                         break;
@@ -198,8 +209,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Target.attachedToTarget":
                     {
-                        if (args["targetInfo"]["type"]?.ToString() == "page")
+                        var targetType = args["targetInfo"]["type"]?.ToString();
+                        if (targetType == "page")
                             await AttachToTarget(new SessionId(args["sessionId"]?.ToString()), token);
+                        else if (targetType == "worker")
+                            CreateWorkerExecutionContext(new SessionId(args["sessionId"]?.ToString()), new SessionId(parms["sessionId"]?.ToString()));
                         break;
                     }
 
@@ -212,6 +226,22 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return false;
         }
+
+        protected void CreateWorkerExecutionContext(SessionId workerSessionId, SessionId originSessionId)
+        {
+            if (!contexts.TryGetValue(originSessionId, out ExecutionContext context))
+            {
+                logger.LogDebug($"Origin sessionId does not exist - {originSessionId}");
+                return;
+            }
+            if (contexts.ContainsKey(workerSessionId))
+            {
+                logger.LogDebug($"Worker sessionId already exists - {originSessionId}");
+                return;
+            }
+            contexts[workerSessionId] = context.CreateChildAsyncExecutionContext(workerSessionId);
+        }
+
         protected virtual async Task SendResume(SessionId id, CancellationToken token)
         {
             await SendCommand(id, "Debugger.resume", new JObject(), token);
@@ -1077,6 +1107,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 data,
                 hitBreakpoints = bp_list,
             });
+            if (args["asyncStackTraceId"] != null)
+                o["asyncStackTraceId"] = args["asyncStackTraceId"];
             if (!await EvaluateCondition(sessionId, context, context.CallStack.First(), bp, token))
             {
                 context.ClearState();
@@ -1092,16 +1124,29 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
         }
 
-        internal async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
+        internal async Task<Result> GetLastDebuggerAgentBuffer(SessionId sessionId, JObject args, CancellationToken token)
+        {
+            if (args?["callFrames"].Value<JArray>().Count == 0 || args["callFrames"][0]["scopeChain"].Value<JArray>().Count == 0)
+                return Result.Err($"Unexpected callFrames {args}");
+            var argsNew = JObject.FromObject(new
+            {
+                objectId = args["callFrames"][0]["scopeChain"][0]["object"]["objectId"].Value<string>(),
+            });
+            Result res = await SendCommand(sessionId, "Runtime.getProperties", argsNew, token);
+            return res;
+        }
+
+        internal async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, Result debuggerAgentBuffer, CancellationToken token)
         {
             var debuggerAgentBufferTask = SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
             SaveLastDebuggerAgentBufferReceivedToContext(sessionId, debuggerAgentBufferTask);
-            var res = await debuggerAgentBufferTask;
-            if (!res.IsOk)
+            if (!debuggerAgentBuffer.IsOk || debuggerAgentBuffer.Value?["result"].Value<JArray>().Count == 0)
+            {
+                logger.LogTrace($"Unexpected DebuggerAgentBufferReceived {debuggerAgentBuffer}");
                 return false;
-
+            }
             ExecutionContext context = GetContext(sessionId);
-            byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
+            byte[] newBytes = Convert.FromBase64String(debuggerAgentBuffer.Value?["result"]?[0]?["value"]?["value"]?.Value<string>());
             using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
             retDebuggerCmdReader.ReadBytes(11); //skip HEADER_LEN
             retDebuggerCmdReader.ReadByte(); //suspend_policy
@@ -1157,6 +1202,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                         else if (event_kind == EventKind.Breakpoint)
                             context.PauseKind = "breakpoint";
                         Breakpoint bp = context.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
+                        if (bp == null && context.ParentContext != null)
+                        {
+                            bp = context.ParentContext.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
+                        }
                         if (request_id == context.TempBreakpointForSetNextIP)
                         {
                             context.TempBreakpointForSetNextIP = -1;
@@ -1473,12 +1522,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return bp;
         }
 
-        internal virtual async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
+        internal virtual async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token, bool resolveBreakpoints = true)
         {
             JObject scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
             // Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
             await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
-
+            if (!resolveBreakpoints)
+                return;
             foreach (var req in context.BreakpointRequests.Values)
             {
                 if (req.TryResolve(source))

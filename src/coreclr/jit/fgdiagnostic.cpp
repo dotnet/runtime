@@ -785,7 +785,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
         return false;
     }
 
-    JITDUMP("Dumping flow graph %s phase %s\n", (pos == PhasePosition::PrePhase) ? "before" : "after",
+    JITDUMP("Writing out flow graph %s phase %s\n", (pos == PhasePosition::PrePhase) ? "before" : "after",
             PhaseNames[phase]);
 
     bool        validWeights  = fgHaveValidEdgeWeights;
@@ -2664,8 +2664,8 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             break;
 
         case BBJ_LEAVE:
-            // We may see BBJ_LEAVE preds in unimported blocks if we haven't done cleanup yet.
-            if (!comp->compPostImportationCleanupDone && ((blockPred->bbFlags & BBF_IMPORTED) == 0))
+            // We may see BBJ_LEAVE preds if we haven't done cleanup yet.
+            if (!comp->compPostImportationCleanupDone)
             {
                 return true;
             }
@@ -2907,7 +2907,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         // Under OSR, if we also are keeping the original method entry around,
         // mark that as implicitly referenced as well.
-        if (opts.IsOSR() && (block == fgEntryBB) && ((block->bbFlags & BBF_IMPORTED) != 0))
+        if (opts.IsOSR() && (block == fgEntryBB) && fgOSROriginalEntryBBProtected)
         {
             blockRefs += 1;
         }

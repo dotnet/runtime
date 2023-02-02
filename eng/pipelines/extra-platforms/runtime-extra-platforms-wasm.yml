@@ -99,7 +99,7 @@ jobs:
         - WasmTestOnBrowser
         - WasmTestOnNodeJS
 
-  # Library tests with full threading 
+  # Library tests with full threading
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
@@ -211,6 +211,17 @@ jobs:
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       # ff tests are unstable currently
       shouldContinueOnError: true
+
+  - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+        - Browser_wasm_win
+      extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true
+      nameSuffix: DebuggerTests_MultiThreaded
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
   # Disable for now
   #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml

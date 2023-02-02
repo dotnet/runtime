@@ -3687,6 +3687,7 @@ private:
 public:
     void impInit();
     void impImport();
+    void impFixPredLists();
 
     CORINFO_CLASS_HANDLE impGetRefAnyClass();
     CORINFO_CLASS_HANDLE impGetRuntimeArgumentHandle();
@@ -4397,6 +4398,7 @@ public:
     DomTreeNode* fgSsaDomTree;
 
     bool fgBBVarSetsInited;
+    bool fgOSROriginalEntryBBProtected;
 
     // Allocate array like T* a = new T[fgBBNumMax + 1];
     // Using helper so we don't keep forgetting +1.
@@ -8415,6 +8417,8 @@ private:
         CORINFO_CLASS_HANDLE SIMDNIntHandle;
         CORINFO_CLASS_HANDLE SIMDNUIntHandle;
 
+        CORINFO_CLASS_HANDLE SIMDPlaneHandle;
+        CORINFO_CLASS_HANDLE SIMDQuaternionHandle;
         CORINFO_CLASS_HANDLE SIMDVector2Handle;
         CORINFO_CLASS_HANDLE SIMDVector3Handle;
         CORINFO_CLASS_HANDLE SIMDVector4Handle;
@@ -8492,23 +8496,54 @@ private:
             switch (simdType)
             {
                 case TYP_SIMD8:
+                {
                     return m_simdHandleCache->SIMDVector2Handle;
+                }
+
                 case TYP_SIMD12:
+                {
                     return m_simdHandleCache->SIMDVector3Handle;
+                }
+
                 case TYP_SIMD16:
-                    if ((getSIMDVectorType() == TYP_SIMD32) ||
-                        (m_simdHandleCache->SIMDVector4Handle != NO_CLASS_HANDLE))
+                {
+                    // We order the checks roughly by expected hit count so early exits are possible
+
+                    if (simdBaseJitType != CORINFO_TYPE_FLOAT)
+                    {
+                        // We could be Vector<T>, so handle below
+                        assert(getSIMDVectorType() == TYP_SIMD16);
+                        break;
+                    }
+
+                    if (m_simdHandleCache->SIMDVector4Handle != NO_CLASS_HANDLE)
                     {
                         return m_simdHandleCache->SIMDVector4Handle;
                     }
-                    break;
+
+                    if (m_simdHandleCache->SIMDQuaternionHandle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->SIMDQuaternionHandle;
+                    }
+
+                    if (m_simdHandleCache->SIMDPlaneHandle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->SIMDPlaneHandle;
+                    }
+
+                    return NO_CLASS_HANDLE;
+                }
+
                 case TYP_SIMD32:
                     break;
+
                 default:
                     unreached();
             }
         }
+
         assert(emitTypeSize(simdType) <= largestEnregisterableStructSize());
+
         switch (simdBaseJitType)
         {
             case CORINFO_TYPE_FLOAT:
@@ -8538,6 +8573,7 @@ private:
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
+
         return NO_CLASS_HANDLE;
     }
 
@@ -8615,9 +8651,39 @@ private:
     // actually be declared as having fields.
     bool isOpaqueSIMDType(CORINFO_CLASS_HANDLE structHandle) const
     {
-        return ((m_simdHandleCache != nullptr) && (structHandle != m_simdHandleCache->SIMDVector2Handle) &&
-                (structHandle != m_simdHandleCache->SIMDVector3Handle) &&
-                (structHandle != m_simdHandleCache->SIMDVector4Handle));
+        // We order the checks roughly by expected hit count so early exits are possible
+
+        if (m_simdHandleCache == nullptr)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDVector4Handle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDVector3Handle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDVector2Handle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDQuaternionHandle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDPlaneHandle)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     // Returns true if the lclVar is an opaque SIMD type.
