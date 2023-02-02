@@ -8,7 +8,6 @@
 
 #ifdef ENABLE_PERFTRACING
 
-#include "gcenv.h"
 #include "EmptyContainers.h"
 
 #ifdef DEBUG

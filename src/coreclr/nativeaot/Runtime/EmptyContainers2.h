@@ -18,9 +18,7 @@ class DefaultSHashTraits_EP
 public:
     typedef COUNT_T count_t;
     typedef ELEMENT element_t;
-    typedef DPTR(element_t) PTR_element_t;   // by default SHash is DAC-aware. For RS
-                                             // only SHash use NonDacAwareSHashTraits
-                                             // (which typedefs element_t* PTR_element_t)
+    typedef element_t* PTR_element_t;
 
     static const count_t s_growth_factor_numerator = 3;
     static const count_t s_growth_factor_denominator = 2;
@@ -37,7 +35,7 @@ public:
     static bool IsNull(const ELEMENT &e) { return e == (const ELEMENT) 0; }
     static bool IsDeleted(const ELEMENT &e) 
     { 
-        PalDebugBreak();
+        //PalDebugBreak();
         return false;
         //return e == (const ELEMENT) -1;
     }
@@ -133,8 +131,8 @@ class SHash_EP : public TRAITS
 
     bool Reallocate(count_t newTableSize)
     {
-        ASSERT(newTableSize >=
-                    (count_t) (GetCount() * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator));
+        // ASSERT(newTableSize >=
+        //             (count_t) (GetCount() * TRAITS::s_density_factor_denominator / TRAITS::s_density_factor_numerator));
 
         // Allocation size must be a prime number.  This is necessary so that hashes uniformly
         // distribute to all indices, and so that chaining will visit all indices in the hash table.
@@ -317,12 +315,12 @@ class SHash_EP : public TRAITS
     
     bool AddNoThrow(const element_t &element)
     {
-        PalDebugBreak();
+        //PalDebugBreak();
         return false;
     }
     bool AddOrReplaceNoThrow(const element_t &element)
     {
-        PalDebugBreak();
+        //PalDebugBreak();
         return false;
     }
 
@@ -333,13 +331,13 @@ class SHash_EP : public TRAITS
 
     void Remove(key_t key)
     {
-        PalDebugBreak();
+        //PalDebugBreak();
     }
 
     // Remove the specific element.
     void Remove(Iterator& i)
     {
-        PalDebugBreak();
+        //PalDebugBreak();
     }
     void RemoveAll()
     {
@@ -535,13 +533,13 @@ public:
 
     key_t const & Key() const
     {
-        PalDebugBreak();
+        //PalDebugBreak();
         return *(new KEY());
     }
 
     value_t const & Value() const
     {
-        PalDebugBreak();
+        //PalDebugBreak();
         return *(new VALUE());
     }
 };

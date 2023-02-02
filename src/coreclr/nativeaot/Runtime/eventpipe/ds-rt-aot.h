@@ -11,49 +11,49 @@
 #include <eventpipe/ds-dump-protocol.h>
 
 #undef DS_LOG_ALWAYS_0
-#define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
+#define DS_LOG_ALWAYS_0(msg) do {} while (0)
 
 #undef DS_LOG_ALWAYS_1
-#define DS_LOG_ALWAYS_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n", data1)
+#define DS_LOG_ALWAYS_1(msg, data1) do {} while (0)
 
 #undef DS_LOG_ALWAYS_2
-#define DS_LOG_ALWAYS_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n", data1, data2)
+#define DS_LOG_ALWAYS_2(msg, data1, data2) do {} while (0)
 
 #undef DS_LOG_INFO_0
-#define DS_LOG_INFO_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO10, msg "\n")
+#define DS_LOG_INFO_0(msg) do {} while (0)
 
 #undef DS_LOG_INFO_1
-#define DS_LOG_INFO_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO10, msg "\n", data1)
+#define DS_LOG_INFO_1(msg, data1) do {} while (0)
 
 #undef DS_LOG_INFO_2
-#define DS_LOG_INFO_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO10, msg "\n", data1, data2)
+#define DS_LOG_INFO_2(msg, data1, data2) do {} while (0)
 
 #undef DS_LOG_ERROR_0
-#define DS_LOG_ERROR_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, msg "\n")
+#define DS_LOG_ERROR_0(msg) do {} while (0)
 
 #undef DS_LOG_ERROR_1
-#define DS_LOG_ERROR_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_ERROR, msg "\n", data1)
+#define DS_LOG_ERROR_1(msg, data1) do {} while (0)
 
 #undef DS_LOG_ERROR_2
-#define DS_LOG_ERROR_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_ERROR, msg "\n", data1, data2)
+#define DS_LOG_ERROR_2(msg, data1, data2) do {} while (0)
 
 #undef DS_LOG_WARNING_0
-#define DS_LOG_WARNING_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_WARNING, msg "\n")
+#define DS_LOG_WARNING_0(msg) do {} while (0)
 
 #undef DS_LOG_WARNING_1
-#define DS_LOG_WARNING_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_WARNING, msg "\n", data1)
+#define DS_LOG_WARNING_1(msg, data1) do {} while (0)
 
 #undef DS_LOG_WARNING_2
-#define DS_LOG_WARNING_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_WARNING, msg "\n", data1, data2)
+#define DS_LOG_WARNING_2(msg, data1, data2) do {} while (0)
 
 #undef DS_LOG_DEBUG_0
-#define DS_LOG_DEBUG_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_INFO1000, msg "\n")
+#define DS_LOG_DEBUG_0(msg) do {} while (0)
 
 #undef DS_LOG_DEBUG_1
-#define DS_LOG_DEBUG_1(msg, data1) STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_INFO1000, msg "\n", data1)
+#define DS_LOG_DEBUG_1(msg, data1) do {} while (0)
 
 #undef DS_LOG_DEBUG_2
-#define DS_LOG_DEBUG_2(msg, data1, data2) STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_INFO1000, msg "\n", data1, data2)
+#define DS_LOG_DEBUG_2(msg, data1, data2) do {} while (0)
 
 #undef DS_ENTER_BLOCKING_PAL_SECTION
 #define DS_ENTER_BLOCKING_PAL_SECTION
@@ -184,7 +184,7 @@ ds_rt_generate_core_dump (
     uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Generate an exception dump
-    PalDebugBreak();
+    // PalDebugBreak();
 
     return 0;
 }
@@ -295,7 +295,7 @@ uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
      // return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
-     PalDebugBreak();
+     // PalDebugBreak();
     return 0xffff;
 }
 
@@ -312,7 +312,7 @@ ds_rt_server_log_pause_message (void)
     const char diagPortsName[] = "DOTNET_DiagnosticPorts";
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Cannot find nocache versions of RhConfig
-    PalDebugBreak();
+    // PalDebugBreak();
 }
 
 #endif /* ENABLE_PERFTRACING */

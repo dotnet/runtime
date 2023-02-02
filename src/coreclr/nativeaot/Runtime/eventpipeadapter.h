@@ -17,6 +17,13 @@
 #include <eventpipe/ep-event-payload.h>
 #include <eventpipe/ep-buffer-manager.h>
 
+#include "gcenv.h"
+#include "regdisplay.h"
+#include "StackFrameIterator.h"
+#include "thread.h"
+#include "holder.h"
+#include "SpinLock.h"
+
 class EventPipeAdapter final
 {
 public:

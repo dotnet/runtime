@@ -4,6 +4,12 @@
 #include "common.h"
 #include "eventpipeadapter.h"
 
+#include "gcenv.h"
+#include "regdisplay.h"
+#include "StackFrameIterator.h"
+#include "thread.h"
+#include "SpinLock.h"
+
 #ifdef FEATURE_PERFTRACING
 
 struct EventPipeEventInstanceData

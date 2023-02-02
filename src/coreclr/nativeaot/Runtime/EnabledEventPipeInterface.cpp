@@ -4,6 +4,11 @@
 #include "eventpipeadapter.h"
 #include "diagnosticserveradapter.h"
 
+#include "gcenv.h"
+#include "regdisplay.h"
+#include "StackFrameIterator.h"
+#include "thread.h"
+#include "SpinLock.h"
 
 void EventPipeAdapter_Initialize() { EventPipeAdapter::Initialize(); }
 

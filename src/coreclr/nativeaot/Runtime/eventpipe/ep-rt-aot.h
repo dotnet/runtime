@@ -11,19 +11,8 @@
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-session-provider.h>
 
-// The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
-// class and can be removed if it turns out that the required ep_rt_thread_handle_t can be
-// implemented in some manner that doesn't rely on the Thread class.
+#include "rhassert.h"
 
-#include "gcenv.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "holder.h"
-#include "SpinLock.h"
-#ifdef _INC_WINDOWS
-#include <sysinfoapi.h>
-#endif
 #define STATIC_CONTRACT_NOTHROW
 
 #undef EP_INFINITE_WAIT
@@ -39,7 +28,7 @@
 #define EP_ALWAYS_INLINE FORCEINLINE
 
 #undef EP_NEVER_INLINE
-#define EP_NEVER_INLINE NOINLINE
+#define EP_NEVER_INLINE
 
 #undef EP_ALIGN_UP
 #define EP_ALIGN_UP(val,align) _rt_aot_align_up(val,align)
@@ -1143,17 +1132,12 @@ ep_rt_aot_config_lock_get (void)
 static
 inline
 const ep_char8_t *
-ep_rt_entrypoint_assembly_name_get_utf8 (void) 
+ep_rt_entrypoint_assembly_name_get_utf8 (void)
 { 
     STATIC_CONTRACT_NOTHROW;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement EventPipe assembly name - return filename in nativeaot?
-    PalDebugBreak();
-
-    // fallback to the empty string if we can't get assembly info, e.g., if the runtime is
-    // suspended before an assembly is loaded.
-    return reinterpret_cast<const ep_char8_t*>("");
+    extern const ep_char8_t * ep_rt_aot_entrypoint_assembly_name_get_utf8 (void);
+    return ep_rt_aot_entrypoint_assembly_name_get_utf8();
 }
 
 static
@@ -1171,7 +1155,7 @@ ep_rt_runtime_version_get_utf8 (void) {
  */
 
 static
-EP_ALWAYS_INLINE
+inline
 uint16_t
 ep_rt_val_uint16_t (uint16_t value)
 {
@@ -1179,7 +1163,7 @@ ep_rt_val_uint16_t (uint16_t value)
 }
 
 static
-EP_ALWAYS_INLINE
+inline
 uint32_t
 ep_rt_val_uint32_t (uint32_t value)
 {
@@ -1187,7 +1171,7 @@ ep_rt_val_uint32_t (uint32_t value)
 }
 
 static
-EP_ALWAYS_INLINE
+inline
 uint64_t
 ep_rt_val_uint64_t (uint64_t value)
 {
@@ -1195,7 +1179,7 @@ ep_rt_val_uint64_t (uint64_t value)
 }
 
 static
-EP_ALWAYS_INLINE
+inline
 int16_t
 ep_rt_val_int16_t (int16_t value)
 {
@@ -1203,7 +1187,7 @@ ep_rt_val_int16_t (int16_t value)
 }
 
 static
-EP_ALWAYS_INLINE
+inline
 int32_t
 ep_rt_val_int32_t (int32_t value)
 {
@@ -1211,7 +1195,7 @@ ep_rt_val_int32_t (int32_t value)
 }
 
 static
-EP_ALWAYS_INLINE
+inline
 int64_t
 ep_rt_val_int64_t (int64_t value)
 {
@@ -1219,7 +1203,7 @@ ep_rt_val_int64_t (int64_t value)
 }
 
 static
-EP_ALWAYS_INLINE
+inline
 uintptr_t
 ep_rt_val_uintptr_t (uintptr_t value)
 {
@@ -1236,7 +1220,8 @@ uint32_t
 ep_rt_atomic_inc_uint32_t (volatile uint32_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<uint32_t>(PalInterlockedIncrement ((volatile int32_t *)(value)));
+    extern uint32_t ep_rt_aot_atomic_inc_uint32_t (volatile uint32_t *value);
+    return ep_rt_aot_atomic_inc_uint32_t (value);
 }
 
 static
@@ -1245,7 +1230,8 @@ uint32_t
 ep_rt_atomic_dec_uint32_t (volatile uint32_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<uint32_t>(PalInterlockedDecrement ((volatile int32_t *)(value)));
+    extern uint32_t ep_rt_aot_atomic_dec_uint32_t (volatile uint32_t *value);
+    return ep_rt_aot_atomic_dec_uint32_t (value);
 }
 
 static
@@ -1254,7 +1240,9 @@ int32_t
 ep_rt_atomic_inc_int32_t (volatile int32_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<int32_t>(PalInterlockedIncrement (value));
+    extern int32_t ep_rt_aot_atomic_inc_int32_t (volatile int32_t *value);
+
+    return ep_rt_aot_atomic_inc_int32_t (value);
 }
 
 static
@@ -1263,7 +1251,8 @@ int32_t
 ep_rt_atomic_dec_int32_t (volatile int32_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<int32_t>(PalInterlockedDecrement (value));
+    extern int32_t ep_rt_aot_atomic_dec_int32_t (volatile int32_t *value);
+    return ep_rt_aot_atomic_dec_int32_t (value);
 }
 
 static
@@ -1273,52 +1262,39 @@ ep_rt_atomic_inc_int64_t (volatile int64_t *value)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Consider replacing with a new PalInterlockedIncrement64 service
-    int64_t currentValue;
-    do {
-        currentValue = *value;
-    } while (currentValue != PalInterlockedCompareExchange64(value, (currentValue + 1), currentValue));
-
-    // The current value has been atomically replaced with the incremented value.
-    return (currentValue + 1);
+    extern int64_t ep_rt_aot_atomic_inc_int64_t (volatile int64_t *value);
+    return ep_rt_aot_atomic_inc_int64_t (value);
 }
 
 static
 inline
 int64_t
-ep_rt_atomic_dec_int64_t (volatile int64_t *value) { 
+ep_rt_atomic_dec_int64_t (volatile int64_t *value) 
+{ 
     STATIC_CONTRACT_NOTHROW;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Consider replacing with a new PalInterlockedDecrement64 service
-    int64_t currentValue;
-    do {
-        currentValue = *value;
-    } while (currentValue != PalInterlockedCompareExchange64(value, (currentValue - 1), currentValue));
-
-    // The current value has been atomically replaced with the decremented value.
-    return (currentValue - 1);
+    extern int64_t ep_rt_aot_atomic_dec_int64_t (volatile int64_t *value);
+    return ep_rt_aot_atomic_dec_int64_t (value);
 }
 
 static
 inline
 size_t
-ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value) {
+ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value) 
+{
     STATIC_CONTRACT_NOTHROW;
-#ifdef HOST_64BIT
-    return static_cast<size_t>(PalInterlockedCompareExchange64 ((volatile int64_t *)target, (int64_t)value, (int64_t)expected));
-#else
-    return static_cast<size_t>(PalInterlockedCompareExchange ((volatile int32_t *)target, (int32_t)value, (int32_t)expected));
-#endif	
+    extern size_t ep_rt_aot_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value);
+    return ep_rt_aot_atomic_compare_exchange_size_t (target, expected, value);
 }
 
 static
 inline
 ep_char8_t *
-ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value) { 
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value) 
+{ 
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<ep_char8_t *>(PalInterlockedCompareExchangePointer ((void *volatile *)target, value, expected));
+    extern ep_char8_t * ep_rt_aot_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value);
+    return ep_rt_aot_atomic_compare_exchange_utf8_string (target, expected, value);
 }
 
 /*
@@ -1421,7 +1397,7 @@ ep_rt_method_get_simple_assembly_name (
 
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Design MethodDesc and method name services if/when needed
-    PalDebugBreak();
+    //PalDebugBreak();
 
     return false;
 
@@ -1436,7 +1412,7 @@ ep_rt_method_get_full_name (
 {
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Design MethodDesc and method name services if/when needed
-    PalDebugBreak();
+    //PalDebugBreak();
 
     return false;
 }
@@ -1610,7 +1586,7 @@ ep_rt_config_value_get_config (void)
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeConfig)
-    PalDebugBreak();
+    // PalDebugBreak();
     return nullptr;
 //	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
 }
@@ -1624,7 +1600,7 @@ ep_rt_config_value_get_output_path (void)
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeOutputPath)
-    PalDebugBreak();
+    //PalDebugBreak();
     return nullptr;
 }
 
@@ -1637,7 +1613,7 @@ ep_rt_config_value_get_circular_mb (void)
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeCircularMB)
-    PalDebugBreak();
+    //PalDebugBreak();
     return 0;
 }
 
@@ -1650,7 +1626,7 @@ ep_rt_config_value_get_output_streaming (void)
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeOutputStreaming)
-    PalDebugBreak();
+    //PalDebugBreak();
     return false;
 }
 
@@ -1783,17 +1759,11 @@ ep_rt_wait_event_alloc (
 {
     STATIC_CONTRACT_NOTHROW;
 
-    EP_ASSERT (wait_event != NULL);
-    EP_ASSERT (wait_event->event == NULL);
-
-    wait_event->event = new (nothrow) CLREventStatic ();
-    if (wait_event->event) {
-        // NativeAOT has the NoThrow versions
-        if (manual)
-            wait_event->event->CreateManualEventNoThrow (initial);
-        else
-            wait_event->event->CreateAutoEventNoThrow (initial);
-    }
+    extern void ep_rt_aot_wait_event_alloc (
+    ep_rt_wait_event_handle_t *wait_event,
+    bool manual,
+    bool initial);
+    ep_rt_aot_wait_event_alloc(wait_event, manual, initial);
 }
 
 static
@@ -1802,12 +1772,8 @@ void
 ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    if (wait_event != NULL && wait_event->event != NULL) {
-        wait_event->event->CloseEvent ();
-        delete wait_event->event;
-        wait_event->event = NULL;
-    }
+    extern void ep_rt_aot_wait_event_free (ep_rt_wait_event_handle_t *wait_event);
+    ep_rt_aot_wait_event_free(wait_event);
 }
 
 static
@@ -1816,9 +1782,8 @@ bool
 ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event) 
 { 
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
-
-    return wait_event->event->Set ();
+    extern bool ep_rt_aot_wait_event_set (ep_rt_wait_event_handle_t *wait_event);
+    return ep_rt_aot_wait_event_set (wait_event);
 }
 
 static
@@ -1829,9 +1794,13 @@ ep_rt_wait_event_wait (
     bool alertable) 
 { 
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
+    extern int32_t
+ep_rt_aot_wait_event_wait (
+    ep_rt_wait_event_handle_t *wait_event,
+    uint32_t timeout,
+    bool alertable);
 
-    return wait_event->event->Wait (timeout, alertable);
+    return ep_rt_aot_wait_event_wait(wait_event, timeout, alertable);
 }
 
 static
@@ -1840,11 +1809,11 @@ EventPipeWaitHandle
 ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event) 
 { 
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
+    // EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: NativeAOT CLREventStatic doesn't have GetHandleUNHOSTED
-    PalDebugBreak();
+    // PalDebugBreak();
     return 0;
 }
 
@@ -1854,11 +1823,10 @@ bool
 ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event) 
 { 
     STATIC_CONTRACT_NOTHROW;
+    extern bool
+    ep_rt_aot_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event);
 
-    if (wait_event == NULL || wait_event->event == NULL)
-        return false;
-
-    return wait_event->event->IsValid ();
+    return ep_rt_aot_wait_event_is_valid (wait_event);
 }
 
 /*
@@ -1871,7 +1839,9 @@ int
 ep_rt_get_last_error (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return PalGetLastError();
+    extern int
+    ep_rt_aot_get_last_error (void);
+    return ep_rt_aot_get_last_error ();
 }
 
 static
@@ -1946,7 +1916,7 @@ ep_rt_is_running (void)
     STATIC_CONTRACT_NOTHROW;
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Does NativeAot have the concept of EEStarted
-    PalDebugBreak();
+    // PalDebugBreak();
 
     return false;
 }
@@ -1962,7 +1932,7 @@ ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: EventPipe Configuration values - RhConfig?
     // (CLRConfig::INTERNAL_EventPipeCircularMB)
-    PalDebugBreak();
+    // PalDebugBreak();
 }
 
 /*
@@ -2019,39 +1989,14 @@ ep_rt_thread_create (
     void *id)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (thread_func != NULL);
+    extern bool
+    ep_rt_aot_thread_create (
+    void *thread_func,
+    void *params,
+    EventPipeThreadType thread_type,
+    void *id);
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Fill in the outgoing id if any callers ever need it
-    if (id)
-        *reinterpret_cast<DWORD*>(id) = 0xffffffff;
-
-    switch (thread_type)
-    {
-    default:
-        return false;
-
-    case EP_THREAD_TYPE_SERVER:
-        // Match CoreCLR and hardcode a null thread context in this case.
-        return PalStartEventPipeHelperThread(reinterpret_cast<BackgroundCallback>(thread_func), NULL);
-
-    case EP_THREAD_TYPE_SESSION:
-    case EP_THREAD_TYPE_SAMPLING:
-        ep_rt_thread_params_t* thread_params = new (nothrow) ep_rt_thread_params_t ();
-        if (!thread_params)
-            return false;
-
-        thread_params->thread_type = thread_type;
-        thread_params->thread_func = reinterpret_cast<ep_rt_thread_start_func>(thread_func);
-        thread_params->thread_params = params;
-        if (!PalStartEventPipeHelperThread(reinterpret_cast<BackgroundCallback>(ep_rt_thread_aot_start_session_or_sampling_thread), thread_params)) {
-            delete thread_params;
-            return false;
-        }
-
-        return true;
-    }
-
+    return ep_rt_aot_thread_create(thread_func, params, thread_type, id);
 }
 
 static
@@ -2071,7 +2016,9 @@ void
 ep_rt_thread_sleep (uint64_t ns)
 {
     STATIC_CONTRACT_NOTHROW;
-    PalSleep(static_cast<uint32_t>(ns/1000000));
+    extern void
+    ep_rt_aot_thread_sleep (uint64_t ns);
+    ep_rt_aot_thread_sleep(ns);
 }
 
 static
@@ -2080,7 +2027,9 @@ uint32_t
 ep_rt_current_process_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<uint32_t>(GetCurrentProcessId ());
+    extern uint32_t
+    ep_rt_aot_current_process_get_id (void);
+    return ep_rt_aot_current_process_get_id();
 }
 
 static
@@ -2096,7 +2045,7 @@ ep_rt_current_processor_get_number (void)
         // PROCESSOR_NUMBER proc;
         // GetCurrentProcessorNumberEx (&proc);
         // return _ep_rt_aot_proc_group_offsets [proc.Group] + proc.Number;
-        PalDebugBreak();
+        // PalDebugBreak();
     }
 #endif
     return 0xFFFFFFFF;
@@ -2113,7 +2062,7 @@ ep_rt_processors_get_count (void)
     GetSystemInfo (&sys_info);
     return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
 #else    
-    PalDebugBreak();
+    // PalDebugBreak();
     return 0xffff;
 #endif
 }
@@ -2124,15 +2073,9 @@ ep_rt_thread_id_t
 ep_rt_current_thread_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-#ifdef TARGET_UNIX
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: AOT doesn't have PAL_GetCurrentOSThreadId, as CoreCLR does.
-    PalDebugBreak();    
-    return static_cast<ep_rt_thread_id_t>(0);
-#else
-    return static_cast<ep_rt_thread_id_t>(::GetCurrentThreadId ());
-#endif
+    extern ep_rt_thread_id_t
+    ep_rt_aot_current_thread_get_id (void);
+    return ep_rt_aot_current_thread_get_id();
 }
 
 static
@@ -2141,7 +2084,10 @@ int64_t
 ep_rt_perf_counter_query (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return (int64_t)PalQueryPerformanceCounter();
+    extern int64_t
+    ep_rt_aot_perf_counter_query (void);
+
+    return ep_rt_aot_perf_counter_query();
 }
 
 static
@@ -2150,7 +2096,10 @@ int64_t
 ep_rt_perf_frequency_query (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return (int64_t)PalQueryPerformanceFrequency();
+    extern int64_t
+    ep_rt_aot_perf_frequency_query (void);
+
+    return ep_rt_aot_perf_frequency_query();
 }
 
 static
@@ -2178,7 +2127,7 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
 #else
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Get System time
-    PalDebugBreak();
+    // PalDebugBreak();
 #endif
 
 }
@@ -2189,10 +2138,8 @@ int64_t
 ep_rt_system_timestamp_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    FILETIME value;
-    GetSystemTimeAsFileTime (&value);
-    return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+    extern int64_t ep_rt_aot_system_timestamp_get (void);
+    return ep_rt_aot_system_timestamp_get();
 }
 
 static
@@ -2211,7 +2158,7 @@ const ep_char8_t *
 ep_rt_os_command_line_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_UNREACHABLE ("Can not reach here");
+    //EP_UNREACHABLE ("Can not reach here");
 
     return NULL;
 }
@@ -2227,7 +2174,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
 
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Find out the way to open a file in native
-    PalDebugBreak();
+    // PalDebugBreak();
 
     return 0;
 }
@@ -2241,7 +2188,7 @@ ep_rt_file_close (ep_rt_file_handle_t file_handle)
 
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Find out the way to close a file in native
-    PalDebugBreak();
+    // PalDebugBreak();
     return true;
 }
 
@@ -2259,7 +2206,7 @@ ep_rt_file_write (
 
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Find out the way to write to a file in native
-    PalDebugBreak();
+    // PalDebugBreak();
     
     return false;
 }
@@ -2270,7 +2217,10 @@ uint8_t *
 ep_rt_valloc0 (size_t buffer_size)
 {
     STATIC_CONTRACT_NOTHROW;
-    return reinterpret_cast<uint8_t *>(PalVirtualAlloc (NULL, buffer_size, MEM_COMMIT, PAGE_READWRITE));
+    extern uint8_t *
+    ep_rt_aot_valloc0 (size_t buffer_size);
+
+    return ep_rt_aot_valloc0(buffer_size);
 }
 
 static
@@ -2281,9 +2231,12 @@ ep_rt_vfree (
     size_t buffer_size)
 {
     STATIC_CONTRACT_NOTHROW;
+    extern void
+    ep_rt_aot_vfree (
+    uint8_t *buffer,
+    size_t buffer_size);
 
-    if (buffer)
-        PalVirtualFree (buffer, 0, MEM_RELEASE);
+    return ep_rt_aot_vfree(buffer, buffer_size);
 }
 
 static
@@ -2294,7 +2247,7 @@ ep_rt_temp_path_get (
     uint32_t buffer_len)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_UNREACHABLE ("Can not reach here");
+//    EP_UNREACHABLE ("Can not reach here");
 
     return 0;
 }
@@ -2309,7 +2262,7 @@ ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (env_array != NULL);
 
-    PalDebugBreak();
+    // PalDebugBreak();
 }
 
 /*
@@ -2350,7 +2303,7 @@ ep_rt_lock_requires_lock_held (const ep_rt_lock_handle_t *lock)
 {
 
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (((ep_rt_lock_handle_t *)lock)->lock->OwnedByCurrentThread ());
+    //EP_ASSERT (((ep_rt_lock_handle_t *)lock)->lock->OwnedByCurrentThread ());
 }
 
 static
@@ -2359,7 +2312,7 @@ void
 ep_rt_lock_requires_lock_not_held (const ep_rt_lock_handle_t *lock)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (lock->lock == NULL || !((ep_rt_lock_handle_t *)lock)->lock->OwnedByCurrentThread ());
+    //EP_ASSERT (lock->lock == NULL || !((ep_rt_lock_handle_t *)lock)->lock->OwnedByCurrentThread ());
 }
 #endif
 
@@ -2372,8 +2325,9 @@ void
 ep_rt_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    spin_lock->lock = new (nothrow) SpinLock ();
+    extern void
+    ep_rt_aot_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock);
+    ep_rt_aot_spin_lock_alloc(spin_lock);
 }
 
 static
@@ -2382,11 +2336,9 @@ void
 ep_rt_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
-
-    if (spin_lock && spin_lock->lock) {
-        delete spin_lock->lock;
-        spin_lock->lock = NULL;
-    }
+    extern void
+    ep_rt_aot_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock);
+    ep_rt_aot_spin_lock_free(spin_lock);
 }
 
 static
@@ -2395,7 +2347,7 @@ bool
 ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
+//    EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
 
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement locking (maybe by making the manual Lock and Unlock functions public)
@@ -2647,9 +2599,9 @@ size_t
 ep_rt_utf16_string_len (const ep_char16_t *str)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (str != NULL);
-
-    return wcslen (reinterpret_cast<LPCWSTR>(str));
+    extern size_t
+    ep_rt_aot_utf16_string_len (const ep_char16_t *str);
+    return ep_rt_aot_utf16_string_len(str);
 }
 
 static
@@ -2711,7 +2663,7 @@ const ep_char8_t *
 ep_rt_managed_command_line_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_UNREACHABLE ("Can not reach here");
+    //EP_UNREACHABLE ("Can not reach here");
 
     return NULL;
 }
@@ -2860,7 +2812,7 @@ ep_rt_thread_get_id (ep_rt_thread_handle_t thread_handle)
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed
     // return ep_rt_uint64_t_to_thread_id_t (thread_handle->GetOSThreadId64 ());
-    PalDebugBreak();
+    // PalDebugBreak();
     return 0;
 }
 
@@ -2901,7 +2853,7 @@ ep_rt_thread_get_activity_id_handle (void)
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed
     // return GetThread ();
-    PalDebugBreak();
+    // PalDebugBreak();
     return NULL;
 }
 
@@ -2916,7 +2868,7 @@ ep_rt_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed
     // return reinterpret_cast<const uint8_t *>(activity_id_handle->GetActivityId ());
-    PalDebugBreak();
+    // PalDebugBreak();
     return NULL;
 }
 
@@ -2952,7 +2904,7 @@ ep_rt_thread_set_activity_id (
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement thread creation/management if needed
     // activity_id_handle->SetActivityId (reinterpret_cast<LPCGUID>(activity_id));
-    PalDebugBreak();
+    // PalDebugBreak();
 }
 
 #undef EP_YIELD_WHILE
@@ -2975,7 +2927,9 @@ uint32_t
 ep_rt_volatile_load_uint32_t (const volatile uint32_t *ptr)
 {
     STATIC_CONTRACT_NOTHROW;
-    return VolatileLoad<uint32_t> ((const uint32_t *)ptr);
+    extern uint32_t
+    ep_rt_aot_volatile_load_uint32_t (const volatile uint32_t *ptr);
+    return ep_rt_aot_volatile_load_uint32_t(ptr);
 }
 
 static
@@ -2984,7 +2938,10 @@ uint32_t
 ep_rt_volatile_load_uint32_t_without_barrier (const volatile uint32_t *ptr)
 {
     STATIC_CONTRACT_NOTHROW;
-    return VolatileLoadWithoutBarrier<uint32_t> ((const uint32_t *)ptr);
+    extern uint32_t
+    ep_rt_aot_volatile_load_uint32_t_without_barrier (const volatile uint32_t *ptr);
+
+    return ep_rt_aot_volatile_load_uint32_t_without_barrier(ptr);
 }
 
 static
@@ -2995,7 +2952,12 @@ ep_rt_volatile_store_uint32_t (
     uint32_t value)
 {
     STATIC_CONTRACT_NOTHROW;
-    VolatileStore<uint32_t> ((uint32_t *)ptr, value);
+    extern void
+    ep_rt_aot_volatile_store_uint32_t (
+    volatile uint32_t *ptr,
+    uint32_t value);
+
+    ep_rt_aot_volatile_store_uint32_t(ptr, value);
 }
 
 static
@@ -3006,7 +2968,12 @@ ep_rt_volatile_store_uint32_t_without_barrier (
     uint32_t value)
 {
     STATIC_CONTRACT_NOTHROW;
-    VolatileStoreWithoutBarrier<uint32_t>((uint32_t *)ptr, value);
+    extern void
+    ep_rt_aot_volatile_store_uint32_t_without_barrier (
+    volatile uint32_t *ptr,
+    uint32_t value);
+
+    ep_rt_aot_volatile_store_uint32_t_without_barrier(ptr, value);
 }
 
 static
@@ -3015,7 +2982,10 @@ uint64_t
 ep_rt_volatile_load_uint64_t (const volatile uint64_t *ptr)
 {
     STATIC_CONTRACT_NOTHROW;
-    return VolatileLoad<uint64_t> ((const uint64_t *)ptr);
+    extern uint64_t
+    ep_rt_aot_volatile_load_uint64_t (const volatile uint64_t *ptr);
+
+    return ep_rt_aot_volatile_load_uint64_t(ptr);
 }
 
 static
@@ -3024,7 +2994,10 @@ uint64_t
 ep_rt_volatile_load_uint64_t_without_barrier (const volatile uint64_t *ptr)
 {
     STATIC_CONTRACT_NOTHROW;
-    return VolatileLoadWithoutBarrier<uint64_t> ((const uint64_t *)ptr);
+    extern uint64_t
+    ep_rt_aot_volatile_load_uint64_t_without_barrier (const volatile uint64_t *ptr);
+
+    return ep_rt_aot_volatile_load_uint64_t_without_barrier(ptr);
 }
 
 static
@@ -3035,7 +3008,12 @@ ep_rt_volatile_store_uint64_t (
     uint64_t value)
 {
     STATIC_CONTRACT_NOTHROW;
-    VolatileStore<uint64_t> ((uint64_t *)ptr, value);
+    extern void
+    ep_rt_aot_volatile_store_uint64_t (
+    volatile uint64_t *ptr,
+    uint64_t value);
+
+    ep_rt_aot_volatile_store_uint64_t(ptr, value);
 }
 
 static
@@ -3046,7 +3024,11 @@ ep_rt_volatile_store_uint64_t_without_barrier (
     uint64_t value)
 {
     STATIC_CONTRACT_NOTHROW;
-    VolatileStoreWithoutBarrier<uint64_t> ((uint64_t *)ptr, value);
+    extern void
+    ep_rt_aot_volatile_store_uint64_t_without_barrier (
+    volatile uint64_t *ptr,
+    uint64_t value);
+    ep_rt_aot_volatile_store_uint64_t_without_barrier(ptr, value);
 }
 
 static
@@ -3055,7 +3037,9 @@ int64_t
 ep_rt_volatile_load_int64_t (const volatile int64_t *ptr)
 {
     STATIC_CONTRACT_NOTHROW;
-    return VolatileLoad<int64_t> ((int64_t *)ptr);
+    extern int64_t
+    ep_rt_aot_volatile_load_int64_t (const volatile int64_t *ptr);
+    return ep_rt_aot_volatile_load_int64_t(ptr);
 }
 
 static
@@ -3064,7 +3048,9 @@ int64_t
 ep_rt_volatile_load_int64_t_without_barrier (const volatile int64_t *ptr)
 {
     STATIC_CONTRACT_NOTHROW;
-    return VolatileLoadWithoutBarrier<int64_t> ((int64_t *)ptr);
+    extern int64_t
+    ep_rt_aot_volatile_load_int64_t_without_barrier (const volatile int64_t *ptr);
+    return ep_rt_aot_volatile_load_int64_t_without_barrier(ptr);
 }
 
 static
@@ -3075,7 +3061,11 @@ ep_rt_volatile_store_int64_t (
     int64_t value)
 {
     STATIC_CONTRACT_NOTHROW;
-    VolatileStore<int64_t> ((int64_t *)ptr, value);
+    extern void
+    ep_rt_aot_volatile_store_int64_t (
+    volatile int64_t *ptr,
+    int64_t value);
+    ep_rt_aot_volatile_store_int64_t(ptr, value);
 }
 
 static
@@ -3086,7 +3076,11 @@ ep_rt_volatile_store_int64_t_without_barrier (
     int64_t value)
 {
     STATIC_CONTRACT_NOTHROW;
-    VolatileStoreWithoutBarrier<int64_t> ((int64_t *)ptr, value);
+    extern void
+    ep_rt_aot_volatile_store_int64_t_without_barrier (
+    volatile int64_t *ptr,
+    int64_t value);
+    ep_rt_aot_volatile_store_int64_t_without_barrier(ptr, value);
 }
 
 static
@@ -3095,7 +3089,9 @@ void *
 ep_rt_volatile_load_ptr (volatile void **ptr)
 {
     STATIC_CONTRACT_NOTHROW;
-    return VolatileLoad<void *> ((void **)ptr);
+    extern void *
+    ep_rt_aot_volatile_load_ptr (volatile void **ptr);
+    return ep_rt_aot_volatile_load_ptr(ptr);
 }
 
 static
@@ -3104,7 +3100,9 @@ void *
 ep_rt_volatile_load_ptr_without_barrier (volatile void **ptr)
 {
     STATIC_CONTRACT_NOTHROW;
-    return VolatileLoadWithoutBarrier<void *> ((void **)ptr);
+    extern void *
+    ep_rt_aot_volatile_load_ptr_without_barrier (volatile void **ptr);
+    return ep_rt_aot_volatile_load_ptr_without_barrier(ptr);
 }
 
 static
@@ -3115,7 +3113,11 @@ ep_rt_volatile_store_ptr (
     void *value)
 {
     STATIC_CONTRACT_NOTHROW;
-    VolatileStore<void *> ((void **)ptr, value);
+    extern void
+    ep_rt_aot_volatile_store_ptr (
+    volatile void **ptr,
+    void *value);
+    ep_rt_aot_volatile_store_ptr(ptr, value);
 }
 
 static
@@ -3126,7 +3128,11 @@ ep_rt_volatile_store_ptr_without_barrier (
     void *value)
 {
     STATIC_CONTRACT_NOTHROW;
-    VolatileStoreWithoutBarrier<void *> ((void **)ptr, value);
+    extern void
+    ep_rt_aot_volatile_store_ptr_without_barrier (
+    volatile void **ptr,
+    void *value);
+    ep_rt_aot_volatile_store_ptr_without_barrier(ptr, value);
 }
 
 #endif /* ENABLE_PERFTRACING */

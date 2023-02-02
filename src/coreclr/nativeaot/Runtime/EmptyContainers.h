@@ -10,6 +10,7 @@
 // Hence initially, the bare boned implementation focus is on unblocking HW/Simple Trace bring up
 
 #include "EmptyContainers2.h"
+#include "rhassert.h"
 
 struct SLink_EP
 {
@@ -143,7 +144,7 @@ public:
 
     void InsertHead(T *pObj)
     {
-        PalDebugBreak();
+        //PalDebugBreak();
     }
 
 
@@ -181,7 +182,7 @@ public:
 
         T * operator->() const 
         {
-            PalDebugBreak();
+            //PalDebugBreak();
             return m_cur;
         }
 
@@ -232,13 +233,13 @@ struct SListElem_EP
 
     ElemT const & operator*() const
     { 
-        PalDebugBreak();
+        //PalDebugBreak();
         return m_Value; 
     }
 
     ElemT & operator*()
     { 
-        PalDebugBreak();
+        //PalDebugBreak();
         return m_Value; 
     }
 
@@ -284,8 +285,8 @@ public:
 
     bool PushNoThrow(const T & value)
     {
-        if(m_curSize >= maxSize)
-            PalDebugBreak();
+        // if(m_curSize >= maxSize)
+        //     PalDebugBreak();
         m_array[m_curSize++] = value;
         return true;
     }
