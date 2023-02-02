@@ -109,6 +109,7 @@ elseif(CLR_CMAKE_HOST_UNIX)
 
     if(CLR_CMAKE_HOST_LINUX)
         add_dependencies(mscordbi pal_redefines_file)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--undefined-version")
     endif(CLR_CMAKE_HOST_LINUX)
 
 endif(CLR_CMAKE_HOST_WIN32)
