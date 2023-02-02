@@ -60,8 +60,8 @@ echo Unity: Copying built artifacts
 echo ******************************
 echo.
 copy unity\unitygc\%configuration%\unitygc.dll artifacts\bin\microsoft.netcore.app.runtime.win-%architecture%\%configuration%\runtimes\win-%architecture%\native || goto :error
-copy artifacts\bin\unity-embed-host\%configuration%\net6.0\unity-embed-host.dll artifacts\bin\microsoft.netcore.app.runtime.win-%architecture%\%configuration%\runtimes\win-%architecture%\lib\net7.0 || goto :error
-copy artifacts\bin\unity-embed-host\%configuration%\net6.0\unity-embed-host.pdb artifacts\bin\microsoft.netcore.app.runtime.win-%architecture%\%configuration%\runtimes\win-%architecture%\lib\net7.0 || goto :error
+copy unity\unity-embed-host\bin\%configuration%\net7.0\unity-embed-host.dll artifacts\bin\microsoft.netcore.app.runtime.win-%architecture%\%configuration%\runtimes\win-%architecture%\lib\net7.0 || goto :error
+copy unity\unity-embed-host\bin\%configuration%\net7.0\unity-embed-host.pdb artifacts\bin\microsoft.netcore.app.runtime.win-%architecture%\%configuration%\runtimes\win-%architecture%\lib\net7.0 || goto :error
 
 rem Every thing succeeded - jump to the end of the file and return a 0 exit code
 echo.

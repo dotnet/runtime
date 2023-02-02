@@ -84,8 +84,8 @@ echo "Unity: Copying built artifacts"
 echo "*******************************"
 echo
 cp unity/unitygc/$configuration/libunitygc.dylib artifacts/bin/microsoft.netcore.app.runtime.osx-$architecture/$configuration/runtimes/osx-$architecture/native
-cp artifacts/bin/unity-embed-host/$configuration/net6.0/unity-embed-host.dll artifacts/bin/microsoft.netcore.app.runtime.osx-$architecture/$configuration/runtimes/osx-$architecture/lib/net7.0
-cp artifacts/bin/unity-embed-host/$configuration/net6.0/unity-embed-host.pdb artifacts/bin/microsoft.netcore.app.runtime.osx-$architecture/$configuration/runtimes/osx-$architecture/lib/net7.0
+cp unity/unity-embed-host/bin/$configuration/net7.0/unity-embed-host.dll artifacts/bin/microsoft.netcore.app.runtime.osx-$architecture/$configuration/runtimes/osx-$architecture/lib/net7.0
+cp unity/unity-embed-host/bin/$configuration/net7.0/unity-embed-host.pdb artifacts/bin/microsoft.netcore.app.runtime.osx-$architecture/$configuration/runtimes/osx-$architecture/lib/net7.0
 cp LICENSE.md artifacts/bin/microsoft.netcore.app.runtime.osx-$architecture/$configuration/runtimes/osx-$architecture/.
 artifacts/7za-mac-x64/7za a artifacts/unity/$ARTIFACT_FILENAME ./artifacts/bin/microsoft.netcore.app.runtime.osx-$architecture/$configuration/runtimes/osx-$architecture/*
 
