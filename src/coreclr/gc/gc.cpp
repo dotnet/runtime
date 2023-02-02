@@ -3856,13 +3856,13 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
 
     print_map ("before alloc");
 
-    if ((direction == allocate_forward) && (num_left_used_free_units >= num_units) ||
-        (direction == allocate_backward) && (num_right_used_free_units >= num_units))
+    if (((direction == allocate_forward) && (num_left_used_free_units >= num_units)) ||
+        ((direction == allocate_backward) && (num_right_used_free_units >= num_units)))
     {
         while (((direction == allocate_forward) && (current_index < end_index)) ||
             ((direction == allocate_backward) && (current_index > end_index)))
         {
-            uint32_t current_val = *(current_index - ((direction == -1) ? 1 : 0));
+            uint32_t current_val = *(current_index - ((direction == allocate_backward) ? 1 : 0));
             uint32_t current_num_units = get_num_units (current_val);
             bool free_p = is_unit_memory_free (current_val);
             dprintf (REGIONS_LOG, ("ALLOC[%s: %zd]%d->%d", (free_p ? "F" : "B"), (size_t)current_num_units,
@@ -3884,6 +3884,7 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
                     }
                     else
                     {
+                        assert (direction == allocate_backward);
                         assert (num_right_used_free_units >= num_units);
                         num_right_used_free_units -= num_units;
                     }
@@ -4046,6 +4047,7 @@ void region_allocator::delete_region_impl (uint8_t* region_start)
     }
     else
     {
+        assert (free_index >= region_map_right_start);
         num_right_used_free_units += free_block_size;
     }
     
