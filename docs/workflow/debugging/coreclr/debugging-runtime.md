@@ -130,7 +130,7 @@ Note that you can omit the `-c Debug` flag, since it's the default one when none
 If for some reason `System.Private.CoreLib.dll` is missing, you can rebuild it with the following command, instead of having to go through the whole build again:
 
 ```bash
-./build.sh -s clr.corelib+clr.corelibnative -c Debug
+./build.sh -s clr.corelib+clr.nativecorelib -c Debug
 ```
 
 **NOTE**: When debugging with _CORE\_LIBRARIES_, the `libs` subset must also be built prior to attempting any debugging.
