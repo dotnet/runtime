@@ -6066,7 +6066,7 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
         {
             simd8_t result = {};
             EvaluateBinarySimd<simd8_t>(oper, scalar, baseType, &result, vns->GetConstantSimd8(arg0VN),
-                                               vns->GetConstantSimd8(arg1VN));
+                                        vns->GetConstantSimd8(arg1VN));
             return vns->VNForSimd8Con(result);
         }
 
@@ -6074,7 +6074,7 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
         {
             simd12_t result = {};
             EvaluateBinarySimd<simd12_t>(oper, scalar, baseType, &result, vns->GetConstantSimd12(arg0VN),
-                                                vns->GetConstantSimd12(arg1VN));
+                                         vns->GetConstantSimd12(arg1VN));
             return vns->VNForSimd12Con(result);
         }
 
@@ -6082,7 +6082,7 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
         {
             simd16_t result = {};
             EvaluateBinarySimd<simd16_t>(oper, scalar, baseType, &result, vns->GetConstantSimd16(arg0VN),
-                                                vns->GetConstantSimd16(arg1VN));
+                                         vns->GetConstantSimd16(arg1VN));
             return vns->VNForSimd16Con(result);
         }
 
@@ -6090,7 +6090,7 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
         {
             simd32_t result = {};
             EvaluateBinarySimd<simd32_t>(oper, scalar, baseType, &result, vns->GetConstantSimd32(arg0VN),
-                                                vns->GetConstantSimd32(arg1VN));
+                                         vns->GetConstantSimd32(arg1VN));
             return vns->VNForSimd32Con(result);
         }
 
@@ -6245,15 +6245,13 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
             case NI_AdvSimd_Negate:
             case NI_AdvSimd_Arm64_Negate:
             {
-                return EvaluateUnarySimd(this, GT_NEG, /* scalar */ false, type, baseType,
-                                         arg0VN);
+                return EvaluateUnarySimd(this, GT_NEG, /* scalar */ false, type, baseType, arg0VN);
             }
 
             case NI_AdvSimd_NegateScalar:
             case NI_AdvSimd_Arm64_NegateScalar:
             {
-                return EvaluateUnarySimd(this, GT_NEG, /* scalar */ true, type, baseType,
-                                         arg0VN);
+                return EvaluateUnarySimd(this, GT_NEG, /* scalar */ true, type, baseType, arg0VN);
             }
 #endif // TARGET_ARM64
 
@@ -6394,8 +6392,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Add:
 #endif
             {
-                return EvaluateBinarySimd(this, GT_ADD, /* scalar */ false, type,
-                                          baseType, arg0VN, arg1VN);
+                return EvaluateBinarySimd(this, GT_ADD, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
 #ifdef TARGET_ARM64
@@ -6405,8 +6402,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_AddScalar:
 #endif
             {
-                return EvaluateBinarySimd(this, GT_ADD, /* scalar */ true, type,
-                                          baseType, arg0VN, arg1VN);
+                return EvaluateBinarySimd(this, GT_ADD, /* scalar */ true, type, baseType, arg0VN, arg1VN);
             }
 
 #ifdef TARGET_ARM64
@@ -6460,8 +6456,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Subtract:
 #endif
             {
-                return EvaluateBinarySimd(this, GT_SUB, /* scalar */ false, type,
-                                          baseType, arg0VN, arg1VN);
+                return EvaluateBinarySimd(this, GT_SUB, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
 #ifdef TARGET_ARM64
@@ -6471,8 +6466,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_SubtractScalar:
 #endif
             {
-                return EvaluateBinarySimd(this, GT_SUB, /* scalar */ true, type,
-                                          baseType, arg0VN, arg1VN);
+                return EvaluateBinarySimd(this, GT_SUB, /* scalar */ true, type, baseType, arg0VN, arg1VN);
             }
 
             default:
