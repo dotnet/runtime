@@ -60,7 +60,7 @@ WARNING:   When setting properties based on their current state (for example:
     <PropertyGroup>
       <IncompatibleTestBashScriptExitCode>0</IncompatibleTestBashScriptExitCode>
       <CoreRunArgs>@(RuntimeHostConfigurationOption -> '-p &quot;%(Identity)=%(Value)&quot;', ' ')</CoreRunArgs>
-      <SimulatorSuffix Condition="'$(TargetOS)'='iossimulator'">-simulator</SimulatorSuffix>
+      <SimulatorSuffix Condition="'$(TargetOS)' == 'iossimulator'">-simulator</SimulatorSuffix>
       <iOSArchSuffix Condition="'$(TargetArchitecture) == 'x64'">64</iOSArchSuffix>
       <iOSArchSuffix Condition="'$(TargetArchitecture) == 'arm64'">arm64</iOSArchSuffix>
 
