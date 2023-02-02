@@ -13,6 +13,13 @@
 
 #include "rhassert.h"
 
+#ifdef TARGET_UNIX
+#define __stdcall
+#define sprintf_s snprintf
+#define _stricmp strcasecmp
+#define INFINITE            0xFFFFFFFF  // Infinite timeout
+#endif
+
 #define STATIC_CONTRACT_NOTHROW
 
 #undef EP_INFINITE_WAIT
@@ -25,7 +32,7 @@
 #define EP_GCX_PREEMP_EXIT }
 
 #undef EP_ALWAYS_INLINE
-#define EP_ALWAYS_INLINE FORCEINLINE
+#define EP_ALWAYS_INLINE
 
 #undef EP_NEVER_INLINE
 #define EP_NEVER_INLINE
