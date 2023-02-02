@@ -3,71 +3,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net.WebSockets;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Text;
 
 namespace Unity.CoreCLRHelpers
 {
-    internal class AssemblyLoadContextUnloadException : Exception
-    {
-    }
-
-    unsafe delegate IntPtr CallLoadFromAssemblyData2(byte* data, long size);
-    unsafe delegate IntPtr CallLoadFromAssemblyPath2(byte* path, int length);
-
-    struct HostStruct
-    {
-        public IntPtr version;
-
-        public IntPtr/*CallLoadFromAssemblyData2*/ loadFromMemory;
-        public IntPtr/*CallLoadFromAssemblyPath2*/ loadFromPath;
-    }
-
-    unsafe static class CoreCLRHost
-    {
-        static ALCWrapper alcWrapper;
-        static FieldInfo assemblyHandleField;
-        public unsafe static int InitMethod(HostStruct* functionStruct, int structSize)
-        {
-            if (Marshal.SizeOf<HostStruct>() != structSize)
-                throw new Exception("Invalid struct size");
-
-            alcWrapper = new ALCWrapper();
-            assemblyHandleField = typeof(Assembly).Assembly.GetType("System.Reflection.RuntimeAssembly").GetField("m_assembly", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (assemblyHandleField == null)
-                throw new Exception("Failed to find RuntimeAssembly.m_assembly field.");
-
-            var loadAssemblyFromData = (CallLoadFromAssemblyData2)CallLoadFromAssemblyData;
-            GCHandle.Alloc(loadAssemblyFromData, GCHandleType.Normal);
-            functionStruct->loadFromMemory = Marshal.GetFunctionPointerForDelegate(loadAssemblyFromData);
-
-            var loadAssemblyFromPath = (CallLoadFromAssemblyPath2)CallLoadFromAssemblyPath;
-            GCHandle.Alloc(loadAssemblyFromPath, GCHandleType.Normal);
-            functionStruct->loadFromPath = Marshal.GetFunctionPointerForDelegate(loadAssemblyFromPath);
-
-            return 0;
-        }
-
-        static IntPtr /*Assembly*/ CallLoadFromAssemblyData(byte* data, long size)
-        {
-            var assembly = alcWrapper.CallLoadFromAssemblyData(data, size);
-            return (IntPtr)assemblyHandleField.GetValue(assembly);
-        }
-
-        static IntPtr /*Assembly*/ CallLoadFromAssemblyPath(byte* path, int length)
-        {
-            var assembly = alcWrapper.CallLoadFromAssemblyPath(Encoding.UTF8.GetString(path, length));
-            return (IntPtr)assemblyHandleField.GetValue(assembly);
-
-        }
-    }
-
-    
     internal class ALCWrapper : AssemblyLoadContext
     {
         private static ALCWrapper rootDomain;
@@ -86,12 +28,12 @@ namespace Unity.CoreCLRHelpers
 
         public ALCWrapper() : base(isCollectible: false)
         {
-            // If this is the first ALC we create, we consider this the root domain, which 
+            // If this is the first ALC we create, we consider this the root domain, which
             // should load all "System" assemblies.
             if (rootDomain == null)
                 rootDomain = this;
             id = idCount++;
-        #if DEBUG_ALC_WRAPPER            
+        #if DEBUG_ALC_WRAPPER
             Console.WriteLine($"[ALCWrapper:#{id}] Created");
         #endif
             systemPaths = new List<string>();
@@ -116,46 +58,46 @@ namespace Unity.CoreCLRHelpers
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern string InvokeFindPluginCallback(string path);
-        
+
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
         {
             string pluginPath = InvokeFindPluginCallback(unmanagedDllName);
 #if DEBUG_ALC_WRAPPER
-            Console.WriteLine($"[ALCWrapper:#{id}] LoadUnmanagedDll {unmanagedDllName} -> {pluginPath}"); 
+            Console.WriteLine($"[ALCWrapper:#{id}] LoadUnmanagedDll {unmanagedDllName} -> {pluginPath}");
 #endif
             if (!string.IsNullOrEmpty(pluginPath) && Path.IsPathRooted(pluginPath))
                 return LoadUnmanagedDllFromPath(pluginPath);
 
             return IntPtr.Zero;
         }
-        
+
         internal unsafe Assembly CallLoadFromAssemblyData(byte* data, long size)
         {
 #if DEBUG_ALC_WRAPPER
             Console.WriteLine($"[ALCWrapper:#{id}] CallLoadFromAssemblyData {(IntPtr)data} {size}");
-#endif            
+#endif
             using (var mem = new UnmanagedMemoryStream(data, size, size, FileAccess.Read))
             {
                 return LoadFromStream(mem);
             }
         }
-        
+
         internal Assembly CallLoadFromAssemblyPath(string path)
         {
         #if DEBUG_ALC_WRAPPER
             Console.WriteLine($"[ALCWrapper:#{id}] CallLoadFromAssemblyPath {path}");
         #endif
             Assembly asm = LoadFromAssemblyPath(path);
-            
+
             // If the directory containing the assembly we want to load has not been added to user or system paths yet,
-            // add it to user paths, so we can resolve any potential dlls next to it, which this assembly might depend on. 
+            // add it to user paths, so we can resolve any potential dlls next to it, which this assembly might depend on.
             var parent = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(parent) && !userPaths.Contains(parent) && !systemPaths.Contains(parent))
                 userPaths.Add(parent);
-            
+
             return asm;
         }
-        
+
         protected override Assembly Load(AssemblyName name)
         {
 #if DEBUG_ALC_WRAPPER
@@ -202,7 +144,7 @@ namespace Unity.CoreCLRHelpers
             {
 #if DEBUG_ALC_WRAPPER
                 Console.WriteLine($"[ALCWrapper:#{id}] Load assembly {name} from {assemblyPath}");
-#endif                    
+#endif
                 var result = LoadFromAssemblyPath(assemblyPath);
                 return result;
             }
@@ -229,9 +171,9 @@ namespace Unity.CoreCLRHelpers
             catch (System.Exception e)
             {
                 Console.WriteLine($"Caught {e} calling AppDomain.CurrentDomain.DomainUnload.");
-            } 
+            }
         }
-        
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         WeakReference InitUnload()
         {
@@ -245,22 +187,22 @@ namespace Unity.CoreCLRHelpers
             Unload();
             return alcWeakRef;
         }
-        
+
         static Exception FinishUnload(WeakReference alcWeakRef)
         {
             for (int i = 0; alcWeakRef.IsAlive && (i < 10); i++)
-            { 
-            #if DEBUG_ALC_WRAPPER            
+            {
+            #if DEBUG_ALC_WRAPPER
                 Console.WriteLine($"[ALCWrapper] Unload attempt: {i}");
             #endif
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
-            
+
         #if DEBUG_ALC_WRAPPER
             Console.WriteLine($"[ALCWrapper] FinishUnload success: {!alcWeakRef.IsAlive}");
         #endif
-            
+
             if (alcWeakRef.IsAlive)
             {
                 return new AssemblyLoadContextUnloadException();
@@ -268,4 +210,4 @@ namespace Unity.CoreCLRHelpers
             return null;
         }
     }
-}    
+}
