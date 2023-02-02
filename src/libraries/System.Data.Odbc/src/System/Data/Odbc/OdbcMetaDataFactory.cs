@@ -134,6 +134,7 @@ namespace System.Data.Odbc
             }
         }
 
+#pragma warning disable CA1859 // https://github.com/dotnet/roslyn-analyzers/issues/6440
         private static object BooleanFromODBC(object odbcSource)
         {
             if (odbcSource != DBNull.Value)
@@ -153,6 +154,7 @@ namespace System.Data.Odbc
 
             return DBNull.Value;
         }
+#pragma warning disable CA1859
 
         private static OdbcCommand GetCommand(OdbcConnection connection)
         {
@@ -1061,7 +1063,7 @@ namespace System.Data.Odbc
             return true;
         }
 
-        private static DataTable NewDataTableFromReader(IDataReader reader, out object[] values, string tableName)
+        private static DataTable NewDataTableFromReader(OdbcDataReader reader, out object[] values, string tableName)
         {
             DataTable resultTable = new DataTable(tableName);
             resultTable.Locale = System.Globalization.CultureInfo.InvariantCulture;

@@ -3575,7 +3575,6 @@ void Compiler::compInitDebuggingInfo()
 
         JITDUMP("Debuggable code - Add new %s to perform initialization of variables\n", fgFirstBB->dspToString());
     }
-
     /*-------------------------------------------------------------------------
      *
      * Read the stmt-offsets table and the line-number table
@@ -3903,9 +3902,9 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 #endif
 
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            // The JIT doesn't currently support loop alignment for prejitted images.
+            // The JIT doesn't currently support loop alignment for prejitted images outside NativeAOT.
             // (The JIT doesn't know the final address of the code, hence
             // it can't align code based on unknown addresses.)
 
@@ -4347,6 +4346,11 @@ void Compiler::EndPhase(Phases phase)
 //
 void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFlags* compileFlags)
 {
+    compFunctionTraceStart();
+
+    // Enable flow graph checks
+    activePhaseChecks |= PhaseChecks::CHECK_FG;
+
     // Prepare for importation
     //
     auto preImportPhase = [this]() {
@@ -4375,8 +4379,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
-    compFunctionTraceStart();
-
     // Incorporate profile data.
     //
     // Note: the importer is sensitive to block weights, so this has
@@ -4401,8 +4403,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Enable the post-phase checks that use internal logic to decide when checking makes sense.
     //
-    activePhaseChecks = PhaseChecks::CHECK_EH | PhaseChecks::CHECK_LOOPS | PhaseChecks::CHECK_UNIQUE |
-                        PhaseChecks::CHECK_PROFILE | PhaseChecks::CHECK_LINKED_LOCALS;
+    activePhaseChecks |= PhaseChecks::CHECK_EH | PhaseChecks::CHECK_LOOPS | PhaseChecks::CHECK_UNIQUE |
+                         PhaseChecks::CHECK_PROFILE | PhaseChecks::CHECK_LINKED_LOCALS;
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
@@ -4431,23 +4433,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
-
-    // Compute bbNum, bbRefs and bbPreds
-    //
-    // This is the first time full (not cheap) preds will be computed.
-    // And, if we have profile data, we can now check integrity.
-    //
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated.
-    //
-    auto computePredsPhase = [this]() {
-        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
-        fgRenumberBlocks();
-        fgComputePreds();
-        // Enable flow graph checks
-        activePhaseChecks |= PhaseChecks::CHECK_FG;
-    };
-    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
     // Expand any patchpoints
     //
@@ -10013,8 +9998,8 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 // gtChangeOperToNullCheck: helper to change tree oper to a NULLCHECK.
 //
 // Arguments:
-//    tree       - the node to change;
-//    basicBlock - basic block of the node.
+//    tree  - the node to change;
+//    block - basic block of the node.
 //
 // Notes:
 //    the function should not be called after lowering for platforms that do not support
@@ -10026,6 +10011,8 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
+    assert(fgAddrCouldBeNull(tree->gtGetOp1()));
+    tree->gtFlags |= GTF_EXCEPT;
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
