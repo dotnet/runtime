@@ -244,7 +244,7 @@ internal static class ObjectHeader
         return false;
     }
 
-    private static bool TryEnterInflatedFast(object o, ref bool lockTaken)
+    private static bool TryEnterInflatedFast(object o)
     {
         LockWord lw = GetLockWord (ref o);
         int small_id = Thread.CurrentThread.GetSmallId();
@@ -258,7 +258,6 @@ internal static class ObjectHeader
                 uint prev_status = Interlocked.CompareExchange (ref SyncBlock.Status (ref mon), new_status, old_status);
                 if (prev_status == old_status)
                 {
-                    lockTaken = true;
                     return true;
                 }
                 // someone else changed the status, go around the loop again
@@ -268,7 +267,6 @@ internal static class ObjectHeader
             {
                 // we own it
                 SyncBlock.IncrementNest (ref mon);
-                lockTaken = true;
                 return true;
             }
             else
@@ -280,15 +278,11 @@ internal static class ObjectHeader
     }
 
     // returns false if we should fall back to the slow path
-    // returns true if we tried to enter
-    // sets lockTaken to true if the lock was taken
+    // returns true if the lock was taken
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryEnterFast(object? o, ref bool lockTaken)
+    public static bool TryEnterFast(object? o)
     {
-        if (lockTaken || o == null)
-            return false;
-
-        lockTaken = false;
+	Debug.Assert (o != null);
 
         LockWord lw = GetLockWord (ref o);
         if (lw.IsFree)
@@ -297,7 +291,6 @@ internal static class ObjectHeader
             LockWord nlw = LockWord.NewFlat(owner);
             if (LockWordCompareExchange (ref o, nlw, lw) == lw.AsIntPtr)
             {
-                lockTaken = true;
                 return true;
             } else {
                 return false;
@@ -305,7 +298,7 @@ internal static class ObjectHeader
         }
         else if (lw.IsInflated)
         {
-            return TryEnterInflatedFast(o, ref lockTaken);
+            return TryEnterInflatedFast(o);
         }
         else if (lw.IsFlat)
         {

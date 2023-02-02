@@ -127,8 +127,10 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(timeout));
 
             // fast path
-            if (ObjectHeader.TryEnterFast(obj, ref lockTaken))
+            if (ObjectHeader.TryEnterFast(obj)) {
+		lockTaken = true;
                 return;
+	    }
 
             try_enter_with_atomic_var(obj, timeout, true, ref lockTaken);
         }
