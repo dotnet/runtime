@@ -61,8 +61,8 @@ WARNING:   When setting properties based on their current state (for example:
       <IncompatibleTestBashScriptExitCode>0</IncompatibleTestBashScriptExitCode>
       <CoreRunArgs>@(RuntimeHostConfigurationOption -> '-p &quot;%(Identity)=%(Value)&quot;', ' ')</CoreRunArgs>
       <SimulatorSuffix Condition="'$(TargetOS)' == 'iossimulator'">-simulator</SimulatorSuffix>
-      <iOSArchSuffix Condition="'$(TargetArchitecture) == 'x64'">64</iOSArchSuffix>
-      <iOSArchSuffix Condition="'$(TargetArchitecture) == 'arm64'">arm64</iOSArchSuffix>
+      <iOSArchSuffix Condition="'$(TargetArchitecture)' == 'x64'">64</iOSArchSuffix>
+      <iOSArchSuffix Condition="'$(TargetArchitecture)' == 'arm64'">arm64</iOSArchSuffix>
 
 
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
@@ -403,7 +403,7 @@ CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And ('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And ('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios')">
       <![CDATA[
 __Command=""
 if [ ! -z ${__TestDotNetCmd+x} ] %3B then
