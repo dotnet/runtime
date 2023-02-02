@@ -2,9 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
+.namespace localloc_Conformance_Base
+{
 .class public _localloc {
 
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .locals	(native int)
 .maxstack 10
@@ -108,4 +114,5 @@ FAIL:
 
 }
 }
-.assembly 'localloc'{}
+.assembly 'localloc_Conformance_Base'{}
+}

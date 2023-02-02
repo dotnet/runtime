@@ -1,0 +1,41 @@
+trigger: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+jobs:
+
+#
+# Evaluate paths
+#
+- template: /eng/pipelines/common/evaluate-default-paths.yml
+
+# Debugger tests
+- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+  parameters:
+    platforms:
+      - Browser_wasm
+      - Browser_wasm_win
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+
+- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+  parameters:
+    platforms:
+      - Browser_wasm
+      - Browser_wasm_win
+    extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true
+    nameSuffix: DebuggerTests_MultiThreaded
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+
+- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+  parameters:
+    platforms:
+      - Browser_wasm_firefox
+    browser: firefox
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+    alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+    # ff tests are unstable currently
+    shouldContinueOnError: true

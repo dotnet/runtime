@@ -2,8 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
+.namespace brtrue_Conformance
+{
 .class public _brtrue {
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		20
 .locals	(int32,int32)
@@ -145,4 +151,5 @@ FAIL:
 
 }
 }
-.assembly 'brtrue'{}
+.assembly 'brtrue_Conformance'{}
+}
