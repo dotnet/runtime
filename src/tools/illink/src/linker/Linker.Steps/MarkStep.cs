@@ -1610,7 +1610,7 @@ namespace Mono.Linker.Steps
 				Debug.Assert (reason.Kind == DependencyKind.FieldAccess || reason.Kind == DependencyKind.Ldtoken);
 				// Blame the field reference (without actually marking) on the original reason.
 				Tracer.AddDirectDependency (reference, reason, marked: false);
-				MarkType (reference.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, reference), new MessageOrigin (Context.TryResolve (reference)));
+				MarkType (reference.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, reference));
 
 				// Blame the field definition that we will resolve on the field reference.
 				reason = new DependencyInfo (DependencyKind.FieldOnGenericInstance, reference);

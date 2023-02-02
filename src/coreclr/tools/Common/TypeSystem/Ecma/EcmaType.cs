@@ -54,7 +54,7 @@ namespace Internal.TypeSystem.Ecma
 
         private int InitializeHashCode()
         {
-            TypeDesc containingType = ContainingType;
+            DefType containingType = ContainingType;
             if (containingType == null)
             {
                 string ns = Namespace;

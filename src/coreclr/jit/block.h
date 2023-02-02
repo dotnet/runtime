@@ -902,10 +902,7 @@ struct BasicBlock : private LIR::Range
         m_firstNode = tree;
     }
 
-    union {
-        EntryState* bbEntryState; // verifier tracked state of all entries in stack.
-        flowList*   bbLastPred;   // last pred list entry
-    };
+    EntryState* bbEntryState; // verifier tracked state of all entries in stack.
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
 
@@ -1091,10 +1088,14 @@ struct BasicBlock : private LIR::Range
     BlockSet bbReach; // Set of all blocks that can reach this one
 
     union {
-        BasicBlock* bbIDom;      // Represent the closest dominator to this block (called the Immediate
-                                 // Dominator) used to compute the dominance tree.
-        void* bbSparseProbeList; // Used early on by fgInstrument
+        BasicBlock* bbIDom;   // Represent the closest dominator to this block (called the Immediate
+                              // Dominator) used to compute the dominance tree.
+        flowList* bbLastPred; // Used early on by fgComputePreds
+    };
+
+    union {
         void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
+        void* bbSparseProbeList; // Used early on by fgInstrument
     };
 
     unsigned bbPostOrderNum; // the block's post order number in the graph.

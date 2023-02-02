@@ -409,10 +409,10 @@ void BlockCountInstrumentor::Prepare(bool preImport)
 //   would appear in post-tail call blocks.
 //
 // Notes:
-//   Conveys relocation information by modifying the cheap pred list.
+//   Conveys relocation information by updating the m_relocationMap.
 //
 //   Actual relocation happens during Instrument, keying off of the
-//   BBF_TAILCALL_SUCCESSOR flag and the (modified) cheap pred list.
+//   BBF_TAILCALL_SUCCESSOR flag and m_relocationMap entries.
 //
 void BlockCountInstrumentor::RelocateProbes()
 {
@@ -435,24 +435,15 @@ void BlockCountInstrumentor::RelocateProbes()
     //
     assert(!m_comp->compIsForInlining());
 
-    // Build cheap preds.
-    //
-    m_comp->fgComputeCheapPreds();
-    m_comp->EnsureBasicBlockEpoch();
-
     // Keep track of return blocks needing special treatment.
-    // We also need to track of duplicate preds.
     //
-    JitExpandArrayStack<BasicBlock*> specialReturnBlocks(m_comp->getAllocator(CMK_Pgo));
-    BlockSet                         predsSeen = BlockSetOps::MakeEmpty(m_comp);
+    ArrayStack<BasicBlock*> criticalPreds(m_comp->getAllocator(CMK_Pgo));
 
     // Walk blocks looking for BBJ_RETURNs that are successors of potential tail calls.
     //
-    // If any such has a conditional pred, we will need to reroute flow from those preds
+    // If any such block has a conditional pred, we will need to reroute flow from those preds
     // via an intermediary block. That block will subsequently hold the relocated block
-    // probe for the return for those preds.
-    //
-    // Scrub the cheap pred list for these blocks so that each pred appears at most once.
+    // probe for the returnBlock for those preds.
     //
     for (BasicBlock* const block : m_comp->Blocks())
     {
@@ -463,120 +454,73 @@ void BlockCountInstrumentor::RelocateProbes()
             continue;
         }
 
-        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
+        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
         {
-            JITDUMP("Return " FMT_BB " is successor of possible tail call\n", block->bbNum);
-            assert(block->bbJumpKind == BBJ_RETURN);
-            bool pushed = false;
-            BlockSetOps::ClearD(m_comp, predsSeen);
-            for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
+            continue;
+        }
+
+        JITDUMP("Return " FMT_BB " is successor of possible tail call\n", block->bbNum);
+        assert(block->bbJumpKind == BBJ_RETURN);
+
+        // Scan for critical preds, and add relocated probes to non-critical preds.
+        //
+        criticalPreds.Reset();
+        for (BasicBlock* const pred : block->PredBlocks())
+        {
+            if (!ShouldProcess(pred))
             {
-                BasicBlock* const pred = predEdge->block;
+                JITDUMP(FMT_BB " -> " FMT_BB " is dead edge\n", pred->bbNum, block->bbNum);
+                continue;
+            }
 
-                // If pred is not to be processed, ignore it and scrub from the pred list.
+            BasicBlock* const succ = pred->GetUniqueSucc();
+
+            if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
+            {
+                // Route pred through the intermediary.
                 //
-                if (!ShouldProcess(pred))
+                JITDUMP(FMT_BB " -> " FMT_BB " is critical edge\n", pred->bbNum, block->bbNum);
+                criticalPreds.Push(pred);
+            }
+            else
+            {
+                // Ensure this pred is not a fall through.
+                //
+                if (pred->bbJumpKind == BBJ_NONE)
                 {
-                    JITDUMP(FMT_BB " -> " FMT_BB " is dead edge\n", pred->bbNum, block->bbNum);
-                    predEdge->block = nullptr;
-                    continue;
+                    pred->bbJumpKind = BBJ_ALWAYS;
+                    pred->bbJumpDest = block;
                 }
-
-                BasicBlock* const succ = pred->GetUniqueSucc();
-
-                if (succ == nullptr)
-                {
-                    // Flow from pred -> block is conditional, and will require updating.
-                    //
-                    JITDUMP(FMT_BB " -> " FMT_BB " is critical edge\n", pred->bbNum, block->bbNum);
-                    if (!pushed)
-                    {
-                        specialReturnBlocks.Push(block);
-                        pushed = true;
-                    }
-
-                    // Have we seen this pred before?
-                    //
-                    if (BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum))
-                    {
-                        // Yes, null out the duplicate pred list entry.
-                        //
-                        predEdge->block = nullptr;
-                    }
-                }
-                else
-                {
-                    // We should only ever see one reference to this pred.
-                    //
-                    assert(!BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum));
-
-                    // Ensure flow from non-critical preds is BBJ_ALWAYS as we
-                    // may add a new block right before block.
-                    //
-                    if (pred->bbJumpKind == BBJ_NONE)
-                    {
-                        pred->bbJumpKind = BBJ_ALWAYS;
-                        pred->bbJumpDest = block;
-                    }
-                    assert(pred->bbJumpKind == BBJ_ALWAYS);
-                }
-
-                BlockSetOps::AddElemD(m_comp, predsSeen, pred->bbNum);
+                assert(pred->bbJumpKind == BBJ_ALWAYS);
             }
         }
-    }
 
-    // Did we find any blocks with probes needing relocation?
-    //
-    if (specialReturnBlocks.Size() == 0)
-    {
-        JITDUMP("No probes need relocating\n");
-        return;
-    }
-
-    JITDUMP("%u probes need relocating\n", specialReturnBlocks.Size());
-
-    // Now process each special return block.
-    // Create an intermediary that falls through to the return.
-    // Update any critical edges to target the intermediary.
-    //
-    // Note we could also route any non-tail-call pred via the
-    // intermedary. Doing so would cut down on probe duplication.
-    //
-    SetModifiedFlow();
-
-    while (specialReturnBlocks.Size() > 0)
-    {
-        bool              first        = true;
-        BasicBlock* const block        = specialReturnBlocks.Pop();
-        BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-
-        intermediary->bbFlags |= BBF_IMPORTED;
-        intermediary->inheritWeight(block);
-
-        for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
+        // If there are any critical preds, create and instrument the
+        // intermediary and reroute flow. Mark the intermediary so we make
+        // sure to instrument it later.
+        //
+        if (criticalPreds.Height() > 0)
         {
-            BasicBlock* const pred = predEdge->block;
+            BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
+            intermediary->bbFlags |= BBF_IMPORTED | BBF_MARKED;
+            intermediary->inheritWeight(block);
+            m_comp->fgAddRefPred(block, intermediary);
+            SetModifiedFlow();
 
-            if (pred != nullptr)
+            while (criticalPreds.Height() > 0)
             {
-                BasicBlock* const succ = pred->GetUniqueSucc();
+                BasicBlock* const pred = criticalPreds.Pop();
 
-                if (succ == nullptr)
-                {
-                    // This will update all branch targets from pred.
-                    //
-                    m_comp->fgReplaceJumpTarget(pred, intermediary, block);
+                // Redirect any jumps
+                //
+                m_comp->fgReplaceJumpTarget(pred, intermediary, block);
 
-                    // Patch the pred list. Note we only need one pred list
-                    // entry pointing at intermediary.
-                    //
-                    predEdge->block = first ? intermediary : nullptr;
-                    first           = false;
-                }
-                else
+                // Handle case where we had a fall through critical edge
+                //
+                if (pred->bbNext == intermediary)
                 {
-                    assert(pred->bbJumpKind == BBJ_ALWAYS);
+                    m_comp->fgRemoveRefPred(pred, block);
+                    m_comp->fgAddRefPred(intermediary, block);
                 }
             }
         }
@@ -657,29 +601,25 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 
     if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) != 0)
     {
-        // We should have built and updated cheap preds during the prepare stage.
-        //
-        assert(m_comp->fgCheapPredsValid);
-
-        // Instrument each predecessor.
+        // This block probe needs to be relocated; instrument each predecessor.
         //
         bool first = true;
-        for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
+        for (BasicBlock* pred : block->PredBlocks())
         {
-            BasicBlock* const pred = predEdge->block;
-
-            // We may have scrubbed cheap pred list duplicates during Prepare.
-            //
-            if (pred != nullptr)
+            const bool isLivePred = ShouldProcess(pred) || ((pred->bbFlags & BBF_MARKED) == BBF_MARKED);
+            if (!isLivePred)
             {
-                JITDUMP("Placing copy of block probe for " FMT_BB " in pred " FMT_BB "\n", block->bbNum, pred->bbNum);
-                if (!first)
-                {
-                    asgNode = m_comp->gtCloneExpr(asgNode);
-                }
-                m_comp->fgNewStmtAtBeg(pred, asgNode);
-                first = false;
+                continue;
             }
+
+            JITDUMP("Placing copy of block probe for " FMT_BB " in pred " FMT_BB "\n", block->bbNum, pred->bbNum);
+            if (!first)
+            {
+                asgNode = m_comp->gtCloneExpr(asgNode);
+            }
+            m_comp->fgNewStmtAtBeg(pred, asgNode);
+            pred->bbFlags &= ~BBF_MARKED;
+            first = false;
         }
     }
     else
@@ -1530,7 +1470,6 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
 //   would appear in post-tail call blocks.
 //
 // Notes:
-//   May build and modify the cheap pred lists.
 //   May create Leader and Duplicate probes.
 //
 void EfficientEdgeCountInstrumentor::RelocateProbes()
@@ -1554,26 +1493,16 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
     //
     assert(!m_comp->compIsForInlining());
 
-    // Build cheap preds.
+    // We may need to track the critical predecessors of some blocks.
     //
-    m_comp->fgComputeCheapPreds();
-    m_comp->EnsureBasicBlockEpoch();
-
-    // Keep track of return blocks needing special treatment.
-    // We also need to track of duplicate preds.
-    //
-    JitExpandArrayStack<BasicBlock*> specialReturnBlocks(m_comp->getAllocator(CMK_Pgo));
-    BlockSet                         retsPushed = BlockSetOps::MakeEmpty(m_comp);
-    BlockSet                         predsSeen  = BlockSetOps::MakeEmpty(m_comp);
+    ArrayStack<BasicBlock*> criticalPreds(m_comp->getAllocator(CMK_Pgo));
 
     // Walk probe list looking for probes that would appear in BBJ_RETURNs
-    // that are successors of potential tail calls.
+    // that are successors of potential tail calls, and relocate them.
     //
-    // If any such has a conditional pred, we will need to reroute flow from those preds
-    // via an intermediary block. That block will subsequently hold the relocated
+    // If any such block has a conditional pred, we will need to reroute flow from those preds
+    // via an intermediary block. That block will subsequently hold the relocated edge
     // probe for the return for those preds.
-    //
-    // Scrub the cheap pred list for these blocks so that each pred appears at most once.
     //
     for (BasicBlock* const block : m_comp->Blocks())
     {
@@ -1582,115 +1511,15 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
             continue;
         }
 
-        for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
+        // Nothing to do unless the block is a tail call successor.
+        //
+        if ((block->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
         {
-            if (probe->kind == EdgeKind::Deleted)
-            {
-                continue;
-            }
-
-            // Figure out what block the probe will appear in.
-            // We do not expect to see any critical edges as we should have split them already.
-            //
-            BasicBlock* const source            = probe->source;
-            BasicBlock* const target            = probe->target;
-            BasicBlock*       instrumentedBlock = nullptr;
-
-            switch (probe->kind)
-            {
-                case EdgeKind::PostdominatesSource:
-                    instrumentedBlock = source;
-                    break;
-                case EdgeKind::DominatesTarget:
-                    instrumentedBlock = target;
-                    break;
-                case EdgeKind::Relocated:
-                    instrumentedBlock = block;
-                    break;
-                default:
-                    assert(!"unexpected probe kind");
-            }
-
-            assert(instrumentedBlock != nullptr);
-
-            // Nothing to do unless the block we wanted to instrument is a tail call successor.
-            //
-            if ((instrumentedBlock->bbFlags & BBF_TAILCALL_SUCCESSOR) == 0)
-            {
-                continue;
-            }
-
-            JITDUMP("Instrumentation target " FMT_BB " is successor of possible tail call\n", instrumentedBlock->bbNum);
-            assert(instrumentedBlock->bbJumpKind == BBJ_RETURN);
-
-            // We will need to relocate probes in this block. Add to our list if not already there.
-            //
-            if (!BlockSetOps::IsMember(m_comp, retsPushed, instrumentedBlock->bbNum))
-            {
-                specialReturnBlocks.Push(instrumentedBlock);
-                BlockSetOps::AddElemD(m_comp, retsPushed, instrumentedBlock->bbNum);
-            }
-
-            // Figure out which preds we'll relocate things to.
-            //
-            BlockSetOps::ClearD(m_comp, predsSeen);
-
-            for (BasicBlockList* predEdge = instrumentedBlock->bbCheapPreds; predEdge != nullptr;
-                 predEdge                 = predEdge->next)
-            {
-                BasicBlock* const pred = predEdge->block;
-                BasicBlock* const succ = pred->GetUniqueSucc();
-
-                if (succ == nullptr)
-                {
-                    // Flow from pred -> block is conditional, and will require updating.
-                    //
-                    JITDUMP(FMT_BB " -> " FMT_BB " is critical edge\n", pred->bbNum, instrumentedBlock->bbNum);
-
-                    // Have we seen this pred before?
-                    //
-                    if (BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum))
-                    {
-                        // Yes, null out the duplicate pred list entry.
-                        //
-                        predEdge->block = nullptr;
-                    }
-                }
-                else
-                {
-                    // We should only ever see one reference to this pred.
-                    //
-                    assert(!BlockSetOps::IsMember(m_comp, predsSeen, pred->bbNum));
-
-                    // Ensure flow from non-critical preds is BBJ_ALWAYS as we
-                    // may add a new block right before block.
-                    //
-                    if (pred->bbJumpKind == BBJ_NONE)
-                    {
-                        pred->bbJumpKind = BBJ_ALWAYS;
-                        pred->bbJumpDest = block;
-                    }
-                    assert(pred->bbJumpKind == BBJ_ALWAYS);
-                }
-
-                BlockSetOps::AddElemD(m_comp, predsSeen, pred->bbNum);
-            }
+            continue;
         }
-    }
 
-    // Did we find any blocks with probes needing relocation?
-    //
-    if (specialReturnBlocks.Size() == 0)
-    {
-        JITDUMP("No probes need relocating\n");
-        return;
-    }
-
-    JITDUMP("%u blocks have probes need relocating\n", specialReturnBlocks.Size());
-
-    while (specialReturnBlocks.Size() > 0)
-    {
-        BasicBlock* const block = specialReturnBlocks.Pop();
+        JITDUMP("Return " FMT_BB " is successor of possible tail call\n", block->bbNum);
+        assert(block->bbJumpKind == BBJ_RETURN);
 
         // This block should have just one probe, which we no longer need.
         //
@@ -1699,26 +1528,15 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         assert(probe->kind == EdgeKind::PostdominatesSource);
         probe->kind = EdgeKind::Deleted;
 
-        // Any critical edge preds will probe via this intermediary block
-        // that we will create when necessary.
-        //
-        BasicBlock* intermediary = nullptr;
-
         // The first probe we add will be the leader of a duplicate probe group.
         //
         Probe* leader = nullptr;
 
-        for (BasicBlockList* predEdge = block->bbCheapPreds; predEdge != nullptr; predEdge = predEdge->next)
+        // Scan for critical preds, and add relocated probes to non-critical preds.
+        //
+        criticalPreds.Reset();
+        for (BasicBlock* const pred : block->PredBlocks())
         {
-            BasicBlock* const pred = predEdge->block;
-
-            if (pred == nullptr)
-            {
-                // Pred edge for a duplicate pred we scrubbed above.
-                //
-                continue;
-            }
-
             // Does this pred reach along a critical edge,
             // or is the pred the tail of a callfinally pair?
             //
@@ -1726,27 +1544,44 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 
             if ((succ == nullptr) || pred->isBBCallAlwaysPairTail())
             {
-                // Yes. Create intermediary if necessary and add probe there.
+                // Route pred through the intermediary.
                 //
-                if (intermediary == nullptr)
-                {
-                    intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
-
-                    intermediary->bbFlags |= BBF_IMPORTED;
-                    intermediary->inheritWeight(block);
-                    NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
-                    SetModifiedFlow();
-                }
-
-                // Alter flow from pred->block to go via intermediary
-                //
-                m_comp->fgReplaceJumpTarget(pred, intermediary, block);
+                JITDUMP(FMT_BB " -> " FMT_BB " is critical edge\n", pred->bbNum, block->bbNum);
+                criticalPreds.Push(pred);
             }
             else
             {
                 // Put a copy of probe into the pred.
                 //
                 NewRelocatedProbe(pred, probe->source, probe->target, &leader);
+
+                // Ensure this pred is not a fall through.
+                //
+                if (pred->bbJumpKind == BBJ_NONE)
+                {
+                    pred->bbJumpKind = BBJ_ALWAYS;
+                    pred->bbJumpDest = block;
+                }
+                assert(pred->bbJumpKind == BBJ_ALWAYS);
+            }
+        }
+
+        // If there are any critical preds, create and instrument the
+        // intermediary and reroute flow.
+        //
+        if (criticalPreds.Height() > 0)
+        {
+            BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_NONE, block, /* extendRegion*/ true);
+            intermediary->bbFlags |= BBF_IMPORTED;
+            intermediary->inheritWeight(block);
+            m_comp->fgAddRefPred(block, intermediary);
+            NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
+            SetModifiedFlow();
+
+            while (criticalPreds.Height() > 0)
+            {
+                BasicBlock* const pred = criticalPreds.Pop();
+                m_comp->fgReplaceJumpTarget(pred, intermediary, block);
             }
         }
     }
@@ -2333,7 +2168,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     }
     else
     {
-        JITDUMP("Using block profiling, because %s\n", edgesEnabled ? "edge profiling disabled" : "prejitting");
+        JITDUMP("Using block profiling, because %s\n", prejit ? "prejitting" : "edge profiling disabled");
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
 
@@ -2466,13 +2301,6 @@ PhaseStatus Compiler::fgInstrumentMethod()
         fgCountInstrumentor->SuppressProbes();
         fgHistogramInstrumentor->SuppressProbes();
 
-        // If we needed to create cheap preds, we're done with them now.
-        //
-        if (fgCheapPredsValid)
-        {
-            fgRemovePreds();
-        }
-
         // We may have modified control flow preparing for instrumentation.
         //
         const bool modifiedFlow = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
@@ -2509,13 +2337,6 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     fgCountInstrumentor->InstrumentMethodEntry(schema, profileMemory);
     fgHistogramInstrumentor->InstrumentMethodEntry(schema, profileMemory);
-
-    // If we needed to create cheap preds, we're done with them now.
-    //
-    if (fgCheapPredsValid)
-    {
-        fgRemovePreds();
-    }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -4365,11 +4186,24 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
 #ifdef DEBUG
                     // Now edge->flEdgeWeightMin and otherEdge->flEdgeWeightMax) should add up to bSrc->bbWeight
                     diff = bSrc->bbWeight - (edge->edgeWeightMin() + otherEdge->edgeWeightMax());
-                    assert(((-slop) <= diff) && (diff <= slop));
+
+                    if (!((-slop) <= diff) && (diff <= slop))
+                    {
+                        JITDUMP("Edge weight discrepancy: " FMT_BB "[" FMT_WT "] -> {" FMT_BB "[min:" FMT_WT
+                                "], " FMT_BB "[max: " FMT_WT "]} diff " FMT_WT " exceeds slop " FMT_WT "\n",
+                                bSrc->bbNum, bSrc->bbWeight, bDst->bbNum, edge->edgeWeightMin(), otherDst->bbNum,
+                                otherEdge->edgeWeightMax(), diff, slop);
+                    }
 
                     // Now otherEdge->flEdgeWeightMin and edge->flEdgeWeightMax) should add up to bSrc->bbWeight
                     diff = bSrc->bbWeight - (otherEdge->edgeWeightMin() + edge->edgeWeightMax());
-                    assert(((-slop) <= diff) && (diff <= slop));
+                    if (!((-slop) <= diff) && (diff <= slop))
+                    {
+                        JITDUMP("Edge weight discrepancy: " FMT_BB "[" FMT_WT "] -> {" FMT_BB "[max:" FMT_WT
+                                "], " FMT_BB "[min: " FMT_WT "]} diff " FMT_WT " exceeds slop " FMT_WT "\n",
+                                bSrc->bbNum, bSrc->bbWeight, bDst->bbNum, edge->edgeWeightMax(), otherDst->bbNum,
+                                otherEdge->edgeWeightMin(), diff, slop);
+                    }
 #endif // DEBUG
                 }
             }

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <_SampleProject>Wasm.Advanced.Sample.csproj</_SampleProject>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <!-- add OpenGL emulation -->
