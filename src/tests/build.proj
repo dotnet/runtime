@@ -581,6 +581,8 @@
       <CreateLibProperty Include="IlcBuildTasksPath=$(IlcBuildTasksPath)" />
       <CreateLibProperty Include="IlcSdkPath=$(IlcSdkPath)" />
       <CreateLibProperty Include="IlcFrameworkPath=$(IlcFrameworkPath)" />
+      <CreateLibProperty Include="IlcFrameworkNativePath=$(IlcFrameworkNativePath)" />
+      <CreateLibProperty Include="IlcDynamicBuildPropertyDependencies=$(IlcDynamicBuildPropertyDependencies)" />
       <CreateLibProperty Include="FrameworkLibPath=$(IlcSdkPath)" />
       <CreateLibProperty Include="FrameworkObjPath=$(IntermediateOutputPath)/NativeAOTFX" />
       <CreateLibProperty Condition="'$(Configuration)' == 'Checked' or '$(Configuration)' == 'Release'" Include="Optimize=true" />

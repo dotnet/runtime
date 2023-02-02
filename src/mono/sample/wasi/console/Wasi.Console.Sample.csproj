@@ -4,10 +4,5 @@
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <_SampleProject>Wasi.Console.Sample.csproj</_SampleProject>
-    <_SampleAssembly>Wasi.Console.Sample.dll</_SampleAssembly>
-  </PropertyGroup>
-
   <Target Name="RunSample" DependsOnTargets="RunSampleWithWasmtime" />
 </Project>

@@ -222,7 +222,7 @@ namespace Microsoft.Interop
             return Block(allStatements);
         }
 
-        private ExpressionSyntax CreateFunctionPointerExpression(
+        private ParenthesizedExpressionSyntax CreateFunctionPointerExpression(
             ExpressionSyntax untypedFunctionPointerExpression,
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv)
         {
