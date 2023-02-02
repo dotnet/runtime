@@ -670,7 +670,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
                 partial class C
                 {
-                    [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""M1 {A} M1 { M3"")]
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""M1 {A} M1 { M1"")]
                     static partial void M1(ILogger logger);
 
                     [LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = ""M2 {A} M2 } M2"")]
@@ -691,15 +691,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     [LoggerMessage(EventId = 7, Level = LogLevel.Debug, Message = ""{M7{"")]
                     static partial void M7(ILogger logger);
 
-                    [LoggerMessage(EventId = 8, Level = LogLevel.Debug, Message = ""M8 {{arg1}}"")]
+                    [LoggerMessage(EventId = 8, Level = LogLevel.Debug, Message = ""{{{arg1 M8"")]
                     static partial void M8(ILogger logger);
 
-                    [LoggerMessage(EventId = 9, Level = LogLevel.Debug, Message = ""}M9{arg1}{arg2}"")]
+                    [LoggerMessage(EventId = 9, Level = LogLevel.Debug, Message = ""arg1}}} M9"")]
                     static partial void M9(ILogger logger);
+
+                    [LoggerMessage(EventId = 10, Level = LogLevel.Debug, Message = ""{} M10"")]
+                    static partial void M10(ILogger logger);
+
+                    [LoggerMessage(EventId = 11, Level = LogLevel.Debug, Message = ""{ } M11"")]
+                    static partial void M11(ILogger logger);
                 }
             ");
 
-            Assert.Equal(9, diagnostics.Count);
+            Assert.Equal(11, diagnostics.Count);
             foreach (var diagnostic in diagnostics)
             {
                 Assert.Equal(DiagnosticDescriptors.MalformedFormatStrings.Id, diagnostic.Id);
@@ -707,7 +713,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
-        public async Task Templates()
+        public async Task ValidTemplates()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
                 partial class C
@@ -727,14 +733,14 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     [LoggerMessage(EventId = 5, Level = LogLevel.Debug, Message = ""{arg1} M5"")]
                     static partial void M5(ILogger logger, int arg1);
 
-                    [LoggerMessage(EventId = 6, Level = LogLevel.Debug, Message = ""{arg1}{arg2}"")]
+                    [LoggerMessage(EventId = 6, Level = LogLevel.Debug, Message = ""M6{arg1}M6{arg2}M6"")]
                     static partial void M6(ILogger logger, string arg1, string arg2);
 
-                    [LoggerMessage(EventId = 7, Level = LogLevel.Debug, Message = ""M7 {arg1} {arg2}"")]
-                    static partial void M7(ILogger logger, string arg1, string arg2);
+                    [LoggerMessage(EventId = 7, Level = LogLevel.Debug, Message = ""M7 {{const}}"")]
+                    static partial void M7(ILogger logger);
 
-                    [LoggerMessage(EventId = 8, Level = LogLevel.Debug, Message = ""{arg1} M8 {arg2} "")]
-                    static partial void M8(ILogger logger, string arg1, string arg2);
+                    [LoggerMessage(EventId = 8, Level = LogLevel.Debug, Message = ""{{prefix{{{arg1}}}suffix}}"")]
+                    static partial void M8(ILogger logger, string arg1);
                 }
             ");
 

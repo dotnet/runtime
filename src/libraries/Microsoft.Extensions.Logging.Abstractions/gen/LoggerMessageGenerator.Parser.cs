@@ -637,68 +637,76 @@ namespace Microsoft.Extensions.Logging.Generators
 
                     // Format item syntax : { index[,alignment][ :formatString] }.
                     int formatDelimiterIndex = FindIndexOfAny(message, _formatDelimiters, openBraceIndex, closeBraceIndex);
-
                     string templateName = message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
+
+                    if (string.IsNullOrWhiteSpace(templateName)) // braces with no named argument, such as {} and { }
+                    {
+                        success = false;
+                        break;
+                    }
+
                     templateMap[templateName] = templateName;
                     templateList.Add(templateName);
+
                     scanIndex = closeBraceIndex + 1;
                 }
 
                 return success;
             }
 
-            private static int FindBraceIndex(string message, char brace, int startIndex, int endIndex)
+            /// <summary>
+            /// Searches for the next brace index in the message.
+            /// </summary>
+            /// <remarks> The search skips any sequences of {{ or }}.</remarks>
+            /// <example>{{prefix{{{Argument}}}suffix}}</example>
+            /// <returns>The zero-based index position of the first occurrence of the searched brace; -1 if the searched brace was not found; -2 if the wrong brace was found.</returns>
+            private static int FindBraceIndex(string message, char searchedBrace, int startIndex, int endIndex)
             {
-                Debug.Assert(brace is '{' or '}');
+                Debug.Assert(searchedBrace is '{' or '}');
 
-                // Example: {{prefix{{{Argument}}}suffix}}.
                 int braceIndex = -1;
                 int scanIndex = startIndex;
-                int braceOccurrenceCount = 0;
 
                 while (scanIndex < endIndex)
                 {
-                    if (braceOccurrenceCount > 0 && message[scanIndex] != brace)
+                    char current = message[scanIndex];
+
+                    if (current is '{' or '}')
                     {
-                        if (braceOccurrenceCount % 2 == 0)
+                        char currentBrace = current;
+
+                        int scanIndexBeforeSkip = scanIndex;
+                        while (current == currentBrace && ++scanIndex < endIndex)
                         {
-                            // Even number of '{' or '}' found. Proceed search with next occurrence of '{' or '}'.
-                            braceOccurrenceCount = 0;
-                            braceIndex = endIndex;
+                            current = message[scanIndex];
                         }
-                        else
+
+                        int bracesCount = scanIndex - scanIndexBeforeSkip;
+                        if (bracesCount % 2 != 0) // if it is an even number of braces, just skip them, otherwise, we found an unescaped brace
                         {
-                            // An unescaped '{' or '}' found.
+                            if (currentBrace == searchedBrace)
+                            {
+                                if (currentBrace == '{')
+                                {
+                                    braceIndex = scanIndex - 1; // For '{' pick the last occurrence.
+                                }
+                                else
+                                {
+                                    braceIndex = scanIndexBeforeSkip; // For '}' pick the first occurrence.
+                                }
+                            }
+                            else
+                            {
+                                braceIndex = -2; // wrong brace found
+                            }
+
                             break;
                         }
                     }
-                    else if (message[scanIndex] == '{')
+                    else
                     {
-                        if (brace != '{')
-                        {
-                            return -2; // not expected
-                        }
-
-                        // For '{' pick the last occurrence.
-                        braceIndex = scanIndex;
-                        braceOccurrenceCount++;
+                        scanIndex++;
                     }
-                    else if (message[scanIndex] == '}')
-                    {
-                        if (brace != '}')
-                        {
-                            return -2; // not expected
-                        }
-
-                        if (braceOccurrenceCount == 0)
-                        {
-                            // For '}' pick the first occurrence.
-                            braceIndex = scanIndex;
-                        }
-                        braceOccurrenceCount++;
-                    }
-
-                    scanIndex++;
                 }
 
                 return braceIndex;
