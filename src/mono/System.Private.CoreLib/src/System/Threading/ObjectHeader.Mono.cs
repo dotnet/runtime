@@ -282,8 +282,7 @@ internal static class ObjectHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryEnterFast(object? o)
     {
-	Debug.Assert (o != null);
-
+        Debug.Assert (o != null);
         LockWord lw = GetLockWord (ref o);
         if (lw.IsFree)
         {
@@ -302,6 +301,27 @@ internal static class ObjectHeader
         }
         else if (lw.IsFlat)
         {
+            int owner = Thread.CurrentThread.GetSmallId();
+            if (lw.GetOwner() == owner)
+            {
+                if (lw.IsNestMax)
+                {
+                    // too much recursive locking, need to inflate
+                    return false;
+                } else {
+                    LockWord nlw = lw.IncrementNest();
+                    if (LockWordCompareExchange (ref o, nlw, lw) == lw.AsIntPtr)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        // someone else inflated it in the meantime, fall back to slow path
+                        return false;
+                    }
+                }
+            }
+            // there's contention, go to slow path
             return false;
         }
         Debug.Assert (lw.HasHash);
