@@ -108,7 +108,6 @@ namespace ILCompiler.Diagnostics
 
         private static PerfmapTokensForTarget TranslateTargetDetailsToPerfmapConstants(TargetDetails details)
         {
-            // TODO: What about ios and iossimulator
             PerfMapOSToken osToken = details.OperatingSystem switch
             {
                 TargetOS.Unknown => PerfMapOSToken.Unknown,
