@@ -6121,7 +6121,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
             case NI_X86Base_BitScanForward:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
-                int32_t value  = GetConstantInt32(arg0VN);
+                int32_t value = GetConstantInt32(arg0VN);
 
                 if (value == 0)
                 {
