@@ -3,9 +3,10 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
-  platform: ''
+  runtimeFlavor: ''
   runtimeVariant: ''
   testBuildArgs: ''
+  nativeAotTest: false
 
 steps:
 # Can't run arm/arm64 tests on x64 build machines
@@ -13,6 +14,15 @@ steps:
 
   # Build coreclr native test output and send to helix
   - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+    parameters:
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: ${{ parameters.archType }}
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      runtimeVariant: ${{ parameters.runtimeVariant }}
+      testBuildArgs: ${{ parameters.testBuildArgs }}
+      nativeAotTest: ${{ parameters.nativeAotTest }}
 
   # Publishing tooling doesn't support different configs between runtime and libs, so only run tests in Release config
   - ${{ if eq(parameters.buildConfig, 'release') }}:
