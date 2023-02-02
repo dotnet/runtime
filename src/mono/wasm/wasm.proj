@@ -32,7 +32,7 @@
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
-    <_EmccLinkUndefinedSymbolsFile>$(NativeBinDir)src\symbols.undefined</_EmccLinkUndefinedSymbolsFile>
+    <_EmccLinkUndefinedSymbolsFile>$(WasmObjDir)src\symbols.undefined</_EmccLinkUndefinedSymbolsFile>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
   </PropertyGroup>
 
