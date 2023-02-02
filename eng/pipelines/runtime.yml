@@ -210,14 +210,14 @@ extends:
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
-            nameSuffix: NativeAOT_Helix
+            nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
               nativeAotTest: true
-            testRunNamePrefixSuffix: NativeAOT_Debug
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -245,14 +245,14 @@ extends:
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
-            nameSuffix: NativeAOT_Helix
+            nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot /p:BuildNativeAotFrameworkObjects=true
               nativeAotTest: true
-            testRunNamePrefixSuffix: NativeAOT_Checked
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),

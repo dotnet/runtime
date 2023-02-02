@@ -31,7 +31,7 @@ steps:
       displayName: Build Tests
 
   - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ${{ parameters.archType }} $(buildConfigUpper) ${{ parameters.testBuildArgs }} /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ${{ parameters.archType }} $(buildConfigUpper) ${{ parameters.testBuildArgs }} -ci
       displayName: Build Tests
 
 
