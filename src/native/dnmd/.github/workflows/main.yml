@@ -33,6 +33,7 @@ jobs:
     - name: Build Managed Test Components
       run: dotnet build --configuration ${{ matrix.flavor }}
       working-directory: ./test
+
     - name: Run Unit Tests
       run: dotnet test --configuration ${{ matrix.flavor }} --logger trx --results-directory "TestResults-${{ matrix.os }}-${{ matrix.flavor }}"
       working-directory: ./test/Regression.UnitTests
