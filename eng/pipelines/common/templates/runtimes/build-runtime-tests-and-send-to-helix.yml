@@ -2,7 +2,7 @@ parameters:
   buildConfig: ''
   osSubgroup: ''
   container: ''
-  testFilter: ''
+  testBuildArgs: ''
   crossBuild: false
   readyToRun: false
   liveLibrariesBuildConfig: ''
@@ -13,7 +13,6 @@ parameters:
   nativeAotTest: false
   runtimeFlavor: 'mono'
   runtimeVariant: 'monointerpreter'
-  testBuildMode: ''
   variables: {}
   pool: ''
   dependsOn: []
@@ -28,11 +27,11 @@ parameters:
 
 steps:
   - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=${{ parameters.runtimeVariant }} ${{ parameters.testFilter }} -mono os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=${{ parameters.runtimeVariant }} ${{ parameters.testBuildArgs }} -mono os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci
       displayName: Build Tests
 
   - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ${{ parameters.testBuildMode }} ${{ parameters.testFilter }} ${{ parameters.archType }} $(buildConfigUpper) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ${{ parameters.archType }} $(buildConfigUpper) ${{ parameters.testBuildArgs }} /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci
       displayName: Build Tests
 
 
