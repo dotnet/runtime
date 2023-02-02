@@ -36,7 +36,7 @@ Bereit? Los geht's!</String>
   <String Id="ModifyCloseButton">S&amp;chließen</String>
   <String Id="SuccessRepairHeader">Reparatur erfolgreich abgeschlossen</String>
   <String Id="SuccessUninstallHeader">Deinstallation erfolgreich abgeschlossen</String>
-  <String Id="SuccessInstallHeader">Installation was successful</String>
+  <String Id="SuccessInstallHeader">Die Installation war erfolgreich.</String>
   <String Id="SuccessHeader">Setup wurde erfolgreich abgeschlossen</String>
   <String Id="SuccessLaunchButton">&amp;Starten</String>
   <String Id="SuccessRestartText">Sie müssen den Computer neu starten, bevor Sie die Software verwenden können.</String>
@@ -58,7 +58,7 @@ Bereit? Los geht's!</String>
   <String Id="FilesInUseDontCloseRadioButton">&amp;Anwendungen nicht schließen. Ein Neustart ist erforderlich.</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Abbrechen</String>
-  <String Id="WelcomeHeaderMessage">.NET Runtime</String>
+  <String Id="WelcomeHeaderMessage">.NET-Runtime</String>
   <String Id="WelcomeDescription">Die .NET-Runtime wird zum Ausführen von .NET-Anwendungen auf Ihrem Windows-Computer verwendet. .NET ist ein plattformübergreifendes Open-Source-Framework, das von Microsoft unterstützt wird. Wir wünschen Ihnen viel Spaß damit!</String>
   <String Id="LearnMoreTitle">Weitere Informationen zu .NET</String>
   <String Id="SuccessInstallLocation">Folgendes wurde unter [DOTNETHOME] installiert.</String>
