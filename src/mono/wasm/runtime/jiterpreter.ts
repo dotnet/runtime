@@ -263,6 +263,7 @@ function getTraceImports () {
         ["safepoint", "safepoint", getRawCwrap("mono_jiterp_auto_safepoint")],
         ["hashcode", "hashcode", getRawCwrap("mono_jiterp_get_hashcode")],
         ["hascsize", "hascsize", getRawCwrap("mono_jiterp_object_has_component_size")],
+        ["hasflag", "hasflag", getRawCwrap("mono_jiterp_enum_hasflag")],
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -532,6 +533,14 @@ function generate_wasm (
                 "ppObj": WasmValtype.i32,
             }, WasmValtype.i32
         );
+        builder.defineType(
+            "hasflag", {
+                "klass": WasmValtype.i32,
+                "dest": WasmValtype.i32,
+                "sp1": WasmValtype.i32,
+                "sp2": WasmValtype.i32,
+            }, WasmValtype.void
+        );
 
         builder.generateTypeSection();
 
@@ -612,7 +621,7 @@ function generate_wasm (
         compileStarted = _now();
         const buffer = builder.getArrayView();
         if (trace > 0)
-            console.log(`${traceName} generated ${buffer.length} byte(s) of wasm`);
+            console.log(`${(<any>(builder.base)).toString(16)} ${traceName} generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
@@ -663,6 +672,11 @@ function generate_wasm (
             throw new Error("add_function_pointer returned a 0 index");
         else if (trace >= 2)
             console.log(`${traceName} -> fn index ${idx}`);
+
+        // Ensure that a bit of ongoing diagnostic output is printed for very long-running test
+        //  suites or benchmarks if you've enabled stats
+        if (builder.options.enableStats && (counters.tracesCompiled % 500) === 0)
+            jiterpreter_dump_stats(false, true);
 
         return idx;
     } catch (exc: any) {
@@ -926,15 +940,20 @@ function generate_wasm_body (
                 append_ldloca(builder, getArgU16(ip, 2));
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
+
             case MintOpcode.MINT_LDTOKEN:
             case MintOpcode.MINT_LDSTR:
+            case MintOpcode.MINT_LDFTN:
             case MintOpcode.MINT_LDFTN_ADDR:
             case MintOpcode.MINT_MONO_LDPTR: {
                 // Pre-load locals for the store op
                 builder.local("pLocals");
 
                 // frame->imethod->data_items [ip [2]]
-                const data = get_imethod_data(frame, getArgU16(ip, 2));
+                let data = get_imethod_data(frame, getArgU16(ip, 2));
+                if (opcode === MintOpcode.MINT_LDFTN)
+                    data = <any>cwraps.mono_jiterp_imethod_to_ftnptr(<any>data);
+
                 builder.ptr_const(data);
 
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
@@ -1088,6 +1107,15 @@ function generate_wasm_body (
                 append_bailout(builder, ip, BailoutReason.NullCheck);
                 builder.endBlock();
                 break;
+            case MintOpcode.MINT_INTRINS_ENUM_HASFLAG: {
+                const klass = get_imethod_data(frame, getArgU16(ip, 4));
+                builder.ptr_const(klass);
+                append_ldloca(builder, getArgU16(ip, 1));
+                append_ldloca(builder, getArgU16(ip, 2));
+                append_ldloca(builder, getArgU16(ip, 3));
+                builder.callImport("hasflag");
+                break;
+            }
             case MintOpcode.MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF: {
                 const offset = cwraps.mono_jiterp_get_offset_of_array_data();
                 builder.local("pLocals");
@@ -3107,7 +3135,7 @@ export function mono_interp_tier_prepare_jiterpreter (
         return JITERPRETER_TRAINING;
 }
 
-export function jiterpreter_dump_stats (b?: boolean) {
+export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
     if (!mostRecentOptions || (b !== undefined))
         mostRecentOptions = getOptions();
 
@@ -3116,6 +3144,9 @@ export function jiterpreter_dump_stats (b?: boolean) {
 
     console.log(`// generated: ${counters.bytesGenerated} wasm bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
     console.log(`// time spent: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm`);
+    if (concise)
+        return;
+
     if (mostRecentOptions.countBailouts) {
         for (let i = 0; i < BailoutReasonNames.length; i++) {
             const bailoutCount = cwraps.mono_jiterp_get_trace_bailout_count(i);
