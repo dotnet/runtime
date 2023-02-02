@@ -132,7 +132,7 @@ public class FullRangeComparisonTest
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
         // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         //
-        // X64-FULL-LINE:        cmov{{a|be}} {{[a-z]+}}, {{.*}}
+        // X64-FULL-LINE:        cmov{{g|le}} {{[a-z]+}}, {{.*}}
 
         if (a1 > a2) { a1 = 14; }
         consume<ushort>(a1, a2);
@@ -397,7 +397,7 @@ public class FullRangeComparisonTest
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
         // ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{lt|ge}}
         //
-        // X64-FULL-LINE:        cmov{{l|ge}} {{[a-z]+}}, {{.*}}
+        // X64-FULL-LINE:        cmov{{b|ae}} {{[a-z]+}}, {{.*}}
 
         return (a1 < a2) ? (ulong)16 : (ulong)106;
     }
