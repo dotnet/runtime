@@ -2131,6 +2131,8 @@ public class TestEvaluateDontPauseOnBreakpoint
     {
         var myVar = new TestEvaluateDontPauseOnBreakpoint();
         myVar.count = 10;
+        myVar.MyMethod2();
+        myVar.MyMethod();
     }
     public string MyMethod() {
         System.Diagnostics.Debugger.Break();

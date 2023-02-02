@@ -871,24 +871,34 @@ namespace DebuggerTests
                CheckNumber(props, "a", 11);
            });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task EvaluateMethodAndCheckIsNotPausingOnBreakpoint()
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task EvaluateMethodWithBPWhilePausedInADifferentMethodAndNotHit(bool setBreakpointBeforePause)
         {
+            await cli.SendCommand("DotnetDebugger.setEvaluationOptions", JObject.FromObject(new { options = new { noFuncEval = false } }), token);
             var waitForScript = WaitForConsoleMessage("console.warning: MONO_WASM: Adding an id (0) that already exists in commands_received");
+            if (setBreakpointBeforePause)
+                await SetBreakpointInMethod("debugger-test.dll", "TestEvaluateDontPauseOnBreakpoint", "MyMethod2", 1);
             await CheckInspectLocalsAtBreakpointSite(
             "TestEvaluateDontPauseOnBreakpoint", "run", 3, "TestEvaluateDontPauseOnBreakpoint.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] TestEvaluateDontPauseOnBreakpoint:run'); })",
             wait_for_event_fn: async (pause_location) =>
            {
-                await SetBreakpointInMethod("debugger-test.dll", "TestEvaluateDontPauseOnBreakpoint", "MyMethod2", 1);
+                if (!setBreakpointBeforePause)
+                    await SetBreakpointInMethod("debugger-test.dll", "TestEvaluateDontPauseOnBreakpoint", "MyMethod2", 1);
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
-                    ("myVar.MyMethod()", TString("Object 10")),
                     ("myVar.MyMethod2()", TString("Object 11")),
                     ("myVar.MyMethod3()", TString("Object 11")),
                     ("myVar.MyCount", TString("Object 11")),
+                    ("myVar.MyMethod()", TString("Object 10")),
                     ("myVar", TObject("TestEvaluateDontPauseOnBreakpoint", description: "Object 11")));
+                var props = await GetObjectOnFrame(pause_location["callFrames"][0], "myVar");
+                await CheckString(props, "MyCount", "Object 11");
            });
+           await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0,  "TestEvaluateDontPauseOnBreakpoint.MyMethod2");
+           await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0,  "TestEvaluateDontPauseOnBreakpoint.MyMethod");
            Assert.False(waitForScript.IsCompleted);
         }
     }
