@@ -209,6 +209,7 @@ internal static class ObjectHeader
         return lw;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static IntPtr LockWordCompareExchange (ref object obj, LockWord nlw, LockWord expected)
     {
         ref Header h = ref ObjectHeaderUNSAFE(ref obj);
