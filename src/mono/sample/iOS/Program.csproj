@@ -6,7 +6,7 @@
     <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
     <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iossimulator</TargetOS>
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
-    <IOSDedup Condition="'$(TargetOS)' == 'ios'">true</IOSDedup>
+    <iOSLikeDedup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'">true</iOSLikeDedup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
@@ -42,13 +42,13 @@
 
     <RemoveDir Directories="$(AppDir)" />
 
-    <PropertyGroup Condition="'$(IOSDedup)' == 'true'">
-      <DedupAssembly>$(MSBuildThisFileDirectory)$(PublishDir)\aot-instances.dll</DedupAssembly>
+    <PropertyGroup Condition="'$(iOSLikeDedup)' == 'true'">
+      <_iOSLikeDedupAssembly>$(MSBuildThisFileDirectory)$(PublishDir)\aot-instances.dll</_iOSLikeDedupAssembly>
     </PropertyGroup>
-    <WriteLinesToFile Condition="'$(IOSDedup)' == 'true'" File="$(MSBuildThisFileDirectory)$(PublishDir)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
-    <Csc Condition="'$(IOSDedup)' == 'true'"
+    <WriteLinesToFile Condition="'$(iOSLikeDedup)' == 'true'" File="$(MSBuildThisFileDirectory)$(PublishDir)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
+    <Csc Condition="'$(iOSLikeDedup)' == 'true'"
       Sources="$(MSBuildThisFileDirectory)$(PublishDir)\aot-instances.cs"
-      OutputAssembly="$(DedupAssembly)"
+      OutputAssembly="$(_iOSLikeDedupAssembly)"
       TargetType="library"
       Deterministic="true"
       References="@(ReferencePath)"
@@ -75,7 +75,7 @@
         Mode="$(AOTMode)"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
-        DedupAssembly="$(DedupAssembly)"
+        DedupAssembly="$(_iOSLikeDedupAssembly)"
         AotModulesTablePath="$(AppDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         OutputDir="$(PublishDir)"

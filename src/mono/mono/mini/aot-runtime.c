@@ -4472,7 +4472,7 @@ inst_is_private (MonoGenericInst *inst)
 gboolean
 mono_aot_can_dedup (MonoMethod *method)
 {
-#if defined(TARGET_WASM) || defined(TARGET_APPLE_MOBILE) || defined(TARGET_MACCAT)
+#if defined(TARGET_WASM) || defined(TARGET_APPLE_MOBILE)
 	/* Use a set of wrappers/instances which work and useful */
 	switch (method->wrapper_type) {
 	case MONO_WRAPPER_RUNTIME_INVOKE:
