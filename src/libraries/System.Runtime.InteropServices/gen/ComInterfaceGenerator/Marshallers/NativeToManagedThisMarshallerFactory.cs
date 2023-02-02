@@ -28,8 +28,8 @@ namespace Microsoft.Interop
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => new PointerTypeInfo("void*", "void*", false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
-                TypeSyntax? unwrapperType = (info.MarshallingAttributeInfo as NativeThisInfo)?.UnwrapperType;
-                Debug.Assert(unwrapperType != null);
+                Debug.Assert(info.MarshallingAttributeInfo is NativeThisInfo);
+                TypeSyntax? unwrapperType = ((NativeThisInfo)info.MarshallingAttributeInfo).UnwrapperType;
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
                 {
                     yield break;
