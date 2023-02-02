@@ -307,7 +307,7 @@ namespace Microsoft.Interop
         public static bool IsOfType(this INamedTypeSymbol type, string typeName)
         {
             if (typeName.Contains('<') || typeName.Contains('+') || typeName.Contains('/'))
-                throw new ArgumentException($"Cannot handle type name in the format provided: {typeName}");
+                throw new ArgumentException($"Cannot handle type name in the format provided: {typeName}", nameof(typeName));
             string[] typeNameParts = typeName.Split('.');
             INamespaceOrTypeSymbol current = type;
             for (int i = typeNameParts.Length - 1; i >= 0; i--)
