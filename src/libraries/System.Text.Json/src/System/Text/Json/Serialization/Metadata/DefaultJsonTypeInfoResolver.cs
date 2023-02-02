@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Reflection;
 using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -86,7 +84,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
         {
             JsonConverter converter = GetConverterForType(type, options);
-            return CreateCore(type, converter, options);
+            return CreateTypeInfoCore(type, converter, options);
         }
 
         /// <summary>

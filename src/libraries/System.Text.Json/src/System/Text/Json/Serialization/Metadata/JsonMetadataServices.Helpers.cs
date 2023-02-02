@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         private static JsonTypeInfo<T> CreateCore<T>(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo)
         {
-            JsonConverter converter = GetConverter(objectInfo);
+            JsonConverter<T> converter = GetConverter(objectInfo);
             JsonTypeInfo<T> typeInfo = new JsonTypeInfo<T>(converter, options);
             if (objectInfo.ObjectWithParameterizedConstructorCreator != null)
             {
@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Metadata
             object? createObjectWithArgs = null,
             object? addFunc = null)
         {
-            JsonConverter converter = new JsonMetadataServicesConverter<T>(converterCreator());
+            JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator());
             JsonTypeInfo<T> typeInfo = new JsonTypeInfo<T>(converter, options);
             if (collectionInfo is null)
             {
@@ -142,6 +142,8 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
+            // TODO update the source generator so that all property
+            // hierarchy resolution is happening at compile time.
             JsonTypeInfo.PropertyHierarchyResolutionState state = new();
 
             foreach (JsonPropertyInfo jsonPropertyInfo in properties)

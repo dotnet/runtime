@@ -212,23 +212,16 @@ namespace System.Text.Json.Serialization.Metadata
         /// It is required that added <see cref="JsonPropertyInfo"/> entries are unique up to <see cref="JsonPropertyInfo.Name"/>,
         /// however this will only be validated on serialization, once the metadata instance gets locked for further modification.
         /// </remarks>
-        public IList<JsonPropertyInfo> Properties
-        {
-            get
-            {
-                _isUserModifiedPropertyList = true;
-                return _properties ??= new(this);
-            }
-        }
-
+        public IList<JsonPropertyInfo> Properties => _properties ??= new(this);
         private JsonPropertyInfoList? _properties;
-        private bool _isUserModifiedPropertyList;
 
         internal void SortProperties()
         {
             Debug.Assert(!IsConfigured);
-            _properties?.SortProperties();
-            PropertyCache?.List?.StableSortByKey(static propInfo => propInfo.Value.Order);
+            Debug.Assert(_properties != null && _properties.Count > 0);
+
+            _properties.SortProperties();
+            PropertyCache?.List.StableSortByKey(static propInfo => propInfo.Value.Order);
         }
 
         /// <summary>
@@ -594,11 +587,11 @@ namespace System.Text.Json.Serialization.Metadata
                 $"ConverterStrategy from PropertyInfoForTypeInfo.EffectiveConverter.ConverterStrategy ({PropertyInfoForTypeInfo.EffectiveConverter.ConverterStrategy}) does not match converter's ({Converter.ConverterStrategy})");
             if (Kind == JsonTypeInfoKind.Object)
             {
-                InitializePropertyCache();
+                ConfigureProperties();
 
                 if (Converter.ConstructorIsParameterized)
                 {
-                    InitializeConstructorParameters(ParameterInfoValues ?? Array.Empty<JsonParameterInfoValues>(), sourceGenMode: Options.TypeInfoResolver is JsonSerializerContext);
+                    ConfigureConstructorParameters();
                 }
             }
 
@@ -633,10 +626,9 @@ namespace System.Text.Json.Serialization.Metadata
             if (propCacheInitialized)
             {
                 sb.AppendLine("  Properties: {");
-                foreach (var property in PropertyCache!.List)
+                foreach (JsonPropertyInfo pi in PropertyCache!.Values)
                 {
-                    JsonPropertyInfo pi = property.Value;
-                    sb.AppendLine($"    {property.Key}:");
+                    sb.AppendLine($"    {pi.Name}:");
                     sb.AppendLine($"{pi.GetDebugInfo(indent: 6)},");
                 }
 
@@ -791,6 +783,9 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract object? DeserializeAsObject(Stream utf8Json);
         internal abstract IAsyncEnumerable<object?> DeserializeAsyncEnumerableAsObject(Stream utf8Json, CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Used by the built-in resolvers to add property metadata applying conflict resolution.
+        /// </summary>
         internal void AddProperty(JsonPropertyInfo jsonPropertyInfo, ref PropertyHierarchyResolutionState state)
         {
             Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
@@ -902,17 +897,18 @@ namespace System.Text.Json.Serialization.Metadata
             public JsonPropertyInfo JsonPropertyInfo { get; }
         }
 
-        internal void InitializePropertyCache()
+        internal void ConfigureProperties()
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
             Debug.Assert(PropertyCache is null);
             Debug.Assert(ExtensionDataProperty is null);
 
             IList<JsonPropertyInfo> properties = (IList<JsonPropertyInfo>?)_properties ?? Array.Empty<JsonPropertyInfo>();
-            int numberOfRequiredProperties = 0;
-            bool isOrderSpecified = false;
 
-            PropertyCache = CreatePropertyCache(capacity: properties.Count);
+            JsonPropertyDictionary<JsonPropertyInfo> propertyCache = CreatePropertyCache(capacity: properties.Count);
+            int numberOfRequiredProperties = 0;
+            bool arePropertiesSorted = true;
+            int previousPropertyOrder = int.MinValue;
 
             foreach (JsonPropertyInfo property in properties)
             {
@@ -939,9 +935,13 @@ namespace System.Text.Json.Serialization.Metadata
                         property.RequiredPropertyIndex = numberOfRequiredProperties++;
                     }
 
-                    isOrderSpecified |= property.Order != 0;
+                    if (arePropertiesSorted)
+                    {
+                        arePropertiesSorted = previousPropertyOrder <= property.Order;
+                        previousPropertyOrder = property.Order;
+                    }
 
-                    if (!PropertyCache.TryAddValue(property.Name, property))
+                    if (!propertyCache.TryAddValue(property.Name, property))
                     {
                         ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, property.Name);
                     }
@@ -950,13 +950,15 @@ namespace System.Text.Json.Serialization.Metadata
                 property.EnsureConfigured();
             }
 
-            if (isOrderSpecified && _isUserModifiedPropertyList)
+            NumberOfRequiredProperties = numberOfRequiredProperties;
+            PropertyCache = propertyCache;
+
+            if (!arePropertiesSorted)
             {
-                // We only need to sort again if we know that the user has accessed properties.
+                // Properties have been configured by the user and require sorting.
                 SortProperties();
             }
 
-            NumberOfRequiredProperties = numberOfRequiredProperties;
             // Override global UnmappedMemberHandling configuration
             // if type specifies an extension data property.
             EffectiveUnmappedMemberHandling = UnmappedMemberHandling ??
@@ -965,11 +967,15 @@ namespace System.Text.Json.Serialization.Metadata
                     : JsonUnmappedMemberHandling.Skip);
         }
 
-        internal void InitializeConstructorParameters(JsonParameterInfoValues[] jsonParameters, bool sourceGenMode = false)
+        internal void ConfigureConstructorParameters()
         {
-            Debug.Assert(ParameterCache is null);
-            Debug.Assert(PropertyCache is not null);
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
+            Debug.Assert(Converter.ConstructorIsParameterized);
+            Debug.Assert(PropertyCache is not null);
+            Debug.Assert(ParameterCache is null);
+
+            JsonParameterInfoValues[] jsonParameters = ParameterInfoValues ?? Array.Empty<JsonParameterInfoValues>();
+            bool sourceGenMode = Options.TypeInfoResolver is JsonSerializerContext;
 
             var parameterCache = new JsonPropertyDictionary<JsonParameterInfo>(Options.PropertyNameCaseInsensitive, jsonParameters.Length);
 
@@ -1018,7 +1024,7 @@ namespace System.Text.Json.Serialization.Metadata
                     JsonParameterInfo jsonParameterInfo = CreateConstructorParameter(parameterInfo, jsonPropertyInfo, sourceGenMode, Options);
                     parameterCache.Add(jsonPropertyInfo.Name, jsonParameterInfo);
                 }
-                // It is invalid for the extension data property to bind with a constructor argument.
+                // It is invalid for the extension data property to bind to a constructor argument.
                 else if (ExtensionDataProperty != null &&
                     StringComparer.OrdinalIgnoreCase.Equals(paramToCheck.Name, ExtensionDataProperty.Name))
                 {
