@@ -7,6 +7,7 @@ parameters:
   runtimeVariant: ''
   testBuildArgs: ''
   nativeAotTest: false
+  helixQueues: ''
 
 steps:
 # Can't run arm/arm64 tests on x64 build machines
@@ -23,6 +24,7 @@ steps:
       runtimeVariant: ${{ parameters.runtimeVariant }}
       testBuildArgs: ${{ parameters.testBuildArgs }}
       nativeAotTest: ${{ parameters.nativeAotTest }}
+      helixQueues: ${{ parameters.helixQueues }}
 
   # Publishing tooling doesn't support different configs between runtime and libs, so only run tests in Release config
   - ${{ if eq(parameters.buildConfig, 'release') }}:
