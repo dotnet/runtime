@@ -19,10 +19,6 @@ namespace System.Threading
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
-            // fast path
-            if (ObjectHeader.TryEnterFast(obj, ref lockTaken))
-                    return;
-
             ReliableEnterTimeout(obj, (int)Timeout.Infinite, ref lockTaken);
         }
 
@@ -41,9 +37,6 @@ namespace System.Threading
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
 
-            if (ObjectHeader.TryEnterFast(obj, ref lockTaken))
-                    return;
-
             ReliableEnterTimeout(obj, 0, ref lockTaken);
         }
 
@@ -59,9 +52,6 @@ namespace System.Threading
         {
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-
-            if (ObjectHeader.TryEnterFast(obj, ref lockTaken))
-                return;
 
             ReliableEnterTimeout(obj, millisecondsTimeout, ref lockTaken);
         }
@@ -135,6 +125,10 @@ namespace System.Threading
 
             if (timeout < 0 && timeout != (int)Timeout.Infinite)
                 throw new ArgumentOutOfRangeException(nameof(timeout));
+
+            // fast path
+            if (ObjectHeader.TryEnterFast(obj, ref lockTaken))
+                return;
 
             try_enter_with_atomic_var(obj, timeout, true, ref lockTaken);
         }
