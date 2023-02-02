@@ -3981,7 +3981,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             //
             bool omitCopy = call->IsTailCall();
 
-            if (!omitCopy && fgDidEarlyLiveness)
+            if (!omitCopy && fgGlobalMorph)
             {
                 omitCopy = !varDsc->lvPromoted && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
             }
@@ -4016,6 +4016,17 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
                     // Copy prop could allow creating another later use of lcl if there are live assertions about it.
                     fgKillDependentAssertions(varNum DEBUGARG(lcl));
+
+                    // We may have seen previous uses of this local already,
+                    // and those uses should now be marked as GTF_GLOB_REF
+                    // since otherwise they could be reordered with the call.
+                    // The only known issues are under stress mode and happen
+                    // in the same statement, so we only handle this case currently.
+                    // TODO: A more complete fix will likely entail identifying
+                    // these candidates before morph and address exposing them
+                    // at that point, which first requires ABI determination to
+                    // be moved earlier.
+                    fgRemarkGlobalUses = true;
                 }
 
                 JITDUMP("did not need to make outgoing copy for last use of V%02d\n", varNum);
@@ -4094,6 +4105,51 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     arg->SetEarlyNode(argNode);
+}
+
+//------------------------------------------------------------------------
+// fgMarkNewlyGlobalUses: Given a local that is newly address exposed, add
+// GTF_GLOB_REF whever necessary in the specified statement.
+//
+// Arguments:
+//    stmt   - The statement
+//    lclNum - The local that is newly address exposed
+//
+// Notes:
+//    See comment in fgMakeOutgoingStructArgCopy.
+//
+void Compiler::fgMarkGlobalUses(Statement* stmt)
+{
+    struct Visitor : GenTreeVisitor<Visitor>
+    {
+        enum
+        {
+            DoPostOrder = true,
+        };
+
+        Visitor(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if (node->OperIsLocal() && m_compiler->lvaGetDesc(node->AsLclVarCommon()->GetLclNum())->IsAddressExposed())
+            {
+                node->gtFlags |= GTF_GLOB_REF;
+            }
+
+            if (user != nullptr)
+            {
+                user->gtFlags |= node->gtFlags & GTF_GLOB_REF;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(this);
+    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
 }
 
 /*****************************************************************************
@@ -10739,6 +10795,100 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         return vecCon;
     }
 
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+
+    switch (intrinsicId)
+    {
+#if defined(TARGET_ARM64)
+        case NI_Vector64_Create:
+#endif // TARGET_ARM64
+        case NI_Vector128_Create:
+        {
+            // The `Dot` API returns a scalar. However, many common usages require it to
+            // be then immediately broadcast back to a vector so that it can be used in
+            // a subsequent operation. One of the most common is normalizing a vector
+            // which is effectively `value / value.Length` where `Length` is
+            // `Sqrt(Dot(value, value))`
+            //
+            // In order to ensure that developers can still utilize this efficiently, we
+            // will look for two common patterns:
+            //  * Create(Dot(..., ...))
+            //  * Create(Sqrt(Dot(..., ...)))
+            //
+            // When these exist, we'll avoid converting to a scalar at all and just
+            // keep everything as a vector. However, we only do this for Vector64/Vector128
+            // and only for float/double.
+            //
+            // We don't do this for Vector256 since that is xarch only and doesn't trivially
+            // support operations which cross the upper and lower 128-bit lanes
+
+            if (node->GetOperandCount() != 1)
+            {
+                break;
+            }
+
+            if (!varTypeIsFloating(node->GetSimdBaseType()))
+            {
+                break;
+            }
+
+            GenTree* op1  = node->Op(1);
+            GenTree* sqrt = nullptr;
+
+            if (op1->OperIs(GT_INTRINSIC))
+            {
+                if (op1->AsIntrinsic()->gtIntrinsicName != NI_System_Math_Sqrt)
+                {
+                    break;
+                }
+
+                sqrt = op1;
+                op1  = op1->gtGetOp1();
+            }
+
+            if (!op1->OperIs(GT_HWINTRINSIC))
+            {
+                break;
+            }
+
+            GenTreeHWIntrinsic* hwop1 = op1->AsHWIntrinsic();
+
+#if defined(TARGET_ARM64)
+            if ((hwop1->GetHWIntrinsicId() != NI_Vector64_Dot) && (hwop1->GetHWIntrinsicId() != NI_Vector128_Dot))
+#else
+            if (hwop1->GetHWIntrinsicId() != NI_Vector128_Dot)
+#endif
+            {
+                break;
+            }
+
+            unsigned  simdSize = node->GetSimdSize();
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            hwop1->gtType = simdType;
+
+            if (sqrt != nullptr)
+            {
+                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+                node = gtNewSimdSqrtNode(simdType, hwop1, simdBaseJitType, simdSize, node->IsSimdAsHWIntrinsic())
+                           ->AsHWIntrinsic();
+                DEBUG_DESTROY_NODE(sqrt);
+            }
+            else
+            {
+                node = hwop1;
+            }
+
+            INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            return node;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
     return node;
 }
 
@@ -13349,6 +13499,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
 void Compiler::fgMorphStmts(BasicBlock* block)
 {
     fgRemoveRestOfBlock = false;
+    fgRemarkGlobalUses  = false;
 
     for (Statement* const stmt : block->Statements())
     {
@@ -13462,6 +13613,12 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         }
 
         stmt->SetRootNode(morphedTree);
+
+        if (fgRemarkGlobalUses)
+        {
+            fgMarkGlobalUses(stmt);
+            fgRemarkGlobalUses = false;
+        }
 
         if (fgRemoveRestOfBlock)
         {
@@ -13624,12 +13781,16 @@ void Compiler::fgMorphBlocks()
 
     // Under OSR, we no longer need to specially protect the original method entry
     //
-    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
+    if (opts.IsOSR() && (fgEntryBB != nullptr))
     {
-        JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
-        assert(fgEntryBB->bbRefs > 0);
-        fgEntryBB->bbRefs--;
-        // We don't need to remember this block anymore.
+        if (fgOSROriginalEntryBBProtected)
+        {
+            JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+            assert(fgEntryBB->bbRefs > 0);
+            fgEntryBB->bbRefs--;
+        }
+
+        // And we don't need to remember this block anymore.
         fgEntryBB = nullptr;
     }
 
