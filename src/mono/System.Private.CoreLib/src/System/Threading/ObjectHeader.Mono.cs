@@ -21,6 +21,28 @@ internal static class ObjectHeader
 #endregion // keep in sync with src/native/public/mono/metadata/details/object-types.h
     }
 
+    // This is similar to QCallHandler ObjectHandleOnStack, but with a getter that let's view the
+    // object's header.  This does two things:
+    //
+    // 1. It gives us a way to pass around a reference to the object header
+    //
+    // 2. because mono uses conservative stack scanning, we ensure there's always some place on the
+    // stack that stores a pointer to the object, thus pinning the object.
+    private unsafe ref struct ObjectHeaderOnStack
+    {
+        private Header** _header;
+        private ObjectHeaderOnStack(ref object o)
+        {
+            _header = (Header**)Unsafe.AsPointer(ref o);
+        }
+        public static ObjectHeaderOnStack Create(ref object o)
+        {
+            return new ObjectHeaderOnStack(ref o);
+        }
+        public ref Header Header => ref Unsafe.AsRef<Header>(*_header);
+
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private unsafe struct MonoThreadsSync
     {
@@ -189,33 +211,15 @@ internal static class ObjectHeader
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe ref Header ObjectHeaderUNSAFE(ref object obj)
+    private static LockWord GetLockWord(ObjectHeaderOnStack h)
     {
-        Header** hptr = (Header**)Unsafe.AsPointer(ref obj);
-        ref Header h = ref Unsafe.AsRef<Header>(*hptr);
-        return ref h;
+        return LockWord.FromObjectHeader(ref h.Header);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static LockWord GetLockWord(ref object obj)
+    private static IntPtr LockWordCompareExchange (ObjectHeaderOnStack h, LockWord nlw, LockWord expected)
     {
-        LockWord lw;
-        unsafe
-        {
-            ref Header h = ref ObjectHeaderUNSAFE(ref obj);
-            lw = LockWord.FromObjectHeader(ref h);
-        }
-        GC.KeepAlive(obj);
-        return lw;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static IntPtr LockWordCompareExchange (ref object obj, LockWord nlw, LockWord expected)
-    {
-        ref Header h = ref ObjectHeaderUNSAFE(ref obj);
-        IntPtr result = Interlocked.CompareExchange (ref h.synchronization, nlw.AsIntPtr, expected.AsIntPtr);
-        GC.KeepAlive (obj);
-        return result;
+        return Interlocked.CompareExchange (ref h.Header.synchronization, nlw.AsIntPtr, expected.AsIntPtr);
     }
 
     /// <summary>
@@ -229,7 +233,8 @@ internal static class ObjectHeader
         if (o == null)
             return true;
 
-        LockWord lw = GetLockWord (ref o);
+        ObjectHeaderOnStack h = ObjectHeaderOnStack.Create(ref o);
+        LockWord lw = GetLockWord (h);
         if (lw.HasHash) {
             if (lw.IsInflated) {
                 ref MonoThreadsSync mon = ref lw.GetInflatedLock();
@@ -241,13 +246,12 @@ internal static class ObjectHeader
                 return true;
             }
         }
-        GC.KeepAlive (o);
         return false;
     }
 
-    private static bool TryEnterInflatedFast(object o)
+    private static bool TryEnterInflatedFast(ObjectHeaderOnStack h)
     {
-        LockWord lw = GetLockWord (ref o);
+        LockWord lw = GetLockWord (h);
         int small_id = Thread.CurrentThread.GetSmallId();
         ref MonoThreadsSync mon = ref lw.GetInflatedLock();
         while (true)
@@ -284,12 +288,13 @@ internal static class ObjectHeader
     public static bool TryEnterFast(object? o)
     {
         Debug.Assert (o != null);
-        LockWord lw = GetLockWord (ref o);
+        ObjectHeaderOnStack h = ObjectHeaderOnStack.Create (ref o);
+        LockWord lw = GetLockWord (h);
         if (lw.IsFree)
         {
             int owner = Thread.CurrentThread.GetSmallId();
             LockWord nlw = LockWord.NewFlat(owner);
-            if (LockWordCompareExchange (ref o, nlw, lw) == lw.AsIntPtr)
+            if (LockWordCompareExchange (h, nlw, lw) == lw.AsIntPtr)
             {
                 return true;
             } else {
@@ -298,7 +303,7 @@ internal static class ObjectHeader
         }
         else if (lw.IsInflated)
         {
-            return TryEnterInflatedFast(o);
+            return TryEnterInflatedFast(h);
         }
         else if (lw.IsFlat)
         {
@@ -311,7 +316,7 @@ internal static class ObjectHeader
                     return false;
                 } else {
                     LockWord nlw = lw.IncrementNest();
-                    if (LockWordCompareExchange (ref o, nlw, lw) == lw.AsIntPtr)
+                    if (LockWordCompareExchange (h, nlw, lw) == lw.AsIntPtr)
                     {
                         return true;
                     }
@@ -333,7 +338,8 @@ internal static class ObjectHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsEntered(object obj)
     {
-        LockWord lw = GetLockWord(ref obj);
+        ObjectHeaderOnStack h = ObjectHeaderOnStack.Create(ref obj);
+        LockWord lw = GetLockWord(h);
 
         if (lw.IsFlat)
         {
@@ -350,7 +356,8 @@ internal static class ObjectHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool HasOwner(object obj)
     {
-        LockWord lw = GetLockWord(ref obj);
+        ObjectHeaderOnStack h = ObjectHeaderOnStack.Create(ref obj);
+        LockWord lw = GetLockWord(h);
 
         if (lw.IsFlat)
             return !lw.IsFree;
@@ -365,7 +372,8 @@ internal static class ObjectHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryExit(object obj)
     {
-        LockWord lw = GetLockWord(ref obj);
+        ObjectHeaderOnStack h = ObjectHeaderOnStack.Create(ref obj);
+        LockWord lw = GetLockWord(h);
 
         if (lw.IsInflated)
             return false; // there might be waiters to wake
@@ -376,11 +384,10 @@ internal static class ObjectHeader
         else
             nlw = default;
 
-        if (LockWordCompareExchange (ref obj, nlw, lw) == lw.AsIntPtr)
+        if (LockWordCompareExchange (h, nlw, lw) == lw.AsIntPtr)
             return true;
         // someone inflated the lock in the meantime, fall back to the slow path
 
-        GC.KeepAlive(obj);
         return false;
     }
 
