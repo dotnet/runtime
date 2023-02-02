@@ -1892,17 +1892,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = impPopStack().val;
 
-            if (!op1->OperIsLocal())
+            if (op1->TypeGet() == TYP_STRUCT)
             {
-                unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookup temp tree"));
+                if (!op1->OperIs(GT_LCL_VAR))
+                {
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookup temp tree"));
 
-                impAssignTempGen(tmp, op1, CHECK_SPILL_NONE);
-                op1 = gtNewLclvNode(tmp, argType);
-            }
-
-            if (argType == TYP_STRUCT)
-            {
-                assert(op1->OperIsLocal());
+                    impAssignTempGen(tmp, op1, CHECK_SPILL_NONE);
+                    op1 = gtNewLclvNode(tmp, argType);
+                }
 
                 LclVarDsc* op1VarDsc  = lvaGetDesc(op1->AsLclVar());
                 unsigned   lclNum     = lvaGetLclNum(op1VarDsc);
@@ -1925,7 +1923,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             else
             {
-                assert(argType == TYP_SIMD16);
+                assert(op1->TypeGet() == TYP_SIMD16);
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             }
             break;

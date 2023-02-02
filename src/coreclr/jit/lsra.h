@@ -2281,7 +2281,7 @@ public:
 
 #ifdef TARGET_ARM64
     // If this refposition needs consecutive register assignment
-    bool needsConsecutive;
+    unsigned char needsConsecutive : 1;
 
     // How many consecutive registers does this and subsequent refPositions need
     unsigned char regCount : 3;

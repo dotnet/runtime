@@ -44,32 +44,29 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 }
 
 //------------------------------------------------------------------------
-// setNextConsecutiveRegisterAssignment: Set the consecutive register mask to the
-//   subsequent refpositions
+// setNextConsecutiveRegisterAssignment: For subsequent refPositions, set the register
+//   requirement to be the consecutive register(s) of the register that is assigned to
+//   the firstRefPosition.
 //
 // Arguments:
-//    tree       - The GT_HWINTRINSIC node of interest
-//    pDstCount  - OUT parameter - the number of registers defined for the given node
-//
-// Return Value:
-//    The number of sources consumed by this node.
+//    firstRefPosition  - First refPosition of the series of consecutive registers.
+//    firstRegAssigned  - Register assigned to the first refposition.
 //
 void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regMaskTP firstRegAssigned)
 {
+    regNumber firstReg = genRegNumFromMask(firstRegAssigned);
     assert(isSingleRegister(firstRegAssigned));
     assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
+    assert(emitter::isVectorRegister(firstReg));
 
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
 
     // should have at least one consecutive register requirement
     assert(consecutiveRefPosition != nullptr);
 
-    regNumber firstReg    = genRegNumFromMask(firstRegAssigned);
     regNumber regToAssign = firstReg == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstReg);
 
-#ifdef DEBUG
-    int refPosCount = 1;
-#endif // DEBUG
+    INDEBUG(int refPosCount = 1);
     while (consecutiveRefPosition != nullptr)
     {
         consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
@@ -1055,6 +1052,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     RefPosition* firstRefPos = nullptr;
                     RefPosition* lastRefPos  = nullptr;
 
+                    NextConsecutiveRefPositionsMap* refPositionMap = getNextConsecutiveRefPositionsMap();
                     for (GenTreeFieldList::Use& use : intrin.op1->AsFieldList()->Uses())
                     {
                         currRefPos                   = BuildUse(use.GetNode());
@@ -1066,9 +1064,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                             firstRefPos = currRefPos;
                         }
 
-                        getNextConsecutiveRefPositionsMap()->Set(lastRefPos, currRefPos,
-                                                                 LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
-                        getNextConsecutiveRefPositionsMap()->Set(currRefPos, nullptr);
+                        refPositionMap->Set(lastRefPos, currRefPos,
+                                            LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+                        refPositionMap->Set(currRefPos, nullptr);
 
                         lastRefPos = currRefPos;
                         regCount++;

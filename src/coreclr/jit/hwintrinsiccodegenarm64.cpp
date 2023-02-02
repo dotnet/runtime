@@ -497,28 +497,28 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_VectorTableLookup:
             case NI_AdvSimd_Arm64_VectorTableLookup:
             {
-
-                if (!intrin.op1->OperIsFieldList())
+                unsigned regCount = 1;
+                if (intrin.op1->OperIsFieldList())
                 {
-                    assert(!"Expect the first operand of VectorTableLookup to be FIELD_LIST");
+                    GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
+                    GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                    op1Reg                       = firstField->GetRegNum();
+                    INDEBUG(regNumber argReg = op1Reg);
+                    unsigned regCount = 0;
+                    for (GenTreeFieldList::Use& use : fieldList->Uses())
+                    {
+                        regCount++;
+#ifdef DEBUG
+
+                        GenTree* argNode = use.GetNode();
+                        assert(argReg == argNode->GetRegNum());
+                        argReg = REG_NEXT(argReg);
+#endif
+                    }
                 }
-
-                GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
-                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
-                op1Reg                       = firstField->GetRegNum();
-#ifdef DEBUG
-                regNumber argReg = op1Reg;
-#endif
-                unsigned regCount = 0;
-                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                else
                 {
-                    regCount++;
-#ifdef DEBUG
-
-                    GenTree* argNode = use.GetNode();
-                    assert(argReg == argNode->GetRegNum());
-                    argReg = (regNumber)(argReg + 1);
-#endif
+                    op1Reg = intrin.op1->GetRegNum();
                 }
 
                 switch (regCount)
