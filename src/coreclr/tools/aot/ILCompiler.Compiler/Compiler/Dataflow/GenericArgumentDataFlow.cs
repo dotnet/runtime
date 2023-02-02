@@ -20,15 +20,32 @@ namespace ILCompiler.Dataflow
 {
     public static class GenericArgumentDataFlow
     {
-        public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, Logger logger, NodeFactory factory, FlowAnnotations annotations, in MessageOrigin origin, TypeDesc type)
+        public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, TypeDesc contextType)
         {
+            ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, type, contextType.Instantiation, Instantiation.Empty);
+        }
+
+        public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, MethodDesc contextMethod)
+        {
+            ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, type, contextMethod.OwningType.Instantiation, contextMethod.Instantiation);
+        }
+
+        private static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, Instantiation typeContext, Instantiation methodContext)
+        {
+            if (!type.HasInstantiation)
+                return;
+
+            TypeDesc instantiatedType = type.InstantiateSignature(typeContext, methodContext);
+
+            var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
+
             var diagnosticContext = new DiagnosticContext(
                 origin,
-                !logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
-                logger);
-            var reflectionMarker = new ReflectionMarker(logger, factory, annotations, typeHierarchyDataFlowOrigin: null, enabled: true);
+                !mdManager.Logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                mdManager.Logger);
+            var reflectionMarker = new ReflectionMarker(mdManager.Logger, factory, mdManager.FlowAnnotations, typeHierarchyDataFlowOrigin: null, enabled: true);
 
-            ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, type);
+            ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, instantiatedType);
 
             if (reflectionMarker.Dependencies.Count > 0)
             {

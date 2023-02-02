@@ -10,6 +10,7 @@ using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysisFramework;
 
 using ILLink.Shared.TrimAnalysis;
+using ILCompiler.Logging;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -62,36 +63,22 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
-
             DependencyList dependencies = null;
 
             if (_typeDefinition.HasBaseType)
             {
-                GetDataFlowDependenciesForInstantiation(ref dependencies, mdManager.Logger, factory, mdManager.FlowAnnotations, _typeDefinition.BaseType, _typeDefinition);
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_typeDefinition), _typeDefinition.BaseType, _typeDefinition);
             }
 
             if (_typeDefinition is MetadataType metadataType)
             {
                 foreach (var interfaceType in metadataType.ExplicitlyImplementedInterfaces)
                 {
-                    GetDataFlowDependenciesForInstantiation(ref dependencies, mdManager.Logger, factory, mdManager.FlowAnnotations, interfaceType, _typeDefinition);
+                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_typeDefinition), interfaceType, _typeDefinition);
                 }
             }
 
             return dependencies;
-        }
-
-        private static void GetDataFlowDependenciesForInstantiation(
-            ref DependencyList dependencies,
-            Logger logger,
-            NodeFactory factory,
-            FlowAnnotations flowAnnotations,
-            TypeDesc type,
-            TypeDesc contextType)
-        {
-            TypeDesc instantiatedType = type.InstantiateSignature(contextType.Instantiation, Instantiation.Empty);
-            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, logger, factory, flowAnnotations, new Logging.MessageOrigin(contextType), instantiatedType);
         }
 
         protected override string GetName(NodeFactory factory)

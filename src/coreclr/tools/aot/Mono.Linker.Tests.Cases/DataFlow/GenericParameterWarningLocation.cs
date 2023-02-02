@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Security.Policy;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -36,9 +37,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TypeInheritance.Test ();
 			TypeImplementingInterface.Test ();
 			MethodParametersAndReturn.Test ();
+			MethodParametersAndReturnAccessedViaReflection.Test ();
 			FieldDefinition.Test ();
+			FieldDefinitionViaReflection.Test ();
 			PropertyDefinition.Test ();
 			MethodBody.Test ();
+			GenericAttributes.Test ();
 		}
 
 		class TypeInheritance
@@ -211,6 +215,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
 				() => null;
 
+			class ConstructorWithOneMatchAndOneMismatch<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods>
+			{
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)] // NativeAOT_StorageSpaceType
+				public ConstructorWithOneMatchAndOneMismatch (IWithTwo<TMethods, TMethods> two) { }
+			}
+
 			public static void Test ()
 			{
 				MethodWithSpecificType (null, null);
@@ -221,6 +231,59 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				MethodWithMatchingReturn<TestType> ();
 				MethodWithOneMismatchReturn<TestType> ();
 				MethodWithTwoMismatchesInReturn<TestType, TestType> ();
+
+				_ = new ConstructorWithOneMatchAndOneMismatch<TestType> (null);
+			}
+		}
+
+		class MethodParametersAndReturnAccessedViaReflection
+		{
+			class TypeWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
+			{ }
+
+			interface IWithTwo<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
+			{ }
+
+			static void MethodWithSpecificType (TypeWithPublicMethods<TestType> one, IWithTwo<TestType, TestType> two) { }
+
+			[ExpectedWarning ("IL2091")]
+			static void MethodWithOneMismatch<TUnknown> (TypeWithPublicMethods<TUnknown> one) { }
+
+			[ExpectedWarning ("IL2091", nameof (IWithTwo<TestType, TestType>))]
+			[ExpectedWarning ("IL2091", nameof (TypeWithPublicMethods<TestType>))]
+			static void MethodWithTwoMismatches<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
+				(IWithTwo<TPublicMethods, TPublicMethods> two, TypeWithPublicMethods<TPublicFields> one)
+			{ }
+
+			static TypeWithPublicMethods<TestType> MethodWithSpecificReturnType () => null;
+
+			static TypeWithPublicMethods<TPublicMethods> MethodWithMatchingReturn<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods> () => null;
+
+			[ExpectedWarning ("IL2091")]
+			static TypeWithPublicMethods<TUnknown> MethodWithOneMismatchReturn<TUnknown> () => null;
+
+			[ExpectedWarning ("IL2091")]
+			[ExpectedWarning ("IL2091")]
+			static IWithTwo<TPublicFields, TPublicMethods> MethodWithTwoMismatchesInReturn<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
+				() => null;
+
+			class ConstructorWithOneMatchAndOneMismatch<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TMethods>
+			{
+				[ExpectedWarning ("IL2091")]
+				public ConstructorWithOneMatchAndOneMismatch (IWithTwo<TMethods, TMethods> two) { }
+			}
+
+			public static void Test ()
+			{
+				// Access all of the methods via reflection
+				typeof (MethodParametersAndReturnAccessedViaReflection).RequiresNonPublicMethods ();
+				typeof (ConstructorWithOneMatchAndOneMismatch<>).RequiresPublicConstructors ();
 			}
 		}
 
@@ -292,6 +355,53 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				OneMatchingAnnotation<TestType>.Test ();
 				MultipleReferencesToTheSameType<TestType, TestType>.Test ();
 				TwoMismatchesInOne<TestType, TestType>.Test ();
+			}
+		}
+
+		class FieldDefinitionViaReflection
+		{
+			class TypeWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
+			{ }
+
+			interface IWithTwo<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
+			{ }
+
+			class SpecificType
+			{
+				static TypeWithPublicMethods<TestType> _field;
+			}
+
+			class OneMatchingAnnotation<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
+			{
+				static TypeWithPublicMethods<TPublicMethods> _field;
+			}
+
+			class MultipleReferencesToTheSameType<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods, TUnknown>
+			{
+				[ExpectedWarning ("IL2091")]
+				static TypeWithPublicMethods<TUnknown> _field1;
+				static TypeWithPublicMethods<TPublicMethods> _field2;
+				[ExpectedWarning ("IL2091")]
+				static TypeWithPublicMethods<TUnknown> _field3;
+			}
+
+			class TwoMismatchesInOne<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
+			{
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091")]
+				static IWithTwo<TPublicFields, TPublicMethods> _field;
+			}
+
+			public static void Test ()
+			{
+				typeof (SpecificType).RequiresNonPublicFields ();
+				typeof (OneMatchingAnnotation<>).RequiresNonPublicFields ();
+				typeof (MultipleReferencesToTheSameType<,>).RequiresNonPublicFields ();
+				typeof (TwoMismatchesInOne<,>).RequiresNonPublicFields ();
 			}
 		}
 
@@ -1257,6 +1367,33 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				AsType.Test ();
 				ExceptionCatch.Test ();
 				ExceptionFilter.Test ();
+			}
+		}
+
+		// There are no warnings due to data flow itself
+		// since the generic attributes must be fully instantiated always.
+		class GenericAttributes
+		{
+			class TypeWithPublicMethodsAttribute<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
+				: Attribute
+			{ }
+
+			class TypeWithTwoAttribute<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
+				: Attribute
+			{ }
+
+			[TypeWithPublicMethods<TestType>]
+			static void OneSpecificType () { }
+
+			[TypeWithTwo<TestType, TestType>]
+			static void TwoSpecificTypes () { }
+
+			public static void Test ()
+			{
+				OneSpecificType ();
+				TwoSpecificTypes ();
 			}
 		}
 
