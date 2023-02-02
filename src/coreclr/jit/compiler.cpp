@@ -3575,7 +3575,6 @@ void Compiler::compInitDebuggingInfo()
 
         JITDUMP("Debuggable code - Add new %s to perform initialization of variables\n", fgFirstBB->dspToString());
     }
-
     /*-------------------------------------------------------------------------
      *
      * Read the stmt-offsets table and the line-number table
@@ -4349,14 +4348,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 {
     compFunctionTraceStart();
 
-    // Compute bbRefs and bbPreds
-    //
-    auto computePredsPhase = [this]() {
-        fgComputePreds();
-        // Enable flow graph checks
-        activePhaseChecks |= PhaseChecks::CHECK_FG;
-    };
-    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
+    // Enable flow graph checks
+    activePhaseChecks |= PhaseChecks::CHECK_FG;
 
     // Prepare for importation
     //
