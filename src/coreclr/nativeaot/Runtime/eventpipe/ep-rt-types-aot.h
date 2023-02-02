@@ -10,6 +10,10 @@
 
 #include "EmptyContainers.h"
 
+#ifdef TARGET_UNIX
+#define __stdcall
+#endif
+
 #ifdef DEBUG
 #define EP_CHECKED_BUILD
 #endif

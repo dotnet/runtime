@@ -14,7 +14,6 @@
 #include "rhassert.h"
 
 #ifdef TARGET_UNIX
-#define __stdcall
 #define sprintf_s snprintf
 #define _stricmp strcasecmp
 #define INFINITE            0xFFFFFFFF  // Infinite timeout
