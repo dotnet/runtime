@@ -1,4 +1,22 @@
 <Project TreatAsLocalProperty="ArchiveTests">
+  <!--
+      ** Running extension targets **
+
+      To run a custom project specific target for adding/editing @(HelixWorkItem):
+
+      - In the project add:
+        <HelixTargetsFile Condition="'$(TargetOS)' == 'Browser'">wasm.helix.targets</HelixTargetsFile>
+        - This files gets copied next to the test archive as $(MSBuildProjectName).helix.targets
+
+      - In this `wasm.helix.targets` file, add to $(HelixExtensionTargets) to run your custom target
+
+          <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and '$(Scenario)' == 'WasmTestOnBrowser'">
+            <HelixExtensionTargets>$(HelixExtensionTargets);_AddHelixCrypoItems</HelixExtensionTargets>
+
+        - Useful properties to condition on: $(Scenario), $(IsRunningLibraryTests)
+        - And add to, change, or remove from @(HelixWorkItem)
+  -->
+
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
     <IsWasmProject Condition="'$(IsWasmProject)' == ''">true</IsWasmProject>

@@ -16,7 +16,6 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
             Console.WriteLine ($"No args given");
             return -1;
         }
-
         var testAssembly = args[0];
         var excludedTraits = new List<string>();
         var includedTraits = new List<string>();
@@ -64,6 +63,7 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
             IncludedMethods = includedMethods
         };
 
+        Console.WriteLine ($".. Ready to call runner.Run");
         return await runner.Run();
     }
 }

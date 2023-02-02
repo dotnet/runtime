@@ -1152,10 +1152,12 @@ if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH AND NOT CLR_CMAKE_TAR
   message(FATAL_ERROR "Cannot find the makedev function on this platform.")
 endif()
 
-check_symbol_exists(
-    getgrgid_r
-    grp.h
-    HAVE_GETGRGID_R)
+if (NOT CLR_CMAKE_TARGET_WASI)
+    check_symbol_exists(
+        getgrgid_r
+        grp.h
+        HAVE_GETGRGID_R)
+endif()
 
 check_c_source_compiles(
     "

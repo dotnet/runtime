@@ -479,6 +479,7 @@ MonoAssembly*
 mono_wasm_assembly_load (const char *name)
 {
 	assert (name);
+	printf("wasi: mono_wasm_assembly_load: %s\n", name);
 	MonoImageOpenStatus status;
 	MonoAssemblyName* aname = mono_assembly_name_new (name);
 

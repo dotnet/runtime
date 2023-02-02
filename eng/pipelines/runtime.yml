@@ -455,8 +455,6 @@ extends:
           extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
           alwaysRun: ${{ variables.isRollingBuild }}
 
-      # WASI/WASM
-
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:

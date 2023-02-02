@@ -299,6 +299,10 @@
   <ItemGroup Condition="'$(TargetsWasi)' == 'true' or '$(TargetsAnyOS)' == 'true'">
     <SupportedPlatform Include="wasi"/>
   </ItemGroup>
+  <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
+    <!-- TODOWASI -->
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
 
