@@ -4,7 +4,6 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>illinkanalyzer</AssemblyName>
     <Nullable>disable</Nullable>
-    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
