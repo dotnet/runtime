@@ -23,7 +23,18 @@ namespace System.Threading
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void Exit(object obj);
+        private static extern void InternalExit(object obj);
+
+        public static void Exit(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            if (!ObjectHeader.IsEntered(obj))
+                throw new SynchronizationLockException(SR.Arg_SynchronizationLockException);
+            if (ObjectHeader.TryExit(obj))
+                return;
+
+            InternalExit(obj);
+        }
 
         public static bool TryEnter(object obj)
         {

@@ -116,7 +116,7 @@ internal static class ObjectHeader
 
         public bool IsFlat => (_lock_word & StatusMask) == (IntPtr)Status.Flat;
 
-        public bool IsNested => (_lock_word & NestMask) == NestMask;
+        public bool IsNested => (_lock_word & NestMask) != 0;
 
         public int FlatHash => (int)(_lock_word >>> HashShift);
 
@@ -358,6 +358,28 @@ internal static class ObjectHeader
             return MonitorStatus.GetOwner(lw.GetInflatedLock().status) != 0;
         }
 
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryExit(object obj)
+    {
+        LockWord lw = GetLockWord(ref obj);
+
+        if (lw.IsInflated)
+            return false; // there might be waiters to wake
+        // if the lock word is flat, there has been no contention
+        LockWord nlw;
+        if (lw.IsNested)
+            nlw = lw.DecrementNest();
+        else
+            nlw = default;
+
+        if (LockWordCompareExchange (ref obj, nlw, lw) == lw.AsIntPtr)
+            return true;
+        // someone inflated the lock in the meantime, fall back to the slow path
+
+        GC.KeepAlive(obj);
         return false;
     }
 
