@@ -910,6 +910,79 @@ namespace System.Collections
             }
         }
 
+        public bool HasAllSet()
+        {
+            // This method uses unsafe code to manipulate data in the BitArray.  To avoid issues with
+            // buggy code concurrently mutating this instance in a way that could cause memory corruption,
+            // we snapshot the array then operate only on this snapshot.  We don't care about such code
+            // corrupting the BitArray data in a way that produces incorrect answers, since BitArray is not meant
+            // to be thread-safe; we only care about avoiding buffer overruns.
+            int[] thisArray = m_array;
+
+            const int allSetInt = -1; // 0xFF_FF_FF_FF
+            Div32Rem(m_length, out int extraBits);
+            int intCount = GetInt32ArrayLengthFromBitLength(m_length);
+            if (extraBits != 0)
+            {
+                intCount--;
+            }
+
+            ref int arrayRef = ref MemoryMarshal.GetArrayDataReference(thisArray);
+            uint i = 0;
+
+            // Unroll loop for count less than Vector256 size.
+            switch (intCount)
+            {
+                case 7: if (Unsafe.Add(ref arrayRef, 6) != allSetInt) return false; goto case 6;
+                case 6: if (Unsafe.Add(ref arrayRef, 5) != allSetInt) return false; goto case 5;
+                case 5: if (Unsafe.Add(ref arrayRef, 4) != allSetInt) return false; goto case 4;
+                case 4: if (Unsafe.Add(ref arrayRef, 3) != allSetInt) return false; goto case 3;
+                case 3: if (Unsafe.Add(ref arrayRef, 2) != allSetInt) return false; goto case 2;
+                case 2: if (Unsafe.Add(ref arrayRef, 1) != allSetInt) return false; goto case 1;
+                case 1: if (arrayRef != allSetInt) return false; goto DealWithExtraBits;
+                case 0: goto DealWithExtraBits;
+            }
+
+            if (Vector256.IsHardwareAccelerated)
+            {
+                for (; i <= intCount - Vector256IntCount; i += Vector256IntCount)
+                {
+                    Vector256<int> vector256 = Vector256.LoadUnsafe(ref arrayRef, i);
+                    if (!Vector256.EqualsAll(vector256, Vector256<int>.AllBitsSet))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                for (; i <= intCount - Vector128IntCount; i += Vector128IntCount)
+                {
+                    Vector128<int> vector128 = Vector128.LoadUnsafe(ref arrayRef, i);
+                    if (!Vector128.EqualsAll(vector128, Vector128<int>.AllBitsSet))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            for (; i < intCount; i++)
+            {
+                if (Unsafe.Add(ref arrayRef, i) != allSetInt)
+                {
+                    return false;
+                }
+            }
+
+            DealWithExtraBits:
+            if (extraBits == 0)
+            {
+                return true;
+            }
+            int mask = (1 << extraBits) - 1;
+            return (Unsafe.Add(ref arrayRef, i) & mask) == mask;
+        }
+
         public int Count => m_length;
 
         public object SyncRoot => this;

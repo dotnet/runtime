@@ -33,6 +33,7 @@ namespace System.Collections
         public void Set(int index, bool value) { }
         public void SetAll(bool value) { }
         public System.Collections.BitArray Xor(System.Collections.BitArray value) { throw null; }
+        public bool HasAllSet() { throw null; }
     }
     public static partial class StructuralComparisons
     {
