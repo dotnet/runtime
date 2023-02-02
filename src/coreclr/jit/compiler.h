@@ -3687,6 +3687,7 @@ private:
 public:
     void impInit();
     void impImport();
+    void impFixPredLists();
 
     CORINFO_CLASS_HANDLE impGetRefAnyClass();
     CORINFO_CLASS_HANDLE impGetRuntimeArgumentHandle();
@@ -4397,6 +4398,7 @@ public:
     DomTreeNode* fgSsaDomTree;
 
     bool fgBBVarSetsInited;
+    bool fgOSROriginalEntryBBProtected;
 
     // Allocate array like T* a = new T[fgBBNumMax + 1];
     // Using helper so we don't keep forgetting +1.

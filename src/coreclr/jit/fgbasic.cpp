@@ -46,11 +46,12 @@ void Compiler::fgInit()
 
     /* Initialize the basic block list */
 
-    fgFirstBB        = nullptr;
-    fgLastBB         = nullptr;
-    fgFirstColdBlock = nullptr;
-    fgEntryBB        = nullptr;
-    fgOSREntryBB     = nullptr;
+    fgFirstBB                     = nullptr;
+    fgLastBB                      = nullptr;
+    fgFirstColdBlock              = nullptr;
+    fgEntryBB                     = nullptr;
+    fgOSREntryBB                  = nullptr;
+    fgOSROriginalEntryBBProtected = false;
 
 #if defined(FEATURE_EH_FUNCLETS)
     fgFirstFuncletBB  = nullptr;
@@ -3922,6 +3923,10 @@ void Compiler::fgCheckForLoopsInHandlers()
 //    the middle of the try. But we defer that until after importation.
 //    See fgPostImportationCleanup.
 //
+//    Also protect the original method entry, if it was imported, since
+//    we may decide to branch there during morph as part of the tail recursion
+//    to loop optimization.
+//
 void Compiler::fgFixEntryFlowForOSR()
 {
     // Ensure lookup IL->BB lookup table is valid
@@ -3944,6 +3949,8 @@ void Compiler::fgFixEntryFlowForOSR()
     // Now branch from method start to the right spot.
     //
     fgEnsureFirstBBisScratch();
+    assert(fgFirstBB->bbJumpKind == BBJ_NONE);
+    fgRemoveRefPred(fgFirstBB->bbNext, fgFirstBB);
     fgFirstBB->bbJumpKind = BBJ_ALWAYS;
     fgFirstBB->bbJumpDest = osrEntry;
     fgAddRefPred(osrEntry, fgFirstBB);
