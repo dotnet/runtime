@@ -475,8 +475,7 @@ namespace Microsoft.Interop
                 {
                     diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
                 },
-                methodStub.UnmanagedToManagedGeneratorFactory.GeneratorFactory,
-                methodStub.UnwrapperType);
+                methodStub.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
@@ -520,7 +519,7 @@ namespace Microsoft.Interop
 
             var elements = ImmutableArray.CreateBuilder<TypePositionInfo>(originalElements.Length + 2);
 
-            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, NativeThisInfo.Instance)
+            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, new NativeThisInfo(methodStub.UnwrapperType))
             {
                 InstanceIdentifier = ThisParameterIdentifier,
                 NativeIndex = 0,
@@ -616,8 +615,7 @@ namespace Microsoft.Interop
                     AddImplicitElementInfos(method),
                     // Swallow diagnostics here since the diagnostics will be reported by the unmanaged->managed stub generation
                     (elementInfo, ex) => { },
-                    method.UnmanagedToManagedGeneratorFactory.GeneratorFactory,
-                    method.UnwrapperType);
+                    method.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
 
                 List<FunctionPointerParameterSyntax> functionPointerParameters = new();
                 var (paramList, retType, _) = stubGenerator.GenerateAbiMethodSignatureData();

@@ -11,8 +11,6 @@ namespace Microsoft.Interop
     {
         public override bool SingleFrameSpansNativeContext => false;
 
-        public TypeSyntax? UnwrapperType { get; private set; }
-
         public override bool AdditionalTemporaryStateLivesAcrossStages => false;
 
         private readonly TargetFramework _framework;
@@ -27,14 +25,12 @@ namespace Microsoft.Interop
             TargetFramework targetFramework,
             Version targetFrameworkVersion,
             string returnIdentifier,
-            string nativeReturnIdentifier,
-            TypeSyntax? unwrapperType = null)
+            string nativeReturnIdentifier)
         {
             _framework = targetFramework;
             _frameworkVersion = targetFrameworkVersion;
             _returnIdentifier = returnIdentifier;
             _nativeReturnIdentifier = nativeReturnIdentifier;
-            UnwrapperType = unwrapperType;
             Direction = MarshalDirection.UnmanagedToManaged;
         }
 

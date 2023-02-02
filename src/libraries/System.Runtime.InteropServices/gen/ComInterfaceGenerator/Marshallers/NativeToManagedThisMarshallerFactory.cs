@@ -10,10 +10,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal sealed record NativeThisInfo : MarshallingInfo
-    {
-        public static readonly NativeThisInfo Instance = new();
-    }
+    internal sealed record NativeThisInfo(TypeSyntax UnwrapperType) : MarshallingInfo;
 
     internal sealed class NativeToManagedThisMarshallerFactory : IMarshallingGeneratorFactory
     {
@@ -31,7 +28,7 @@ namespace Microsoft.Interop
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => new PointerTypeInfo("void*", "void*", false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
-                TypeSyntax? unwrapperType = (context as NativeToManagedStubCodeContext)?.UnwrapperType;
+                TypeSyntax? unwrapperType = (info.MarshallingAttributeInfo as NativeThisInfo)?.UnwrapperType;
                 Debug.Assert(unwrapperType != null);
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
                 {
