@@ -264,6 +264,7 @@ function getTraceImports () {
         ["hashcode", "hashcode", getRawCwrap("mono_jiterp_get_hashcode")],
         ["hascsize", "hascsize", getRawCwrap("mono_jiterp_object_has_component_size")],
         ["hasflag", "hasflag", getRawCwrap("mono_jiterp_enum_hasflag")],
+        ["array_rank", "array_rank", getRawCwrap("mono_jiterp_get_array_rank")],
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -540,6 +541,12 @@ function generate_wasm (
                 "sp1": WasmValtype.i32,
                 "sp2": WasmValtype.i32,
             }, WasmValtype.void
+        );
+        builder.defineType(
+            "array_rank", {
+                "destination": WasmValtype.i32,
+                "source": WasmValtype.i32,
+            }, WasmValtype.i32
         );
 
         builder.generateTypeSection();
@@ -1137,6 +1144,19 @@ function generate_wasm_body (
                 builder.callImport("hascsize");
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
+            case MintOpcode.MINT_ARRAY_RANK: {
+                builder.block();
+                // dest, src
+                append_ldloca(builder, getArgU16(ip, 1));
+                append_ldloca(builder, getArgU16(ip, 2));
+                builder.callImport("array_rank");
+                // If the array was null we will bail out, otherwise continue
+                builder.appendU8(WasmOpcode.br_if);
+                builder.appendULeb(0);
+                append_bailout(builder, ip, BailoutReason.NullCheck);
+                builder.endBlock();
+                break;
+            }
 
             case MintOpcode.MINT_CASTCLASS:
             case MintOpcode.MINT_ISINST:
