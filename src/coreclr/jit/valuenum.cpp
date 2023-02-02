@@ -6121,40 +6121,60 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
             case NI_X86Base_BitScanForward:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+                int32_t value  = GetConstantInt32(arg0VN);
 
-                int32_t  value  = GetConstantInt32(arg0VN);
+                if (value == 0)
+                {
+                    // bsf is undefined for 0
+                    break;
+                }
+
                 uint32_t result = BitOperations::BitScanForward(static_cast<uint32_t>(value));
-
                 return VNForIntCon(static_cast<int32_t>(result));
             }
 
             case NI_X86Base_X64_BitScanForward:
             {
                 assert(varTypeIsLong(type));
+                int64_t value = GetConstantInt64(arg0VN);
 
-                int64_t  value  = GetConstantInt64(arg0VN);
+                if (value == 0)
+                {
+                    // bsf is undefined for 0
+                    break;
+                }
+
                 uint32_t result = BitOperations::BitScanForward(static_cast<uint64_t>(value));
-
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 
             case NI_X86Base_BitScanReverse:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+                int32_t value = GetConstantInt32(arg0VN);
 
-                int32_t  value  = GetConstantInt32(arg0VN);
+                if (value == 0)
+                {
+                    // bsr is undefined for 0
+                    break;
+                }
+
                 uint32_t result = BitOperations::BitScanReverse(static_cast<uint32_t>(value));
-
                 return VNForIntCon(static_cast<int32_t>(result));
             }
 
             case NI_X86Base_X64_BitScanReverse:
             {
                 assert(varTypeIsLong(type));
+                int64_t value = GetConstantInt64(arg0VN);
 
-                int64_t  value  = GetConstantInt64(arg0VN);
+                if (value == 0)
+                {
+                    // bsr is undefined for 0
+                    break;
+                }
+
                 uint32_t result = BitOperations::BitScanReverse(static_cast<uint64_t>(value));
-
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 #endif // TARGET_XARCH
