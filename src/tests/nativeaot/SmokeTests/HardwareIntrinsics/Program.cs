@@ -12,6 +12,22 @@ unsafe class Program
     {
         s_success = true;
 
+#if !DEBUG
+        Console.WriteLine("****************************************************");
+        Console.WriteLine("* Size test                                        *");
+        long fileSize = new System.IO.FileInfo(Environment.ProcessPath).Length;
+        Console.WriteLine($"* Size of the executable is {fileSize / 1024,7:n0} kB             *");
+        Console.WriteLine("****************************************************");
+
+        if (fileSize < 1024 * 1024 || fileSize > 2 * 1024 * 1024)
+        {
+            Console.WriteLine("BUG: File size is not in the expected range. Did a libraries change regress size of Hello World?");
+            return 1;
+        }
+
+        Console.WriteLine();
+#endif
+
         // We expect the AOT compiler generated HW intrinsics with the following characteristics:
         //
         // * TRUE = IsSupported assumed to be true, no runtime check
