@@ -14,8 +14,8 @@
     <ProjectReference Include="Microsoft.NET.Runtime.iOS.Sample.Mono\Microsoft.NET.Runtime.iOS.Sample.Mono.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
-    <ProjectReference Include="Microsoft.NET.Workload.Mono.Toolchain.Manifest\Microsoft.NET.Workload.Mono.Toolchain.Manifest.pkgproj" />
+  <ItemGroup Condition="'$(TargetsMobile)' == 'true' or '$(ForceBuildMobileManifests)' == 'true'">
+    <ProjectReference Include="Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest\Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest\Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Workload.Mono.Toolchain.net7.Manifest\Microsoft.NET.Workload.Mono.Toolchain.net7.Manifest.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task\Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj" />

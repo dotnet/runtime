@@ -2435,10 +2435,14 @@ bool Compiler::fgNormalizeEHCase2()
                                 fgAddCheapPred(newTryStart, predBlock);
                                 fgRemoveCheapPred(insertBeforeBlk, predBlock);
 
-                                // Now change the branch. If it was a BBJ_NONE fall-through to the top block, this will
-                                // do nothing. Since cheap preds contains dups (for switch duplicates), we will call
+                                // Now change pred branches.
+                                //
+                                // Since cheap preds contains dups (for switch duplicates), we will call
                                 // this once per dup.
-                                fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
+                                if (predBlock->bbJumpKind != BBJ_NONE)
+                                {
+                                    fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
+                                }
 
                                 // Need to adjust ref counts here since we're retargeting edges.
                                 newTryStart->bbRefs++;
@@ -4551,7 +4555,9 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 }
 #endif // DEBUG
                 // Change the bbJumpDest for bFilterLast from the old first 'block' to the new first 'bPrev'
+                fgRemoveRefPred(bFilterLast->bbJumpDest, bFilterLast);
                 bFilterLast->bbJumpDest = bPrev;
+                fgAddRefPred(bPrev, bFilterLast);
             }
         }
 

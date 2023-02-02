@@ -595,11 +595,6 @@ private:
 //
 PhaseStatus Compiler::fgInline()
 {
-#ifdef DEBUG
-    // Inliner could add basic blocks. Check that the flowgraph data is up-to-date
-    fgDebugCheckBBlist(false, false);
-#endif // DEBUG
-
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
         return PhaseStatus::MODIFIED_NOTHING;
@@ -741,6 +736,202 @@ PhaseStatus Compiler::fgInline()
     }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------------
+// fgMorphCallInline: attempt to inline a call
+//
+// Arguments:
+//    call         - call expression to inline, inline candidate
+//    inlineResult - result tracking and reporting
+//
+// Notes:
+//    Attempts to inline the call.
+//
+//    If successful, callee's IR is inserted in place of the call, and
+//    is marked with an InlineContext.
+//
+//    If unsuccessful, the transformations done in anticipation of a
+//    possible inline are undone, and the candidate flag on the call
+//    is cleared.
+//
+void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
+{
+    bool inliningFailed = false;
+
+    InlineCandidateInfo* inlCandInfo = call->gtInlineCandidateInfo;
+
+    // Is this call an inline candidate?
+    if (call->IsInlineCandidate())
+    {
+        InlineContext* createdContext = nullptr;
+        // Attempt the inline
+        fgMorphCallInlineHelper(call, inlineResult, &createdContext);
+
+        // We should have made up our minds one way or another....
+        assert(inlineResult->IsDecided());
+
+        // If we failed to inline, we have a bit of work to do to cleanup
+        if (inlineResult->IsFailure())
+        {
+            if (createdContext != nullptr)
+            {
+                // We created a context before we got to the failure, so mark
+                // it as failed in the tree.
+                createdContext->SetFailed(inlineResult);
+            }
+            else
+            {
+#ifdef DEBUG
+                // In debug we always put all inline attempts into the inline tree.
+                InlineContext* ctx =
+                    m_inlineStrategy->NewContext(call->gtInlineCandidateInfo->inlinersContext, fgMorphStmt, call);
+                ctx->SetFailed(inlineResult);
+#endif
+            }
+
+            inliningFailed = true;
+
+            // Clear the Inline Candidate flag so we can ensure later we tried
+            // inlining all candidates.
+            //
+            call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+        }
+    }
+    else
+    {
+        // This wasn't an inline candidate. So it must be a GDV candidate.
+        assert(call->IsGuardedDevirtualizationCandidate());
+
+        // We already know we can't inline this call, so don't even bother to try.
+        inliningFailed = true;
+    }
+
+    // If we failed to inline (or didn't even try), do some cleanup.
+    if (inliningFailed)
+    {
+        if (call->gtReturnType != TYP_VOID)
+        {
+            JITDUMP("Inlining [%06u] failed, so bashing " FMT_STMT " to NOP\n", dspTreeID(call), fgMorphStmt->GetID());
+
+            // Detach the GT_CALL tree from the original statement by
+            // hanging a "nothing" node to it. Later the "nothing" node will be removed
+            // and the original GT_CALL tree will be picked up by the GT_RET_EXPR node.
+            inlCandInfo->retExpr->gtSubstExpr = call;
+            inlCandInfo->retExpr->gtSubstBB   = compCurBB;
+
+            noway_assert(fgMorphStmt->GetRootNode() == call);
+            fgMorphStmt->SetRootNode(gtNewNothingNode());
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+// fgMorphCallInlineHelper: Helper to attempt to inline a call
+//
+// Arguments:
+//    call           - call expression to inline, inline candidate
+//    result         - result to set to success or failure
+//    createdContext - The context that was created if the inline attempt got to the inliner.
+//
+// Notes:
+//    Attempts to inline the call.
+//
+//    If successful, callee's IR is inserted in place of the call, and
+//    is marked with an InlineContext.
+//
+//    If unsuccessful, the transformations done in anticipation of a
+//    possible inline are undone, and the candidate flag on the call
+//    is cleared.
+//
+//    If a context was created because we got to the importer then it is output by this function.
+//    If the inline succeeded, this context will already be marked as successful. If it failed and
+//    a context is returned, then it will not have been marked as success or failed.
+//
+void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, InlineContext** createdContext)
+{
+    // Don't expect any surprises here.
+    assert(result->IsCandidate());
+
+    if (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
+    {
+        // For now, attributing this to call site, though it's really
+        // more of a budget issue (lvaCount currently includes all
+        // caller and prospective callee locals). We still might be
+        // able to inline other callees into this caller, or inline
+        // this callee in other callers.
+        result->NoteFatal(InlineObservation::CALLSITE_TOO_MANY_LOCALS);
+        return;
+    }
+
+    if (call->IsVirtual())
+    {
+        result->NoteFatal(InlineObservation::CALLSITE_IS_VIRTUAL);
+        return;
+    }
+
+    // Re-check this because guarded devirtualization may allow these through.
+    if (gtIsRecursiveCall(call) && call->IsImplicitTailCall())
+    {
+        result->NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
+        return;
+    }
+
+    // impMarkInlineCandidate() is expected not to mark tail prefixed calls
+    // and recursive tail calls as inline candidates.
+    noway_assert(!call->IsTailPrefixedCall());
+    noway_assert(!call->IsImplicitTailCall() || !gtIsRecursiveCall(call));
+
+    //
+    // Calling inlinee's compiler to inline the method.
+    //
+
+    unsigned const startVars     = lvaCount;
+    unsigned const startBBNumMax = fgBBNumMax;
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Expanding INLINE_CANDIDATE in statement ");
+        printStmtID(fgMorphStmt);
+        printf(" in " FMT_BB ":\n", compCurBB->bbNum);
+        gtDispStmt(fgMorphStmt);
+        if (call->IsImplicitTailCall())
+        {
+            printf("Note: candidate is implicit tail call\n");
+        }
+    }
+#endif
+
+    impInlineRoot()->m_inlineStrategy->NoteAttempt(result);
+
+    //
+    // Invoke the compiler to inline the call.
+    //
+
+    fgInvokeInlineeCompiler(call, result, createdContext);
+
+    if (result->IsFailure())
+    {
+        // Undo some changes made during the inlining attempt.
+        // Zero out the used locals
+        memset((void*)(lvaTable + startVars), 0, (lvaCount - startVars) * sizeof(*lvaTable));
+        for (unsigned i = startVars; i < lvaCount; i++)
+        {
+            new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
+        }
+
+        // Reset local var count and max bb num
+        lvaCount   = startVars;
+        fgBBNumMax = startBBNumMax;
+
+#ifdef DEBUG
+        for (BasicBlock* block : Blocks())
+        {
+            assert(block->bbNum <= fgBBNumMax);
+        }
+#endif
+    }
 }
 
 #if defined(DEBUG) || defined(INLINE_DATA)

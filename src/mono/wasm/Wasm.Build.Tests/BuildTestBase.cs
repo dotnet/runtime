@@ -496,10 +496,14 @@ namespace Wasm.Build.Tests
                     .EnsureSuccessful();
 
             string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
+            string extraProperties = string.Empty;
+            extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
             if (runAnalyzers)
-                AddItemsPropertiesToProject(projectfile, "<RunAnalyzers>true</RunAnalyzers>");
+                extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
             if (UseWebcil)
-                AddItemsPropertiesToProject(projectfile, "<WasmEnableWebcil>true</WasmEnableWebcil>");
+                extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>";
+            AddItemsPropertiesToProject(projectfile, extraProperties);
+
             return projectfile;
         }
 

@@ -7899,7 +7899,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_ins (td, MINT_REFANYTYPE);
 				td->sp--;
 				interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-				push_simple_type (td, STACK_TYPE_I);
+				push_type_vt (td, mono_defaults.typehandle_class, mono_class_value_size (mono_defaults.typehandle_class, NULL));
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				++td->ip;
 				break;
@@ -9194,11 +9194,6 @@ retry:
 					}
 				} else {
 					cprop_sreg (td, ins, &sregs [i], local_defs);
-					// This var is used as a source to a normal instruction. In case this var will
-					// also be used as source to a call, make sure the offset allocator will create
-					// a new temporary call arg var and not use this one. Call arg vars have special
-					// semantics. They can be assigned only once and they die once the call is made.
-					td->locals [sregs [i]].flags |= INTERP_LOCAL_FLAG_NO_CALL_ARGS;
 				}
 			}
 
@@ -10389,9 +10384,12 @@ interp_alloc_offsets (TransformData *td)
 
 					while (var != -1) {
 						if (td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL ||
+								!td->local_ref_count || td->local_ref_count [var] > 1 ||
 								td->locals [var].flags & INTERP_LOCAL_FLAG_NO_CALL_ARGS) {
-							// A global var is an argument to a call, which is not allowed. We need
-							// to copy the global var into a local var
+							// Some vars can't be allocated on the call args stack, since the constraint is that
+							// call args vars die after the call. This isn't necessarily true for global vars or
+							// vars that are used by other instructions aside from the call.
+							// We need to copy the var into a new tmp var
 							int new_var = create_interp_local (td, td->locals [var].type);
 							td->locals [new_var].call = ins;
 							td->locals [new_var].flags |= INTERP_LOCAL_FLAG_CALL_ARGS;

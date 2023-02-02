@@ -137,6 +137,21 @@ namespace ILCompiler.DependencyAnalysis
                         dependencies.AddRange(caDependencies);
                         dependencies.Add(factory.CustomAttributeMetadata(new ReflectableCustomAttribute(module, caHandle)), "Attribute metadata");
                     }
+
+                    // Works around https://github.com/dotnet/runtime/issues/81459
+                    if (constructor.OwningType is MetadataType { Name: "EventSourceAttribute" } eventSourceAttributeType)
+                    {
+                        foreach (var namedArg in decodedValue.NamedArguments)
+                        {
+                            if (namedArg.Name == "LocalizationResources" && namedArg.Value is string resName
+                                && InlineableStringsResourceNode.IsInlineableStringsResource(module, resName + ".resources"))
+                            {
+                                dependencies ??= new DependencyList();
+                                dependencies.Add(factory.InlineableStringResource(module), "EventSource used resource");
+                            }
+                        }
+                    }
+                    // End of workaround for https://github.com/dotnet/runtime/issues/81459
                 }
                 catch (TypeSystemException)
                 {

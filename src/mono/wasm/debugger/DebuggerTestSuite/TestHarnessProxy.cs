@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.WebAssembly.Diagnostics;
 using Xunit.Abstractions;
 
@@ -36,6 +37,16 @@ namespace DebuggerTests
 
         public static Task Start(string appPath, string pagePath, string url, ITestOutputHelper testOutput, string locale = "en-US")
         {
+            TestHarnessOptions options = new()
+            {
+                AppPath = appPath,
+                PagePath = pagePath,
+                DevToolsUrl = new Uri(url),
+                WebServerUseCors = false,
+                WebServerUseCrossOriginPolicy = true,
+                Locale = locale
+            };
+
             lock (proxyLock)
             {
                 if (hostTask != null)
@@ -76,14 +87,17 @@ namespace DebuggerTests
                     })
                     .ConfigureServices((ctx, services) =>
                     {
-                        services.Configure<TestHarnessOptions>(ctx.Configuration);
-                        services.Configure<TestHarnessOptions>(options =>
+                        if (options.WebServerUseCors)
                         {
-                            options.AppPath = appPath;
-                            options.PagePath = pagePath;
-                            options.DevToolsUrl = new Uri(url);
-                            options.Locale = locale;
-                        });
+                            services.AddCors(o => o.AddPolicy("AnyCors", builder =>
+                                {
+                                    builder.AllowAnyOrigin()
+                                        .AllowAnyMethod()
+                                        .AllowAnyHeader()
+                                        .WithExposedHeaders("*");
+                                }));
+                        }
+                        services.AddSingleton(Options.Create(options));
                     })
                     .UseStartup<TestHarnessStartup>()
                     .UseUrls(Endpoint.ToString())

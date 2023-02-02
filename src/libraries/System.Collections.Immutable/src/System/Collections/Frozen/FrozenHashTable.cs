@@ -18,6 +18,13 @@ namespace System.Collections.Frozen
         private readonly Bucket[] _buckets;
         private readonly ulong _fastModMultiplier;
 
+        /// <summary>Initializes the hashtable with the computed hashcodes and bucket information.</summary>
+        /// <param name="hashCodes">The array of hashcodes grouped into contiguous regions by bucket. Each bucket is one and only one region of the array.</param>
+        /// <param name="buckets">
+        /// The array of buckets, indexed by hashCodes % buckets.Length, where each bucket is
+        /// the start/end index into <paramref name="hashCodes"/> for all items in that bucket.
+        /// </param>
+        /// <param name="fastModMultiplier">The multiplier to use as part of a FastMod method call.</param>
         private FrozenHashTable(int[] hashCodes, Bucket[] buckets, ulong fastModMultiplier)
         {
             Debug.Assert(hashCodes.Length != 0);
@@ -32,6 +39,7 @@ namespace System.Collections.Frozen
         /// <param name="entries">The set of entries to track from the hash table.</param>
         /// <param name="hasher">A delegate that produces a hash code for a given entry.</param>
         /// <param name="setter">A delegate that assigns the index to a specific entry.</param>
+        /// <param name="optimizeForReading">true to spend additional effort tuning for subsequent read speed on the table; false to prioritize construction time.</param>
         /// <typeparam name="T">The type of elements in the hash table.</typeparam>
         /// <remarks>
         /// This method will iterate through the incoming entries and will invoke the hasher on each once.
@@ -41,50 +49,85 @@ namespace System.Collections.Frozen
         /// then uses this index to reference individual entries by indexing into <see cref="HashCodes"/>.
         /// </remarks>
         /// <returns>A frozen hash table.</returns>
-        public static FrozenHashTable Create<T>(T[] entries, Func<T, int> hasher, Action<int, T> setter)
+        public static FrozenHashTable Create<T>(T[] entries, Func<T, int> hasher, Action<int, T> setter, bool optimizeForReading = true)
         {
             Debug.Assert(entries.Length != 0);
 
-            int[] hashCodes = new int[entries.Length];
+            // Calculate the hashcodes for every entry.
+            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(entries.Length);
+            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, entries.Length);
             for (int i = 0; i < entries.Length; i++)
             {
                 hashCodes[i] = hasher(entries[i]);
             }
 
-            int numBuckets = CalcNumBuckets(hashCodes);
+            // Determine how many buckets to use.  This might be fewer than the number of entries
+            // if any entries have identical hashcodes (not just different hashcodes that might
+            // map to the same bucket).
+            int numBuckets = CalcNumBuckets(hashCodes, optimizeForReading);
             ulong fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)numBuckets);
 
-            var chainBuddies = new Dictionary<uint, List<ChainBuddy>>();
+            // Create two spans:
+            // - bucketStarts: initially filled with all -1s, the ith element stores the index
+            //   into hashCodes of the head element of that bucket's chain.
+            // - nexts: the ith element stores the index of the next item in the chain.
+            int[] arrayPoolBuckets = ArrayPool<int>.Shared.Rent(numBuckets + hashCodes.Length);
+            Span<int> bucketStarts = arrayPoolBuckets.AsSpan(0, numBuckets);
+            Span<int> nexts = arrayPoolBuckets.AsSpan(numBuckets, hashCodes.Length);
+            bucketStarts.Fill(-1);
+
+            // Populate the bucket entries and starts.  For each hash code, compute its bucket,
+            // and store at the bucket entry corresponding to the hashcode item the entry for that
+            // item, which includes a copy of the hash code and the current bucket start, which
+            // is then replaced by this entry as it's pushed into the bucket list.
             for (int index = 0; index < hashCodes.Length; index++)
             {
                 int hashCode = hashCodes[index];
-                uint bucket = HashHelpers.FastMod((uint)hashCode, (uint)numBuckets, fastModMultiplier);
+                int bucketNum = (int)HashHelpers.FastMod((uint)hashCode, (uint)bucketStarts.Length, fastModMultiplier);
 
-                if (!chainBuddies.TryGetValue(bucket, out List<ChainBuddy>? list))
-                {
-                    chainBuddies[bucket] = list = new List<ChainBuddy>();
-                }
-
-                list.Add(new ChainBuddy(hashCode, index));
+                ref int bucketStart = ref bucketStarts[bucketNum];
+                nexts[index] = bucketStart;
+                bucketStart = index;
             }
 
-            var buckets = new Bucket[numBuckets];
-
+            // Write out the hashcodes and buckets arrays to be used by the FrozenHashtable instance.
+            // We iterate through each bucket start, and from each, each item in that chain, writing
+            // out all of the items in each chain next to each other in the hashcodes list (and
+            // calling the setter to allow the consumer to reorder its entries appropriately).
+            // Along the way we could how many items are in each chain, and use that along with
+            // the starting index to write out the bucket information for indexing into hashcodes.
+            var hashtableHashcodes = new int[hashCodes.Length];
+            var hashtableBuckets = new Bucket[bucketStarts.Length];
             int count = 0;
-            foreach (List<ChainBuddy> list in chainBuddies.Values)
+            for (int bucketNum = 0; bucketNum < hashtableBuckets.Length; bucketNum++)
             {
-                uint bucket = HashHelpers.FastMod((uint)list[0].HashCode, (uint)buckets.Length, fastModMultiplier);
-
-                buckets[bucket] = new Bucket(count, list.Count);
-                for (int i = 0; i < list.Count; i++)
+                int bucketStart = bucketStarts[bucketNum];
+                if (bucketStart < 0)
                 {
-                    hashCodes[count] = list[i].HashCode;
-                    setter(count, entries[list[i].Index]);
-                    count++;
+                    continue;
                 }
-            }
 
-            return new FrozenHashTable(hashCodes, buckets, fastModMultiplier);
+                int bucketCount = 0;
+                int index = bucketStart;
+                bucketStart = count;
+                while (index >= 0)
+                {
+                    hashtableHashcodes[count] = hashCodes[index];
+                    setter(count, entries[index]);
+                    count++;
+                    bucketCount++;
+
+                    index = nexts[index];
+                }
+
+                hashtableBuckets[bucketNum] = new Bucket(bucketStart, bucketCount);
+            }
+            Debug.Assert(count == hashtableHashcodes.Length);
+
+            ArrayPool<int>.Shared.Return(arrayPoolBuckets);
+            ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
+
+            return new FrozenHashTable(hashtableHashcodes, hashtableBuckets, fastModMultiplier);
         }
 
         /// <summary>
@@ -96,7 +139,8 @@ namespace System.Collections.Frozen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FindMatchingEntries(int hashCode, out int startIndex, out int endIndex)
         {
-            ref Bucket b = ref _buckets[HashHelpers.FastMod((uint)hashCode, (uint)_buckets.Length, _fastModMultiplier)];
+            Bucket[] buckets = _buckets;
+            ref Bucket b = ref buckets[HashHelpers.FastMod((uint)hashCode, (uint)buckets.Length, _fastModMultiplier)];
             startIndex = b.StartIndex;
             endIndex = b.EndIndex;
         }
@@ -106,22 +150,38 @@ namespace System.Collections.Frozen
         internal int[] HashCodes { get; }
 
         /// <summary>
-        /// Given an array of hash codes, figure out the best number of hash buckets to use.
+        /// Given a span of hash codes, figure out the best number of hash buckets to use.
         /// </summary>
         /// <remarks>
         /// This tries to select a prime number of buckets. Rather than iterating through all possible bucket
         /// sizes, starting at the exact number of hash codes and incrementing the bucket count by 1 per trial,
         /// this is a trade-off between speed of determining a good number of buckets and maximal density.
         /// </remarks>
-        private static int CalcNumBuckets(int[] hashCodes)
+        private static int CalcNumBuckets(ReadOnlySpan<int> hashCodes, bool optimizeForReading)
         {
+            Debug.Assert(hashCodes.Length != 0);
+
             const double AcceptableCollisionRate = 0.05;  // What is a satisfactory rate of hash collisions?
             const int LargeInputSizeThreshold = 1000;     // What is the limit for an input to be considered "small"?
             const int MaxSmallBucketTableMultiplier = 16; // How large a bucket table should be allowed for small inputs?
             const int MaxLargeBucketTableMultiplier = 3;  // How large a bucket table should be allowed for large inputs?
 
+            if (!optimizeForReading)
+            {
+                return HashHelpers.GetPrime(hashCodes.Length);
+            }
+
             // Filter out duplicate codes, since no increase in buckets will avoid collisions from duplicate input hash codes.
-            var codes = new HashSet<int>(hashCodes);
+            var codes =
+#if NETCOREAPP2_0_OR_GREATER
+                new HashSet<int>(hashCodes.Length);
+#else
+                new HashSet<int>();
+#endif
+            foreach (int hashCode in hashCodes)
+            {
+                codes.Add(hashCode);
+            }
             Debug.Assert(codes.Count != 0);
 
             // In our precomputed primes table, find the index of the smallest prime that's at least as large as our number of
@@ -213,29 +273,17 @@ namespace System.Collections.Frozen
             return bestNumBuckets;
         }
 
-        private readonly struct ChainBuddy
-        {
-            public readonly int HashCode;
-            public readonly int Index;
-
-            public ChainBuddy(int hashCode, int index)
-            {
-                HashCode = hashCode;
-                Index = index;
-            }
-        }
-
         private readonly struct Bucket
         {
             public readonly int StartIndex;
             public readonly int EndIndex;
 
-            public Bucket(int index, int count)
+            public Bucket(int startIndex, int count)
             {
                 Debug.Assert(count > 0);
 
-                StartIndex = index;
-                EndIndex = index + count - 1;
+                StartIndex = startIndex;
+                EndIndex = startIndex + count - 1;
             }
         }
     }
