@@ -325,24 +325,6 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
-#if false
-        // TODO: can't have the same template with different casing
-        [Fact]
-        public async Task InconsistentTemplateCasing()
-        {
-            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
-                partial class C
-                {
-                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {p1} {P1}"")]
-                    static partial void M1(ILogger logger, int p1, int P1);
-                }
-            ");
-
-            Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticDescriptors.InconsistentTemplateCasing.Id, diagnostics[0].Id);
-        }
-#endif
-
         [Fact]
         public async Task InvalidParameterName()
         {
