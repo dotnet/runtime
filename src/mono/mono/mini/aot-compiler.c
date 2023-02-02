@@ -14480,7 +14480,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	TV_GETTIME (btv);
 
 	acfg->stats.jit_time = GINT64_TO_INT (TV_ELAPSED (atv, btv));
-#if 0
+#ifndef TARGET_APPLE_MOBILE
 	dedup_skip_methods (acfg);
 #endif
 	if (acfg->dedup_collect_only) {
