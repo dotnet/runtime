@@ -111,6 +111,8 @@ jobs:
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true)) ]
 
+      - template: /eng/common/templates/variables/pool-providers.yml
+
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 
@@ -132,12 +134,12 @@ jobs:
       pool:
         # Public Linux Build Pool
         ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), eq(variables['System.TeamProject'], 'public')) }}:
-          name:  NetCore-Public
+          name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
         # Official Build Linux Pool
         ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), ne(variables['System.TeamProject'], 'public')) }}:
-          name: NetCore1ESPool-Internal
+          name: $(DncEngInternalBuildPool)
           demands: ImageOverride -equals Build.Ubuntu.1804.Amd64
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
@@ -146,12 +148,12 @@ jobs:
 
         # Official Build Windows Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), ne(variables['System.TeamProject'], 'public')) }}:
-          name: NetCore1ESPool-Internal
+          name: $(DncEngInternalBuildPool)
           demands: ImageOverride -equals windows.vs2022.amd64
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
-          name: NetCore-Public
+          name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals windows.vs2022.amd64.open
 
 
