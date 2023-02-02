@@ -295,9 +295,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal PolymorphicTypeResolver? PolymorphicTypeResolver { get; private set; }
 
-        // If enumerable or dictionary, the JsonTypeInfo for the element type.
-        private JsonTypeInfo? _elementTypeInfo;
-
         // Flag indicating that JsonTypeInfo<T>.SerializeHandler is populated and is compatible with the associated Options instance.
         internal bool CanUseSerializeHandler { get; private protected set; }
 
@@ -314,84 +311,47 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        internal Type? ElementType { get; }
+        internal Type? KeyType { get; }
+
         /// <summary>
         /// Return the JsonTypeInfo for the element type, or null if the type is not an enumerable or dictionary.
         /// </summary>
-        /// <remarks>
-        /// This should not be called during warm-up (initial creation of JsonTypeInfos) to avoid recursive behavior
-        /// which could result in a StackOverflowException.
-        /// </remarks>
         internal JsonTypeInfo? ElementTypeInfo
         {
             get
             {
-                if (_elementTypeInfo == null)
-                {
-                    if (ElementType != null)
-                    {
-                        // GetOrAddJsonTypeInfo already ensures JsonTypeInfo is configured
-                        // also see comment on JsonPropertyInfo.JsonTypeInfo
-                        _elementTypeInfo = Options.GetTypeInfoInternal(ElementType);
-                    }
-                }
-                else
-                {
-                    _elementTypeInfo.EnsureConfigured();
-                }
-
+                Debug.Assert(IsConfigured);
                 return _elementTypeInfo;
             }
             set
             {
-                // Set by JsonMetadataServices.
-                Debug.Assert(_elementTypeInfo == null);
+                Debug.Assert(!IsReadOnly);
+                Debug.Assert(value is null || value.Type == ElementType);
                 _elementTypeInfo = value;
             }
         }
 
-        internal Type? ElementType { get; }
-
-        // If dictionary, the JsonTypeInfo for the key type.
-        private JsonTypeInfo? _keyTypeInfo;
-
         /// <summary>
         /// Return the JsonTypeInfo for the key type, or null if the type is not a dictionary.
         /// </summary>
-        /// <remarks>
-        /// This should not be called during warm-up (initial creation of JsonTypeInfos) to avoid recursive behavior
-        /// which could result in a StackOverflowException.
-        /// </remarks>
         internal JsonTypeInfo? KeyTypeInfo
         {
             get
             {
-                if (_keyTypeInfo == null)
-                {
-                    if (KeyType != null)
-                    {
-                        Debug.Assert(Kind == JsonTypeInfoKind.Dictionary);
-
-                        // GetOrAddJsonTypeInfo already ensures JsonTypeInfo is configured
-                        // also see comment on JsonPropertyInfo.JsonTypeInfo
-                        _keyTypeInfo = Options.GetTypeInfoInternal(KeyType);
-                    }
-                }
-                else
-                {
-                    _keyTypeInfo.EnsureConfigured();
-                }
-
+                Debug.Assert(IsConfigured);
                 return _keyTypeInfo;
             }
             set
             {
-                // Set by JsonMetadataServices.
-                Debug.Assert(_keyTypeInfo == null);
+                Debug.Assert(!IsReadOnly);
+                Debug.Assert(value is null || value.Type == KeyType);
                 _keyTypeInfo = value;
             }
         }
 
-        internal Type? KeyType { get; }
+        private JsonTypeInfo? _elementTypeInfo;
+        private JsonTypeInfo? _keyTypeInfo;
 
         /// <summary>
         /// Gets the <see cref="JsonSerializerOptions"/> value associated with the current <see cref="JsonTypeInfo" /> instance.
@@ -530,61 +490,59 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private volatile bool _isConfigured;
-        private readonly object _configureLock = new object();
+        internal bool IsConfigured => _configureState == 2;
+        private volatile int _configureState; // 0: not configured, 1: configuring, 2: configured
         private ExceptionDispatchInfo? _cachedConfigureError;
-
-        internal bool IsConfigured => _isConfigured;
 
         internal void EnsureConfigured()
         {
-            Debug.Assert(!Monitor.IsEntered(_configureLock), "recursive locking detected.");
+            if (!IsConfigured)
+                ConfigureSynchronized();
 
-            if (!_isConfigured)
-                ConfigureLocked();
-
-            void ConfigureLocked()
+            void ConfigureSynchronized()
             {
+                Options.MakeReadOnly();
+                MakeReadOnly();
+
                 _cachedConfigureError?.Throw();
 
-                lock (_configureLock)
+                lock (Options.CacheContext)
                 {
-                    if (_isConfigured)
+                    if (_configureState != 0)
+                    {
+                        // The value of _configureState is either
+                        //   1: recursive instance configured by this thread OR
+                        //   2: instance already configured by another thread.
                         return;
+                    }
 
                     _cachedConfigureError?.Throw();
 
                     try
                     {
+                        _configureState = 1;
                         Configure();
-
-                        IsReadOnly = true;
-                        _isConfigured = true;
+                        _configureState = 2;
                     }
                     catch (Exception e)
                     {
                         _cachedConfigureError = ExceptionDispatchInfo.Capture(e);
+                        _configureState = 0;
                         throw;
                     }
                 }
             }
         }
 
-        internal void Configure()
+        private void Configure()
         {
-            Debug.Assert(Monitor.IsEntered(_configureLock), "Configure called directly, use EnsureConfigured which locks this method");
+            Debug.Assert(Monitor.IsEntered(Options.CacheContext), "Configure called directly, use EnsureConfigured which synchronizes access to this method");
+            Debug.Assert(Options.IsReadOnly);
+            Debug.Assert(IsReadOnly);
 
-            if (!Options.IsReadOnly)
-            {
-                Options.MakeReadOnly();
-            }
-
-            PropertyInfoForTypeInfo.EnsureConfigured();
-
+            PropertyInfoForTypeInfo.Configure();
             CanUseSerializeHandler &= Options.CanUseFastPathSerializationLogic;
 
-            Debug.Assert(PropertyInfoForTypeInfo.EffectiveConverter.ConverterStrategy == Converter.ConverterStrategy,
-                $"ConverterStrategy from PropertyInfoForTypeInfo.EffectiveConverter.ConverterStrategy ({PropertyInfoForTypeInfo.EffectiveConverter.ConverterStrategy}) does not match converter's ({Converter.ConverterStrategy})");
             if (Kind == JsonTypeInfoKind.Object)
             {
                 ConfigureProperties();
@@ -593,6 +551,18 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     ConfigureConstructorParameters();
                 }
+            }
+
+            if (ElementType != null)
+            {
+                _elementTypeInfo ??= Options.GetTypeInfoInternal(ElementType);
+                _elementTypeInfo.EnsureConfigured();
+            }
+
+            if (KeyType != null)
+            {
+                _keyTypeInfo ??= Options.GetTypeInfoInternal(KeyType);
+                _keyTypeInfo.EnsureConfigured();
             }
 
             if (PolymorphismOptions != null)
@@ -947,7 +917,7 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
 
-                property.EnsureConfigured();
+                property.Configure();
             }
 
             NumberOfRequiredProperties = numberOfRequiredProperties;

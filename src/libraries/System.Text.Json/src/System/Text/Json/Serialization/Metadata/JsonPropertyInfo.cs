@@ -140,7 +140,7 @@ namespace System.Text.Json.Serialization.Metadata
             get => _ignoreCondition;
             set
             {
-                Debug.Assert(!_isConfigured);
+                Debug.Assert(!IsConfigured);
                 ConfigureIgnoreCondition(value);
                 _ignoreCondition = value;
             }
@@ -272,24 +272,12 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal bool IsConfigured => _isConfigured;
-        private volatile bool _isConfigured;
-
-        internal void EnsureConfigured()
-        {
-            if (_isConfigured)
-            {
-                return;
-            }
-
-            Configure();
-
-            _isConfigured = true;
-        }
+        internal bool IsConfigured { get; private set; }
 
         internal void Configure()
         {
             Debug.Assert(ParentTypeInfo != null);
+            Debug.Assert(!IsConfigured);
 
             if (IsIgnored)
             {
@@ -300,7 +288,9 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType, ensureConfigured: false);
+                _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
+                _jsonTypeInfo.EnsureConfigured();
+
                 DetermineEffectiveConverter(_jsonTypeInfo);
                 DetermineNumberHandlingForProperty();
                 DetermineSerializationCapabilities();
@@ -330,6 +320,8 @@ namespace System.Text.Json.Serialization.Metadata
 
                 Debug.Assert(!IgnoreNullTokensOnRead);
             }
+
+            IsConfigured = true;
         }
 
         private protected abstract void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo);
@@ -553,7 +545,7 @@ namespace System.Text.Json.Serialization.Metadata
             sb.AppendLine($"{ind}{{");
             sb.AppendLine($"{ind}  Name: {Name},");
             sb.AppendLine($"{ind}  NameAsUtf8.Length: {(NameAsUtf8Bytes?.Length ?? -1)},");
-            sb.AppendLine($"{ind}  IsConfigured: {_isConfigured},");
+            sb.AppendLine($"{ind}  IsConfigured: {IsConfigured},");
             sb.AppendLine($"{ind}  IsIgnored: {IsIgnored},");
             sb.AppendLine($"{ind}  CanSerialize: {CanSerialize},");
             sb.AppendLine($"{ind}  CanDeserialize: {CanDeserialize},");
@@ -799,8 +791,7 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                Debug.Assert(_jsonTypeInfo != null);
-                _jsonTypeInfo.EnsureConfigured();
+                Debug.Assert(_jsonTypeInfo?.IsConfigured == true);
                 return _jsonTypeInfo;
             }
             set
@@ -878,13 +869,13 @@ namespace System.Text.Json.Serialization.Metadata
         {
             get
             {
-                Debug.Assert(_isConfigured);
+                Debug.Assert(IsConfigured);
                 Debug.Assert(IsRequired);
                 return _index;
             }
             set
             {
-                Debug.Assert(!_isConfigured);
+                Debug.Assert(!IsConfigured);
                 _index = value;
             }
         }
