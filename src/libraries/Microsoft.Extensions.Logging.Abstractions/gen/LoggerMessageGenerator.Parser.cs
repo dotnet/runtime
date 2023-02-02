@@ -649,6 +649,8 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private static int FindBraceIndex(string message, char brace, int startIndex, int endIndex)
             {
+                Debug.Assert(brace is '{' or '}');
+
                 // Example: {{prefix{{{Argument}}}suffix}}.
                 int braceIndex = -1;
                 int scanIndex = startIndex;
@@ -672,7 +674,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                     else if (message[scanIndex] == '{')
                     {
-                        if (message[scanIndex] != brace)
+                        if (brace != '{')
                         {
                             return -2; // not expected
                         }
@@ -683,7 +685,7 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                     else if (message[scanIndex] == '}')
                     {
-                        if (message[scanIndex] != brace)
+                        if (brace != '}')
                         {
                             return -2; // not expected
                         }
