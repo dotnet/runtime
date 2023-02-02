@@ -289,13 +289,23 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void Configure()
         {
-            if (!IsForTypeInfo)
-            {
-                CacheNameAsUtf8BytesAndEscapedNameSection();
-            }
+            Debug.Assert(ParentTypeInfo != null);
 
-            _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType, ensureConfigured: false);
-            DetermineEffectiveConverter(_jsonTypeInfo);
+            if (IsIgnored)
+            {
+                // Avoid configuring JsonIgnore.Always properties
+                // to avoid failing on potentially unsupported types.
+                CanSerialize = false;
+                CanDeserialize = false;
+            }
+            else
+            {
+                _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType, ensureConfigured: false);
+                DetermineEffectiveConverter(_jsonTypeInfo);
+                DetermineNumberHandlingForProperty();
+                DetermineSerializationCapabilities();
+                DetermineIgnoreCondition();
+            }
 
             if (IsForTypeInfo)
             {
@@ -303,9 +313,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                DetermineNumberHandlingForProperty();
-                DetermineIgnoreCondition();
-                DetermineSerializationCapabilities();
+                CacheNameAsUtf8BytesAndEscapedNameSection();
             }
 
             if (IsRequired)
@@ -404,7 +412,6 @@ namespace System.Text.Json.Serialization.Metadata
         private void DetermineSerializationCapabilities()
         {
             Debug.Assert(EffectiveConverter != null, "Must have calculated the effective converter.");
-
             CanSerialize = HasGetter;
             CanDeserialize = HasSetter;
 
@@ -787,7 +794,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Type DeclaringType { get; }
 
-        [AllowNull]
         internal JsonTypeInfo JsonTypeInfo
         {
             get
@@ -799,13 +805,14 @@ namespace System.Text.Json.Serialization.Metadata
             }
             set
             {
-                // This could potentially be double initialized
-                Debug.Assert(_jsonTypeInfo == null || _jsonTypeInfo == value);
                 _jsonTypeInfo = value;
             }
         }
 
-        internal bool IsIgnored => _ignoreCondition == JsonIgnoreCondition.Always;
+        /// <summary>
+        /// Property was marked JsonIgnoreCondition.Always and also hasn't been configured by the user.
+        /// </summary>
+        internal bool IsIgnored => _ignoreCondition is JsonIgnoreCondition.Always && Get is null && Set is null;
 
         /// <summary>
         /// Reflects the value of <see cref="HasGetter"/> combined with any additional global ignore policies.

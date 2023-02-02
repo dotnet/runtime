@@ -14,6 +14,7 @@
   <Import Project="Microsoft.NETCore.Native.targets" Condition="'$(IlcCalledViaPackage)' == ''" />
 
   <Target Name="BuildAllFrameworkLibraries"
+    DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)"
     Inputs="@(DefaultFrameworkAssemblies)"
     Outputs="@(DefaultFrameworkAssemblies->'$(NativeIntermediateOutputPath)\%(Filename)$(NativeObjectExt)')">
     <ItemGroup>
@@ -28,7 +29,6 @@
 
   <Target Name="BuildAllFrameworkLibrariesAsSingleLib"
     DependsOnTargets="BuildAllFrameworkLibraries">
-
     <ItemGroup>
       <LibInputs Include="$(NativeIntermediateOutputPath)\*$(NativeObjectExt)" />
     </ItemGroup>
