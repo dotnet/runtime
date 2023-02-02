@@ -3486,7 +3486,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	target_method = interp_transform_internal_calls (method, target_method, csignature, is_virtual);
+	if (op == -1)
+		target_method = interp_transform_internal_calls (method, target_method, csignature, is_virtual);
 
 	if (csignature->call_convention == MONO_CALL_VARARG)
 		csignature = mono_method_get_signature_checked (target_method, image, token, generic_context, error);
