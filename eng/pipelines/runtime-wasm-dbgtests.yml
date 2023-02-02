@@ -3,39 +3,21 @@ trigger: none
 variables:
   - template: /eng/pipelines/common/variables.yml
 
-jobs:
-
-#
-# Evaluate paths
-#
-- template: /eng/pipelines/common/evaluate-default-paths.yml
-
-# Debugger tests
-- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    platforms:
-      - Browser_wasm
-      - Browser_wasm_win
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+    stages:
+    - stage: Build
+      jobs:
 
-- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm
-      - Browser_wasm_win
-    extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true
-    nameSuffix: DebuggerTests_MultiThreaded
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      #
+      # Evaluate paths
+      #
+      - template: /eng/pipelines/common/evaluate-default-paths.yml
 
-- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
-  parameters:
-    platforms:
-      - Browser_wasm_firefox
-    browser: firefox
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-    alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-    # ff tests are unstable currently
-    shouldContinueOnError: true
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
+          debuggerTestsOnly: true
