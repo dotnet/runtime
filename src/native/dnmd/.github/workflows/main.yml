@@ -16,6 +16,8 @@ jobs:
     name: Build (${{ matrix.os }}, ${{ matrix.flavor }})
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - uses: actions/setup-dotnet@v1
       with:
@@ -44,7 +46,7 @@ jobs:
 
   publish-test-results:
     name: Publish Test Results
-    needs: build-and-test
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       checks: write
