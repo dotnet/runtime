@@ -10,7 +10,7 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarWriter_WriteEntryAsync_File_Tests : TarWriter_File_Base
     {
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -55,7 +55,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -103,7 +103,7 @@ namespace System.Formats.Tar.Tests
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
@@ -149,7 +149,7 @@ namespace System.Formats.Tar.Tests
                 }
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
-        
+
         [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
@@ -182,7 +182,7 @@ namespace System.Formats.Tar.Tests
                     await writer.WriteEntryAsync(filePath, fileName); // Should not throw
                 }
                 archive.Seek(0, SeekOrigin.Begin);
-                
+
                 await using (TarReader reader = new TarReader(archive, leaveOpen: false))
                 {
                     PosixTarEntry entry = await reader.GetNextEntryAsync() as PosixTarEntry;
