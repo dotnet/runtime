@@ -20,11 +20,23 @@ namespace ILCompiler.DependencyAnalysis.X64
 
         public TargetRegisterMap(TargetOS os)
         {
-            Arg0 = os == TargetOS.Windows ? Register.RCX : Register.RDI;
-            Arg1 = os == TargetOS.Windows ? Register.RDX : Register.RSI;
-            Arg2 = os == TargetOS.Windows ? Register.R8  : Register.RDX;
-            Arg3 = os == TargetOS.Windows ? Register.R9  : Register.RCX;
-            Result = Register.RAX;
+            switch (os)
+            {
+                case TargetOS.Windows:
+                    Arg0 = Register.RCX;
+                    Arg1 = Register.RDX;
+                    Arg2 = Register.R8;
+                    Arg3 = Register.R9;
+                    Result = Register.RAX;
+                    break;
+                default:
+                    Arg0 = Register.RDI;
+                    Arg1 = Register.RSI;
+                    Arg2 = Register.RDX;
+                    Arg3 = Register.RCX;
+                    Result = Register.RAX;
+                    break;
+            }
         }
     }
 }
