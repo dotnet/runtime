@@ -1282,6 +1282,18 @@ function generate_wasm_body (
                 builder.endBlock();
                 break;
 
+            case MintOpcode.MINT_ADD_MUL_I4_IMM:
+            case MintOpcode.MINT_ADD_MUL_I8_IMM: {
+                builder.local("pLocals");
+                append_ldloc(builder, getArgU16(ip, 2), opcode === MintOpcode.MINT_ADD_MUL_I4_IMM ? WasmOpcode.i32_load : WasmOpcode.i64_load);
+                builder.i32_const(getArgI16(ip, 3));
+                builder.appendU8(WasmOpcode.i32_add);
+                builder.i32_const(getArgI16(ip, 4));
+                builder.appendU8(WasmOpcode.i32_mul);
+                append_stloc_tail(builder, getArgU16(ip, 1), opcode === MintOpcode.MINT_ADD_MUL_I4_IMM ? WasmOpcode.i32_store : WasmOpcode.i64_store);
+                break;
+            }
+
             default:
                 if (opname.startsWith("ret")) {
                     if ((builder.branchTargets.size > 0) || trapTraceErrors || builder.options.countBailouts)

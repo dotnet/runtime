@@ -699,6 +699,8 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_SAFEPOINT:
 		case MINT_INTRINS_GET_HASHCODE:
 		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
+		case MINT_ADD_MUL_I4_IMM:
+		case MINT_ADD_MUL_I8_IMM:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
