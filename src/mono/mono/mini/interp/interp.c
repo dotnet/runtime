@@ -7007,6 +7007,41 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_I4) {
+			gint32 *dest = LOCAL_VAR(ip[2], gint32*);
+			gint32 value = LOCAL_VAR(ip[3], gint32);
+			gint32 comparand = LOCAL_VAR(ip[4], gint32);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], gint32) = mono_atomic_cas_i32(dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_I8) {
+			gboolean flag = FALSE;
+			gint64 *dest = LOCAL_VAR(ip[2], gint64*);
+			gint64 value = LOCAL_VAR(ip[3], gint64);
+			gint64 comparand = LOCAL_VAR(ip[4], gint64);
+			NULL_CHECK(dest);
+
+#if SIZEOF_VOID_P == 4
+			if (G_UNLIKELY ((size_t)dest & 0x7)) {
+				gint64 old;
+				mono_interlocked_lock ();
+				old = *dest;
+				if (old == comparand)
+					*dest = value;
+				mono_interlocked_unlock ();
+				LOCAL_VAR(ip[1], gint64) = old;
+				flag = TRUE;
+			}
+#endif
+
+			if (!flag)
+				LOCAL_VAR(ip[1], gint64) = mono_atomic_cas_i64(dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_MONO_LDDOMAIN)
 			LOCAL_VAR (ip [1], gpointer) = mono_domain_get ();
 			ip += 2;
