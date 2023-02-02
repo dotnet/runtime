@@ -3662,6 +3662,8 @@ bool region_allocator::init (uint8_t* start, uint8_t* end, size_t alignment, uin
     global_region_end = (uint8_t*)align_region_down ((size_t)actual_end);
     global_region_left_used = global_region_start;
     global_region_right_used = global_region_end;
+    num_left_used_free_units = 0;
+    num_right_used_free_units = 0;
 
     // Note: I am allocating a map that covers the whole reserved range.
     // We can optimize it to only cover the current heap range.
@@ -3755,6 +3757,14 @@ void region_allocator::print_map (const char* msg)
         }
         current_index = region_map_right_start;
         end_index = region_map_right_end;
+        if (i == 0)
+        {
+            assert (count_free_units == num_left_used_free_units);
+        }
+        else
+        {
+            assert (count_free_units == num_left_used_free_units + num_right_used_free_units);
+        }
     }
 
     count_free_units += (uint32_t)(region_map_right_start - region_map_left_end);
@@ -3762,7 +3772,7 @@ void region_allocator::print_map (const char* msg)
 
     uint32_t total_regions = (uint32_t)((global_region_end - global_region_start) / region_alignment);
 
-    dprintf (REGIONS_LOG, ("[%s]-----end printing----[%d total, left used %zd, right used %zd]\n", heap_type, total_regions, (region_map_left_end - region_map_left_start), (region_map_right_end - region_map_right_start)));
+    dprintf (REGIONS_LOG, ("[%s]-----end printing----[%d total, left used %zd (free: %d), right used %zd (free: %d)]\n", heap_type, total_regions, (region_map_left_end - region_map_left_start), num_left_used_free_units, (region_map_right_end - region_map_right_start), num_right_used_free_units));
 #endif //_DEBUG
 }
 
@@ -3846,59 +3856,74 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
 
     print_map ("before alloc");
 
-    while (((direction == allocate_forward) && (current_index < end_index)) ||
-           ((direction == allocate_backward) && (current_index > end_index)))
+    if ((direction == allocate_forward) && (num_left_used_free_units >= num_units) ||
+        (direction == allocate_backward) && (num_right_used_free_units >= num_units))
     {
-        uint32_t current_val = *(current_index - ((direction == -1) ? 1 : 0));
-        uint32_t current_num_units = get_num_units (current_val);
-        bool free_p = is_unit_memory_free (current_val);
-        dprintf (REGIONS_LOG, ("ALLOC[%s: %zd]%d->%d", (free_p ? "F" : "B"), (size_t)current_num_units,
-            (int)(current_index - region_map_left_start), (int)(current_index + current_num_units - region_map_left_start)));
-
-        if (free_p)
+        while (((direction == allocate_forward) && (current_index < end_index)) ||
+            ((direction == allocate_backward) && (current_index > end_index)))
         {
-            if (current_num_units >= num_units)
+            uint32_t current_val = *(current_index - ((direction == -1) ? 1 : 0));
+            uint32_t current_num_units = get_num_units (current_val);
+            bool free_p = is_unit_memory_free (current_val);
+            dprintf (REGIONS_LOG, ("ALLOC[%s: %zd]%d->%d", (free_p ? "F" : "B"), (size_t)current_num_units,
+                (int)(current_index - region_map_left_start), (int)(current_index + current_num_units - region_map_left_start)));
+
+            if (free_p)
             {
-                dprintf (REGIONS_LOG, ("found %zd contiguous free units(%d->%d), sufficient",
-                    (size_t)current_num_units,
-                    (int)(current_index - region_map_left_start),
-                    (int)(current_index - region_map_left_start + current_num_units)));
-
-                uint32_t* busy_block;
-                uint32_t* free_block;
-                if (direction == 1)
+                if (current_num_units >= num_units)
                 {
-                    busy_block = current_index;
-                    free_block = current_index + num_units;
+                    dprintf (REGIONS_LOG, ("found %zd contiguous free units(%d->%d), sufficient",
+                        (size_t)current_num_units,
+                        (int)(current_index - region_map_left_start),
+                        (int)(current_index - region_map_left_start + current_num_units)));
+
+                    if (direction == allocate_forward)
+                    {
+                        assert (num_left_used_free_units >= num_units);
+                        num_left_used_free_units -= num_units;
+                    }
+                    else
+                    {
+                        assert (num_right_used_free_units >= num_units);
+                        num_right_used_free_units -= num_units;
+                    }
+
+                    uint32_t* busy_block;
+                    uint32_t* free_block;
+                    if (direction == 1)
+                    {
+                        busy_block = current_index;
+                        free_block = current_index + num_units;
+                    }
+                    else
+                    {
+                        busy_block = current_index - num_units;
+                        free_block = current_index - current_num_units;
+                    }
+
+                    make_busy_block (busy_block, num_units);
+                    if ((current_num_units - num_units) > 0)
+                    {
+                        make_free_block (free_block, (current_num_units - num_units));
+                    }
+
+                    total_free_units -= num_units;
+                    print_map ("alloc: found in free");
+
+                    leave_spin_lock();
+
+                    return region_address_of (busy_block);
                 }
-                else
-                {
-                    busy_block = current_index - num_units;
-                    free_block = current_index - current_num_units;
-                }
-
-                make_busy_block (busy_block, num_units);
-                if ((current_num_units - num_units) > 0)
-                {
-                    make_free_block (free_block, (current_num_units - num_units));
-                }
-
-                total_free_units -= num_units;
-                print_map ("alloc: found in free");
-
-                leave_spin_lock();
-
-                return region_address_of (busy_block);
             }
-        }
 
-        if (direction == allocate_forward)
-        {
-            current_index += current_num_units;
-        }
-        else
-        {
-            current_index -= current_num_units;
+            if (direction == allocate_forward)
+            {
+                current_index += current_num_units;
+            }
+            else
+            {
+                current_index -= current_num_units;
+            }
         }
     }
 
@@ -4014,6 +4039,16 @@ void region_allocator::delete_region_impl (uint8_t* region_start)
 
     int free_block_size = current_val;
     uint32_t* free_index = current_index;
+
+    if (free_index <= region_map_left_end)
+    {
+        num_left_used_free_units += free_block_size;
+    }
+    else
+    {
+        num_right_used_free_units += free_block_size;
+    }
+    
     if ((current_index != region_map_left_start) && (current_index != region_map_right_start))
     {
         uint32_t previous_val = *(current_index - 1);
@@ -4036,6 +4071,7 @@ void region_allocator::delete_region_impl (uint8_t* region_start)
     }
     if (region_end == global_region_left_used)
     {
+        num_left_used_free_units -= free_block_size;
         region_map_left_end = free_index;
         dprintf (REGIONS_LOG, ("adjust global left used from %p to %p",
             global_region_left_used, region_address_of (free_index)));
@@ -4043,6 +4079,7 @@ void region_allocator::delete_region_impl (uint8_t* region_start)
     }
     else if (region_start == global_region_right_used)
     {
+        num_right_used_free_units -= free_block_size;
         region_map_right_start = free_index + free_block_size;
         dprintf (REGIONS_LOG, ("adjust global right used from %p to %p",
             global_region_right_used, region_address_of (free_index + free_block_size)));

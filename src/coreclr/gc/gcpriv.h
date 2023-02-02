@@ -5867,14 +5867,14 @@ typedef bool (*region_allocator_callback_fn)(uint8_t*);
 //
 // For each region we encode the info with a busy block in the map. This block has the
 // same # of uints as the # of units this region occupies. And we store the # in
-// the starting uint. These uints can be converted to bytes since we have multiple units
-// for larger regions anyway. I haven't done that since this will need to be changed in
-// the near future based on more optimal allocation strategies.
+// the first and last uint. These uints can be converted to bytes since we have multiple
+// units for larger regions anyway. I haven't done that since this will need to be changed
+// in the near future based on more optimal allocation strategies.
 //
-// When we allocate, we search forward to find contiguous free units >= num_units
-// We do take the opportunity to coalesce free blocks but we do not coalesce busy blocks.
-// When we decommit a region, we simply mark its block free. Free blocks are coalesced
-// opportunistically when we need to walk them.
+// When we allocate, if we knew there could be free blocks that fits, we search forward to find
+// contiguous free units >= num_units. Otherwise we simply allocate at the end. We coalesce
+// free blocks but we do not coalesce busy blocks. When we delete a region, we mark the block
+// free and coalesced them with its free neighbors if any.
 //
 // TODO: to accommodate 32-bit processes, we reserve in segment sizes and divide each seg
 // into regions.
@@ -5899,6 +5899,9 @@ private:
 
     uint32_t* region_map_right_start;
     uint32_t* region_map_right_end;
+
+    uint32_t num_left_used_free_units;
+    uint32_t num_right_used_free_units;
 
     uint8_t* region_address_of (uint32_t* map_index);
     uint32_t* region_map_index_of (uint8_t* address);
