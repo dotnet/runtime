@@ -1830,8 +1830,8 @@ function emit_fieldop (
                 builder.i32_const(offsetBytes);
                 builder.appendU8(WasmOpcode.i32_add);
             }
-            // src
-            append_ldloca(builder, getArgU16(ip, 2));
+            append_ldloca(builder, getArgU16(ip, isStatic ? 1 : 2));
+            // FIXME: Use mono_gc_wbarrier_set_field_internal
             builder.callImport("copy_pointer");
             return true;
         case MintOpcode.MINT_LDFLD_VT:
