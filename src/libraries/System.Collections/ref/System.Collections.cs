@@ -26,6 +26,8 @@ namespace System.Collections
         public void CopyTo(System.Array array, int index) { }
         public bool Get(int index) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
+        public bool HasAllSet() { throw null; }
+        public bool HasAnySet() { throw null; }
         public System.Collections.BitArray LeftShift(int count) { throw null; }
         public System.Collections.BitArray Not() { throw null; }
         public System.Collections.BitArray Or(System.Collections.BitArray value) { throw null; }
@@ -33,8 +35,6 @@ namespace System.Collections
         public void Set(int index, bool value) { }
         public void SetAll(bool value) { }
         public System.Collections.BitArray Xor(System.Collections.BitArray value) { throw null; }
-        public bool HasAllSet() { throw null; }
-        public bool HasAnySet() { throw null; }
     }
     public static partial class StructuralComparisons
     {
