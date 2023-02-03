@@ -490,8 +490,10 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal bool IsConfigured => _configureState == 2;
-        private volatile int _configureState; // 0: not configured, 1: configuring, 2: configured
+        internal bool IsConfigured => _configurationState == ConfigurationState.Configured;
+        private volatile ConfigurationState _configurationState;
+        private enum ConfigurationState : byte { NotConfigured = 0, Configuring = 1, Configured = 2 };
+
         private ExceptionDispatchInfo? _cachedConfigureError;
 
         internal void EnsureConfigured()
@@ -508,11 +510,12 @@ namespace System.Text.Json.Serialization.Metadata
 
                 lock (Options.CacheContext)
                 {
-                    if (_configureState != 0)
+                    if (_configurationState != ConfigurationState.NotConfigured)
                     {
-                        // The value of _configureState is either
-                        //   1: recursive instance configured by this thread OR
-                        //   2: instance already configured by another thread.
+                        // The value of _configurationState is either
+                        //    'Configuring': recursive instance configured by this thread or
+                        //    'Configured' : instance already configured by another thread.
+                        // We can safely yield the configuration operation in both cases.
                         return;
                     }
 
@@ -520,14 +523,14 @@ namespace System.Text.Json.Serialization.Metadata
 
                     try
                     {
-                        _configureState = 1;
+                        _configurationState = ConfigurationState.Configuring;
                         Configure();
-                        _configureState = 2;
+                        _configurationState = ConfigurationState.Configured;
                     }
                     catch (Exception e)
                     {
                         _cachedConfigureError = ExceptionDispatchInfo.Capture(e);
-                        _configureState = 0;
+                        _configurationState = ConfigurationState.NotConfigured;
                         throw;
                     }
                 }
