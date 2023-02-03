@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -20,7 +21,7 @@ import {
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
-const trace = 1;
+const trace = 0;
 
 const
     // Record a trace of all managed interpreter opcodes then dump it to console
@@ -53,8 +54,19 @@ const
 
 const callTargetCounts : { [method: number] : number } = {};
 
+const disabledOpcodes : Array<MintOpcode> = [
+    MintOpcode.MINT_LDSFLD_O,
+    // MintOpcode.MINT_LDFLD_O,
+    MintOpcode.MINT_LDLEN,
+    MintOpcode.MINT_LDSFLDA,
+    MintOpcode.MINT_LDFLDA,
+    MintOpcode.MINT_LDELEMA1,
+    MintOpcode.MINT_BNE_UN_I4_IMM_SP,
+    MintOpcode.MINT_REM_UN_I4,
+];
+
 const instrumentedMethodNames : Array<string> = [
-    // "int NDPin:RunTest ()"
+    // "System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>& System.Collections.Generic.Dictionary`2<System.Type, System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>>:FindValue (System.Type)"
 ];
 
 class InstrumentedTraceState {
@@ -84,6 +96,7 @@ class TraceInfo {
 
 const instrumentedTraces : { [key: number]: InstrumentedTraceState } = {};
 let nextInstrumentedTraceId = 1;
+let countLimitedPrintCounter = 10;
 const abortCounts : { [key: string] : number } = {};
 const traceInfo : { [key: string] : TraceInfo } = {};
 
@@ -163,7 +176,8 @@ const enum BailoutReason {
     CastFailed,
     SafepointBranchTaken,
     UnboxFailed,
-    CallDelegate
+    CallDelegate,
+    Debugging
 }
 
 const BailoutReasonNames = [
@@ -188,7 +202,8 @@ const BailoutReasonNames = [
     "CastFailed",
     "SafepointBranchTaken",
     "UnboxFailed",
-    "CallDelegate"
+    "CallDelegate",
+    "Debugging"
 ];
 
 let traceBuilder : WasmBuilder;
@@ -351,7 +366,8 @@ function generate_wasm (
 
     if (useDebugCount) {
         if (cwraps.mono_jiterp_debug_count() === 0) {
-            console.log(`COUNT limited: ${methodFullName || methodName} @${(traceOffset).toString(16)}`);
+            if (countLimitedPrintCounter-- >= 0)
+                console.log(`COUNT limited: ${methodFullName || methodName} @${(traceOffset).toString(16)}`);
             return 0;
         }
     }
@@ -837,11 +853,12 @@ function generate_wasm_body (
             builder.callImport("trace_eip");
         }
 
-        const _ip = ip,
-            opcode = getU16(ip),
-            info = OpcodeInfo[opcode];
+        let opcode = getU16(ip);
+        const info = OpcodeInfo[opcode];
         mono_assert(info, () => `invalid opcode ${opcode}`);
+
         const opname = info[0];
+        const _ip = ip;
         let is_dead_opcode = false;
         /* This doesn't work for some reason
         const endOfOpcode = ip + <any>(info[1] * 2);
@@ -870,6 +887,12 @@ function generate_wasm_body (
             builder.ip_const(rip);
             builder.local("eip", WasmOpcode.set_local);
             append_branch_target_block(builder, ip);
+        }
+
+        if (disabledOpcodes.indexOf(opcode) >= 0) {
+            append_bailout(builder, ip, BailoutReason.Debugging);
+            opcode = MintOpcode.MINT_NOP;
+            // Intentionally leave the correct info in place so we skip the right number of bytes
         }
 
         switch (opcode) {
@@ -1852,9 +1875,11 @@ function emit_fieldop (
             append_memmove_dest_src(builder, sizeBytes);
             return true;
         }
+
         case MintOpcode.MINT_LDFLDA_UNSAFE:
         case MintOpcode.MINT_LDFLDA:
         case MintOpcode.MINT_LDSFLDA:
+            append_bailout(builder, ip, BailoutReason.Debugging);
             builder.local("pLocals");
             if (isStatic) {
                 builder.ptr_const(pStaticData);
