@@ -6,7 +6,7 @@ using System;
 
 namespace hello
 {
-    class Class1
+    public class Class1
     {
         static public int Main()
         {

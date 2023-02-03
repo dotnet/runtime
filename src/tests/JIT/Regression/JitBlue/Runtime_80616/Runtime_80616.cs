@@ -4,9 +4,9 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-class Runtime_80616
+public class Runtime_80616
 {
-    static int Main()
+    public static int Main()
     {
         Vector<uint> foo = default;
         FooBar(ref foo, default);

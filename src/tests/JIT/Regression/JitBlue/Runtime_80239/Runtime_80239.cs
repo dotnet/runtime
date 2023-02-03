@@ -4,9 +4,9 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-class Runtime_80239
+public class Runtime_80239
 {
-    static int Main()
+    public static int Main()
     {
         Unsafe.SkipInit(out Vector3 test);
         test.X = 500.0f;

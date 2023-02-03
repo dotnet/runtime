@@ -5,7 +5,7 @@
 .assembly extern System.Console {}
 .assembly Runtime_80731 {}
 
-.class private auto ansi beforefieldinit Runtime_80731
+.class public auto ansi beforefieldinit Runtime_80731
        extends [System.Runtime]System.Object
 {
   .class sequential ansi sealed nested private beforefieldinit S16
@@ -17,7 +17,7 @@
     .field public int32 D
   } // end of class S16
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .entrypoint

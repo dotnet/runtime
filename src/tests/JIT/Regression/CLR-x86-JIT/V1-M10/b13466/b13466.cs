@@ -8,7 +8,7 @@ namespace Default
     //@ENDRENAME; Verify this renames
     using System;
 
-    class q
+    public class q
     {
         static
         int func(int i, int updateAddr, byte[] newBytes, int[] m_fixupPos)

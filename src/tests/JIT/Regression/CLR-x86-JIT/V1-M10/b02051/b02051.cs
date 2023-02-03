@@ -5,7 +5,7 @@
 namespace DefaultNamespace
 {
     using System;
-    class JITcrash
+    public class JITcrash
     {
         public
         static

@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Runtime_80488
+public class Runtime_80488
 {
-    static int Main()
+    public static int Main()
     {
         int code = Foo(new S16 { F1 = 100 });
         if (code != 100)

@@ -3,7 +3,7 @@
 
 using System;
 
-internal class Test
+public class Test
 {
     static public int Main()
     {

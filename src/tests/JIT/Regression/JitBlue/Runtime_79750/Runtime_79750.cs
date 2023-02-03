@@ -3,9 +3,9 @@
 
 using System.Runtime.CompilerServices;
 
-class Runtime_79750
+public class Runtime_79750
 {
-    static int Main()
+    public static int Main()
     {
         byte dest = 0;
         byte source = 100;
