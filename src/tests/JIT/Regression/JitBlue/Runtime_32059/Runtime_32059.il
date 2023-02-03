@@ -9,12 +9,21 @@
 .class public auto ansi beforefieldinit Runtime_32059 extends [System.Runtime]System.Object
 {
 
-.method public hidebysig static int32 Main(string[] args) cil managed
+.method public hidebysig static int32 Main() cil managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
       01 00 00 00
   )
   .entrypoint
+
+   ldc.i4.0
+   newarr [mscorlib]System.String
+   call int32 switchdefaultonly1::MainX(string[])
+   ret
+}
+
+.method public hidebysig static int32 MainX(string[] args) cil managed noinlining
+{
   .locals init (valuetype [System.Runtime]System.DateTime V_0)
   .maxstack 12
   ldarg.0
