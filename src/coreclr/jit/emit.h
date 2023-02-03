@@ -1839,10 +1839,10 @@ public:
 /*        Members and methods used to issue (encode) instructions.      */
 /************************************************************************/
 
-#ifdef DEBUG
+//#ifdef DEBUG
     // If we have started issuing instructions from the list of instrDesc, this is set
     bool emitIssuing;
-#endif
+//#endif
 
     BYTE*  emitCodeBlock;     // Hot code block
     BYTE*  emitColdCodeBlock; // Cold code block

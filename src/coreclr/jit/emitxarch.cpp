@@ -12905,7 +12905,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // When SMALL_CODE is set, we only expect 4-byte alignment, otherwise
         // we expect the same alignment as the size of the constant.
 
-        assert((emitChkAlign == false) || (ins == INS_lea) ||
+        assert(!emitIssuing || (emitChkAlign == false) || (ins == INS_lea) ||
                ((emitComp->compCodeOpt() == Compiler::SMALL_CODE) && (((size_t)addr & 3) == 0)) ||
                (((size_t)addr & (byteSize - 1)) == 0));
 #endif // DEBUG
@@ -13314,7 +13314,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 #ifdef DEBUG
             regMaskTP regMask = genRegMask(reg);
 #endif
-            if (id->idGCref())
+            if (emitIssuing && id->idGCref())
             {
                 assert(ins == INS_inc || ins == INS_dec || ins == INS_inc_l || ins == INS_dec_l);
                 // We would like to assert that the reg must currently be holding either a gcref or a byref.
@@ -13326,7 +13326,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
                 // Mark it as holding a GCT_BYREF
                 emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
             }
-            else
+            else if (emitIssuing)
             {
                 // Can't use RRW to trash a GC ref.  It's OK for unverifiable code
                 // to trash Byrefs.
@@ -13565,7 +13565,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     }
 
     // Does this instruction operate on a GC ref value?
-    if (id->idGCref())
+    if (emitIssuing && id->idGCref())
     {
         switch (id->idInsFmt())
         {
@@ -13713,7 +13713,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 assert(!"unexpected GC ref instruction format");
         }
     }
-    else
+    else if (emitIssuing)
     {
         if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
         {
@@ -14404,7 +14404,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         id->idjOffs = dstOffs;
 
         // Are we overflowing the id->idjOffs bitfield?
-        if (id->idjOffs != dstOffs)
+        if (emitIssuing && (id->idjOffs != dstOffs))
         {
             IMPL_LIMITATION("Method is too large");
         }
@@ -14956,10 +14956,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_LABEL:
         case IF_SWR_LABEL:
             assert(id->idGCref() == GCT_NONE);
-            assert(id->idIsBound() || emitJmpInstHasNoCode(id));
+            assert(id->idIsBound() || emitJmpInstHasNoCode(id) || !emitIssuing);
 
             // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?
-            if (id->idCodeSize() != 0)
+            if (!emitIssuing || (id->idCodeSize() != 0))
             {
                 dst = emitOutputLJ(ig, dst, id);
             }
@@ -15982,7 +15982,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     // Only epilog "instructions", some pseudo-instrs and blocks that ends with a jump to the next block
 
-    assert(*dp != dst || emitInstHasNoCode(id));
+    assert(*dp != dst || emitInstHasNoCode(id) || !emitIssuing);
 
 #ifdef DEBUG
     if ((emitComp->opts.disAsm || emitComp->verbose) && !emitJmpInstHasNoCode(id))
@@ -16063,27 +16063,30 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     *dp = dst;
 
 #ifdef DEBUG
-    if (ins == INS_mulEAX || ins == INS_imulEAX)
+    if (emitIssuing)
     {
-        // INS_mulEAX has implicit target of Edx:Eax. Make sure
-        // that we detected this cleared its GC-status.
+        if (ins == INS_mulEAX || ins == INS_imulEAX)
+        {
+            // INS_mulEAX has implicit target of Edx:Eax. Make sure
+            // that we detected this cleared its GC-status.
 
-        assert(((RBM_EAX | RBM_EDX) & (emitThisGCrefRegs | emitThisByrefRegs)) == 0);
-    }
+            assert(((RBM_EAX | RBM_EDX) & (emitThisGCrefRegs | emitThisByrefRegs)) == 0);
+        }
 
-    if (instrIs3opImul(ins))
-    {
-        // The target of the 3-operand imul is implicitly encoded. Make sure
-        // that we detected the implicit register and cleared its GC-status.
+        if (instrIs3opImul(ins))
+        {
+            // The target of the 3-operand imul is implicitly encoded. Make sure
+            // that we detected the implicit register and cleared its GC-status.
 
-        regMaskTP regMask = genRegMask(inst3opImulReg(ins));
-        assert((regMask & (emitThisGCrefRegs | emitThisByrefRegs)) == 0);
-    }
+            regMaskTP regMask = genRegMask(inst3opImulReg(ins));
+            assert((regMask & (emitThisGCrefRegs | emitThisByrefRegs)) == 0);
+        }
 
-    // Output any delta in GC info.
-    if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
-    {
-        emitDispGCInfoDelta();
+        // Output any delta in GC info.
+        if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+        {
+            emitDispGCInfoDelta();
+        }
     }
 #endif
 
