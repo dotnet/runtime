@@ -8512,7 +8512,10 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
 
 void emitter::emitGCregLiveSet(GCtype gcType, regMaskTP regMask, BYTE* addr, bool isThis)
 {
-    assert(emitIssuing);
+    if (!emitIssuing)
+    {
+        return;
+    }
     assert(needsGC(gcType));
 
     regPtrDsc* regPtrNext;

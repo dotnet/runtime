@@ -2887,7 +2887,7 @@ const emitJumpKind emitReverseJumpKinds[] = {
 //
 /* static */ bool emitter::emitAlignInstHasNoCode(instrDesc* id)
 {
-    return (id->idIns() == INS_align) && (id->idCodeSize() == 0);
+    return ((id->idIns() == INS_align) || (id->idIns() == INS_nop)) && (id->idCodeSize() == 0);
 }
 
 //------------------------------------------------------------------------
@@ -9863,6 +9863,10 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* code, size_t sz, insGroup* ig)
 {
+    if (!emitIssuing)
+    {
+        return;
+    }
     emitAttr    attr;
     const char* sstr;
 
