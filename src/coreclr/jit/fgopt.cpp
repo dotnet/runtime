@@ -29,7 +29,6 @@
 bool Compiler::fgDominate(BasicBlock* b1, BasicBlock* b2)
 {
     noway_assert(fgDomsComputed);
-    assert(!fgCheapPredsValid);
 
     //
     // If the fgModified flag is false then we made some modifications to
@@ -113,7 +112,6 @@ bool Compiler::fgDominate(BasicBlock* b1, BasicBlock* b2)
 bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 {
     noway_assert(fgDomsComputed);
-    assert(!fgCheapPredsValid);
 
     //
     // If the fgModified flag is false then we made some modifications to
@@ -233,7 +231,6 @@ void Compiler::fgUpdateChangedFlowGraph(FlowGraphUpdates updates)
 void Compiler::fgComputeReachabilitySets()
 {
     assert(fgComputePredsDone);
-    assert(!fgCheapPredsValid);
 
 #ifdef DEBUG
     fgReachabilitySetsValid = false;
@@ -436,8 +433,6 @@ void Compiler::fgComputeEnterBlocksSet()
 template <typename CanRemoveBlockBody>
 bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 {
-    assert(!fgCheapPredsValid);
-
     bool hasUnreachableBlocks = false;
     bool changed              = false;
 
@@ -931,8 +926,6 @@ void Compiler::fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, uns
 //
 void Compiler::fgComputeDoms()
 {
-    assert(!fgCheapPredsValid);
-
 #ifdef DEBUG
     if (verbose)
     {

@@ -71,6 +71,9 @@
       - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to .webcil
       - $(WasmIncludeFullIcuData )          - Loads full ICU data (icudt.dat). Only when InvariantGlobalization false. Defaults to false.
       - $(WasmIcuDataFileName)              - Name/path of ICU globalization file loaded to app. Only when InvariantGloblization=false and WasmIncludeFullIcuData=false.
+      - $(WasmAllowUndefinedSymbols)        - Controls whether undefined symbols are allowed or not,
+                                              if true, appends 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=0' as arguments for wasm-ld,
+                                              if false (default), removes 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=1'.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).

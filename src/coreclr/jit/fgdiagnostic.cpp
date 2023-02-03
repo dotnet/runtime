@@ -1871,15 +1871,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     // Display block predecessor list
     //
 
-    unsigned charCnt;
-    if (fgCheapPredsValid)
-    {
-        charCnt = block->dspCheapPreds();
-    }
-    else
-    {
-        charCnt = block->dspPreds();
-    }
+    unsigned charCnt = block->dspPreds();
 
     if (charCnt < 19)
     {
@@ -2283,7 +2275,6 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         maxBlockNumWidth, "----");
     printf("BBnum %*sBBid ref try hnd %s     weight  %*s%s  lp [IL range]     [jump]%*s    [EH region]         [flags]\n",
         padWidth, "",
-        fgCheapPredsValid       ? "cheap preds" :
         (fgComputePredsDone     ? "preds      "
                                 : "           "),
         ((ibcColWidth > 0) ? ibcColWidth - 3 : 0), "",  // Subtract 3 for the width of "IBC", printed next.
@@ -2504,11 +2495,6 @@ private:
 //   the number of incoming edges for the block.
 unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalStamp)
 {
-    if (comp->fgCheapPredsValid)
-    {
-        return 0;
-    }
-
     if (!comp->fgComputePredsDone)
     {
         assert(block->bbPreds == nullptr);
@@ -2857,11 +2843,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         if (block->bbCatchTyp == BBCT_FILTER)
         {
-            if (!fgCheapPredsValid) // Don't check cheap preds
-            {
-                // A filter has no predecessors
-                assert(block->bbPreds == nullptr);
-            }
+            // A filter has no predecessors
+            assert(block->bbPreds == nullptr);
         }
 
 #if defined(FEATURE_EH_FUNCLETS)
