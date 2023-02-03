@@ -269,6 +269,7 @@
 
       <WasmFilesToIncludeInFileSystem Include="@(_SatelliteAssemblies)" />
       <WasmExtraFilesToDeploy Include="$(WasmMainJSPath)" />
+      <WasmExtraFilesToDeploy Include="index.html" />
     </ItemGroup>
 
     <ItemGroup>
@@ -290,6 +291,8 @@
               TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
+
+    <WriteLinesToFile File="index.html" Lines="&lt;html&gt;&lt;body&gt;&lt;script type='module' src='test-main.js'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" WriteOnlyWhenDifferent="true" />
   </Target>
 
   <!-- linker automatically picks up the .pdb files, but they are not added to the publish list.
