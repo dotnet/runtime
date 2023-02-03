@@ -367,9 +367,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForSelect(treeNode->AsConditional());
             break;
 
-        case GT_ANDFLAGS:
+        case GT_CCMP_EQ:
+        case GT_CCMP_NE:
             genConsumeOperands(treeNode->AsOp());
-            genCodeForAndFlags(treeNode->AsOp());
+            genCodeForConditionalCompare(treeNode->AsOp());
             break;
 #endif
 

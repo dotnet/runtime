@@ -2868,15 +2868,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
     ssize_t        op2Value = op2->IconValue();
 
-#ifdef TARGET_ARM64
-    // Do not optimise further if op1 has a contained chain.
-    if (op1->OperIs(GT_AND) &&
-        (op1->isContainedCompareChainSegment(op1->gtGetOp1()) || op1->isContainedCompareChainSegment(op1->gtGetOp2())))
-    {
-        return cmp;
-    }
-#endif
-
 #ifdef TARGET_XARCH
     var_types op1Type = op1->TypeGet();
     if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && FitsIn(op1Type, op2Value))
@@ -7173,13 +7164,12 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
         op1->gtFlags |= GTF_SET_FLAGS;
     }
 #if defined(TARGET_ARM64)
-    else if (op1->OperIs(GT_AND))
+    else if (op1->OperIsConditionalCompare())
     {
-        // If the second op of the AND is contained, then the AND does not need to be generated
+        // If the second op of the CCMP is contained, then the CCMP does not need to be generated
         // into a register.
         if (op1->gtGetOp2()->isContained())
         {
-            op1->SetOper(GT_ANDFLAGS);
             op1->gtType = TYP_VOID;
             op1->gtFlags |= GTF_SET_FLAGS;
         }

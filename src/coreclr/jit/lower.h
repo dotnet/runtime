@@ -88,8 +88,8 @@ private:
 #ifdef TARGET_ARM64
     bool IsValidCompareChain(GenTree* child, GenTree* parent);
     bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
-    void ContainCheckCompareChainForAnd(GenTree* tree);
-    void ContainCheckConditionalCompare(GenTreeOp* cmp);
+    bool ContainCheckCompareChainForAnd(GenTree* tree);
+    void ContainCheckChainedCompare(GenTreeOp* cmp);
     void ContainCheckNeg(GenTreeOp* neg);
 #endif
     void ContainCheckSelect(GenTreeOp* select);

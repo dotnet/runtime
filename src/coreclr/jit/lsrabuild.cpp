@@ -3225,11 +3225,11 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     }
 #endif // FEATURE_HW_INTRINSICS
 #ifdef TARGET_ARM64
-    if (node->OperIs(GT_MUL) || node->OperIsCompare() || node->OperIs(GT_AND))
+    if (node->OperIs(GT_MUL) || node->OperIsCompare() || node->OperIs(GT_AND) || node->OperIsConditionalCompare())
     {
         // MUL can be contained for madd or msub on arm64.
-        // Compares can be contained by a SELECT.
-        // ANDs and Cmp Compares may be contained in a chain.
+        // Compares and ConditionalCompares can be contained by a SELECT.
+        // ANDs, Cmp Compares and ConditionalCompares may be contained in a chain.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
     if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ))
@@ -4075,7 +4075,7 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 //
 int LinearScan::BuildCmp(GenTree* tree)
 {
-    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP) || tree->OperIs(GT_JCMP));
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_JCMP) || tree->OperIsConditionalCompare());
     regMaskTP dstCandidates = RBM_NONE;
     regMaskTP op1Candidates = RBM_NONE;
     regMaskTP op2Candidates = RBM_NONE;

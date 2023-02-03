@@ -4664,7 +4664,7 @@ void CodeGen::genCodeForContainedCompareChain(GenTree* tree, bool* inChain, GenC
 {
     assert(tree->isContained());
 
-    if (tree->OperIs(GT_AND))
+    if (tree->OperIs(GT_AND) || tree->OperIsConditionalCompare())
     {
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
@@ -4734,28 +4734,71 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
     GenCondition prevCond;
-    genConsumeRegs(opcond);
     if (opcond->isContained())
     {
         // Generate the contained condition.
         if (opcond->OperIsCompare())
         {
+            genConsumeRegs(opcond);
             genCodeForCompare(opcond->AsOp());
             prevCond = GenCondition::FromRelop(opcond);
         }
         else
         {
-            // Condition is a compare chain. Try to contain it.
-            assert(opcond->OperIs(GT_AND));
+            assert(opcond->OperIsConditionalCompare());
+
+            // Condition is a compare chain. Generate it.
             bool chain = false;
             JITDUMP("Generating compare chain:\n");
-            genCodeForContainedCompareChain(opcond, &chain, &prevCond);
-            assert(chain);
+
+            GenTree* op1 = opcond->gtGetOp1();
+            GenTree* op2 = opcond->gtGetOp2();
+
+            genConsumeRegs(op1);
+            genConsumeRegs(op2);
+
+            assert(op2->isContained());
+
+            // If Op1 is contained, generate into flags.
+            if (op1->isContained())
+            {
+                genCodeForContainedCompareChain(op1, &chain, &prevCond);
+                assert(chain);
+                assert(op2->isContained());
+            }
+            // If Op2 is contained, generate into flags.
+            if (op2->isContained())
+            {
+                genCodeForContainedCompareChain(op2, &chain, &prevCond);
+                assert(chain);
+            }
+            // If nothing was contained, put the result of op2 into flags.
+            else
+            {
+                emitter* emit = GetEmitter();
+                emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op2->GetRegNum(), 0);
+                prevCond = GenCondition::NE;
+            }
+
+            if (opcond->OperIs(GT_CCMP_NE))
+            {
+                prevCond = GenCondition::Reverse(prevCond);
+            }
         }
+        // else
+        // {
+        //     // Condition is a compare chain. Try to contain it.
+        //     assert(opcond->OperIs(GT_AND));
+        //     bool chain = false;
+        //     JITDUMP("Generating compare chain:\n");
+        //     genCodeForContainedCompareChain(opcond, &chain, &prevCond);
+        //     assert(chain);
+        // }
     }
     else
     {
         // Condition has been generated into a register - move it into flags.
+        genConsumeRegs(opcond);
         emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
         prevCond = GenCondition::NE;
     }
@@ -4785,23 +4828,22 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForAndFlags: Generates code for ANDFLAGS statement.
+// genCodeForConditionalCompare: Generates code for CCMP node.
 //
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForAndFlags(GenTreeOp* tree)
+void CodeGen::genCodeForConditionalCompare(GenTreeOp* tree)
 {
     var_types targetType = tree->TypeGet();
     emitter*  emit       = GetEmitter();
 
-    assert(tree->OperIs(GT_ANDFLAGS));
-    assert(tree->GetRegNum() == REG_NA);
+    assert(tree->OperIsConditionalCompare());
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    assert (tree->isContainedCompareChainSegment(op2));
+    assert(tree->isContainedCompareChainSegment(op2));
 
     GenCondition cond;
     bool         chain = false;
@@ -4821,9 +4863,37 @@ void CodeGen::genCodeForAndFlags(GenTreeOp* tree)
         chain = true;
     }
 
+    // AHTODO: not sure this is always true
+    assert(op2->isContained());
+
     // Gen Op2 into flags.
     genCodeForContainedCompareChain(op2, &chain, &cond);
     assert(chain);
+
+    // Are we evaluating this into a register?
+    regNumber targetReg = tree->GetRegNum();
+    if (targetReg != REG_NA)
+    {
+        // AHTODO: merge this into helper function with genCodeForJumpTrue()
+        // Find the last contained compare in the chain.
+        GenCondition condition;
+        GenTreeOp*   lastCompare = tree->gtGetOp2()->AsOp();
+        assert(lastCompare->isContained());
+        while (!lastCompare->OperIsCompare())
+        {
+            assert(lastCompare->OperIs(GT_AND) || lastCompare->OperIsConditionalCompare());
+            lastCompare = lastCompare->gtGetOp2()->AsOp();
+            assert(lastCompare->isContained());
+        }
+        condition = GenCondition::FromRelop(lastCompare);
+        if (tree->OperIs(GT_CCMP_NE))
+        {
+            condition = GenCondition::Reverse(condition);
+        }
+
+        inst_SETCC(condition, tree->TypeGet(), targetReg);
+        genProduceReg(tree);
+    }
 }
 
 //------------------------------------------------------------------------

@@ -914,8 +914,9 @@ public:
     // Node and its child in isolation form a contained compare chain.
     bool isContainedCompareChainSegment(GenTree* child) const
     {
-        return ((OperIs(GT_AND) || OperIs(GT_ANDFLAGS)) && child->isContained() &&
-                (child->OperIs(GT_AND) || child->OperIsCmpCompare()));
+        // AHTODO: Not sure we need all of these?
+        return ((OperIs(GT_AND) || OperIsConditionalCompare()) && child->isContained() &&
+                (child->OperIs(GT_AND) || child->OperIsCmpCompare() || child->OperIsConditionalCompare()));
     }
 #endif
 
@@ -1093,7 +1094,7 @@ public:
         {
             // These are the only operators which can produce either VOID or non-VOID results.
             assert(OperIs(GT_NOP, GT_CALL, GT_COMMA, GT_AND) || OperIsCompare() || OperIsLong() ||
-                   OperIsHWIntrinsic() || IsCnsVec());
+                   OperIsHWIntrinsic() || IsCnsVec() || OperIsConditionalCompare());
             return false;
         }
 
@@ -1377,6 +1378,16 @@ public:
     bool OperIsConditional() const
     {
         return OperIsConditional(OperGet());
+    }
+
+    static bool OperIsConditionalCompare(genTreeOps gtOper)
+    {
+        return (GT_CCMP_EQ == gtOper || GT_CCMP_NE == gtOper);
+    }
+
+    bool OperIsConditionalCompare() const
+    {
+        return OperIsConditionalCompare(OperGet());
     }
 
     static bool OperIsCC(genTreeOps gtOper)

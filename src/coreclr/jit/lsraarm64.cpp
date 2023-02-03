@@ -246,7 +246,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount     = 0;
             if ((op1->gtFlags & GTF_SET_FLAGS) == 0)
             {
-                assert(op1->OperIs(GT_AND));
+                assert(op1->OperIsConditionalCompare());
                 srcCount = BuildOperandUses(op1);
             }
             assert(dstCount == 0);
@@ -305,13 +305,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
             BuildDef(tree);
-            break;
-
-        case GT_ANDFLAGS:
-            srcCount = BuildBinaryUses(tree->AsOp());
-            assert(dstCount == 0);
-            assert((tree->gtFlags & GTF_SET_FLAGS) != 0);
-            assert(tree->TypeIs(TYP_VOID));
             break;
 
         case GT_BFIZ:
@@ -421,6 +414,8 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_TEST_EQ:
         case GT_TEST_NE:
         case GT_JCMP:
+        case GT_CCMP_EQ:
+        case GT_CCMP_NE:
             srcCount = BuildCmp(tree);
             break;
 

@@ -558,11 +558,10 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Verify the test block ends with a condition that we can manipulate.
-    // Assuming that an AND connected to a JTRUE is always a valid chain.
     GenTree* last = m_startBlock->lastStmt()->GetRootNode();
     noway_assert(last->OperIs(GT_JTRUE));
     m_cond = last->gtGetOp1();
-    if (!m_cond->OperIsCompare() && !m_cond->OperIs(GT_AND))
+    if (!m_cond->OperIsCompare())
     {
         return false;
     }

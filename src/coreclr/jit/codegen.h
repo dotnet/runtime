@@ -887,7 +887,7 @@ protected:
     void genCodeForContainedCompareChain(GenTree* tree, bool* inchain, GenCondition* prevCond);
 #endif
     void genCodeForSelect(GenTreeOp* select);
-    void genCodeForAndFlags(GenTreeOp* select);
+    void genCodeForConditionalCompare(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);
     void genPutArgStk(GenTreePutArgStk* treeNode);
     void genPutArgReg(GenTreeOp* tree);
