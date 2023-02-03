@@ -1052,7 +1052,7 @@ struct BasicBlock : private LIR::Range
     };
 
     // Basic block predecessor lists. Predecessor lists are created by fgLinkBasicBlocks(), stored
-    // in 'bbPreds', and then maintained throughout compilation. 'fgComputePredsDone' will be 'true' after the
+    // in 'bbPreds', and then maintained throughout compilation. 'fgPredsComputed' will be 'true' after the
     // predecessor lists are created.
     //
     flowList* bbPreds; // ptr to list of predecessors
