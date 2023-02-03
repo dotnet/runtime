@@ -5393,7 +5393,6 @@ void Compiler::optMarkLoopHeads()
         printf("*************** In optMarkLoopHeads()\n");
     }
 
-    assert(!fgCheapPredsValid);
     assert(fgReachabilitySetsValid);
     fgDebugCheckBBNumIncreasing();
 

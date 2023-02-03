@@ -64,5 +64,8 @@ namespace Mono.Linker.Dataflow
 		public override bool Equals (object? obj) => obj is ValueBasicBlockPair other && Equals (other);
 
 		public override int GetHashCode () => HashUtils.Combine (Value.GetHashCode (), BasicBlockIndex);
+
+		public static bool operator == (ValueBasicBlockPair left, ValueBasicBlockPair right) => left.Equals (right);
+		public static bool operator != (ValueBasicBlockPair left, ValueBasicBlockPair right) => !(left == right);
 	}
 }

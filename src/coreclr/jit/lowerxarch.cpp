@@ -3590,6 +3590,9 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
 
+    // We support the return type being a SIMD for floating-point as a special optimization
+    assert(varTypeIsArithmetic(node) || (varTypeIsSIMD(node) && varTypeIsFloating(simdBaseType)));
+
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
 
@@ -3753,25 +3756,38 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                     if (simdSize == 8)
                     {
-                        idx = comp->gtNewIconNode(0x31, TYP_INT);
+                        idx = comp->gtNewIconNode(0x3F, TYP_INT);
                     }
                     else if (simdSize == 12)
                     {
-                        idx = comp->gtNewIconNode(0x71, TYP_INT);
+                        idx = comp->gtNewIconNode(0x7F, TYP_INT);
                     }
                     else
                     {
                         assert(simdSize == 16);
-                        idx = comp->gtNewIconNode(0xF1, TYP_INT);
+                        idx = comp->gtNewIconNode(0xFF, TYP_INT);
                     }
                     BlockRange().InsertBefore(node, idx);
 
-                    tmp3 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_SSE41_DotProduct, simdBaseJitType,
-                                                          simdSize);
-                    BlockRange().InsertAfter(idx, tmp3);
-                    LowerNode(tmp3);
+                    if (varTypeIsSIMD(node->gtType))
+                    {
+                        // We're producing a vector result, so just emit DotProduct directly
+                        node->ResetHWIntrinsicId(NI_SSE41_DotProduct, comp, op1, op2, idx);
+                    }
+                    else
+                    {
+                        // We're producing a scalar result, so we only need the result in element 0
+                        //
+                        // However, doing that would break/limit CSE and requires a partial write so
+                        // it's better to just broadcast the value to the entire vector
 
-                    node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp3);
+                        tmp3 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_SSE41_DotProduct,
+                                                              simdBaseJitType, simdSize);
+                        BlockRange().InsertAfter(idx, tmp3);
+                        LowerNode(tmp3);
+
+                        node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp3);
+                    }
 
                     return LowerNode(node);
                 }
@@ -3804,15 +3820,28 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                     //   var tmp3 = Avx.DotProduct(op1, op2, 0x31);
                     //   return tmp3.ToScalar();
 
-                    idx = comp->gtNewIconNode(0x31, TYP_INT);
+                    idx = comp->gtNewIconNode(0x33, TYP_INT);
                     BlockRange().InsertBefore(node, idx);
 
-                    tmp3 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_SSE41_DotProduct, simdBaseJitType,
-                                                          simdSize);
-                    BlockRange().InsertAfter(idx, tmp3);
-                    LowerNode(tmp3);
+                    if (varTypeIsSIMD(node->gtType))
+                    {
+                        // We're producing a vector result, so just emit DotProduct directly
+                        node->ResetHWIntrinsicId(NI_SSE41_DotProduct, comp, op1, op2, idx);
+                    }
+                    else
+                    {
+                        // We're producing a scalar result, so we only need the result in element 0
+                        //
+                        // However, doing that would break/limit CSE and requires a partial write so
+                        // it's better to just broadcast the value to the entire vector
 
-                    node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp3);
+                        tmp3 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_SSE41_DotProduct,
+                                                              simdBaseJitType, simdSize);
+                        BlockRange().InsertAfter(idx, tmp3);
+                        LowerNode(tmp3);
+
+                        node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp3);
+                    }
 
                     return LowerNode(node);
                 }
@@ -4191,18 +4220,34 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         node->SetSimdSize(16);
     }
 
-    // We will be constructing the following parts:
-    //   ...
-    //          /--*  tmp1 simd16
-    //   node = *  HWINTRINSIC   simd16 T ToScalar
+    if (varTypeIsSIMD(node->gtType))
+    {
+        // We're producing a vector result, so just return the result directly
 
-    // This is roughly the following managed code:
-    //   ...
-    //   return tmp1.ToScalar();
+        LIR::Use use;
 
-    node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp1);
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            use.ReplaceWith(tmp1);
+        }
 
-    return LowerNode(node);
+        BlockRange().Remove(node);
+        return tmp1->gtNext;
+    }
+    else
+    {
+        // We will be constructing the following parts:
+        //   ...
+        //          /--*  tmp1 simd16
+        //   node = *  HWINTRINSIC   simd16 T ToScalar
+
+        // This is roughly the following managed code:
+        //   ...
+        //   return tmp1.ToScalar();
+
+        node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp1);
+        return LowerNode(node);
+    }
 }
 
 //----------------------------------------------------------------------------------------------

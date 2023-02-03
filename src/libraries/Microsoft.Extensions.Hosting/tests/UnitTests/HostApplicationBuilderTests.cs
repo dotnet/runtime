@@ -603,6 +603,23 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Throws<InvalidOperationException>(() => builder.Services.RemoveAt(0));
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void RespectsArgsWhenDisableDefaults(bool disableDefaults)
+        {
+            HostApplicationBuilder builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+            {
+                DisableDefaults = disableDefaults,
+                Args = new string[] { "mySetting=settingValue" }
+            });
+
+            using IHost host = builder.Build();
+            IConfiguration config = host.Services.GetRequiredService<IConfiguration>();
+
+            Assert.Equal("settingValue", config["mySetting"]);
+        }
+
         private static HostApplicationBuilder CreateEmptyBuilder()
         {
             return new HostApplicationBuilder(new HostApplicationBuilderSettings
