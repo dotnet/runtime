@@ -20,7 +20,7 @@ import {
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
-const trace = 0;
+const trace = 1;
 
 const
     // Record a trace of all managed interpreter opcodes then dump it to console
@@ -45,7 +45,11 @@ const
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code
-    compressImportNames = true;
+    compressImportNames = true,
+    // Always grab method full names
+    useFullNames = true,
+    // Use the mono_debug_count() API (set the COUNT=n env var) to limit the number of traces to compile
+    useDebugCount = true;
 
 const callTargetCounts : { [method: number] : number } = {};
 
@@ -345,6 +349,13 @@ function generate_wasm (
     const endOfBody = <any>startOfBody + <any>sizeOfBody;
     const traceName = `${methodName}:${(traceOffset).toString(16)}`;
 
+    if (useDebugCount) {
+        if (cwraps.mono_jiterp_debug_count() === 0) {
+            console.log(`COUNT limited: ${methodFullName || methodName} @${(traceOffset).toString(16)}`);
+            return 0;
+        }
+    }
+
     const started = _now();
     let compileStarted = 0;
     let rejected = true, threw = false;
@@ -628,7 +639,7 @@ function generate_wasm (
         compileStarted = _now();
         const buffer = builder.getArrayView();
         if (trace > 0)
-            console.log(`${(<any>(builder.base)).toString(16)} ${traceName} generated ${buffer.length} byte(s) of wasm`);
+            console.log(`${(<any>(builder.base)).toString(16)} ${methodFullName || traceName} generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
@@ -1346,7 +1357,7 @@ function generate_wasm_body (
                     builder.i32_const(multiplier);
                 else
                     builder.i52_const(multiplier);
-                builder.appendU8(isI32? WasmOpcode.i32_mul : WasmOpcode.i64_mul);
+                builder.appendU8(isI32 ? WasmOpcode.i32_mul : WasmOpcode.i64_mul);
                 append_stloc_tail(builder, getArgU16(ip, 1), isI32 ? WasmOpcode.i32_store : WasmOpcode.i64_store);
                 break;
             }
@@ -3139,7 +3150,7 @@ export function mono_interp_tier_prepare_jiterpreter (
     else if (info.hitCount === minHitCount) {
         counters.traceCandidates++;
         let methodFullName: string | undefined;
-        if (trapTraceErrors || mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0)) {
+        if (trapTraceErrors || mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0) || useFullNames) {
             const pMethodName = cwraps.mono_wasm_method_get_full_name(method);
             methodFullName = Module.UTF8ToString(pMethodName);
             Module._free(<any>pMethodName);
