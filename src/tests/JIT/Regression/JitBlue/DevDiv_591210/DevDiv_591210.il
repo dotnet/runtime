@@ -3,7 +3,7 @@
 
 // Test description
 
-.assembly extern System.Runtime { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly DevDiv_591210 {}
 .assembly extern xunit.core {}
 
