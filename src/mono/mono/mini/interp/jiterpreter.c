@@ -669,6 +669,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_LDLOCA_S:
 		case MINT_LDTOKEN:
 		case MINT_LDSTR:
+		case MINT_LDFTN:
 		case MINT_LDFTN_ADDR:
 		case MINT_MONO_LDPTR:
 		case MINT_CPOBJ_VT:
@@ -699,6 +700,10 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_SAFEPOINT:
 		case MINT_INTRINS_GET_HASHCODE:
 		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
+		case MINT_INTRINS_ENUM_HASFLAG:
+		case MINT_ADD_MUL_I4_IMM:
+		case MINT_ADD_MUL_I8_IMM:
+		case MINT_ARRAY_RANK:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
@@ -1014,6 +1019,18 @@ mono_jiterp_type_to_stind (MonoType *type)
 	if (m_type_is_byref(type))
 		return 0;
 	return mono_type_to_stind (type);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_array_rank (gint32 *dest, MonoObject **src)
+{
+	if (!src || !*src) {
+		*dest = 0;
+		return 0;
+	}
+
+	*dest = m_class_get_rank (mono_object_class (*src));
+	return 1;
 }
 
 // HACK: fix C4206
