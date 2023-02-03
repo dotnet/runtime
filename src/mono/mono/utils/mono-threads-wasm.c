@@ -45,6 +45,9 @@ wasm_get_stack_size (void)
 
 // TODO after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b
 // use __stack_low && __stack_high
+// see mono-threads-wasi.S
+uintptr_t get_wasm_heap_base(void);
+uintptr_t get_wasm_data_end(void);
 
 static int
 wasm_get_stack_size (void)
@@ -57,8 +60,20 @@ wasm_get_stack_size (void)
 static int
 wasm_get_stack_base (void)
 {
-	// assuming we are compiling with LLVM's --stack-first
-    return 4;
+	size_t heap_base = get_wasm_heap_base();
+	size_t data_end = get_wasm_data_end();
+	size_t stack_size_pad = wasm_get_stack_size() + 12; // there is padding
+	// g_print("heap_base %d: ", heap_base);
+	// g_print("data_end %d: ", data_end);
+
+
+	// assuming we are compiling without LLVM's --stack-first
+	g_assert (heap_base > 0);
+	g_assert (data_end > 0);
+	g_assert (heap_base > data_end);
+	g_assert (heap_base - stack_size_pad == data_end);
+
+    return data_end;
 	// this will need further change for multithreading as the stack will allocated be per thread at different addresses
 }
 

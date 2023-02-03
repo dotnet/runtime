@@ -139,8 +139,8 @@
       <!--<_EmccCompileBitcodeRsp>$(_WasmIntermediateOutputPath)emcc-compile-bc.rsp</_EmccCompileBitcodeRsp>-->
       <!--<_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>-->
 
-      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">$(WasmTotalMemory)</WasmInitialHeapSize>
-      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">536870912</WasmInitialHeapSize>
+      <!-- TODOWASI this needs similar AOT logic as EMCC in https://github.com/dotnet/runtime/pull/80507 -->
+      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">52428800</WasmInitialHeapSize>
     </PropertyGroup>
 
     <ItemGroup>
@@ -405,7 +405,6 @@
     <!-- Invoke the WASI SDK clang binary to build the .wasm file -->
     <ItemGroup>
       <_WasiSdkLinkerFlags Include="--initial-memory=$(WasmInitialHeapSize)" />
-      <_WasiSdkLinkerFlags Include="--max-memory=$(WasmInitialHeapSize)" />
 
       <_WasiFilePathForFixup Include="$(_WasiGetEntrypointCFile)" />
       <_WasiFilePathForFixup Include="@(_WasiObjectFilesForBundle)" />
@@ -422,7 +421,7 @@
       <_WasiSdkClangArgs Include="-I&quot;$(MicrosoftNetCoreAppRuntimePackRidNativeDir.Replace('\', '/'))include&quot;" />
       <_WasiSdkClangArgs Include="-Wl,--export=malloc,--export=free,--export=__heap_base,--export=__data_end" />
       <!-- keep in sync with src\mono\wasi\wasi.proj -->
-      <_WasiSdkClangArgs Include="-Wl,-z,stack-size=8388608,--stack-first,--initial-memory=52428800,--max-memory=671088640,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
+      <_WasiSdkClangArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
       <_WasiSdkClangArgs Include="-Wl,-s" /> <!-- Strip debug symbols -->
 
       <_WasiSdkClangArgs Include="@(_WasiSdkLinkerFlags -> '-Xlinker %(Identity)', ' ')" />
