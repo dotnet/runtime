@@ -11158,5 +11158,32 @@
     "aot",
     "any",
     "base"
+  ],
+  "wolfi": [
+    "wolfi",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "wolfi-arm64": [
+    "wolfi-arm64",
+    "wolfi",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "wolfi-x64": [
+    "wolfi-x64",
+    "wolfi",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
   ]
 }

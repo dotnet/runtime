@@ -279,6 +279,11 @@
       <Versions>7;8;81;10</Versions>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="wolfi">
+      <Parent>linux</Parent>
+      <Architectures>x64;arm64</Architectures>
+    </RuntimeGroup>
+
     <RuntimeGroupWithQualifiers Include="@(RuntimeGroup)" />
 
     <!-- root RIDs -->

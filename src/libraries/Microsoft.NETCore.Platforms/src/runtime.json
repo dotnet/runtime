@@ -4404,6 +4404,23 @@
         "win81",
         "win8-x86-aot"
       ]
+    },
+    "wolfi": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "wolfi-arm64": {
+      "#import": [
+        "wolfi",
+        "linux-arm64"
+      ]
+    },
+    "wolfi-x64": {
+      "#import": [
+        "wolfi",
+        "linux-x64"
+      ]
     }
   }
 }
