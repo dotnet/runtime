@@ -17,7 +17,7 @@ class Runtime_77968
         return ((int[])o).Length;
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         for (int i = 0; i < 100; i++)
         {

@@ -31,7 +31,7 @@ namespace Default
 
         public
         static
-        int Main(String[] args)
+        int Main()
         {
             func(0, 0, null, null);
             return 100;

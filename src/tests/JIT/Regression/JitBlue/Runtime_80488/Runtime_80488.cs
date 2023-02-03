@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 class Runtime_80488
 {
-    static int Main(string[] args)
+    static int Main()
     {
         int code = Foo(new S16 { F1 = 100 });
         if (code != 100)

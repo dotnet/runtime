@@ -8,7 +8,7 @@ namespace hello
 {
     class Class1
     {
-        static public int Main(string[] args)
+        static public int Main()
         {
             int i = 123;
             Console.WriteLine(i);

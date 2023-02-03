@@ -5,7 +5,7 @@ using System;
 
 internal class Test
 {
-    static public int Main(string[] args)
+    static public int Main()
     {
         bool b1 = Double.IsPositiveInfinity(Math.Exp(Double.PositiveInfinity));
         bool b2 = 0 == Math.Exp(Double.NegativeInfinity);
