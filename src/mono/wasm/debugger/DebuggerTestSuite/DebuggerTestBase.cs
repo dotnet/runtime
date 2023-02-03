@@ -147,24 +147,17 @@ namespace DebuggerTests
 
         public virtual async Task InitializeAsync()
         {
-            Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
-             {
-                 Func<string, JObject, (string, Task<Result>)> getInitCmdFn = (cmd, args) => (cmd, client.SendCommand(cmd, args, token));
-                 var init_cmds = new List<(string, Task<Result>)>
-                 {
-                    getInitCmdFn("Profiler.enable", null),
-                    getInitCmdFn("Runtime.enable", null),
-                    getInitCmdFn("Debugger.enable", null),
-                    getInitCmdFn("Runtime.runIfWaitingForDebugger", null),
-                    getInitCmdFn("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 })),
-                    getInitCmdFn("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }))
-                    //getInitCmdFn("ServiceWorker.enable", null)
-                 };
-                 return init_cmds;
-             };
-
+            var init_cmds = new List<(string, JObject)>
+            {
+                ("Profiler.enable", null),
+                ("Runtime.enable", null),
+                ("Debugger.enable", null),
+                ("Runtime.runIfWaitingForDebugger", null),
+                ("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 })),
+                ("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }))
+            };
             await Ready();
-            await insp.OpenSessionAsync(fn, TestTimeout);
+            await insp.OpenSessionAsync(init_cmds, TestTimeout);
         }
 
         public virtual async Task DisposeAsync()

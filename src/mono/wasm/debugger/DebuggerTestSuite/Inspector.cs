@@ -38,6 +38,7 @@ namespace DebuggerTests
         private Exception? _isFailingWithException;
         private bool _gotRuntimeReady = false;
         private bool _gotAppReady = false;
+        private List<(string cmd, JObject? args)> initCmdList = new ();
 
         protected static Lazy<ILoggerFactory> s_loggerFactory = new(() =>
             LoggerFactory.Create(builder =>
@@ -216,10 +217,10 @@ namespace DebuggerTests
                 case "Target.attachedToTarget":
                 {
                     var sessionIdNewTarget = new SessionId(args["sessionId"]?.Value<string>());
-                    await Client.SendCommand(sessionIdNewTarget, "Profiler.enable", null, token);
-                    await Client.SendCommand(sessionIdNewTarget, "Runtime.enable", null, token);
-                    await Client.SendCommand(sessionIdNewTarget, "Debugger.enable", null, token);
-                    await Client.SendCommand(sessionIdNewTarget, "Runtime.runIfWaitingForDebugger", null, token);
+                    foreach (var cmdToInit in initCmdList)
+                    {
+                        await Client.SendCommand(sessionIdNewTarget, cmdToInit.cmd, cmdToInit.args, token);
+                    }
                     await Client.SendCommand(sessionIdNewTarget, "Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32}), token);
                     break;
                 }
@@ -351,14 +352,18 @@ namespace DebuggerTests
             });
         }
 
-        public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan span)
+        public async Task OpenSessionAsync(List<(string cmd, JObject? args)> initCmdList, TimeSpan span)
         {
             var start = DateTime.Now;
             try
             {
                 await LaunchBrowser(start, span);
-
-                var init_cmds = getInitCmds(Client, _cancellationTokenSource.Token);
+                var init_cmds = new List<(string, Task<Result>)>();
+                this.initCmdList = initCmdList;
+                foreach (var cmdToInit in initCmdList)
+                {
+                    init_cmds.Add((cmdToInit.cmd, Client.SendCommand(cmdToInit.cmd, cmdToInit.args, _cancellationTokenSource.Token)));
+                }
 
                 Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
                 init_cmds.Add((APP_READY, readyTask));

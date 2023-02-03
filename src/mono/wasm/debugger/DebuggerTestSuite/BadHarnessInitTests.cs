@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
+using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -25,16 +26,15 @@ namespace DebuggerTests
         {
             var bad_cmd_name = "non-existent.command";
 
-            Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
-                new List<(string, Task<Result>)>
-                {
-                    ("Profiler.enable", client.SendCommand("Profiler.enable", null, token)),
-                    (bad_cmd_name, client.SendCommand(bad_cmd_name, null, token))
-                };
+            var init_cmds = new List<(string, JObject?)>
+            {
+                ("Profiler.enable", null),
+                (bad_cmd_name, null)
+            };
 
             await Ready();
 
-            var ae = await Assert.ThrowsAsync<ArgumentException>(async () => await insp.OpenSessionAsync(fn, TestTimeout));
+            var ae = await Assert.ThrowsAsync<ArgumentException>(async () => await insp.OpenSessionAsync(init_cmds, TestTimeout));
             Assert.Contains(bad_cmd_name, ae.Message);
         }
     }

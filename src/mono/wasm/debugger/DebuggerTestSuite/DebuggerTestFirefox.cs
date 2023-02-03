@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -26,19 +27,13 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
     public override async Task InitializeAsync()
     {
-        Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
-            {
-                Func<string, JObject, (string, Task<Result>)> getInitCmdFn = (cmd, args) => (cmd, client.SendCommand(cmd, args, token));
-                var init_cmds = new List<(string, Task<Result>)>
-                {
-                    getInitCmdFn("listTabs", JObject.FromObject(new { type = "listTabs", to = "root"}))
-                };
-
-                return init_cmds;
-            };
+        var init_cmds = new List<(string, JObject)>
+        {
+            ("listTabs", JObject.FromObject(new { type = "listTabs", to = "root"}))
+        };
 
         await Ready();
-        await insp.OpenSessionAsync(fn, TestTimeout);
+        await insp.OpenSessionAsync(init_cmds, TestTimeout);
     }
 
     internal override Dictionary<string, string> SubscribeToScripts(Inspector insp)
