@@ -4450,7 +4450,7 @@ void Compiler::fgDebugCheckProfileWeights()
 {
     // Optionally check profile data, if we have any.
     //
-    const bool enabled = (JitConfig.JitProfileChecks() > 0) && fgHaveProfileWeights() && fgComputePredsDone;
+    const bool enabled = (JitConfig.JitProfileChecks() > 0) && fgHaveProfileWeights() && fgPredsComputed;
     if (!enabled)
     {
         return;

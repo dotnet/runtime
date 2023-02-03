@@ -27,13 +27,6 @@ PhaseStatus Compiler::fgMorphInit()
 {
     bool madeChanges = false;
 
-#if !FEATURE_EH
-    // If we aren't yet supporting EH in a compiler bring-up, remove as many EH handlers as possible, so
-    // we can pass tests that contain try/catch EH, but don't actually throw any exceptions.
-    fgRemoveEH();
-    madeChanges = true;
-#endif // !FEATURE_EH
-
     // We could allow ESP frames. Just need to reserve space for
     // pushing EBP if the method becomes an EBP-frame after an edit.
     // Note that requiring a EBP Frame disallows double alignment.  Thus if we change this

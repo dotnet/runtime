@@ -4654,15 +4654,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         lvaRefCountState       = RCS_INVALID;
         fgLocalVarLivenessDone = false;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        if (fgNeedToAddFinallyTargetBits)
-        {
-            // We previously wiped out the BBF_FINALLY_TARGET bits due to some morphing; add them back.
-            fgAddFinallyTargetFlags();
-            fgNeedToAddFinallyTargetBits = false;
-        }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
         // Decide the kind of code we want to generate
         fgSetOptions();
 
