@@ -750,10 +750,10 @@ void emitter::emitIns_R_R_R(
         assert(isGeneralRegisterOrR0(reg2));
         assert(isGeneralRegisterOrR0(reg3));
 
+#endif
         code |= (reg1 << 7);
         code |= (reg2 << 15);
         code |= (reg3 << 20);
-#endif
     }
     else
     {
