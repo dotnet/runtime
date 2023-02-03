@@ -11,5 +11,6 @@
     <Compile Include="Program.AdvSimd.Arm64.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
+    <ProjectReference Include="..\AdvSimd\VectorTableLookup.csproj" Aliases="CoreLib"  Private="false" />
   </ItemGroup>
 </Project>
