@@ -22,11 +22,11 @@ namespace System.Net.Http
     {
         private readonly HttpHandlerType _underlyingHandler;
 
-        private HttpHandlerType Handler
+
 #if TARGET_BROWSER
-            { get; }
+        private HttpMessageHandler Handler { get; }
 #else
-            => _underlyingHandler;
+        private HttpHandlerType Handler => _underlyingHandler;
 #endif
 
         private ClientCertificateOption _clientCertificateOptions;

@@ -1686,7 +1686,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         protected async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, bool fromEnC, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
-            if ((!fromEnC && req.Locations.Any()) || (fromEnC && req.Locations.Any(bp => bp.State == BreakpointState.Active)))
+            if ((!fromEnC && req.Locations.Count != 0) || (fromEnC && req.Locations.Any(bp => bp.State == BreakpointState.Active)))
             {
                 if (!fromEnC)
                     Log("debug", $"locations already loaded for {req.Id}");
