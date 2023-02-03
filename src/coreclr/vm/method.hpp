@@ -138,7 +138,8 @@ enum MethodDescClassification
     // Has slot for native code
     mdcHasNativeCodeSlot                = 0x0020,
 
-    // unused                           = 0x0040,
+    // Method was added via Edit And Continue
+    mdcEnCAddedMethod                   = 0x0040,
 
     // Method is static
     mdcStatic                           = 0x0080,
@@ -668,7 +669,7 @@ public:
     // If the method is in an Edit and Continue (EnC) module, then
     // we DON'T want to backpatch this, ever.  We MUST always call
     // through the precode so that we can update the method.
-    inline DWORD IsEnCMethod()
+    inline DWORD InEnCEnabledModuled()
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
@@ -976,11 +977,6 @@ public:
         //_ASSERTE(!GetClass()->IsInterface());
         m_wFlags |= mdcDuplicate;
     }
-
-    //==================================================================
-    // EnC
-
-    inline BOOL IsEnCAddedMethod();
 
     //==================================================================
     //
@@ -1384,7 +1380,7 @@ public:
             return false;
 #endif
 
-        return !IsVersionable() && !IsEnCMethod();
+        return !IsVersionable() && !InEnCEnabledModuled();
     }
 
     //Is this method currently pointing to native code that will never change?
@@ -1735,6 +1731,26 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_wFlags |= mdcHasNativeCodeSlot;
     }
+
+#ifdef EnC_SUPPORTED
+    inline BOOL IsEnCAddedMethod()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (m_wFlags & mdcEnCAddedMethod) != 0;
+    }
+
+    inline void SetIsEnCAddedMethod()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_wFlags |= mdcEnCAddedMethod;
+    }
+#else
+    inline BOOL IsEnCAddedMethod()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FALSE;
+    }
+#endif // !EnC_SUPPORTED
 
     inline BOOL IsIntrinsic()
     {
@@ -3298,7 +3314,7 @@ public:
 // parameters (see MethodDesc::IsSharedByGenericInstantiations()).
 //-----------------------------------------------------------------------
 
-class InstantiatedMethodDesc : public MethodDesc
+class InstantiatedMethodDesc final : public MethodDesc
 {
 
 public:
@@ -3352,17 +3368,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         return((m_wFlags2 & KindMask) == WrapperStubWithInstantiations);
-    }
-
-    BOOL IMD_IsEnCAddedMethod()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-#ifdef EnC_SUPPORTED
-        return((m_wFlags2 & KindMask) == EnCAddedMethod);
-#else
-        return FALSE;
-#endif
     }
 
     PTR_DictionaryLayout GetDictLayoutRaw()
@@ -3423,15 +3428,6 @@ public:
     // Setup the IMD as a wrapper around another method desc
     void SetupWrapperStubWithInstantiations(MethodDesc* wrappedMD,DWORD numGenericArgs, TypeHandle *pGenericMethodInst);
 
-
-#ifdef EnC_SUPPORTED
-    void SetupEnCAddedMethod()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wFlags2 = EnCAddedMethod;
-    }
-#endif
-
 private:
     enum
     {
@@ -3440,17 +3436,6 @@ private:
         UnsharedMethodInstantiation         = 0x01,
         SharedMethodInstantiation           = 0x02,
         WrapperStubWithInstantiations       = 0x03,
-
-#ifdef EnC_SUPPORTED
-        // Non-virtual method added through EditAndContinue.
-        EnCAddedMethod                      = 0x07,
-#endif // EnC_SUPPORTED
-
-        Unrestored                          = 0x08,
-
-#ifdef FEATURE_COMINTEROP
-        HasComPlusCallInfo                  = 0x10, // this IMD contains an optional ComPlusCallInfo
-#endif // FEATURE_COMINTEROP
     };
 
     friend class MethodDesc; // this fields are currently accessed by MethodDesc::Save/Restore etc.
@@ -3609,13 +3594,6 @@ inline BOOL MethodDesc::SanityCheck()
 }
 
 #endif // _DEBUG
-
-inline BOOL MethodDesc::IsEnCAddedMethod()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return (GetClassification() == mcInstantiated) && AsInstantiatedMethodDesc()->IMD_IsEnCAddedMethod();
-}
 
 inline BOOL MethodDesc::HasNonVtableSlot()
 {
