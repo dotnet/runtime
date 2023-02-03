@@ -580,16 +580,7 @@ public:
             GenTreeLclVar* lclVar  = tree->gtGetOp1()->AsLclVar();
             var_types      lclType = m_compiler->lvaGetDesc(lclVar)->lvType;
 
-            if (tree->TypeIs(lclType))
-            {
-                lclVar->ChangeOper(GT_LCL_VAR);
-                lclVar->ChangeType(lclType);
-
-                DEBUG_DESTROY_NODE(tree);
-
-                return lclVar;
-            }
-            else if ((lclType == TYP_INT) && varTypeIsSmall(tree))
+            if ((lclType == TYP_INT) && varTypeIsSmall(tree))
             {
                 lclVar->ChangeOper(GT_LCL_VAR);
                 lclVar->ChangeType(lclType);
@@ -602,25 +593,6 @@ public:
                 else
                 {
                     newTree = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, tree->TypeGet());
-                }
-
-                DEBUG_DESTROY_NODE(tree);
-
-                return newTree;
-            }
-            else if ((lclType == TYP_LONG) && varTypeIsSmall(tree))
-            {
-                lclVar->ChangeOper(GT_LCL_VAR);
-                lclVar->ChangeType(lclType);
-
-                GenTree* newTree;
-                if ((parent != nullptr) && parent->OperIs(GT_ASG))
-                {
-                   newTree = lclVar;
-                }
-                else
-                {
-                   newTree = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, tree->TypeGet());
                 }
 
                 DEBUG_DESTROY_NODE(tree);
