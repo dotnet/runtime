@@ -11,6 +11,12 @@ if(NOT MSVC)
   )
 endif()
 
+set(CMAKE_INSTALL_PREFIX ./)
+set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+set(CMAKE_INSTALL_NAME_DIR "@rpath")
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH "@loader_path")
+
 add_library(regnative
   SHARED
   ${SOURCES}
