@@ -11,7 +11,6 @@ namespace System.Linq.Expressions.Tests
     {
         private static readonly PropertyInfo s_debugView = typeof(LightLambda).GetPropertyAssert("DebugView");
 
-        /*
         // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
         // but this functionality relies on private reflection and that would not work with AOT
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
@@ -101,7 +100,6 @@ namespace System.Linq.Expressions.Tests
                     }
                   }");
         }
-        */
 
         [Fact]
         [ActiveIssue ("https://github.com/dotnet/runtime/issues/53599", platforms: TestPlatforms.MacCatalyst, runtimes: TestRuntimes.Mono)]

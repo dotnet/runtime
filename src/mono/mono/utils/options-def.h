@@ -95,12 +95,12 @@ DEFINE_BOOL(jiterpreter_call_resume_enabled, "jiterpreter-call-resume-enabled", 
 //  stats for options like estimateHeat, but raises overhead.
 DEFINE_BOOL(jiterpreter_disable_heuristic, "jiterpreter-disable-heuristic", FALSE, "Always insert trace entry points for more accurate statistics")
 // Automatically prints stats at app exit or when jiterpreter_dump_stats is called
-DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", TRUE, "Automatically print jiterpreter statistics")
+DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", FALSE, "Automatically print jiterpreter statistics")
 // Continue counting hits for traces that fail to compile and use it to estimate
 //  the relative importance of the opcode that caused them to abort
 DEFINE_BOOL(jiterpreter_estimate_heat, "jiterpreter-estimate-heat", FALSE, "Maintain accurate hit count for all trace entry points")
 // Count the number of times a trace bails out (branch taken, etc) and for what reason
-DEFINE_BOOL(jiterpreter_count_bailouts, "jiterpreter-count-bailouts", TRUE, "Maintain accurate count of all trace bailouts based on cause")
+DEFINE_BOOL(jiterpreter_count_bailouts, "jiterpreter-count-bailouts", FALSE, "Maintain accurate count of all trace bailouts based on cause")
 // Dump the wasm blob for all compiled traces
 DEFINE_BOOL(jiterpreter_dump_traces, "jiterpreter-dump-traces", FALSE, "Dump the wasm blob for all compiled traces to the console")
 // Use runtime imports for pointer constants
@@ -123,7 +123,7 @@ DEFINE_INT(jiterpreter_interp_entry_trampoline_hit_count, "jiterpreter-interp-en
 DEFINE_INT(jiterpreter_interp_entry_queue_flush_threshold, "jiterpreter-interp-entry-queue-flush-threshold", 3000, "Flush the interp_entry JIT queue after an unJITted call site has this many hits")
 // In degenerate cases the jiterpreter could end up generating lots of WASM, so shut off jitting once it reaches this limit
 // Each wasm byte likely maps to multiple bytes of native code, so it's important for this limit not to be too high
-DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 24 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
+DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 6 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
 #endif // HOST_BROWSER
 
 /* Cleanup */

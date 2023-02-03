@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -48,21 +47,13 @@ const
     // Generate compressed names for imports so that modules have more space for code
     compressImportNames = true,
     // Always grab method full names
-    useFullNames = true,
+    useFullNames = false,
     // Use the mono_debug_count() API (set the COUNT=n env var) to limit the number of traces to compile
-    useDebugCount = true;
+    useDebugCount = false;
 
 const callTargetCounts : { [method: number] : number } = {};
 
 const disabledOpcodes : Array<MintOpcode> = [
-    // MintOpcode.MINT_LDSFLD_O,
-    // MintOpcode.MINT_LDFLD_O,
-    // MintOpcode.MINT_LDLEN,
-    // MintOpcode.MINT_LDSFLDA,
-    // MintOpcode.MINT_LDFLDA,
-    // MintOpcode.MINT_LDELEMA1,
-    // MintOpcode.MINT_BNE_UN_I4_IMM_SP,
-    // MintOpcode.MINT_REM_UN_I4,
 ];
 
 const instrumentedMethodNames : Array<string> = [
