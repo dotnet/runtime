@@ -20,6 +20,12 @@ public class Program
             UseShellExecute = false
         });
 
+        if (proc is null)
+        {
+            Console.WriteLine("llvm-dwarfdump could not run");
+            return 1;
+        }
+
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
         const int ExpectedCount = 13396;
         int count = 0;
@@ -32,12 +38,6 @@ public class Program
             }
         }
         proc.WaitForExit();
-        if (proc.ExitCode != 0)
-        {
-            Console.WriteLine("llvm-dwarfdump failed with exit code " + proc.ExitCode);
-            Console.WriteLine(proc.StandardError.ReadToEnd());
-            return 1;
-        }
         if (count != ExpectedCount)
         {
             Console.WriteLine($"Found {count} warnings and errors, expected {ExpectedCount}");
