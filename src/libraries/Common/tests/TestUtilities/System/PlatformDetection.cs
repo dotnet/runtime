@@ -199,6 +199,7 @@ namespace System
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
         public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host
+        public static bool IsSingleFile => !HasAssemblyFiles;
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported

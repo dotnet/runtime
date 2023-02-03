@@ -21,33 +21,25 @@ namespace System.Net.Quic.Tests
             Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, 0)));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73290", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.SupportsTls13))]
         public void SupportedWindowsPlatforms_IsSupportedIsTrue()
         {
-            if (PlatformDetection.HasAssemblyFiles)
-            {
-                Assert.True(QuicListener.IsSupported);
-                Assert.True(QuicConnection.IsSupported);
-            }
-            else
-            {
-                // The above if check can be deleted when https://github.com/dotnet/runtime/issues/73290
-                // gets fixed and this test starts failing.
-                Assert.False(QuicListener.IsSupported);
-                Assert.False(QuicConnection.IsSupported);
-            }
+            Assert.True(QuicListener.IsSupported);
+            Assert.True(QuicConnection.IsSupported);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
         public async Task SupportedLinuxPlatforms_IsSupportedIsTrue()
         {
-            using Process ldconfig = new Process();
-            ldconfig.StartInfo.FileName = "ldconfig";
-            ldconfig.StartInfo.Arguments = "-p";
-            ldconfig.StartInfo.RedirectStandardOutput = true;
-            ldconfig.Start();
-            string output = await ldconfig.StandardOutput.ReadToEndAsync();
-            await ldconfig.WaitForExitAsync();
+            using Process find = new Process();
+            find.StartInfo.FileName = "find";
+            find.StartInfo.Arguments = "/usr/ -iname libmsquic.so*";
+            find.StartInfo.RedirectStandardOutput = true;
+            find.Start();
+            string output = await find.StandardOutput.ReadToEndAsync();
+            _output.WriteLine(output);
+            await find.WaitForExitAsync();
             if (output.Contains("libmsquic.so"))
             {
                 Assert.True(QuicListener.IsSupported);
