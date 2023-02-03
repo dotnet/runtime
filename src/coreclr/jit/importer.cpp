@@ -5530,6 +5530,8 @@ void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* c
 
 void Compiler::impValidateCheckElisionOpcode(const BYTE* codeAddr, const BYTE* codeEndp, int flags)
 {
+    OPCODE opcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
+
     if ((flags & PREFIX_NO_TYPECHECK) != 0)
     {
         if (!(opcode == CEE_CASTCLASS || opcode == CEE_UNBOX || opcode == CEE_LDELEMA
