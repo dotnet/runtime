@@ -5528,7 +5528,7 @@ void Compiler::impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* c
 /*****************************************************************************/
 // Checks whether the opcode is a valid opcode for no. (check elision) prefix
 
-static void impValidateCheckElisionOpcode(const BYTE* codeAddr, const BYTE* codeEndp, int flags)
+void Compiler::impValidateCheckElisionOpcode(const BYTE* codeAddr, const BYTE* codeEndp, int flags)
 {
     if ((flags & PREFIX_NO_TYPECHECK) != 0)
     {

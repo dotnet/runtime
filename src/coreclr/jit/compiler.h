@@ -3682,6 +3682,7 @@ private:
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
+    static void impValidateCheckElisionOpcode(const BYTE* codeAddr, const BYTE* codeEndp, int flags);
     static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp);
     static bool impOpcodeIsCallOpcode(OPCODE opcode);
 
