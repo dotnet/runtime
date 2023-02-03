@@ -979,6 +979,7 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 		PRINT_DEBUG_MSG (1, "[%p] No line number info for il offset %x, don't know if it's in the same line single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
 		req->last_method = method;
 		req->last_line = -1;
+		req->refcount--;
 		return hit;
 	} else if (loc && method == req->last_method && loc->row == req->last_line) {
 		int nframes;
