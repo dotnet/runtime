@@ -1775,6 +1775,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
+
+    compPoisoningAnyImplicitByrefs = false;
 #endif
 
 #if defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
@@ -1908,8 +1910,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compGeneratingProlog = false;
     compGeneratingEpilog = false;
 
-    compLSRADone       = false;
-    compRationalIRForm = false;
+    compPostImportationCleanupDone = false;
+    compLSRADone                   = false;
+    compRationalIRForm             = false;
 
 #ifdef DEBUG
     compCodeGenDone        = false;
@@ -3572,7 +3575,6 @@ void Compiler::compInitDebuggingInfo()
 
         JITDUMP("Debuggable code - Add new %s to perform initialization of variables\n", fgFirstBB->dspToString());
     }
-
     /*-------------------------------------------------------------------------
      *
      * Read the stmt-offsets table and the line-number table
@@ -3900,9 +3902,9 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 #endif
 
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            // The JIT doesn't currently support loop alignment for prejitted images.
+            // The JIT doesn't currently support loop alignment for prejitted images outside NativeAOT.
             // (The JIT doesn't know the final address of the code, hence
             // it can't align code based on unknown addresses.)
 
@@ -4344,6 +4346,11 @@ void Compiler::EndPhase(Phases phase)
 //
 void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFlags* compileFlags)
 {
+    compFunctionTraceStart();
+
+    // Enable flow graph checks
+    activePhaseChecks |= PhaseChecks::CHECK_FG;
+
     // Prepare for importation
     //
     auto preImportPhase = [this]() {
@@ -4372,8 +4379,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
-    compFunctionTraceStart();
-
     // Incorporate profile data.
     //
     // Note: the importer is sensitive to block weights, so this has
@@ -4398,12 +4403,29 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Enable the post-phase checks that use internal logic to decide when checking makes sense.
     //
-    activePhaseChecks = PhaseChecks::CHECK_EH | PhaseChecks::CHECK_LOOPS | PhaseChecks::CHECK_UNIQUE |
-                        PhaseChecks::CHECK_PROFILE | PhaseChecks::CHECK_LINKED_LOCALS;
+    activePhaseChecks |= PhaseChecks::CHECK_EH | PhaseChecks::CHECK_LOOPS | PhaseChecks::CHECK_UNIQUE |
+                         PhaseChecks::CHECK_PROFILE | PhaseChecks::CHECK_LINKED_LOCALS;
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
+
+    // If this is a failed inline attempt, we're done.
+    //
+    if (compIsForInlining() && compInlineResult->IsFailure())
+    {
+#ifdef FEATURE_JIT_METHOD_PERF
+        if (pCompJitTimer != nullptr)
+        {
+#if MEASURE_CLRAPI_CALLS
+            EndPhase(PHASE_CLR_API);
+#endif
+            pCompJitTimer->Terminate(this, CompTimeSummaryInfo::s_compTimeSummary, false);
+        }
+#endif
+
+        return;
+    }
 
     // If instrumenting, add block and class probes.
     //
@@ -4564,25 +4586,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif
 
-    // Compute bbNum, bbRefs and bbPreds
-    //
-    // This is the first time full (not cheap) preds will be computed.
-    // And, if we have profile data, we can now check integrity.
-    //
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated.
-    //
-    auto computePredsPhase = [this]() {
-        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
-        fgRenumberBlocks();
-        noway_assert(!fgComputePredsDone);
-        fgComputePreds();
-        // Enable flow graph checks
-        activePhaseChecks |= PhaseChecks::CHECK_FG;
-    };
-    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
-
-    // Now that we have pred lists, do some flow-related optimizations
+    // Do some flow-related optimizations
     //
     if (opts.OptimizationEnabled())
     {
@@ -4607,14 +4611,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     lvaRefCountState = RCS_EARLY;
 
-    // Figure out what locals are address-taken.
-    //
-    DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
-
     if (opts.OptimizationEnabled())
     {
         fgNodeThreading = NodeThreading::AllLocals;
     }
+
+    // Figure out what locals are address-taken.
+    //
+    DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
 
     // Do an early pass of liveness for forward sub and morph. This data is
     // valid until after morph.
@@ -4647,7 +4651,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
         fgMarkDemotedImplicitByRefArgs();
-        lvaRefCountState = RCS_INVALID;
+        lvaRefCountState       = RCS_INVALID;
+        fgLocalVarLivenessDone = false;
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         if (fgNeedToAddFinallyTargetBits)
@@ -8855,7 +8860,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cVarDsc,     dVarDsc        : Display a local variable given a LclVarDsc* (call lvaDumpEntry()).
  *      cVars,       dVars          : Display the local variable table (call lvaTableDump()).
  *      cVarsFinal,  dVarsFinal     : Display the local variable table (call lvaTableDump(FINAL_FRAME_LAYOUT)).
- *      cBlockCheapPreds, dBlockCheapPreds : Display a block's cheap predecessors (call block->dspCheapPreds()).
  *      cBlockPreds, dBlockPreds    : Display a block's predecessors (call block->dspPreds()).
  *      cBlockSuccs, dBlockSuccs    : Display a block's successors (call block->dspSuccs(compiler)).
  *      cReach,      dReach         : Display all block reachability (call fgDispReach()).
@@ -8955,14 +8959,6 @@ void cVarsFinal(Compiler* comp)
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Vars %u\n", sequenceNumber++);
     comp->lvaTableDump(Compiler::FINAL_FRAME_LAYOUT);
-}
-
-void cBlockCheapPreds(Compiler* comp, BasicBlock* block)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *BlockCheapPreds %u\n",
-           sequenceNumber++);
-    block->dspCheapPreds();
 }
 
 void cBlockPreds(Compiler* comp, BasicBlock* block)
@@ -9108,11 +9104,6 @@ void dVarsFinal()
 void dBlockPreds(BasicBlock* block)
 {
     cBlockPreds(JitTls::GetCompiler(), block);
-}
-
-void dBlockCheapPreds(BasicBlock* block)
-{
-    cBlockCheapPreds(JitTls::GetCompiler(), block);
 }
 
 void dBlockSuccs(BasicBlock* block)
@@ -9344,9 +9335,31 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_CLONED]");
                 }
-                if (tree->gtFlags & GTF_VAR_DEATH)
+                if (!comp->lvaGetDesc(tree->AsLclVarCommon())->lvPromoted)
                 {
-                    chars += printf("[VAR_DEATH]");
+                    if (tree->gtFlags & GTF_VAR_DEATH)
+                    {
+                        chars += printf("[VAR_DEATH]");
+                    }
+                }
+                else
+                {
+                    if (tree->gtFlags & GTF_VAR_FIELD_DEATH0)
+                    {
+                        chars += printf("[VAR_FIELD_DEATH0]");
+                    }
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH1)
+                {
+                    chars += printf("[VAR_FIELD_DEATH1]");
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH2)
+                {
+                    chars += printf("[VAR_FIELD_DEATH2]");
+                }
+                if (tree->gtFlags & GTF_VAR_FIELD_DEATH3)
+                {
+                    chars += printf("[VAR_FIELD_DEATH3]");
                 }
                 if (tree->gtFlags & GTF_VAR_EXPLICIT_INIT)
                 {
@@ -9588,6 +9601,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_STATIC_BOX_PTR:
 
                         chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
+                        break;
+
+                    case GTF_ICON_STATIC_ADDR_PTR:
+
+                        chars += printf("[GTF_ICON_STATIC_ADDR_PTR]");
                         break;
 
                     default:
@@ -9966,8 +9984,8 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 // gtChangeOperToNullCheck: helper to change tree oper to a NULLCHECK.
 //
 // Arguments:
-//    tree       - the node to change;
-//    basicBlock - basic block of the node.
+//    tree  - the node to change;
+//    block - basic block of the node.
 //
 // Notes:
 //    the function should not be called after lowering for platforms that do not support
@@ -9979,6 +9997,8 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
+    assert(fgAddrCouldBeNull(tree->gtGetOp1()));
+    tree->gtFlags |= GTF_EXCEPT;
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }
@@ -10179,6 +10199,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_dispatchRetBuf++;
                     break;
 
+                case AddressExposedReason::STRESS_POISON_IMPLICIT_BYREFS:
+                    m_stressPoisonImplicitByrefs++;
+                    break;
+
                 default:
                     unreached();
                     break;
@@ -10274,5 +10298,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_osrExposed, m_addrExposed);
     PRINT_STATS(m_stressLclFld, m_addrExposed);
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
+    PRINT_STATS(m_stressPoisonImplicitByrefs, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

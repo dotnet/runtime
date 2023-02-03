@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Text;
 
 #pragma warning disable 8500 // sizeof of managed types
 
@@ -3563,6 +3564,97 @@ namespace System
             return (startInclusive, endExclusive);
         }
 
+        /// <summary>Counts the number of times the specified <paramref name="value"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value for which to search.</param>
+        /// <returns>The number of times <paramref name="value"/> was found in the <paramref name="span"/>.</returns>
+        public static int Count<T>(this Span<T> span, T value) where T : IEquatable<T>? =>
+            Count((ReadOnlySpan<T>)span, value);
+
+        /// <summary>Counts the number of times the specified <paramref name="value"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value for which to search.</param>
+        /// <returns>The number of times <paramref name="value"/> was found in the <paramref name="span"/>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Count<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
+        {
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    return SpanHelpers.CountValueType(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref value),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.CountValueType(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    return SpanHelpers.CountValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, int>(ref value),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    return SpanHelpers.CountValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, long>(ref value),
+                        span.Length);
+                }
+            }
+
+            return SpanHelpers.Count(
+                ref MemoryMarshal.GetReference(span),
+                value,
+                span.Length);
+        }
+
+        /// <summary>Counts the number of times the specified <paramref name="value"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value for which to search.</param>
+        /// <returns>The number of times <paramref name="value"/> was found in the <paramref name="span"/>.</returns>
+        public static int Count<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>? =>
+            Count((ReadOnlySpan<T>)span, value);
+
+        /// <summary>Counts the number of times the specified <paramref name="value"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value for which to search.</param>
+        /// <returns>The number of times <paramref name="value"/> was found in the <paramref name="span"/>.</returns>
+        public static int Count<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>?
+        {
+            switch (value.Length)
+            {
+                case 0:
+                    return 0;
+
+                case 1:
+                    return Count(span, value[0]);
+
+                default:
+                    int count = 0;
+
+                    int pos;
+                    while ((pos = span.IndexOf(value)) >= 0)
+                    {
+                        span = span.Slice(pos + value.Length);
+                        count++;
+                    }
+
+                    return count;
+            }
+        }
+
         /// <summary>Writes the specified interpolated string to the character span.</summary>
         /// <param name="destination">The span to which the interpolated string should be formatted.</param>
         /// <param name="handler">The interpolated string.</param>
@@ -3592,6 +3684,167 @@ namespace System
             // The provider is passed to the handler by the compiler, so the actual implementation of the method
             // is the same as the non-provider overload.
             TryWrite(destination, ref handler, out charsWritten);
+
+        /// <summary>
+        /// Writes the <see cref="CompositeFormat"/> string to the character span, substituting the format item or items
+        /// with the string representation of the corresponding arguments.
+        /// </summary>
+        /// <typeparam name="TArg0">The type of the first object to format.</typeparam>
+        /// <param name="destination">The span to which the string should be formatted.</param>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="format">A <see cref="CompositeFormat"/>.</param>
+        /// <param name="charsWritten">The number of characters written to the span.</param>
+        /// <param name="arg0">The first object to format.</param>
+        /// <returns><see langword="true"/> if the entire interpolated string could be formatted successfully; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
+        public static bool TryWrite<TArg0>(this Span<char> destination, IFormatProvider? provider, CompositeFormat format, out int charsWritten, TArg0 arg0)
+        {
+            ArgumentNullException.ThrowIfNull(format);
+            format.ValidateNumberOfArgs(1);
+            return TryWrite(destination, provider, format, out charsWritten, arg0, 0, 0, default);
+        }
+
+        /// <summary>
+        /// Writes the <see cref="CompositeFormat"/> string to the character span, substituting the format item or items
+        /// with the string representation of the corresponding arguments.
+        /// </summary>
+        /// <typeparam name="TArg0">The type of the first object to format.</typeparam>
+        /// <typeparam name="TArg1">The type of the second object to format.</typeparam>
+        /// <param name="destination">The span to which the string should be formatted.</param>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="format">A <see cref="CompositeFormat"/>.</param>
+        /// <param name="charsWritten">The number of characters written to the span.</param>
+        /// <param name="arg0">The first object to format.</param>
+        /// <param name="arg1">The second object to format.</param>
+        /// <returns><see langword="true"/> if the entire interpolated string could be formatted successfully; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
+        public static bool TryWrite<TArg0, TArg1>(this Span<char> destination, IFormatProvider? provider, CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1)
+        {
+            ArgumentNullException.ThrowIfNull(format);
+            format.ValidateNumberOfArgs(2);
+            return TryWrite(destination, provider, format, out charsWritten, arg0, arg1, 0, default);
+        }
+
+        /// <summary>
+        /// Writes the <see cref="CompositeFormat"/> string to the character span, substituting the format item or items
+        /// with the string representation of the corresponding arguments.
+        /// </summary>
+        /// <typeparam name="TArg0">The type of the first object to format.</typeparam>
+        /// <typeparam name="TArg1">The type of the second object to format.</typeparam>
+        /// <typeparam name="TArg2">The type of the third object to format.</typeparam>
+        /// <param name="destination">The span to which the string should be formatted.</param>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="format">A <see cref="CompositeFormat"/>.</param>
+        /// <param name="charsWritten">The number of characters written to the span.</param>
+        /// <param name="arg0">The first object to format.</param>
+        /// <param name="arg1">The second object to format.</param>
+        /// <param name="arg2">The third object to format.</param>
+        /// <returns><see langword="true"/> if the entire interpolated string could be formatted successfully; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
+        public static bool TryWrite<TArg0, TArg1, TArg2>(this Span<char> destination, IFormatProvider? provider, CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1, TArg2 arg2)
+        {
+            ArgumentNullException.ThrowIfNull(format);
+            format.ValidateNumberOfArgs(3);
+            return TryWrite(destination, provider, format, out charsWritten, arg0, arg1, arg2, default);
+        }
+
+        /// <summary>
+        /// Writes the <see cref="CompositeFormat"/> string to the character span, substituting the format item or items
+        /// with the string representation of the corresponding arguments.
+        /// </summary>
+        /// <param name="destination">The span to which the string should be formatted.</param>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="format">A <see cref="CompositeFormat"/>.</param>
+        /// <param name="charsWritten">The number of characters written to the span.</param>
+        /// <param name="args">An array of objects to format.</param>
+        /// <returns><see langword="true"/> if the entire interpolated string could be formatted successfully; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="args"/> is null.</exception>
+        /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
+        public static bool TryWrite(this Span<char> destination, IFormatProvider? provider, CompositeFormat format, out int charsWritten, params object?[] args)
+        {
+            ArgumentNullException.ThrowIfNull(format);
+            ArgumentNullException.ThrowIfNull(args);
+            return TryWrite(destination, provider, format, out charsWritten, (ReadOnlySpan<object?>)args);
+        }
+
+        /// <summary>
+        /// Writes the <see cref="CompositeFormat"/> string to the character span, substituting the format item or items
+        /// with the string representation of the corresponding arguments.
+        /// </summary>
+        /// <param name="destination">The span to which the string should be formatted.</param>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <param name="format">A <see cref="CompositeFormat"/>.</param>
+        /// <param name="charsWritten">The number of characters written to the span.</param>
+        /// <param name="args">A span of objects to format.</param>
+        /// <returns><see langword="true"/> if the entire interpolated string could be formatted successfully; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
+        /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
+        public static bool TryWrite(this Span<char> destination, IFormatProvider? provider, CompositeFormat format, out int charsWritten, ReadOnlySpan<object?> args)
+        {
+            ArgumentNullException.ThrowIfNull(format);
+            format.ValidateNumberOfArgs(args.Length);
+            return args.Length switch
+            {
+                0 => TryWrite(destination, provider, format, out charsWritten, 0, 0, 0, args),
+                1 => TryWrite(destination, provider, format, out charsWritten, args[0], 0, 0, args),
+                2 => TryWrite(destination, provider, format, out charsWritten, args[0], args[1], 0, args),
+                _ => TryWrite(destination, provider, format, out charsWritten, args[0], args[1], args[2], args),
+            };
+        }
+
+        private static bool TryWrite<TArg0, TArg1, TArg2>(Span<char> destination, IFormatProvider? provider, CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1, TArg2 arg2, ReadOnlySpan<object?> args)
+        {
+            // Create the interpolated string handler.
+            var handler = new TryWriteInterpolatedStringHandler(format._literalLength, format._formattedCount, destination, provider, out bool shouldAppend);
+
+            if (shouldAppend)
+            {
+                // Write each segment.
+                foreach ((string? Literal, int ArgIndex, int Alignment, string? Format) segment in format._segments)
+                {
+                    bool appended;
+                    if (segment.Literal is string literal)
+                    {
+                        appended = handler.AppendLiteral(literal);
+                    }
+                    else
+                    {
+                        int index = segment.ArgIndex;
+                        switch (index)
+                        {
+                            case 0:
+                                appended = handler.AppendFormatted(arg0, segment.Alignment, segment.Format);
+                                break;
+
+                            case 1:
+                                appended = handler.AppendFormatted(arg1, segment.Alignment, segment.Format);
+                                break;
+
+                            case 2:
+                                appended = handler.AppendFormatted(arg2, segment.Alignment, segment.Format);
+                                break;
+
+                            default:
+                                Debug.Assert(index > 2);
+                                appended = handler.AppendFormatted(args[index], segment.Alignment, segment.Format);
+                                break;
+                        }
+                    }
+
+                    if (!appended)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // Complete the operation.
+            return TryWrite(destination, provider, ref handler, out charsWritten);
+        }
 
         /// <summary>Provides a handler used by the language compiler to format interpolated strings into character spans.</summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -3658,36 +3911,55 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool AppendLiteral(string value)
             {
-                // See comment on inlining and special-casing in DefaultInterpolatedStringHandler.AppendLiteral.
-
-                if (value.Length == 1)
+                if (RuntimeHelpers.IsKnownConstant(value))
                 {
-                    Span<char> destination = _destination;
-                    int pos = _pos;
-                    if ((uint)pos < (uint)destination.Length)
+                    // See comment on inlining and special-casing in DefaultInterpolatedStringHandler.AppendLiteral.
+
+                    if (value.Length == 1)
                     {
-                        destination[pos] = value[0];
-                        _pos = pos + 1;
-                        return true;
+                        Span<char> destination = _destination;
+                        int pos = _pos;
+                        if ((uint)pos < (uint)destination.Length)
+                        {
+                            destination[pos] = value[0];
+                            _pos = pos + 1;
+                            return true;
+                        }
+
+                        return Fail();
                     }
 
-                    return Fail();
-                }
-
-                if (value.Length == 2)
-                {
-                    Span<char> destination = _destination;
-                    int pos = _pos;
-                    if ((uint)pos < destination.Length - 1)
+                    if (value.Length == 2)
                     {
-                        Unsafe.WriteUnaligned(
-                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), pos)),
-                            Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref value.GetRawStringData())));
-                        _pos = pos + 2;
-                        return true;
+                        Span<char> destination = _destination;
+                        int pos = _pos;
+                        if ((uint)pos < destination.Length - 1)
+                        {
+                            Unsafe.WriteUnaligned(
+                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), pos)),
+                                Unsafe.ReadUnaligned<int>(ref Unsafe.As<char, byte>(ref value.GetRawStringData())));
+                            _pos = pos + 2;
+                            return true;
+                        }
+
+                        return Fail();
                     }
 
-                    return Fail();
+                    if (value.Length == 4)
+                    {
+                        Span<char> destination = _destination;
+                        int pos = _pos;
+                        if ((uint)pos < destination.Length - 3)
+                        {
+                            Unsafe.WriteUnaligned(
+                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), pos)),
+                                Unsafe.ReadUnaligned<long>(ref Unsafe.As<char, byte>(ref value.GetRawStringData())));
+                            _pos = pos + 4;
+                            return true;
+                        }
+
+                        return Fail();
+                    }
                 }
 
                 return AppendStringDirect(value);

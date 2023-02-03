@@ -41125,10 +41125,14 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
             size));
     }
 
+    // Under USE_REGIONS, mark array is never partially committed. So we are only checking for this
+    // flag here.
     if ((region->flags & heap_segment_flags_ma_committed) != 0)
     {
 #ifdef MULTIPLE_HEAPS
-        gc_heap* hp = heap_segment_heap (region);
+        // In return_free_region, we set heap_segment_heap (region) to nullptr so we cannot use it here.
+        // but since all heaps share the same mark array we simply pick the 0th heap to use. 
+        gc_heap* hp = g_heaps [0];
 #else
         gc_heap* hp = pGenGCHeap;
 #endif

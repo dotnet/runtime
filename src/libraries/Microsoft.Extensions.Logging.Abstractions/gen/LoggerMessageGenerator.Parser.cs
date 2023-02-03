@@ -524,9 +524,8 @@ namespace Microsoft.Extensions.Logging.Generators
                             var methods = new Dictionary<string, int>(lc.Methods.Count);
                             foreach (LoggerMethod lm in lc.Methods)
                             {
-                                if (methods.ContainsKey(lm.Name))
+                                if (methods.TryGetValue(lm.Name, out int currentCount))
                                 {
-                                    int currentCount = methods[lm.Name];
                                     lm.UniqueName = $"{lm.Name}{currentCount}";
                                     methods[lm.Name] = currentCount + 1;
                                 }
@@ -596,7 +595,7 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Finds the template arguments contained in the message string.
             /// </summary>
-            private static void ExtractTemplates(string? message, IDictionary<string, string> templateMap, ICollection<string> templateList)
+            private static void ExtractTemplates(string? message, IDictionary<string, string> templateMap, List<string> templateList)
             {
                 if (string.IsNullOrEmpty(message))
                 {

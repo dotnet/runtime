@@ -28,7 +28,6 @@
 #include "ObjectLayout.h"
 #include "gcrhinterface.h"
 #include "shash.h"
-#include "RWLock.h"
 #include "TypeManager.h"
 #include "RuntimeInstance.h"
 #include "MethodTable.inl"

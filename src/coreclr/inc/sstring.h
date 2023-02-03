@@ -518,6 +518,9 @@ private:
     //Returns the unicode string, the caller is responsible for lifetime of the string
     WCHAR *GetCopyOfUnicodeString();
 
+    //Returns the UTF8 string, the caller is responsible for the lifetime of the string
+    UTF8 *GetCopyOfUTF8String();
+
     // Get the max size that can be passed to OpenUnicodeBuffer without causing allocations.
     COUNT_T GetUnicodeAllocation();
 
@@ -562,9 +565,6 @@ private:
     // Utilities
     //---------------------------------------------------------------------
 
-    // WARNING: The MBCS version of printf function are factory for globalization
-    // issues when used to format Unicode strings (%S). The Unicode versions are
-    // preferred in this case.
     void Printf(const CHAR *format, ...);
     void VPrintf(const CHAR *format, va_list args);
     void AppendPrintf(const CHAR *format, ...);

@@ -255,6 +255,13 @@ namespace ILCompiler.DependencyAnalysis
 
             _methodEntrypoints = new MethodEntrypointHashtable(this);
 
+            _tentativeMethodEntrypoints = new NodeCache<MethodDesc, IMethodNode>((MethodDesc method) =>
+            {
+                IMethodNode entrypoint = MethodEntrypoint(method, unboxingStub: false);
+                return new TentativeMethodNode(entrypoint is TentativeMethodNode tentative ?
+                    tentative.RealBody : (IMethodBodyNode)entrypoint);
+            });
+
             _tentativeMethods = new NodeCache<MethodDesc, TentativeInstanceMethodNode>(method =>
             {
                 return new TentativeInstanceMethodNode((IMethodBodyNode)MethodEntrypoint(method));
@@ -371,6 +378,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
             });
 
+            _dynamicDependencyAttributesOnEntities = new NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode>((TypeSystemEntity entity) =>
+            {
+                return new DynamicDependencyAttributesOnEntityNode(entity);
+            });
+
             _embeddedTrimmingDescriptors = new NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode>((module) =>
             {
                 return new EmbeddedTrimmingDescriptorNode(module);
@@ -448,6 +460,11 @@ namespace ILCompiler.DependencyAnalysis
             _modulesWithMetadata = new NodeCache<ModuleDesc, ModuleMetadataNode>(module =>
             {
                 return new ModuleMetadataNode(module);
+            });
+
+            _inlineableStringResources = new NodeCache<EcmaModule, InlineableStringsResourceNode>(module =>
+            {
+                return new InlineableStringsResourceNode(module);
             });
 
             _customAttributesWithMetadata = new NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode>(ca =>
@@ -692,6 +709,13 @@ namespace ILCompiler.DependencyAnalysis
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
         }
 
+        private NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode> _dynamicDependencyAttributesOnEntities;
+
+        public DynamicDependencyAttributesOnEntityNode DynamicDependencyAttributesOnEntity(TypeSystemEntity entity)
+        {
+            return _dynamicDependencyAttributesOnEntities.GetOrAdd(entity);
+        }
+
         private NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode> _embeddedTrimmingDescriptors;
 
         public EmbeddedTrimmingDescriptorNode EmbeddedTrimmingDescriptor(EcmaModule module)
@@ -847,6 +871,15 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return _methodEntrypoints.GetOrCreateValue(method);
+        }
+
+        protected NodeCache<MethodDesc, IMethodNode> _tentativeMethodEntrypoints;
+
+        public IMethodNode TentativeMethodEntrypoint(MethodDesc method, bool unboxingStub = false)
+        {
+            // Didn't implement unboxing stubs for now. Would need to pass down the flag.
+            Debug.Assert(!unboxingStub);
+            return _tentativeMethodEntrypoints.GetOrAdd(method);
         }
 
         private NodeCache<MethodDesc, TentativeInstanceMethodNode> _tentativeMethods;
@@ -1109,6 +1142,12 @@ namespace ILCompiler.DependencyAnalysis
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _modulesWithMetadata.GetOrAdd(module);
+        }
+
+        private NodeCache<EcmaModule, InlineableStringsResourceNode> _inlineableStringResources;
+        internal InlineableStringsResourceNode InlineableStringResource(EcmaModule module)
+        {
+            return _inlineableStringResources.GetOrAdd(module);
         }
 
         private NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode> _customAttributesWithMetadata;

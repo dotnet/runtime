@@ -163,6 +163,7 @@ namespace System
         /// </summary>
         public int Length
         {
+            [Intrinsic]
             [NonVersionable]
             get => _length;
         }

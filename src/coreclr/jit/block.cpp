@@ -554,35 +554,6 @@ unsigned BasicBlock::dspPreds()
     return count;
 }
 
-/*****************************************************************************
- *
- *  Display the bbCheapPreds basic block list (the block predecessors).
- *  Returns the number of characters printed.
- */
-
-unsigned BasicBlock::dspCheapPreds()
-{
-    unsigned count = 0;
-    for (BasicBlockList* pred = bbCheapPreds; pred != nullptr; pred = pred->next)
-    {
-        if (count != 0)
-        {
-            printf(",");
-            count += 1;
-        }
-        printf(FMT_BB, pred->block->bbNum);
-        count += 4;
-
-        // Account for %02u only handling 2 digits, but we can display more than that.
-        unsigned digits = CountDigits(pred->block->bbNum);
-        if (digits > 2)
-        {
-            count += digits - 2;
-        }
-    }
-    return count;
-}
-
 //------------------------------------------------------------------------
 // dspSuccs: Display the basic block successors.
 //
@@ -731,14 +702,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
     if (showPreds)
     {
         printf(", preds={");
-        if (compiler->fgCheapPredsValid)
-        {
-            dspCheapPreds();
-        }
-        else
-        {
-            dspPreds();
-        }
+        dspPreds();
         printf("} succs={");
         dspSuccs(compiler);
         printf("}");
@@ -788,18 +752,19 @@ void* BasicBlock::MemoryPhiArg::operator new(size_t sz, Compiler* comp)
 //    IR nodes.  If cloning of any statement fails, `false` will be returned and block `to` may be
 //    partially populated.  If cloning of all statements succeeds, `true` will be returned and
 //    block `to` will be fully populated.
-
+//
+// Note:
+//    Leaves block ref count at zero, and pred edge list empty.
+//
 bool BasicBlock::CloneBlockState(
     Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum, int varVal)
 {
     assert(to->bbStmtList == nullptr);
-
     to->bbFlags  = from->bbFlags;
     to->bbWeight = from->bbWeight;
     BlockSetOps::AssignAllowUninitRhs(compiler, to->bbReach, from->bbReach);
     to->copyEHRegion(from);
     to->bbCatchTyp    = from->bbCatchTyp;
-    to->bbRefs        = from->bbRefs;
     to->bbStkTempsIn  = from->bbStkTempsIn;
     to->bbStkTempsOut = from->bbStkTempsOut;
     to->bbStkDepth    = from->bbStkDepth;

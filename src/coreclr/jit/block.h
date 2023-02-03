@@ -665,7 +665,6 @@ struct BasicBlock : private LIR::Range
 
 #ifdef DEBUG
     void     dspFlags();               // Print the flags
-    unsigned dspCheapPreds();          // Print the predecessors (bbCheapPreds)
     unsigned dspPreds();               // Print the predecessors (bbPreds)
     void dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
                                        // regions are printed: see NumSucc() for details.
@@ -902,10 +901,7 @@ struct BasicBlock : private LIR::Range
         m_firstNode = tree;
     }
 
-    union {
-        EntryState* bbEntryState; // verifier tracked state of all entries in stack.
-        flowList*   bbLastPred;   // last pred list entry
-    };
+    EntryState* bbEntryState; // verifier tracked state of all entries in stack.
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
 
@@ -1055,16 +1051,11 @@ struct BasicBlock : private LIR::Range
         unsigned short bbFPinVars; // number of inner enregistered FP vars
     };
 
-    // Basic block predecessor lists. Early in compilation, some phases might need to compute "cheap" predecessor
-    // lists. These are stored in bbCheapPreds, computed by fgComputeCheapPreds(). If bbCheapPreds is valid,
-    // 'fgCheapPredsValid' will be 'true'. Later, the "full" predecessor lists are created by fgComputePreds(), stored
+    // Basic block predecessor lists. Predecessor lists are created by fgLinkBasicBlocks(), stored
     // in 'bbPreds', and then maintained throughout compilation. 'fgComputePredsDone' will be 'true' after the
-    // full predecessor lists are created. See the comment at fgComputeCheapPreds() to see how those differ from
-    // the "full" variant.
-    union {
-        BasicBlockList* bbCheapPreds; // ptr to list of cheap predecessors (used before normal preds are computed)
-        flowList*       bbPreds;      // ptr to list of predecessors
-    };
+    // predecessor lists are created.
+    //
+    flowList* bbPreds; // ptr to list of predecessors
 
     // PredEdges: convenience method for enabling range-based `for` iteration over predecessor edges, e.g.:
     //    for (flowList* const edge : block->PredEdges()) ...
@@ -1091,10 +1082,14 @@ struct BasicBlock : private LIR::Range
     BlockSet bbReach; // Set of all blocks that can reach this one
 
     union {
-        BasicBlock* bbIDom;      // Represent the closest dominator to this block (called the Immediate
-                                 // Dominator) used to compute the dominance tree.
-        void* bbSparseProbeList; // Used early on by fgInstrument
+        BasicBlock* bbIDom;   // Represent the closest dominator to this block (called the Immediate
+                              // Dominator) used to compute the dominance tree.
+        flowList* bbLastPred; // Used early on by fgComputePreds
+    };
+
+    union {
         void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
+        void* bbSparseProbeList; // Used early on by fgInstrument
     };
 
     unsigned bbPostOrderNum; // the block's post order number in the graph.
@@ -1773,9 +1768,7 @@ inline BBArrayIterator BasicBlock::BBSuccList::end() const
 // by Compiler::fgReorderBlocks()
 //
 // We have a simpler struct, BasicBlockList, which is simply a singly-linked
-// list of blocks. This is used for various purposes, but one is as a "cheap"
-// predecessor list, computed by fgComputeCheapPreds(), and stored as a list
-// on BasicBlock pointed to by bbCheapPreds.
+// list of blocks.
 
 struct BasicBlockList
 {

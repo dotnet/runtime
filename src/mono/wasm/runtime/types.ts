@@ -259,7 +259,7 @@ export type DotnetModuleConfig = {
 
 export type DotnetModuleConfigImports = {
     require?: (name: string) => any;
-    fetch?: (url: string) => Promise<Response>;
+    fetch?: (url: string, options: any | undefined) => Promise<Response>;
     fs?: {
         promises?: {
             readFile?: (path: string) => Promise<string | Buffer>,

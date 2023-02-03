@@ -38,6 +38,7 @@ extends:
       #
       # Localization build
       #
+
       - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
         - template: /eng/common/templates/job/onelocbuild.yml
           parameters:

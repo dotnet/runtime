@@ -2131,18 +2131,10 @@ void Compiler::fgNormalizeEH()
 
     if (modified)
     {
-        // If we computed the cheap preds, don't let them leak out, in case other code doesn't maintain them properly.
-        if (fgCheapPredsValid)
-        {
-            fgRemovePreds();
-        }
-
         JITDUMP("Added at least one basic block in fgNormalizeEH.\n");
         fgRenumberBlocks();
-#ifdef DEBUG
         // fgRenumberBlocks() will dump all the blocks and the handler table, so we don't need to do it here.
-        fgVerifyHandlerTab();
-#endif
+        INDEBUG(fgVerifyHandlerTab());
     }
     else
     {
@@ -2182,7 +2174,16 @@ bool Compiler::fgNormalizeEHCase1()
             // ...then we want to insert an empty, non-removable block outside the try to be the new first block of the
             // handler.
             BasicBlock* newHndStart = bbNewBasicBlock(BBJ_NONE);
-            fgInsertBBbefore(eh->ebdHndBeg, newHndStart);
+            fgInsertBBbefore(handlerStart, newHndStart);
+            fgAddRefPred(handlerStart, newHndStart);
+
+            // Handler begins have an extra implicit ref count.
+            // bbNewBasicBlock has already handled this for newHndStart.
+            // Remove handlerStart's implicit ref count.
+            //
+            assert(newHndStart->bbRefs == 1);
+            assert(handlerStart->bbRefs >= 2);
+            handlerStart->bbRefs--;
 
 #ifdef DEBUG
             if (verbose)
@@ -2238,6 +2239,7 @@ bool Compiler::fgNormalizeEHCase2()
     // Note that this can only happen for nested 'try' regions, so we only need to look through the
     // 'try' nesting hierarchy.
     //
+    ArrayStack<BasicBlock*> interestingPreds(getAllocator(CMK_BasicBlock));
 
     for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
     {
@@ -2337,30 +2339,28 @@ bool Compiler::fgNormalizeEHCase2()
                         mutualTryLast      = ehOuter->ebdTryLast;
                         mutualProtectIndex = ehOuterTryIndex;
 
-                        // We're going to need the preds. We compute them here, before inserting the new block,
-                        // so our logic to add/remove preds below is the same for both the first time preds are
-                        // created and subsequent times.
-                        if (!fgCheapPredsValid)
-                        {
-                            fgComputeCheapPreds();
-                        }
-
                         // We've got multiple 'try' blocks starting at the same place!
                         // Add a new first 'try' block for 'ehOuter' that will be outside 'eh'.
 
                         BasicBlock* newTryStart = bbNewBasicBlock(BBJ_NONE);
+                        newTryStart->bbRefs     = 0;
                         fgInsertBBbefore(insertBeforeBlk, newTryStart);
-                        insertBeforeBlk->bbRefs++;
+                        fgAddRefPred(insertBeforeBlk, newTryStart);
 
-#ifdef DEBUG
-                        if (verbose)
+                        // It's possible for a try to start at the beginning of a method. If so, we need
+                        // to adjust the implicit ref counts as we've just created a new first bb
+                        //
+                        if (newTryStart == fgFirstBB)
                         {
-                            printf("'try' begin for EH#%u and EH#%u are same block; inserted new " FMT_BB
-                                   " before " FMT_BB " "
-                                   "as new 'try' begin for EH#%u.\n",
-                                   ehOuterTryIndex, XTnum, newTryStart->bbNum, insertBeforeBlk->bbNum, ehOuterTryIndex);
+                            assert(insertBeforeBlk->bbRefs >= 2);
+                            insertBeforeBlk->bbRefs--;
+                            newTryStart->bbRefs++;
                         }
-#endif // DEBUG
+
+                        JITDUMP("'try' begin for EH#%u and EH#%u are same block; inserted new " FMT_BB " before " FMT_BB
+                                " "
+                                "as new 'try' begin for EH#%u.\n",
+                                ehOuterTryIndex, XTnum, newTryStart->bbNum, insertBeforeBlk->bbNum, ehOuterTryIndex);
 
                         // The new block is the new 'try' begin.
                         ehOuter->ebdTryBeg = newTryStart;
@@ -2420,43 +2420,37 @@ bool Compiler::fgNormalizeEHCase2()
                         //               |      |-----------  BB04
                         //               |------------------  BB05
 
-                        BasicBlockList* nextPred; // we're going to update the pred list as we go, so we need to keep
-                                                  // track of the next pred in case it gets deleted.
-                        for (BasicBlockList* pred = insertBeforeBlk->bbCheapPreds; pred != nullptr; pred = nextPred)
+                        interestingPreds.Reset();
+                        for (BasicBlock* predBlock : insertBeforeBlk->PredBlocks())
                         {
-                            nextPred = pred->next;
-
-                            // Who gets this predecessor?
-                            BasicBlock* predBlock = pred->block;
-
-                            if (!BasicBlock::sameTryRegion(insertBeforeBlk, predBlock))
+                            if ((predBlock == newTryStart) || BasicBlock::sameTryRegion(insertBeforeBlk, predBlock))
                             {
-                                // Move the edge to target newTryStart instead of insertBeforeBlk.
-                                fgAddCheapPred(newTryStart, predBlock);
-                                fgRemoveCheapPred(insertBeforeBlk, predBlock);
-
-                                // Now change the branch. If it was a BBJ_NONE fall-through to the top block, this will
-                                // do nothing. Since cheap preds contains dups (for switch duplicates), we will call
-                                // this once per dup.
-                                fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
-
-                                // Need to adjust ref counts here since we're retargeting edges.
-                                newTryStart->bbRefs++;
-                                assert(insertBeforeBlk->countOfInEdges() > 0);
-                                insertBeforeBlk->bbRefs--;
-
-#ifdef DEBUG
-                                if (verbose)
-                                {
-                                    printf("Redirect " FMT_BB " target from " FMT_BB " to " FMT_BB ".\n",
-                                           predBlock->bbNum, insertBeforeBlk->bbNum, newTryStart->bbNum);
-                                }
-#endif // DEBUG
+                                continue;
                             }
+
+                            interestingPreds.Push(predBlock);
                         }
 
-                        // The new block (a fall-through block) is a new predecessor.
-                        fgAddCheapPred(insertBeforeBlk, newTryStart);
+                        while (interestingPreds.Height() > 0)
+                        {
+                            BasicBlock* const predBlock = interestingPreds.Pop();
+
+                            // Change pred branches.
+                            //
+                            if (predBlock->bbJumpKind != BBJ_NONE)
+                            {
+                                fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
+                            }
+
+                            if ((predBlock->bbNext == newTryStart) && predBlock->bbFallsThrough())
+                            {
+                                fgRemoveRefPred(insertBeforeBlk, predBlock);
+                                fgAddRefPred(newTryStart, predBlock);
+                            }
+
+                            JITDUMP("Redirect " FMT_BB " target from " FMT_BB " to " FMT_BB ".\n", predBlock->bbNum,
+                                    insertBeforeBlk->bbNum, newTryStart->bbNum);
+                        }
 
                         // We don't need to update the tryBeg block of other EH regions here because we are looping
                         // outwards in enclosing try index order, and we'll get to them later.
@@ -2829,6 +2823,7 @@ bool Compiler::fgNormalizeEHCase3()
                     // shares a 'last' pointer
 
                     BasicBlock* newLast = bbNewBasicBlock(BBJ_NONE);
+                    newLast->bbRefs     = 0;
                     assert(insertAfterBlk != nullptr);
                     fgInsertBBafter(insertAfterBlk, newLast);
 
@@ -2876,12 +2871,7 @@ bool Compiler::fgNormalizeEHCase3()
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
                     newLast->bbFlags |= BBF_INTERNAL;
-
-                    // The new block (a fall-through block) is a new predecessor.
-                    if (fgCheapPredsValid)
-                    {
-                        fgAddCheapPred(newLast, insertAfterBlk);
-                    }
+                    fgAddRefPred(newLast, insertAfterBlk);
 
                     // Move the insert pointer. More enclosing equivalent 'last' blocks will be inserted after this.
                     insertAfterBlk = newLast;
@@ -4551,7 +4541,9 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 }
 #endif // DEBUG
                 // Change the bbJumpDest for bFilterLast from the old first 'block' to the new first 'bPrev'
+                fgRemoveRefPred(bFilterLast->bbJumpDest, bFilterLast);
                 bFilterLast->bbJumpDest = bPrev;
+                fgAddRefPred(bPrev, bFilterLast);
             }
         }
 

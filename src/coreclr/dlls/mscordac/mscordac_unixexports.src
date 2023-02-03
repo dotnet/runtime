@@ -51,7 +51,6 @@ nativeStringResourceTable_mscorrc
 #PAL_Random
 #PAL_malloc
 #PAL_realloc
-#PAL_printf
 #PAL_qsort
 #PAL_fprintf
 #PAL__wcstoui64
