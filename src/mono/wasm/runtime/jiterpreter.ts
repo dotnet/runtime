@@ -57,12 +57,12 @@ const callTargetCounts : { [method: number] : number } = {};
 const disabledOpcodes : Array<MintOpcode> = [
     MintOpcode.MINT_LDSFLD_O,
     // MintOpcode.MINT_LDFLD_O,
-    MintOpcode.MINT_LDLEN,
-    MintOpcode.MINT_LDSFLDA,
-    MintOpcode.MINT_LDFLDA,
-    MintOpcode.MINT_LDELEMA1,
-    MintOpcode.MINT_BNE_UN_I4_IMM_SP,
-    MintOpcode.MINT_REM_UN_I4,
+    // MintOpcode.MINT_LDLEN,
+    // MintOpcode.MINT_LDSFLDA,
+    // MintOpcode.MINT_LDFLDA,
+    // MintOpcode.MINT_LDELEMA1,
+    // MintOpcode.MINT_BNE_UN_I4_IMM_SP,
+    // MintOpcode.MINT_REM_UN_I4,
 ];
 
 const instrumentedMethodNames : Array<string> = [
@@ -1713,9 +1713,11 @@ function append_vtable_initialize (builder: WasmBuilder, pVtable: NativePointer,
     // TODO: Actually initialize the vtable instead of just checking and bailing out?
     builder.block();
     // FIXME: This will prevent us from reusing traces between runs since the vtables can move
-    builder.ptr_const(<any>pVtable + get_offset_of_vtable_initialized_flag());
+    // We could bake the offset of the flag into this but it's nice to have the vtable ptr
+    //  in the trace as a constant visible in the wasm
+    builder.ptr_const(<any>pVtable);
     builder.appendU8(WasmOpcode.i32_load8_u);
-    builder.appendMemarg(0, 0);
+    builder.appendMemarg(get_offset_of_vtable_initialized_flag(), 0);
     builder.appendU8(WasmOpcode.br_if);
     builder.appendULeb(0);
     append_bailout(builder, ip, BailoutReason.VtableNotInitialized);
@@ -1879,7 +1881,6 @@ function emit_fieldop (
         case MintOpcode.MINT_LDFLDA_UNSAFE:
         case MintOpcode.MINT_LDFLDA:
         case MintOpcode.MINT_LDSFLDA:
-            append_bailout(builder, ip, BailoutReason.Debugging);
             builder.local("pLocals");
             if (isStatic) {
                 builder.ptr_const(pStaticData);

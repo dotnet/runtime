@@ -100,7 +100,7 @@ DEFINE_BOOL(jiterpreter_stats_enabled, "jiterpreter-stats-enabled", TRUE, "Autom
 //  the relative importance of the opcode that caused them to abort
 DEFINE_BOOL(jiterpreter_estimate_heat, "jiterpreter-estimate-heat", FALSE, "Maintain accurate hit count for all trace entry points")
 // Count the number of times a trace bails out (branch taken, etc) and for what reason
-DEFINE_BOOL(jiterpreter_count_bailouts, "jiterpreter-count-bailouts", FALSE, "Maintain accurate count of all trace bailouts based on cause")
+DEFINE_BOOL(jiterpreter_count_bailouts, "jiterpreter-count-bailouts", TRUE, "Maintain accurate count of all trace bailouts based on cause")
 // Dump the wasm blob for all compiled traces
 DEFINE_BOOL(jiterpreter_dump_traces, "jiterpreter-dump-traces", FALSE, "Dump the wasm blob for all compiled traces to the console")
 // Use runtime imports for pointer constants
