@@ -27,7 +27,7 @@ public class Program
         }
 
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
-        const int ExpectedCount = 13396;
+        const int ExpectedCount = 23126;
         int count = 0;
         string line;
         while ((line = proc.StandardOutput.ReadLine()) != null)

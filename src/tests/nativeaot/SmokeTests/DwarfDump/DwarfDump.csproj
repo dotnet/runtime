@@ -4,6 +4,8 @@
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
+    <!-- Test checks symbols, so don't run in non-debug builds. -->
+    <CLRTestTargetUnsupported Condition="'$(Configuration)' != 'Debug' or '$(TestBuildMode)' != 'nativeaot'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>
