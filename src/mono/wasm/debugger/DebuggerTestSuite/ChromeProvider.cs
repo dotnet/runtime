@@ -53,6 +53,9 @@ internal class ChromeProvider : WasmHostProvider
         string? line;
         try
         {
+            // for WIndows setting --lang arg is enough
+            if (!OperatingSystem.IsWindows())
+                Environment.SetEnvironmentVariable("LANGUAGE", locale);
             ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort, locale), targetUrl);
             line = await LaunchHostAsync(
                                     psi,

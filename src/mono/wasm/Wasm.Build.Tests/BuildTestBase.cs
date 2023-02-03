@@ -166,11 +166,10 @@ namespace Wasm.Build.Tests
             {
                 RunHost.V8     => ("wasm test", $"--js-file={jsRelativePath} --engine=V8 -v trace", true),
                 RunHost.NodeJS => ("wasm test", $"--js-file={jsRelativePath} --engine=NodeJS -v trace", true),
-                _              => ("wasm test-browser", $"-v trace -b {host} --web-server-use-cop", false)
+                _              => ("wasm test-browser", $"-v trace -b {host} --browser-arg=--lang={environmentLocale} --web-server-use-cop", false)
             };
 
             extraXHarnessArgs += " " + xharnessArgs;
-            args = $"{args} --lang={environmentLocale}";
 
             string testLogPath = Path.Combine(_logPath, host.ToString());
             string output = RunWithXHarness(

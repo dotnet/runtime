@@ -59,15 +59,15 @@ export function get_preferred_icu_asset(): string | null {
     if (icuAssets.length === 1)
         return icuAssets[0].name;
 
+    // reads the browsers locale / the OS's locale
     const preferredCulture = ENVIRONMENT_IS_WEB ? navigator.language : Intl.DateTimeFormat().resolvedOptions().locale;
     const prefix = preferredCulture.split("-")[0];
     const CJK = "icudt_CJK.dat";
     const EFIGS = "icudt_EFIGS.dat";
     const OTHERS = "icudt_no_CJK.dat";
 
-
-    // not all "fr", "it", "de", "es" are in EFIGS, only the one that is mostly used
-    if (prefix == "en" || ["fr-FR", "it-IT", "de-DE", "es-ES"].includes(preferredCulture))
+    // not all "fr-*", "it-*", "de-*", "es-*" are in EFIGS, only the one that is mostly used
+    if (prefix == "en" || ["fr", "fr-FR", "it", "it-IT", "de", "de-DE", "es", "es-ES"].includes(preferredCulture))
         return EFIGS;
     if (["zh", "ko", "ja"].includes(prefix))
         return CJK;

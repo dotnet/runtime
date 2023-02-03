@@ -26,7 +26,7 @@ public class IcuShardingTests : BuildTestBase
             .Multiply(
                 new object[] { "fr-FR", new string[] { "en-US", "fr-FR", "es-ES" }, new string[] { "pl-PL", "ko-KR", "cs-CZ" } },   // "icudt_EFIGS.dat"
                 new object[] { "ja-JP", new string[] { "en-GB", "zh-CN", "ja-JP" }, new string[] { "fr-FR", "hr-HR", "it-IT" } },   // icudt_CJK.dat
-                new object[] { "fr-CA", new string[] { "en-AU", "fr-FR", "sk-SK" }, new string[] { "ja-JP", "ko-KR", "zh-CN" } })   // "icudt_no_CJK.dat"
+                new object[] { "cz-CS", new string[] { "en-AU", "fr-FR", "sk-SK" }, new string[] { "ja-JP", "ko-KR", "zh-CN" } })   // "icudt_no_CJK.dat"
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
@@ -106,20 +106,26 @@ public class IcuShardingTests : BuildTestBase
     }
 
     [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { false, RunHost.All })]
-    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { true, RunHost.All })]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { false, RunHost.NodeJS })]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { false, RunHost.Chrome })]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { true, RunHost.NodeJS })]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { true, RunHost.Chrome })]
     public void DefaultAvailableIcuShardsFromRuntimePack(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id) =>
         TestIcuShards(buildArgs, shardName, expectedLocales, missingLocales, host, id);
 
     [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { false, RunHost.All })]
-    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { true, RunHost.All })]
+    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { false, RunHost.NodeJS })]
+    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { false, RunHost.Chrome })]
+    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { true, RunHost.NodeJS })]
+    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { true, RunHost.Chrome })]
     public void CustomIcuShard(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id) =>
         TestIcuShards(buildArgs, shardName, expectedLocales, missingLocales, host, id);
 
     [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { false, RunHost.All })]
-    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { true, RunHost.All })]
+    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { false, RunHost.NodeJS })]
+    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { false, RunHost.Chrome })]
+    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { true, RunHost.NodeJS })]
+    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { true, RunHost.Chrome })]
     public void AutomaticShardSelectionDependingOnEnvLocale(BuildArgs buildArgs, string environmentLocale, string[] expectedLocales, string[] missingLocales, RunHost host, string id)
     {
         string projectName = $"automatic_shard_{environmentLocale}_{buildArgs.Config}_{buildArgs.AOT}";
@@ -167,8 +173,10 @@ public class IcuShardingTests : BuildTestBase
     }
 
     [Theory]
-    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { false, RunHost.All })]
-    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { true, RunHost.All })]
+    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { false, RunHost.NodeJS })]
+    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { false, RunHost.Chrome })]
+    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { true, RunHost.NodeJS })]
+    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { true, RunHost.Chrome })]
     public void FullIcuFromRuntimePackWithInvariant(BuildArgs buildArgs, bool invariant, bool fullIcu, string[] testedLocales, RunHost host, string id)
     {
         string projectName = $"fullIcuInvariant_{fullIcu}_{invariant}_{buildArgs.Config}_{buildArgs.AOT}";
@@ -195,8 +203,10 @@ public class IcuShardingTests : BuildTestBase
     }
 
     [Theory]
-    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, RunHost.All })]
-    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { true, RunHost.All })]
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, RunHost.NodeJS })]
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, RunHost.Chrome })]
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { true, RunHost.NodeJS })]
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { true, RunHost.Chrome })]
     public void FullIcuFromRuntimePackWithCustomIcu(BuildArgs buildArgs, bool hasCustomIcu, RunHost host, string id)
     {
         string projectName = $"fullIcuCustom_{hasCustomIcu}_{buildArgs.Config}_{buildArgs.AOT}";
