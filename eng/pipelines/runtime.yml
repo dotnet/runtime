@@ -260,7 +260,7 @@ extends:
                 eq(variables['isFullMatrix'], true))
 
       #
-      # CoreCLR NativeAOT release build and pri0 tests
+      # CoreCLR NativeAOT release build and smoke tests
       # Only when CoreCLR is changed
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -282,14 +282,14 @@ extends:
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
-            nameSuffix: NativeAOT
+            nameSuffix: NativeAOT_Helix
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
-              testBuildArgs: nativeaot
+              testBuildArgs: nativeaot tree nativeaot
               nativeAotTest: true
-            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            testRunNamePrefixSuffix: NativeAOT_Release
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
