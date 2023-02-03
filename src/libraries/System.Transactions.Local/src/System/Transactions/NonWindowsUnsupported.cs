@@ -117,7 +117,7 @@ namespace System.Transactions.Oletx
         internal static IDtcTransaction GetDtcTransaction()
             => throw NotSupported();
 
-        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext context)
+        public void GetObjectData(SerializationInfo serializationInfo, StreamingContext context)
         {
             //if (serializationInfo == null)
             //{

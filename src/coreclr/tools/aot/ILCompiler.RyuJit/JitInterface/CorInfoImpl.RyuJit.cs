@@ -45,7 +45,7 @@ namespace Internal.JitInterface
             _compilation = compilation;
         }
 
-        private MethodDesc getUnboxingThunk(MethodDesc method)
+        private UnboxingMethodDesc getUnboxingThunk(MethodDesc method)
         {
             return _unboxingThunkFactory.GetUnboxingMethod(method);
         }
@@ -2141,12 +2141,21 @@ namespace Internal.JitInterface
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
-                    else if (!_compilation.HasLazyStaticConstructor(field.OwningType) && !field.HasGCStaticBase)
+                    else if (!_compilation.HasLazyStaticConstructor(field.OwningType))
                     {
                         fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RELOCATABLE;
-                        ISymbolNode baseAddress = _compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType);
-                        pResult->fieldLookup.accessType = InfoAccessType.IAT_VALUE;
-                        pResult->fieldLookup.addr = (void*)ObjectToHandle(baseAddress);
+                        ISymbolNode baseAddr;
+                        if (field.HasGCStaticBase)
+                        {
+                            pResult->fieldLookup.accessType = InfoAccessType.IAT_PVALUE;
+                            baseAddr = _compilation.NodeFactory.TypeGCStaticsSymbol((MetadataType)field.OwningType);
+                        }
+                        else
+                        {
+                            pResult->fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                            baseAddr = _compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType);
+                        }
+                        pResult->fieldLookup.addr = (void*)ObjectToHandle(baseAddr);
                     }
                     else
                     {

@@ -7304,6 +7304,59 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 	return mono_cpu_limit ();
 }
 
+void
+ves_icall_System_Diagnostics_StackTrace_GetTrace (MonoObjectHandleOnStack ex_handle, MonoObjectHandleOnStack res, int skip_frames, MonoBoolean need_file_info)
+{
+	MonoArray *trace = mono_get_runtime_callbacks ()->get_trace ((MonoException*)*ex_handle, skip_frames, need_file_info);
+	HANDLE_ON_STACK_SET (res, trace);
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_StackFrame_GetFrameInfo (gint32 skip, MonoBoolean need_file_info,
+													  MonoObjectHandleOnStack out_method, MonoObjectHandleOnStack out_file,
+													  gint32 *iloffset, gint32 *native_offset,
+													  gint32 *line, gint32 *column)
+{
+	MonoMethod *method = NULL;
+	MonoDebugSourceLocation *location;
+	ERROR_DECL (error);
+
+	gboolean res = mono_get_runtime_callbacks ()->get_frame_info (skip, &method, &location, iloffset, native_offset);
+	if (!res)
+		return FALSE;
+
+	if (location)
+		*iloffset = location->il_offset;
+	else
+		*iloffset = 0;
+
+	if (need_file_info) {
+		if (location) {
+			MonoString *filename = mono_string_new_checked (location->source_file, error);
+			if (!is_ok (error)) {
+				mono_error_set_pending_exception (error);
+				return FALSE;
+			}
+			HANDLE_ON_STACK_SET (out_file, filename);
+			*line = location->row;
+			*column = location->column;
+		} else {
+			*line = *column = 0;
+		}
+	}
+
+	mono_debug_free_source_location (location);
+
+	MonoReflectionMethod *rm = mono_method_get_object_checked (method, NULL, error);
+	if (!is_ok (error)) {
+		mono_error_set_pending_exception (error);
+		return FALSE;
+	}
+	HANDLE_ON_STACK_SET (out_method, rm);
+
+	return TRUE;
+}
+
 // Generate wrappers.
 
 #define ICALL_TYPE(id,name,first) /* nothing */

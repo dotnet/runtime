@@ -7,6 +7,10 @@
     <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
 
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- This doesn't run on V8 shell because https://bugs.chromium.org/p/v8/issues/detail?id=12541 -->
     <Scenario>WasmTestOnBrowser</Scenario>

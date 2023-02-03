@@ -79,6 +79,12 @@ function set_env_vars()
         export SDK_HAS_WORKLOAD_INSTALLED=false
     fi
 
+    if [ "x$TEST_USING_WEBCIL" = "xtrue" ]; then
+        export USE_WEBCIL_FOR_TESTS=true
+    else
+        export USE_WEBCIL_FOR_TESTS=false
+    fi
+
     local _SDK_DIR=
     if [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
         cp -r $BASE_DIR/$_DIR_NAME $EXECUTION_DIR

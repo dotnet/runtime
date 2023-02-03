@@ -10,15 +10,17 @@ using System.Text.RegularExpressions;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class ApkBuilder
+public partial class ApkBuilder
 {
     private const string DefaultMinApiLevel = "21";
+    private const string DefaultTargetApiLevel = "31";
 
     public string? ProjectName { get; set; }
     public string? AppDir { get; set; }
     public string? AndroidNdk { get; set; }
     public string? AndroidSdk { get; set; }
     public string? MinApiLevel { get; set; }
+    public string? TargetApiLevel { get; set; }
     public string? BuildApiLevel { get; set; }
     public string? BuildToolsVersion { get; set; }
     public string OutputDir { get; set; } = ""!;
@@ -118,14 +120,24 @@ public class ApkBuilder
         if (string.IsNullOrEmpty(MinApiLevel))
             MinApiLevel = DefaultMinApiLevel;
 
-        // make sure BuildApiLevel >= MinApiLevel
+        if (string.IsNullOrEmpty(TargetApiLevel))
+            TargetApiLevel = DefaultTargetApiLevel;
+
+        // make sure BuildApiLevel >= MinApiLevel and BuildApiLevel >= TargetApiLevel
         // only if these api levels are not "preview" (not integers)
-        if (int.TryParse(BuildApiLevel, out int intApi) &&
-            int.TryParse(MinApiLevel, out int intMinApi) &&
-            intApi < intMinApi)
+        if (int.TryParse(BuildApiLevel, out int intApi))
         {
-            throw new ArgumentException($"BuildApiLevel={BuildApiLevel} <= MinApiLevel={MinApiLevel}. " +
-                "Make sure you've downloaded some recent build-tools in Android SDK");
+            if (int.TryParse(MinApiLevel, out int intMinApi) && intApi < intMinApi)
+            {
+                throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < MinApiLevel={MinApiLevel}. " +
+                    "Make sure you've downloaded some recent build-tools in Android SDK");
+            }
+
+            if (int.TryParse(TargetApiLevel, out int intTargetApi) && intApi < intTargetApi)
+            {
+                throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < TargetApiLevel={TargetApiLevel}. " +
+                    "Make sure you've downloaded some recent build-tools in Android SDK");
+            }
         }
 
         string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
@@ -368,7 +380,7 @@ public class ApkBuilder
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
 
-        Regex checkNumerics = new Regex(@"\.(\d)");
+        Regex checkNumerics = DotNumberRegex();
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
             ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
 
@@ -397,7 +409,8 @@ public class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
                 .Replace("%PackageName%", packageId)
-                .Replace("%MinSdkLevel%", MinApiLevel));
+                .Replace("%MinSdkLevel%", MinApiLevel)
+                .Replace("%TargetSdkVersion%", TargetApiLevel));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
@@ -620,4 +633,7 @@ public class ApkBuilder
             .FirstOrDefault()
             .ToString();
     }
+
+    [GeneratedRegex(@"\.(\d)")]
+    private static partial Regex DotNumberRegex();
 }

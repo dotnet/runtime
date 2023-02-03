@@ -147,11 +147,12 @@ struct _InterpCallInfo {
 	// in the order they are pushed to the stack. This makes it easy to find
 	// all source vars for these types of opcodes. This is terminated with -1.
 	int *call_args;
+	int call_offset;
 	union {
 		// Array of call dependencies that need to be resolved before
 		GSList *call_deps;
-		// Stack call offset with call arguments
-		int call_offset;
+		// Stack end offset of call arguments
+		int call_end_offset;
 	};
 };
 
