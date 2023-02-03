@@ -6378,8 +6378,32 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
                                                  bool           encodeResultType,
                                                  ValueNum       resultTypeVN)
 {
-    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN))
+    ValueNum cnsVN = NoVN;
+    ValueNum argVN = NoVN;
+
+    if (IsVNConstant(arg0VN))
     {
+        cnsVN = arg0VN;
+
+        if (!IsVNConstant(arg1VN))
+        {
+            argVN = arg1VN;
+        }
+    }
+    else
+    {
+        argVN = arg0VN;
+
+        if (IsVNConstant(arg1VN))
+        {
+            cnsVN = arg1VN;
+        }
+    }
+
+    if (argVN == NoVN)
+    {
+        assert(IsVNConstant(arg0VN) && IsVNConstant(arg1VN));
+
         switch (ni)
         {
 #ifdef TARGET_ARM64
@@ -6467,6 +6491,62 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 #endif
             {
                 return EvaluateBinarySimd(this, GT_SUB, /* scalar */ true, type, baseType, arg0VN, arg1VN);
+            }
+
+            default:
+                break;
+        }
+    }
+    else if (cnsVN != NoVN)
+    {
+        switch (ni)
+        {
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Add:
+            case NI_AdvSimd_Arm64_Add:
+#else
+            case NI_SSE_Add:
+            case NI_SSE2_Add:
+            case NI_AVX_Add:
+            case NI_AVX2_Add:
+#endif
+            {
+                // Handle `x + 0` and `0 + x`
+
+                ValueNum zeroVN = VNZeroForType(type);
+
+                if (cnsVN == zeroVN)
+                {
+                    return argVN;
+                }
+                break;
+            }
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Subtract:
+            case NI_AdvSimd_Arm64_Subtract:
+#else
+            case NI_SSE_Subtract:
+            case NI_SSE2_Subtract:
+            case NI_AVX_Subtract:
+            case NI_AVX2_Subtract:
+#endif
+            {
+                // Handle `x - 0`
+
+                if (cnsVN != arg1VN)
+                {
+                    // This is `0 - x` which is `NEG(x)`
+                    break;
+                }
+
+                ValueNum zeroVN = VNZeroForType(type);
+
+                if (cnsVN == zeroVN)
+                {
+                    return argVN;
+                }
+                break;
             }
 
             default:
