@@ -289,7 +289,7 @@ extends:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
               nativeAotTest: true
-            testRunNamePrefixSuffix: NativeAOT_Release
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
