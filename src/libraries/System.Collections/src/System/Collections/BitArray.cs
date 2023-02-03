@@ -936,6 +936,30 @@ namespace System.Collections
             return (m_array[intCount] & mask) == mask;
         }
 
+        public bool HasAnySet()
+        {
+            Div32Rem(m_length, out int extraBits);
+            int intCount = GetInt32ArrayLengthFromBitLength(m_length);
+            if (extraBits != 0)
+            {
+                intCount--;
+            }
+
+            if (m_array.AsSpan(0, intCount).IndexOfAnyExcept(0) != -1)
+            {
+                return true;
+            }
+            if (extraBits == 0)
+            {
+                return false;
+            }
+
+            Debug.Assert(GetInt32ArrayLengthFromBitLength(m_length) > 0);
+            Debug.Assert(intCount == GetInt32ArrayLengthFromBitLength(m_length) - 1);
+
+            return (m_array[intCount] & (1 << extraBits) - 1) != 0;
+        }
+
         public int Count => m_length;
 
         public object SyncRoot => this;

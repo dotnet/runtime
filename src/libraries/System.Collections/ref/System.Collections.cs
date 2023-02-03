@@ -34,6 +34,7 @@ namespace System.Collections
         public void SetAll(bool value) { }
         public System.Collections.BitArray Xor(System.Collections.BitArray value) { throw null; }
         public bool HasAllSet() { throw null; }
+        public bool HasAnySet() { throw null; }
     }
     public static partial class StructuralComparisons
     {
