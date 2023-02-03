@@ -26,8 +26,6 @@ set(utils_unix_sources
 
 if(HOST_WIN32)
     set(utils_platform_sources ${utils_win32_sources})
-elseif(HOST_WASI)
-    set(utils_platform_sources ${utils_unix_sources} mono-threads-wasi.S)
 else()
     set(utils_platform_sources ${utils_unix_sources})
 endif()

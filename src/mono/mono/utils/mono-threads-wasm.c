@@ -13,10 +13,6 @@
 
 #include <glib.h>
 
-#ifdef HOST_WASI
-extern size_t __heap_base;
-#endif
-
 #ifdef HOST_BROWSER
 
 #include <mono/utils/mono-threads-wasm.h>
@@ -47,27 +43,26 @@ wasm_get_stack_size (void)
 
 #else /* WASI */
 
-// see mono-threads-wasi.S
-uintptr_t get_wasm_stack_high(void);
-uintptr_t get_wasm_stack_low(void);
+// TODO after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b
+// use __stack_low && __stack_high
+extern size_t __heap_base;
 
 static int
 wasm_get_stack_size (void)
 {
-	return get_wasm_stack_high();
-	// this will need change for multithreading as the stack will allocated be per thread at different addresses
+	// keep in sync with src\mono\wasi\wasi.proj stack-size
+	return 8388608;
 }
 
 static int
 wasm_get_stack_base (void)
 {
+	// assuming we are not compiling with LLVM's --stack-first
+	// which means that heap is above the stack
+	// __heap_base is start of the heap
+	// this function needs to return the start of the stack, so we have to subtract size of the stack to get lower bound
     return ((uintptr_t)&__heap_base) - wasm_get_stack_size();
-#if 0
-	// keep in sync with src\mono\wasi\wasi.proj stack-size
-	return 8388608;
-    // TODO after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b
-	// return (guint8*)get_wasm_stack_high () - (guint8*)get_wasm_stack_low ();
-#endif
+	// this will need further change for multithreading as the stack will allocated be per thread at different addresses
 }
 
 #endif
