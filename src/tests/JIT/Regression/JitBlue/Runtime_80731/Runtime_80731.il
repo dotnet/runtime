@@ -18,7 +18,7 @@
   } // end of class S16
 
   .method private hidebysig static int32 
-          Main(string[] args) cil managed
+          Main() cil managed
   {
     .entrypoint
     // Code size       99 (0x63)
