@@ -32,6 +32,12 @@ public class Program
             }
         }
         proc.WaitForExit();
+        if (proc.ExitCode != 0)
+        {
+            Console.WriteLine("llvm-dwarfdump failed with exit code " + proc.ExitCode);
+            Console.WriteLine(proc.StandardError.ReadToEnd());
+            return 1;
+        }
         if (count != ExpectedCount)
         {
             Console.WriteLine($"Found {count} warnings and errors, expected {ExpectedCount}");
