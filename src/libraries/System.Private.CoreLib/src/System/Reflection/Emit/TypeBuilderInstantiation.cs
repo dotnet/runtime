@@ -2,20 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
+    /*
+     * TypeBuilderInstantiation represents an instantiation of a generic TypeBuilder.
+     */
+#if MONO_FEATURE_SRE
+    [StructLayout(LayoutKind.Sequential)]
+#endif
     internal sealed partial class TypeBuilderInstantiation : TypeInfo
     {
-        #region Private Data Members
-        private Type m_type;
-        private Type[] m_inst;
-        private string? m_strFullQualName;
-        internal Hashtable m_hashtable;
-        #endregion
+#region Keep in sync with object-internals.h MonoReflectionGenericClass
+        private Type generic_type;
+        private Type[] type_arguments;
+#endregion
+        private string? _strFullQualName;
+        internal Hashtable _hashtable;
+
 
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
@@ -23,7 +32,7 @@ namespace System.Reflection.Emit
             return IsAssignableFrom(typeInfo.AsType());
         }
 
-        #region Static Members
+#region Static Members
         internal static Type MakeGenericType(Type type, Type[] typeArguments)
         {
             Debug.Assert(type != null, "this is only called from RuntimeType.MakeGenericType and TypeBuilder.MakeGenericType so 'type' cannot be null");
@@ -40,35 +49,35 @@ namespace System.Reflection.Emit
 
             return new TypeBuilderInstantiation(type, typeArguments);
         }
-        #endregion
+#endregion
 
-        #region Constructor
+#region Constructor
         internal TypeBuilderInstantiation(Type type, Type[] inst)
         {
-            m_type = type;
-            m_inst = inst;
-            m_hashtable = new Hashtable();
+            generic_type = type;
+            type_arguments = inst;
+            _hashtable = new Hashtable();
         }
-        #endregion
+#endregion
 
-        #region Object Overrides
+#region Object Overrides
         public override string ToString()
         {
             return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.ToString)!;
         }
-        #endregion
+#endregion
 
-        #region MemberInfo Overrides
-        public override Type? DeclaringType => m_type.DeclaringType;
+#region MemberInfo Overrides
+        public override Type? DeclaringType => generic_type.DeclaringType;
 
-        public override Type? ReflectedType => m_type.ReflectedType;
+        public override Type? ReflectedType => generic_type.ReflectedType;
 
-        public override string Name => m_type.Name;
+        public override string Name => generic_type.Name;
 
-        public override Module Module => m_type.Module;
-        #endregion
+        public override Module Module => generic_type.Module;
+#endregion
 
-        #region Type Overrides
+#region Type Overrides
         public override Type MakePointerType()
         {
             return SymbolType.FormCompoundType("*", this, 0)!;
@@ -97,10 +106,10 @@ namespace System.Reflection.Emit
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) { throw new NotSupportedException(); }
 
-        public override Assembly Assembly => m_type.Assembly;
+        public override Assembly Assembly => generic_type.Assembly;
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
-        public override string? FullName => m_strFullQualName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
-        public override string? Namespace => m_type.Namespace;
+        public override string? FullName => _strFullQualName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
+        public override string? Namespace => generic_type.Namespace;
         public override string? AssemblyQualifiedName => TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName);
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "The entire TypeBuilderInstantiation is serving the MakeGenericType implementation. " +
@@ -143,7 +152,7 @@ namespace System.Reflection.Emit
             // D<S,string> : B<string,List<S>,char>
             get
             {
-                Type? typeBldrBase = m_type.BaseType;
+                Type? typeBldrBase = generic_type.BaseType;
 
                 if (typeBldrBase == null)
                     return null;
@@ -210,7 +219,7 @@ namespace System.Reflection.Emit
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
-        protected override TypeAttributes GetAttributeFlagsImpl() { return m_type.Attributes; }
+        protected override TypeAttributes GetAttributeFlagsImpl() { return generic_type.Attributes; }
 
         public override bool IsTypeDefinition => false;
         public override bool IsSZArray => false;
@@ -223,20 +232,20 @@ namespace System.Reflection.Emit
         public override Type GetElementType() { throw new NotSupportedException(); }
         protected override bool HasElementTypeImpl() { return false; }
         public override Type UnderlyingSystemType => this;
-        public override Type[] GetGenericArguments() { return m_inst; }
+        public override Type[] GetGenericArguments() { return type_arguments; }
         public override bool IsGenericTypeDefinition => false;
         public override bool IsGenericType => true;
         public override bool IsConstructedGenericType => true;
         public override bool IsGenericParameter => false;
         public override int GenericParameterPosition => throw new InvalidOperationException();
-        protected override bool IsValueTypeImpl() { return m_type.IsValueType; }
+        protected override bool IsValueTypeImpl() { return generic_type.IsValueType; }
         public override bool ContainsGenericParameters
         {
             get
             {
-                for (int i = 0; i < m_inst.Length; i++)
+                for (int i = 0; i < type_arguments.Length; i++)
                 {
-                    if (m_inst[i].ContainsGenericParameters)
+                    if (type_arguments[i].ContainsGenericParameters)
                         return true;
                 }
 
@@ -244,7 +253,7 @@ namespace System.Reflection.Emit
             }
         }
         public override MethodBase? DeclaringMethod => null;
-        public override Type GetGenericTypeDefinition() { return m_type; }
+        public override Type GetGenericTypeDefinition() { return generic_type; }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
@@ -254,7 +263,24 @@ namespace System.Reflection.Emit
         {
             throw new NotSupportedException();
         }
-        #endregion
+
+#if MONO_FEATURE_SRE
+        internal override MethodInfo GetMethod(MethodInfo fromNoninstanciated)
+        {
+            return new MethodOnTypeBuilderInstantiation(fromNoninstanciated, this);
+        }
+
+        internal override ConstructorInfo GetConstructor(ConstructorInfo fromNoninstanciated)
+        {
+            return new ConstructorOnTypeBuilderInstantiation(fromNoninstanciated, this);
+        }
+
+        internal override FieldInfo GetField(FieldInfo fromNoninstanciated)
+        {
+            return FieldOnTypeBuilderInstantiation.GetField(fromNoninstanciated, this);
+        }
+#endif
+#endregion
 
         #region ICustomAttributeProvider Implementation
         public override object[] GetCustomAttributes(bool inherit) { throw new NotSupportedException(); }
@@ -262,6 +288,6 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { throw new NotSupportedException(); }
 
         public override bool IsDefined(Type attributeType, bool inherit) { throw new NotSupportedException(); }
-        #endregion
+#endregion
     }
 }

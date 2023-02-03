@@ -1525,13 +1525,13 @@ is_sre_enum_builder (MonoClass *klass)
 gboolean
 mono_is_sre_method_on_tb_inst (MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System.Reflection.Emit", "MethodOnTypeBuilderInst");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "MethodOnTypeBuilderInstantiation");
 }
 
 gboolean
 mono_is_sre_ctor_on_tb_inst (MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System.Reflection.Emit", "ConstructorOnTypeBuilderInst");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "ConstructorOnTypeBuilderInstantiation");
 }
 
 static MonoReflectionTypeHandle
@@ -4309,9 +4309,9 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 			   is_sre_array (oklass) ||
 			   is_sre_byref (oklass) ||
 			   is_sre_pointer (oklass) ||
-			   !strcmp (oklass->name, "FieldOnTypeBuilderInst") ||
-			   !strcmp (oklass->name, "MethodOnTypeBuilderInst") ||
-			   !strcmp (oklass->name, "ConstructorOnTypeBuilderInst")) {
+			   !strcmp (oklass->name, "FieldOnTypeBuilderInstantiation") ||
+			   !strcmp (oklass->name, "MethodOnTypeBuilderInstantiation") ||
+			   !strcmp (oklass->name, "ConstructorOnTypeBuilderInstantiation")) {
 		static MonoMethod *resolve_method;
 		if (!resolve_method) {
 			MonoMethod *m = mono_class_get_method_from_name_checked (mono_class_get_module_builder_class (), "RuntimeResolve", 1, 0, error);
