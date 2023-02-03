@@ -55,7 +55,7 @@ const
 const callTargetCounts : { [method: number] : number } = {};
 
 const disabledOpcodes : Array<MintOpcode> = [
-    MintOpcode.MINT_LDSFLD_O,
+    // MintOpcode.MINT_LDSFLD_O,
     // MintOpcode.MINT_LDFLD_O,
     // MintOpcode.MINT_LDLEN,
     // MintOpcode.MINT_LDSFLDA,
