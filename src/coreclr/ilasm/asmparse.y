@@ -141,7 +141,7 @@
 %token P_DEFINE P_UNDEF P_IFDEF P_IFNDEF P_ELSE P_ENDIF P_INCLUDE
 
         /* newly added tokens go here */
-%token  CONSTRAINT_
+%token  CONSTRAINT_ TYPECHECK_ RANGECHECK_ NULLCHECK_
 
         /* nonTerminals */
 %type <string> dottedName id methodName atOpt slashedName
@@ -269,6 +269,15 @@ int64                   : INT64                               { $$ = $1; }
 float64                 : FLOAT64                             { $$ = $1; }
                         | FLOAT32_ '(' int32 ')'              { float f; *((__int32*) (&f)) = $3; $$ = new double(f); }
                         | FLOAT64_ '(' int64 ')'              { $$ = (double*) $3; }
+                        ;
+
+noCheckOpt              : TYPECHECK_                          { $$ = 0x01; }
+                        | RANGECHECK_                         { $$ = 0x02; }
+                        | NULLCHECK_                          { $$ = 0x04; }
+                        ;
+
+noCheckOptGroup         : noCheckOpt                          { $$ = $1; }
+                        | noCheckOpt noCheckOptGroup          { $$ = $1 | $2; }
                         ;
 
 /*  Aliasing of types, type specs, methods, fields and custom attributes */
@@ -1368,6 +1377,7 @@ instr                   : instr_none                         { PASM->EmitOpcode(
                         | instr_var int32                    { PASM->EmitInstrVar($1, $2); }
                         | instr_var id                       { PASM->EmitInstrVarByName($1, $2); }
                         | instr_i int32                      { PASM->EmitInstrI($1, $2); }
+                        | instr_i noCheckOptGroup            { PASM->EmitInstrI($1, $2); }
                         | instr_i8 int64                     { PASM->EmitInstrI8($1, $2); }
                         | instr_r float64                    { PASM->EmitInstrR($1, $2); delete ($2);}
                         | instr_r int64                      { double f = (double) (*$2); PASM->EmitInstrR($1, &f); }

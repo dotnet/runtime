@@ -298,6 +298,12 @@
     KYWD( "constraint",     CONSTRAINT_,        NO_VALUE )
 
 
+    /* Should these be NO_VALUE? */
+    KYWD( "typecheck",      TYPECHECK_,         NO_VALUE )
+    KYWD( "rangecheck",     RANGECHECK_,        NO_VALUE )
+    KYWD( "nullcheck",      NULLCHECK_,         NO_VALUE )
+
+
     /* Deprecated keywords */
     KYWD( ".vtable",        _VTABLE,            NO_VALUE )
 
