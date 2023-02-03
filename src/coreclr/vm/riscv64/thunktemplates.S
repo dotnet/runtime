@@ -5,23 +5,20 @@
 #include "asmconstants.h"
 
 LEAF_ENTRY StubPrecodeCode
-    auipc t2, 0x1
-    addi t1, t2, 0x4 // 4, for Type encoding.
-    ld t2,(StubPrecodeData__MethodDesc - 0x4)(t1)
-    ld t1,(StubPrecodeData__Target - 0x4)(t1)
+    auipc t1, 0x1
+    ld t2, (StubPrecodeData__MethodDesc)(t1)
+    ld t1, (StubPrecodeData__Target)(t1)
     jalr x0,t1,0
 LEAF_END_MARKED StubPrecodeCode
 
 LEAF_ENTRY FixupPrecodeCode
     auipc t2, 0x1
-    addi t1, t2, 0x3 // 3, for Type encoding.
-    ld t2, (FixupPrecodeData__Target - 3)(t1)
+    ld t2, (FixupPrecodeData__Target)(t2)
     c.jr t2
 
     auipc t2, 0x1
-    addi t1, t2, 0x3 // 3, for Type encoding.
-    ld t2, (FixupPrecodeData__MethodDesc - 0x3 - 0xe)(t1)
-    ld t1, (FixupPrecodeData__PrecodeFixupThunk - 0x3 - 0xe)(t1)
+    ld t1, (FixupPrecodeData__PrecodeFixupThunk - 0xa)(t2)
+    ld t2, (FixupPrecodeData__MethodDesc - 0xa)(t2)
     jalr x0, t1, 0
 LEAF_END_MARKED FixupPrecodeCode
 

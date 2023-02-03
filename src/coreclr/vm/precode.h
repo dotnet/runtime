@@ -47,7 +47,7 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 #elif defined(HOST_RISCV64)
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
-#define OFFSETOF_PRECODE_TYPE       6
+#define OFFSETOF_PRECODE_TYPE       0
 
 #endif // HOST_AMD64
 
@@ -106,7 +106,7 @@ struct StubPrecode
     static const int Type = 0x4;
     static const int CodeSize = 24;
 #elif defined(HOST_RISCV64)
-    static const int Type = 0x4;
+    static const int Type = 0x17;
     static const int CodeSize = 24;
 #endif // HOST_AMD64
 
@@ -245,9 +245,9 @@ struct FixupPrecode
     static const int CodeSize = 32;
     static const int FixupCodeOffset = 12;
 #elif defined(HOST_RISCV64)
-    static const int Type = 0x3;
-    static const int CodeSize = 40;
-    static const int FixupCodeOffset = 14;
+    static const int Type = 0x97;
+    static const int CodeSize = 32;
+    static const int FixupCodeOffset = 10;
 #endif // HOST_AMD64
 
     BYTE m_code[CodeSize];
@@ -441,9 +441,8 @@ public:
         short type = *((short*)m_data);
         type >>= 5;
 #elif defined(TARGET_RISCV64)
-        assert(6 == OFFSETOF_PRECODE_TYPE);
+        assert(0 == OFFSETOF_PRECODE_TYPE);
         BYTE type = *((BYTE*)m_data + OFFSETOF_PRECODE_TYPE);
-        type >>= 4;
 #else
         BYTE type = m_data[OFFSETOF_PRECODE_TYPE];
 #endif
