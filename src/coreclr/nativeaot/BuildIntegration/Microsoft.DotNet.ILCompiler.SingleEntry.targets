@@ -4,6 +4,8 @@
     <!-- Define the name of the runtime specific compiler package to import -->
     <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('win'))">win</OSIdentifier>
     <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</OSIdentifier>
+    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('ios'))">ios</OSIdentifier>
+    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('iossimulator'))">iossimulator</OSIdentifier>
     <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('freebsd'))">freebsd</OSIdentifier>
     <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('linux-musl')) OR $(RuntimeIdentifier.StartsWith('alpine'))">linux-musl</OSIdentifier>
     <OSIdentifier Condition="'$(OSIdentifier)' == ''">linux</OSIdentifier>
