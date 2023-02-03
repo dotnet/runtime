@@ -13,8 +13,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 			if (string.IsNullOrEmpty (assemblyFileName))
 				throw new ArgumentNullException (nameof (assemblyFileName));
 
-			if (expectedReferenceAssemblyNames == null)
-				throw new ArgumentNullException (nameof (expectedReferenceAssemblyNames));
+			ArgumentNullException.ThrowIfNull (expectedReferenceAssemblyNames);
 		}
 	}
 }
