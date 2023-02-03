@@ -14802,12 +14802,6 @@ unsigned emitter::emitSetAcurateCodeSize(insGroup* ig, instrDesc* id)
     emittedSoFar += actualSize;
     id->idCodeSize(actualSize);
 
-
-    emitPrintLabel(ig);
-    printf(": ");
-    const char* sstr = codeGen->genInsDisplayName(id);
-    printf("%s  = %u\n", sstr, actualSize);
-
     // reset
     tempOutputMemory = curInsAdr;
     return actualSize;

@@ -1137,11 +1137,11 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitForceStoreGCState = false;
 
-#ifdef DEBUG
+//#ifdef DEBUG
 
     emitIssuing = false;
 
-#endif
+//#endif
 
     /* Assume there will be no GC ref variables */
 
@@ -6495,9 +6495,11 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     emitThisGCrefRegs = emitThisByrefRegs = RBM_NONE;
     emitThisGCrefVset                     = true;
 
-#ifdef DEBUG
+
 
     emitIssuing = true;
+
+#ifdef DEBUG
 
     // We don't use these after this point
 
