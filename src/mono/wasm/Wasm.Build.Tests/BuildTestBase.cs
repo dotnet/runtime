@@ -343,6 +343,9 @@ namespace Wasm.Build.Tests
                 extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>\n";
             }
 
+            extraItems += "<WasmExtraFilesToDeploy Include='test-main.js' />";
+            extraItems += "<WasmExtraFilesToDeploy Include='index.html' />";
+
             string projectContents = projectTemplate
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
                                         .Replace("##EXTRA_ITEMS##", extraItems)
@@ -378,6 +381,8 @@ namespace Wasm.Build.Tests
                 File.Copy(Path.Combine(AppContext.BaseDirectory,
                                         options.TargetFramework == "net8.0" ? "test-main.js" : "data/test-main-7.0.js"),
                             Path.Combine(_projectDir, "test-main.js"));
+
+                File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.js""></script></body></html>");
             }
             else if (_projectDir is null)
             {
