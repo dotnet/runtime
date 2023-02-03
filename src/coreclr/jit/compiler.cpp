@@ -1629,7 +1629,7 @@ void Compiler::compShutdown()
 
     fprintf(fout, "\n");
     fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "BasicBlock and flowList/BasicBlockList allocation stats\n");
+    fprintf(fout, "BasicBlock and FlowEdge/BasicBlockList allocation stats\n");
     fprintf(fout, "---------------------------------------------------\n");
 
     fprintf(fout, "Allocated %6u basic blocks (%7u bytes total, avg %4u bytes per method)\n", BasicBlock::s_Count,
