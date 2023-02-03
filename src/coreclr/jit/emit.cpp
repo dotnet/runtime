@@ -9658,6 +9658,11 @@ void emitter::emitRecordRelocation(void*    location,            /* IN */
 
 #endif // !DEBUG
 {
+    if (!emitIssuing)
+    {
+        return;
+    }
+
     void* locationRW = (BYTE*)location + writeableOffset;
 
     JITDUMP("recordRelocation: %p (rw: %p) => %p, type %u (%s), delta %d\n", dspPtr(location), dspPtr(locationRW),
