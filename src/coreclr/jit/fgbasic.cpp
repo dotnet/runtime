@@ -23,9 +23,6 @@ void Compiler::fgInit()
     /* We haven't yet computed the bbPreds lists */
     fgComputePredsDone = false;
 
-    /* We haven't yet computed the bbCheapPreds lists */
-    fgCheapPredsValid = false;
-
     /* We haven't yet computed the edge weight */
     fgEdgeWeightsComputed    = false;
     fgHaveValidEdgeWeights   = false;
@@ -641,7 +638,6 @@ void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock*
     noway_assert(block != nullptr);
     noway_assert(oldPred != nullptr);
     noway_assert(newPred != nullptr);
-    assert(!fgCheapPredsValid);
 
     bool modified = false;
 
