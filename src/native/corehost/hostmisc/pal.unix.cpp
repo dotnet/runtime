@@ -762,12 +762,15 @@ pal::string_t pal::get_current_os_rid_platform()
 // 'rhel.7'. This brings RHEL in line with other distros like CentOS or Debian which
 // don't put minor version numbers in their VERSION_ID fields because all minor versions
 // are backwards compatible.
+//
+// Wolfi never has a version, so in that case, we just remove the version part entirely.
 static
 pal::string_t normalize_linux_rid(pal::string_t rid)
 {
     pal::string_t rhelPrefix(_X("rhel."));
     pal::string_t alpinePrefix(_X("alpine."));
     pal::string_t rockyPrefix(_X("rocky."));
+    pal::string_t wolfiPrefix(_X("wolfi"));
     size_t lastVersionSeparatorIndex = std::string::npos;
 
     if (rid.compare(0, rhelPrefix.length(), rhelPrefix) == 0)
@@ -785,6 +788,10 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
     else if (rid.compare(0, rockyPrefix.length(), rockyPrefix) == 0)
     {
         lastVersionSeparatorIndex = rid.find(_X("."), rockyPrefix.length());
+    }
+    else if (rid.compare(0, wolfiPrefix.length(), wolfiPrefix) == 0)
+    {
+        lastVersionSeparatorIndex = rid.find(_X("."), wolfiPrefix.length());
     }
 
     if (lastVersionSeparatorIndex != std::string::npos)
