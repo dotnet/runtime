@@ -188,7 +188,7 @@ typedef struct MonoAotOptions {
 	char *llvm_outfile;
 	char *data_outfile;
 	char *export_symbols_outfile;
-	char *compiled_methods_outpath;
+	char *compiled_methods_outfile;
 	GList *profile_files;
 	GList *mibc_profile_files;
 	gboolean save_temps;
@@ -8435,8 +8435,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->llvm_outfile = g_strdup (arg + strlen ("llvm-outfile="));
 		} else if (str_begins_with (arg, "export-symbols-outfile=")) {
 			opts->export_symbols_outfile = g_strdup (arg + strlen ("export-symbols-outfile="));
-		} else if (str_begins_with (arg, "compiled-methods-outpath=")) {
-			opts->compiled_methods_outpath = g_strdup (arg + strlen ("compiled-methods-outpath="));
+		} else if (str_begins_with (arg, "compiled-methods-outfile=")) {
+			opts->compiled_methods_outfile = g_strdup (arg + strlen ("compiled-methods-outfile="));
 		} else if (str_begins_with (arg, "temp-path=")) {
 			opts->temp_path = clean_path (g_strdup (arg + strlen ("temp-path=")));
 		} else if (str_begins_with (arg, "save-temps")) {
@@ -9430,8 +9430,8 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
-	if (acfg->aot_opts.compiled_methods_outpath){
-		if (!mono_method_is_generic_impl (method))
+	if (acfg->aot_opts.compiled_methods_outfile && acfg->compiled_methods_outfile != NULL) {
+		if (!mono_method_is_generic_impl (method) && method->token != 0)
 			fprintf (acfg->compiled_methods_outfile, "%x\n", method->token);
 	}
 }
@@ -14151,12 +14151,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->logfile = fopen (acfg->aot_opts.logfile, "a+");
 	}
 
-	if (acfg->aot_opts.compiled_methods_outpath) {
-		char *assembly_file_name = g_path_get_basename (image->name);
-		g_strdelimit (assembly_file_name, '.', '_');
-		char *filename = g_strconcat (assembly_file_name, "_compiled_methods.txt", (const char*)NULL);
-		char *fullpath = g_strconcat (acfg->aot_opts.compiled_methods_outpath, G_DIR_SEPARATOR_S, filename, (const char*)NULL);
-		acfg->compiled_methods_outfile = fopen (fullpath, "w+");
+	if (acfg->aot_opts.compiled_methods_outfile && !acfg->dedup_collect_only) {
+		acfg->compiled_methods_outfile = fopen (acfg->aot_opts.compiled_methods_outfile, "w+");
+		if (!acfg->compiled_methods_outfile)
+			aot_printerrf (acfg, "Unable to open compiled-methods-outfile specified file %s\n", acfg->aot_opts.compiled_methods_outfile);
 	}
 
 	if (acfg->aot_opts.data_outfile) {
@@ -14472,7 +14470,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 
 	current_acfg = NULL;
 
-	if (acfg->aot_opts.compiled_methods_outpath) {
+	if (acfg->compiled_methods_outfile) {
 		fclose (acfg->compiled_methods_outfile);
 	}
 
@@ -14839,9 +14837,9 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		dedup_methods = g_hash_table_new (NULL, NULL);
 	}
 
-	if (aot_opts.compiled_methods_outpath) {
-		if (g_ensure_directory_exists (aot_opts.compiled_methods_outpath) == FALSE) {
-			fprintf (stderr, "AOT : failed to create the directory to save the compiled method names: %s\n", aot_opts.compiled_methods_outpath);
+	if (aot_opts.compiled_methods_outfile) {
+		if (g_ensure_directory_exists (aot_opts.compiled_methods_outfile) == FALSE) {
+			fprintf (stderr, "AOT : failed to create the directory to save the compiled method names: %s\n", aot_opts.compiled_methods_outfile);
 			exit (1);
 		}
 	}
