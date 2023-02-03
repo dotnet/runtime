@@ -3044,11 +3044,6 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
 #endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 
     success = CopyContext(pCtx, pCtx->ContextFlags, pCurrentThreadCtx);
-    if (!success)
-    {
-        DWORD hresult = GetLastError();
-        printf("Last Error: %d\n", hresult);
-    }
     _ASSERTE(success);
     if (!success)
         return FALSE;
