@@ -1341,12 +1341,12 @@ function generate_wasm_body (
                     builder.i32_const(rhs);
                 else
                     builder.i52_const(rhs);
-                builder.appendU8(WasmOpcode.i32_add);
+                builder.appendU8(isI32 ? WasmOpcode.i32_add : WasmOpcode.i64_add);
                 if (isI32)
                     builder.i32_const(multiplier);
                 else
                     builder.i52_const(multiplier);
-                builder.appendU8(WasmOpcode.i32_mul);
+                builder.appendU8(isI32? WasmOpcode.i32_mul : WasmOpcode.i64_mul);
                 append_stloc_tail(builder, getArgU16(ip, 1), isI32 ? WasmOpcode.i32_store : WasmOpcode.i64_store);
                 break;
             }
