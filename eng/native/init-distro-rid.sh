@@ -46,6 +46,13 @@ initNonPortableDistroRid()
                     VERSION_ID="${VERSION_ID%.*}"
                 fi
 
+                if [[ "${ID}" == "wolfi" ]]; then
+                    # Wolfi is a rolling release distro. The VERSION_ID is only relevant
+                    # for the base filesystem layout, and does not provide any indication of
+                    # ABI compatibility, so drop it.
+                    unset VERSION_ID
+                fi
+
                 if [ -z "${VERSION_ID+x}" ]; then
                         # Rolling release distros do not set VERSION_ID, so omit
                         # it here to be consistent with everything else.
