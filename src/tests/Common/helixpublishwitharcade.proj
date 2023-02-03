@@ -840,8 +840,9 @@
     </XHarnessApkToTest>
     
     <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
-      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</TestTarget>
-      <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</TestTarget>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</TestTarget>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'x64' '$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</TestTarget>
+      <TestTarget Condition="'$(TargetOS)' == 'iOS'">ios-device</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
       <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
       <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
@@ -849,8 +850,9 @@
 
     <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAppleMobile)' == 'true'">
       <Arguments>--set-env=TestExclusionListPath=TestExclusionList.txt</Arguments>
-      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</TestTarget>
-      <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</TestTarget>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</TestTarget>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</TestTarget>
+      <TestTarget Condition="'$(TargetOS)' == 'iOS'">ios-device</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessAppBundleToTest>
 
