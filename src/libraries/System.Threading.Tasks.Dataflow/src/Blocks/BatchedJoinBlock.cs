@@ -65,7 +65,7 @@ namespace System.Threading.Tasks.Dataflow
 
             // Configure the source
             _source = new SourceCore<Tuple<IList<T1>, IList<T2>>>(
-                this, dataflowBlockOptions, owningSource => ((BatchedJoinBlock<T1, T2>)owningSource).CompleteEachTarget());
+                this, dataflowBlockOptions, static owningSource => ((BatchedJoinBlock<T1, T2>)owningSource).CompleteEachTarget());
 
             // The action to run when a batch should be created.  This is typically called
             // when we have a full batch, but it will also be called when we're done receiving
@@ -96,7 +96,7 @@ namespace System.Threading.Tasks.Dataflow
             // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-            _source.Completion.ContinueWith((completed, state) =>
+            _source.Completion.ContinueWith(static (completed, state) =>
             {
                 var thisBlock = ((BatchedJoinBlock<T1, T2>)state!) as IDataflowBlock;
                 Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
@@ -105,7 +105,7 @@ namespace System.Threading.Tasks.Dataflow
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
-                dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchedJoinBlock<T1, T2>)state!).CompleteEachTarget(), this);
+                dataflowBlockOptions.CancellationToken, _source.Completion, static (state, _) => ((BatchedJoinBlock<T1, T2>)state!).CompleteEachTarget(), this);
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -316,7 +316,7 @@ namespace System.Threading.Tasks.Dataflow
 
             // Configure the source
             _source = new SourceCore<Tuple<IList<T1>, IList<T2>, IList<T3>>>(
-                this, dataflowBlockOptions, owningSource => ((BatchedJoinBlock<T1, T2, T3>)owningSource).CompleteEachTarget());
+                this, dataflowBlockOptions, static owningSource => ((BatchedJoinBlock<T1, T2, T3>)owningSource).CompleteEachTarget());
 
             // The action to run when a batch should be created.  This is typically called
             // when we have a full batch, but it will also be called when we're done receiving
@@ -348,7 +348,7 @@ namespace System.Threading.Tasks.Dataflow
             // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-            _source.Completion.ContinueWith((completed, state) =>
+            _source.Completion.ContinueWith(static (completed, state) =>
             {
                 var thisBlock = ((BatchedJoinBlock<T1, T2, T3>)state!) as IDataflowBlock;
                 Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
@@ -357,7 +357,7 @@ namespace System.Threading.Tasks.Dataflow
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
-                dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchedJoinBlock<T1, T2, T3>)state!).CompleteEachTarget(), this);
+                dataflowBlockOptions.CancellationToken, _source.Completion, static (state, _) => ((BatchedJoinBlock<T1, T2, T3>)state!).CompleteEachTarget(), this);
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -537,7 +537,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Whether this target is declining future messages.</summary>
         private bool _decliningPermanently;
         /// <summary>Input messages for the next batch.</summary>
-        private IList<T> _messages = new List<T>();
+        private List<T> _messages = new List<T>();
 
         /// <summary>Initializes the target.</summary>
         /// <param name="sharedResources">The shared resources used by all targets associated with this batched join.</param>
@@ -561,7 +561,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             Common.ContractAssertMonitorStatus(_sharedResources._incomingLock, held: true);
 
-            IList<T> toReturn = _messages;
+            List<T> toReturn = _messages;
             _messages = new List<T>();
             return toReturn;
         }

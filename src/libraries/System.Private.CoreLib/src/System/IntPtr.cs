@@ -284,18 +284,23 @@ namespace System
         public static (nint Quotient, nint Remainder) DivRem(nint left, nint right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        [Intrinsic]
         public static nint LeadingZeroCount(nint value) => BitOperations.LeadingZeroCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        [Intrinsic]
         public static nint PopCount(nint value) => BitOperations.PopCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        [Intrinsic]
         public static nint RotateLeft(nint value, int rotateAmount) => (nint)BitOperations.RotateLeft((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        [Intrinsic]
         public static nint RotateRight(nint value, int rotateAmount) => (nint)BitOperations.RotateRight((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        [Intrinsic]
         public static nint TrailingZeroCount(nint value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
@@ -540,6 +545,8 @@ namespace System
         public static bool IsPow2(nint value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint Log2(nint value)
         {
             if (value < 0)

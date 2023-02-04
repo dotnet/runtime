@@ -133,7 +133,7 @@ namespace System.Security.Cryptography
             throw DerivedClassMustOverride();
         }
 
-        private static Exception DerivedClassMustOverride()
+        private static NotImplementedException DerivedClassMustOverride()
         {
             return new NotImplementedException(SR.NotSupported_SubclassOverride);
         }

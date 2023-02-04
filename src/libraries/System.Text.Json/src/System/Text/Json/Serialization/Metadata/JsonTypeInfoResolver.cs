@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
@@ -13,7 +15,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <param name="resolvers">Sequence of contract resolvers to be queried for metadata.</param>
         /// <returns>A <see cref="IJsonTypeInfoResolver"/> combining results from <paramref name="resolvers"/>.</returns>
-        /// <exception cref="ArgumentException"><paramref name="resolvers"/> or any of its elements is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="resolvers"/> is null.</exception>
         /// <remarks>
         /// The combined resolver will query each of <paramref name="resolvers"/> in the specified order,
         /// returning the first result that is non-null. If all <paramref name="resolvers"/> return null,
@@ -23,32 +25,42 @@ namespace System.Text.Json.Serialization.Metadata
         /// which typically define contract metadata for small subsets of types.
         /// It can also be used to fall back to <see cref="DefaultJsonTypeInfoResolver"/> wherever necessary.
         /// </remarks>
-        public static IJsonTypeInfoResolver Combine(params IJsonTypeInfoResolver[] resolvers)
+        public static IJsonTypeInfoResolver Combine(params IJsonTypeInfoResolver?[] resolvers)
         {
-            if (resolvers == null)
+            if (resolvers is null)
             {
                 throw new ArgumentNullException(nameof(resolvers));
             }
 
+            var flattenedResolvers = new List<IJsonTypeInfoResolver>();
+
             foreach (IJsonTypeInfoResolver? resolver in resolvers)
             {
-                if (resolver == null)
+                if (resolver is null)
                 {
-                    throw new ArgumentNullException(nameof(resolvers), SR.CombineOneOfResolversIsNull);
+                    continue;
+                }
+                else if (resolver is CombiningJsonTypeInfoResolver nested)
+                {
+                    flattenedResolvers.AddRange(nested._resolvers);
+                }
+                else
+                {
+                    flattenedResolvers.Add(resolver);
                 }
             }
 
-            return new CombiningJsonTypeInfoResolver(resolvers);
+            return flattenedResolvers.Count == 1
+                ? flattenedResolvers[0]
+                : new CombiningJsonTypeInfoResolver(flattenedResolvers.ToArray());
         }
 
         private sealed class CombiningJsonTypeInfoResolver : IJsonTypeInfoResolver
         {
-            private readonly IJsonTypeInfoResolver[] _resolvers;
+            internal readonly IJsonTypeInfoResolver[] _resolvers;
 
             public CombiningJsonTypeInfoResolver(IJsonTypeInfoResolver[] resolvers)
-            {
-                _resolvers = resolvers.AsSpan().ToArray();
-            }
+                => _resolvers = resolvers;
 
             public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
             {

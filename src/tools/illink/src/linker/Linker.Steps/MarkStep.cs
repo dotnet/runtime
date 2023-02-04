@@ -1610,7 +1610,7 @@ namespace Mono.Linker.Steps
 				Debug.Assert (reason.Kind == DependencyKind.FieldAccess || reason.Kind == DependencyKind.Ldtoken);
 				// Blame the field reference (without actually marking) on the original reason.
 				Tracer.AddDirectDependency (reference, reason, marked: false);
-				MarkType (reference.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, reference), new MessageOrigin (Context.TryResolve (reference)));
+				MarkType (reference.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, reference));
 
 				// Blame the field definition that we will resolve on the field reference.
 				reason = new DependencyInfo (DependencyKind.FieldOnGenericInstance, reference);
@@ -1793,6 +1793,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.DynamicDependency:
 			case DependencyKind.DynamicallyAccessedMember:
 			case DependencyKind.InteropMethodDependency:
+			case DependencyKind.Ldtoken:
 				if (isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field))
 					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, field.GetDisplayName ());
 
@@ -2171,7 +2172,11 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		static readonly Regex DebuggerDisplayAttributeValueRegex = new Regex ("{[^{}]+}", RegexOptions.Compiled);
+		[GeneratedRegex ("{[^{}]+}")]
+		private static partial Regex DebuggerDisplayAttributeValueRegex ();
+
+		[GeneratedRegex (@".+,\s*nq")]
+		private static partial Regex ContainsNqSuffixRegex ();
 
 		void MarkTypeWithDebuggerDisplayAttribute (TypeDefinition type, CustomAttribute attribute)
 		{
@@ -2185,13 +2190,13 @@ namespace Mono.Linker.Steps
 				if (string.IsNullOrEmpty (displayString))
 					return;
 
-				foreach (Match match in DebuggerDisplayAttributeValueRegex.Matches (displayString)) {
+				foreach (Match match in DebuggerDisplayAttributeValueRegex ().Matches (displayString)) {
 					// Remove '{' and '}'
 					string realMatch = match.Value.Substring (1, match.Value.Length - 2);
 
 					// Remove ",nq" suffix if present
 					// (it asks the expression evaluator to remove the quotes when displaying the final value)
-					if (Regex.IsMatch (realMatch, @".+,\s*nq")) {
+					if (ContainsNqSuffixRegex ().IsMatch(realMatch)) {
 						realMatch = realMatch.Substring (0, realMatch.LastIndexOf (','));
 					}
 

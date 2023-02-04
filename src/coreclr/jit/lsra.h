@@ -706,7 +706,11 @@ public:
 
     void handleOutgoingCriticalEdges(BasicBlock* block);
 
-    void resolveEdge(BasicBlock* fromBlock, BasicBlock* toBlock, ResolveType resolveType, VARSET_VALARG_TP liveSet);
+    void resolveEdge(BasicBlock*      fromBlock,
+                     BasicBlock*      toBlock,
+                     ResolveType      resolveType,
+                     VARSET_VALARG_TP liveSet,
+                     regMaskTP        terminatorConsumedRegs);
 
     void resolveEdges();
 
@@ -1352,7 +1356,11 @@ private:
     // the block)
     VarToRegMap setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarToRegMap);
 
-    regNumber getTempRegForResolution(BasicBlock* fromBlock, BasicBlock* toBlock, var_types type);
+    regNumber getTempRegForResolution(BasicBlock*      fromBlock,
+                                      BasicBlock*      toBlock,
+                                      var_types        type,
+                                      VARSET_VALARG_TP sharedCriticalLiveSet,
+                                      regMaskTP        terminatorConsumedRegs);
 
 #ifdef DEBUG
     void dumpVarToRegMap(VarToRegMap map);
@@ -1590,9 +1598,10 @@ private:
     // A temporary VarToRegMap used during the resolution of critical edges.
     VarToRegMap sharedCriticalVarToRegMap;
 
-    PhasedVar<regMaskTP> availableIntRegs;
-    PhasedVar<regMaskTP> availableFloatRegs;
-    PhasedVar<regMaskTP> availableDoubleRegs;
+    PhasedVar<regMaskTP>  availableIntRegs;
+    PhasedVar<regMaskTP>  availableFloatRegs;
+    PhasedVar<regMaskTP>  availableDoubleRegs;
+    PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
     // Register mask of argument registers currently occupied because we saw a
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding

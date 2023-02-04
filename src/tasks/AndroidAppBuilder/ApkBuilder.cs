@@ -10,21 +10,22 @@ using System.Text.RegularExpressions;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class ApkBuilder
+public partial class ApkBuilder
 {
     private const string DefaultMinApiLevel = "21";
+    private const string DefaultTargetApiLevel = "31";
 
     public string? ProjectName { get; set; }
     public string? AppDir { get; set; }
     public string? AndroidNdk { get; set; }
     public string? AndroidSdk { get; set; }
     public string? MinApiLevel { get; set; }
+    public string? TargetApiLevel { get; set; }
     public string? BuildApiLevel { get; set; }
     public string? BuildToolsVersion { get; set; }
     public string OutputDir { get; set; } = ""!;
     public bool StripDebugSymbols { get; set; }
     public string? NativeMainSource { get; set; }
-    public bool IncludeNetworkSecurityConfig { get; set; }
     public string? KeyStorePath { get; set; }
     public bool ForceInterpreter { get; set; }
     public bool ForceAOT { get; set; }
@@ -57,12 +58,6 @@ public class ApkBuilder
         if (!string.IsNullOrEmpty(mainLibraryFileName) && !File.Exists(Path.Combine(AppDir, mainLibraryFileName)))
         {
             throw new ArgumentException($"MainLibraryFileName='{mainLibraryFileName}' was not found in AppDir='{AppDir}'");
-        }
-
-        var networkSecurityConfigFilePath = Path.Combine(AppDir, "res", "xml", "network_security_config.xml");
-        if (IncludeNetworkSecurityConfig && !File.Exists(networkSecurityConfigFilePath))
-        {
-            throw new ArgumentException($"IncludeNetworkSecurityConfig is set but the file '{networkSecurityConfigFilePath}' was not found");
         }
 
         if (string.IsNullOrEmpty(abi))
@@ -125,14 +120,24 @@ public class ApkBuilder
         if (string.IsNullOrEmpty(MinApiLevel))
             MinApiLevel = DefaultMinApiLevel;
 
-        // make sure BuildApiLevel >= MinApiLevel
+        if (string.IsNullOrEmpty(TargetApiLevel))
+            TargetApiLevel = DefaultTargetApiLevel;
+
+        // make sure BuildApiLevel >= MinApiLevel and BuildApiLevel >= TargetApiLevel
         // only if these api levels are not "preview" (not integers)
-        if (int.TryParse(BuildApiLevel, out int intApi) &&
-            int.TryParse(MinApiLevel, out int intMinApi) &&
-            intApi < intMinApi)
+        if (int.TryParse(BuildApiLevel, out int intApi))
         {
-            throw new ArgumentException($"BuildApiLevel={BuildApiLevel} <= MinApiLevel={MinApiLevel}. " +
-                "Make sure you've downloaded some recent build-tools in Android SDK");
+            if (int.TryParse(MinApiLevel, out int intMinApi) && intApi < intMinApi)
+            {
+                throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < MinApiLevel={MinApiLevel}. " +
+                    "Make sure you've downloaded some recent build-tools in Android SDK");
+            }
+
+            if (int.TryParse(TargetApiLevel, out int intTargetApi) && intApi < intTargetApi)
+            {
+                throw new ArgumentException($"BuildApiLevel={BuildApiLevel} < TargetApiLevel={TargetApiLevel}. " +
+                    "Make sure you've downloaded some recent build-tools in Android SDK");
+            }
         }
 
         string buildToolsFolder = Path.Combine(AndroidSdk, "build-tools", BuildToolsVersion);
@@ -180,9 +185,8 @@ public class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "obj"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets-tozip"));
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
-        Directory.CreateDirectory(Path.Combine(OutputDir, "res"));
 
-        var extensionsToIgnore = new List<string> { ".so", ".a" };
+        var extensionsToIgnore = new List<string> { ".so", ".a", ".dex", ".jar" };
         if (StripDebugSymbols)
         {
             extensionsToIgnore.Add(".pdb");
@@ -209,19 +213,8 @@ public class ApkBuilder
                 // aapt complains on such files
                 return false;
             }
-            if (file.Contains("/res/"))
-            {
-                // exclude everything in the `res` folder
-                return false;
-            }
             return true;
         });
-
-        // copy the res directory as is
-        if (Directory.Exists(Path.Combine(AppDir, "res")))
-        {
-            Utils.DirectoryCopy(Path.Combine(AppDir, "res"), Path.Combine(OutputDir, "res"));
-        }
 
         // add AOT .so libraries
         foreach (var aotlib in aotLibraryFiles)
@@ -247,7 +240,7 @@ public class ApkBuilder
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
 
-        // 1. Build libmonodroid.so` via cmake
+        // 1. Build libmonodroid.so via cmake
 
         string nativeLibraries = "";
         string monoRuntimeLib = "";
@@ -387,7 +380,7 @@ public class ApkBuilder
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
 
-        Regex checkNumerics = new Regex(@"\.(\d)");
+        Regex checkNumerics = DotNumberRegex();
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
             ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
 
@@ -398,11 +391,6 @@ public class ApkBuilder
                 .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName)));
         if (!string.IsNullOrEmpty(NativeMainSource))
             File.Copy(NativeMainSource, javaActivityPath, true);
-
-        string networkSecurityConfigAttribute =
-            IncludeNetworkSecurityConfig
-                ? "a:networkSecurityConfig=\"@xml/network_security_config\""
-                : string.Empty;
 
         string envVariables = "";
         foreach (ITaskItem item in EnvironmentVariables)
@@ -421,8 +409,8 @@ public class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
                 .Replace("%PackageName%", packageId)
-                .Replace("%NetworkSecurityConfig%", networkSecurityConfigAttribute)
-                .Replace("%MinSdkLevel%", MinApiLevel));
+                .Replace("%MinSdkLevel%", MinApiLevel)
+                .Replace("%TargetSdkVersion%", TargetApiLevel));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
@@ -446,8 +434,7 @@ public class ApkBuilder
 
         string debugModeArg = StripDebugSymbols ? string.Empty : "--debug-mode";
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
-        string resources = IncludeNetworkSecurityConfig ? "-S res" : string.Empty;
-        Utils.RunProcess(logger, aapt, $"package -f -m -F {apkFile} -A assets {resources} -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
+        Utils.RunProcess(logger, aapt, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
         dynamicLibs.Add(Path.Combine(OutputDir, "monodroid", "libmonodroid.so"));
@@ -506,6 +493,17 @@ public class ApkBuilder
             Utils.RunProcess(logger, aapt, $"add {apkFile} {destRelative}", workingDir: OutputDir);
         }
         Utils.RunProcess(logger, aapt, $"add {apkFile} classes.dex", workingDir: OutputDir);
+
+        // Include prebuilt .dex files
+        int sequence = 2;
+        var dexFiles = Directory.GetFiles(AppDir, "*.dex");
+        foreach (var dexFile in dexFiles)
+        {
+            var classesFileName = $"classes{sequence++}.dex";
+            File.Copy(dexFile, Path.Combine(OutputDir, classesFileName));
+            logger.LogMessage(MessageImportance.High, $"Adding dex file {Path.GetFileName(dexFile)} as {classesFileName}");
+            Utils.RunProcess(logger, aapt, $"add {apkFile} {classesFileName}", workingDir: OutputDir);
+        }
 
         // 4. Align APK
 
@@ -635,4 +633,7 @@ public class ApkBuilder
             .FirstOrDefault()
             .ToString();
     }
+
+    [GeneratedRegex(@"\.(\d)")]
+    private static partial Regex DotNumberRegex();
 }

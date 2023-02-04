@@ -83,7 +83,7 @@ namespace System.Reflection
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
         private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
 
-        private static Assembly? GetEntryAssemblyInternal()
+        private static RuntimeAssembly? GetEntryAssemblyInternal()
         {
             RuntimeAssembly? entryAssembly = null;
             GetEntryAssemblyNative(ObjectHandleOnStack.Create(ref entryAssembly));

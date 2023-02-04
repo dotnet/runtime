@@ -53,7 +53,8 @@ namespace System.Xml.Schema
             ArgumentOutOfRangeException.ThrowIfNegative(hours);
             ArgumentOutOfRangeException.ThrowIfNegative(minutes);
             ArgumentOutOfRangeException.ThrowIfNegative(seconds);
-            if (nanoseconds < 0 || nanoseconds > 999999999) throw new ArgumentOutOfRangeException(nameof(nanoseconds));
+            ArgumentOutOfRangeException.ThrowIfNegative(nanoseconds);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(nanoseconds, 999999999);
 
             _years = years;
             _months = months;

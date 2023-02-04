@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <returns>Serialization metadata for the given type.</returns>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonTypeInfo<TElement[]> CreateArrayInfo<TElement>(JsonSerializerOptions options, JsonCollectionInfoValues<TElement[]> collectionInfo)
-            => new SourceGenJsonTypeInfo<TElement[]>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new ArrayConverter<TElement[], TElement>());
@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : List<TElement>
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new ListOfTConverter<TCollection, TElement>());
@@ -57,7 +57,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : Dictionary<TKey, TValue>
             where TKey : notnull
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new DictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>());
@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(createRangeFunc));
             }
 
-            return new SourceGenJsonTypeInfo<TCollection>(
+            return CreateCore(
                 options,
                 collectionInfo,
                 () => new ImmutableDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>(),
@@ -111,7 +111,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : IDictionary<TKey, TValue>
             where TKey : notnull
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new IDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>());
@@ -131,7 +131,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : IReadOnlyDictionary<TKey, TValue>
             where TKey : notnull
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new IReadOnlyDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>());
@@ -159,7 +159,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(createRangeFunc));
             }
 
-            return new SourceGenJsonTypeInfo<TCollection>(
+            return CreateCore(
                 options,
                 collectionInfo,
                 () => new ImmutableEnumerableOfTConverter<TCollection, TElement>(),
@@ -178,7 +178,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : IList
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new IListConverter<TCollection>());
@@ -196,7 +196,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : IList<TElement>
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new IListOfTConverter<TCollection, TElement>());
@@ -214,7 +214,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : ISet<TElement>
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new ISetOfTConverter<TCollection, TElement>());
@@ -232,7 +232,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : ICollection<TElement>
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new ICollectionOfTConverter<TCollection, TElement>());
@@ -250,7 +250,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : Stack<TElement>
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new StackOfTConverter<TCollection, TElement>());
@@ -268,7 +268,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : Queue<TElement>
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new QueueOfTConverter<TCollection, TElement>());
@@ -286,7 +286,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : ConcurrentStack<TElement>
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new ConcurrentStackOfTConverter<TCollection, TElement>());
@@ -304,7 +304,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : ConcurrentQueue<TElement>
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new ConcurrentQueueOfTConverter<TCollection, TElement>());
@@ -322,7 +322,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : IEnumerable<TElement>
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new IEnumerableOfTConverter<TCollection, TElement>());
@@ -340,7 +340,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : IAsyncEnumerable<TElement>
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new IAsyncEnumerableOfTConverter<TCollection, TElement>());
@@ -357,7 +357,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : IDictionary
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new IDictionaryConverter<TCollection>());
@@ -409,7 +409,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(addFunc));
             }
 
-            return new SourceGenJsonTypeInfo<TCollection>(
+            return CreateCore(
                 options,
                 collectionInfo,
                 () => new StackOrQueueConverter<TCollection>(),
@@ -429,7 +429,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonSerializerOptions options,
             JsonCollectionInfoValues<TCollection> collectionInfo)
             where TCollection : IEnumerable
-            => new SourceGenJsonTypeInfo<TCollection>(
+            => CreateCore(
                 options,
                 collectionInfo,
                 () => new IEnumerableConverter<TCollection>());

@@ -232,8 +232,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(source, nameof(source));
 
-            var existingDictionary = source as ImmutableDictionary<TKey, TValue>;
-            if (existingDictionary != null)
+            if (source is ImmutableDictionary<TKey, TValue> existingDictionary)
             {
                 return existingDictionary.WithComparers(keyComparer, valueComparer);
             }

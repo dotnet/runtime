@@ -8,7 +8,13 @@
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
     <OutputType>library</OutputType>
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
+    <_WasmPThreadPoolSize Condition="'$(WasmEnableThreads)'=='true'">10</_WasmPThreadPoolSize>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- keep this version to make sure it will pause in the expected line -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+  </ItemGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="debugger-driver.html" />
@@ -66,6 +72,7 @@
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-non-user-code-class.dll" />
       <WasmAssembliesToBundle Condition="!$([MSBuild]::IsOSPlatform('windows'))" Include="$(OutDir)\debugger-test-with-colon-in-source-name.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-vb.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\Newtonsoft.Json.dll" />
       <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\$(NetCoreappCurrent)\System.Runtime.InteropServices.JavaScript.dll" />
 
       <!-- Assemblies only dynamically loaded -->
@@ -81,7 +88,7 @@
     </ItemGroup>
   </Target>
   <Target Name="PreserveEnCAssembliesFromLinking"
-          Condition="'$(TargetOS)' == 'Browser' and '$(EnableAggressiveTrimming)' == 'true'"
+          Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'"
           BeforeTargets="ConfigureTrimming">
     <ItemGroup>
       <!-- Don't modify EnC test assemblies -->
@@ -95,7 +102,7 @@
   </Target>
   <Target Name="IncludeDeltasInWasmBundle"
           BeforeTargets="PrepareForWasmBuildApp"
-          Condition="'$(TargetOS)' == 'Browser'">
+          Condition="'$(TargetOS)' == 'browser'">
     <ItemGroup>
       <!-- FIXME: this belongs in eng/testing/tests.wasm.targets -->
       <!-- FIXME: Can we do something on the Content items in the referenced projects themselves to get this for free? -->

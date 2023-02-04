@@ -467,13 +467,14 @@ enum class DoNotEnregisterReason
 enum class AddressExposedReason
 {
     NONE,
-    PARENT_EXPOSED,   // This is a promoted field but the parent is exposed.
-    TOO_CONSERVATIVE, // Were marked as exposed to be conservative, fix these places.
-    ESCAPE_ADDRESS,   // The address is escaping, for example, passed as call argument.
-    WIDE_INDIR,       // We access via indirection with wider type.
-    OSR_EXPOSED,      // It was exposed in the original method, osr has to repeat it.
-    STRESS_LCL_FLD,   // Stress mode replaces localVar with localFld and makes them addrExposed.
-    DISPATCH_RET_BUF  // Caller return buffer dispatch.
+    PARENT_EXPOSED,                // This is a promoted field but the parent is exposed.
+    TOO_CONSERVATIVE,              // Were marked as exposed to be conservative, fix these places.
+    ESCAPE_ADDRESS,                // The address is escaping, for example, passed as call argument.
+    WIDE_INDIR,                    // We access via indirection with wider type.
+    OSR_EXPOSED,                   // It was exposed in the original method, osr has to repeat it.
+    STRESS_LCL_FLD,                // Stress mode replaces localVar with localFld and makes them addrExposed.
+    DISPATCH_RET_BUF,              // Caller return buffer dispatch.
+    STRESS_POISON_IMPLICIT_BYREFS, // This is an implicit byref we want to poison.
 };
 
 #endif // DEBUG
@@ -656,6 +657,10 @@ public:
     unsigned char lvIsOSRLocal : 1; // Root method local in an OSR method. Any stack home will be on the Tier0 frame.
                                     // Initial value will be defined by Tier0. Requires special handing in prolog.
 
+private:
+    unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
+
+public:
     union {
         unsigned lvFieldLclStart; // The index of the local var representing the first field in the promoted struct
                                   // local.  For implicit byref parameters, this gets hijacked between
@@ -957,6 +962,18 @@ public:
     }
 #endif
 
+    // Is this is local never negative?
+    bool IsNeverNegative() const
+    {
+        return lvIsNeverNegative;
+    }
+
+    // Is this is local never negative?
+    void SetIsNeverNegative(bool value)
+    {
+        lvIsNeverNegative = value;
+    }
+
     /////////////////////
 
     regNumber GetArgInitReg() const
@@ -997,6 +1014,36 @@ public:
             }
         }
         return regMask;
+    }
+
+    //-----------------------------------------------------------------------------
+    // AllFieldDeathFlags: Get a bitset of flags that represents all fields dying.
+    //
+    // Returns:
+    //    A bit mask that has GTF_VAR_FIELD_DEATH0 to GTF_VAR_FIELD_DEATH3 set,
+    //    depending on how many fields this promoted local has.
+    //
+    // Remarks:
+    //    Only usable for promoted locals.
+    //
+    GenTreeFlags AllFieldDeathFlags() const
+    {
+        assert(lvPromoted && (lvFieldCnt > 0) && (lvFieldCnt <= 4));
+        GenTreeFlags flags = static_cast<GenTreeFlags>(((1 << lvFieldCnt) - 1) << FIELD_LAST_USE_SHIFT);
+        assert((flags & ~GTF_VAR_DEATH_MASK) == 0);
+        return flags;
+    }
+
+    //-----------------------------------------------------------------------------
+    // FullDeathFlags: Get a bitset of flags that represents this local fully dying.
+    //
+    // Returns:
+    //    For promoted locals, this returns AllFieldDeathFlags(). Otherwise
+    //    returns GTF_VAR_DEATH.
+    //
+    GenTreeFlags FullDeathFlags() const
+    {
+        return lvPromoted ? AllFieldDeathFlags() : GTF_VAR_DEATH;
     }
 
     unsigned short lvVarIndex; // variable tracking index
@@ -1454,13 +1501,14 @@ extern const char* PhaseEnums[];
 // clang-format off
 enum class PhaseChecks : unsigned int
 {
-    CHECK_NONE    = 0,
-    CHECK_IR      = 1 << 0, // ir flags, etc
-    CHECK_UNIQUE  = 1 << 1, // tree node uniqueness
-    CHECK_FG      = 1 << 2, // flow graph integrity
-    CHECK_EH      = 1 << 3, // eh table integrity
-    CHECK_LOOPS   = 1 << 4, // loop table integrity
-    CHECK_PROFILE = 1 << 5, // profile data integrity
+    CHECK_NONE          = 0,
+    CHECK_IR            = 1 << 0, // ir flags, etc
+    CHECK_UNIQUE        = 1 << 1, // tree node uniqueness
+    CHECK_FG            = 1 << 2, // flow graph integrity
+    CHECK_EH            = 1 << 3, // eh table integrity
+    CHECK_LOOPS         = 1 << 4, // loop table integrity
+    CHECK_PROFILE       = 1 << 5, // profile data integrity
+    CHECK_LINKED_LOCALS = 1 << 6, // check linked list of locals
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -1509,6 +1557,24 @@ enum API_ICorJitInfo_Names
 #include "ICorJitInfo_names_generated.h"
     API_COUNT
 };
+
+enum class FlowGraphUpdates
+{
+    COMPUTE_BASICS  = 0,      // renumber blocks, reachability, etc
+    COMPUTE_DOMS    = 1 << 0, // recompute dominators
+    COMPUTE_RETURNS = 1 << 1, // recompute return blocks
+    COMPUTE_LOOPS   = 1 << 2, // recompute loop table
+};
+
+inline constexpr FlowGraphUpdates operator|(FlowGraphUpdates a, FlowGraphUpdates b)
+{
+    return (FlowGraphUpdates)((unsigned int)a | (unsigned int)b);
+}
+
+inline constexpr FlowGraphUpdates operator&(FlowGraphUpdates a, FlowGraphUpdates b)
+{
+    return (FlowGraphUpdates)((unsigned int)a & (unsigned int)b);
+}
 
 //---------------------------------------------------------------
 // Compilation time.
@@ -1860,6 +1926,16 @@ struct RichIPMapping
     DebugInfo    debugInfo;
 };
 
+// Current kind of node threading stored in GenTree::gtPrev and GenTree::gtNext.
+// See fgNodeThreading for more information.
+enum class NodeThreading
+{
+    None,
+    AllLocals, // Locals are threaded (after local morph when optimizing)
+    AllTrees,  // All nodes are threaded (after gtSetBlockOrder)
+    LIR,       // Nodes are in LIR form (after rationalization)
+};
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1910,6 +1986,7 @@ class Compiler
     friend class LIR;
     friend class ObjectAllocator;
     friend class LocalAddressVisitor;
+    friend struct Statement;
     friend struct GenTree;
     friend class MorphInitBlockHelper;
     friend class MorphCopyBlockHelper;
@@ -2284,10 +2361,6 @@ public:
 
 #endif // FEATURE_EH_FUNCLETS
 
-#if !FEATURE_EH
-    void fgRemoveEH();
-#endif // !FEATURE_EH
-
     void fgSortEHTable();
 
     // Causes the EH table to obey some well-formedness conditions, by inserting
@@ -2593,6 +2666,15 @@ public:
                                      unsigned    simdSize,
                                      bool        isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdLoadNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdLoadAlignedNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdLoadNonTemporalNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
     GenTree* gtNewSimdMaxNode(var_types   type,
                               GenTree*    op1,
                               GenTree*    op2,
@@ -2623,6 +2705,15 @@ public:
 
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdStoreNode(
+        GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdStoreAlignedNode(
+        GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdStoreNonTemporalNode(
+        GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
     GenTree* gtNewSimdSumNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
@@ -2789,7 +2880,7 @@ public:
     // is #of nodes in subtree) of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
     // before they have been set.)
-    bool gtComplexityExceeds(GenTree** tree, unsigned limit);
+    bool gtComplexityExceeds(GenTree* tree, unsigned limit);
 
     GenTree* gtReverseCond(GenTree* tree);
 
@@ -3592,6 +3683,7 @@ private:
 public:
     void impInit();
     void impImport();
+    void impFixPredLists();
 
     CORINFO_CLASS_HANDLE impGetRefAnyClass();
     CORINFO_CLASS_HANDLE impGetRuntimeArgumentHandle();
@@ -3778,6 +3870,7 @@ protected:
                               NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    NamedIntrinsic lookupPrimitiveNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -3787,6 +3880,11 @@ protected:
                                     CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,
                                     CORINFO_SIG_INFO*     sig);
+
+    GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
+                                        CORINFO_CLASS_HANDLE  clsHnd,
+                                        CORINFO_METHOD_HANDLE method,
+                                        CORINFO_SIG_INFO*     sig);
 
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
@@ -3827,22 +3925,6 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
-
-#ifdef TARGET_XARCH
-    GenTree* impBaseIntrinsic(NamedIntrinsic        intrinsic,
-                              CORINFO_CLASS_HANDLE  clsHnd,
-                              CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig,
-                              CorInfoType           simdBaseJitType,
-                              var_types             retType,
-                              unsigned              simdSize);
-    GenTree* impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
-    GenTree* impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
-    GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
-    GenTree* impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
-
-    GenTree* impSerializeIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
-#endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                      CORINFO_SIG_INFO*    sig,
@@ -4171,6 +4253,7 @@ private:
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
+    void impPoisonImplicitByrefsBeforeReturn();
 
     // A free list of linked list nodes used to represent to-do stacks of basic blocks.
     struct BlockListNode
@@ -4291,6 +4374,7 @@ public:
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
+    unsigned     fgBBNumMin;       // The min bbNum that has been assigned to basic blocks
     unsigned     fgBBNumMax;       // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;     // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBInvPostOrder; // The flow graph stored in an array sorted in topological order, needed to compute
@@ -4310,6 +4394,7 @@ public:
     DomTreeNode* fgSsaDomTree;
 
     bool fgBBVarSetsInited;
+    bool fgOSROriginalEntryBBProtected;
 
     // Allocate array like T* a = new T[fgBBNumMax + 1];
     // Using helper so we don't keep forgetting +1.
@@ -4423,8 +4508,7 @@ public:
 #endif // FEATURE_JIT_METHOD_PERF
 
     bool fgModified;             // True if the flow graph has been modified recently
-    bool fgComputePredsDone;     // Have we computed the bbPreds list
-    bool fgCheapPredsValid;      // Is the bbCheapPreds list valid?
+    bool fgPredsComputed;        // Have we computed the bbPreds list
     bool fgDomsComputed;         // Have we computed the dominator sets?
     bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
@@ -4447,31 +4531,49 @@ public:
 
     bool fgRemoveRestOfBlock; // true if we know that we will throw
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
-
-    // There are two modes for ordering of the trees.
-    //  - In FGOrderTree, the dominant ordering is the tree order, and the nodes contained in
-    //    each tree and sub-tree are contiguous, and can be traversed (in gtNext/gtPrev order)
-    //    by traversing the tree according to the order of the operands.
-    //  - In FGOrderLinear, the dominant ordering is the linear order.
+    bool fgRemarkGlobalUses;  // true if morph should remark global uses after processing a statement
 
     enum FlowGraphOrder
     {
         FGOrderTree,
         FGOrderLinear
     };
+    // There are two modes for ordering of the trees.
+    //  - In FGOrderTree, the dominant ordering is the tree order, and the nodes contained in
+    //    each tree and sub-tree are contiguous, and can be traversed (in gtNext/gtPrev order)
+    //    by traversing the tree according to the order of the operands.
+    //  - In FGOrderLinear, the dominant ordering is the linear order.
     FlowGraphOrder fgOrder;
 
-    // The following are boolean flags that keep track of the state of internal data structures
+    // The following are flags that keep track of the state of internal data structures
 
-    bool     fgStmtListThreaded;       // true if the node list is now threaded
-    bool     fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
-    bool     fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
-    bool     fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
-    bool     fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
-    bool     fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
-    weight_t fgCalledCount;            // count of the number of times this method was called
-                                       // This is derived from the profile data
-                                       // or is BB_UNITY_WEIGHT when we don't have profile data
+    // Even in tree form (fgOrder == FGOrderTree) the trees are threaded in a
+    // doubly linked lists during certain phases of the compilation.
+    // - Local morph threads all locals to be used for early liveness and
+    //   forward sub when optimizing. This is kept valid until after forward sub.
+    //   The first local is kept in Statement::GetTreeList() and the last
+    //   local in Statement::GetTreeListEnd(). fgSequenceLocals can be used
+    //   to (re-)sequence a statement into this form, and
+    //   Statement::LocalsTreeList for range-based iteration. The order must
+    //   match tree order.
+    //
+    // - fgSetBlockOrder threads all nodes. This is kept valid until LIR form.
+    //   In this form the first node is given by Statement::GetTreeList and the
+    //   last node is given by Statement::GetRootNode(). fgSetStmtSeq can be used
+    //   to (re-)sequence a statement into this form, and Statement::TreeList for
+    //   range-based iteration. The order must match tree order.
+    //
+    // - Rationalization links all nodes into linear form which is kept until
+    //   the end of compilation. The first and last nodes are stored in the block.
+    NodeThreading fgNodeThreading;
+    bool          fgCanRelocateEHRegions;   // true if we are allowed to relocate the EH regions
+    bool          fgEdgeWeightsComputed;    // true after we have called fgComputeEdgeWeights
+    bool          fgHaveValidEdgeWeights;   // true if we were successful in computing all of the edge weights
+    bool          fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
+    bool          fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
+    weight_t      fgCalledCount;            // count of the number of times this method was called
+                                            // This is derived from the profile data
+                                            // or is BB_UNITY_WEIGHT when we don't have profile data
 
 #if defined(FEATURE_EH_FUNCLETS)
     bool fgFuncletsCreated; // true if the funclet creation phase has been run
@@ -4528,7 +4630,6 @@ public:
     void fgAddFinallyTargetFlags();
 
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
     PhaseStatus fgTailMergeThrows();
     void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                             BasicBlock* nonCanonicalBlock,
@@ -4538,12 +4639,6 @@ public:
                                        BasicBlock* nonCanonicalBlock,
                                        BasicBlock* canonicalBlock,
                                        flowList*   predEdge);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // Sometimes we need to defer updating the BBF_FINALLY_TARGET bit. fgNeedToAddFinallyTargetBits signals
-    // when this is necessary.
-    bool fgNeedToAddFinallyTargetBits;
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
                                                   BasicBlock*      handler,
@@ -4679,6 +4774,8 @@ public:
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
     PhaseStatus fgSimpleLowering();
 
+    bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
+
 #if FEATURE_LOOP_ALIGN
     PhaseStatus placeLoopAlignInstructions();
 #endif
@@ -4723,6 +4820,8 @@ public:
                                      LclVarDsc&           varDsc,
                                      GenTreeLclVarCommon* lclVarNode);
     bool fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode);
+
+    GenTree* fgTryRemoveDeadStoreEarly(Statement* stmt, GenTreeLclVarCommon* dst);
 
     void fgComputeLife(VARSET_TP&       life,
                        GenTree*         startNode,
@@ -5107,28 +5206,10 @@ protected:
     // && postOrder(A) >= postOrder(B) making the computation O(1).
     void fgNumberDomTree(DomTreeNode* domTree);
 
-    // When the flow graph changes, we need to update the block numbers, predecessor lists, reachability sets,
+    // When the flow graph changes, we need to update the block numbers, reachability sets,
     // dominators, and possibly loops.
-    void fgUpdateChangedFlowGraph(const bool computePreds        = true,
-                                  const bool computeDoms         = true,
-                                  const bool computeReturnBlocks = false,
-                                  const bool computeLoops        = false);
-
-public:
-    // Compute the predecessors of the blocks in the control flow graph.
-    void fgComputePreds();
-
-    // Remove all predecessor information.
-    void fgRemovePreds();
-
-    // Compute the cheap flow graph predecessors lists. This is used in some early phases
-    // before the full predecessors lists are computed.
-    void fgComputeCheapPreds();
-
-private:
-    void fgAddCheapPred(BasicBlock* block, BasicBlock* blockPred);
-
-    void fgRemoveCheapPred(BasicBlock* block, BasicBlock* blockPred);
+    //
+    void fgUpdateChangedFlowGraph(FlowGraphUpdates updates);
 
 public:
     enum GCPollType
@@ -5419,6 +5500,7 @@ public:
     void fgDebugCheckLinks(bool morphTrees = false);
     void fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees);
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
+    void fgDebugCheckLinkedLocals();
     void fgDebugCheckNodesUniqueness();
     void fgDebugCheckLoopTable();
     void fgDebugCheckSsa();
@@ -5713,6 +5795,7 @@ private:
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
+    void fgMarkGlobalUses(Statement* stmt);
 
     GenTree* fgMorphLocal(GenTreeLclVarCommon* lclNode);
 #ifdef TARGET_X86
@@ -5731,7 +5814,9 @@ private:
     GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
 #if FEATURE_FASTTAILCALL
-    bool fgCallHasMustCopyByrefParameter(GenTreeCall* callee);
+    bool fgCallHasMustCopyByrefParameter(GenTreeCall* call);
+    bool fgCallArgWillPointIntoLocalFrame(GenTreeCall* call, CallArg& arg);
+
 #endif
     bool     fgCheckStmtAfterTailCall();
     GenTree* fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL_HELPERS& help);
@@ -5835,6 +5920,8 @@ private:
 
     bool byrefStatesMatchGcHeapStates; // True iff GcHeap and ByrefExposed memory have all the same def points.
 
+    PhaseStatus fgEarlyLiveness();
+
     void fgMarkUseDef(GenTreeLclVarCommon* tree);
 
     void fgBeginScopeLife(VARSET_TP* inScope, VarScopeDsc* var);
@@ -5926,11 +6013,12 @@ private:
     void fgMarkDemotedImplicitByRefArgs();
 
     PhaseStatus fgMarkAddressExposedLocals();
-    void fgMarkAddressExposedLocals(Statement* stmt);
+    void fgSequenceLocals(Statement* stmt);
 
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);
     bool fgForwardSubStatement(Statement* statement);
+    void fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast);
 
     // The given local variable, required to be a struct variable, is being assigned via
     // a "lclField", to make it masquerade as an integral type in the ABI.  Make sure that
@@ -6437,7 +6525,16 @@ protected:
     // loop nested in "loopInd" that shares the same head as "loopInd".
     void optUpdateLoopHead(unsigned loopInd, BasicBlock* from, BasicBlock* to);
 
-    void optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, const bool updatePreds = false);
+    enum class RedirectBlockOption
+    {
+        DoNotChangePredLists, // do not modify pred lists
+        UpdatePredLists,      // add/remove to pred lists
+        AddToPredLists,       // only add to pred lists
+    };
+
+    void optRedirectBlock(BasicBlock*      blk,
+                          BlockToBlockMap* redirectMap,
+                          const RedirectBlockOption = RedirectBlockOption::DoNotChangePredLists);
 
     // Marks the containsCall information to "lnum" and any parent loops.
     void AddContainsCallAllContainingLoops(unsigned lnum);
@@ -7407,7 +7504,7 @@ public:
     GenTree* optConstantAssertionProp(AssertionDsc*        curAssertion,
                                       GenTreeLclVarCommon* tree,
                                       Statement* stmt DEBUGARG(AssertionIndex index));
-    bool optIsProfitableToSubstitute(GenTreeLclVarCommon* lcl, BasicBlock* lclBlock, GenTree* value);
+    bool optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* value);
     bool optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions);
 
     // Assertion propagation functions.
@@ -8031,48 +8128,6 @@ public:
     // not all JIT Helper calls follow the standard ABI on the target architecture.
     regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper);
 
-    // This map is indexed by GT_OBJ nodes that are address of promoted struct variables, which
-    // have been annotated with the GTF_VAR_DEATH flag.  If such a node is *not* mapped in this
-    // table, one may assume that all the (tracked) field vars die at this GT_OBJ.  Otherwise,
-    // the node maps to a pointer to a VARSET_TP, containing set bits for each of the tracked field
-    // vars of the promoted struct local that go dead at the given node (the set bits are the bits
-    // for the tracked var indices of the field vars, as in a live var set).
-    //
-    // The map is allocated on demand so all map operations should use one of the following three
-    // wrapper methods.
-
-    NodeToVarsetPtrMap* m_promotedStructDeathVars;
-
-    NodeToVarsetPtrMap* GetPromotedStructDeathVars()
-    {
-        if (m_promotedStructDeathVars == nullptr)
-        {
-            m_promotedStructDeathVars = new (getAllocator()) NodeToVarsetPtrMap(getAllocator());
-        }
-        return m_promotedStructDeathVars;
-    }
-
-    void ClearPromotedStructDeathVars()
-    {
-        if (m_promotedStructDeathVars != nullptr)
-        {
-            m_promotedStructDeathVars->RemoveAll();
-        }
-    }
-
-    bool LookupPromotedStructDeathVars(GenTree* tree, VARSET_TP** bits)
-    {
-        *bits       = nullptr;
-        bool result = false;
-
-        if (m_promotedStructDeathVars != nullptr)
-        {
-            result = m_promotedStructDeathVars->Lookup(tree, bits);
-        }
-
-        return result;
-    }
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -8334,6 +8389,8 @@ private:
         CORINFO_CLASS_HANDLE SIMDNIntHandle;
         CORINFO_CLASS_HANDLE SIMDNUIntHandle;
 
+        CORINFO_CLASS_HANDLE SIMDPlaneHandle;
+        CORINFO_CLASS_HANDLE SIMDQuaternionHandle;
         CORINFO_CLASS_HANDLE SIMDVector2Handle;
         CORINFO_CLASS_HANDLE SIMDVector3Handle;
         CORINFO_CLASS_HANDLE SIMDVector4Handle;
@@ -8397,6 +8454,8 @@ private:
     // Get the handle for a SIMD type.
     CORINFO_CLASS_HANDLE gtGetStructHandleForSIMD(var_types simdType, CorInfoType simdBaseJitType)
     {
+        assert(varTypeIsSIMD(simdType));
+
         if (m_simdHandleCache == nullptr)
         {
             // This may happen if the JIT generates SIMD node on its own, without importing them.
@@ -8409,23 +8468,54 @@ private:
             switch (simdType)
             {
                 case TYP_SIMD8:
+                {
                     return m_simdHandleCache->SIMDVector2Handle;
+                }
+
                 case TYP_SIMD12:
+                {
                     return m_simdHandleCache->SIMDVector3Handle;
+                }
+
                 case TYP_SIMD16:
-                    if ((getSIMDVectorType() == TYP_SIMD32) ||
-                        (m_simdHandleCache->SIMDVector4Handle != NO_CLASS_HANDLE))
+                {
+                    // We order the checks roughly by expected hit count so early exits are possible
+
+                    if (simdBaseJitType != CORINFO_TYPE_FLOAT)
+                    {
+                        // We could be Vector<T>, so handle below
+                        assert(getSIMDVectorType() == TYP_SIMD16);
+                        break;
+                    }
+
+                    if (m_simdHandleCache->SIMDVector4Handle != NO_CLASS_HANDLE)
                     {
                         return m_simdHandleCache->SIMDVector4Handle;
                     }
-                    break;
+
+                    if (m_simdHandleCache->SIMDQuaternionHandle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->SIMDQuaternionHandle;
+                    }
+
+                    if (m_simdHandleCache->SIMDPlaneHandle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->SIMDPlaneHandle;
+                    }
+
+                    return NO_CLASS_HANDLE;
+                }
+
                 case TYP_SIMD32:
                     break;
+
                 default:
                     unreached();
             }
         }
+
         assert(emitTypeSize(simdType) <= largestEnregisterableStructSize());
+
         switch (simdBaseJitType)
         {
             case CORINFO_TYPE_FLOAT:
@@ -8455,6 +8545,7 @@ private:
             default:
                 assert(!"Didn't find a class handle for simdType");
         }
+
         return NO_CLASS_HANDLE;
     }
 
@@ -8463,6 +8554,8 @@ private:
                                                       CorInfoType simdBaseJitType,
                                                       bool        isSimdAsHWIntrinsic = false)
     {
+        assert(varTypeIsSIMD(simdType));
+
         CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
 
         if (isSimdAsHWIntrinsic)
@@ -8472,6 +8565,14 @@ private:
         else
         {
             clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
+        }
+
+        // Currently there are cases where isSimdAsHWIntrinsic is passed
+        // incorrectly. Fall back to the canonical SIMD handle in that case.
+        // TODO-cleanup: We can probably just always use the canonical handle.
+        if (clsHnd == NO_CLASS_HANDLE)
+        {
+            clsHnd = gtGetCanonicalStructHandleForSIMD(simdType);
         }
 
         return clsHnd;
@@ -8522,9 +8623,39 @@ private:
     // actually be declared as having fields.
     bool isOpaqueSIMDType(CORINFO_CLASS_HANDLE structHandle) const
     {
-        return ((m_simdHandleCache != nullptr) && (structHandle != m_simdHandleCache->SIMDVector2Handle) &&
-                (structHandle != m_simdHandleCache->SIMDVector3Handle) &&
-                (structHandle != m_simdHandleCache->SIMDVector4Handle));
+        // We order the checks roughly by expected hit count so early exits are possible
+
+        if (m_simdHandleCache == nullptr)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDVector4Handle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDVector3Handle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDVector2Handle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDQuaternionHandle)
+        {
+            return false;
+        }
+
+        if (structHandle == m_simdHandleCache->SIMDPlaneHandle)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     // Returns true if the lclVar is an opaque SIMD type.
@@ -9033,10 +9164,15 @@ public:
     bool    fgNormalizeEHDone;              // Has the flowgraph EH normalization phase been done?
     size_t  compSizeEstimate;               // The estimated size of the method as per `gtSetEvalOrder`.
     size_t  compCycleEstimate;              // The estimated cycle count of the method as per `gtSetEvalOrder`
-#endif                                      // DEBUG
+    bool    compPoisoningAnyImplicitByrefs; // Importer inserted IR before returns to poison implicit byrefs
+
+#endif // DEBUG
 
     bool fgLocalVarLivenessDone; // Note that this one is used outside of debug.
     bool fgLocalVarLivenessChanged;
+    bool fgIsDoingEarlyLiveness;
+    bool fgDidEarlyLiveness;
+    bool compPostImportationCleanupDone;
     bool compLSRADone;
     bool compRationalIRForm;
 
@@ -9338,8 +9474,8 @@ public:
 // likely complicated enough that loop alignment will not impact performance.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
-// By default only single iteration loops will be unrolled
-#define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 1
+// By default only loops with a constant iteration count less than or equal to this will be unrolled
+#define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 4
 
 #ifdef DEBUG
         // Loop alignment variables
@@ -9551,6 +9687,7 @@ public:
         STRESS_MODE(GENERIC_CHECK)                                                              \
         STRESS_MODE(IF_CONVERSION_COST)                                                         \
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
+        STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
         STRESS_MODE(COUNT)
 
     enum                compStressArea
@@ -10087,6 +10224,7 @@ public:
         unsigned m_stressLclFld;
         unsigned m_dispatchRetBuf;
         unsigned m_wideIndir;
+        unsigned m_stressPoisonImplicitByrefs;
 
     public:
         void RecordLocal(const LclVarDsc* varDsc);
@@ -10385,6 +10523,8 @@ public:
                                     // This can be overwritten by setting complus_JITInlineSize env variable.
 
 #define DEFAULT_MAX_INLINE_DEPTH 20 // Methods at more than this level deep will not be inlined
+
+#define DEFAULT_MAX_FORCE_INLINE_DEPTH 1 // Methods at more than this level deep will not be force inlined
 
 #define DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE 32 // fixed locallocs of this size or smaller will convert to local buffers
 
@@ -10977,7 +11117,6 @@ public:
                 if (TVisitor::UseExecutionOrder && node->IsReverseOp())
                 {
                     assert(node->AsMultiOp()->GetOperandCount() == 2);
-
                     result = WalkTree(&node->AsMultiOp()->Op(2), node);
                     if (result == fgWalkResult::WALK_ABORT)
                     {

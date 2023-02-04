@@ -323,9 +323,6 @@ typedef struct {
 /*
  * Globals
  */
-#ifdef TARGET_WASM
-static DebuggerTlsData debugger_wasm_thread;
-#endif
 static AgentConfig agent_config;
 
 /*
@@ -414,7 +411,7 @@ static gint32 suspend_count;
 /* Whenever to buffer reply messages and send them together */
 static gboolean buffer_replies;
 
-#ifndef TARGET_WASM
+
 #define GET_TLS_DATA_FROM_THREAD(thread) \
 	DebuggerTlsData *tls = NULL; \
 	mono_loader_lock(); \
@@ -424,15 +421,6 @@ static gboolean buffer_replies;
 #define GET_DEBUGGER_TLS() \
 	DebuggerTlsData *tls; \
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
-#else
-/* the thread argument is omitted on wasm, to avoid compiler warning */
-#define GET_TLS_DATA_FROM_THREAD(...) \
-	DebuggerTlsData *tls; \
-	tls = &debugger_wasm_thread;
-#define GET_DEBUGGER_TLS() \
-	DebuggerTlsData *tls; \
-	tls = &debugger_wasm_thread;
-#endif
 
 #define GET_EXTRA_SPACE_FOR_REF_FIELDS(klass) \
 	extra_space_size = 0; \
@@ -527,6 +515,8 @@ static void finish_agent_init (gboolean on_startup);
 static void process_profiler_event (EventKind event, gpointer arg);
 
 static void invalidate_frames (DebuggerTlsData *tls);
+
+static void mono_init_debugger_agent_common (MonoProfilerHandle *prof);
 
 /* Callbacks used by debugger-engine */
 static MonoContext* tls_get_restore_state (void *the_tls);
@@ -814,25 +804,13 @@ mono_debugger_agent_init_internal (void)
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 	mono_profiler_set_domain_unloading_callback (prof, appdomain_start_unload);
 	mono_profiler_set_domain_unloaded_callback (prof, appdomain_unload);
-	mono_profiler_set_thread_started_callback (prof, thread_startup);
-	mono_profiler_set_thread_stopped_callback (prof, thread_end);
 	mono_profiler_set_assembly_loaded_callback (prof, assembly_load);
 	mono_profiler_set_assembly_unloading_callback (prof, assembly_unload);
-	mono_profiler_set_jit_done_callback (prof, jit_done);
 	mono_profiler_set_jit_failed_callback (prof, jit_failed);
 	mono_profiler_set_gc_finalizing_callback (prof, gc_finalizing);
 	mono_profiler_set_gc_finalized_callback (prof, gc_finalized);
 
-	mono_native_tls_alloc (&debugger_tls_id, NULL);
-
-	/* Needed by the hash_table_new_type () call below */
-	mono_gc_base_init ();
-
-	thread_to_tls = mono_g_hash_table_new_type_internal ((GHashFunc)mono_object_hash_internal, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger TLS Table");
-
-	tid_to_thread = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Table");
-
-	tid_to_thread_obj = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Object Table");
+	mono_init_debugger_agent_common (&prof);
 
 	pending_assembly_loads = g_ptr_array_new ();
 
@@ -852,7 +830,6 @@ mono_debugger_agent_init_internal (void)
 	}
 	mono_de_set_log_level (log_level, log_file);
 
-	ids_init ();
 	objrefs_init ();
 	suspend_init ();
 
@@ -1636,6 +1613,31 @@ static GHashTable *obj_to_objref;
 /* Protected by the dbg lock */
 static MonoGHashTable *suspended_objs;
 
+static void
+mono_init_debugger_agent_common (MonoProfilerHandle *prof)
+{
+	ids_init ();
+
+	event_requests = g_ptr_array_new ();
+
+	pending_assembly_loads = g_ptr_array_new ();
+
+	mono_profiler_set_thread_started_callback (*prof, thread_startup);
+	mono_profiler_set_thread_stopped_callback (*prof, thread_end);
+	mono_profiler_set_jit_done_callback (*prof, jit_done);
+	
+	mono_native_tls_alloc (&debugger_tls_id, NULL);
+
+	/* Needed by the hash_table_new_type () call below */
+	mono_gc_base_init ();
+
+	thread_to_tls = mono_g_hash_table_new_type_internal ((GHashFunc)mono_object_hash_internal, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger TLS Table");
+
+	tid_to_thread = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Table");
+
+	tid_to_thread_obj = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Object Table");
+}
+
 #ifdef TARGET_WASM
 void
 mono_init_debugger_agent_for_wasm (int log_level_parm, MonoProfilerHandle *prof)
@@ -1646,23 +1648,17 @@ mono_init_debugger_agent_for_wasm (int log_level_parm, MonoProfilerHandle *prof)
 	int ntransports = 0;
 	DebuggerTransport *transports = mono_debugger_agent_get_transports (&ntransports);
 
-	ids_init();
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
 	obj_to_objref = g_hash_table_new (NULL, NULL);
-	pending_assembly_loads = g_ptr_array_new ();
 
 	log_level = log_level_parm;
-	event_requests = g_ptr_array_new ();
+
 	vm_start_event_sent = TRUE;
 	transport = &transports [0];
 
-	memset(&debugger_wasm_thread, 0, sizeof(DebuggerTlsData));
-	mono_native_tls_alloc (&debugger_tls_id, NULL);
-	mono_native_tls_set_value (debugger_tls_id, &debugger_wasm_thread);
-
 	agent_config.enabled = TRUE;
 
-	mono_profiler_set_jit_done_callback (*prof, jit_done);
+	mono_init_debugger_agent_common (prof);
 }
 
 void
@@ -2255,14 +2251,17 @@ save_thread_context (MonoContext *ctx)
 void
 mono_wasm_save_thread_context (void)
 {
-	debugger_wasm_thread.really_suspended = TRUE;
-	mono_thread_state_init_from_current (&debugger_wasm_thread.context);
+	DebuggerTlsData* tls = mono_wasm_get_tls ();
+	tls->really_suspended = TRUE;
+	mono_thread_state_init_from_current (&tls->context);
 }
 
 DebuggerTlsData*
 mono_wasm_get_tls (void)
 {
-	return &debugger_wasm_thread;
+	MonoThread *thread = mono_thread_current ();
+	GET_TLS_DATA_FROM_THREAD (thread);
+	return tls;
 }
 #endif
 
@@ -2855,7 +2854,11 @@ wait_for_suspend (void)
 static gboolean
 is_suspended (void)
 {
+#ifdef HOST_WASM
+	return true;
+#else
 	return count_threads_to_wait_for () == 0;
+#endif
 }
 
 static void
@@ -3762,6 +3765,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 
 #ifdef TARGET_WASM
 	PRINT_DEBUG_MSG (1, "[%p] Sent %d events %s(%d), suspend=%d.\n", (gpointer) (gsize) mono_native_thread_id_get (), nevents, event_to_string (event), ecount, suspend_policy);
+	mono_wasm_save_thread_context();
 #endif
 
 	send_success = send_packet (CMD_SET_EVENT, CMD_COMPOSITE, &buf);
@@ -3910,8 +3914,9 @@ thread_startup (MonoProfiler *prof, uintptr_t tid)
 	/*
 	 * suspend_vm () could have missed this thread, so wait for a resume.
 	 */
-
+#ifndef HOST_WASM
 	suspend_current_func ();
+#endif
 }
 
 static void
@@ -5575,12 +5580,11 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 					decode_int (buf, &buf, limit); //not used
 				}
 			} else if (type == MONO_TYPE_VALUETYPE) {
-				MonoClass *klass;
 				MonoDomain *d;
 				decode_byte (buf, &buf, limit);
 				if (CHECK_PROTOCOL_VERSION(2, 61))
 					decode_byte (buf, &buf, limit); //ignore is boxed
-				klass = decode_typeid (buf, &buf, limit, &d, &err);
+				decode_typeid (buf, &buf, limit, &d, &err);
 				ret += decode_vtype_compute_size (NULL, domain, buf, &buf, limit, from_by_ref_value_type);
 			} else {
 				goto end;
@@ -9314,7 +9318,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		// Wait for suspending if it already started
 		// FIXME: Races with suspend_count
-#ifndef HOST_WASI	
+#if !defined(HOST_WASI) && !defined(HOST_WASM)
 		while (!is_suspended ()) {
 			if (suspend_count)
 				wait_for_suspend ();
@@ -9499,9 +9503,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	int objid;
 	ErrorCode err;
 	MonoThread *thread_obj;
-#ifndef TARGET_WASM
 	MonoInternalThread *thread;
-#endif
 	int pos, i, len, frame_idx;
 	StackFrame *frame;
 	MonoDebugMethodJitInfo *jit;
@@ -9515,16 +9517,10 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	if (err != ERR_NONE)
 		return err;
 
-#ifndef TARGET_WASM
 	thread = THREAD_TO_INTERNAL (thread_obj);
-#endif
 	id = decode_id (p, &p, end);
 
-#ifndef TARGET_WASM
 	GET_TLS_DATA_FROM_THREAD (thread);
-#else
-	GET_TLS_DATA_FROM_THREAD ();
-#endif
 	g_assert (tls);
 
 	for (i = 0; i < tls->frame_count; ++i) {

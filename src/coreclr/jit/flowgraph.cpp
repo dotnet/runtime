@@ -78,19 +78,9 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
     bool createdPollBlocks = false;
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgInsertGCPolls() for %s\n", info.compFullName);
-        fgDispBasicBlocks(false);
-        printf("\n");
-    }
-#endif // DEBUG
-
-    BasicBlock* block;
-
     // Walk through the blocks and hunt for a block that needs a GC Poll
-    for (block = fgFirstBB; block != nullptr; block = block->bbNext)
+    //
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         compCurBB = block;
 
@@ -112,56 +102,36 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
         GCPollType pollType = GCPOLL_INLINE;
 
-        // We'd like to inset an inline poll. Below is the list of places where we
+        // We'd like to insert an inline poll. Below is the list of places where we
         // can't or don't want to emit an inline poll. Check all of those. If after all of that we still
         // have INLINE, then emit an inline check.
 
         if (opts.OptimizationDisabled())
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because of debug/minopts\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // Don't split blocks and create inlined polls unless we're optimizing.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because of debug/minopts\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if (genReturnBB == block)
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // we don't want to split the single return block
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if (BBJ_SWITCH == block->bbJumpKind)
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // We don't want to deal with all the outgoing edges of a switch block.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if ((block->bbFlags & BBF_COLD) != 0)
         {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Selecting CALL poll in block " FMT_BB " because it is a cold block\n", block->bbNum);
-            }
-#endif // DEBUG
-
             // We don't want to split a cold block.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a cold block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
 
@@ -176,9 +146,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
     {
         noway_assert(opts.OptimizationEnabled());
         fgReorderBlocks(/* useProfileData */ false);
-        constexpr bool computePreds = true;
-        constexpr bool computeDoms  = false;
-        fgUpdateChangedFlowGraph(computePreds, computeDoms);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
     }
 
     return result;
@@ -194,7 +162,6 @@ PhaseStatus Compiler::fgInsertGCPolls()
 // Return Value:
 //    If new basic blocks are inserted, the last inserted block; otherwise, the input block.
 //
-
 BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 {
     bool createdPollBlocks;
@@ -258,7 +225,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             }
         }
 
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(newStmt);
             fgSetStmtSeq(newStmt);
@@ -333,7 +300,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         // Add the GC_CALL node to Poll.
         Statement* pollStmt = fgNewStmtAtEnd(poll, call);
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(pollStmt);
             fgSetStmtSeq(pollStmt);
@@ -393,7 +360,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         GenTree* trapCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, trapRelop);
         gtSetEvalOrder(trapCheck);
         Statement* trapCheckStmt = fgNewStmtAtEnd(top, trapCheck);
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             gtSetStmtInfo(trapCheckStmt);
             fgSetStmtSeq(trapCheckStmt);
@@ -647,14 +614,6 @@ PhaseStatus Compiler::fgImport()
     if (compIsForInlining())
     {
         compInlineResult->SetImportedILSize(info.compILImportSize);
-    }
-
-    // Full preds are only used later on
-    assert(!fgComputePredsDone);
-    if (fgCheapPredsValid)
-    {
-        // Cheap predecessors are only used during importation
-        fgRemovePreds();
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
@@ -1598,8 +1557,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgPredsComputed);
 
 #if !FEATURE_EH
     // If we don't support EH, we can't add the EH needed by synchronized methods.
@@ -1628,6 +1587,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // Create a block for the fault.
+    // It gets an artificial ref count.
 
     assert(!tryLastBB->bbFallsThrough());
     BasicBlock* faultBB = fgNewBBafter(BBJ_EHFINALLYRET, tryLastBB, false);
@@ -1635,6 +1595,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     assert(tryLastBB->bbNext == faultBB);
     assert(faultBB->bbNext == nullptr);
     assert(faultBB == fgLastBB);
+
+    faultBB->bbRefs = 1;
 
     { // Scope the EH region creation
 
@@ -2217,7 +2179,6 @@ private:
     BasicBlock* CreateReturnBB(unsigned index, GenTreeIntConCommon* returnConst = nullptr)
     {
         BasicBlock* newReturnBB = comp->fgNewBBinRegion(BBJ_RETURN);
-        newReturnBB->bbRefs     = 1; // bbRefs gets update later, for now it should be 1
         comp->fgReturnCount++;
 
         noway_assert(newReturnBB->bbNext == nullptr);
@@ -2377,6 +2338,7 @@ private:
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
                     returnBlock->bbJumpKind = BBJ_ALWAYS;
                     returnBlock->bbJumpDest = constReturnBlock;
+                    comp->fgAddRefPred(constReturnBlock, returnBlock);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
                     assert(returnBlock->lastStmt()->GetRootNode()->OperIs(GT_RETURN));
@@ -3019,6 +2981,15 @@ PhaseStatus Compiler::fgSimpleLowering()
                 }
 #endif // FEATURE_FIXED_OUT_ARGS
 
+                case GT_CAST:
+                {
+                    if (tree->AsCast()->CastOp()->OperIsSimple() && fgSimpleLowerCastOfSmpOp(range, tree->AsCast()))
+                    {
+                        madeChanges = true;
+                    }
+                    break;
+                }
+
                 default:
                 {
                     // No other operators need processing.
@@ -3075,6 +3046,91 @@ PhaseStatus Compiler::fgSimpleLowering()
 #endif // FEATURE_FIXED_OUT_ARGS
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
+// fgSimpleLowerCastOfSmpOp: Optimization to remove CAST nodes from operands of some simple ops that are safe to do so
+// since the upper bits do not affect the lower bits, and result of the simple op is zero/sign-extended via a CAST.
+// Example:
+//      CAST(ADD(CAST(x), CAST(y))) transforms to CAST(ADD(x, y))
+//
+// Returns:
+//      True or false, representing changes were made.
+//
+// Notes:
+//      This optimization could be done in morph, but it cannot because there are correctness
+//      problems with NOLs (normalized-on-load locals) and how they are handled in VN.
+//      Simple put, you cannot remove a CAST from CAST(LCL_VAR{nol}) in HIR.
+//
+//      Because the optimization happens after rationalization, turning into LIR, it is safe to remove the CAST.
+//
+bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
+{
+    GenTree*  castOp     = cast->CastOp();
+    var_types castToType = cast->CastToType();
+    var_types srcType    = castOp->TypeGet();
+
+    assert(castOp->OperIsSimple());
+
+    if (opts.OptimizationDisabled())
+        return false;
+
+    if (cast->gtOverflow())
+        return false;
+
+    if (castOp->OperMayOverflow() && castOp->gtOverflow())
+        return false;
+
+    // Only optimize if the castToType is a small integer type.
+    // Only optimize if the srcType is an integer type.
+    if (!varTypeIsSmall(castToType) || !varTypeIsIntegral(srcType))
+        return false;
+
+    // These are the only safe ops where the CAST is not necessary for the inputs.
+    if (castOp->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_AND, GT_XOR, GT_OR, GT_NOT, GT_NEG))
+    {
+        bool madeChanges = false;
+
+        if (castOp->gtGetOp1()->OperIs(GT_CAST))
+        {
+            GenTreeCast* op1 = castOp->gtGetOp1()->AsCast();
+
+            if (!op1->gtOverflow() && (genActualType(op1->CastOp()) == genActualType(srcType)) &&
+                (castToType == op1->CastToType()))
+            {
+                // Removes the cast.
+                castOp->AsOp()->gtOp1 = op1->CastOp();
+                range.Remove(op1);
+                madeChanges = true;
+            }
+        }
+
+        if (castOp->OperIsBinary() && castOp->gtGetOp2()->OperIs(GT_CAST))
+        {
+            GenTreeCast* op2 = castOp->gtGetOp2()->AsCast();
+
+            if (!op2->gtOverflow() && (genActualType(op2->CastOp()) == genActualType(srcType)) &&
+                (castToType == op2->CastToType()))
+            {
+                // Removes the cast.
+                castOp->AsOp()->gtOp2 = op2->CastOp();
+                range.Remove(op2);
+                madeChanges = true;
+            }
+        }
+
+#ifdef DEBUG
+        if (madeChanges)
+        {
+            JITDUMP("Lower - Cast of Simple Op %s:\n", GenTree::OpName(cast->OperGet()));
+            DISPTREE(cast);
+        }
+#endif // DEBUG
+
+        return madeChanges;
+    }
+
+    return false;
 }
 
 /*****************************************************************************************************
@@ -3248,7 +3304,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 //
 void Compiler::fgCreateFuncletPrologBlocks()
 {
-    noway_assert(fgComputePredsDone);
+    noway_assert(fgPredsComputed);
     noway_assert(!fgDomsComputed); // this function doesn't maintain the dom sets
     assert(!fgFuncletsCreated);
 
@@ -3419,6 +3475,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     // Since we may need to create a new transition block
     // we assert that it is OK to create new blocks.
     //
+    assert(fgPredsComputed);
     assert(fgSafeBasicBlockCreation);
     assert(fgFirstColdBlock == nullptr);
 
@@ -3619,8 +3676,6 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                         BasicBlock* transitionBlock = fgNewBBafter(BBJ_ALWAYS, prevToFirstColdBlock, true);
                         transitionBlock->bbJumpDest = firstColdBlock;
                         transitionBlock->inheritWeight(firstColdBlock);
-
-                        noway_assert(fgComputePredsDone);
 
                         // Update the predecessor list for firstColdBlock
                         fgReplacePred(firstColdBlock, prevToFirstColdBlock, transitionBlock);
@@ -4008,6 +4063,16 @@ GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
         }
     };
 
+#ifdef DEBUG
+    if (isLIR)
+    {
+        assert((fgNodeThreading == NodeThreading::LIR) || (mostRecentlyActivePhase == PHASE_RATIONALIZE));
+    }
+    else
+    {
+        assert((fgNodeThreading == NodeThreading::AllTrees) || (mostRecentlyActivePhase == PHASE_SET_BLOCK_ORDER));
+    }
+#endif
     return SetTreeSeqVisitor(this, tree, isLIR).Sequence();
 }
 
@@ -4111,10 +4176,6 @@ PhaseStatus Compiler::fgSetBlockOrder()
 
         fgSetBlockOrder(block);
     }
-
-    /* Remember that now the tree list is threaded */
-
-    fgStmtListThreaded = true;
 
 #ifdef DEBUG
     if (verbose)

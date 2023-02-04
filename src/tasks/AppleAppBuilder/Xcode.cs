@@ -103,9 +103,13 @@ public class XcodeBuildApp : Task
     /// </summary>
     public string? DestinationFolder { get; set; }
 
+    /// Strip local symbols and debug information, and extract it in XcodeProjectPath directory
+    /// </summary>
+    public bool StripSymbolTable { get; set; }
+
     public override bool Execute()
     {
-        new Xcode(Log, TargetOS, Arch).BuildAppBundle(XcodeProjectPath, Optimized, DevTeamProvisioning, DestinationFolder);
+        new Xcode(Log, TargetOS, Arch).BuildAppBundle(XcodeProjectPath, Optimized, StripSymbolTable, DevTeamProvisioning, DestinationFolder);
 
         return true;
     }
@@ -440,7 +444,7 @@ internal sealed class Xcode
     }
 
     public string BuildAppBundle(
-        string xcodePrjPath, bool optimized, string? devTeamProvisioning = null, string? destination = null)
+        string xcodePrjPath, bool optimized, bool stripSymbolTable, string? devTeamProvisioning = null, string? destination = null)
     {
         string sdk = "";
         var args = new StringBuilder();
@@ -543,6 +547,13 @@ internal sealed class Xcode
             var newAppPath = Path.Combine(destination, Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
             Directory.Move(appPath, newAppPath);
             appPath = newAppPath;
+        }
+
+        if (stripSymbolTable)
+        {
+            string filename = Path.GetFileNameWithoutExtension(appPath);
+            Utils.RunProcess(Logger, "dsymutil", $"{appPath}/{filename} -o {Path.GetDirectoryName(xcodePrjPath)}/{filename}.dSYM", workingDir: Path.GetDirectoryName(appPath));
+            Utils.RunProcess(Logger, "strip", $"-no_code_signature_warning -x {appPath}/{filename}", workingDir: Path.GetDirectoryName(appPath));
         }
 
         long appSize = new DirectoryInfo(appPath)

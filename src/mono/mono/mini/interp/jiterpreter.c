@@ -346,7 +346,7 @@ mono_jiterp_localloc (gpointer *destination, gint32 len, InterpFrame *frame)
 	ThreadContext *context = mono_jiterp_get_context();
 	gpointer mem;
 	if (len > 0) {
-		mem = mono_jiterp_frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
+		mem = mono_jiterp_frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, sizeof (gint64)));
 
 		if (frame->imethod->init_locals)
 			memset (mem, 0, len);
@@ -438,6 +438,14 @@ mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
 	return 0;
 }
 
+#define JITERP_CNE_UN_R4 (0xFFFF + 0)
+#define JITERP_CGE_UN_R4 (0xFFFF + 1)
+#define JITERP_CLE_UN_R4 (0xFFFF + 2)
+#define JITERP_CNE_UN_R8 (0xFFFF + 3)
+#define JITERP_CGE_UN_R8 (0xFFFF + 4)
+#define JITERP_CLE_UN_R8 (0xFFFF + 5)
+
+
 #define JITERP_RELOP(opcode, type, op, noorder) \
 	case opcode: \
 		{ \
@@ -455,10 +463,14 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 		JITERP_RELOP(MINT_CEQ_R8, double, ==, 0);
 		JITERP_RELOP(MINT_CNE_R4, float, !=, 1);
 		JITERP_RELOP(MINT_CNE_R8, double, !=, 1);
+		JITERP_RELOP(JITERP_CNE_UN_R4, float, !=, 1);
+		JITERP_RELOP(JITERP_CNE_UN_R8, double, !=, 1);
 		JITERP_RELOP(MINT_CGT_R4, float, >, 0);
 		JITERP_RELOP(MINT_CGT_R8, double, >, 0);
 		JITERP_RELOP(MINT_CGE_R4, float, >=, 0);
 		JITERP_RELOP(MINT_CGE_R8, double, >=, 0);
+		JITERP_RELOP(JITERP_CGE_UN_R4, float, >=, 1);
+		JITERP_RELOP(JITERP_CGE_UN_R8, double, >=, 1);
 		JITERP_RELOP(MINT_CGT_UN_R4, float, >, 1);
 		JITERP_RELOP(MINT_CGT_UN_R8, double, >, 1);
 		JITERP_RELOP(MINT_CLT_R4, float, <, 0);
@@ -467,6 +479,8 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 		JITERP_RELOP(MINT_CLT_UN_R8, double, <, 1);
 		JITERP_RELOP(MINT_CLE_R4, float, <=, 0);
 		JITERP_RELOP(MINT_CLE_R8, double, <=, 0);
+		JITERP_RELOP(JITERP_CLE_UN_R4, float, <=, 1);
+		JITERP_RELOP(JITERP_CLE_UN_R8, double, <=, 1);
 
 		default:
 			g_assert_not_reached();
@@ -563,7 +577,6 @@ EMSCRIPTEN_KEEPALIVE stackval *
 mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 {
 	stackval *sp_args;
-	MonoMethod *method;
 	InterpMethod *rmethod;
 	ThreadContext *context;
 
@@ -572,15 +585,13 @@ mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 	jiterp_assert(data);
 	rmethod = data->header.rmethod;
 	jiterp_assert(rmethod);
-	method = rmethod->method;
-	jiterp_assert(method);
 
-	if (mono_interp_is_method_multicastdelegate_invoke(method)) {
+	// Is this method MulticastDelegate.Invoke?
+	if (rmethod->is_invoke) {
 		// Copy the current state of the cache before using it
 		JiterpEntryDataCache cache = data->cache;
 		if (this_arg && (cache.delegate_invoke_is_for == (MonoDelegate*)this_arg)) {
 			// We previously cached the invoke for this delegate
-			method = cache.delegate_invoke;
 			data->header.rmethod = rmethod = cache.delegate_invoke_rmethod;
 		} else {
 			/*
@@ -588,7 +599,7 @@ mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 			* Have to replace the method with the wrapper here, since the wrapper depends on the delegate.
 			*/
 			MonoDelegate *del = (MonoDelegate*)this_arg;
-			method = mono_marshal_get_delegate_invoke (method, del);
+			MonoMethod *method = mono_marshal_get_delegate_invoke (rmethod->method, del);
 			data->header.rmethod = rmethod = mono_interp_get_imethod (method);
 
 			// Cache the delegate invoke. This works because data was allocated statically
@@ -658,11 +669,14 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_LDLOCA_S:
 		case MINT_LDTOKEN:
 		case MINT_LDSTR:
+		case MINT_LDFTN:
 		case MINT_LDFTN_ADDR:
 		case MINT_MONO_LDPTR:
 		case MINT_CPOBJ_VT:
 		case MINT_LDOBJ_VT:
 		case MINT_STOBJ_VT:
+		case MINT_STOBJ_VT_NOREF:
+		case MINT_CPOBJ_VT_NOREF:
 		case MINT_STRLEN:
 		case MINT_GETCHR:
 		case MINT_GETITEM_SPAN:
@@ -683,18 +697,32 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_NEWOBJ_VT_INLINED:
 		case MINT_LD_DELEGATE_METHOD_PTR:
 		case MINT_LDTSFLDA:
+		case MINT_SAFEPOINT:
+		case MINT_INTRINS_GET_HASHCODE:
+		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
+		case MINT_INTRINS_ENUM_HASFLAG:
+		case MINT_ADD_MUL_I4_IMM:
+		case MINT_ADD_MUL_I8_IMM:
+		case MINT_ARRAY_RANK:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
 		case MINT_BR_S:
-			if (*inside_branch_block)
-				return TRACE_CONTINUE;
-
-			return TRACE_ABORT;
-
-		case MINT_THROW:
 		case MINT_LEAVE:
 		case MINT_LEAVE_S:
+			// Detect backwards branches
+			if (ins->info.target_bb->il_offset <= ins->il_offset) {
+				if (*inside_branch_block)
+					return TRACE_CONTINUE;
+				else
+					return TRACE_ABORT;
+			}
+
+			*inside_branch_block = TRUE;
+			return TRACE_CONTINUE;
+
+		case MINT_MONO_RETHROW:
+		case MINT_THROW:
 			if (*inside_branch_block)
 				return TRACE_CONTINUE;
 
@@ -708,10 +736,8 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_CALL_HANDLER_S:
 		case MINT_ENDFINALLY:
 		case MINT_RETHROW:
-		case MINT_MONO_RETHROW:
 		case MINT_PROF_EXIT:
 		case MINT_PROF_EXIT_VOID:
-		case MINT_SAFEPOINT:
 			return TRACE_ABORT;
 
 		case MINT_MOV_SRC_OFF:
@@ -930,6 +956,81 @@ mono_jiterp_update_jit_call_dispatcher (WasmDoJitCall dispatcher)
 	if (!dispatcher)
 		dispatcher = (WasmDoJitCall)mono_llvm_cpp_catch_exception;
 	jiterpreter_do_jit_call = dispatcher;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_object_has_component_size (MonoObject ** ppObj)
+{
+	MonoObject *obj = *ppObj;
+	if (!obj)
+		return 0;
+	return (obj->vtable->flags & MONO_VT_FLAG_ARRAY_OR_STRING) != 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_hashcode (MonoObject ** ppObj)
+{
+	MonoObject *obj = *ppObj;
+	g_assert (obj);
+	return mono_object_hash_internal (obj);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_signature_has_this (MonoMethodSignature *sig)
+{
+	return sig->hasthis;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoType *
+mono_jiterp_get_signature_return_type (MonoMethodSignature *sig)
+{
+	return sig->ret;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_signature_param_count (MonoMethodSignature *sig)
+{
+	return sig->param_count;
+}
+
+EMSCRIPTEN_KEEPALIVE MonoType **
+mono_jiterp_get_signature_params (MonoMethodSignature *sig)
+{
+	return sig->params;
+}
+
+#define DUMMY_BYREF 0xFFFF
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_type_to_ldind (MonoType *type)
+{
+	if (!type)
+		return 0;
+	if (m_type_is_byref(type))
+		return DUMMY_BYREF;
+	return mono_type_to_ldind (type);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_type_to_stind (MonoType *type)
+{
+	if (!type)
+		return 0;
+	if (m_type_is_byref(type))
+		return 0;
+	return mono_type_to_stind (type);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_array_rank (gint32 *dest, MonoObject **src)
+{
+	if (!src || !*src) {
+		*dest = 0;
+		return 0;
+	}
+
+	*dest = m_class_get_rank (mono_object_class (*src));
+	return 1;
 }
 
 // HACK: fix C4206

@@ -535,6 +535,7 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 }
 
 bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
+                                      uint32_t        flags,
                                       REGDISPLAY *    pRegisterSet,                 // in/out
                                       PInvokeTransitionFrame**      ppPreviousTransitionFrame)    // out
 {
@@ -574,10 +575,16 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         }
 
         *ppPreviousTransitionFrame = *(PInvokeTransitionFrame**)(basePointer + slot);
-        return true;
-    }
 
-    *ppPreviousTransitionFrame = NULL;
+        if ((flags & USFF_StopUnwindOnTransitionFrame) != 0)
+        {
+            return true;
+        }
+    }
+    else
+    {
+        *ppPreviousTransitionFrame = NULL;
+    }
 
     CONTEXT context;
     KNONVOLATILE_CONTEXT_POINTERS contextPointers;

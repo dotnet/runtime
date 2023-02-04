@@ -109,7 +109,6 @@ jobs:
             shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
-            extraHelixArguments: $(_extraHelixArguments)
 
             # coreclrTestGroup: The following mappings of 'coreclrTestGroup' to 'scenarios' is copied from
             # eng/pipelines/common/templates/runtimes/run-test-job.yml (with 'testGroup' replaced by 'coreclrTestGroup'
@@ -122,6 +121,17 @@ jobs:
             # that 'jitstress' contains 'no_tiered_compilation'. The 'normal' (default) test mode
             # is run in a regular CI job, so there is no need to duplicate it here. So, add 'no_tiered_compilation'
             # to the 'jitstress' job instead of adding a new job just for 'no_tiered_compilation'.
+
+            # src/libraries/sendtohelix.proj processes one scenario per parallel MSBuild invocation. Each invocation only
+            # creates Helix work items and them waits for their completion on the remote Helix machines, so is not
+            # computationally intensive. We want Helix to be provided with all the possible work items in up front,
+            # so can do as much work in parallel as possible. Thus, increase the amount of allowed MSBuild parallelism
+            # to at least the maximum number of scenarios to be processed in a coreclrTestGroup. If there is no
+            # coreclrTestGroup then there is only one scenario (the default scenario), so don't change the MSBuild argument.
+            ${{ if ne(parameters.coreclrTestGroup, '') }}:
+              extraHelixArguments: $(_extraHelixArguments) /maxcpucount:10
+            ${{ else }}:
+              extraHelixArguments: $(_extraHelixArguments)
 
             ${{ if in(parameters.coreclrTestGroup, 'jitstress') }}:
               scenarios:

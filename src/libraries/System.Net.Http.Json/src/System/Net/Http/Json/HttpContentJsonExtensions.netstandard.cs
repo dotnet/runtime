@@ -21,7 +21,7 @@ namespace System.Net.Http.Json
             return content.ReadAsStreamAsync();
         }
 
-        private static Stream GetTranscodingStream(Stream contentStream, Encoding sourceEncoding)
+        private static TranscodingReadStream GetTranscodingStream(Stream contentStream, Encoding sourceEncoding)
         {
             return new TranscodingReadStream(contentStream, sourceEncoding);
         }

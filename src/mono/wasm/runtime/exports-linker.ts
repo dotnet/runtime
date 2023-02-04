@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { mono_wasm_fire_debugger_agent_message, mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint } from "./debug";
+import { mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause, mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint } from "./debug";
+
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
@@ -48,10 +49,10 @@ export function export_linker(): any {
 
         // mini-wasm-debugger.c
         mono_wasm_asm_loaded,
-        mono_wasm_fire_debugger_agent_message,
         mono_wasm_debugger_log,
         mono_wasm_add_dbg_command_received,
-
+        mono_wasm_fire_debugger_agent_message_with_data,
+        mono_wasm_fire_debugger_agent_message_with_data_to_pause,
         // mono-threads-wasm.c
         schedule_background_exec,
 

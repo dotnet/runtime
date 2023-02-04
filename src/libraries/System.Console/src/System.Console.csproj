@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_SystemConsole</GeneratePlatformNotSupportedAssemblyMessage>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'Browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Console.cs" />
@@ -47,11 +49,42 @@
       <Link>Common\Interop\Android\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- WebAssembly -->
+  <!-- Browser -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="System\ConsolePal.WebAssembly.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dup.cs"
              Link="Common\Interop\Unix\Interop.Dup.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
+             Link="Common\Interop\Unix\Interop.Write.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FileDescriptors.cs"
+             Link="Common\Interop\Unix\Interop.FileDescriptors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
+             Link="Common\Interop\Unix\Interop.IOErrors.cs" />
+  </ItemGroup>
+  <!-- WASI is like unix without dup and termio -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
+    <Compile Include="System\ConsolePal.Wasi.cs" />
+    <Compile Include="System\ConsolePal.Unix.ConsoleStream.cs" />
+    <!-- 
+    <Compile Include="System\IO\SyncTextReader.Unix.cs" />
+     -->
+
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.StdinReady.cs"
+             Link="Common\Interop\Unix\Interop.StdinReady.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadStdinUnbuffered.cs"
+             Link="Common\Interop\Unix\Interop.ReadStdinUnbuffered.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
+             Link="Common\Interop\Unix\Interop.Poll.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
+             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs"
+             Link="Common\Interop\Unix\Interop.Read.cs" />
+    <Compile Include="$(CommonPath)System\Text\EncodingHelper.Unix.cs"
+             Link="Common\System\Text\EncodingHelper.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs"
              Link="Common\Interop\Unix\Interop.Write.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -158,6 +191,7 @@
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\ConsolePal.Unix.cs" />
+    <Compile Include="System\ConsolePal.Unix.ConsoleStream.cs" />
     <Compile Include="System\TerminalFormatStrings.cs" />
     <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
              Link="Common\System\Console\ConsoleUtils.cs" />

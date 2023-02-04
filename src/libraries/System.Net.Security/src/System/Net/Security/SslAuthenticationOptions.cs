@@ -82,6 +82,7 @@ namespace System.Net.Security
             EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
             IsServer = false;
             RemoteCertRequired = true;
+            CertificateContext = sslClientAuthenticationOptions.ClientCertificateContext;
             if (!string.IsNullOrEmpty(sslClientAuthenticationOptions.TargetHost))
             {
                 // RFC 6066 section 3 says to exclude trailing dot from fully qualified DNS hostname
@@ -223,5 +224,9 @@ namespace System.Net.Security
         internal object? UserState { get; set; }
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
         internal X509ChainPolicy? CertificateChainPolicy { get; set; }
+
+#if TARGET_ANDROID
+        internal SslStream.JavaProxy? SslStreamProxy { get; set; }
+#endif
     }
 }
