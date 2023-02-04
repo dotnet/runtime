@@ -272,7 +272,7 @@
 
     <ItemGroup Condition="'$(TargetOS)' == 'wasi'">
       <WorkloadIdForTesting Include="wasi-experimental"
-                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
                             Variant="latest"
                             Version="$(PackageVersionForWorkloadManifests)"
                             VersionBand="$(SdkBandVersion)" />
