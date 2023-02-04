@@ -1,12 +1,13 @@
 <Project TreatAsLocalProperty="ArchiveTests">
+  <Import Project="tests.wasm.targets" />
+
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
-    <IsWasmProject Condition="'$(IsWasmProject)' == ''">true</IsWasmProject>
+    <IsWasiProject Condition="'$(IsWasiProject)' == ''">true</IsWasiProject>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <ArchiveTests Condition="'$(WasmBuildingForNestedPublish)' == 'true'">false</ArchiveTests>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
-    <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
 
     <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
          so, just setting it true by default -->
@@ -17,24 +18,27 @@
       - for AOT library tests, we use WasmNativeStrip=false, so we already have symbols
     -->
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
-    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">true</WasmEmitSymbolMap>
+    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
+    <WasmSingleFileBundle>true</WasmSingleFileBundle>
+
+    <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
 
     <!-- Run only if previous command succeeded -->
     <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
-    <_WasmMainJSFileName Condition="'$(WasmMainJSPath)' != ''">$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
-    <_WasmStrictVersionMatch Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</_WasmStrictVersionMatch>
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
     <_UseWasmSymbolicator Condition="'$(TestTrimming)' != 'true'">true</_UseWasmSymbolicator>
     <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' == ''">true</WasmIgnoreNet6WorkloadInstallErrors>
     <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' != 'true'">false</WasmIgnoreNet6WorkloadInstallErrors>
     <InstallWorkloadUsingArtifactsDependsOn>_GetWorkloadsToInstall;$(InstallWorkloadUsingArtifactsDependsOn)</InstallWorkloadUsingArtifactsDependsOn>
-    <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and
-                                        ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv')) and
-                                        '$(Scenario)' == 'WasmTestOnBrowser'">true</InstallChromeForTests>
     <_XHarnessTestsTimeout>00:30:00</_XHarnessTestsTimeout>
-    <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>
+
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
   </PropertyGroup>
+
+  <!-- On CI this is installed as part of pretest, but it should still be installed
+       for WBT, and debugger tests -->
+  <Import Project="$(MSBuildThisFileDirectory)wasi-provisioning.targets" />
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
@@ -55,37 +59,84 @@
     <_AOT_InternalForceInterpretAssemblies Include="@(HighAotMemoryUsageAssembly)" />
   </ItemGroup>
 
-  <!--<PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">-->
-    <!--[> running aot-helix tests locally, so we can test with the same project file as CI <]-->
-    <!--<_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>-->
+  <PropertyGroup>
+    <_AppArgs Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_AppArgs>
+    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm</_AppArgs>
 
-    <!--<_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</_AOTBuildCommand>-->
-    <!--<_AOTBuildCommand>$(_AOTBuildCommand) $(_ShellCommandSeparator) cd wasm_build/AppBundle</_AOTBuildCommand>-->
+    <_AppArgs Condition="'$(IsFunctionalTest)' != 'true'">$(_AppArgs) $(AssemblyName).dll</_AppArgs>
+    <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) -- $(WasmTestAppArgs)</_AppArgs>
 
-    <!--<RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>-->
-    <!--<RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) $(_ShellCommandSeparator) $(RunScriptCommand)</RunScriptCommand>-->
-  <!--</PropertyGroup>-->
+    <!-- FIXME: wasttime specific param name -->
+    <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --env=XHARNESS_LOG_TEST_START=1</WasmXHarnessMonoArgs>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RunScriptCommand)' == ''">
+    <_XHarnessArgs Condition="'$(OS)' != 'Windows_NT'">wasi $XHARNESS_COMMAND --app=. --output-directory=$XHARNESS_OUT</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(OS)' == 'Windows_NT'">wasi %XHARNESS_COMMAND% --app=. --output-directory=%XHARNESS_OUT%</_XHarnessArgs>
+
+    <!-- FIXME: workaround till xharness correctly defaults to using wasmtime.exe -->
+    <_XHarnessArgs Condition="'$(OS)' == 'Windows_NT' and '$(ContinuousIntegrationBuild)' != 'true'">$(_XHarnessArgs) --wasm-engine-path=$(WasmtimeDir)wasmtime.exe</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(OS)' == 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">$(_XHarnessArgs) --wasm-engine-path=%HELIX_CORRELATION_PAYLOAD%\wasmtime\wasmtime.exe</_XHarnessArgs>
+
+    <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(_XHarnessTestsTimeout)' != ''   " >$(_XHarnessArgs) &quot;--timeout=$(_XHarnessTestsTimeout)&quot;</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
+
+    <!-- There two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
+    <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24XHARNESS_ARGS %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
+    <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">%HARNESS_RUNNER% $(_XHarnessArgs) %XHARNESS_ARGS% %WasmXHarnessArgs%  -- $(WasmXHarnessMonoArgs) %WasmXHarnessMonoArgs% $(_AppArgs) %WasmTestAppArgs%</RunScriptCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
+    <_AOTBuildCommand Condition="'$(BrowserHost)' != 'windows'">_buildAOTFunc publish/ProxyProjectForAOTOnHelix.proj $XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
+    <_AOTBuildCommand Condition="'$(BrowserHost)' == 'windows'">dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:%XHARNESS_OUT%/AOTBuild.binlog</_AOTBuildCommand>
+
+    <_AOTBuildCommand  Condition="'$(BrowserHost)' == 'windows'">$(_AOTBuildCommand) &quot;/p:WasmCachePath=%USERPROFILE%\.emscripten-cache&quot;</_AOTBuildCommand>
+
+    <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
+    <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
+
+    <_AOTBuildCommand>$(_AOTBuildCommand) /p:RunAOTCompilation=$(RunAOTCompilation)</_AOTBuildCommand>
+    <_AOTBuildCommand>$(_AOTBuildCommand) $(_ShellCommandSeparator) cd wasm_build/AppBundle</_AOTBuildCommand>
+
+    <RunScriptCommand Condition="'$(RunScriptCommand)' == ''">$(_AOTBuildCommand)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) $(_ShellCommandSeparator) $(RunScriptCommand)</RunScriptCommand>
+  </PropertyGroup>
 
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
-  <!--<Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.props"-->
-          <!--Condition="'$(BuildAOTTestsOn)' == 'local'" />-->
-  <!--<Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets"-->
-          <!--Condition="'$(BuildAOTTestsOn)' == 'local'" />-->
+  <Import Project="$(MonoProjectRoot)\wasi\build\WasiApp.props"
+          Condition="'$(BuildAOTTestsOn)' == 'local'" />
+  <Import Project="$(MonoProjectRoot)\wasi\build\WasiApp.InTree.targets"
+          Condition="'$(BuildAOTTestsOn)' == 'local'" />
 
   <PropertyGroup>
-    <!-- non-library tests have IsBrowserWasmProject==false -->
-    <!--<BundleTestWasmAppDependsOn Condition="'$(IsBrowserWasmProject)' == 'true' and '$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>-->
-    <!--<BundleTestWasmAppDependsOn Condition="'$(IsBrowserWasmProject)' == 'true' and '$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>-->
+    <!-- non-library tests have IsWasmProject==false -->
+    <BundleTestWasmAppDependsOn Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
+    <BundleTestWasmAppDependsOn Condition="'$(IsWasmProject)' == 'true' and '$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
+
+    <!-- Use BundleDir here, since WasmAppDir is set in a target, and `dotnet run` reads
+         $(Run*) without running any targets -->
+    <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(BundleDir), 'WasmTestRunner.runtimeconfig.json'))</_RuntimeConfigJsonPath>
+    <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments) $(StartArguments) $(WasmXHarnessMonoArgs) $(_AppArgs)</RunArguments>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
     <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
   </PropertyGroup>
 
-  <!--<ItemGroup>-->
-    <!--<WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />-->
-    <!--<WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppToolCurrent)\WasmSymbolicator.dll" />-->
-  <!--</ItemGroup>-->
+  <PropertyGroup Condition="'$(IsWasiProject)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
+    <WasmBuildOnlyAfterPublish>true</WasmBuildOnlyAfterPublish>
+
+    <!-- wasm's publish targets will trigger publish, so we shouldn't do that -->
+    <PublishTestAsSelfContainedDependsOn />
+    <WasmNestedPublishAppDependsOn>PrepareForWasmBuildApp;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />
+    <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppToolCurrent)\WasmSymbolicator.dll" />
+  </ItemGroup>
 
   <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />
 
@@ -94,11 +145,15 @@
              AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
 
   <Target Name="_BundleAOTTestWasmAppForHelix" DependsOnTargets="PrepareForWasmBuildApp">
+    <PropertyGroup Condition="'$(IsHighAotMemoryUsageTest)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true'">
+      <DisableParallelEmccCompile Condition="'$(DisableParallelEmccCompile)' == ''">true</DisableParallelEmccCompile>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-O2</EmccLinkOptimizationFlag>
+    </PropertyGroup>
+
     <PropertyGroup>
       <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
       <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
-      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-O1 -Wl,-O0 -Wl,-lto-O0</EmccLinkOptimizationFlag>
-      <WasmNativeStrip>true</WasmNativeStrip>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Oz -Wl,-O0 -Wl,-lto-O0</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
     <Error Text="Item WasmAssembliesToBundle is empty. This is likely an authoring error." Condition="@(WasmAssembliesToBundle->Count()) == 0" />
@@ -123,6 +178,9 @@
       <_WasmPropertyNames Include="AOTMode" />
       <_WasmPropertyNames Include="AssemblyName" />
       <_WasmPropertyNames Include="DisableParallelAot" />
+      <_WasmPropertyNames Include="DisableParallelEmccCompile" />
+      <_WasmPropertyNames Include="EmccCompileOptimizationFlag" />
+      <_WasmPropertyNames Include="EmccLinkOptimizationFlag" />
       <_WasmPropertyNames Include="IncludeSatelliteAssembliesInVFS" />
       <_WasmPropertyNames Include="InvariantGlobalization" />
       <_WasmPropertyNames Include="WasmBuildNative" />
@@ -223,39 +281,13 @@
     <Copy SourceFiles="$(HelixTargetsFile)" DestinationFiles="$(TestArchiveTestsDir)$(TestProjectName).helix.targets" SkipUnchangedFiles="true" />
   </Target>
 
-  <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersionForWorkloadsTesting" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
-    <ItemGroup Condition="'$(TargetOS)' == 'browser'">
-      <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
-                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
-                            Variant="latest"
-                            Version="$(PackageVersionForWorkloadManifests)" />
-
-      <WorkloadIdForTesting Include="wasm-tools-net7;wasm-experimental-net7"
-                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
-                            Variant="net7"
-                            Version="$(PackageVersionForWorkloadManifests)" />
-
-      <WorkloadIdForTesting Include="wasm-tools-net6"
-                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
-                            Variant="net6"
-                            Version="$(PackageVersionForWorkloadManifests)"
-                            IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)" />
-
-      <WorkloadCombinationsToInstall Include="latest"   Variants="latest" />
-      <WorkloadCombinationsToInstall Include="net7"     Variants="net7" />
-      <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" />
-      <!--<WorkloadCombinationsToInstall Include="net6"     Variants="net6" />-->
-      <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->
-      <!--<WorkloadCombinationsToInstall Include="none" />-->
+  <Target Name="_WasiAddToRunScript" BeforeTargets="GenerateRunScript">
+    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+      <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="export PREPEND_PATH=$(WasmtimeDir)" />
     </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetOS)' == 'wasi'">
-      <WorkloadIdForTesting Include="wasi-experimental"
-                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
-                            Variant="latest"
-                            Version="$(PackageVersionForWorkloadManifests)"
-                            VersionBand="$(SdkBandVersion)" />
-      <WorkloadCombinationsToInstall Include="latest" Variants="latest" />
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+      <SetScriptCommands Condition="'$(InstallWasmtimeForTests)' == 'true' and Exists($(WasmtimeDir))" Include="set PREPEND_PATH=$(WasmtimeDir)" />
     </ItemGroup>
   </Target>
+
 </Project>

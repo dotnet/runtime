@@ -9,6 +9,7 @@ parameters:
   isRollingBuild: false
   excludeLibTests: false
   excludeNonLibTests: false
+  excludeOptional: true
   debuggerTestsOnly: false
 
 jobs:
@@ -230,3 +231,13 @@ jobs:
     #parameters:
       #runProfile: 'v8'
       #onlySanityCheck: true
+
+- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - wasi_wasm
+      extraBuildArgs: /p:EnableAggressiveTrimming=true
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      scenarios:
+        - normal

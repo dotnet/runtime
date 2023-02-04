@@ -6,6 +6,8 @@
 
   <PropertyGroup>
     <_WasmBuildNativeCoreDependsOn>
+      _WasmAotCompileApp;
+      _WasmStripAOTAssemblies;
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
       _GenerateManagedToNative;
