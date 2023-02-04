@@ -554,35 +554,6 @@ unsigned BasicBlock::dspPreds()
     return count;
 }
 
-/*****************************************************************************
- *
- *  Display the bbCheapPreds basic block list (the block predecessors).
- *  Returns the number of characters printed.
- */
-
-unsigned BasicBlock::dspCheapPreds()
-{
-    unsigned count = 0;
-    for (BasicBlockList* pred = bbCheapPreds; pred != nullptr; pred = pred->next)
-    {
-        if (count != 0)
-        {
-            printf(",");
-            count += 1;
-        }
-        printf(FMT_BB, pred->block->bbNum);
-        count += 4;
-
-        // Account for %02u only handling 2 digits, but we can display more than that.
-        unsigned digits = CountDigits(pred->block->bbNum);
-        if (digits > 2)
-        {
-            count += digits - 2;
-        }
-    }
-    return count;
-}
-
 //------------------------------------------------------------------------
 // dspSuccs: Display the basic block successors.
 //
@@ -731,14 +702,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
     if (showPreds)
     {
         printf(", preds={");
-        if (compiler->fgCheapPredsValid)
-        {
-            dspCheapPreds();
-        }
-        else
-        {
-            dspPreds();
-        }
+        dspPreds();
         printf("} succs={");
         dspSuccs(compiler);
         printf("}");
