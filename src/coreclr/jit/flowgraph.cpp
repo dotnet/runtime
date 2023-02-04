@@ -53,6 +53,45 @@ static bool blockNeedsGCPoll(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------------
+// fgExpandRuntimeLookups : partially expand runtime lookups helper calls
+//                          to add a nullcheck [+ size check] and a fast path
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
+PhaseStatus Compiler::fgExpandRuntimeLookups()
+{
+    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
+    if (!doesMethodHaveExpRuntimeLookup())
+    {
+        return result;
+    }
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            {
+                if (!tree->IsCall() || !tree->AsCall()->IsExpRuntimeLookup())
+                {
+                    continue;
+                }
+                assert(tree->IsHelperCall());
+
+                // TODO: expand runtime lookups into:
+                //
+                // isNull ? helperCall : IND(fastpath)
+                //
+                // or (for dynamic expansion):
+                //
+                // isNull ? helperCall : (sizeCheck ? IND(fastPath) : helperCall)
+            }
+        }
+    }
+    return result;
+}
+
+//------------------------------------------------------------------------------
 // fgInsertGCPolls : Insert GC polls for basic blocks containing calls to methods
 //                   with SuppressGCTransitionAttribute.
 //

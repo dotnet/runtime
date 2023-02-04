@@ -1881,62 +1881,17 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     assert(pRuntimeLookup->indirections != 0);
 
-    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark1"));
-
-    // Extract the handle
-    GenTree* handleForNullCheck = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-    handleForNullCheck->gtFlags |= GTF_IND_NONFAULTING;
-
     // Call the helper
     // - Setup argNode with the pointer to the signature returned by the lookup
     GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-
     GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
 
-    // Check for null and possibly call helper
-    GenTree* nullCheck       = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
-    GenTree* handleForResult = gtCloneExpr(handleForNullCheck);
+    // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
+    // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
+    setMethodHasExpRuntimeLookup();
 
-    GenTree* result = nullptr;
-
-    if (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
-    {
-        // Dynamic dictionary expansion support
-
-        assert((lastIndOfTree != nullptr) && (pRuntimeLookup->indirections > 0));
-
-        // sizeValue = dictionary[pRuntimeLookup->sizeOffset]
-        GenTreeIntCon* sizeOffset      = gtNewIconNode(pRuntimeLookup->sizeOffset, TYP_I_IMPL);
-        GenTree*       sizeValueOffset = gtNewOperNode(GT_ADD, TYP_I_IMPL, lastIndOfTree, sizeOffset);
-        GenTree*       sizeValue       = gtNewOperNode(GT_IND, TYP_I_IMPL, sizeValueOffset);
-        sizeValue->gtFlags |= GTF_IND_NONFAULTING;
-
-        // sizeCheck fails if sizeValue < pRuntimeLookup->offsets[i]
-        GenTree* offsetValue = gtNewIconNode(pRuntimeLookup->offsets[pRuntimeLookup->indirections - 1], TYP_I_IMPL);
-        GenTree* sizeCheck   = gtNewOperNode(GT_LE, TYP_INT, sizeValue, offsetValue);
-
-        // revert null check condition.
-        nullCheck->ChangeOperUnchecked(GT_EQ);
-
-        // ((sizeCheck fails || nullCheck fails))) ? (helperCall : handle).
-        // Add checks and the handle as call arguments, indirect call transformer will handle this.
-        NewCallArg nullCheckArg       = NewCallArg::Primitive(nullCheck);
-        NewCallArg sizeCheckArg       = NewCallArg::Primitive(sizeCheck);
-        NewCallArg handleForResultArg = NewCallArg::Primitive(handleForResult);
-        helperCall->gtArgs.PushFront(this, nullCheckArg, sizeCheckArg, handleForResultArg);
-        result = helperCall;
-        addExpRuntimeLookupCandidate(helperCall);
-    }
-    else
-    {
-        GenTreeColon* colonNullCheck = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, handleForResult, helperCall);
-        result                       = gtNewQmarkNode(TYP_I_IMPL, nullCheck, colonNullCheck);
-    }
-
-    unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling Runtime Lookup tree"));
-
-    impAssignTempGen(tmp, result, CHECK_SPILL_NONE);
-    return gtNewLclvNode(tmp, TYP_I_IMPL);
+    helperCall->SetExpRuntimeLookup();
+    return helperCall;
 }
 
 struct RecursiveGuard
@@ -14060,12 +14015,6 @@ methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED
     memory->m_token           = token;
     memory->m_tokenConstraint = tokenConstrained;
     return memory;
-}
-
-void Compiler::addExpRuntimeLookupCandidate(GenTreeCall* call)
-{
-    setMethodHasExpRuntimeLookup();
-    call->SetExpRuntimeLookup();
 }
 
 //------------------------------------------------------------------------

@@ -4918,6 +4918,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDomsComputed    = false;
     optLoopTableValid = false;
 
+    // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
+    DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
+
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 

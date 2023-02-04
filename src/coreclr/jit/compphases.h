@@ -92,6 +92,7 @@ CompPhaseNameMacro(PHASE_IF_CONVERSION,              "If conversion",           
 CompPhaseNameMacro(PHASE_VN_BASED_DEAD_STORE_REMOVAL,"VN-based dead store removal",    false, -1, false)
 CompPhaseNameMacro(PHASE_OPT_UPDATE_FLOW_GRAPH,      "Update flow graph opt pass",     false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS2,      "Compute edge weights (2, false)",false, -1, false)
+CompPhaseNameMacro(PHASE_EXPAND_RTLOOKUPS,           "Expand runtime lookups",         false, -1, true)
 CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,            "Insert GC Polls",                false, -1, true)
 CompPhaseNameMacro(PHASE_DETERMINE_FIRST_COLD_BLOCK, "Determine first cold block",     false, -1, true)
 CompPhaseNameMacro(PHASE_RATIONALIZE,                "Rationalize IR",                 false, -1, false)

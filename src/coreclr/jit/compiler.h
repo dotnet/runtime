@@ -5222,6 +5222,7 @@ public:
     // Initialize the per-block variable sets (used for liveness analysis).
     void fgInitBlockVarSets();
 
+    PhaseStatus fgExpandRuntimeLookups();
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -7024,8 +7025,6 @@ public:
     {
         optMethodFlags &= ~OMF_HAS_EXPRUNTIMELOOKUP;
     }
-
-    void addExpRuntimeLookupCandidate(GenTreeCall* call);
 
     bool doesMethodHavePatchpoints()
     {
