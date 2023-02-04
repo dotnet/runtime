@@ -537,7 +537,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     // Note that the parentNode is always the block node, even if we're dealing with the source address.
     // The source address is not directly used by the block node but by an IND node and that IND node is
     // always contained.
-    if (!IsSafeToContainMem(blkNode, addrParent, addrMode))
+    if (!IsInvariantInRange(addrMode, addrParent, blkNode))
     {
         return;
     }
@@ -1300,7 +1300,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            if (!IsSafeToContainMem(node, op1))
+            if (!IsInvariantInRange(op1, node))
             {
                 // What we're doing here is effectively similar to containment,
                 // except for we're deleting the node entirely, so don't we have
@@ -5298,7 +5298,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
             MakeSrcContained(node, addr);
         }
     }
-    else if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(node, addr))
+    else if ((addr->OperGet() == GT_LEA) && IsInvariantInRange(addr, node))
     {
         MakeSrcContained(node, addr);
     }
@@ -5329,7 +5329,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
         {
             unsigned swapSize = src->OperIs(GT_BSWAP16) ? 2 : genTypeSize(src);
 
-            if ((swapSize == genTypeSize(node)) && IsSafeToContainMem(node, src))
+            if ((swapSize == genTypeSize(node)) && IsInvariantInRange(src, node))
             {
                 // Prefer containing in the store in case the load has been contained.
                 src->gtGetOp1()->ClearContained();
@@ -5408,7 +5408,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 }
             }
 
-            if (isContainable && IsSafeToContainMem(node, src))
+            if (isContainable && IsInvariantInRange(src, node))
             {
                 MakeSrcContained(node, src);
 
@@ -5562,30 +5562,27 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
         }
         else
         {
-            // IsSafeToContainMem is expensive so we call it at most once for each operand
-            // in this method. If we already called IsSafeToContainMem, it must have returned false;
-            // otherwise, memOp would be set to the corresponding operand (op1 or op2).
             if (imm != nullptr)
             {
                 // Has a contained immediate operand.
                 // Only 'other' operand can be marked as reg optional.
                 assert(other != nullptr);
 
-                isSafeToContainOp1 = ((other == op1) && isSafeToContainOp1 && IsSafeToContainMem(node, op1));
-                isSafeToContainOp2 = ((other == op2) && isSafeToContainOp2 && IsSafeToContainMem(node, op2));
+                isSafeToContainOp1 = ((other == op1) && IsSafeToMarkRegOptional(node, op1));
+                isSafeToContainOp2 = ((other == op2) && IsSafeToMarkRegOptional(node, op2));
             }
             else if (hasImpliedFirstOperand)
             {
                 // Only op2 can be marked as reg optional.
                 isSafeToContainOp1 = false;
-                isSafeToContainOp2 = isSafeToContainOp2 && IsSafeToContainMem(node, op2);
+                isSafeToContainOp2 = isSafeToContainOp2 && IsSafeToMarkRegOptional(node, op2);
             }
             else
             {
                 // If there are no containable operands, we can make either of op1 or op2
                 // as reg optional.
-                isSafeToContainOp1 = isSafeToContainOp1 && IsSafeToContainMem(node, op1);
-                isSafeToContainOp2 = isSafeToContainOp2 && IsSafeToContainMem(node, op2);
+                isSafeToContainOp1 = isSafeToContainOp1 && IsSafeToMarkRegOptional(node, op1);
+                isSafeToContainOp2 = isSafeToContainOp2 && IsSafeToMarkRegOptional(node, op2);
             }
             SetRegOptionalForBinOp(node, isSafeToContainOp1, isSafeToContainOp2);
         }
@@ -5621,11 +5618,11 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 #endif
 
     // divisor can be an r/m, but the memory indirection must be of the same size as the divide
-    if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()) && IsSafeToContainMem(node, divisor))
+    if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()) && IsInvariantInRange(divisor, node))
     {
         MakeSrcContained(node, divisor);
     }
-    else if (divisorCanBeRegOptional)
+    else if (divisorCanBeRegOptional && IsSafeToMarkRegOptional(node, divisor))
     {
         // If there are no containable operands, we can make an operand reg optional.
         // Div instruction allows only divisor to be a memory op.
@@ -5833,7 +5830,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             }
         }
 
-        if (!otherOp->isContained() && isSafeToContainOtherOp && IsSafeToContainMem(cmp, otherOp))
+        if (!otherOp->isContained() && IsSafeToMarkRegOptional(cmp, otherOp))
         {
             // SSE2 allows only otherOp to be a memory-op. Since otherOp is not
             // contained, we can mark it reg-optional.
@@ -5892,11 +5889,8 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             // if one of them is on stack.
             GenTree* regOptionalCandidate = op1->IsCnsIntOrI() ? op2 : PreferredRegOptionalOperand(cmp);
 
-            // IsSafeToContainMem is expensive so we call it at most once for each operand
-            // in this method. If we already called IsSafeToContainMem, it must have returned false;
-            // otherwise, the corresponding operand (op1 or op2) would be contained.
-            bool setRegOptional = (regOptionalCandidate == op1) ? isSafeToContainOp1 && IsSafeToContainMem(cmp, op1)
-                                                                : isSafeToContainOp2 && IsSafeToContainMem(cmp, op2);
+            bool setRegOptional =
+                (regOptionalCandidate == op1) ? IsSafeToMarkRegOptional(cmp, op1) : IsSafeToMarkRegOptional(cmp, op2);
             if (setRegOptional)
             {
                 MakeSrcRegOptional(cmp, regOptionalCandidate);
@@ -5932,14 +5926,11 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
 
     if (genTypeSize(op1) == operSize)
     {
-        if (IsContainableMemoryOp(op1))
+        if (IsContainableMemoryOp(op1) && IsSafeToContainMem(select, op1))
         {
-            if (IsSafeToContainMem(select, op1))
-            {
-                MakeSrcContained(select, op1);
-            }
+            MakeSrcContained(select, op1);
         }
-        else if (IsSafeToContainMem(select, op1))
+        else if (IsSafeToMarkRegOptional(select, op1))
         {
             MakeSrcRegOptional(select, op1);
         }
@@ -5947,14 +5938,11 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
 
     if (genTypeSize(op2) == operSize)
     {
-        if (IsContainableMemoryOp(op2))
+        if (IsContainableMemoryOp(op2) && IsSafeToContainMem(select, op2))
         {
-            if (IsSafeToContainMem(select, op2))
-            {
-                MakeSrcContained(select, op2);
-            }
+            MakeSrcContained(select, op2);
         }
-        else if (IsSafeToContainMem(select, op2))
+        else if (IsSafeToMarkRegOptional(select, op2))
         {
             MakeSrcRegOptional(select, op2);
         }
@@ -6165,11 +6153,8 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
         // Read-Modify-Write (RMW) operation, we can mark its operands
         // as reg optional.
 
-        // IsSafeToContainMem is expensive so we call it at most once for each operand
-        // in this method. If we already called IsSafeToContainMem, it must have returned false;
-        // otherwise, directlyEncodable would be true.
-        isSafeToContainOp1 = isSafeToContainOp1 && IsSafeToContainMem(node, op1);
-        isSafeToContainOp2 = isSafeToContainOp2 && IsSafeToContainMem(node, op2);
+        isSafeToContainOp1 = IsSafeToMarkRegOptional(node, op1);
+        isSafeToContainOp2 = IsSafeToMarkRegOptional(node, op2);
 
         SetRegOptionalForBinOp(node, isSafeToContainOp1, isSafeToContainOp2);
     }
@@ -6668,9 +6653,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         }
     }
 
-    bool isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
-
-    *supportsRegOptional = isSafeToContainMem && supportsGeneralLoads;
+    *supportsRegOptional = supportsGeneralLoads && IsSafeToMarkRegOptional(parentNode, childNode);
 
     if (!childNode->OperIsHWIntrinsic())
     {
@@ -6680,7 +6663,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         {
             if (IsContainableMemoryOp(childNode))
             {
-                canBeContained = isSafeToContainMem;
+                canBeContained = IsSafeToContainMem(parentNode, childNode);
             }
             else if (childNode->IsCnsNonZeroFltOrDbl())
             {
@@ -6785,7 +6768,7 @@ void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* ad
     TryCreateAddrMode(addr, true, node);
     if ((addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR, GT_LEA) ||
          (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp))) &&
-        IsSafeToContainMem(node, addr))
+        IsInvariantInRange(addr, node))
     {
         MakeSrcContained(node, addr);
     }
@@ -7557,11 +7540,8 @@ void Lowering::ContainCheckFloatBinary(GenTreeOp* node)
     if (!op1->isContained() && !op2->isContained())
     {
         // If there are no containable operands, we can make an operand reg optional.
-        // IsSafeToContainMem is expensive so we call it at most once for each operand
-        // in this method. If we already called IsSafeToContainMem, it must have returned false;
-        // otherwise, the corresponding operand (op1 or op2) would be contained.
-        isSafeToContainOp1 = isSafeToContainOp1 && IsSafeToContainMem(node, op1);
-        isSafeToContainOp2 = isSafeToContainOp2 && IsSafeToContainMem(node, op2);
+        isSafeToContainOp1 = IsSafeToMarkRegOptional(node, op1);
+        isSafeToContainOp2 = IsSafeToMarkRegOptional(node, op2);
         SetRegOptionalForBinOp(node, isSafeToContainOp1, isSafeToContainOp2);
     }
 }

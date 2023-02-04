@@ -356,7 +356,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
         return;
     }
 
-    if (!IsSafeToContainMem(blkNode, addrParent, addr))
+    if (!IsInvariantInRange(addr, addrParent, blkNode))
     {
         return;
     }
@@ -629,7 +629,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 #endif // FEATURE_SIMD
 
     GenTree* addr = indirNode->Addr();
-    if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
+    if ((addr->OperGet() == GT_LEA) && IsInvariantInRange(addr, indirNode))
     {
         MakeSrcContained(indirNode, addr);
     }
