@@ -214,7 +214,6 @@
     <MicrosoftPrivateIntellisenseVersion>7.0.0-preview-20221010.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>8.0.0-preview.2.23103.1</MicrosoftNETILLinkTasksVersion>
-    <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- Mono Cecil -->
     <MicrosoftDotNetCecilVersion>0.11.4-alpha.23080.1</MicrosoftDotNetCecilVersion>
     <MicrosoftDotNetCecilPdbVersion>0.11.4-alpha.23080.1</MicrosoftDotNetCecilPdbVersion>
