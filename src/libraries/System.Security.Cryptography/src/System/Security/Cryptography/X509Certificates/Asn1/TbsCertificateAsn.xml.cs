@@ -54,7 +54,11 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             // DEFAULT value handler for Version.
             {
+#if NET7_0_OR_GREATER
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: 6);
+#else
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+#endif
                 tmp.WriteInteger(Version);
 
                 if (!tmp.EncodedValueEquals(DefaultVersion))

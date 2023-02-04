@@ -40,7 +40,11 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             // DEFAULT value handler for CA.
             {
+#if NET7_0_OR_GREATER
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: 3);
+#else
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+#endif
                 tmp.WriteBoolean(CA);
 
                 if (!tmp.EncodedValueEquals(DefaultCA))

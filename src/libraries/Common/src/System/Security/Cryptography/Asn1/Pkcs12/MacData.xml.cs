@@ -48,7 +48,11 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
 
             // DEFAULT value handler for IterationCount.
             {
+#if NET7_0_OR_GREATER
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: 6);
+#else
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+#endif
                 tmp.WriteInteger(IterationCount);
 
                 if (!tmp.EncodedValueEquals(DefaultIterationCount))

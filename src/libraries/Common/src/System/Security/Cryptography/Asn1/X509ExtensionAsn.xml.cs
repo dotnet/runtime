@@ -49,7 +49,11 @@ namespace System.Security.Cryptography.Asn1
 
             // DEFAULT value handler for Critical.
             {
+#if NET7_0_OR_GREATER
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: 3);
+#else
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+#endif
                 tmp.WriteBoolean(Critical);
 
                 if (!tmp.EncodedValueEquals(DefaultCritical))
