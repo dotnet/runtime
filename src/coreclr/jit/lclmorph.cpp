@@ -1250,7 +1250,7 @@ private:
 #ifdef DEBUG
                 removeIndir = true;
 #endif // DEBUG
-                lclNode     = BashToLclVar(indir->gtGetOp1(), lclNum);
+                lclNode = BashToLclVar(indir->gtGetOp1(), lclNum);
                 if (isDef)
                 {
                     *val.Use() = lclNode;
@@ -1353,11 +1353,6 @@ private:
                 return IndirTransform::LclVar;
             }
 
-            if (varTypeIsSmall(indir) && varTypeIsIntegral(varDsc->TypeGet()) && !varTypeIsLong(varDsc->TypeGet()))
-            {
-                return IndirTransform::CastOfLclVar;
-            }
-
             bool isDef = user->OperIs(GT_ASG) && (user->gtGetOp1() == indir);
 
             // For small locals on the LHS we can ignore the signed/unsigned diff.
@@ -1370,6 +1365,11 @@ private:
             if (m_compiler->opts.OptimizationDisabled())
             {
                 return IndirTransform::LclFld;
+            }
+
+            if (varTypeIsSmall(indir) && varTypeIsIntegral(varDsc->TypeGet()) && !varTypeIsLong(varDsc->TypeGet()))
+            {
+                return IndirTransform::CastOfLclVar;
             }
 
 #ifdef FEATURE_HW_INTRINSICS
