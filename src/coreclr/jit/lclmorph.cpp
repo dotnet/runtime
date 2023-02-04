@@ -1139,7 +1139,7 @@ private:
         unsigned             lclNum      = val.LclNum();
         LclVarDsc*           varDsc      = m_compiler->lvaGetDesc(lclNum);
         GenTreeLclVarCommon* lclNode     = nullptr;
-        bool                 isDef       = user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir);
+        bool                 isDef = (user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir);
 
 #ifdef DEBUG
         bool removeIndir = false;
