@@ -12,56 +12,56 @@
 .method public static string typecheck_castclass(object) {
 .maxstack	1
     ldarg   0
-	no. typecheck castclass [mscorlib]System.String
-	ret
+    no. typecheck castclass [mscorlib]System.String
+    ret
 }
 .method public static int32& typecheck_unbox(object) {
 .maxstack	1
-	ldarg	0
-	no. typecheck unbox [mscorlib]System.Object
-	ret
+    ldarg	0
+    no. typecheck unbox [mscorlib]System.Object
+    ret
 }
 .method public static object& typecheck_ldelema(object[]) {
 .maxstack	2
-	ldarg	0
+    ldarg	0
     ldc.i4  0
-	no. typecheck ldelema [mcsorlib]System.Object
-	ret
+    no. typecheck ldelema [mcsorlib]System.Object
+    ret
 }
 .method public static void typecheck_stelem(object[], string) {
 .maxstack	3
-	ldarg	0
+    ldarg	0
     ldc.i4  0
     ldarg   1
-	no. typecheck stelem.ref
-	ret
+    no. typecheck stelem.ref
+    ret
 }
 
 // rangecheck
 
 .method public static object& rangecheck_ldelema(object[]) {
 .maxstack	2
-	ldarg	0
+    ldarg	0
     ldc.i4  0
-	no. rangecheck ldelema [mcsorlib]System.Object
-	ret
+    no. rangecheck ldelema [mcsorlib]System.Object
+    ret
 }
 
 .method public static object rangecheck_ldelem(object[]) {
 .maxstack	2
-	ldarg	0
+    ldarg	0
     ldc.i4  0
-	no. rangecheck ldelem [mcsorlib]System.Object
-	ret
+    no. rangecheck ldelem [mcsorlib]System.Object
+    ret
 }
 
 .method public static void rangecheck_stelem(object[], string) {
 .maxstack	3
-	ldarg	0
+    ldarg	0
     ldc.i4  0
     ldarg   1
-	no. rangecheck stelem.ref
-	ret
+    no. rangecheck stelem.ref
+    ret
 }
 
 // nullcheck
@@ -86,94 +86,94 @@
 
 .method public static void nullcheck_callvirt(class Example) {
 .maxstack	1
-	ldarg	0
-	no. nullcheck callvirt instance void Example::VirtualMethod()
-	ret
+    ldarg	0
+    no. nullcheck callvirt instance void Example::VirtualMethod()
+    ret
 }
 
 .method public static object nullcheck_ldfld(class Example) {
 .maxstack	1
-	ldarg	0
-	no. nullcheck ldfld object Example::Field
-	ret
+    ldarg	0
+    no. nullcheck ldfld object Example::Field
+    ret
 }
 
 .method public static void nullcheck_stfld(class Example, object) {
 .maxstack	2
-	ldarg	0
+    ldarg	0
     ldarg   1
-	no. nullcheck stfld object Example::Field
-	ret
+    no. nullcheck stfld object Example::Field
+    ret
 }
 
 .method public static void* nullcheck_ldvirtfn(class Example) {
 .maxstack	1
-	ldarg	0
-	no. nullcheck ldvirtfn instance void Example::VirtualMethod()
-	ret
+    ldarg	0
+    no. nullcheck ldvirtfn instance void Example::VirtualMethod()
+    ret
 }
 
 .method public static object& nullcheck_ldelema(object[]) {
 .maxstack	2
-	ldarg	0
+    ldarg	0
     ldc.i4  0
-	no. nullcheck ldelema [mcsorlib]System.Object
-	ret
+    no. nullcheck ldelema [mcsorlib]System.Object
+    ret
 }
 
 .method public static object nullcheck_ldelem(object[]) {
 .maxstack	2
-	ldarg	0
+    ldarg	0
     ldc.i4  0
-	no. nullcheck ldelem [mcsorlib]System.Object
-	ret
+    no. nullcheck ldelem [mcsorlib]System.Object
+    ret
 }
 
 .method public static void nullcheck_stelem(object[], string) {
 .maxstack	3
-	ldarg	0
+    ldarg	0
     ldc.i4  0
     ldarg   1
-	no. nullcheck stelem.ref
-	ret
+    no. nullcheck stelem.ref
+    ret
 }
 
 // typecheck | rangecheck
 
 .method public static object& typecheck_rangecheck_ldelema(object[]) {
 .maxstack	2
-	ldarg	0
+    ldarg	0
     ldc.i4  0
-	no. typecheck | rangecheck ldelema [mcsorlib]System.Object
-	ret
+    no. typecheck | rangecheck ldelema [mcsorlib]System.Object
+    ret
 }
 
 .method public static void typecheck_rangecheck_stelem(object[], string) {
 .maxstack	3
-	ldarg	0
+    ldarg	0
     ldc.i4  0
     ldarg   1
-	no. typecheck | rangecheck stelem.ref
-	ret
+    no. typecheck | rangecheck stelem.ref
+    ret
 }
 
 // typecheck | nullcheck
 
 .method public static object& typecheck_nullcheck_ldelema(object[]) {
 .maxstack	2
-	ldarg	0
+    ldarg	0
     ldc.i4  0
-	no. typecheck | nullcheck ldelema [mcsorlib]System.Object
-	ret
+    no. typecheck | nullcheck ldelema [mcsorlib]System.Object
+    ret
 }
 
 .method public static object typecheck_nullcheck_stelem(object[], string) {
 .maxstack	3
-	ldarg	0
+    ldarg	0
     ldc.i4  0
     ldarg   1
-	no. typecheck | rangecheck stelem.ref
-	ret
+    no. typecheck | rangecheck stelem.ref
+    ret
 }
 
 
@@ -181,46 +181,46 @@
 
 .method public static object& rangecheck_nullcheck_ldelema(object[]) {
 .maxstack	2
-	ldarg	0
+    ldarg	0
     ldc.i4  0
-	no. rangecheck | nullcheck ldelema [mcsorlib]System.Object
-	ret
+    no. rangecheck | nullcheck ldelema [mcsorlib]System.Object
+    ret
 }
 
 .method public static object rangecheck_nullcheck_ldelem(object[]) {
 .maxstack	2
-	ldarg	0
+    ldarg	0
     ldc.i4  0
-	no. rangecheck | nullcheck ldelem [mcsorlib]System.Object
-	ret
+    no. rangecheck | nullcheck ldelem [mcsorlib]System.Object
+    ret
 }
 
 .method public static void rangecheck_nullcheck_stelem(object[], string) {
 .maxstack	3
-	ldarg	0
+    ldarg	0
     ldc.i4  0
     ldarg   1
-	no. rangecheck | nullcheck stelem.ref
-	ret
+    no. rangecheck | nullcheck stelem.ref
+    ret
 }
 
 // typecheck | rangecheck | nullcheck
 
 .method public static object& typecheck_rangecheck_nullcheck_ldelema(object[]) {
 .maxstack	2
-	ldarg	0
+    ldarg	0
     ldc.i4  0
-	no. typecheck | rangecheck | nullcheck ldelema [mcsorlib]System.Object
-	ret
+    no. typecheck | rangecheck | nullcheck ldelema [mcsorlib]System.Object
+    ret
 }
 
 .method public static object typecheck_rangecheck_nullcheck_stelem(object[], string) {
 .maxstack	3
-	ldarg	0
+    ldarg	0
     ldc.i4  0
     ldarg   1
-	no. typecheck | rangecheck | nullcheck stelem.ref
-	ret
+    no. typecheck | rangecheck | nullcheck stelem.ref
+    ret
 }
 
 .method public static int32 main(class [mscorlib]System.String[]) {
