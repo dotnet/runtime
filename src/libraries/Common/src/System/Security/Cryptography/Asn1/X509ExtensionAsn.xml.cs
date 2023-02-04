@@ -50,7 +50,8 @@ namespace System.Security.Cryptography.Asn1
             // DEFAULT value handler for Critical.
             {
 #if NET7_0_OR_GREATER
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: 3);
+                const int AsnBoolDerEncodeSize = 3;
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);
 #else
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
 #endif

@@ -41,7 +41,8 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             // DEFAULT value handler for CA.
             {
 #if NET7_0_OR_GREATER
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: 3);
+                const int AsnBoolDerEncodeSize = 3;
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);
 #else
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
 #endif
