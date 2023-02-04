@@ -537,7 +537,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     // Note that the parentNode is always the block node, even if we're dealing with the source address.
     // The source address is not directly used by the block node but by an IND node and that IND node is
     // always contained.
-    if (!IsInvariantInRange(addrMode, addrParent, blkNode))
+    if (!IsInvariantInRange(addrMode, blkNode, addrParent))
     {
         return;
     }

@@ -692,7 +692,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     }
 #endif // !TARGET_ARM
 
-    if (!IsInvariantInRange(addr, addrParent, blkNode))
+    if (!IsInvariantInRange(addr, blkNode, addrParent))
     {
         return;
     }

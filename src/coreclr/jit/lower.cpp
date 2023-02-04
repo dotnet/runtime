@@ -226,7 +226,7 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const
 
 //------------------------------------------------------------------------
 // IsSafeToContainMem: Checks for conflicts between childNode and grandParentNode
-// and returns 'true' iff memory operand childNode can be contained in ancestorNode
+// and returns 'true' iff memory operand childNode can be contained in grandParentNode.
 //
 // Arguments:
 //    grandParentNode - any non-leaf node
@@ -257,7 +257,7 @@ bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) 
     }
 
     // We expect this to have interference as otherwise we could have marked it contained.
-    return IsInvariantInRange(childNode, parentNode);
+    return false;
 }
 
 //------------------------------------------------------------------------
