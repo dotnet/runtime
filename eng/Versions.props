@@ -218,7 +218,7 @@
     <MicrosoftDotNetCecilVersion>0.11.4-alpha.23080.1</MicrosoftDotNetCecilVersion>
     <MicrosoftDotNetCecilPdbVersion>0.11.4-alpha.23080.1</MicrosoftDotNetCecilPdbVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-preview.2.23080.3</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-preview.2.23103.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicVersion>2.1.1</MicrosoftNativeQuicMsQuicVersion>
     <SystemNetMsQuicTransportVersion>7.0.0-alpha.1.22406.1</SystemNetMsQuicTransportVersion>
