@@ -150,6 +150,8 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 //
 bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 {
+    assert((node != nullptr) && (endExclusive != nullptr));
+
     // Quick early-out for unary cases
     //
     if (node->gtNext == endExclusive)
@@ -162,6 +164,7 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 
     for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
     {
+        assert((cur != nullptr) && "Expected first node to precede end node");
         const bool strict = true;
         if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
         {
@@ -188,11 +191,14 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 //
 bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const
 {
+    assert((node != nullptr) && (endExclusive != nullptr));
+
     m_scratchSideEffects.Clear();
     m_scratchSideEffects.AddNode(comp, node);
 
     for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
     {
+        assert((cur != nullptr) && "Expected first node to precede end node");
         if (cur == ignoreNode)
         {
             continue;
