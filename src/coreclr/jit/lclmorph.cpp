@@ -1244,21 +1244,15 @@ private:
 
             case IndirTransform::CastOfLclVar:
                 assert(varTypeIsSmall(indir));
-                assert(varTypeIsIntegral(varDsc->TypeGet()));
+                assert(varTypeIsIntegral(varDsc));
                 assert(*val.Use() == indir);
+                assert(!isDef);
 
 #ifdef DEBUG
                 removeIndir = true;
 #endif // DEBUG
-                lclNode = BashToLclVar(indir->gtGetOp1(), lclNum);
-                if (isDef)
-                {
-                    *val.Use() = lclNode;
-                }
-                else
-                {
-                    *val.Use() = m_compiler->gtNewCastNode(varDsc->TypeGet(), lclNode, false, indir->TypeGet());
-                }
+                lclNode = BashToLclVar(indir->gtGetOp1(), lclNum);               
+                *val.Use() = m_compiler->gtNewCastNode(TYP_INT, lclNode, false, indir->TypeGet());
                 break;
 
             case IndirTransform::LclFld:
@@ -1367,7 +1361,11 @@ private:
                 return IndirTransform::LclFld;
             }
 
-            if (varTypeIsSmall(indir) && varTypeIsIntegral(varDsc->TypeGet()) && !varTypeIsLong(varDsc->TypeGet()))
+#ifdef TARGET_64BIT
+            if (!isDef && varTypeIsSmall(indir) && varTypeIsIntegral(varDsc) && !varTypeIsLong(varDsc))
+#else // TARGET_64BIT
+            if (!isDef && varTypeIsSmall(indir) && varTypeIsIntegral(varDsc) && !varTypeIsLong(varDsc))
+#endif // !TARGET_64BIT
             {
                 return IndirTransform::CastOfLclVar;
             }
