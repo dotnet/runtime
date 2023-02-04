@@ -699,6 +699,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_LDTSFLDA:
 		case MINT_SAFEPOINT:
 		case MINT_INTRINS_GET_HASHCODE:
+		case MINT_INTRINS_TRY_GET_HASHCODE:
 		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
 		case MINT_INTRINS_ENUM_HASFLAG:
 		case MINT_ADD_MUL_I4_IMM:
@@ -973,6 +974,14 @@ mono_jiterp_get_hashcode (MonoObject ** ppObj)
 	MonoObject *obj = *ppObj;
 	g_assert (obj);
 	return mono_object_hash_internal (obj);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_try_get_hashcode (MonoObject ** ppObj)
+{
+	MonoObject *obj = *ppObj;
+	g_assert (obj);
+	return mono_object_try_get_hash_internal (obj);
 }
 
 EMSCRIPTEN_KEEPALIVE int
