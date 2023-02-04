@@ -741,6 +741,12 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
                     [LoggerMessage(EventId = 8, Level = LogLevel.Debug, Message = ""{{prefix{{{arg1}}}suffix}}"")]
                     static partial void M8(ILogger logger, string arg1);
+
+                    [LoggerMessage(EventId = 9, Level = LogLevel.Debug, Message = ""prefix }}"")]
+                    static partial void M9(ILogger logger);
+
+                    [LoggerMessage(EventId = 10, Level = LogLevel.Debug, Message = ""}}suffix"")]
+                    static partial void M10(ILogger logger);
                 }
             ");
 
