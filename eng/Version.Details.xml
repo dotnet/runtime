@@ -314,17 +314,17 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>0de414d16337a6b1089a4bc318a243718e859b3f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.6.0-2.23102.6">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.6.0-2.23103.10">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>95d69a42a8b330bec2f9c7fbe15333667e245634</Sha>
+      <Sha>8a8df34cc1c4e8a87ae084ee7508d722588ee7e3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.6.0-2.23102.6">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.6.0-2.23103.10">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>95d69a42a8b330bec2f9c7fbe15333667e245634</Sha>
+      <Sha>8a8df34cc1c4e8a87ae084ee7508d722588ee7e3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.6.0-2.23102.6">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.6.0-2.23103.10">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>95d69a42a8b330bec2f9c7fbe15333667e245634</Sha>
+      <Sha>8a8df34cc1c4e8a87ae084ee7508d722588ee7e3</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.3.5-beta1.23068.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
