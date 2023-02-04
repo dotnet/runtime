@@ -8,6 +8,8 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -605,32 +607,170 @@ namespace System
         /// <summary>Explicitly converts a <see cref="float" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Half(float value)
         {
-            const int SingleMaxExponent = 0xFF;
-
-            uint floatInt = BitConverter.SingleToUInt32Bits(value);
-            bool sign = (floatInt & float.SignMask) >> float.SignShift != 0;
-            int exp = (int)(floatInt & float.BiasedExponentMask) >> float.BiasedExponentShift;
-            uint sig = floatInt & float.TrailingSignificandMask;
-
-            if (exp == SingleMaxExponent)
+            const uint ExponentLowerBound = 0x3880_0000u;
+            const uint ExponentOffset = 0x3800_0000u;
+            const uint FloatSignMask = 0x8000_0000u;
+            const uint FloatExponentMask = 0x7f80_0000u;
+            const uint RoundingExponentOffset = 0x0680_0000u;
+            const float MinimumHalfInfinity = 65520.0f;
+            if (Sse41.IsSupported)
             {
-                if (sig != 0) // NaN
+                var v0 = Vector128.CreateScalarUnsafe(ExponentLowerBound);
+                var v1 = Vector128.CreateScalarUnsafe(ExponentOffset);
+                var v2 = Vector128.CreateScalarUnsafe(FloatSignMask);
+                var v3 = Vector128.CreateScalarUnsafe(FloatExponentMask);
+                var v4 = Vector128.CreateScalarUnsafe(RoundingExponentOffset);
+                var v5 = Vector128.CreateScalarUnsafe(MinimumHalfInfinity);
+                var vval = Vector128.CreateScalarUnsafe(value);
+                var v = BitConverter.SingleToUInt32Bits(value);
+                vval = Sse.AndNot(v2.AsSingle(), vval);
+                var sign = v & FloatSignMask;
+                vval = Sse.MinScalar(v5, vval);
+                var isNaN = Sse.CompareEqual(vval, vval).AsUInt32();
+                var y = Sse41.Max(vval.AsUInt32(), v0);
+                y = Sse2.And(y, v3);
+                y = Sse2.Add(y, v4);
+                var z = Sse2.Subtract(y, v1);
+                z = Sse2.And(z, isNaN);
+                vval = Sse.AddScalar(vval, y.AsSingle());
+                vval = Sse2.Subtract(vval.AsUInt32(), v1).AsSingle();
+                vval = Sse.SubtractScalar(vval, z.AsSingle());
+                v = vval.AsUInt32().GetElement(0) >> 13;
+                sign >>>= 16;
+                var hc = ~isNaN.GetElement(0) & 0x7C00u;
+                v &= 0x7fffu;
+                var gc = hc;
+                gc |= sign;
+                v &= ~hc;
+                v |= gc;
+                return BitConverter.UInt16BitsToHalf((ushort)v);
+            }
+            if (Sse2.IsSupported)
+            {
+                var v0 = Vector128.CreateScalarUnsafe(ExponentLowerBound);
+                var v1 = Vector128.CreateScalarUnsafe(ExponentOffset);
+                var v2 = Vector128.CreateScalarUnsafe(FloatSignMask);
+                var v3 = Vector128.CreateScalarUnsafe(FloatExponentMask);
+                var v4 = Vector128.CreateScalarUnsafe(RoundingExponentOffset);
+                var v5 = Vector128.CreateScalarUnsafe(MinimumHalfInfinity);
+                var vval = Vector128.CreateScalarUnsafe(value);
+                var v = BitConverter.SingleToUInt32Bits(value);
+                vval = Sse.AndNot(v2.AsSingle(), vval);
+                var sign = v & FloatSignMask;
+                vval = Sse.MinScalar(v5, vval);
+                var isNaN = Sse.CompareEqual(vval, vval).AsUInt32();
+                var y = Sse.MaxScalar(vval, v0.AsSingle()).AsUInt32();
+                y = Sse2.And(y, v3);
+                y = Sse2.Add(y, v4);
+                var z = Sse2.Subtract(y, v1);
+                z = Sse2.And(z, isNaN);
+                vval = Sse.AddScalar(vval, y.AsSingle());
+                vval = Sse2.Subtract(vval.AsUInt32(), v1).AsSingle();
+                vval = Sse.SubtractScalar(vval, z.AsSingle());
+                v = vval.AsUInt32().GetElement(0) >> 13;
+                sign >>>= 16;
+                var hc = ~isNaN.GetElement(0) & 0x7C00u;
+                v &= 0x7fffu;
+                var gc = hc;
+                gc |= sign;
+                v &= ~hc;
+                v |= gc;
+                return BitConverter.UInt16BitsToHalf((ushort)v);
+            }
+            if (Vector64.IsHardwareAccelerated)
+            {
+                var v0 = Vector64.CreateScalarUnsafe(ExponentLowerBound);
+                var v1 = Vector64.CreateScalarUnsafe(ExponentOffset);
+                var v2 = Vector64.CreateScalarUnsafe(FloatSignMask);
+                var v3 = Vector64.CreateScalarUnsafe(FloatExponentMask);
+                var v4 = Vector64.CreateScalarUnsafe(RoundingExponentOffset);
+                var v5 = Vector64.CreateScalarUnsafe(MinimumHalfInfinity);
+                var x0 = BitConverter.SingleToUInt32Bits(value);
+                var s0 = Vector64.CreateScalarUnsafe(value);
+                s0 = Vector64.AndNot(s0.AsUInt32(), v2).AsSingle();
+                var sign = x0 & FloatSignMask;
+                s0 = Vector64.Min(v5, s0);
+                var s1 = Vector64.Max(v0, s0.AsUInt32());
+                var isNaN = Vector64.Equals(s0, s0).AsUInt32();
+                s1 = Vector64.BitwiseAnd(s1, v3);
+                s1 = Vector64.Add(s1, v4);
+                var s2 = Vector64.Subtract(s1, v1);
+                s2 = Vector64.BitwiseAnd(s2, isNaN);
+                s0 = Vector64.Add(s0, s1.AsSingle());
+                s0 = Vector64.Subtract(s0.AsUInt32(), v1).AsSingle();
+                s0 = Vector64.Subtract(s0, s2.AsSingle());
+                x0 = s0.AsUInt32().GetElement(0) >> 13;
+                sign >>>= 16;
+                var hc = ~isNaN.GetElement(0) & 0x7C00u;
+                x0 &= 0x7fffu;
+                var gc = hc;
+                gc |= sign;
+                x0 &= ~hc;
+                x0 |= gc;
+                return BitConverter.UInt16BitsToHalf((ushort)x0);
+            }
+            if (Vector128.IsHardwareAccelerated)
+            {
+                var v0 = Vector128.CreateScalarUnsafe(ExponentLowerBound);
+                var v1 = Vector128.CreateScalarUnsafe(ExponentOffset);
+                var v2 = Vector128.CreateScalarUnsafe(FloatSignMask);
+                var v3 = Vector128.CreateScalarUnsafe(FloatExponentMask);
+                var v4 = Vector128.CreateScalarUnsafe(RoundingExponentOffset);
+                var v5 = Vector128.CreateScalarUnsafe(MinimumHalfInfinity);
+                var x0 = BitConverter.SingleToUInt32Bits(value);
+                var s0 = Vector128.CreateScalarUnsafe(value);
+                s0 = Vector128.AndNot(s0.AsUInt32(), v2).AsSingle();
+                var sign = x0 & FloatSignMask;
+                s0 = Vector128.Min(v5, s0);
+                var s1 = Vector128.Max(v0, s0.AsUInt32());
+                var isNaN = Vector128.Equals(s0, s0).AsUInt32();
+                s1 = Vector128.BitwiseAnd(s1, v3);
+                s1 = Vector128.Add(s1, v4);
+                var s2 = Vector128.Subtract(s1, v1);
+                s2 = Vector128.BitwiseAnd(s2, isNaN);
+                s0 = Vector128.Add(s0, s1.AsSingle());
+                s0 = Vector128.Subtract(s0.AsUInt32(), v1).AsSingle();
+                s0 = Vector128.Subtract(s0, s2.AsSingle());
+                x0 = s0.AsUInt32().GetElement(0) >> 13;
+                sign >>>= 16;
+                var hc = ~isNaN.GetElement(0) & 0x7C00u;
+                x0 &= 0x7fffu;
+                var gc = hc;
+                gc |= sign;
+                x0 &= ~hc;
+                x0 |= gc;
+                return BitConverter.UInt16BitsToHalf((ushort)x0);
+            }
+            else
+            {
+                const int SingleMaxExponent = 0xFF;
+
+                uint floatInt = BitConverter.SingleToUInt32Bits(value);
+                bool sign = (floatInt & float.SignMask) >> float.SignShift != 0;
+                int exp = (int)(floatInt & float.BiasedExponentMask) >> float.BiasedExponentShift;
+                uint sig = floatInt & float.TrailingSignificandMask;
+
+                if (exp == SingleMaxExponent)
                 {
-                    return CreateHalfNaN(sign, (ulong)sig << 41); // Shift the significand bits to the left end
+                    if (sig != 0) // NaN
+                    {
+                        return CreateHalfNaN(sign, (ulong)sig << 41); // Shift the significand bits to the left end
+                    }
+                    return sign ? NegativeInfinity : PositiveInfinity;
                 }
-                return sign ? NegativeInfinity : PositiveInfinity;
+
+                uint sigHalf = sig >> 9 | ((sig & 0x1FFU) != 0 ? 1U : 0U); // RightShiftJam
+
+                if ((exp | (int)sigHalf) == 0)
+                {
+                    return new Half(sign, 0, 0);
+                }
+
+                return new Half(RoundPackToHalf(sign, (short)(exp - 0x71), (ushort)(sigHalf | 0x4000)));
             }
-
-            uint sigHalf = sig >> 9 | ((sig & 0x1FFU) != 0 ? 1U : 0U); // RightShiftJam
-
-            if ((exp | (int)sigHalf) == 0)
-            {
-                return new Half(sign, 0, 0);
-            }
-
-            return new Half(RoundPackToHalf(sign, (short)(exp - 0x71), (ushort)(sigHalf | 0x4000)));
         }
 
         /// <summary>Explicitly converts a <see cref="ushort" /> value to its nearest representable half-precision floating-point value.</summary>
@@ -874,32 +1014,28 @@ namespace System
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="float" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="float" /> value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator float(Half value)
         {
-            bool sign = IsNegative(value);
-            int exp = value.BiasedExponent;
-            uint sig = value.TrailingSignificand;
-
-            if (exp == MaxBiasedExponent)
-            {
-                if (sig != 0)
-                {
-                    return CreateSingleNaN(sign, (ulong)sig << 54);
-                }
-                return sign ? float.NegativeInfinity : float.PositiveInfinity;
-            }
-
-            if (exp == 0)
-            {
-                if (sig == 0)
-                {
-                    return BitConverter.UInt32BitsToSingle(sign ? float.SignMask : 0); // Positive / Negative zero
-                }
-                (exp, sig) = NormSubnormalF16Sig(sig);
-                exp -= 1;
-            }
-
-            return CreateSingle(sign, (byte)(exp + 0x70), sig << 13);
+            const uint ExponentLowerBound = 0x3880_0000u;
+            const uint ExponentOffset = 0x3800_0000u;
+            const uint FloatSignMask = 0x8000_0000u;
+            var h = BitConverter.HalfToInt16Bits(value);
+            var v = (uint)(int)h;
+            var e = v & 0x7c00u;
+            var c = e == 0u;
+            var hc = (uint)-Unsafe.As<bool, byte>(ref c);
+            var b = e == 0x7c00u;
+            var hb = (uint)-Unsafe.As<bool, byte>(ref b);
+            var n = hc & ExponentLowerBound;
+            var j = ExponentOffset | n;
+            v <<= 13;
+            j += j & hb;
+            var s = v & FloatSignMask;
+            v &= 0x0FFF_E000;
+            v += j;
+            var k = BitConverter.SingleToUInt32Bits(BitConverter.UInt32BitsToSingle(v) - BitConverter.UInt32BitsToSingle(n));
+            return BitConverter.UInt32BitsToSingle(k | s);
         }
 
         // IEEE 754 specifies NaNs to be propagated
