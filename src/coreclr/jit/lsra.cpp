@@ -1269,7 +1269,7 @@ PhaseStatus LinearScan::doLinearScan()
     }
     else
 #endif // TARGET_ARM64
-    allocateRegisters();
+        allocateRegisters();
 
     allocationPassComplete = true;
     compiler->EndPhase(PHASE_LINEAR_SCAN_ALLOC);
@@ -5325,7 +5325,7 @@ void LinearScan::allocateRegisters()
                         if (currentRefPosition.regCount != 0)
                         {
                             setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
-                        }   
+                        }
 
                         // For consecutive register, it doesn't matter what the assigned register was.
                         // We have just assigned it `copyRegMask` and that's the one in-use, and not the

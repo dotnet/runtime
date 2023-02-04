@@ -638,7 +638,7 @@ public:
     // This does the dataflow analysis and builds the intervals
     void buildIntervals();
 
-    // This is where the actual assignment is done
+// This is where the actual assignment is done
 #ifdef TARGET_ARM64
     template <bool hasConsecutiveRegister = false>
 #endif
