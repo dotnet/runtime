@@ -38,7 +38,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 #endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     if (compHndBBtabCount == 0)
     {
@@ -293,7 +293,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 #endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     bool enableRemoveEmptyTry = true;
 
@@ -630,7 +630,7 @@ PhaseStatus Compiler::fgCloneFinally()
 #endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     bool enableCloning = true;
 
@@ -1643,7 +1643,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
 #endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     if (compHndBBtabCount == 0)
     {
@@ -2007,7 +2007,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
     // This transformation requires block pred lists to be built
     // so that flow can be safely updated.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     struct ThrowHelper
     {
