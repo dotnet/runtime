@@ -462,9 +462,18 @@ extends:
           platforms:
             - wasi_wasm
             - wasi_wasm_win
-          nameSuffix: '_Smoke'
+          nameSuffix: _Relinking
           extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
-          shouldRunSmokeOnly: true
+          alwaysRun: ${{ variables.isRollingBuild }}
+          scenarios:
+            - normal
+
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+            - wasi_wasm_win
+          extraBuildArgs: /p:RunWasmSamples=true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
             - normal
