@@ -18,7 +18,7 @@ namespace System
     public partial class String
     {
         // Avoid paying the init cost of all the IndexOfAnyValues unless they are actually used.
-        private static class IndexOfAnyValuesStorage
+        internal static class IndexOfAnyValuesStorage
         {
             // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
             // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
@@ -26,6 +26,10 @@ namespace System
             // it in the needle list.
             public static readonly IndexOfAnyValues<char> NewLineChars =
                 IndexOfAnyValues.Create("\r\n\f\u0085\u2028\u2029");
+
+            // IndexOfAnyValues would use SpanHelpers.IndexOfAnyValueType for 5 values in this case.
+            // No need to allocate the IndexOfAnyValues as a regular Span.IndexOfAny will use the same implementation.
+            public const string NewLineCharsExceptLineFeed = "\r\f\u0085\u2028\u2029";
         }
 
         internal const int StackallocIntBufferSizeLimit = 128;
@@ -1373,14 +1377,21 @@ namespace System
         /// This method is guaranteed O(n * r) complexity, where <em>n</em> is the length of the input string,
         /// and where <em>r</em> is the length of <paramref name="replacementText"/>.
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string ReplaceLineEndings(string replacementText)
+        {
+            return replacementText == "\n"
+                ? ReplaceLineEndingsWithLineFeed()
+                : ReplaceLineEndingsCore(replacementText);
+        }
+
+        private string ReplaceLineEndingsCore(string replacementText)
         {
             ArgumentNullException.ThrowIfNull(replacementText);
 
             // Early-exit: do we need to do anything at all?
             // If not, return this string as-is.
-
-            int idxOfFirstNewlineChar = IndexOfNewlineChar(this, out int stride);
+            int idxOfFirstNewlineChar = IndexOfNewlineChar(this, replacementText, out int stride);
             if (idxOfFirstNewlineChar < 0)
             {
                 return this;
@@ -1394,10 +1405,10 @@ namespace System
             ReadOnlySpan<char> firstSegment = this.AsSpan(0, idxOfFirstNewlineChar);
             ReadOnlySpan<char> remaining = this.AsSpan(idxOfFirstNewlineChar + stride);
 
-            ValueStringBuilder builder = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
+            var builder = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
             while (true)
             {
-                int idx = IndexOfNewlineChar(remaining, out stride);
+                int idx = IndexOfNewlineChar(remaining, replacementText, out stride);
                 if (idx < 0) { break; } // no more newline chars
                 builder.Append(replacementText);
                 builder.Append(remaining.Slice(0, idx));
@@ -1409,9 +1420,9 @@ namespace System
             return retVal;
         }
 
-        // Scans the input text, returning the index of the first newline char.
+        // Scans the input text, returning the index of the first newline char other than the replacement text.
         // Newline chars are given by the Unicode Standard, Sec. 5.8.
-        internal static int IndexOfNewlineChar(ReadOnlySpan<char> text, out int stride)
+        private static int IndexOfNewlineChar(ReadOnlySpan<char> text, string replacementText, out int stride)
         {
             // !! IMPORTANT !!
             //
@@ -1423,9 +1434,18 @@ namespace System
             // O(n^2), where n is the length of the input text.
 
             stride = default;
-            int idx = text.IndexOfAny(IndexOfAnyValuesStorage.NewLineChars);
-            if ((uint)idx < (uint)text.Length)
+            int offset = 0;
+
+            while (true)
             {
+                int idx = text.IndexOfAny(IndexOfAnyValuesStorage.NewLineChars);
+
+                if ((uint)idx >= (uint)text.Length)
+                {
+                    return -1;
+                }
+
+                offset += idx;
                 stride = 1; // needle found
 
                 // Did we match CR? If so, and if it's followed by LF, then we need
@@ -1437,11 +1457,60 @@ namespace System
                     if ((uint)nextCharIdx < (uint)text.Length && text[nextCharIdx] == '\n')
                     {
                         stride = 2;
+
+                        if (replacementText != "\r\n")
+                        {
+                            return offset;
+                        }
+                    }
+                    else if (replacementText != "\r")
+                    {
+                        return offset;
                     }
                 }
+                else if (replacementText.Length != 1 || replacementText[0] != text[idx])
+                {
+                    return offset;
+                }
+
+                offset += stride;
+                text = text.Slice(idx + stride);
+            }
+        }
+
+        private string ReplaceLineEndingsWithLineFeed()
+        {
+            // If we are going to replace the new line with a line feed ('\n'),
+            // we can skip looking for it to avoid breaking out of the vectorized path unnecessarily.
+            // We can't use the same optimization for the carriage return ('\r')
+            // as we still want to replace CRLF ("\r\n") sequences.
+            int idxOfFirstNewlineChar = this.AsSpan().IndexOfAny(IndexOfAnyValuesStorage.NewLineCharsExceptLineFeed);
+            if ((uint)idxOfFirstNewlineChar >= (uint)Length)
+            {
+                return this;
             }
 
-            return idx;
+            int stride = this[idxOfFirstNewlineChar] == '\r' &&
+                (uint)(idxOfFirstNewlineChar + 1) < (uint)Length &&
+                this[idxOfFirstNewlineChar + 1] == '\n' ? 2 : 1;
+
+            ReadOnlySpan<char> remaining = this.AsSpan(idxOfFirstNewlineChar + stride);
+
+            var builder = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
+            while (true)
+            {
+                int idx = remaining.IndexOfAny(IndexOfAnyValuesStorage.NewLineCharsExceptLineFeed);
+                if ((uint)idx >= (uint)remaining.Length) break; // no more newline chars
+                stride = remaining[idx] == '\r' && (uint)(idx + 1) < (uint)remaining.Length && remaining[idx + 1] == '\n' ? 2 : 1;
+                builder.Append('\n');
+                builder.Append(remaining.Slice(0, idx));
+                remaining = remaining.Slice(idx + stride);
+            }
+
+            builder.Append('\n');
+            string retVal = Concat(this.AsSpan(0, idxOfFirstNewlineChar), builder.AsSpan(), remaining);
+            builder.Dispose();
+            return retVal;
         }
 
         public string[] Split(char separator, StringSplitOptions options = StringSplitOptions.None)
