@@ -36,14 +36,14 @@ build-all:
 	$(TOP)/build.sh mono+libs+packs -os wasi -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
 runtime:
-	$(TOP)/build.sh mono.runtime+mono.wasmruntime+libs.native+libs.pretest -os wasi -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+	$(TOP)/build.sh mono.runtime+mono.wasiruntime+libs.native+libs.pretest -os wasi -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
 # Rebuild only the mono runtime+cross compiler, don't build dotnet.wasm
 mono-runtime:
 	$(TOP)/build.sh mono.runtime+libs.native+libs.pretest -os wasi -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
 corlib:
-	$(TOP)/build.sh mono.corelib+mono.wasmruntime+libs.pretest -os wasi -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+	$(TOP)/build.sh mono.corelib+mono.wasiruntime+libs.pretest -os wasi -c $(CONFIG) /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
 test-runner:
 	$(DOTNET) build $(TOP)/src/libraries/Common/tests/WasmTestRunner /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)

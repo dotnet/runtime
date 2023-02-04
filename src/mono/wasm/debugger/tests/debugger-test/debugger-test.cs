@@ -1394,7 +1394,7 @@ public class ReadOnlySpanTest
         public void Modify(double newDouble) {
             r1.d1 = newDouble;
         }
-        
+
         public double Run() {
             return r1.d1;
         }
@@ -1422,7 +1422,7 @@ public class ReadOnlySpanTest
         myR1.s2 = new S1();
         myR1.s2.d1 = 30;
         myR1.s2.d2 = 40;
-        double xyz = 123.0;        
+        double xyz = 123.0;
         R2Sample2 r2 = new R2Sample2(ref xyz);
         xyz = 456.0;
         System.Diagnostics.Debugger.Break();
@@ -1576,3 +1576,27 @@ public class TestLoadSymbols
         array.Add(date);
     }
 }
+
+public class MultiThreadedTest
+{
+    public static void Run()
+    {
+        System.Collections.Generic.List<System.Threading.Thread> myThreads = new();
+        for (int i = 0 ; i < 3; i++)
+        {
+            var t = new System.Threading.Thread (() => Write("y"));
+            myThreads.Add(t);
+            t.Start();
+        }
+        foreach (System.Threading.Thread curThread in myThreads)
+        {
+            curThread.Join();
+        }
+    }
+    static void Write(string input)
+    {
+        var currentThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+        Console.WriteLine($"Thread:{currentThread} - {input}");
+    }
+}
+
