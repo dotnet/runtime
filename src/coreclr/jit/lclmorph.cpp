@@ -469,7 +469,8 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         WithElement,
 #endif // FEATURE_HW_INTRINSICS
         LclVar,
-        LclFld
+        LclFld,
+        CastOfLclVar
     };
 
     ArrayStack<Value> m_valueStack;
@@ -565,45 +566,6 @@ public:
 #endif // DEBUG
     }
 
-    GenTree* TryOptimizeIndir(GenTree* tree, GenTree* parent)
-    {
-        assert(tree->OperIs(GT_IND));
-
-        if (m_compiler->opts.OptimizationDisabled())
-            return nullptr;
-
-        if ((parent != nullptr) && parent->OperIs(GT_CAST))
-            return nullptr;
-
-        if (tree->gtGetOp1()->OperIs(GT_LCL_VAR_ADDR))
-        {
-            GenTreeLclVar* lclVar  = tree->gtGetOp1()->AsLclVar();
-            var_types      lclType = m_compiler->lvaGetDesc(lclVar)->lvType;
-
-            if ((lclType == TYP_INT) && varTypeIsSmall(tree))
-            {
-                lclVar->ChangeOper(GT_LCL_VAR);
-                lclVar->ChangeType(lclType);
-
-                GenTree* newTree;
-                if ((parent != nullptr) && parent->OperIs(GT_ASG))
-                {
-                    newTree = lclVar;
-                }
-                else
-                {
-                    newTree = m_compiler->gtNewCastNode(TYP_INT, lclVar, false, tree->TypeGet());
-                }
-
-                DEBUG_DESTROY_NODE(tree);
-
-                return newTree;
-            }
-        }
-
-        return nullptr;
-    }
-
     // Morph promoted struct fields and count local occurrences.
     //
     // Also create and push the value produced by the visited node. This is done here
@@ -612,17 +574,7 @@ public:
     // to the visited node is encountered.
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        GenTree* node = *use;
-
-        if (node->OperIs(GT_IND))
-        {
-            GenTree* optimizedNode = TryOptimizeIndir(node, user);
-            if (optimizedNode != nullptr)
-            {
-                node = *use    = optimizedNode;
-                m_stmtModified = true;
-            }
-        }
+        GenTree* const node = *use;
 
         if (node->OperIs(GT_IND, GT_FIELD, GT_FIELD_ADDR))
         {
@@ -1187,6 +1139,11 @@ private:
         unsigned             lclNum      = val.LclNum();
         LclVarDsc*           varDsc      = m_compiler->lvaGetDesc(lclNum);
         GenTreeLclVarCommon* lclNode     = nullptr;
+        bool                 isDef       = user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir);
+
+#ifdef DEBUG
+        bool removeIndir = false;
+#endif // DEBUG
 
         switch (transform)
         {
@@ -1285,6 +1242,23 @@ private:
                 lclNode = indir->AsLclVarCommon();
                 break;
 
+            case IndirTransform::CastOfLclVar:
+                assert(varTypeIsSmall(indir));
+                assert(varTypeIsIntegral(varDsc->TypeGet()));
+                assert(*val.Use() == indir);
+
+                removeIndir = true;
+                lclNode     = BashToLclVar(indir->gtGetOp1(), lclNum);
+                if (isDef)
+                {
+                    *val.Use() = lclNode;
+                }
+                else
+                {
+                    *val.Use() = m_compiler->gtNewCastNode(varDsc->TypeGet(), lclNode, false, indir->TypeGet());
+                }
+                break;
+
             case IndirTransform::LclFld:
                 indir->ChangeOper(GT_LCL_FLD);
                 indir->AsLclFld()->SetLclNum(lclNum);
@@ -1307,7 +1281,7 @@ private:
 
         GenTreeFlags lclNodeFlags = GTF_EMPTY;
 
-        if (user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
+        if (isDef)
         {
             lclNodeFlags |= (GTF_VAR_DEF | GTF_DONT_CSE);
 
@@ -1325,6 +1299,15 @@ private:
 
         lclNode->gtFlags = lclNodeFlags;
         m_stmtModified   = true;
+
+#ifdef DEBUG
+        if (removeIndir)
+        {
+            DEBUG_DESTROY_NODE(indir);
+        }
+#endif // DEBUG
+
+        return;
     }
 
     //------------------------------------------------------------------------
@@ -1366,6 +1349,11 @@ private:
                 (indir->TypeIs(TYP_UBYTE) && (varDsc->TypeGet() == TYP_BOOL)))
             {
                 return IndirTransform::LclVar;
+            }
+
+            if (varTypeIsSmall(indir) && varTypeIsIntegral(varDsc->TypeGet()) && !varTypeIsLong(varDsc->TypeGet()))
+            {
+                return IndirTransform::CastOfLclVar;
             }
 
             bool isDef = user->OperIs(GT_ASG) && (user->gtGetOp1() == indir);
@@ -1551,6 +1539,8 @@ private:
                 m_stmtModified = true;
             }
         }
+
+        return;
     }
 
     //------------------------------------------------------------------------
