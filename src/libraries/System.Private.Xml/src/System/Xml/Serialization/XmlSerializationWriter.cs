@@ -18,7 +18,6 @@ using System.Xml.Serialization;
 using System.Xml;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Buffers;
 
 namespace System.Xml.Serialization
 {
@@ -38,6 +37,9 @@ namespace System.Xml.Serialization
         private readonly string _aliasBase = "q";
         private bool _soap12;
         private bool _escapeName = true;
+
+        //char buffer for serializing primitive values
+        private char[]? _primitivesBuffer;
 
         // this method must be called before any generated serialization methods are called
         internal void Init(XmlWriter w, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? idBase)
@@ -262,7 +264,7 @@ namespace System.Xml.Serialization
             bool? tryFormatResult = null;
             int charsWritten = -1;
 
-            char[] buffer = ArrayPool<char>.Shared.Rent(128);
+            char[] buffer = Interlocked.Exchange(ref _primitivesBuffer, null) ?? new char[128];
             switch (Type.GetTypeCode(t))
             {
                 case TypeCode.String:
@@ -380,12 +382,12 @@ namespace System.Xml.Serialization
                             xmlNodes[i].WriteTo(_w);
                         }
                         _w.WriteEndElement();
-                        ArrayPool<char>.Shared.Return(buffer);
+                        Interlocked.Exchange(ref _primitivesBuffer, buffer);
                         return;
                     }
                     else
                     {
-                        ArrayPool<char>.Shared.Return(buffer);
+                        Interlocked.Exchange(ref _primitivesBuffer, buffer);
                         throw CreateUnknownTypeException(t);
                     }
 
@@ -412,7 +414,7 @@ namespace System.Xml.Serialization
 #if DEBUG
                 const string escapeChars = "<>\"'&";
                 ReadOnlySpan<char> span = buffer;
-                Debug.Assert(span.IndexOfAny(escapeChars) == 0, "Primitive value contains illegal xml char.");
+                Debug.Assert(span.Slice(0, charsWritten).IndexOfAny(escapeChars) == -1, "Primitive value contains illegal xml char.");
 #endif
                 //all the primitive types except string and XmlQualifiedName writes to the buffer
                 _w.WriteRaw(buffer, 0, charsWritten);
@@ -430,7 +432,7 @@ namespace System.Xml.Serialization
             }
 
             _w.WriteEndElement();
-            ArrayPool<char>.Shared.Return(buffer);
+            Interlocked.Exchange(ref _primitivesBuffer, buffer);
         }
 
         private string GetQualifiedName(string name, string? ns)
