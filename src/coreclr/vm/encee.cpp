@@ -323,7 +323,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     //
     // Note that this only works since we've very carefully made sure that _all_ references
     // to the Method's code must be to the call/jmp blob immediately in front of the
-    // MethodDesc itself.  See MethodDesc::InEnCEnabledModuled()
+    // MethodDesc itself.  See MethodDesc::InEnCEnabledModule()
     //
     pMethod->ResetCodeEntryPointForEnC();
 

@@ -1108,7 +1108,8 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             if (pOldVar->startOffset <= oldMethodOffset &&
                 pOldVar->endOffset   >  oldMethodOffset)
             {
-                oldMethodVarsSorted[(int)varNumber] = *pOldVar;
+                // Indexing should be performed with a signed value - could be negative.
+                oldMethodVarsSorted[(int32_t)varNumber] = *pOldVar;
             }
         }
 
@@ -1160,7 +1161,8 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             if (pNewVar->startOffset <= newMethodOffset &&
                 pNewVar->endOffset   >  newMethodOffset)
             {
-                newMethodVarsSorted[varNumber] = *pNewVar;
+                // Indexing should be performed with a signed valued - could be negative.
+                newMethodVarsSorted[(int32_t)varNumber] = *pNewVar;
             }
         }
 

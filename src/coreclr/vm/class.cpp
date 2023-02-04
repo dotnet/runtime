@@ -607,10 +607,28 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
      // Use a local StackingAllocator instead.
     StackingAllocator stackingAllocator;
 
+    MethodTableBuilder::bmtInternalInfo bmtInternal;
+    bmtInternal.pModule = pMT->GetModule();
+    bmtInternal.pInternalImport = NULL;
+    bmtInternal.pParentMT = NULL;
+
     MethodTableBuilder builder(pMT,
                                pClass,
                                &stackingAllocator,
                                &dummyAmTracker);
+
+    builder.SetBMTData(pMT->GetLoaderAllocator(),
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       &bmtInternal);
+
     EX_TRY
     {
         INDEBUG(LPCSTR debug_szFieldName);

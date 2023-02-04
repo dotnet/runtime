@@ -6101,25 +6101,13 @@ MethodTableBuilder::InitMethodDesc(
             // Initialize the typical instantiation.
             InstantiatedMethodDesc* pNewIMD = pNewMD->AsInstantiatedMethodDesc();
 
-            LoaderAllocator* pAllocator;
-            AllocMemTracker* pamTracker;
-            Module* pModule;
-            if (fEnC)
-            {
-                pAllocator = pNewIMD->GetLoaderAllocator();
-                pamTracker = GetMemTracker();
-                pModule = pNewIMD->GetModule();
-            }
-            else
-            {
-                _ASSERTE(!fEnC);
-                pAllocator = GetLoaderAllocator();
-                pamTracker = GetMemTracker();
-                pModule = GetModule();
-            }
-
             //data has the same lifetime as method table, use our allocator
-            pNewIMD->SetupGenericMethodDefinition(pIMDII, pAllocator, pamTracker, pModule, tok);
+            pNewIMD->SetupGenericMethodDefinition(
+                pIMDII,
+                GetLoaderAllocator(),
+                GetMemTracker(),
+                GetModule(),
+                tok);
         }
         break;
 

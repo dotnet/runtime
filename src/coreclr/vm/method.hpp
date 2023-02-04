@@ -669,7 +669,7 @@ public:
     // If the method is in an Edit and Continue (EnC) module, then
     // we DON'T want to backpatch this, ever.  We MUST always call
     // through the precode so that we can update the method.
-    inline DWORD InEnCEnabledModuled()
+    inline DWORD InEnCEnabledModule()
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
@@ -1380,7 +1380,7 @@ public:
             return false;
 #endif
 
-        return !IsVersionable() && !InEnCEnabledModuled();
+        return !IsVersionable() && !InEnCEnabledModule();
     }
 
     //Is this method currently pointing to native code that will never change?

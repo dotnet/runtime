@@ -8957,7 +8957,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
         if (ret == NULL)
         {
             // should never get here for EnC methods or if interception via remoting stub is required
-            _ASSERTE(!ftn->InEnCEnabledModuled());
+            _ASSERTE(!ftn->InEnCEnabledModule());
 
             ret = (void *)ftn->GetAddrOfSlot();
 
