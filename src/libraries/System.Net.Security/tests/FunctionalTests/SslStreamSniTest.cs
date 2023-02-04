@@ -172,6 +172,31 @@ namespace System.Net.Security.Tests
                 return true;
             });
         }
+        [Theory]
+        [InlineData("127.0.0.1")]
+        [InlineData("::1")]
+        [InlineData("2001:11:22::1")]
+        [InlineData("fe80::9c3a:b64d:6249:1de8%2")]
+        [InlineData("fe80::9c3a:b64d:6249:1de8")]
+        public async Task SslStream_IpLiteral_NotSend(string target)
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+            {
+                    TargetHost = target,
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+            };
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = Configuration.Certificates.GetServerCertificate(),
+            };
+
+            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions, default),
+                        server.AuthenticateAsServerAsync(serverOptions, default));
+
+            Assert.Equal(string.Empty, server.TargetHostName);
+        }
 
         private static Func<Task> WithAggregateExceptionUnwrapping(Func<Task> a)
         {
