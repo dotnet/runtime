@@ -8512,6 +8512,7 @@ MethodTable::TryResolveConstraintMethodApprox(
             &uniqueResolution);
         if (result == NULL || !uniqueResolution)
         {
+            _ASSERTE(pfForceUseRuntimeLookup != NULL);
             *pfForceUseRuntimeLookup = TRUE;
             result = NULL;
         }
