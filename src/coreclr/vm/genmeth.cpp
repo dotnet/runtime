@@ -117,10 +117,13 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
     {
         pMD->SetIsIntrinsic();
     }
+
+#ifdef EnC_SUPPORTED
     if (pTemplateMD->IsEnCAddedMethod())
     {
         pMD->SetIsEnCAddedMethod();
     }
+#endif // EnC_SUPPORTED
 
     pMD->SetMemberDef(token);
     pMD->SetSlot(pTemplateMD->GetSlot());
