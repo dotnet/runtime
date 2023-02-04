@@ -1261,7 +1261,16 @@ PhaseStatus LinearScan::doLinearScan()
     DBEXEC(VERBOSE, lsraDumpIntervals("after buildIntervals"));
 
     initVarRegMaps();
+
+#ifdef TARGET_ARM64
+    if (compiler->info.needsConsecutiveRegisters)
+    {
+        allocateRegisters<true>();
+    }
+    else
+#endif // TARGET_ARM64
     allocateRegisters();
+
     allocationPassComplete = true;
     compiler->EndPhase(PHASE_LINEAR_SCAN_ALLOC);
     resolveRegisters();
@@ -2847,13 +2856,6 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
 
     assignPhysReg(availablePhysRegRecord, currentInterval);
     refPosition->registerAssignment = foundRegBit;
-
-#ifdef TARGET_ARM64
-    if (refPosition->isFirstRefPositionOfConsecutiveRegisters())
-    {
-        setNextConsecutiveRegisterAssignment(refPosition, foundRegBit);
-    }
-#endif // TARGET_ARM64
 
     return foundReg;
 }
@@ -4536,6 +4538,9 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
 // LinearScan::allocateRegisters: Perform the actual register allocation by iterating over
 //                                all of the previously constructed Intervals
 //
+#ifdef TARGET_ARM64
+template <bool hasConsecutiveRegister>
+#endif
 void LinearScan::allocateRegisters()
 {
     JITDUMP("*************** In LinearScan::allocateRegisters()\n");
@@ -5315,8 +5320,13 @@ void LinearScan::allocateRegisters()
                     regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
 
 #ifdef TARGET_ARM64
-                    if (currentRefPosition.needsConsecutive)
+                    if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
                     {
+                        if (currentRefPosition.regCount != 0)
+                        {
+                            setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
+                        }   
+
                         // For consecutive register, it doesn't matter what the assigned register was.
                         // We have just assigned it `copyRegMask` and that's the one in-use, and not the
                         // one that was assigned previously.
@@ -5381,7 +5391,7 @@ void LinearScan::allocateRegisters()
         }
 
 #ifdef TARGET_ARM64
-        if (currentRefPosition.needsConsecutive)
+        if (hasConsecutiveRegister && currentRefPosition.needsConsecutive)
         {
             // For consecutive register, we would like to assign a register (if not already assigned)
             // to the 1st refPosition and the subsequent refPositions will just get the consecutive register.
@@ -5394,7 +5404,7 @@ void LinearScan::allocateRegisters()
                     // subsequent registers to the remaining position and skip the allocation for the
                     // 1st refPosition altogether.
 
-                    setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegBit);
+                    setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
                 }
             }
             else
@@ -5468,6 +5478,12 @@ void LinearScan::allocateRegisters()
                     unassignPhysReg(currentInterval->assignedReg, nullptr);
                 }
                 assignedRegister = allocateReg(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
+#ifdef TARGET_ARM64
+                if (hasConsecutiveRegister && currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
+                {
+                    setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
+                }
+#endif // TARGET_ARM64
             }
 
             // If no register was found, this RefPosition must not require a register.

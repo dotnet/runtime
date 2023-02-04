@@ -9815,6 +9815,10 @@ public:
         // Number of class profile probes in this method
         unsigned compHandleHistogramProbeCount;
 
+#ifdef TARGET_ARM64
+        bool needsConsecutiveRegisters;
+#endif
+
     } info;
 
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method

@@ -1879,6 +1879,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AdvSimd_VectorTableLookup:
         case NI_AdvSimd_Arm64_VectorTableLookup:
         {
+            info.needsConsecutiveRegisters = true;
             assert(sig->numArgs == 2);
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;

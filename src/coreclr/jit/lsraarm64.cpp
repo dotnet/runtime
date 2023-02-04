@@ -50,21 +50,20 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 //
 // Arguments:
 //    firstRefPosition  - First refPosition of the series of consecutive registers.
-//    firstRegAssigned  - Register assigned to the first refposition.
+//    firstReg          - Register assigned to the first refposition.
 //
-void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regMaskTP firstRegAssigned)
+void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned)
 {
-    regNumber firstReg = genRegNumFromMask(firstRegAssigned);
-    assert(isSingleRegister(firstRegAssigned));
+    assert(isSingleRegister(genRegMask(firstRegAssigned)));
     assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
-    assert(emitter::isVectorRegister(firstReg));
+    assert(emitter::isVectorRegister(firstRegAssigned));
 
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
 
     // should have at least one consecutive register requirement
     assert(consecutiveRefPosition != nullptr);
 
-    regNumber regToAssign = firstReg == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstReg);
+    regNumber regToAssign = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
 
     INDEBUG(int refPosCount = 1);
     while (consecutiveRefPosition != nullptr)
