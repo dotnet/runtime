@@ -150,7 +150,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-L/usr/local/lib -lgssapi_krb5" Condition="'$(TargetOS)' == 'freebsd'" />
       <!-- FreeBSD's inotify is an installed package and not found in default libraries  -->
       <LinkerArg Include="-L/usr/local/lib -linotify" Condition="'$(TargetOS)' == 'freebsd'" />
-      <UseLlvmLinker Condition="'$(UseLlvmLinker)' == '' and '$(TargetOS)' == 'freebsd'">true</UseLlvmLinker>
+      <UseLLVMLinker Condition="'$(UseLlvmLinker)' == '' and '$(TargetOS)' == 'freebsd'">true</UseLLVMLinker>
 
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'osx'" />
     </ItemGroup>
