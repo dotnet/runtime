@@ -177,6 +177,19 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
+  # Wasi
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - wasi_wasm
+        - wasi_wasm_win
+      nameSuffix: '_Smoke'
+      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
+      shouldRunSmokeOnly: true
+      alwaysRun: ${{ variables.isRollingBuild }}
+      scenarios:
+        - normal
+
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Wasm.Build.Tests
   - template: /eng/pipelines/common/templates/wasm-build-tests.yml
@@ -237,7 +250,11 @@ jobs:
     parameters:
       platforms:
         - wasi_wasm
-      extraBuildArgs: /p:EnableAggressiveTrimming=true
+        - wasi_wasm_win
+      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
+      # always run for wasm only pipelines
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
         - normal
