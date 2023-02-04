@@ -1251,7 +1251,7 @@ private:
 #ifdef DEBUG
                 removeIndir = true;
 #endif // DEBUG
-                lclNode = BashToLclVar(indir->gtGetOp1(), lclNum);               
+                lclNode    = BashToLclVar(indir->gtGetOp1(), lclNum);
                 *val.Use() = m_compiler->gtNewCastNode(TYP_INT, lclNode, false, indir->TypeGet());
                 break;
 
