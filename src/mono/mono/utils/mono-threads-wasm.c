@@ -52,28 +52,26 @@ uintptr_t get_wasm_data_end(void);
 static int
 wasm_get_stack_size (void)
 {
-	// keep in sync with src\mono\wasi\wasi.proj stack-size
-	// keep in sync with src\mono\wasi\build\WasiApp.Native.targets stack-size
-	return 8388608;
+	/*
+	 * | -- increasing address ---> |
+	 * | data (data_end)| stack |(heap_base) heap |
+	 */
+	size_t heap_base = get_wasm_heap_base();
+	size_t data_end = get_wasm_data_end();
+	size_t max_stack_size = heap_base - data_end;
+
+	g_assert (data_end > 0);
+	g_assert (heap_base > data_end);
+
+	// this is the max available stack size size,
+	// return a 16-byte aligned smaller size
+	return max_stack_size & ~0xF;
 }
 
 static int
 wasm_get_stack_base (void)
 {
-	size_t heap_base = get_wasm_heap_base();
-	size_t data_end = get_wasm_data_end();
-	size_t stack_size_pad = wasm_get_stack_size() + 12; // there is padding
-	// g_print("heap_base %d: ", heap_base);
-	// g_print("data_end %d: ", data_end);
-
-
-	// assuming we are compiling without LLVM's --stack-first
-	g_assert (heap_base > 0);
-	g_assert (data_end > 0);
-	g_assert (heap_base > data_end);
-	g_assert (heap_base - stack_size_pad == data_end);
-
-    return data_end;
+	return get_wasm_data_end();
 	// this will need further change for multithreading as the stack will allocated be per thread at different addresses
 }
 
