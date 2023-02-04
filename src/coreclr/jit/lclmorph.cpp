@@ -1247,7 +1247,9 @@ private:
                 assert(varTypeIsIntegral(varDsc->TypeGet()));
                 assert(*val.Use() == indir);
 
+#ifdef DEBUG
                 removeIndir = true;
+#endif // DEBUG
                 lclNode     = BashToLclVar(indir->gtGetOp1(), lclNum);
                 if (isDef)
                 {
