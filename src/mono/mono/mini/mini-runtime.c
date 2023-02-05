@@ -4347,8 +4347,8 @@ init_class (MonoClass *klass)
 	 * The JIT can't handle SIMD types with != 16 size yet.
 	 */
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
-		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
-		if (!strcmp (name, "Vector4"))
+		// FIXME: Support Vector2/Vector3 and Plane
+		if (!strcmp (name, "Vector4") || !strcmp (name, "Quaternion"))
 			mono_class_set_is_simd_type (klass, TRUE);
 	}
 #endif
