@@ -8770,7 +8770,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     ssize_t   byteOffset = 0;
     FieldSeq* fieldSeq   = nullptr;
-    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    if ((varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
 #if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
@@ -8877,12 +8877,14 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                         tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(val));
                         return true;
                     }
+#if defined(TARGET_XARCH)
                     case TYP_SIMD32:
                     {
                         READ_VALUE(simd32_t);
                         tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(val));
                         return true;
                     }
+#endif
 #endif
                     default:
                         break;
