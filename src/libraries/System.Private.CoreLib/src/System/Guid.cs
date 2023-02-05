@@ -1210,8 +1210,7 @@ namespace System
                         // Vectorized implementation for D, N, P and B formats:
                         // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
 
-                        ref byte thisPtr = ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in this));
-                        Vector128<byte> srcVec = Vector128.LoadUnsafe(ref thisPtr);
+                        Vector128<byte> srcVec = Unsafe.As<Guid, Vector128<byte>>(ref Unsafe.AsRef(in this));
 
                         // The algorithm is simple: a single srcVec (contains the whole 16b Guid) is converted
                         // into nibbles and then, via hexMap, converted into a HEX representation via
