@@ -8775,7 +8775,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     {
         CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
         int                  size           = (int)genTypeSize(tree->TypeGet());
-        const int            maxElementSize = 32; // SIMD32
+        const int            maxElementSize = max(sizeof(int64_t), maxSIMDStructBytes());
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
@@ -8878,6 +8878,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 #endif
 #endif
                     default:
+                        assert(!varTypeIsSIMD(tree));
                         break;
                 }
             }
