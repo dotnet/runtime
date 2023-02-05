@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
-using System.Buffers.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -1127,7 +1126,6 @@ namespace System
                 throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
             }
 
-
             bool dash = true;
             bool hex = false;
             int braces = 0;
@@ -1211,37 +1209,31 @@ namespace System
                     {
                         // Vectorized implementation for D, N, P and B formats:
                         // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-
                         (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) =
-                            Utf8Formatter.FormatGuidVector128Utf8(this, dash);
+                            Buffers.Text.Utf8Formatter.FormatGuidVector128Utf8(this, dash);
 
                         // Expand to UTF-16
                         (Vector128<ushort> x0, Vector128<ushort> x1) = Vector128.Widen(vecX);
                         (Vector128<ushort> y0, Vector128<ushort> y1) = Vector128.Widen(vecY);
-
                         ushort* pChar = (ushort*)p;
                         if (dash)
                         {
                             (Vector128<ushort> z0, Vector128<ushort> z1) = Vector128.Widen(vecZ);
 
                             // We need to merge these vectors in this order:
-                            //
                             // xxxxxxxxxxxxxxxx
                             //                     yyyyyyyyyyyyyyyy
                             //         zzzzzzzzzzzzzzzz
-
                             x0.Store(pChar + 0);
-                            // x1 is not needed, it's overlapped by z0
                             y0.Store(pChar + 20);
                             y1.Store(pChar + 28);
-                            z0.Store(pChar + 8);
+                            z0.Store(pChar + 8); // overlaps x1
                             z1.Store(pChar + 16);
                             p += 36;
                         }
                         else
                         {
                             // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
-
                             x0.Store(pChar + 0);
                             x1.Store(pChar + 8);
                             y0.Store(pChar + 16);
@@ -1281,6 +1273,7 @@ namespace System
                     Debug.Assert(p - guidChars == guidSize);
                 }
             }
+
             charsWritten = guidSize;
             return true;
         }

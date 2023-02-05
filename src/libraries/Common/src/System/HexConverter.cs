@@ -87,30 +87,25 @@ namespace System
         }
 
 #if SYSTEM_PRIVATE_CORELIB
-
+        // Converts Vector128<byte> into 2xVector128<byte> ASCII Hex representation
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static (Vector128<byte>, Vector128<byte>) AsciiToHexVector128(Vector128<byte> src, Vector128<byte> hexMap)
         {
             Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);
-
             // The algorithm is simple: a single srcVec (contains the whole 16b Guid) is converted
             // into nibbles and then, via hexMap, converted into a HEX representation via
             // Shuffle(nibbles, srcVec). ASCII is then expanded to UTF-16.
-
             Vector128<byte> nibbles = Vector128.ShiftRightLogical(src.AsUInt64(), 4).AsByte();
+            Vector128<byte> lowNibbles = Vector128.UnpackLow(nibbles, src);
+            Vector128<byte> highNibbles = Vector128.UnpackHigh(nibbles, src);
 
-            Vector128<byte> lowNibbles = Sse2.IsSupported ?
-                Sse2.UnpackLow(nibbles, src) : AdvSimd.Arm64.ZipLow(nibbles, src);
-            Vector128<byte> highNibbles = Sse2.IsSupported ?
-                Sse2.UnpackHigh(nibbles, src) : AdvSimd.Arm64.ZipHigh(nibbles, src);
+            return (ShuffleUnsafe(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
+                ShuffleUnsafe(hexMap, highNibbles & Vector128.Create((byte)0xF)));
 
             // TODO: remove once https://github.com/dotnet/runtime/pull/80963 is merged
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static Vector128<byte> ShuffleUnsafe(Vector128<byte> value, Vector128<byte> mask)
                 => Ssse3.IsSupported ? Ssse3.Shuffle(value, mask) : AdvSimd.Arm64.VectorTableLookup(value, mask);
-
-            return (ShuffleUnsafe(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
-                ShuffleUnsafe(hexMap, highNibbles & Vector128.Create((byte)0xF)));
         }
 
         private static void EncodeToUtf16_Vector128(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
@@ -124,7 +119,7 @@ namespace System
                 Vector128.Create("0123456789ABCDEF"u8) :
                 Vector128.Create("0123456789abcdef"u8);
 
-            nuint offset = 0;
+            nuint pos = 0;
             nuint lengthSubVector128 = (nuint)bytes.Length - (nuint)Vector128<int>.Count;
             do
             {
@@ -133,25 +128,25 @@ namespace System
                 // for Converter.ToHexString (around 8% faster for large inputs) so
                 // it focuses on small inputs instead.
 
-                uint i32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref srcRef, offset));
+                uint i32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref srcRef, pos));
                 Vector128<byte> vec = Vector128.CreateScalar(i32).AsByte();
 
                 // JIT is expected to eliminate all unused calculations
                 (Vector128<byte> hexLow, _) = AsciiToHexVector128(vec, hexMap);
                 (Vector128<ushort> v0, _) = Vector128.Widen(hexLow);
 
-                v0.StoreUnsafe(ref destRef, offset / 2);
+                v0.StoreUnsafe(ref destRef, pos / 2);
 
-                offset += (nuint)Vector128<int>.Count;
-                if (offset == (nuint)bytes.Length)
+                pos += (nuint)Vector128<int>.Count;
+                if (pos == (nuint)bytes.Length)
                 {
                     return;
                 }
 
                 // Overlap with the current chunk for trailing elements
-                if (offset > lengthSubVector128)
+                if (pos > lengthSubVector128)
                 {
-                    offset = lengthSubVector128;
+                    pos = lengthSubVector128;
                 }
 
             } while (true);

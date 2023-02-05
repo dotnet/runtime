@@ -28,7 +28,6 @@ namespace System.Buffers.Text
         internal static (Vector128<byte>, Vector128<byte>, Vector128<byte>) FormatGuidVector128Utf8(Guid value, bool useDashes)
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
-
             // Vectorized implementation for D, N, P and B formats:
             // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
 
@@ -62,7 +61,6 @@ namespace System.Buffers.Text
                     Vector128.Create(0x0D0CFF0B0A0908FF, 0xFFFFFFFFFFFF0F0E).AsByte());
                 Vector128<byte> mid2 = Vector128.Shuffle(hexHigh,
                     Vector128.Create(0xFFFFFFFFFFFFFFFF, 0xFF03020100FFFFFF).AsByte());
-
                 Vector128<byte> dashesMask = Vector128.Shuffle(Vector128.CreateScalarUnsafe((byte)'-'),
                     Vector128.Create(0xFFFF00FFFFFFFF00, 0x00FFFFFFFF00FFFF).AsByte());
 
@@ -162,7 +160,6 @@ namespace System.Buffers.Text
             {
                 // Vectorized implementation for D, N, P and B formats:
                 // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-
                 (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) =
                     FormatGuidVector128Utf8(value, flags < 0 /*dash*/);
 
@@ -170,11 +167,9 @@ namespace System.Buffers.Text
                 if (flags < 0)
                 {
                     // We need to merge these vectors in this order:
-                    //
                     // xxxxxxxxxxxxxxxx
                     //                     yyyyyyyyyyyyyyyy
                     //         zzzzzzzzzzzzzzzz
-
                     vecX.StoreUnsafe(ref dest, 0);
                     vecY.StoreUnsafe(ref dest, 20);
                     vecZ.StoreUnsafe(ref dest, 8);
@@ -182,7 +177,6 @@ namespace System.Buffers.Text
                 else
                 {
                     // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
-
                     vecX.StoreUnsafe(ref dest, 0);
                     vecY.StoreUnsafe(ref dest, 16);
                 }
