@@ -9,6 +9,8 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -1203,25 +1205,72 @@ namespace System
                         p += HexsToCharsHexOutput(p, _j, _k);
                         *p++ = '}';
                     }
+                    else if ((Ssse3.IsSupported || AdvSimd.IsSupported) && BitConverter.IsLittleEndian)
+                    {
+                        ref byte thisPtr = ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in this));
+                        Vector128<byte> srcVec = Vector128.LoadUnsafe(ref thisPtr);
+                        // The algorithm is simple: a single srcVec (contains the whole 16b Guid) is converted
+                        // into nibbles and then, via hexMap, converted into a HEX representation via
+                        // Shuffle(nibbles, srcVec). ASCII is then expanded to UTF-16.
+                        Vector128<byte> hexMap = Vector128.Create("0123456789abcdef"u8);
+                        Vector128<byte> nibbles = Vector128.ShiftRightLogical(srcVec.AsUInt64(), 4).AsByte();
+                        Vector128<byte> lowNibbles = UnpackLow(nibbles, srcVec) & Vector128.Create((byte)0xF);
+                        Vector128<byte> highNibbles = UnpackHigh(nibbles, srcVec) & Vector128.Create((byte)0xF);
+                        (Vector128<ushort> v0, Vector128<ushort> v1) = Vector128.Widen(Shuffle(hexMap, lowNibbles));
+                        (Vector128<ushort> v2, Vector128<ushort> v3) = Vector128.Widen(Shuffle(hexMap, highNibbles));
+
+                        ushort* pChar = (ushort*)p;
+                        // because of Guid's layout (int _a, short _b, _c, byte ...)
+                        // we have to handle v0 and v1 separately:
+                        v0 = Vector128.Shuffle(v0.AsInt32(), Vector128.Create(3, 2, 1, 0)).AsUInt16();
+                        v1 = Vector128.Shuffle(v1.AsInt32(), Vector128.Create(1, 0, 3, 2)).AsUInt16();
+
+                        if (dash)
+                        {
+                            // v0v0v0v0-v1v1-v1v1-v2v2-v2v2v3v3v3v3
+                            v0.Store(pChar + 0);
+                            v1.Store(pChar + 9);
+                            v1 = Vector128.Shuffle(v1.AsInt64(), Vector128.Create(1, 0)).AsUInt16();
+                            v1.Store(pChar + 14);
+                            v2.Store(pChar + 19);
+                            v2 = Vector128.Shuffle(v2.AsInt64(), Vector128.Create(1, 0)).AsUInt16();
+                            v2.Store(pChar + 24);
+                            v3.Store(pChar + 28);
+                            pChar[8] = '-';
+                            pChar[13] = '-';
+                            pChar[18] = '-';
+                            pChar[23] = '-';
+                            // We could be smarter here by doing only 5 SIMD stores + permutations
+                            // but extra complexity is not worth it according to benchmarks
+                            p += 36;
+                        }
+                        else
+                        {
+                            // v0v0v0v0v1v1v1v1v2v2v2v2v3v3v3v3
+                            v0.Store(pChar + 0);
+                            v1.Store(pChar + 8);
+                            v2.Store(pChar + 16);
+                            v3.Store(pChar + 24);
+                            p += 32;
+                        }
+
+                        // https://github.com/dotnet/runtime/issues/81609
+                        // VectorTableLookup is not exactly the same but it doesn't matter for the given use case
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask) =>
+                            Ssse3.IsSupported ? Ssse3.Shuffle(value, mask) : AdvSimd.Arm64.VectorTableLookup(value, mask);
+
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        static Vector128<byte> UnpackLow(Vector128<byte> left, Vector128<byte> right) =>
+                            Sse2.IsSupported ? Sse2.UnpackLow(left, right) : AdvSimd.Arm64.ZipLow(left, right);
+
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        static Vector128<byte> UnpackHigh(Vector128<byte> left, Vector128<byte> right) =>
+                            Sse2.IsSupported ? Sse2.UnpackHigh(left, right) : AdvSimd.Arm64.ZipHigh(left, right);
+                    }
                     else
                     {
-                        // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-                        p += HexsToChars(p, _a >> 24, _a >> 16);
-                        p += HexsToChars(p, _a >> 8, _a);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _b >> 8, _b);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _c >> 8, _c);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _d, _e);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _f, _g);
-                        p += HexsToChars(p, _h, _i);
-                        p += HexsToChars(p, _j, _k);
+                        p = FormatNonHexFallback(p, dash);
                     }
 
                     if (braces != 0)
@@ -1233,6 +1282,30 @@ namespace System
 
             charsWritten = guidSize;
             return true;
+        }
+
+        // Non-vectorized fallback for D, N, P and B formats
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private unsafe char* FormatNonHexFallback(char* p, bool dash)
+        {
+            // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+            p += HexsToChars(p, _a >> 24, _a >> 16);
+            p += HexsToChars(p, _a >> 8, _a);
+            if (dash)
+                *p++ = '-';
+            p += HexsToChars(p, _b >> 8, _b);
+            if (dash)
+                *p++ = '-';
+            p += HexsToChars(p, _c >> 8, _c);
+            if (dash)
+                *p++ = '-';
+            p += HexsToChars(p, _d, _e);
+            if (dash)
+                *p++ = '-';
+            p += HexsToChars(p, _f, _g);
+            p += HexsToChars(p, _h, _i);
+            p += HexsToChars(p, _j, _k);
+            return p;
         }
 
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, IFormatProvider? provider)
