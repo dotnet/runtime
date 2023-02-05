@@ -553,40 +553,58 @@ namespace Microsoft.Extensions.Configuration
             }
 
             // addMethod can only be null if dictionaryType is IReadOnlyDictionary<TKey, TValue> rather than IDictionary<TKey, TValue>.
-            MethodInfo? addMethod = dictionaryType.GetMethod("Add", DeclaredOnlyLookup);
-            if (addMethod is null || source is null)
+            if (source == null || dictionaryType.GetMethod("Add", DeclaredOnlyLookup) == null)
             {
-                dictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
-                object? dictionary = Activator.CreateInstance(dictionaryType);
-                addMethod = dictionaryType.GetMethod("Add", DeclaredOnlyLookup);
+                // Minimize use of Reflection by using a helper type to improve performance.
+                Type factoryType =
+                    typeof(DictionaryInterfaceFactory<,>).MakeGenericType(keyType, valueType);
+                DictionaryInterfaceFactory factory =
+                    (DictionaryInterfaceFactory)Activator.CreateInstance(factoryType)!;
 
-                var orig = source as IEnumerable;
-                if (orig is not null)
-                {
-                    Type kvpType = typeof(KeyValuePair<,>).MakeGenericType(keyType, valueType);
-                    PropertyInfo keyMethod = kvpType.GetProperty("Key", DeclaredOnlyLookup)!;
-                    PropertyInfo valueMethod = kvpType.GetProperty("Value", DeclaredOnlyLookup)!;
-                    object?[] arguments = new object?[2];
-
-                    foreach (object? item in orig)
-                    {
-                        object? k = keyMethod.GetMethod!.Invoke(item, null);
-                        object? v = valueMethod.GetMethod!.Invoke(item, null);
-                        arguments[0] = k;
-                        arguments[1] = v;
-                        addMethod!.Invoke(dictionary, arguments);
-                    }
-                }
-
-                source = dictionary;
+                source = factory.Copy(source);
             }
 
             Debug.Assert(source is not null);
-            Debug.Assert(addMethod is not null);
+            Debug.Assert(source.GetType().GetMethod("Add", DeclaredOnlyLookup) is not null);
 
-            BindDictionary(source, dictionaryType, config, options);
+            BindDictionary(source, source.GetType(), config, options);
 
             return source;
+        }
+
+        internal abstract class DictionaryInterfaceFactory
+        {
+            public abstract object Copy(object? source);
+        }
+
+        internal sealed class DictionaryInterfaceFactory<TKey, TValue>
+            : DictionaryInterfaceFactory
+            where TKey : notnull
+        {
+            public override object Copy(object? source)
+            {
+                if (source == null)
+                {
+                    return new Dictionary<TKey, TValue>();
+                }
+
+                // Dictionary constructor has performance optimizations for copying from another Dictionary.
+                if (source is Dictionary<TKey, TValue> sourceDictionary)
+                {
+                    return new Dictionary<TKey, TValue>(sourceDictionary);
+                }
+
+                // Dictionary constructor does not pre-allocate required capacity when copying from
+                // objects from types that implement IReadOnlyCollection but do not implement
+                // ICollection.
+                var sourceCollection = (IReadOnlyCollection<KeyValuePair<TKey, TValue>>)source;
+                var result = new Dictionary<TKey, TValue>(sourceCollection.Count);
+                foreach (var kvp in sourceCollection)
+                {
+                    result.Add(kvp.Key, kvp.Value);
+                }
+                return result;
+            }
         }
 
         // Binds and potentially overwrites a dictionary object.
@@ -625,8 +643,40 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
-            PropertyInfo indexerProperty = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
+            Func<object, object?> getValue;
+            Action<object, object?> setValue;
+            // Dictionary<TKey, TValue> implements non-generic IDictionary interface. Calling
+            // IDictionary methods is faster than calling IDictionary<T> methods via Reflection.
+            if (dictionary is IDictionary d)
+            {
+                getValue = k =>
+                {
+                    // Unlike IDictionary<TKey, TValue>, non-generic IDictionary should return null
+                    // if key is missing from the dictionary, but we also catch KeyNotFoundException
+                    // as a fail-safe if the implementation is incorrect.
+                    try
+                    {
+                        return d[k];
+                    }
+                    catch (KeyNotFoundException)
+                    {
+                        return null;
+                    }
+                };
+                setValue = (k, v) => d[k] = v;
+            }
+            else
+            {
+                MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
+                PropertyInfo indexerProperty = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
+
+                getValue = k =>
+                {
+                    object?[] tryGetValueArgs = { k, null };
+                    return (bool)tryGetValue.Invoke(dictionary, tryGetValueArgs)! ? tryGetValueArgs[1] : null;
+                };
+                setValue = (k, v) => indexerProperty.SetValue(dictionary, v, new object[] { k });
+            }
 
             foreach (IConfigurationSection child in config.GetChildren())
             {
@@ -637,11 +687,7 @@ namespace Microsoft.Extensions.Configuration
                         child.Key;
 
                     var valueBindingPoint = new BindingPoint(
-                        initialValueProvider: () =>
-                        {
-                            object?[] tryGetValueArgs = { key, null };
-                            return (bool)tryGetValue.Invoke(dictionary, tryGetValueArgs)! ? tryGetValueArgs[1] : null;
-                        },
+                        initialValueProvider: () => getValue(key),
                         isReadOnly: false);
                     BindInstance(
                         type: valueType,
@@ -650,7 +696,7 @@ namespace Microsoft.Extensions.Configuration
                         options: options);
                     if (valueBindingPoint.HasNewValue)
                     {
-                        indexerProperty.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
+                        setValue(key, valueBindingPoint.Value);
                     }
                 }
                 catch(Exception ex)
@@ -674,7 +720,18 @@ namespace Microsoft.Extensions.Configuration
         {
             // ICollection<T> is guaranteed to have exactly one parameter
             Type itemType = collectionType.GenericTypeArguments[0];
-            MethodInfo? addMethod = collectionType.GetMethod("Add", DeclaredOnlyLookup);
+            Action<object?> addElement;
+            // List<T> implements non-generic IList interface. Calling IList.Add is faster than
+            //calling IList<T>.Add via Reflection.
+            if(collection is IList list)
+            {
+                addElement = e => list.Add(e);
+            }
+            else
+            {
+                MethodInfo? addMethod = collectionType.GetMethod("Add", DeclaredOnlyLookup);
+                addElement = e => addMethod?.Invoke(collection, new[] { e });
+            }
 
             foreach (IConfigurationSection section in config.GetChildren())
             {
@@ -688,7 +745,7 @@ namespace Microsoft.Extensions.Configuration
                         options: options);
                     if (itemBindingPoint.HasNewValue)
                     {
-                        addMethod?.Invoke(collection, new[] { itemBindingPoint.Value });
+                        addElement(itemBindingPoint.Value);
                     }
                 }
                 catch(Exception ex)
@@ -775,29 +832,32 @@ namespace Microsoft.Extensions.Configuration
                 return null;
             }
 
-            object?[] arguments = new object?[1];
+            Action<IEnumerable, object?> addElement;
             // addMethod can only be null if type is IReadOnlySet<T> rather than ISet<T>.
             MethodInfo? addMethod = type.GetMethod("Add", DeclaredOnlyLookup);
             if (addMethod is null || source is null)
             {
-                Type genericType = typeof(HashSet<>).MakeGenericType(elementType);
-                object instance = Activator.CreateInstance(genericType)!;
-                addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup);
+                // Minimize use of Reflection by using a helper type to improve performance.
+                Type helperType = typeof(SetHelper<>).MakeGenericType(elementType);
+                SetHelper factory = (SetHelper)Activator.CreateInstance(helperType)!;
 
-                if (source != null)
+                source = factory.Copy(source);
+                addElement = factory.AddElement;
+            }
+            else
+            {
+                // Constructing helper type has performance overhead. If only a small number of
+                // elements is added, it is faster to invoke Add with Reflection.
+                object?[] arguments = new object?[1];
+                addElement = (s, e) =>
                 {
-                    foreach (object? item in source)
-                    {
-                        arguments[0] = item;
-                        addMethod!.Invoke(instance, arguments);
-                    }
-                }
-
-                source = (IEnumerable)instance;
+                    arguments[0] = e;
+                    addMethod.Invoke(s, arguments);
+                };
             }
 
             Debug.Assert(source is not null);
-            Debug.Assert(addMethod is not null);
+            Debug.Assert(addElement is not null);
 
             foreach (IConfigurationSection section in config.GetChildren())
             {
@@ -811,9 +871,7 @@ namespace Microsoft.Extensions.Configuration
                         options: options);
                     if (itemBindingPoint.HasNewValue)
                     {
-                        arguments[0] = itemBindingPoint.Value;
-
-                        addMethod.Invoke(source, arguments);
+                        addElement(source, itemBindingPoint.Value);
                     }
                 }
                 catch (Exception ex)
@@ -827,6 +885,38 @@ namespace Microsoft.Extensions.Configuration
             }
 
             return source;
+        }
+
+        internal abstract class SetHelper
+        {
+            public abstract IEnumerable Copy(IEnumerable? source);
+
+            public abstract void AddElement(IEnumerable instance, object? value);
+        }
+
+        internal sealed class SetHelper<T>
+            : SetHelper
+        {
+            public override IEnumerable Copy(IEnumerable? source)
+                => source switch
+                {
+                    null => new HashSet<T>(),
+                    IEnumerable<T> collection => new HashSet<T>(collection),
+                    _ => CopyFromNonGeneric(source)
+                };
+
+            private static HashSet<T> CopyFromNonGeneric(IEnumerable source)
+            {
+                HashSet<T> result = new HashSet<T>();
+                foreach (T item in source)
+                {
+                    result.Add(item);
+                }
+                return result;
+            }
+
+            public override void AddElement(IEnumerable instance, object? value)
+                => ((ISet<T>)instance).Add((T)value!);
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
