@@ -8775,7 +8775,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     {
         CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
         int                  size           = (int)genTypeSize(tree->TypeGet());
-        const int            maxElementSize = 32; // Vector256
+        const int            maxElementSize = 32; // SIMD32
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
@@ -9243,7 +9243,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // Note VNF_PtrToStatic statics are currently always "simple".
                     fgValueNumberFieldLoad(tree, /* baseAddr */ nullptr, fldSeq, offset);
                 }
-                else if (tree->OperIs(GT_IND, GT_OBJ) && fgValueNumberConstLoad(tree->AsIndir()))
+                else if (tree->OperIs(GT_IND, GT_BLK, GT_OBJ) && fgValueNumberConstLoad(tree->AsIndir()))
                 {
                     // VN is assigned inside fgValueNumberConstLoad
                 }
