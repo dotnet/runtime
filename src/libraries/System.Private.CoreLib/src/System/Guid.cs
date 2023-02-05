@@ -1270,7 +1270,24 @@ namespace System
                     }
                     else
                     {
-                        p = FormatNonHexFallback(p, dash);
+                        // Non-vectorized fallback for D, N, P and B formats:
+                        // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+                        p += HexsToChars(p, _a >> 24, _a >> 16);
+                        p += HexsToChars(p, _a >> 8, _a);
+                        if (dash)
+                            *p++ = '-';
+                        p += HexsToChars(p, _b >> 8, _b);
+                        if (dash)
+                            *p++ = '-';
+                        p += HexsToChars(p, _c >> 8, _c);
+                        if (dash)
+                            *p++ = '-';
+                        p += HexsToChars(p, _d, _e);
+                        if (dash)
+                            *p++ = '-';
+                        p += HexsToChars(p, _f, _g);
+                        p += HexsToChars(p, _h, _i);
+                        p += HexsToChars(p, _j, _k);
                     }
 
                     if (braces != 0)
@@ -1282,30 +1299,6 @@ namespace System
 
             charsWritten = guidSize;
             return true;
-        }
-
-        // Non-vectorized fallback for D, N, P and B formats
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private unsafe char* FormatNonHexFallback(char* p, bool dash)
-        {
-            // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-            p += HexsToChars(p, _a >> 24, _a >> 16);
-            p += HexsToChars(p, _a >> 8, _a);
-            if (dash)
-                *p++ = '-';
-            p += HexsToChars(p, _b >> 8, _b);
-            if (dash)
-                *p++ = '-';
-            p += HexsToChars(p, _c >> 8, _c);
-            if (dash)
-                *p++ = '-';
-            p += HexsToChars(p, _d, _e);
-            if (dash)
-                *p++ = '-';
-            p += HexsToChars(p, _f, _g);
-            p += HexsToChars(p, _h, _i);
-            p += HexsToChars(p, _j, _k);
-            return p;
         }
 
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, IFormatProvider? provider)
