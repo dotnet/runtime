@@ -36,28 +36,28 @@ namespace Microsoft.Extensions.Logging.Generators
             /// </summary>
             public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
-                INamedTypeSymbol loggerMessageAttribute = _compilation.GetBestTypeByMetadataName(LoggerMessageAttribute);
+                INamedTypeSymbol? loggerMessageAttribute = _compilation.GetBestTypeByMetadataName(LoggerMessageAttribute);
                 if (loggerMessageAttribute == null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                INamedTypeSymbol loggerSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
+                INamedTypeSymbol? loggerSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
                 if (loggerSymbol == null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                INamedTypeSymbol logLevelSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
+                INamedTypeSymbol? logLevelSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
                 if (logLevelSymbol == null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                INamedTypeSymbol exceptionSymbol = _compilation.GetBestTypeByMetadataName("System.Exception");
+                INamedTypeSymbol? exceptionSymbol = _compilation.GetBestTypeByMetadataName("System.Exception");
                 if (exceptionSymbol == null)
                 {
                     Diag(DiagnosticDescriptors.MissingRequiredType, null, "System.Exception");
@@ -115,9 +115,9 @@ namespace Microsoft.Extensions.Logging.Generators
                                     }
 
                                     bool hasMisconfiguredInput = false;
-                                    ImmutableArray<AttributeData>? boundAttributes = logMethodSymbol?.GetAttributes();
+                                    ImmutableArray<AttributeData> boundAttributes = logMethodSymbol.GetAttributes();
 
-                                    if (boundAttributes == null || boundAttributes!.Value.Length == 0)
+                                    if (boundAttributes.Length == 0)
                                     {
                                         continue;
                                     }
@@ -138,6 +138,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 if (typedConstant.Kind == TypedConstantKind.Error)
                                                 {
                                                     hasMisconfiguredInput = true;
+                                                    break; // if a compilation error was found, no need to keep evaluating other args
                                                 }
                                             }
 
@@ -146,7 +147,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                             eventId = items[0].IsNull ? -1 : (int)GetItem(items[0]);
                                             level = items[1].IsNull ? null : (int?)GetItem(items[1]);
-                                            message = items[2].IsNull ? "" : (string)GetItem(items[2]);
+                                            message = items[2].IsNull ? string.Empty : (string)GetItem(items[2]);
                                         }
 
                                         // argument syntax takes parameters. e.g. EventId = 0
@@ -159,6 +160,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 if (typedConstant.Kind == TypedConstantKind.Error)
                                                 {
                                                     hasMisconfiguredInput = true;
+                                                    break; // if a compilation error was found, no need to keep evaluating other args
                                                 }
                                                 else
                                                 {
@@ -178,7 +180,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                             eventName = (string?)GetItem(value);
                                                             break;
                                                         case "Message":
-                                                            message = value.IsNull ? "" : (string)GetItem(value);
+                                                            message = value.IsNull ? string.Empty : (string)GetItem(value);
                                                             break;
                                                     }
                                                 }
@@ -301,7 +303,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             break;
                                         }
 
-                                        ITypeSymbol paramTypeSymbol = paramSymbol!.Type;
+                                        ITypeSymbol paramTypeSymbol = paramSymbol.Type;
                                         if (paramTypeSymbol is IErrorTypeSymbol)
                                         {
                                             // semantic problem, just bail quietly
@@ -335,10 +337,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             Type = typeName,
                                             Qualifier = qualifier,
                                             CodeName = needsAtSign ? "@" + paramName : paramName,
-                                            IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol!, loggerSymbol),
-                                            IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol!, exceptionSymbol),
-                                            IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol!, logLevelSymbol),
-                                            IsEnumerable = IsBaseOrIdentity(paramTypeSymbol!, enumerableSymbol) && !IsBaseOrIdentity(paramTypeSymbol!, stringSymbol),
+                                            IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol, loggerSymbol),
+                                            IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol, exceptionSymbol),
+                                            IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, logLevelSymbol),
+                                            IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, enumerableSymbol) && !IsBaseOrIdentity(paramTypeSymbol, stringSymbol),
                                         };
 
                                         foundLogger |= lp.IsLogger;
