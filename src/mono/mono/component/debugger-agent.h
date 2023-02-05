@@ -31,6 +31,8 @@ mono_change_log_level (int new_log_level);
 void
 mono_wasm_save_thread_context (void);
 
+bool
+mono_wasm_breakpoint_and_stepping_disabled (void);
 #endif
 
 void

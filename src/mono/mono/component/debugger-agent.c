@@ -217,7 +217,7 @@ struct _DebuggerTlsData {
 	gboolean terminated;
 
 	/* Whenever to disable breakpoints (used during invokes) */
-	gboolean disable_breakpoints;
+	gboolean disable_breakpoint_and_stepping;
 
 	/*
 	 * Number of times this thread has been resumed using resume_thread ().
@@ -2262,6 +2262,12 @@ mono_wasm_get_tls (void)
 	GET_TLS_DATA_FROM_THREAD (thread);
 	return tls;
 }
+
+bool
+mono_wasm_breakpoint_and_stepping_disabled (void)
+{
+	return mono_wasm_get_tls ()->disable_breakpoint_and_stepping;
+}
 #endif
 
 #ifdef HOST_WASI
@@ -3701,7 +3707,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			GET_DEBUGGER_TLS();
 			g_assert (tls);
 			// We are already processing a breakpoint event
-			if (tls->disable_breakpoints)
+			if (tls->disable_breakpoint_and_stepping)
 				return;
 			mono_stopwatch_stop (&tls->step_time);
 			break;
@@ -4265,7 +4271,7 @@ mono_de_frame_async_id (DbgEngineStackFrame *frame)
 	MonoObject *ex;
 	ERROR_DECL (error);
 	MonoObject *obj;
-	gboolean old_disable_breakpoints = FALSE;
+	gboolean old_disable_breakpoint_and_stepping = FALSE;
 	DebuggerTlsData *tls;
 
 	/*
@@ -4282,21 +4288,21 @@ mono_de_frame_async_id (DbgEngineStackFrame *frame)
 
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 	if (tls) {
-		old_disable_breakpoints = tls->disable_breakpoints;
-		tls->disable_breakpoints = TRUE;
+		old_disable_breakpoint_and_stepping = tls->disable_breakpoint_and_stepping;
+		tls->disable_breakpoint_and_stepping = TRUE;
 	}
 
 	method = get_object_id_for_debugger_method (mono_class_from_mono_type_internal (builder_field->type));
 	if (!method) {
 		if (tls)
-			tls->disable_breakpoints = old_disable_breakpoints;
+			tls->disable_breakpoint_and_stepping = old_disable_breakpoint_and_stepping;
 		return 0;
 	}
 	obj = mono_runtime_try_invoke (method, builder, NULL, &ex, error);
 	mono_error_assert_ok (error);
 
 	if (tls)
-		tls->disable_breakpoints = old_disable_breakpoints;
+		tls->disable_breakpoint_and_stepping = old_disable_breakpoint_and_stepping;
 
 	return get_objid (obj);
 }
@@ -4315,7 +4321,7 @@ mono_begin_breakpoint_processing (void *the_tls, MonoContext *ctx, MonoJitInfo *
 #else
 		NOT_IMPLEMENTED;
 #endif
-	if (tls->disable_breakpoints)
+	if (tls->disable_breakpoint_and_stepping)
 		return FALSE;
 	return TRUE;
 }
@@ -4855,7 +4861,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 	if (tls != NULL) {
 		if (tls->abort_requested)
 			return;
-		if (tls->disable_breakpoints)
+		if (tls->disable_breakpoint_and_stepping)
 			return;
 	}
 
@@ -6379,10 +6385,10 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 	if (i < nargs)
 		return err;
 
-	if (invoke->flags & INVOKE_FLAG_DISABLE_BREAKPOINTS)
-		tls->disable_breakpoints = TRUE;
+	if (invoke->flags & INVOKE_FLAG_DISABLE_BREAKPOINTS_AND_STEPPING)
+		tls->disable_breakpoint_and_stepping = TRUE;
 	else
-		tls->disable_breakpoints = FALSE;
+		tls->disable_breakpoint_and_stepping = FALSE;
 
 	/*
 	 * Add an LMF frame to link the stack frames on the invoke method with our caller.
@@ -6475,7 +6481,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 		}
 	}
 
-	tls->disable_breakpoints = FALSE;
+	tls->disable_breakpoint_and_stepping = FALSE;
 
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 	if (invoke->has_ctx)
