@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -1126,6 +1127,7 @@ namespace System
                 throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
             }
 
+
             bool dash = true;
             bool hex = false;
             int braces = 0;
@@ -1210,64 +1212,46 @@ namespace System
                         // Vectorized implementation for D, N, P and B formats:
                         // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
 
-                        Vector128<byte> srcVec = Unsafe.As<Guid, Vector128<byte>>(ref Unsafe.AsRef(in this));
+                        (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) =
+                            Utf8Formatter.FormatGuidVector128Utf8(this, dash);
 
-                        // The algorithm is simple: a single srcVec (contains the whole 16b Guid) is converted
-                        // into nibbles and then, via hexMap, converted into a HEX representation via
-                        // Shuffle(nibbles, srcVec). ASCII is then expanded to UTF-16.
-                        Vector128<byte> hexMap = Vector128.Create("0123456789abcdef"u8);
-                        Vector128<byte> nibbles = Vector128.ShiftRightLogical(srcVec.AsUInt64(), 4).AsByte();
-                        Vector128<byte> lowNibbles = UnpackLow(nibbles, srcVec) & Vector128.Create((byte)0xF);
-                        Vector128<byte> highNibbles = UnpackHigh(nibbles, srcVec) & Vector128.Create((byte)0xF);
-                        (Vector128<ushort> v0, Vector128<ushort> v1) = Vector128.Widen(Shuffle(hexMap, lowNibbles));
-                        (Vector128<ushort> v2, Vector128<ushort> v3) = Vector128.Widen(Shuffle(hexMap, highNibbles));
-
-                        // Because of Guid's layout (int _a, short _b, _c, byte ...)
-                        // we have to handle v0 and v1 separately:
-                        v0 = Vector128.Shuffle(v0.AsInt32(), Vector128.Create(3, 2, 1, 0)).AsUInt16();
-                        v1 = Vector128.Shuffle(v1.AsInt32(), Vector128.Create(1, 0, 3, 2)).AsUInt16();
+                        // Expand to UTF-16
+                        (Vector128<ushort> x0, Vector128<ushort> x1) = Vector128.Widen(vecX);
+                        (Vector128<ushort> y0, Vector128<ushort> y1) = Vector128.Widen(vecY);
 
                         ushort* pChar = (ushort*)p;
                         if (dash)
                         {
-                            // v0v0v0v0-v1v1-v1v1-v2v2-v2v2v3v3v3v3
-                            v0.Store(pChar + 0);
-                            v1.Store(pChar + 9);
-                            v1 = Vector128.Shuffle(v1.AsInt64(), Vector128.Create(1, 0)).AsUInt16();
-                            v1.Store(pChar + 14);
-                            v2.Store(pChar + 19);
-                            v2 = Vector128.Shuffle(v2.AsInt64(), Vector128.Create(1, 0)).AsUInt16();
-                            v2.Store(pChar + 24);
-                            v3.Store(pChar + 28);
-                            pChar[8] = pChar[13] = pChar[18] = pChar[23] = '-';
+                            (Vector128<ushort> z0, Vector128<ushort> z1) = Vector128.Widen(vecZ);
 
-                            // We could be smarter here by doing only 5 SIMD stores + permutations
-                            // but extra complexity is not worth it according to benchmarks
+                            // We need to merge these vectors in this order:
+                            //
+                            // xxxxxxxxxxxxxxxx
+                            //                     yyyyyyyyyyyyyyyy
+                            //         zzzzzzzzzzzzzzzz
+
+                            x0.Store(pChar + 0);
+                            // x1 is not needed, it's overlapped by z0
+                            y0.Store(pChar + 20);
+                            y1.Store(pChar + 28);
+                            z0.Store(pChar + 8);
+                            z1.Store(pChar + 16);
                             p += 36;
                         }
                         else
                         {
-                            // v0v0v0v0v1v1v1v1v2v2v2v2v3v3v3v3
-                            v0.Store(pChar + 0);
-                            v1.Store(pChar + 8);
-                            v2.Store(pChar + 16);
-                            v3.Store(pChar + 24);
+                            // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
+
+                            x0.Store(pChar + 0);
+                            x1.Store(pChar + 8);
+                            y0.Store(pChar + 16);
+                            y1.Store(pChar + 24);
                             p += 32;
                         }
-
-                        // https://github.com/dotnet/runtime/issues/81609
-                        // VectorTableLookup is not exactly the same but it doesn't matter for the given use case
-                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                        static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask) =>
-                            Ssse3.IsSupported ? Ssse3.Shuffle(value, mask) : AdvSimd.Arm64.VectorTableLookup(value, mask);
-
-                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                        static Vector128<byte> UnpackLow(Vector128<byte> left, Vector128<byte> right) =>
-                            Sse2.IsSupported ? Sse2.UnpackLow(left, right) : AdvSimd.Arm64.ZipLow(left, right);
-
-                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                        static Vector128<byte> UnpackHigh(Vector128<byte> left, Vector128<byte> right) =>
-                            Sse2.IsSupported ? Sse2.UnpackHigh(left, right) : AdvSimd.Arm64.ZipHigh(left, right);
+                        if (braces != 0)
+                            *p = (char)(braces >> 16);
+                        charsWritten = guidSize;
+                        return true;
                     }
                     else
                     {
@@ -1297,7 +1281,6 @@ namespace System
                     Debug.Assert(p - guidChars == guidSize);
                 }
             }
-
             charsWritten = guidSize;
             return true;
         }

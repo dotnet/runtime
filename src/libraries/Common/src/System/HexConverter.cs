@@ -87,83 +87,71 @@ namespace System
         }
 
 #if SYSTEM_PRIVATE_CORELIB
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector128<byte>, Vector128<byte>) AsciiToHexVector128(Vector128<byte> src, Vector128<byte> hexMap)
+        {
+            Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);
+
+            // The algorithm is simple: a single srcVec (contains the whole 16b Guid) is converted
+            // into nibbles and then, via hexMap, converted into a HEX representation via
+            // Shuffle(nibbles, srcVec). ASCII is then expanded to UTF-16.
+
+            Vector128<byte> nibbles = Vector128.ShiftRightLogical(src.AsUInt64(), 4).AsByte();
+
+            Vector128<byte> lowNibbles = Sse2.IsSupported ?
+                Sse2.UnpackLow(nibbles, src) : AdvSimd.Arm64.ZipLow(nibbles, src);
+            Vector128<byte> highNibbles = Sse2.IsSupported ?
+                Sse2.UnpackHigh(nibbles, src) : AdvSimd.Arm64.ZipHigh(nibbles, src);
+
+            // TODO: remove once https://github.com/dotnet/runtime/pull/80963 is merged
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<byte> ShuffleUnsafe(Vector128<byte> value, Vector128<byte> mask)
+                => Ssse3.IsSupported ? Ssse3.Shuffle(value, mask) : AdvSimd.Arm64.VectorTableLookup(value, mask);
+
+            return (ShuffleUnsafe(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
+                ShuffleUnsafe(hexMap, highNibbles & Vector128.Create((byte)0xF)));
+        }
+
         private static void EncodeToUtf16_Vector128(ReadOnlySpan<byte> bytes, Span<char> chars, Casing casing)
         {
-            Vector128<byte> shuffleMask = Vector128.Create(
-                0xFF, 0xFF, 0, 0xFF, 0xFF, 0xFF, 1, 0xFF,
-                0xFF, 0xFF, 2, 0xFF, 0xFF, 0xFF, 3, 0xFF);
+            Debug.Assert(bytes.Length >= Vector128<int>.Count);
 
-            Vector128<byte> asciiTable = (casing == Casing.Upper) ?
-                Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
-                                 (byte)'4', (byte)'5', (byte)'6', (byte)'7',
-                                 (byte)'8', (byte)'9', (byte)'A', (byte)'B',
-                                 (byte)'C', (byte)'D', (byte)'E', (byte)'F') :
-                Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
-                                 (byte)'4', (byte)'5', (byte)'6', (byte)'7',
-                                 (byte)'8', (byte)'9', (byte)'a', (byte)'b',
-                                 (byte)'c', (byte)'d', (byte)'e', (byte)'f');
+            ref byte srcRef = ref MemoryMarshal.GetReference(bytes);
+            ref ushort destRef = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(chars));
 
-            nuint pos = 0;
-            Debug.Assert(bytes.Length >= 4);
+            Vector128<byte> hexMap = casing == Casing.Upper ?
+                Vector128.Create("0123456789ABCDEF"u8) :
+                Vector128.Create("0123456789abcdef"u8);
 
-            // it's used to ensure we can process the trailing elements in the same SIMD loop (with possible overlap)
-            // but we won't double compute for any evenly divisible by 4 length since we
-            // compare pos > lengthSubVector128 rather than pos >= lengthSubVector128
+            nuint offset = 0;
             nuint lengthSubVector128 = (nuint)bytes.Length - (nuint)Vector128<int>.Count;
-            ref byte destRef = ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(chars));
             do
             {
-                // Read 32bits from "bytes" span at "pos" offset
-                uint block = Unsafe.ReadUnaligned<uint>(
-                    ref Unsafe.Add(ref MemoryMarshal.GetReference(bytes), pos));
+                // This implementation processes 4 bytes of input at once, it can be easily modified
+                // to support 16 bytes at once, but that didn't demonstrate noticeable wins
+                // for Converter.ToHexString (around 8% faster for large inputs) so
+                // it focuses on small inputs instead.
 
-                // TODO: Remove once cross-platform Shuffle is landed
-                // https://github.com/dotnet/runtime/issues/63331
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                static Vector128<byte> Shuffle(Vector128<byte> value, Vector128<byte> mask)
-                {
-                    if (Ssse3.IsSupported)
-                    {
-                        return Ssse3.Shuffle(value, mask);
-                    }
-                    else if (!AdvSimd.Arm64.IsSupported)
-                    {
-                        ThrowHelper.ThrowNotSupportedException();
-                    }
-                    return AdvSimd.Arm64.VectorTableLookup(value, mask);
-                }
+                uint i32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref srcRef, offset));
+                Vector128<byte> vec = Vector128.CreateScalar(i32).AsByte();
 
-                // Calculate nibbles
-                Vector128<byte> lowNibbles = Shuffle(
-                    Vector128.CreateScalarUnsafe(block).AsByte(), shuffleMask);
+                // JIT is expected to eliminate all unused calculations
+                (Vector128<byte> hexLow, _) = AsciiToHexVector128(vec, hexMap);
+                (Vector128<ushort> v0, _) = Vector128.Widen(hexLow);
 
-                // ExtractVector128 is not entirely the same as ShiftRightLogical128BitLane, but it works here since
-                // first two bytes in lowNibbles are guaranteed to be zeros
-                Vector128<byte> shifted = Sse2.IsSupported ?
-                    Sse2.ShiftRightLogical128BitLane(lowNibbles, 2) :
-                    AdvSimd.ExtractVector128(lowNibbles, lowNibbles, 2);
+                v0.StoreUnsafe(ref destRef, offset / 2);
 
-                Vector128<byte> highNibbles = Vector128.ShiftRightLogical(shifted.AsInt32(), 4).AsByte();
-
-                // Lookup the hex values at the positions of the indices
-                Vector128<byte> indices = (lowNibbles | highNibbles) & Vector128.Create((byte)0xF);
-                Vector128<byte> hex = Shuffle(asciiTable, indices);
-
-                // The high bytes (0x00) of the chars have also been converted
-                // to ascii hex '0', so clear them out.
-                hex &= Vector128.Create((ushort)0xFF).AsByte();
-                hex.StoreUnsafe(ref destRef, pos * 4); // we encode 4 bytes as a single char (0x0-0xF)
-                pos += (nuint)Vector128<int>.Count;
-
-                if (pos == (nuint)bytes.Length)
+                offset += (nuint)Vector128<int>.Count;
+                if (offset == (nuint)bytes.Length)
                 {
                     return;
                 }
 
                 // Overlap with the current chunk for trailing elements
-                if (pos > lengthSubVector128)
+                if (offset > lengthSubVector128)
                 {
-                    pos = lengthSubVector128;
+                    offset = lengthSubVector128;
                 }
 
             } while (true);
