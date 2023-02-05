@@ -8770,18 +8770,9 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     ssize_t   byteOffset = 0;
     FieldSeq* fieldSeq   = nullptr;
-    if ((varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
-        // SSE2 and AdvSimd are baselines so TYP_SIMD8-16 are always there
-        // for TYP_SIMD32 we need to check AVX support on XARCH
-        if (tree->TypeIs(TYP_SIMD32) && !compOpportunisticallyDependsOn(InstructionSet_AVX))
-        {
-            return false;
-        }
-#endif
-
         CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
         int                  size           = (int)genTypeSize(tree->TypeGet());
         const int            maxElementSize = 32; // Vector256
