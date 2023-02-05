@@ -55,8 +55,8 @@ if [[ "$__TargetOS" == browser ]]; then
     export CLR_CC=$(which emcc)
 elif [[ "$__TargetOS" == wasi ]]; then
     if [[ -z "$WASI_SDK_PATH" ]]; then
-        if [[ -d "$__RootBinDir"/obj/wasi-sdk/ ]]; then
-            export WASI_SDK_PATH="$__RootBinDir"/obj/wasi-sdk/
+        if [[ -d "$__RepoRootDir"/src/mono/wasi/wasi-sdk ]]; then
+            export WASI_SDK_PATH="$__RepoRootDir"/src/mono/wasi/wasi-sdk
         else
             echo "Error: You need to set the WASI_SDK_PATH environment variable pointing to the WASI SDK root."
             exit 1

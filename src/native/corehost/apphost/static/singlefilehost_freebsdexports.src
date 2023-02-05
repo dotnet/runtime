@@ -9,3 +9,7 @@ g_dacTable
 
 ; Used by profilers
 MetaDataGetDispenser
+
+; FreeBSD needs to reexport these
+__progname
+environ 
