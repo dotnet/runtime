@@ -1207,8 +1207,12 @@ namespace System
                     }
                     else if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
                     {
+                        // Vectorized implementation for D, N, P and B formats:
+                        // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+
                         ref byte thisPtr = ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in this));
                         Vector128<byte> srcVec = Vector128.LoadUnsafe(ref thisPtr);
+
                         // The algorithm is simple: a single srcVec (contains the whole 16b Guid) is converted
                         // into nibbles and then, via hexMap, converted into a HEX representation via
                         // Shuffle(nibbles, srcVec). ASCII is then expanded to UTF-16.
@@ -1219,12 +1223,12 @@ namespace System
                         (Vector128<ushort> v0, Vector128<ushort> v1) = Vector128.Widen(Shuffle(hexMap, lowNibbles));
                         (Vector128<ushort> v2, Vector128<ushort> v3) = Vector128.Widen(Shuffle(hexMap, highNibbles));
 
-                        ushort* pChar = (ushort*)p;
-                        // because of Guid's layout (int _a, short _b, _c, byte ...)
+                        // Because of Guid's layout (int _a, short _b, _c, byte ...)
                         // we have to handle v0 and v1 separately:
                         v0 = Vector128.Shuffle(v0.AsInt32(), Vector128.Create(3, 2, 1, 0)).AsUInt16();
                         v1 = Vector128.Shuffle(v1.AsInt32(), Vector128.Create(1, 0, 3, 2)).AsUInt16();
 
+                        ushort* pChar = (ushort*)p;
                         if (dash)
                         {
                             // v0v0v0v0-v1v1-v1v1-v2v2-v2v2v3v3v3v3
@@ -1236,10 +1240,8 @@ namespace System
                             v2 = Vector128.Shuffle(v2.AsInt64(), Vector128.Create(1, 0)).AsUInt16();
                             v2.Store(pChar + 24);
                             v3.Store(pChar + 28);
-                            pChar[8] = '-';
-                            pChar[13] = '-';
-                            pChar[18] = '-';
-                            pChar[23] = '-';
+                            pChar[8] = pChar[13] = pChar[18] = pChar[23] = '-';
+
                             // We could be smarter here by doing only 5 SIMD stores + permutations
                             // but extra complexity is not worth it according to benchmarks
                             p += 36;
