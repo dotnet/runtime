@@ -8770,12 +8770,21 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     ssize_t   byteOffset = 0;
     FieldSeq* fieldSeq   = nullptr;
-    if ((varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+        // SSE2 and AdvSimd are baselines so TYP_SIMD8-16 are always there
+        // for TYP_SIMD32 we need to check AVX support on XARCH
+        if (tree->TypeIs(TYP_SIMD32) && !compOpportunisticallyDependsOn(InstructionSet_AVX))
+        {
+            return false;
+        }
+#endif
+
         CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
         int                  size           = (int)genTypeSize(tree->TypeGet());
-        const int            maxElementSize = sizeof(int64_t);
+        const int            maxElementSize = 32; // Vector256
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
@@ -8785,7 +8794,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                 switch (tree->TypeGet())
                 {
 #define READ_VALUE(typ)                                                                                                \
-    typ val = 0;                                                                                                       \
+    typ val = {};                                                                                                      \
     memcpy(&val, buffer, sizeof(typ));
 
                     case TYP_BOOL:
@@ -8849,6 +8858,32 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                         tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(val));
                         return true;
                     }
+#if defined(FEATURE_SIMD)
+                    case TYP_SIMD8:
+                    {
+                        READ_VALUE(simd8_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(val));
+                        return true;
+                    }
+                    case TYP_SIMD12:
+                    {
+                        READ_VALUE(simd12_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(val));
+                        return true;
+                    }
+                    case TYP_SIMD16:
+                    {
+                        READ_VALUE(simd16_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(val));
+                        return true;
+                    }
+                    case TYP_SIMD32:
+                    {
+                        READ_VALUE(simd32_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(val));
+                        return true;
+                    }
+#endif
                     default:
                         break;
                 }
@@ -8857,7 +8892,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     }
 
     // Throughput check, the logic below is only for USHORT (char)
-    if (!tree->TypeIs(TYP_USHORT))
+    if (!tree->OperIs(GT_IND) || !tree->TypeIs(TYP_USHORT))
     {
         return false;
     }
@@ -9215,7 +9250,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // Note VNF_PtrToStatic statics are currently always "simple".
                     fgValueNumberFieldLoad(tree, /* baseAddr */ nullptr, fldSeq, offset);
                 }
-                else if (tree->OperIs(GT_IND) && fgValueNumberConstLoad(tree->AsIndir()))
+                else if (tree->OperIs(GT_IND, GT_OBJ) && fgValueNumberConstLoad(tree->AsIndir()))
                 {
                     // VN is assigned inside fgValueNumberConstLoad
                 }
