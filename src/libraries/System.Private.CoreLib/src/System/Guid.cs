@@ -1205,7 +1205,7 @@ namespace System
                         p += HexsToCharsHexOutput(p, _j, _k);
                         *p++ = '}';
                     }
-                    else if ((Ssse3.IsSupported || AdvSimd.IsSupported) && BitConverter.IsLittleEndian)
+                    else if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
                     {
                         ref byte thisPtr = ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in this));
                         Vector128<byte> srcVec = Vector128.LoadUnsafe(ref thisPtr);
