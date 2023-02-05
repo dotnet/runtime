@@ -6,8 +6,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'lib'))</ICULibDir>
-    <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'lib'))</ICULibDir>
+    <!-- TODOWASI: icu support -->
+    <!--<ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'lib'))</ICULibDir>-->
+    <!--<ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'lib'))</ICULibDir>-->
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
@@ -101,8 +102,10 @@
       <_WasiCompileFlags Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_SIGNAL"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_MMAN"/>
+      <_WasiCompileFlags Include="-D_WASI_DEFAULT_MAIN"/>
+      <!-- keep in sync with src\mono\wasi\build\WasiApp.Native.targets -->
       <!-- keep stack-size in sync with wasm_get_stack_size until after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b in WASI SDK -->
-      <_WasiLinkFlags Include="-Wl,-z,stack-size=8388608,--initial-memory=52428800,--max-memory=671088640,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
+      <_WasiLinkFlags Include="-Wl,-z,stack-size=8388608,--initial-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
     </ItemGroup>
 
     <PropertyGroup>
@@ -146,10 +149,10 @@
           DependsOnTargets="GenerateWasiPropsAndRspFiles;GenerateManagedToNative;BundleTimeZones">
 
     <ItemGroup>
-      <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
-                                  $(ICULibDir)/libicui18n.a;
-                                  $(ICULibDir)/libicudata.a" />
-      <ICULibFiles Include="$(ICULibDir)/*.dat" />
+      <!--<ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;-->
+                                  <!--$(ICULibDir)/libicui18n.a;-->
+                                  <!--$(ICULibDir)/libicudata.a" />-->
+      <!--<ICULibFiles Include="$(ICULibDir)/*.dat" />-->
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
@@ -187,8 +190,20 @@
 
       <CMakeOptions Condition="'$(MonoVerboseBuild)' != ''">-v</CMakeOptions>
       <CMakeBuildRuntimeCmd>cmake --build . --config $(Configuration) $(CmakeOptions)</CMakeBuildRuntimeCmd>
-
+      <CMakeBuildRuntimeCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; $(CMakeBuildRuntimeCmd)</CMakeBuildRuntimeCmd>
     </PropertyGroup>
+
+    <ItemGroup>
+      <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/driver.c"            DestinationFolder="$(NativeBinDir)src" />
+      <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/main.c"              DestinationFolder="$(NativeBinDir)src" />
+      <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/pinvoke.c"           DestinationFolder="$(NativeBinDir)src" />
+      <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/stubs.c"             DestinationFolder="$(NativeBinDir)src" />
+      <_FilesToCopy Include="$(MSBuildThisFileDirectory)runtime/synthetic-pthread.c" DestinationFolder="$(NativeBinDir)src" />
+
+      <_FilesToCopy Include="$(MonoProjectRoot)wasi\mono-include\driver.h"      DestinationFolder="$(NativeBinDir)include\wasm" />
+      <_FilesToCopy Include="$(MonoProjectRoot)wasi\mono-include\pinvoke.h"     DestinationFolder="$(NativeBinDir)include\wasm" />
+      <_FilesToCopy Include="$(MonoProjectRoot)wasm\runtime\gc-common.h"   DestinationFolder="$(NativeBinDir)include\wasm" />
+    </ItemGroup>
 
     <Copy SourceFiles="$(PInvokeTableFile)"
           DestinationFolder="$(MonoObjDir)"
@@ -197,19 +212,10 @@
     <Copy SourceFiles="$(InterpToNativeTableFile)"
           DestinationFolder="$(MonoObjDir)"
           SkipUnchangedFiles="true" />
-<!--
-    <Copy SourceFiles="runtime/driver.c;
-                       runtime/pinvoke.c;
-                       runtime/corebindings.c;
-                       "
-          DestinationFolder="$(NativeBinDir)src"
-          SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime\pinvoke.h;runtime\gc-common.h"
-          DestinationFolder="$(NativeBinDir)include\wasm"
+    <Copy SourceFiles="@(_FilesToCopy)"
+          DestinationFolder="%(_FilesToCopy.DestinationFolder)"
           SkipUnchangedFiles="true" />
--->
-
 
     <Copy SourceFiles="@(ICULibFiles);
                        @(ICULibNativeFiles);"
@@ -222,7 +228,7 @@
     <ItemGroup>
       <IcuDataFiles Include="$(NativeBinDir)*.dat" />
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;" />
-      <WasmHeaderFiles Include="$(NativeBinDir)include\wasi\*.h" />
+      <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.wasm;

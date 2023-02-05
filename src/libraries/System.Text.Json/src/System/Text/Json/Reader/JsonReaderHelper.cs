@@ -13,16 +13,25 @@ namespace System.Text.Json
     {
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
-            int lastLineFeedIndex = -1;
+            int lastLineFeedIndex = data.LastIndexOf(JsonConstants.LineFeed);
             int newLines = 0;
-            for (int i = 0; i < data.Length; i++)
+
+            if (lastLineFeedIndex >= 0)
             {
-                if (data[i] == JsonConstants.LineFeed)
+                newLines = 1;
+                data = data.Slice(0, lastLineFeedIndex);
+#if NET8_OR_GREATER
+                newLines += data.Count(JsonConstants.LineFeed);
+#else
+                int pos;
+                while ((pos = data.IndexOf(JsonConstants.LineFeed)) >= 0)
                 {
-                    lastLineFeedIndex = i;
                     newLines++;
+                    data = data.Slice(pos + 1);
                 }
+#endif
             }
+
             return (newLines, lastLineFeedIndex);
         }
 

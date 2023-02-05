@@ -1033,6 +1033,12 @@ mono_jiterp_get_array_rank (gint32 *dest, MonoObject **src)
 	return 1;
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_debug_count ()
+{
+	return mono_debug_count();
+}
+
 // HACK: fix C4206
 EMSCRIPTEN_KEEPALIVE
 #endif

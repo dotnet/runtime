@@ -46,10 +46,10 @@
 
   <!-- Directory to provision and use WASI sdk if WASI_SDK_PATH env variable is not set -->
   <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
-    <ProvisionWasiSdkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasi-sdk'))</ProvisionWasiSdkDir>
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$(ProvisionWasiSdkDir.Replace('\', '/'))</WASI_SDK_PATH>
-    <ShouldProvisionWasiSdk Condition="'$(WASI_SDK_PATH)' == '' and !Exists('$(ProvisionWasiSdkDir)')">true</ShouldProvisionWasiSdk>
-    <ShouldProvisionWasiSdk Condition="'$(WASI_SDK_PATH)' != '' and !Exists('$(WASI_SDK_PATH)')">true</ShouldProvisionWasiSdk>
+    <_ProvisionWasiSdkDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi', 'wasi-sdk'))</_ProvisionWasiSdkDir>
+    <ShouldProvisionWasiSdk Condition="'$(WASI_SDK_PATH)' == '' and !Exists($(_ProvisionWasiSdkDir))">true</ShouldProvisionWasiSdk>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$(_ProvisionWasiSdkDir)</WASI_SDK_PATH>
+    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
   </PropertyGroup>
 
   <PropertyGroup>
