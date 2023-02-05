@@ -8716,4 +8716,16 @@ mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip)
 		do_safepoint (frame, get_context(), ip);
 }
 
+EMSCRIPTEN_KEEPALIVE gpointer
+mono_jiterp_imethod_to_ftnptr (InterpMethod *imethod)
+{
+	return imethod_to_ftnptr (imethod, FALSE);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_enum_hasflag (MonoClass *klass, gint32 *dest, stackval *sp1, stackval *sp2)
+{
+	*dest = mono_interp_enum_hasflag (sp1, sp2, klass);
+}
+
 #endif

@@ -32,3 +32,18 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 	// Defer to the main debugging code.
     return DbgDllMain(hInstance, dwReason, lpReserved);
 }
+
+#if defined(HOST_LINUX) && defined(TARGET_LINUX)
+PALIMPORT HINSTANCE PALAPI DAC_PAL_RegisterModule(IN LPCSTR lpLibFileName);
+PALIMPORT VOID PALAPI DAC_PAL_UnregisterModule(IN HINSTANCE hInstance);
+
+HINSTANCE PALAPI PAL_RegisterModule(IN LPCSTR lpLibFileName)
+{
+     return DAC_PAL_RegisterModule(lpLibFileName);
+}
+
+VOID PALAPI PAL_UnregisterModule(IN HINSTANCE hInstance)
+{
+    DAC_PAL_UnregisterModule(hInstance);
+}
+#endif

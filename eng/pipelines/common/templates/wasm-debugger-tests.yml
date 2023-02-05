@@ -4,6 +4,8 @@ parameters:
   isWasmOnlyBuild: false
   browser: 'chrome'
   shouldContinueOnError: false
+  extraBuildArgs: ''
+  nameSuffix: ''
   platforms: []
 
 jobs:
@@ -30,8 +32,11 @@ jobs:
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:DebuggerHost=${{ parameters.browser }}
+      ${{ if eq(parameters.nameSuffix, '') }}:
+        nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
+      ${{ else }}:
+        nameSuffix: ${{ parameters.nameSuffix }}
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:DebuggerHost=${{ parameters.browser }} ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 180
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):

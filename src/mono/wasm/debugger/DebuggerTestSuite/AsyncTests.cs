@@ -22,7 +22,7 @@ namespace DebuggerTests
         // FIXME: check object properties..
 
         //FIXME: function name
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [ConditionalTheory(nameof(WasmSingleThreaded), nameof(RunningOnChrome))]
         [InlineData("ContinueWithStaticAsync", "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithStaticAsync.AnonymousMethod__3_0")]
         [InlineData("ContinueWithInstanceAsync", "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithInstanceAsync.AnonymousMethod__5_0")]
         public async Task AsyncLocalsInContinueWith(string method_name, string expected_method_name) => await CheckInspectLocalsAtBreakpointSite(
@@ -82,7 +82,7 @@ namespace DebuggerTests
                  }, "locals");
               });
 
-        [Theory]
+        [ConditionalTheory(nameof(WasmSingleThreaded), nameof(RunningOnChrome))]
         [InlineData("Run", 246, 16, 252, 16, "RunCSharpScope")]
         [InlineData("RunContinueWith", 277, 20, 283, 20, "RunContinueWithSameVariableName")]
         [InlineData("RunNestedContinueWith", 309, 24, 315, 24, "RunNestedContinueWithSameVariableName.AnonymousMethod__1")]
