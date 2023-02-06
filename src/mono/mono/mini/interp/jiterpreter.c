@@ -864,7 +864,7 @@ should_generate_trace_here (InterpBasicBlock *bb) {
 
 typedef struct {
 	// 64-bits because it can get very high if estimate heat is turned on
-	guint64 hit_count;
+	gint64 hit_count;
 	JiterpreterThunk thunk;
 } TraceInfo;
 
