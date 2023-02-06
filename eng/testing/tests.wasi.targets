@@ -19,7 +19,7 @@
     -->
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
-    <WasmSingleFileBundle>true</WasmSingleFileBundle>
+    <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
 
     <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
 
@@ -61,9 +61,10 @@
 
   <PropertyGroup>
     <_AppArgs Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_AppArgs>
-    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm</_AppArgs>
+    <_AppArgs Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm WasmTestRunner</_AppArgs>
 
-    <_AppArgs Condition="'$(IsFunctionalTest)' != 'true'">$(_AppArgs) $(AssemblyName).dll</_AppArgs>
+    <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmSingleFileBundle)' != 'true'">$(_AppArgs) managed/$(AssemblyName).dll</_AppArgs>
+    <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmSingleFileBundle)' == 'true'">$(_AppArgs) $(AssemblyName).dll</_AppArgs>
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) -- $(WasmTestAppArgs)</_AppArgs>
 
     <!-- FIXME: wasttime specific param name -->
@@ -78,6 +79,7 @@
     <_XHarnessArgs Condition="'$(OS)' == 'Windows_NT' and '$(ContinuousIntegrationBuild)' != 'true'">$(_XHarnessArgs) --wasm-engine-path=$(WasmtimeDir)wasmtime.exe</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(OS)' == 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">$(_XHarnessArgs) --wasm-engine-path=%HELIX_CORRELATION_PAYLOAD%\wasmtime\wasmtime.exe</_XHarnessArgs>
 
+    <_XHarnessArgs Condition="'$(WasmSingleFileBundle)' != 'true'" >$(_XHarnessArgs) --engine-arg=--dir=.</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_XHarnessTestsTimeout)' != ''   " >$(_XHarnessArgs) &quot;--timeout=$(_XHarnessTestsTimeout)&quot;</_XHarnessArgs>
