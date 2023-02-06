@@ -862,13 +862,16 @@ should_generate_trace_here (InterpBasicBlock *bb) {
 }
 
 typedef struct {
-	int hit_count;
+	// 64-bits because it can get very high if estimate heat is turned on
+	guint64 hit_count;
 	JiterpreterThunk thunk;
 } TraceInfo;
 
+#define MAX_TRACE_COUNT 40960
+
 static guint32 trace_count = 0;
 // FIXME: Dynamically sized
-static TraceInfo trace_infos[10240];
+static TraceInfo trace_infos[MAX_TRACE_COUNT];
 
 /*
  * Insert jiterpreter entry points at the correct candidate locations:
@@ -917,6 +920,7 @@ jiterp_insert_entry_points (void *_td)
 
 		if (enabled && should_generate) {
 			guint32 trace_index = trace_count++;
+			g_assert (trace_index < MAX_TRACE_COUNT);
 			td->cbb = bb;
 			InterpInst *ins = mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
 			memcpy(ins->data, &trace_index, sizeof(trace_index));
@@ -932,6 +936,12 @@ jiterp_insert_entry_points (void *_td)
 			enter_at_next = bb->contains_call_instruction;
 		}
 	}
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_get_trace_hit_count (gint32 trace_index) {
+	g_assert(trace_index < trace_count);
+	return (double)trace_infos[trace_index].hit_count;
 }
 
 JiterpreterThunk
@@ -950,10 +960,10 @@ mono_interp_tier_prepare_jiterpreter_fast (
 	if (trace_info->thunk)
 		return trace_info->thunk;
 
-	int count = trace_info->hit_count++;
+	gint64 count = trace_info->hit_count++;
 	if (count == mono_opt_jiterpreter_minimum_trace_hit_count) {
 		JiterpreterThunk result = mono_interp_tier_prepare_jiterpreter(
-			frame, method, ip,
+			frame, method, ip, (gint32)trace_index,
 			start_of_body, size_of_body
 		);
 		trace_info->thunk = result;

@@ -78,12 +78,18 @@ export class InstrumentedTraceState {
 
 export class TraceInfo {
     ip: MintOpcodePtr;
+    index: number; // used to look up hit count
     name: string | undefined;
     abortReason: string | undefined;
     fnPtr: Number | undefined;
 
-    constructor (ip: MintOpcodePtr) {
+    constructor (ip: MintOpcodePtr, index: number) {
         this.ip = ip;
+        this.index = index;
+    }
+
+    get hitCount () {
+        return cwraps.mono_jiterp_get_trace_hit_count(this.index);
     }
 }
 
@@ -761,7 +767,7 @@ const JITERPRETER_TRAINING = 0;
 const JITERPRETER_NOT_JITTED = 1;
 
 export function mono_interp_tier_prepare_jiterpreter (
-    frame: NativePointer, method: MonoMethod, ip: MintOpcodePtr,
+    frame: NativePointer, method: MonoMethod, ip: MintOpcodePtr, index: number,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr
 ) : number {
     mono_assert(ip, "expected instruction pointer");
@@ -777,7 +783,7 @@ export function mono_interp_tier_prepare_jiterpreter (
     let info = traceInfo[<any>ip];
 
     if (!info)
-        traceInfo[<any>ip] = info = new TraceInfo(ip);
+        traceInfo[<any>ip] = info = new TraceInfo(ip, index);
 
     counters.traceCandidates++;
     let methodFullName: string | undefined;
@@ -824,8 +830,6 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
     }
 
     if (mostRecentOptions.estimateHeat) {
-        // FIXME: estimateHeat
-        /*
         const counts : { [key: string] : number } = {};
         const traces = Object.values(traceInfo);
 
@@ -918,7 +922,6 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
         console.log("// heat:");
         for (let i = 0; i < tuples.length; i++)
             console.log(`// ${tuples[i][0]}: ${tuples[i][1]}`);
-        */
     } else {
         for (let i = 0; i < MintOpcode.MINT_LASTOP; i++) {
             const opname = OpcodeInfo[<any>i][0];

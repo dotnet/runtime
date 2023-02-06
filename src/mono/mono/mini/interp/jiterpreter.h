@@ -63,7 +63,7 @@ mono_interp_tier_prepare_jiterpreter_fast (
 // Slow-path implemented in TypeScript, actually performs JIT
 extern JiterpreterThunk
 mono_interp_tier_prepare_jiterpreter (
-	void *frame, MonoMethod *method, const guint16 *ip,
+	void *frame, MonoMethod *method, const guint16 *ip, gint32 trace_index,
 	const guint16 *start_of_body, int size_of_body
 );
 
