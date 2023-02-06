@@ -265,7 +265,6 @@ export function mono_jiterp_do_jit_call_indirect (
         try {
             jitCallCb(_cb_data);
         } catch (exc) {
-            console.error("uncaught in jit_call_cb", exc);
             setU32_unchecked(_thrown, 1);
         }
     };
