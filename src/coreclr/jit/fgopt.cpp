@@ -230,7 +230,7 @@ void Compiler::fgUpdateChangedFlowGraph(FlowGraphUpdates updates)
 //
 void Compiler::fgComputeReachabilitySets()
 {
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
 #ifdef DEBUG
     fgReachabilitySetsValid = false;
@@ -548,7 +548,7 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 //
 PhaseStatus Compiler::fgComputeReachability()
 {
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     fgComputeReturnBlocks();
 

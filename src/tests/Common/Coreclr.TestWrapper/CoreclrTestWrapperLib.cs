@@ -352,7 +352,16 @@ namespace CoreclrTestLib
             }
             outputWriter.WriteLine($"Printing stacktrace from '{crashReportJsonFile}'");
 
-            string contents = File.ReadAllText(crashReportJsonFile);
+            string contents;
+            try
+            {
+                contents = File.ReadAllText(crashReportJsonFile);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reading {crashReportJsonFile}: {ex.ToString()}");
+                return false;
+            }
             dynamic crashReport = JsonSerializer.Deserialize<JsonObject>(contents);
             var threads = crashReport["payload"]["threads"];
 

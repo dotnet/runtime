@@ -101,15 +101,9 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
 {
     assert(block != nullptr);
     assert(blockPred != nullptr);
+    assert(fgPredsComputed ^ initializingPreds);
 
     block->bbRefs++;
-
-    if (!fgComputePredsDone && !initializingPreds)
-    {
-        // Why is someone trying to update the preds list when the preds haven't been created?
-        // Ignore them! This can happen when fgMorph is called before the preds list is created.
-        return nullptr;
-    }
 
     // Keep the predecessor list in lowest to highest bbNum order. This allows us to discover the loops in
     // optFindNaturalLoops from innermost to outermost.
@@ -262,18 +256,9 @@ flowList* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
 {
     noway_assert(block != nullptr);
     noway_assert(blockPred != nullptr);
-
     noway_assert(block->countOfInEdges() > 0);
+    assert(fgPredsComputed);
     block->bbRefs--;
-
-    // Do nothing if we haven't calculated the predecessor list yet.
-    // Yes, this does happen.
-    // For example the predecessor lists haven't been created yet when we do fgMorph.
-    // But fgMorph calls fgFoldConditional, which in turn calls fgRemoveRefPred.
-    if (!fgComputePredsDone)
-    {
-        return nullptr;
-    }
 
     flowList** ptrToPred;
     flowList*  pred = fgGetPredForBlock(block, blockPred, &ptrToPred);
@@ -318,7 +303,7 @@ flowList* Compiler::fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred
 {
     assert(block != nullptr);
     assert(blockPred != nullptr);
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
     assert(block->countOfInEdges() > 0);
 
     flowList** ptrToPred;

@@ -21,7 +21,7 @@ void Compiler::fgInit()
 #endif // DEBUG
 
     /* We haven't yet computed the bbPreds lists */
-    fgComputePredsDone = false;
+    fgPredsComputed = false;
 
     /* We haven't yet computed the edge weight */
     fgEdgeWeightsComputed    = false;
@@ -296,7 +296,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
     // But if we call this early, before fgLinkBasicBlocks,
     // defer and let it handle adding the implicit ref.
     //
-    block->bbRefs = fgComputePredsDone ? 1 : 0;
+    block->bbRefs = fgPredsComputed ? 1 : 0;
 
     fgFirstBBScratch = fgFirstBB;
 
@@ -322,7 +322,7 @@ bool Compiler::fgFirstBBisScratch()
     {
         assert(fgFirstBBScratch == fgFirstBB);
         assert(fgFirstBBScratch->bbFlags & BBF_INTERNAL);
-        if (fgComputePredsDone)
+        if (fgPredsComputed)
         {
             assert(fgFirstBBScratch->countOfInEdges() == 1);
         }
@@ -396,6 +396,7 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
     noway_assert(oldSwitchBlock != nullptr);
     noway_assert(newSwitchBlock != nullptr);
     noway_assert(oldSwitchBlock->bbJumpKind == BBJ_SWITCH);
+    assert(fgPredsComputed);
 
     // Walk the switch's jump table, updating the predecessor for each branch.
     for (BasicBlock* const bJump : oldSwitchBlock->SwitchTargets())
@@ -406,18 +407,12 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
         // fgRemoveRefPred()/fgAddRefPred() will do the right thing: the second and
         // subsequent duplicates will simply subtract from and add to the duplicate
         // count (respectively).
-        if (bJump->countOfInEdges() > 0)
-        {
-            //
-            // Remove the old edge [oldSwitchBlock => bJump]
-            //
-            fgRemoveRefPred(bJump, oldSwitchBlock);
-        }
-        else
-        {
-            // bJump->countOfInEdges() must not be zero after preds are calculated.
-            assert(!fgComputePredsDone);
-        }
+
+        //
+        // Remove the old edge [oldSwitchBlock => bJump]
+        //
+        assert(bJump->countOfInEdges() > 0);
+        fgRemoveRefPred(bJump, oldSwitchBlock);
 
         //
         // Create the new edge [newSwitchBlock => bJump]
@@ -463,6 +458,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
     noway_assert(newTarget != nullptr);
     noway_assert(oldTarget != nullptr);
     noway_assert(blockSwitch->bbJumpKind == BBJ_SWITCH);
+    assert(fgPredsComputed);
 
     // For the jump targets values that match oldTarget of our BBJ_SWITCH
     // replace predecessor 'blockSwitch' with 'newTarget'
@@ -480,10 +476,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
         {
             // Remove the old edge [oldTarget from blockSwitch]
             //
-            if (fgComputePredsDone)
-            {
-                fgRemoveAllRefPreds(oldTarget, blockSwitch);
-            }
+            fgRemoveAllRefPreds(oldTarget, blockSwitch);
 
             //
             // Change the jumpTab entry to branch to the new location
@@ -493,12 +486,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
             //
             // Create the new edge [newTarget from blockSwitch]
             //
-            flowList* newEdge = nullptr;
-
-            if (fgComputePredsDone)
-            {
-                newEdge = fgAddRefPred(newTarget, blockSwitch);
-            }
+            flowList* const newEdge = fgAddRefPred(newTarget, blockSwitch);
 
             // Now set the correct value of newEdge->flDupCount
             // and replace any other jumps in jumpTab[] that go to oldTarget.
@@ -517,10 +505,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
                     //
                     // Increment the flDupCount
                     //
-                    if (fgComputePredsDone)
-                    {
-                        newEdge->flDupCount++;
-                    }
+                    newEdge->flDupCount++;
                 }
                 i++; // Check the next entry in jumpTab[]
             }
@@ -554,6 +539,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, BasicBlock* oldTarget)
 {
     assert(block != nullptr);
+    assert(fgPredsComputed);
 
     switch (block->bbJumpKind)
     {
@@ -567,12 +553,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             if (block->bbJumpDest == oldTarget)
             {
                 block->bbJumpDest = newTarget;
-
-                if (fgComputePredsDone)
-                {
-                    fgRemoveRefPred(oldTarget, block);
-                    fgAddRefPred(newTarget, block);
-                }
+                fgRemoveRefPred(oldTarget, block);
+                fgAddRefPred(newTarget, block);
             }
             break;
 
@@ -588,12 +570,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
                 {
                     jumpTab[i] = newTarget;
                     changed    = true;
-
-                    if (fgComputePredsDone)
-                    {
-                        fgRemoveRefPred(oldTarget, block);
-                        fgAddRefPred(newTarget, block);
-                    }
+                    fgRemoveRefPred(oldTarget, block);
+                    fgAddRefPred(newTarget, block);
                 }
             }
 
@@ -2840,7 +2818,7 @@ void Compiler::fgLinkBasicBlocks()
 
     // Pred lists now established.
     //
-    fgComputePredsDone = true;
+    fgPredsComputed = true;
 }
 
 //------------------------------------------------------------------------
@@ -4746,11 +4724,8 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 {
     assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS));
-
-    if (fgComputePredsDone)
-    {
-        assert(fgGetPredForBlock(succ, curr) != nullptr);
-    }
+    assert(fgPredsComputed);
+    assert(fgGetPredForBlock(succ, curr) != nullptr);
 
     BasicBlock* newBlock;
     if (succ == curr->bbNext)
@@ -5246,13 +5221,20 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
     }
 }
 
-/*****************************************************************************
- *
- *  Function called to connect to block that previously had a fall through
- */
-
+//------------------------------------------------------------------------
+// fgConnectFallThrough: fix flow from a block that previously had a fall through
+//
+// Arguments:
+//   bSrc - source of fall through (may be null?)
+//   bDst - target of fall through
+//
+// Returns:
+//   Newly inserted block after bSrc that jumps to bDst,
+//   or nullptr if bSrc already falls through to bDst
+//
 BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 {
+    assert(fgPredsComputed);
     BasicBlock* jmpBlk = nullptr;
 
     /* If bSrc is non-NULL */
@@ -5269,14 +5251,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                 case BBJ_NONE:
                     bSrc->bbJumpKind = BBJ_ALWAYS;
                     bSrc->bbJumpDest = bDst;
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("Block " FMT_BB " ended with a BBJ_NONE, Changed to an unconditional jump to " FMT_BB
-                               "\n",
-                               bSrc->bbNum, bSrc->bbJumpDest->bbNum);
-                    }
-#endif
+                    JITDUMP("Block " FMT_BB " ended with a BBJ_NONE, Changed to an unconditional jump to " FMT_BB "\n",
+                            bSrc->bbNum, bSrc->bbJumpDest->bbNum);
                     break;
 
                 case BBJ_CALLFINALLY:
@@ -5284,11 +5260,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
                     // Add a new block after bSrc which jumps to 'bDst'
                     jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
+                    fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
 
-                    if (fgComputePredsDone)
-                    {
-                        fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
-                    }
                     // Record the loop number in the new block
                     jmpBlk->bbNatLoopNum = bSrc->bbNatLoopNum;
 
@@ -5296,9 +5269,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                     //
                     if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
                     {
-                        noway_assert(fgComputePredsDone);
-
-                        flowList* newEdge = fgGetPredForBlock(jmpBlk, bSrc);
+                        flowList* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
 
                         jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
                         if (bSrc->bbWeight == BB_ZERO_WEIGHT)
@@ -5339,22 +5310,10 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
                     jmpBlk->bbJumpDest = bDst;
 
-                    if (fgComputePredsDone)
-                    {
-                        fgReplacePred(bDst, bSrc, jmpBlk);
-                    }
-                    else
-                    {
-                        jmpBlk->bbFlags |= BBF_IMPORTED;
-                    }
+                    fgReplacePred(bDst, bSrc, jmpBlk);
 
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n",
-                               jmpBlk->bbJumpDest->bbNum, bSrc->bbNum);
-                    }
-#endif // DEBUG
+                    JITDUMP("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n",
+                            jmpBlk->bbJumpDest->bbNum, bSrc->bbNum);
                     break;
 
                 default:
@@ -5371,14 +5330,9 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                 (bSrc->bbJumpDest == bSrc->bbNext))
             {
                 bSrc->bbJumpKind = BBJ_NONE;
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Changed an unconditional jump from " FMT_BB " to the next block " FMT_BB
-                           " into a BBJ_NONE block\n",
-                           bSrc->bbNum, bSrc->bbNext->bbNum);
-                }
-#endif // DEBUG
+                JITDUMP("Changed an unconditional jump from " FMT_BB " to the next block " FMT_BB
+                        " into a BBJ_NONE block\n",
+                        bSrc->bbNum, bSrc->bbNext->bbNum);
             }
         }
     }
@@ -5404,20 +5358,17 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 //
 bool Compiler::fgRenumberBlocks()
 {
+    assert(fgPredsComputed);
+
     // If we renumber the blocks the dominator information will be out-of-date
     if (fgDomsComputed)
     {
         noway_assert(!"Can't call Compiler::fgRenumberBlocks() when fgDomsComputed==true");
     }
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** Before renumbering the basic blocks\n");
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
-    }
-#endif // DEBUG
+    JITDUMP("\n*************** Before renumbering the basic blocks\n");
+    JITDUMPEXEC(fgDispBasicBlocks());
+    JITDUMPEXEC(fgDispHandlerTab());
 
     bool     renumbered  = false;
     bool     newMaxBBNum = false;
@@ -5450,29 +5401,20 @@ bool Compiler::fgRenumberBlocks()
 
     // If we renumbered, then we may need to reorder some pred lists.
     //
-    if (renumbered && fgComputePredsDone)
+    if (renumbered)
     {
         for (BasicBlock* const block : Blocks())
         {
             block->ensurePredListOrder(this);
         }
+        JITDUMP("\n*************** After renumbering the basic blocks\n");
+        JITDUMPEXEC(fgDispBasicBlocks());
+        JITDUMPEXEC(fgDispHandlerTab());
     }
-
-#ifdef DEBUG
-    if (verbose)
+    else
     {
-        printf("\n*************** After renumbering the basic blocks\n");
-        if (renumbered)
-        {
-            fgDispBasicBlocks();
-            fgDispHandlerTab();
-        }
-        else
-        {
-            printf("=============== No blocks renumbered!\n");
-        }
+        JITDUMP("=============== No blocks renumbered!\n");
     }
-#endif // DEBUG
 
     // Now update the BlockSet epoch, which depends on the block numbers.
     // If any blocks have been renumbered then create a new BlockSet epoch.

@@ -204,9 +204,15 @@ namespace Microsoft.Extensions.Logging.Generators
                                         SkipEnabledCheck = skipEnabledCheck
                                     };
 
-                                    ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
-
                                     bool keepMethod = true;   // whether or not we want to keep the method definition or if it's got errors making it so we should discard it instead
+
+                                    bool success = ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
+                                    if (!success)
+                                    {
+                                        Diag(DiagnosticDescriptors.MalformedFormatStrings, method.Identifier.GetLocation(), method.Identifier.ToString());
+                                        keepMethod = false;
+                                    }
+
                                     if (lm.Name[0] == '_')
                                     {
                                         // can't have logging method names that start with _ since that can lead to conflicting symbol names
@@ -595,81 +601,112 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Finds the template arguments contained in the message string.
             /// </summary>
-            private static void ExtractTemplates(string? message, IDictionary<string, string> templateMap, List<string> templateList)
+            /// <returns>A value indicating whether the extraction was successful.</returns>
+            private static bool ExtractTemplates(string? message, IDictionary<string, string> templateMap, List<string> templateList)
             {
                 if (string.IsNullOrEmpty(message))
                 {
-                    return;
+                    return true;
                 }
 
                 int scanIndex = 0;
-                int endIndex = message!.Length;
+                int endIndex = message.Length;
 
+                bool success = true;
                 while (scanIndex < endIndex)
                 {
                     int openBraceIndex = FindBraceIndex(message, '{', scanIndex, endIndex);
-                    int closeBraceIndex = FindBraceIndex(message, '}', openBraceIndex, endIndex);
 
-                    if (closeBraceIndex == endIndex)
+                    if (openBraceIndex == -2) // found '}' instead of '{'
                     {
-                        scanIndex = endIndex;
+                        success = false;
+                        break;
                     }
-                    else
+                    else if (openBraceIndex == -1) // scanned the string and didn't find any remaining '{' or '}'
                     {
-                        // Format item syntax : { index[,alignment][ :formatString] }.
-                        int formatDelimiterIndex = FindIndexOfAny(message, _formatDelimiters, openBraceIndex, closeBraceIndex);
+                        break;
+                    }
 
-                        string templateName = message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
-                        templateMap[templateName] = templateName;
-                        templateList.Add(templateName);
-                        scanIndex = closeBraceIndex + 1;
+                    int closeBraceIndex = FindBraceIndex(message, '}', openBraceIndex + 1, endIndex);
+
+                    if (closeBraceIndex <= -1) // unclosed '{'
+                    {
+                        success = false;
+                        break;
                     }
+
+                    // Format item syntax : { index[,alignment][ :formatString] }.
+                    int formatDelimiterIndex = FindIndexOfAny(message, _formatDelimiters, openBraceIndex, closeBraceIndex);
+                    string templateName = message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
+
+                    if (string.IsNullOrWhiteSpace(templateName)) // braces with no named argument, such as {} and { }
+                    {
+                        success = false;
+                        break;
+                    }
+
+                    templateMap[templateName] = templateName;
+                    templateList.Add(templateName);
+
+                    scanIndex = closeBraceIndex + 1;
                 }
+
+                return success;
             }
 
-            private static int FindBraceIndex(string message, char brace, int startIndex, int endIndex)
+            /// <summary>
+            /// Searches for the next brace index in the message.
+            /// </summary>
+            /// <remarks> The search skips any sequences of {{ or }}.</remarks>
+            /// <example>{{prefix{{{Argument}}}suffix}}</example>
+            /// <returns>The zero-based index position of the first occurrence of the searched brace; -1 if the searched brace was not found; -2 if the wrong brace was found.</returns>
+            private static int FindBraceIndex(string message, char searchedBrace, int startIndex, int endIndex)
             {
-                // Example: {{prefix{{{Argument}}}suffix}}.
-                int braceIndex = endIndex;
+                Debug.Assert(searchedBrace is '{' or '}');
+
+                int braceIndex = -1;
                 int scanIndex = startIndex;
-                int braceOccurrenceCount = 0;
 
                 while (scanIndex < endIndex)
                 {
-                    if (braceOccurrenceCount > 0 && message[scanIndex] != brace)
+                    char current = message[scanIndex];
+
+                    if (current is '{' or '}')
                     {
-                        if (braceOccurrenceCount % 2 == 0)
+                        char currentBrace = current;
+
+                        int scanIndexBeforeSkip = scanIndex;
+                        while (current == currentBrace && ++scanIndex < endIndex)
                         {
-                            // Even number of '{' or '}' found. Proceed search with next occurrence of '{' or '}'.
-                            braceOccurrenceCount = 0;
-                            braceIndex = endIndex;
+                            current = message[scanIndex];
                         }
-                        else
+
+                        int bracesCount = scanIndex - scanIndexBeforeSkip;
+                        if (bracesCount % 2 != 0) // if it is an even number of braces, just skip them, otherwise, we found an unescaped brace
                         {
-                            // An unescaped '{' or '}' found.
+                            if (currentBrace == searchedBrace)
+                            {
+                                if (currentBrace == '{')
+                                {
+                                    braceIndex = scanIndex - 1; // For '{' pick the last occurrence.
+                                }
+                                else
+                                {
+                                    braceIndex = scanIndexBeforeSkip; // For '}' pick the first occurrence.
+                                }
+                            }
+                            else
+                            {
+                                braceIndex = -2; // wrong brace found
+                            }
+
                             break;
                         }
                     }
-                    else if (message[scanIndex] == brace)
+                    else
                     {
-                        if (brace == '}')
-                        {
-                            if (braceOccurrenceCount == 0)
-                            {
-                                // For '}' pick the first occurrence.
-                                braceIndex = scanIndex;
-                            }
-                        }
-                        else
-                        {
-                            // For '{' pick the last occurrence.
-                            braceIndex = scanIndex;
-                        }
-
-                        braceOccurrenceCount++;
+                        scanIndex++;
                     }
-
-                    scanIndex++;
                 }
 
                 return braceIndex;

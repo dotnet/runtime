@@ -2385,6 +2385,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // The following flags are lost when inlining. (They are removed in
         // Compiler::fgInvokeInlineeCompiler().)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
@@ -4654,15 +4655,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         lvaRefCountState       = RCS_INVALID;
         fgLocalVarLivenessDone = false;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        if (fgNeedToAddFinallyTargetBits)
-        {
-            // We previously wiped out the BBF_FINALLY_TARGET bits due to some morphing; add them back.
-            fgAddFinallyTargetFlags();
-            fgNeedToAddFinallyTargetBits = false;
-        }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
         // Decide the kind of code we want to generate
         fgSetOptions();
 
@@ -6672,6 +6664,13 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             if (canEscapeViaOSR)
             {
                 JITDUMP("\nOSR enabled for this method\n");
+                if (compHasBackwardJump && !compTailPrefixSeen &&
+                    opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS) && opts.IsTier0())
+                {
+                    assert((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) == 0);
+                    opts.jitFlags->Set(JitFlags::JIT_FLAG_BBINSTR);
+                    JITDUMP("\nEnabling instrumentation for this method so OSR'd version will have a profile.\n");
+                }
             }
             else
             {
