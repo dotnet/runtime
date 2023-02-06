@@ -184,7 +184,7 @@ namespace System.Runtime.Loader
             return
                 asm == null ? null :
                 asm is RuntimeAssembly rtAssembly ? rtAssembly :
-                asm is System.Reflection.Emit.AssemblyBuilder ab ? ab.InternalAssembly :
+                asm is System.Reflection.Emit.RuntimeAssemblyBuilder ab ? ab.InternalAssembly :
                 null;
         }
 

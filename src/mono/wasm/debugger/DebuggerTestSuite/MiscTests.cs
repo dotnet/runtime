@@ -858,7 +858,7 @@ namespace DebuggerTests
             Assert.False(source.Value["scriptSource"].Value<string>().Contains("// Unable to read document"));
         }
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [ConditionalFact(nameof(WasmSingleThreaded), nameof(RunningOnChrome))]
         public async Task InspectTaskAtLocals() => await CheckInspectLocalsAtBreakpointSite(
             "InspectTask",
             "RunInspectTask",
@@ -1147,6 +1147,32 @@ namespace DebuggerTests
                     await CheckValueType(locals, "var1", "System.ReadOnlySpan<object>", description: "System.ReadOnlySpan<Object>[0]");
                 }
             );
+        }
+
+        [ConditionalFact(nameof(WasmMultiThreaded))]
+        public async Task TestDebugUsingMultiThreadedRuntime()
+        {
+            var bp = await SetBreakpointInMethod("debugger-test.dll", "MultiThreadedTest", "Write", 2);
+            var expression = $"{{ invoke_static_method('[debugger-test] MultiThreadedTest:Run'); }}";
+
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1598, 8,
+                "MultiThreadedTest.Write");
+
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
+
+            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1598, 8, "MultiThreadedTest.Write");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
+
+            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1598, 8, "MultiThreadedTest.Write");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
         }
     }
 }

@@ -34,7 +34,7 @@ namespace System.Xml
         private int _attributeCount;
         private int _attributeStart;    // Starting index for searching
         private readonly XmlDictionaryReaderQuotas _quotas;
-        private XmlNameTable? _nameTable;
+        private QuotaNameTable? _nameTable;
         private XmlDeclarationNode? _declarationNode;
         private XmlComplexTextNode? _complexTextNode;
         private XmlWhitespaceTextNode? _whitespaceTextNode;
@@ -3120,7 +3120,7 @@ namespace System.Xml
         private sealed class QuotaNameTable : XmlNameTable
         {
             private readonly XmlDictionaryReader _reader;
-            private readonly XmlNameTable _nameTable;
+            private readonly NameTable _nameTable;
             private readonly int _maxCharCount;
             private int _charCount;
 

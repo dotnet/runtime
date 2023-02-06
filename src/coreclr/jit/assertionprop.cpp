@@ -169,11 +169,20 @@ bool IntegralRange::Contains(int64_t value) const
             break;
 
         case GT_LCL_VAR:
-            if (compiler->lvaGetDesc(node->AsLclVar())->lvNormalizeOnStore())
+        {
+            LclVarDsc* const varDsc = compiler->lvaGetDesc(node->AsLclVar());
+
+            if (varDsc->lvNormalizeOnStore())
             {
                 rangeType = compiler->lvaGetDesc(node->AsLclVar())->TypeGet();
             }
+
+            if (varDsc->IsNeverNegative())
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
             break;
+        }
 
         case GT_CNS_INT:
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
@@ -217,6 +226,15 @@ bool IntegralRange::Contains(int64_t value) const
             }
             break;
 #endif // defined(FEATURE_HW_INTRINSICS)
+
+        case GT_FIELD:
+        {
+            if (node->AsField()->IsSpanLength())
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+            break;
+        }
 
         default:
             break;

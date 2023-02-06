@@ -63,8 +63,7 @@ mono_interp_tier_prepare_jiterpreter (
 //  or JitCallInfo
 extern void
 mono_interp_jit_wasm_jit_call_trampoline (
-	MonoMethod *method, void *rmethod, void *cinfo, void *func,
-	gboolean has_this, int param_count,
+	MonoMethod *method, void *rmethod, void *cinfo,
 	guint32 *arg_offsets, gboolean catch_exceptions
 );
 
@@ -122,6 +121,12 @@ mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip);
 
 void
 mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);
+
+gpointer
+mono_jiterp_imethod_to_ftnptr (InterpMethod *imethod);
+
+void
+mono_jiterp_enum_hasflag (MonoClass *klass, gint32 *dest, stackval *sp1, stackval *sp2);
 
 #endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
 

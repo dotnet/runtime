@@ -7042,7 +7042,7 @@ const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsi
  *  Display a IPmappingDsc. Pass -1 as mappingNum to not display a mapping number.
  */
 
-void CodeGen::genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping)
+void CodeGen::genIPmappingDisp(unsigned mappingNum, const IPmappingDsc* ipMapping)
 {
     if (mappingNum != unsigned(-1))
     {

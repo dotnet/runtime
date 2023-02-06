@@ -730,6 +730,46 @@ public:
     static double normalize(double x);
 };
 
+class BitOperations
+{
+public:
+    static uint32_t BitScanForward(uint32_t value);
+
+    static uint32_t BitScanForward(uint64_t value);
+
+    static uint32_t BitScanReverse(uint32_t value);
+
+    static uint32_t BitScanReverse(uint64_t value);
+
+    static uint32_t LeadingZeroCount(uint32_t value);
+
+    static uint32_t LeadingZeroCount(uint64_t value);
+
+    static uint32_t Log2(uint32_t value);
+
+    static uint32_t Log2(uint64_t value);
+
+    static uint32_t PopCount(uint32_t value);
+
+    static uint32_t PopCount(uint64_t value);
+
+    static uint32_t ReverseBits(uint32_t value);
+
+    static uint64_t ReverseBits(uint64_t value);
+
+    static uint32_t RotateLeft(uint32_t value, uint32_t offset);
+
+    static uint64_t RotateLeft(uint64_t value, uint32_t offset);
+
+    static uint32_t RotateRight(uint32_t value, uint32_t offset);
+
+    static uint64_t RotateRight(uint64_t value, uint32_t offset);
+
+    static uint32_t TrailingZeroCount(uint32_t value);
+
+    static uint32_t TrailingZeroCount(uint64_t value);
+};
+
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but
 // that can't be called until the CLR is initialized. If we have static data that we'd like to protect by a
 // lock, and we have a statically allocated lock to protect that data, there's an issue in how to initialize

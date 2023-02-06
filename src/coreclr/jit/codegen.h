@@ -664,7 +664,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #ifdef DEBUG
-    void genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping);
+    void genIPmappingDisp(unsigned mappingNum, const IPmappingDsc* ipMapping);
     void genIPmappingListDisp();
 #endif // DEBUG
 

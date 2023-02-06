@@ -7283,13 +7283,16 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
 #if defined(TARGET_ARM64)
         // Verify containment safety before creating an LEA that must be contained.
         //
-        const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+        const bool isContainable = (ind->Addr() != nullptr) && IsSafeToContainMem(ind, ind->Addr());
 #else
         const bool isContainable         = true;
 #endif
 
-        TryCreateAddrMode(ind->Addr(), isContainable, ind);
-        ContainCheckIndir(ind);
+        if (!ind->OperIs(GT_NOP))
+        {
+            TryCreateAddrMode(ind->Addr(), isContainable, ind);
+            ContainCheckIndir(ind);
+        }
 
 #ifdef TARGET_XARCH
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
@@ -7337,14 +7340,23 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
+    GenTree* const addr = ind->Addr();
+    if (!comp->fgAddrCouldBeNull(addr))
+    {
+        addr->SetUnusedValue();
+        ind->gtBashToNOP();
+        JITDUMP("bash an unused indir [%06u] to NOP.\n", comp->dspTreeID(ind));
+        return;
+    }
+
     ind->ChangeType(comp->gtTypeForNullCheck(ind));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool useNullCheck = true;
-#elif TARGET_ARM
+#elif defined(TARGET_ARM)
     bool           useNullCheck          = false;
 #else  // TARGET_XARCH
-    bool useNullCheck = !ind->Addr()->isContained();
+    bool useNullCheck = !addr->isContained();
     ind->ClearDontExtend();
 #endif // !TARGET_XARCH
 
