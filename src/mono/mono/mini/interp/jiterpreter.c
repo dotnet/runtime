@@ -861,6 +861,15 @@ should_generate_trace_here (InterpBasicBlock *bb) {
 	return FALSE;
 }
 
+typedef struct {
+	int hit_count;
+	JiterpreterThunk thunk;
+} TraceInfo;
+
+static guint32 trace_count = 0;
+// FIXME: Dynamically sized
+static TraceInfo trace_infos[10240];
+
 /*
  * Insert jiterpreter entry points at the correct candidate locations:
  * The first basic block of the function,
@@ -907,14 +916,54 @@ jiterp_insert_entry_points (void *_td)
 			should_generate = TRUE;
 
 		if (enabled && should_generate) {
+			guint32 trace_index = trace_count++;
 			td->cbb = bb;
-			mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
+			InterpInst *ins = mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
+			memcpy(ins->data, &trace_index, sizeof(trace_index));
+
+			// FIXME: Grow array
+			trace_infos[trace_index].hit_count = 0;
+			trace_infos[trace_index].thunk = NULL;
+
 			// Note that we only clear enter_at_next here, after generating a trace.
 			// This means that the flag will stay set intentionally if we keep failing
 			//  to generate traces, perhaps due to a string of small basic blocks
 			//  or multiple call instructions.
 			enter_at_next = bb->contains_call_instruction;
 		}
+	}
+}
+
+JiterpreterThunk
+mono_interp_tier_prepare_jiterpreter_fast (
+	void *frame, MonoMethod *method, const guint16 *ip,
+	const guint16 *start_of_body, int size_of_body
+) {
+	if (!mono_opt_jiterpreter_traces_enabled)
+		return (JiterpreterThunk)(void*)JITERPRETER_NOT_JITTED;
+
+	guint32 trace_index = READ32(ip + 1);
+	g_assert(trace_index < trace_count);
+	TraceInfo *trace_info = &trace_infos[trace_index];
+	g_assert(trace_info);
+
+	if (trace_info->thunk)
+		return trace_info->thunk;
+
+	int count = trace_info->hit_count++;
+	if (count == mono_opt_jiterpreter_minimum_trace_hit_count) {
+		JiterpreterThunk result = mono_interp_tier_prepare_jiterpreter(
+			frame, method, ip,
+			start_of_body, size_of_body
+		);
+		trace_info->thunk = result;
+		return result;
+	} else if (count > mono_opt_jiterpreter_minimum_trace_hit_count) {
+		// FIXME: This shouldn't happen. Race condition?
+		return (JiterpreterThunk)(void*)JITERPRETER_TRAINING;
+	} else {
+		// Hit count not reached
+		return (JiterpreterThunk)(void*)JITERPRETER_TRAINING;
 	}
 }
 

@@ -78,14 +78,12 @@ export class InstrumentedTraceState {
 
 export class TraceInfo {
     ip: MintOpcodePtr;
-    hitCount: number;
     name: string | undefined;
     abortReason: string | undefined;
     fnPtr: Number | undefined;
 
     constructor (ip: MintOpcodePtr) {
         this.ip = ip;
-        this.hitCount = 1;
     }
 }
 
@@ -780,39 +778,29 @@ export function mono_interp_tier_prepare_jiterpreter (
 
     if (!info)
         traceInfo[<any>ip] = info = new TraceInfo(ip);
-    else
-        info.hitCount++;
 
-    const minHitCount = mostRecentOptions.minimumTraceHitCount;
+    counters.traceCandidates++;
+    let methodFullName: string | undefined;
+    if (trapTraceErrors || mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0) || useFullNames) {
+        const pMethodName = cwraps.mono_wasm_method_get_full_name(method);
+        methodFullName = Module.UTF8ToString(pMethodName);
+        Module._free(<any>pMethodName);
+    }
+    const methodName = Module.UTF8ToString(cwraps.mono_wasm_method_get_name(method));
+    info.name = methodFullName || methodName;
+    const fnPtr = generate_wasm(
+        frame, methodName, ip, startOfBody, sizeOfBody, methodFullName
+    );
 
-    if (info.hitCount < minHitCount)
-        return JITERPRETER_TRAINING;
-    else if (info.hitCount === minHitCount) {
-        counters.traceCandidates++;
-        let methodFullName: string | undefined;
-        if (trapTraceErrors || mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0) || useFullNames) {
-            const pMethodName = cwraps.mono_wasm_method_get_full_name(method);
-            methodFullName = Module.UTF8ToString(pMethodName);
-            Module._free(<any>pMethodName);
-        }
-        const methodName = Module.UTF8ToString(cwraps.mono_wasm_method_get_name(method));
-        info.name = methodFullName || methodName;
-        const fnPtr = generate_wasm(
-            frame, methodName, ip, startOfBody, sizeOfBody, methodFullName
-        );
-        if (fnPtr) {
-            counters.tracesCompiled++;
-            // FIXME: These could theoretically be 0 or 1, in which case the trace
-            //  will never get invoked. Oh well
-            info.fnPtr = fnPtr;
-            return fnPtr;
-        } else {
-            return mostRecentOptions.estimateHeat ? JITERPRETER_TRAINING : JITERPRETER_NOT_JITTED;
-        }
-    } else if (!mostRecentOptions.estimateHeat)
-        throw new Error("prepare should not be invoked at this point");
-    else
-        return JITERPRETER_TRAINING;
+    if (fnPtr) {
+        counters.tracesCompiled++;
+        // FIXME: These could theoretically be 0 or 1, in which case the trace
+        //  will never get invoked. Oh well
+        info.fnPtr = fnPtr;
+        return fnPtr;
+    } else {
+        return mostRecentOptions.estimateHeat ? JITERPRETER_TRAINING : JITERPRETER_NOT_JITTED;
+    }
 }
 
 export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
@@ -836,6 +824,8 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
     }
 
     if (mostRecentOptions.estimateHeat) {
+        // FIXME: estimateHeat
+        /*
         const counts : { [key: string] : number } = {};
         const traces = Object.values(traceInfo);
 
@@ -928,6 +918,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
         console.log("// heat:");
         for (let i = 0; i < tuples.length; i++)
             console.log(`// ${tuples[i][0]}: ${tuples[i][1]}`);
+        */
     } else {
         for (let i = 0; i < MintOpcode.MINT_LASTOP; i++) {
             const opname = OpcodeInfo[<any>i][0];
