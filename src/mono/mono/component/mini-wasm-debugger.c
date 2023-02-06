@@ -218,7 +218,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 static void
 mono_wasm_single_step_hit (void)
 {
-	if (mono_wasm_breakpoint_and_stepping_disabled ())
+	if (mono_wasm_is_breakpoint_and_stepping_disabled ())
 		return;
 	mono_de_process_single_step (mono_wasm_get_tls (), FALSE);
 }

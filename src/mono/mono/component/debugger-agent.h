@@ -32,7 +32,7 @@ void
 mono_wasm_save_thread_context (void);
 
 bool
-mono_wasm_breakpoint_and_stepping_disabled (void);
+mono_wasm_is_breakpoint_and_stepping_disabled (void);
 #endif
 
 void

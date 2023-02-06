@@ -2264,7 +2264,7 @@ mono_wasm_get_tls (void)
 }
 
 bool
-mono_wasm_breakpoint_and_stepping_disabled (void)
+mono_wasm_is_breakpoint_and_stepping_disabled (void)
 {
 	return mono_wasm_get_tls ()->disable_breakpoint_and_stepping;
 }
