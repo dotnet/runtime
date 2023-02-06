@@ -99,7 +99,10 @@ const // offsetOfStack = 12,
     //  subtracting 20 from the maximum size to make sure we don't produce too much
     // Also subtract some more size since the wasm we generate for one opcode could be big
     // WASM implementations only allow compiling 4KB of code at once :-)
-    maxModuleSize = 4000 - 160;
+    maxModuleSize = 4000 - 160,
+    // While stats are enabled, dump concise stats every N traces so that it's clear a long-running
+    //  task isn't frozen if it's jitting lots of traces
+    autoDumpInterval = 500;
 
 /*
 struct MonoVTable {
@@ -329,6 +332,195 @@ function wrap_trace_function (
     );
 }
 
+function initialize_builder (builder: WasmBuilder) {
+    // Function type for compiled traces
+    builder.defineType(
+        "trace", {
+            "frame": WasmValtype.i32,
+            "pLocals": WasmValtype.i32
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "bailout", {
+            "ip": WasmValtype.i32,
+            "reason": WasmValtype.i32
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "copy_pointer", {
+            "dest": WasmValtype.i32,
+            "src": WasmValtype.i32
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "value_copy", {
+            "dest": WasmValtype.i32,
+            "src": WasmValtype.i32,
+            "klass": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "array_length", {
+            "ppArray": WasmValtype.i32
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "array_address", {
+            "ppArray": WasmValtype.i32,
+            "elementSize": WasmValtype.i32,
+            "index": WasmValtype.i32
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "entry", {
+            "imethod": WasmValtype.i32
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "strlen", {
+            "ppString": WasmValtype.i32,
+            "pResult": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "getchr", {
+            "ppString": WasmValtype.i32,
+            "pIndex": WasmValtype.i32,
+            "pResult": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "getspan", {
+            "destination": WasmValtype.i32,
+            "span": WasmValtype.i32,
+            "index": WasmValtype.i32,
+            "element_size": WasmValtype.i32
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "overflow_check_i4", {
+            "lhs": WasmValtype.i32,
+            "rhs": WasmValtype.i32,
+            "opcode": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "mathop_d_d", {
+            "value": WasmValtype.f64,
+        }, WasmValtype.f64, true
+    );
+    builder.defineType(
+        "mathop_dd_d", {
+            "lhs": WasmValtype.f64,
+            "rhs": WasmValtype.f64,
+        }, WasmValtype.f64, true
+    );
+    builder.defineType(
+        "trace_eip", {
+            "traceId": WasmValtype.i32,
+            "eip": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "newobj_i", {
+            "ppDestination": WasmValtype.i32,
+            "vtable": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "localloc", {
+            "destination": WasmValtype.i32,
+            "len": WasmValtype.i32,
+            "frame": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "ld_del_ptr", {
+            "ppDestination": WasmValtype.i32,
+            "ppSource": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "ldtsflda", {
+            "ppDestination": WasmValtype.i32,
+            "offset": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "gettype", {
+            "destination": WasmValtype.i32,
+            "source": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "cast", {
+            "destination": WasmValtype.i32,
+            "source": WasmValtype.i32,
+            "klass": WasmValtype.i32,
+            "opcode": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "try_unbox", {
+            "klass": WasmValtype.i32,
+            "destination": WasmValtype.i32,
+            "source": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "box", {
+            "vtable": WasmValtype.i32,
+            "destination": WasmValtype.i32,
+            "source": WasmValtype.i32,
+            "vt": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "conv_ovf", {
+            "destination": WasmValtype.i32,
+            "source": WasmValtype.i32,
+            "opcode": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "relop_fp", {
+            "lhs": WasmValtype.f64,
+            "rhs": WasmValtype.f64,
+            "opcode": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "safepoint", {
+            "frame": WasmValtype.i32,
+            "ip": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "hashcode", {
+            "ppObj": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "hascsize", {
+            "ppObj": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "hasflag", {
+            "klass": WasmValtype.i32,
+            "dest": WasmValtype.i32,
+            "sp1": WasmValtype.i32,
+            "sp2": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "array_rank", {
+            "destination": WasmValtype.i32,
+            "source": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+}
+
 // returns function id
 function generate_wasm (
     frame: NativePointer, methodName: string, ip: MintOpcodePtr,
@@ -342,9 +534,10 @@ function generate_wasm (
     const constantSlotCount = 8;
 
     let builder = traceBuilder;
-    if (!builder)
+    if (!builder) {
         traceBuilder = builder = new WasmBuilder(constantSlotCount);
-    else
+        initialize_builder(builder);
+    } else
         builder.clear(constantSlotCount);
 
     mostRecentOptions = builder.options;
@@ -379,193 +572,6 @@ function generate_wasm (
         // Magic number and version
         builder.appendU32(0x6d736100);
         builder.appendU32(1);
-
-        // Function type for compiled traces
-        builder.defineType(
-            "trace", {
-                "frame": WasmValtype.i32,
-                "pLocals": WasmValtype.i32
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "bailout", {
-                "ip": WasmValtype.i32,
-                "reason": WasmValtype.i32
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "copy_pointer", {
-                "dest": WasmValtype.i32,
-                "src": WasmValtype.i32
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "value_copy", {
-                "dest": WasmValtype.i32,
-                "src": WasmValtype.i32,
-                "klass": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "array_length", {
-                "ppArray": WasmValtype.i32
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "array_address", {
-                "ppArray": WasmValtype.i32,
-                "elementSize": WasmValtype.i32,
-                "index": WasmValtype.i32
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "entry", {
-                "imethod": WasmValtype.i32
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "strlen", {
-                "ppString": WasmValtype.i32,
-                "pResult": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "getchr", {
-                "ppString": WasmValtype.i32,
-                "pIndex": WasmValtype.i32,
-                "pResult": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "getspan", {
-                "destination": WasmValtype.i32,
-                "span": WasmValtype.i32,
-                "index": WasmValtype.i32,
-                "element_size": WasmValtype.i32
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "overflow_check_i4", {
-                "lhs": WasmValtype.i32,
-                "rhs": WasmValtype.i32,
-                "opcode": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "mathop_d_d", {
-                "value": WasmValtype.f64,
-            }, WasmValtype.f64
-        );
-        builder.defineType(
-            "mathop_dd_d", {
-                "lhs": WasmValtype.f64,
-                "rhs": WasmValtype.f64,
-            }, WasmValtype.f64
-        );
-        builder.defineType(
-            "trace_eip", {
-                "traceId": WasmValtype.i32,
-                "eip": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "newobj_i", {
-                "ppDestination": WasmValtype.i32,
-                "vtable": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "localloc", {
-                "destination": WasmValtype.i32,
-                "len": WasmValtype.i32,
-                "frame": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "ld_del_ptr", {
-                "ppDestination": WasmValtype.i32,
-                "ppSource": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "ldtsflda", {
-                "ppDestination": WasmValtype.i32,
-                "offset": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "gettype", {
-                "destination": WasmValtype.i32,
-                "source": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "cast", {
-                "destination": WasmValtype.i32,
-                "source": WasmValtype.i32,
-                "klass": WasmValtype.i32,
-                "opcode": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "try_unbox", {
-                "klass": WasmValtype.i32,
-                "destination": WasmValtype.i32,
-                "source": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "box", {
-                "vtable": WasmValtype.i32,
-                "destination": WasmValtype.i32,
-                "source": WasmValtype.i32,
-                "vt": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "conv_ovf", {
-                "destination": WasmValtype.i32,
-                "source": WasmValtype.i32,
-                "opcode": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "relop_fp", {
-                "lhs": WasmValtype.f64,
-                "rhs": WasmValtype.f64,
-                "opcode": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "safepoint", {
-                "frame": WasmValtype.i32,
-                "ip": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "hashcode", {
-                "ppObj": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "hascsize", {
-                "ppObj": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "hasflag", {
-                "klass": WasmValtype.i32,
-                "dest": WasmValtype.i32,
-                "sp1": WasmValtype.i32,
-                "sp2": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "array_rank", {
-                "destination": WasmValtype.i32,
-                "source": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
 
         builder.generateTypeSection();
 
@@ -700,7 +706,7 @@ function generate_wasm (
 
         // Ensure that a bit of ongoing diagnostic output is printed for very long-running test
         //  suites or benchmarks if you've enabled stats
-        if (builder.options.enableStats && (counters.tracesCompiled % 500) === 0)
+        if (builder.options.enableStats && counters.tracesCompiled && (counters.tracesCompiled % autoDumpInterval) === 0)
             jiterpreter_dump_stats(false, true);
 
         return idx;
