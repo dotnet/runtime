@@ -1272,11 +1272,11 @@ namespace System.Diagnostics.Eventing.Reader
             IntPtr ptr = val.Reference;
             if (ptr == IntPtr.Zero)
             {
-                return Array.CreateInstance(typeof(T), 0);
+                return Array.Empty<T>();
             }
             else
             {
-                Array array = Array.CreateInstance(typeof(T), (int)val.Count);
+                Array array = new T[val.Count];
                 for (int i = 0; i < val.Count; i++)
                 {
                     array.SetValue(Marshal.PtrToStructure<T>(ptr), i);
