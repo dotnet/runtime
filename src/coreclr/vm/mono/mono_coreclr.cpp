@@ -50,11 +50,16 @@ void unity_log(const char *format, ...)
 void* g_CLRRuntimeHost;
 unsigned int g_RootDomainId;
 
+typedef intptr_t ManagedStringPtr_t;
+
 struct HostStruct
 {
-    intptr_t version;
     intptr_t (*load_assembly_from_data)(const char* data, int64_t length);
     intptr_t (*load_assembly_from_path)(const char* path, int32_t length);
+    ManagedStringPtr_t (*string_from_utf16)(const gunichar2* text);
+    ManagedStringPtr_t (*string_new_len)(MonoDomain *domain, const char *text, guint32 length);
+    ManagedStringPtr_t (*string_new_utf16)(MonoDomain * domain, const guint16 * text, gint32 length);
+    ManagedStringPtr_t (*string_new_wrapper)(const char* text);
 };
 HostStruct* g_HostStruct;
 
@@ -2246,10 +2251,8 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
 
     g_HostStruct = (HostStruct*)malloc(sizeof(HostStruct));
     memset(g_HostStruct, 0, sizeof(HostStruct));
-    g_HostStruct->version = 1;
 
-    size_t size = sizeof(HostStruct);
-    hr = init_func(g_HostStruct, (int32_t)size);
+    hr = init_func(g_HostStruct, (int32_t)sizeof(HostStruct));
 
     AppDomain *pCurDomain = SystemDomain::GetCurrentDomain();
     gRootDomain = gCurrentDomain = (MonoDomain*)pCurDomain;
@@ -2950,34 +2953,26 @@ extern "C" EXPORT_API void EXPORT_CC mono_stack_walk_no_il (MonoStackWalk start,
 
 extern "C" EXPORT_API MonoString* EXPORT_CC mono_string_from_utf16(const gunichar2* text)
 {
-    assert(text != nullptr);
-    InlineSString<256> sstr((const WCHAR*)text);
-    GCX_COOP();
-    return (MonoString*)OBJECTREFToObject(AllocateString(sstr));
+    GCX_PREEMP(); // temporary until we sort out our GC thread model
+    return (MonoString*)g_HostStruct->string_from_utf16(text);
 }
 
 extern "C" EXPORT_API MonoString* EXPORT_CC mono_string_new_len(MonoDomain *domain, const char *text, guint32 length)
 {
-    assert(text != nullptr);
-    InlineSString<256> sstr(SString::Utf8, text, length);
-    GCX_COOP();
-    STRINGREF strObj = AllocateString(sstr.GetCount());
-    memcpyNoGCRefs(strObj->GetBuffer(), sstr.GetUnicode(), sstr.GetCount() * sizeof(WCHAR));
-    return (MonoString*)OBJECTREFToObject(strObj);
+    GCX_PREEMP(); // temporary until we sort out our GC thread model
+    return (MonoString*)g_HostStruct->string_new_len(domain, text, length);
 }
 
 extern "C" EXPORT_API MonoString* EXPORT_CC mono_string_new_utf16(MonoDomain * domain, const guint16 * text, gint32 length)
 {
-    ASSERT_NOT_IMPLEMENTED;
-    return NULL;
+    GCX_PREEMP(); // temporary until we sort out our GC thread model
+    return (MonoString*)g_HostStruct->string_new_utf16(domain, text, length);
 }
 
 extern "C" EXPORT_API MonoString* EXPORT_CC mono_string_new_wrapper(const char* text)
 {
-    assert(text != nullptr);
-    InlineSString<256> sstr(SString::Utf8, text);
-    GCX_COOP();
-    return (MonoString*)OBJECTREFToObject(AllocateString(sstr));
+    GCX_PREEMP(); // temporary until we sort out our GC thread model
+    return (MonoString*)g_HostStruct->string_new_wrapper(text);
 }
 
 extern "C" EXPORT_API gunichar2* EXPORT_CC mono_string_to_utf16(MonoString *string_obj)
