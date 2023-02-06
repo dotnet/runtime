@@ -1314,10 +1314,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 // the zmask from op1. We expect that op2 has already been
                 // lowered and therefore the containment checks have happened
 
+                // Since this is a newer operation, we need to account for
+                // the possibility of `op1Intrinsic` zeroing the same element
+                // we're setting here.
+
                 assert(op1Intrinsic->Op(2)->isContained());
 
                 ssize_t op1Ival = op1Idx->AsIntConCommon()->IconValue();
-                ival |= (op1Ival & 0x0F);
+                ival |= ((op1Ival & 0x0F) & ((1 << count_d) - 1));
                 op3->AsIntConCommon()->SetIconValue(ival);
 
                 // Then we'll just carry the original non-zero input and
@@ -1334,6 +1338,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Since we've already updated zmask to take op2 being zero into
                 // account, we can basically do the same thing here by merging this
                 // zmask into the ival from op1.
+
+                // Since this is a later op, direct merging is safe
 
                 ssize_t op1Ival = op1Idx->AsIntConCommon()->IconValue();
                 ival            = op1Ival | zmask;
