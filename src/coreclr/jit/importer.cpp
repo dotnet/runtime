@@ -6369,7 +6369,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             //
             for (BasicBlock* const succ : block->Succs())
             {
-                fgRemoveRefPred(succ, block);
+                // We may have degenerate flow, make sure to fully remove
+                fgRemoveAllRefPreds(succ, block);
             }
 
             // Change block to BBJ_THROW so we won't trigger importation of successors.
