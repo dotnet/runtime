@@ -57,7 +57,7 @@ internal static class ObjectHeader
 
     private static class SyncBlock
     {
-        public static ref int HashCode(ref MonoThreadsSync mon) => ref mon.hash_code;
+        public static int HashCode(ref MonoThreadsSync mon) => mon.hash_code;
         public static ref uint Status (ref MonoThreadsSync mon) => ref mon.status;
 
         // only call if current thread owns the lock
@@ -249,8 +249,7 @@ internal static class ObjectHeader
         if (lw.HasHash) {
             if (lw.IsInflated) {
                 ref MonoThreadsSync mon = ref lw.GetInflatedLock();
-                ref int hashRef = ref SyncBlock.HashCode(ref mon);
-                hash = hashRef;
+                hash = SyncBlock.HashCode(ref mon);
                 return false;
             } else {
                 hash = lw.FlatHash;
@@ -260,36 +259,35 @@ internal static class ObjectHeader
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool TryEnterInflatedFast(ObjectHeaderOnStack h)
     {
         LockWord lw = GetLockWord (h);
         int small_id = Thread.CurrentThread.GetSmallId();
         ref MonoThreadsSync mon = ref lw.GetInflatedLock();
-        while (true)
+
+        uint old_status = SyncBlock.Status (ref mon);
+        if (MonitorStatus.GetOwner(old_status) == 0)
         {
-            uint old_status = SyncBlock.Status (ref mon);
-            if (MonitorStatus.GetOwner(old_status) == 0)
+            uint new_status = MonitorStatus.SetOwner(old_status, small_id);
+            uint prev_status = Interlocked.CompareExchange (ref SyncBlock.Status (ref mon), new_status, old_status);
+            if (prev_status == old_status)
             {
-                uint new_status = MonitorStatus.SetOwner(old_status, small_id);
-                uint prev_status = Interlocked.CompareExchange (ref SyncBlock.Status (ref mon), new_status, old_status);
-                if (prev_status == old_status)
-                {
-                    return true;
-                }
-                // someone else changed the status, go around the loop again
-                continue;
-            }
-            if (MonitorStatus.GetOwner(old_status) == small_id)
-            {
-                // we own it
-                SyncBlock.IncrementNest (ref mon);
                 return true;
             }
-            else
-            {
-                // someone else owns it, fall back to slow path
-                return false;
-            }
+            // someone else changed the status, fall back to the slow path
+            return false;
+        }
+        if (MonitorStatus.GetOwner(old_status) == small_id)
+        {
+            // we own it
+            SyncBlock.IncrementNest (ref mon);
+            return true;
+        }
+        else
+        {
+            // someone else owns it, fall back to slow path
+            return false;
         }
     }
 
