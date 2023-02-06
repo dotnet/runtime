@@ -80,7 +80,7 @@ namespace System.Text.RegularExpressions.Generator
                     // We'll still output a limited implementation that just caches a new Regex(...).
                     if (!SupportsCodeGeneration(regexMethod, methodOrDiagnosticAndCompilationData.Right.LanguageVersion, out string? reason))
                     {
-                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.MethodSyntax.GetLocation()));
+                        return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.MethodSyntax.GetLocation()), methodOrDiagnosticAndCompilationData.Right);
                     }
 
                     // Generate the core logic for the regex.
@@ -150,7 +150,7 @@ namespace System.Text.RegularExpressions.Generator
                 foreach (object? result in results)
                 {
                     RegexMethod? regexMethod = null;
-                    if (result is ValueTuple<RegexMethod, string, Diagnostic> limitedSupportResult)
+                    if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
                     {
                         context.ReportDiagnostic(limitedSupportResult.Item3);
                         regexMethod = limitedSupportResult.Item1;
@@ -212,11 +212,11 @@ namespace System.Text.RegularExpressions.Generator
                 writer.Indent++;
                 foreach (object? result in results)
                 {
-                    if (result is ValueTuple<RegexMethod, string, Diagnostic> limitedSupportResult)
+                    if (result is ValueTuple<RegexMethod, string, Diagnostic, CompilationData> limitedSupportResult)
                     {
                         if (!limitedSupportResult.Item1.IsDuplicate)
                         {
-                            EmitRegexLimitedBoilerplate(writer, limitedSupportResult.Item1, limitedSupportResult.Item2);
+                            EmitRegexLimitedBoilerplate(writer, limitedSupportResult.Item1, limitedSupportResult.Item2, limitedSupportResult.Item4.LanguageVersion);
                             writer.WriteLine();
                         }
                     }
@@ -273,7 +273,7 @@ namespace System.Text.RegularExpressions.Generator
         /// </remarks>
         private static bool SupportsCodeGeneration(RegexMethod method, LanguageVersion languageVersion, [NotNullWhen(false)] out string? reason)
         {
-            if (languageVersion <= LanguageVersion.CSharp10)
+            if (languageVersion < LanguageVersion.CSharp11)
             {
                 reason = "the language version must be C# 11 or higher.";
                 return false;
