@@ -176,57 +176,33 @@ public class AppleAppBuilderTask : Task
         if (UseNativeAOTRuntime)
         {
             if (!string.IsNullOrEmpty(MonoRuntimeHeaders))
-            {
-                Log.LogMessage(MessageImportance.High, $"Property \"{nameof(MonoRuntimeHeaders)}\" is not supported with NativeAOT runtime and will be ignored.");
-                MonoRuntimeHeaders = string.Empty;
-            }
+                throw new ArgumentException($"Property \"{nameof(MonoRuntimeHeaders)}\" is not supported with NativeAOT runtime and will be ignored.");
+
             if (!string.IsNullOrEmpty(MainLibraryFileName))
-            {
-                Log.LogMessage(MessageImportance.High, $"Property \"{nameof(MainLibraryFileName)}\" is not supported with NativeAOT runtime and will be ignored.");
-                MainLibraryFileName = string.Empty;
-            }
+                throw new ArgumentException($"Property \"{nameof(MainLibraryFileName)}\" is not supported with NativeAOT runtime and will be ignored.");
+
             if (UseConsoleUITemplate)
-            {
-                Log.LogMessage(MessageImportance.High, $"Property \"{nameof(UseConsoleUITemplate)}\" is not supported with NativeAOT runtime and will be ignored.");
-                UseConsoleUITemplate = false;
-            }
+                throw new ArgumentException($"Property \"{nameof(UseConsoleUITemplate)}\" is not supported with NativeAOT runtime and will be ignored.");
+
             if (ForceInterpreter)
-            {
-                Log.LogMessage(MessageImportance.High, $"Property \"{nameof(ForceInterpreter)}\" is not supported with NativeAOT runtime and will be ignored.");
-                ForceInterpreter = false;
-            }
+                throw new ArgumentException($"Property \"{nameof(ForceInterpreter)}\" is not supported with NativeAOT runtime and will be ignored.");
+
             if (ForceAOT)
-            {
-                Log.LogMessage(MessageImportance.High, $"Property \"{nameof(ForceAOT)}\" is not supported with NativeAOT runtime and will be ignored.");
-                ForceAOT = false;
-            }
+                throw new ArgumentException($"Property \"{nameof(ForceAOT)}\" is not supported with NativeAOT runtime and will be ignored.");
+
             if (!string.IsNullOrEmpty(RuntimeComponents))
-            {
-                Log.LogMessage(MessageImportance.High, $"Property \"{nameof(RuntimeComponents)}\" is not supported with NativeAOT runtime and will be ignored.");
-                RuntimeComponents = string.Empty;
-            }
+                throw new ArgumentException($"Property \"{nameof(RuntimeComponents)}\" is not supported with NativeAOT runtime and will be ignored.");
+
             if (!string.IsNullOrEmpty(DiagnosticPorts))
-            {
-                Log.LogMessage(MessageImportance.High, $"Property \"{nameof(DiagnosticPorts)}\" is not supported with NativeAOT runtime and will be ignored.");
-                DiagnosticPorts = string.Empty;
-            }
+                throw new ArgumentException($"Property \"{nameof(DiagnosticPorts)}\" is not supported with NativeAOT runtime and will be ignored.");
+
             if (EnableRuntimeLogging)
-            {
-                Log.LogMessage(MessageImportance.High, $"Property \"{nameof(EnableRuntimeLogging)}\" is not supported with NativeAOT runtime and will be ignored.");
-                EnableRuntimeLogging = false;
-            }
-            if (EnableAppSandbox)
-            {
-                Log.LogMessage(MessageImportance.High, $"Property \"{nameof(EnableAppSandbox)}\" is not supported with NativeAOT runtime and will be ignored.");
-                EnableAppSandbox = false;
-            }
+                throw new ArgumentException($"Property \"{nameof(EnableRuntimeLogging)}\" is not supported with NativeAOT runtime and will be ignored.");
         }
         else
         {
             if (string.IsNullOrEmpty(MonoRuntimeHeaders))
-            {
                 throw new ArgumentException($"The \"{nameof(AppleAppBuilderTask)}\" task was not given a value for the required parameter \"{nameof(MonoRuntimeHeaders)}\" when using Mono runtime.");
-            }
         }
     }
 
