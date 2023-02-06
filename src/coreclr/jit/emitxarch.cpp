@@ -640,13 +640,14 @@ bool emitter::AreUpper32BitsFFFF(regNumber reg)
         return false;
     }
 
-    // movsx always sign extends to 8 bytes.
+    // movsx always sign extends to 8 bytes. W-bit is set.
     if (id->idIns() == INS_movsx)
     {
         return true;
     }
 
 #ifdef TARGET_AMD64
+    // movsxd is always an 8 byte operation. W-bit is set.
     if (id->idIns() == INS_movsxd)
     {
         return true;
