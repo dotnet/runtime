@@ -10823,18 +10823,9 @@ field_access_end:
 
 					EMIT_NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, ins->dreg);
-
-					MONO_INST_NEW (cfg, ins, OP_LDTOKEN_FIELD);
-					ins->type = STACK_VTYPE;
+					EMIT_NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 					ins->inst_c0 = vtvar->inst_c0;
 					ins->inst_p1 = handle;
-					MONO_ADD_INS (cfg->cbb, ins);
-
-					cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
-					cfg->cbb->needs_decompose = TRUE;
-			
-					// OP_LDTOKEN_FIELD will later decompose into:
-					// EMIT_NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
 				}
 			}
 

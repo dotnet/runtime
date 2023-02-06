@@ -1533,9 +1533,6 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 
 			for (ins = bb->code; ins; ins = ins->next) {
 				switch (ins->opcode) {
-				case OP_LDTOKEN_FIELD: 
-					MONO_EMIT_NEW_TEMPLOAD (cfg, ins->inst_c0);
-					break;
 				case OP_TYPED_OBJREF:
 					ins->opcode = OP_MOVE;
 					break;
