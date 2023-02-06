@@ -42,8 +42,10 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetHashCode(object? o)
         {
+#if false
             if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
                 return hash;
+#endif
             return InternalGetHashCode(o);
         }
 
@@ -61,8 +63,10 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int TryGetHashCode(object? o)
         {
+#if false
             if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
                 return hash;
+#endif
             return InternalTryGetHashCode(o);
         }
 
