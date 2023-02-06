@@ -24,10 +24,10 @@ namespace System.Diagnostics
         internal const string DefaultFileMappingName = "netfxcustomperfcounters.1.0";
         internal static readonly int s_singleInstanceHashCode = GetWstrHashCode(SingleInstanceName);
         private static readonly Hashtable s_categoryDataTable = new Hashtable(StringComparer.Ordinal);
-        private static readonly int s_categoryEntrySize = Marshal.SizeOf(typeof(CategoryEntry));
-        private static readonly int s_instanceEntrySize = Marshal.SizeOf(typeof(InstanceEntry));
-        private static readonly int s_counterEntrySize = Marshal.SizeOf(typeof(CounterEntry));
-        private static readonly int s_processLifetimeEntrySize = Marshal.SizeOf(typeof(ProcessLifetimeEntry));
+        private static readonly int s_categoryEntrySize = sizeof(CategoryEntry);
+        private static readonly int s_instanceEntrySize = sizeof(InstanceEntry);
+        private static readonly int s_counterEntrySize = sizeof(CounterEntry);
+        private static readonly int s_processLifetimeEntrySize = sizeof(ProcessLifetimeEntry);
 
         private static long s_lastInstanceLifetimeSweepTick;
         private const long InstanceLifetimeSweepWindow = 30 * 10000000; //ticks
