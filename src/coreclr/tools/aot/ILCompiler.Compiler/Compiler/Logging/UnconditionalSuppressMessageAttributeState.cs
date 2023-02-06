@@ -240,7 +240,7 @@ namespace ILCompiler.Logging
             }
         }
 
-        private static IEnumerable<Suppression>? DecodeAssemblyAndModuleSuppressions(EcmaAssembly ecmaAssembly, List<(DiagnosticId, string?[])>? warnings)
+        private static List<Suppression>? DecodeAssemblyAndModuleSuppressions(EcmaAssembly ecmaAssembly, List<(DiagnosticId, string?[])>? warnings)
         {
             List<Suppression>? suppressions = null;
             DecodeGlobalSuppressions(
