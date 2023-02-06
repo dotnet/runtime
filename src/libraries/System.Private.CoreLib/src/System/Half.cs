@@ -606,7 +606,6 @@ namespace System
         /// <summary>Explicitly converts a <see cref="float" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static explicit operator Half(float value)
         {
             var v0 = Vector128.CreateScalarUnsafe(0x3880_0000u); //Minimum exponent for rounding
