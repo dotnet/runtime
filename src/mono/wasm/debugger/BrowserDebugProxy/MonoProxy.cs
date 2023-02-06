@@ -1409,23 +1409,32 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await SendResume(sessionId, token);
             }
         }
-        private static Result AddCallStackInfoToException(Result _error, ExecutionContext context, int scopeId)
+        private Result AddCallStackInfoToException(Result _error, ExecutionContext context, int scopeId)
         {
-            var retStackTrace = new JArray();
-            foreach(var call in context.CallStack)
-            {
-                if (call.Id < scopeId)
-                    continue;
-                retStackTrace.Add(JObject.FromObject(new
+            try {
+                var retStackTrace = new JArray();
+                foreach(var call in context.CallStack)
                 {
-                    functionName = call.Method.Name,
-                    scriptId = call.Location.Id.ToString(),
-                    url = context.Store.ToUrl(call.Location),
-                    lineNumber = call.Location.Line,
-                    columnNumber = call.Location.Column
-                }));
+                    if (call.Id < scopeId)
+                        continue;
+                    retStackTrace.Add(JObject.FromObject(new
+                    {
+                        functionName = call.Method.Name,
+                        scriptId = call.Location.Id.ToString(),
+                        url = context.Store.ToUrl(call.Location),
+                        lineNumber = call.Location.Line,
+                        columnNumber = call.Location.Column
+                    }));
+                }
+                if (!_error.Value.ContainsKey("exceptionDetails"))
+                    _error.Value["exceptionDetails"] = new JObject();
+                _error.Value["exceptionDetails"]["stackTrace"] = JObject.FromObject(new {callFrames = retStackTrace});
+                return _error;
             }
-            _error.Value["exceptionDetails"]["stackTrace"] = JObject.FromObject(new {callFrames = retStackTrace});
+            catch (Exception e)
+            {
+                logger.LogDebug($"Unable to add stackTrace information to exception. {e}");
+            }
             return _error;
         }
 
