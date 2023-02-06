@@ -4127,6 +4127,26 @@ interp_emit_memory_barrier (TransformData *td, int kind)
 			goto exit; \
 	} while (0)
 
+static int
+interp_type_size (MonoType *type, int mt, int *align_p)
+{
+	int size, align;
+	if (mt == MINT_TYPE_VT) {
+		size = mono_type_size (type, &align);
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		if (m_class_is_simd_type (klass)) // mono_type_size should report the alignment
+			align = MINT_SIMD_ALIGNMENT;
+		else
+			align = MINT_STACK_SLOT_SIZE;
+		g_assert (align <= MINT_STACK_ALIGNMENT);
+	} else {
+		size = MINT_STACK_SLOT_SIZE; // not really
+		align = MINT_STACK_SLOT_SIZE;
+	}
+	*align_p = align;
+	return size;
+}
+
 static void
 interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMethodSignature *sig, MonoMethodHeader *header, MonoError *error)
 {
@@ -4158,18 +4178,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->locals [i].indirects = 0;
 		td->locals [i].mt = mt;
 		td->locals [i].def = NULL;
-		if (mt == MINT_TYPE_VT) {
-			size = mono_type_size (type, &align);
-			MonoClass *klass = mono_class_from_mono_type_internal (type);
-			if (m_class_is_simd_type (klass)) // mono_type_size should report the alignment
-				align = MINT_SIMD_ALIGNMENT;
-			else
-				align = MINT_STACK_SLOT_SIZE;
-			g_assert (align <= MINT_STACK_ALIGNMENT);
-		} else {
-			size = MINT_STACK_SLOT_SIZE; // not really
-			align = MINT_STACK_SLOT_SIZE;
-		}
+		size = interp_type_size (type, mt, &align);
 		td->locals [i].size = size;
 		offset = ALIGN_TO (offset, align);
 		td->locals [i].offset = offset;
@@ -4187,12 +4196,8 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 				return;
 			}
 		}
-		MonoClass *klass = mono_class_from_mono_type_internal (header->locals [i]);
-		if (m_class_is_simd_type (klass)) // mono_type_size should report the alignment
-			align = MINT_SIMD_ALIGNMENT;
-		else
-			align = MINT_STACK_SLOT_SIZE;
-		g_assert (align <= MINT_STACK_ALIGNMENT);
+		int mt = mint_type (header->locals [i]);
+		size = interp_type_size (header->locals [i], mt, &align);
 		offset = ALIGN_TO (offset, align);
 		imethod->local_offsets [i] = offset;
 		td->locals [index].type = header->locals [i];
@@ -4201,12 +4206,9 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		td->locals [index].indirects = 0;
 		td->locals [index].mt = mint_type (header->locals [i]);
 		td->locals [index].def = NULL;
-		if (td->locals [index].mt == MINT_TYPE_VT)
-			td->locals [index].size = size;
-		else
-			td->locals [index].size = MINT_STACK_SLOT_SIZE; // not really
+		td->locals [index].size = size;
 		// Every local takes a MINT_STACK_SLOT_SIZE so IL locals have same behavior as execution locals
-		offset += ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+		offset += size;
 	}
 	offset = ALIGN_TO (offset, MINT_STACK_ALIGNMENT);
 
