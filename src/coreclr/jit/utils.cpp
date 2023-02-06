@@ -1348,6 +1348,7 @@ void HelperCallProperties::init()
                 isPure        = true;
                 noThrow       = true;
                 nonNullReturn = true;
+                mutatesHeap   = true;
                 break;
 
             // type casting helpers
