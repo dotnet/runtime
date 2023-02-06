@@ -685,15 +685,30 @@ export function generate_wasm_body (
             }
 
             default:
-                if (opname.startsWith("ret")) {
+                if (
+                    (
+                        (opcode >= MintOpcode.MINT_RET) &&
+                        (opcode <= MintOpcode.MINT_RET_U2)
+                    ) ||
+                    (
+                        (opcode >= MintOpcode.MINT_RET_I4_IMM) &&
+                        (opcode <= MintOpcode.MINT_RET_I8_IMM)
+                    )
+                ) {
                     if ((builder.branchTargets.size > 0) || trapTraceErrors || builder.options.countBailouts)
                         append_bailout(builder, ip, BailoutReason.Return);
                     else
                         ip = abort;
-                } else if (opname.startsWith("ldc")) {
+                } else if (
+                    (opcode >= MintOpcode.MINT_LDC_I4_M1) &&
+                    (opcode <= MintOpcode.MINT_LDC_R8)
+                ) {
                     if (!emit_ldc(builder, ip, opcode))
                         ip = abort;
-                } else if (opname.startsWith("mov")) {
+                } else if (
+                    (opcode >= MintOpcode.MINT_MOV_I4_I1) &&
+                    (opcode <= MintOpcode.MINT_MOV_8_4)
+                ) {
                     if (!emit_mov(builder, ip, opcode))
                         ip = abort;
                 } else if (
@@ -710,20 +725,23 @@ export function generate_wasm_body (
                     if (!emit_relop_branch(builder, ip, opcode))
                         ip = abort;
                 } else if (
-                    opname.startsWith("stfld") ||
-                    opname.startsWith("ldfld")
+                    // instance ldfld/stfld
+                    (opcode >= MintOpcode.MINT_LDFLD_I1) &&
+                    (opcode <= MintOpcode.MINT_STFLD_R8_UNALIGNED)
                 ) {
                     if (!emit_fieldop(builder, frame, ip, opcode))
                         ip = abort;
                 } else if (
-                    opname.startsWith("stsfld") ||
-                    opname.startsWith("ldsfld")
+                    // static ldfld/stfld
+                    (opcode >= MintOpcode.MINT_LDSFLD_I1) &&
+                    (opcode <= MintOpcode.MINT_LDTSFLDA)
                 ) {
                     if (!emit_sfieldop(builder, frame, ip, opcode))
                         ip = abort;
                 } else if (
-                    opname.startsWith("stind") ||
-                    opname.startsWith("ldind")
+                    // indirect load/store
+                    (opcode >= MintOpcode.MINT_LDIND_I1) &&
+                    (opcode <= MintOpcode.MINT_STIND_OFFSET_IMM_I8)
                 ) {
                     if (!emit_indirectop(builder, ip, opcode))
                         ip = abort;
