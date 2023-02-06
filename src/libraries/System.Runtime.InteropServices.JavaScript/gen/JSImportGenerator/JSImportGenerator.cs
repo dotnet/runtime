@@ -121,7 +121,7 @@ namespace Microsoft.Interop.JavaScript
             MethodDeclarationSyntax stubMethod = MethodDeclaration(stub.SignatureContext.StubReturnType, userDeclaredMethod.Identifier)
                 .AddAttributeLists(stub.SignatureContext.AdditionalAttributes.ToArray())
                 .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
-                    Attribute(IdentifierName(Constants.DebuggerStepThroughAttribute))))))
+                    Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))))
                 .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
                 .WithParameterList(ParameterList(SeparatedList(stub.SignatureContext.StubParameters)))
                 .WithBody(stubCode);
