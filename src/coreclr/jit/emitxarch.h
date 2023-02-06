@@ -125,7 +125,7 @@ static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
 
 bool AreUpper32BitsZero(regNumber reg);
-bool AreUpper32BitsSigned(regNumber reg);
+bool AreUpper32BitsFFFF(regNumber reg);
 
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);
 bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* tree);
