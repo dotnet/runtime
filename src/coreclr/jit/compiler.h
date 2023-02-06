@@ -2870,12 +2870,6 @@ public:
     // before they have been set.)
     bool gtComplexityExceeds(GenTree* tree, unsigned limit);
 
-    // Can the test condition be reversed without creating a new node.
-    bool gtCanReverseCondSimple(GenTree* tree)
-    {
-        return (tree->OperIsCompare() || tree->OperIs(GT_JCC, GT_SETCC) || tree->OperIs(GT_JCMP));
-    }
-
     GenTree* gtReverseCond(GenTree* tree);
 
     static bool gtHasRef(GenTree* tree, unsigned lclNum);

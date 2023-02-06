@@ -3454,6 +3454,16 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
         //     tbz <=> tbnz
         tree->gtFlags ^= GTF_JCMP_EQ;
     }
+#if defined(TARGET_ARM64)
+    else if (tree->OperIs(GT_CCMP_EQ))
+    {
+        tree->SetOper(GT_CCMP_NE);
+    }
+    else if (tree->OperIs(GT_CCMP_NE))
+    {
+        tree->SetOper(GT_CCMP_EQ);
+    }
+#endif
     else
     {
         tree = gtNewOperNode(GT_NOT, TYP_INT, tree);
