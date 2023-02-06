@@ -122,6 +122,12 @@ mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip);
 void
 mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);
 
+gpointer
+mono_jiterp_imethod_to_ftnptr (InterpMethod *imethod);
+
+void
+mono_jiterp_enum_hasflag (MonoClass *klass, gint32 *dest, stackval *sp1, stackval *sp2);
+
 #endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
 
 extern WasmDoJitCall jiterpreter_do_jit_call;

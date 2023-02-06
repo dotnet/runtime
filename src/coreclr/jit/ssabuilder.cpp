@@ -1599,6 +1599,8 @@ void SsaBuilder::Build()
 
 void SsaBuilder::SetupBBRoot()
 {
+    assert(m_pCompiler->fgPredsComputed);
+
     // Allocate a bbroot, if necessary.
     // We need a unique block to be the root of the dominator tree.
     // This can be violated if the first block is in a try, or if it is the first block of
@@ -1635,10 +1637,7 @@ void SsaBuilder::SetupBBRoot()
     m_pCompiler->fgInsertBBbefore(m_pCompiler->fgFirstBB, bbRoot);
 
     assert(m_pCompiler->fgFirstBB == bbRoot);
-    if (m_pCompiler->fgComputePredsDone)
-    {
-        m_pCompiler->fgAddRefPred(oldFirst, bbRoot);
-    }
+    m_pCompiler->fgAddRefPred(oldFirst, bbRoot);
 }
 
 #ifdef DEBUG

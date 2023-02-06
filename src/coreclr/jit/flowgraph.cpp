@@ -487,6 +487,7 @@ void Compiler::fgSwitchToOptimized(const char* reason)
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR);
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_OSR);
     opts.jitFlags->Set(JitFlags::JIT_FLAG_BBOPT);
 
@@ -614,14 +615,6 @@ PhaseStatus Compiler::fgImport()
     if (compIsForInlining())
     {
         compInlineResult->SetImportedILSize(info.compILImportSize);
-    }
-
-    // Full preds are only used later on
-    assert(!fgComputePredsDone);
-    if (fgCheapPredsValid)
-    {
-        // Cheap predecessors are only used during importation
-        fgRemovePreds();
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
@@ -1566,7 +1559,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     assert(!fgFuncletsCreated);
 
     // We need to update the bbPreds lists.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
 #if !FEATURE_EH
     // If we don't support EH, we can't add the EH needed by synchronized methods.
@@ -3312,7 +3305,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 //
 void Compiler::fgCreateFuncletPrologBlocks()
 {
-    noway_assert(fgComputePredsDone);
+    noway_assert(fgPredsComputed);
     noway_assert(!fgDomsComputed); // this function doesn't maintain the dom sets
     assert(!fgFuncletsCreated);
 
@@ -3483,6 +3476,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     // Since we may need to create a new transition block
     // we assert that it is OK to create new blocks.
     //
+    assert(fgPredsComputed);
     assert(fgSafeBasicBlockCreation);
     assert(fgFirstColdBlock == nullptr);
 
@@ -3683,8 +3677,6 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                         BasicBlock* transitionBlock = fgNewBBafter(BBJ_ALWAYS, prevToFirstColdBlock, true);
                         transitionBlock->bbJumpDest = firstColdBlock;
                         transitionBlock->inheritWeight(firstColdBlock);
-
-                        noway_assert(fgComputePredsDone);
 
                         // Update the predecessor list for firstColdBlock
                         fgReplacePred(firstColdBlock, prevToFirstColdBlock, transitionBlock);

@@ -91,6 +91,12 @@ namespace Microsoft.Extensions.Hosting
 
                 HostingHostBuilderExtensions.AddDefaultHostConfigurationSources(Configuration, settings.Args);
             }
+            else
+            {
+                // Command line args are added even when DisableDefaults=true. If the caller didn't want settings.Args applied,
+                // they wouldn't have set them on the settings.
+                HostingHostBuilderExtensions.AddCommandLineConfig(Configuration, settings.Args);
+            }
 
             // HostApplicationBuilderSettings override all other config sources.
             List<KeyValuePair<string, string?>>? optionList = null;
