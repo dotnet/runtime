@@ -2324,85 +2324,95 @@ class SuperPMIReplayThroughputDiff:
                 os.remove(overall_md_summary_file)
 
             with open(overall_md_summary_file, "w") as write_fh:
-                if base_jit_compiler_version != diff_jit_compiler_version:
-                    write_fh.write("Warning: Different compilers used for base and diff JITs. Results may be misleading.\n")
-                    write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
-                    write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
-
-                # We write two tables, an overview one with just significantly
-                # impacted collections and a detailed one that includes raw
-                # instruction count and all collections.
-                def is_significant_pct(base, diff):
-                    if base == 0:
-                        return diff != 0
-
-                    return round((diff - base) / base * 100, 2) != 0
-
-                def is_significant(row, base, diff):
-                    return is_significant_pct(int(base[row]["Diff executed instructions"]), int(diff[row]["Diff executed instructions"]))
-                def format_pct(base_instructions, diff_instructions):
-                    plus_if_positive = "+" if diff_instructions > base_instructions else ""
-                    if base_instructions > 0:
-                        pct = (diff_instructions - base_instructions) / base_instructions * 100
-                    else:
-                        pct = 0.0
-
-                    text = "{}{:.2f}%".format(plus_if_positive, pct)
-                    if diff_instructions != base_instructions:
-                        color = "red" if diff_instructions > base_instructions else "green"
-                        return html_color(color, text)
-
-                    return text
-
-                if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in tp_diffs):
-                    def write_pivot_section(row):
-                        if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
-                            return
-
-                        write_fh.write("\n<details>\n")
-                        sum_base = sum(int(base_metrics[row]["Diff executed instructions"]) for (_, base_metrics, _) in tp_diffs)
-                        sum_diff = sum(int(diff_metrics[row]["Diff executed instructions"]) for (_, _, diff_metrics) in tp_diffs)
-
-                        write_fh.write("<summary>{} ({})</summary>\n\n".format(row, format_pct(sum_base, sum_diff)))
-                        write_fh.write("|Collection|PDIFF|\n")
-                        write_fh.write("|---|--:|\n")
-                        for mch_file, base, diff in tp_diffs:
-                            base_instructions = int(base[row]["Diff executed instructions"])
-                            diff_instructions = int(diff[row]["Diff executed instructions"])
-
-                            if is_significant(row, base, diff):
-                                write_fh.write("|{}|{}|\n".format(
-                                    mch_file,
-                                    format_pct(base_instructions, diff_instructions)))
-
-                        write_fh.write("\n\n</details>\n")
-
-                    write_pivot_section("Overall")
-                    write_pivot_section("MinOpts")
-                    write_pivot_section("FullOpts")
-
-                else:
-                    write_fh.write("No significant throughput differences found\n")
-
-                write_fh.write("\n<details>\n")
-                write_fh.write("<summary>Details</summary>\n\n")
-                for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
-                    write_fh.write("{} contexts:\n\n".format(disp))
-                    write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
-                    write_fh.write("|---|--:|--:|--:|\n")
-                    for mch_file, base, diff in tp_diffs:
-                        base_instructions = int(base[row]["Diff executed instructions"])
-                        diff_instructions = int(diff[row]["Diff executed instructions"])
-                        write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
-                            mch_file, base_instructions, diff_instructions,
-                            format_pct(base_instructions, diff_instructions)))
-                    write_fh.write("\n")
-                write_fh.write("\n</details>\n")
-
-            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+                self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_compiler_version, diff_jit_compiler_version)
+                logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
         return True
         ################################################################################################ end of replay_with_throughput_diff()
+
+    def write_tpdiff_markdown_summary(self, write_fh, tp_diffs, base_jit_compiler_version, diff_jit_compiler_version):
+        if base_jit_compiler_version != diff_jit_compiler_version:
+            write_fh.write("Warning: Different compilers used for base and diff JITs. Results may be misleading.\n")
+            write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
+            write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
+
+        # We write two tables, an overview one with just significantly
+        # impacted collections and a detailed one that includes raw
+        # instruction count and all collections.
+        def is_significant_pct(base, diff):
+            if base == 0:
+                return diff != 0
+
+            return round((diff - base) / base * 100, 2) != 0
+
+        def is_significant(row, base, diff):
+            return is_significant_pct(int(base[row]["Diff executed instructions"]), int(diff[row]["Diff executed instructions"]))
+
+        def compute_pct(base_instructions, diff_instructions):
+            if base_instructions > 0:
+                return (diff_instructions - base_instructions) / base_instructions * 100
+            else:
+                return 0.0
+
+        def format_pct(pct):
+            plus_if_positive = "+" if pct > 0 else ""
+
+            text = "{}{:.2f}%".format(plus_if_positive, pct)
+            if pct != 0:
+                color = "red" if pct > 0 else "green"
+                return html_color(color, text)
+
+            return text
+
+        def compute_and_format_pct(base_instructions, diff_instructions):
+            return format_pct(compute_pct(base_instructions, diff_instructions))
+
+        if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in tp_diffs):
+            def write_pivot_section(row):
+                if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
+                    return
+
+                write_fh.write("\n<details>\n")
+                pcts = [compute_pct(int(base_metrics[row]["Diff executed instructions"]), int(diff_metrics[row]["Diff executed instructions"])) for (_, base_metrics, diff_metrics) in tp_diffs]
+                min_pct_str = format_pct(min(pcts))
+                max_pct_str = format_pct(max(pcts))
+                if min_pct_str == max_pct_str:
+                    write_fh.write("<summary>{} ({})</summary>\n\n".format(row, min_pct_str))
+                else:
+                    write_fh.write("<summary>{} ({} to {})</summary>\n\n".format(row, min_pct_str, max_pct_str))
+                write_fh.write("|Collection|PDIFF|\n")
+                write_fh.write("|---|--:|\n")
+                for mch_file, base, diff in tp_diffs:
+                    base_instructions = int(base[row]["Diff executed instructions"])
+                    diff_instructions = int(diff[row]["Diff executed instructions"])
+
+                    if is_significant(row, base, diff):
+                        write_fh.write("|{}|{}|\n".format(
+                            mch_file,
+                            compute_and_format_pct(base_instructions, diff_instructions)))
+
+                write_fh.write("\n\n</details>\n")
+
+            write_pivot_section("Overall")
+            write_pivot_section("MinOpts")
+            write_pivot_section("FullOpts")
+        else:
+            write_fh.write("No significant throughput differences found\n")
+
+        write_fh.write("\n<details>\n")
+        write_fh.write("<summary>Details</summary>\n\n")
+        for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
+            write_fh.write("{} contexts:\n\n".format(disp))
+            write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
+            write_fh.write("|---|--:|--:|--:|\n")
+            for mch_file, base, diff in tp_diffs:
+                base_instructions = int(base[row]["Diff executed instructions"])
+                diff_instructions = int(diff[row]["Diff executed instructions"])
+                write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
+                    mch_file, base_instructions, diff_instructions,
+                    compute_and_format_pct(base_instructions, diff_instructions)))
+            write_fh.write("\n")
+        write_fh.write("\n</details>\n")
 
 ################################################################################
 # Argument handling helpers

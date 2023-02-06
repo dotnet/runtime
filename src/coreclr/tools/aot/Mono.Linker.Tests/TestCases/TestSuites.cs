@@ -45,6 +45,13 @@ namespace Mono.Linker.Tests.TestCases
 			Run(t);
 		}
 
+		[Theory]
+		[MemberData (nameof (TestDatabase.Warnings), MemberType = typeof (TestDatabase))]
+		public void Warnings (string t)
+		{
+			Run (t);
+		}
+
 		protected virtual void Run(string testName)
 		{
 			TestCase testCase = TestDatabase.GetTestCaseFromName(testName) ?? throw new InvalidOperationException($"Unknown test {testName}");

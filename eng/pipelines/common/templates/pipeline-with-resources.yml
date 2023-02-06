@@ -17,7 +17,7 @@ resources:
     - container: linux_arm64
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-arm64
       env:
-        ROOTFS_DIR: /crossrootfs
+        ROOTFS_DIR: /crossrootfs/arm64
 
     - container: linux_musl_x64
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-WithNode

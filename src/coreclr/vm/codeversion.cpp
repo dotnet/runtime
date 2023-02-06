@@ -2102,7 +2102,7 @@ bool CodeVersionManager::IsMethodSupported(PTR_MethodDesc pMethodDesc)
         !pMethodDesc->GetLoaderAllocator()->IsCollectible() &&
 
         // EnC has its own way of versioning
-        !pMethodDesc->IsEnCMethod();
+        !pMethodDesc->InEnCEnabledModule();
 }
 
 //---------------------------------------------------------------------------------------
