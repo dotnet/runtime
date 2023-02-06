@@ -1045,12 +1045,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			// TODO: When OP_STOREP_MEMBASE_IMM works right, replace that entire construct with what is in the #else block here
 			#if TARGET_SIZEOF_VOID_P == 8
+				gintptr p = (gintptr)data_ptr;
+
 				#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (gint)((uint64_t)data_ptr) & 0xffffffff);
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size + 4, (gint)(((uint64_t)data_ptr) >> 32) & 0xffffffff);
+					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (gint)(p & 0xffffffff));
+					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size + 4, (gint)((p >> 32) & 0xffffffff));
 				#else
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size + 4, (gint)((uint64_t)data_ptr) & 0xffffffff);
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (gint)(((uint64_t)data_ptr) >> 32) & 0xffffffff);
+					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size + 4, (gint)(p & 0xffffffff));
+					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (gint)((p >> 32) & 0xffffffff));
 				#endif
 			#else
 				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREP_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (gpointer)data_ptr);
