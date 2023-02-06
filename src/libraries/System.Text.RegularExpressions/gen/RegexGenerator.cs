@@ -78,7 +78,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // If we're unable to generate a full implementation for this regex, report a diagnostic.
                     // We'll still output a limited implementation that just caches a new Regex(...).
-                    if (!SupportsCodeGeneration(methodOrDiagnosticAndCompilationData.Right.LanguageVersion, out string? reason))
+                    if (!SupportsCodeGeneration(regexMethod, methodOrDiagnosticAndCompilationData.Right.LanguageVersion, out string? reason))
                     {
                         return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.MethodSyntax.GetLocation()));
                     }
@@ -271,7 +271,7 @@ namespace System.Text.RegularExpressions.Generator
         // It also provides a human-readable string to explain the reason. It will be emitted by the source generator
         // as a comment into the C# code, hence there's no need to localize.
         /// </remarks>
-        private static bool SupportsCodeGeneration(LanguageVersion languageVersion, [NotNullWhen(false)] out string? reason)
+        private static bool SupportsCodeGeneration(RegexMethod method, LanguageVersion languageVersion, [NotNullWhen(false)] out string? reason)
         {
             if (languageVersion <= LanguageVersion.CSharp10)
             {
