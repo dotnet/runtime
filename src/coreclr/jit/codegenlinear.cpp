@@ -2390,7 +2390,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
     assert((srcSize == 4) || (srcSize == genTypeSize(TYP_I_IMPL)));
     assert((dstSize == 4) || (dstSize == genTypeSize(TYP_I_IMPL)));
 
+#ifdef TARGET_64BIT
+    assert(dstSize == genTypeSize(genActualType(castType)) || ((dstType == TYP_LONG) && (dstSize >= castSize)));
+#else
     assert(dstSize == genTypeSize(genActualType(castType)));
+#endif
 
     if (castSize < 4) // Cast to small int type
     {
