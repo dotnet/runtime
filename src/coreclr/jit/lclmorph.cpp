@@ -1302,8 +1302,6 @@ private:
             DEBUG_DESTROY_NODE(indir);
         }
 #endif // DEBUG
-
-        return;
     }
 
     //------------------------------------------------------------------------
@@ -1362,7 +1360,7 @@ private:
             }
 
 #ifdef TARGET_64BIT
-            if (!isDef && varTypeIsSmall(indir) && varTypeIsIntegral(varDsc) && !varTypeIsLong(varDsc))
+            if (!isDef && varTypeIsSmall(indir) && varTypeIsIntegral(varDsc))
 #else // TARGET_64BIT
             if (!isDef && varTypeIsSmall(indir) && varTypeIsIntegral(varDsc) && !varTypeIsLong(varDsc))
 #endif // !TARGET_64BIT
