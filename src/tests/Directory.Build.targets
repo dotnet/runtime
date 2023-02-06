@@ -658,15 +658,13 @@
     <BuildNativeAotFrameworkObjects Condition="'$(IlcMultiModule)' == 'true'">true</BuildNativeAotFrameworkObjects>
     <DisableFrameworkLibGeneration Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">true</DisableFrameworkLibGeneration>
     <FrameworkLibPath Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(IlcSdkPath)</FrameworkLibPath>
-
-    <!-- Forced by ILLink targets; we should fix the SDK -->
-    <SelfContained>true</SelfContained>
-    <HasRuntimeOutput>false</HasRuntimeOutput>
-    <_UsingDefaultForHasRuntimeOutput>false</_UsingDefaultForHasRuntimeOutput>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <IlcReference Include="$(TargetingPackPath)/*.dll" />
+
+    <!-- xunit calls MakeGenericType to check if something is IEquatable -->
+    <IlcArg Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
   </ItemGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
