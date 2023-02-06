@@ -27,7 +27,8 @@ namespace System.Threading
 
         public static void Exit(object obj)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            if (obj == null)
+                ArgumentNullException.ThrowIfNull(obj);
             if (!ObjectHeader.IsEntered(obj))
                 throw new SynchronizationLockException(SR.Arg_SynchronizationLockException);
             if (ObjectHeader.TryExit(obj))
@@ -130,9 +131,11 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void try_enter_with_atomic_var(object obj, int millisecondsTimeout, bool allowInterruption, ref bool lockTaken);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ReliableEnterTimeout(object obj, int timeout, ref bool lockTaken)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            if (obj == null)
+                ArgumentNullException.ThrowIfNull(obj);
 
             if (timeout < 0 && timeout != (int)Timeout.Infinite)
                 throw new ArgumentOutOfRangeException(nameof(timeout));
