@@ -115,7 +115,7 @@
         DotNetCliRuntime=$(DotNetCliRuntime);
         DotNetCliPackageType=$(DotNetCliPackageType);
         DotNetCliVersion=$(DotNetCliVersion)
-      </_PropertiesToPass>/vi/f5uk6C1iDkQ/mqdefault.jpg
+      </_PropertiesToPass>
     </PropertyGroup>
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
