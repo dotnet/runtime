@@ -303,7 +303,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_Divide:
 			case SN_op_Division: {
 				const char *class_name = m_class_get_name (klass);
-				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name)) {
+				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
 					if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type != MONO_TYPE_GENERICINST)) {
 						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
 						ins->inst_c1 = arg_type;
@@ -329,7 +329,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_Multiply:
 			case SN_op_Multiply: {
 				const char *class_name = m_class_get_name (klass);
-				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name)) {
+				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
 					if (fsig->params [1]->type != MONO_TYPE_GENERICINST) {
 						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
 						ins->inst_c1 = arg_type;
@@ -556,12 +556,12 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	int vector_size = mono_class_value_size (vector_class, NULL);
 	int element_size;
 
-	// FIXME: Support Vector3 and Plane
+	// FIXME: Support Vector3
 
 	const char *class_name = m_class_get_name (vector_class);
 	if (!strcmp ("Vector2", class_name)) {
 		element_size = vector_size / 2;
-	} else if (!strcmp ("Vector4", class_name) || !strcmp ("Quaternion", class_name)) {
+	} else if (!strcmp ("Vector4", class_name) || !strcmp ("Quaternion", class_name) || !strcmp ("Plane", class_name)) {
 		element_size = vector_size / 4;
 	} else {
 		MonoClass *element_class = mono_class_from_mono_type_internal (get_vector_t_elem_type (vector_type));
@@ -1446,7 +1446,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 			elems = size / esize;
 		} else {
-			// This exists to handle the static extension methods for Vector2/3/4 and Quaternion
+			// This exists to handle the static extension methods for Vector2/3/4, Quaternion, and Plane
 			// which live on System.Numerics.Vector
 
 			arg0_type = MONO_TYPE_R4;
@@ -1711,7 +1711,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 			elems = size / esize;
 		} else {
-			// This exists to handle the static extension methods for Vector2/3/4 and Quaternion
+			// This exists to handle the static extension methods for Vector2/3/4, Quaternion, and Plane
 			// which live on System.Numerics.Vector
 
 			arg0_type = MONO_TYPE_R4;
@@ -1874,7 +1874,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	return NULL;
 }
 
-// System.Numerics.Vector2/Vector3/Vector4
+// System.Numerics.Vector2/Vector3/Vector4, Quaternion, and Plane
 static guint16 vector2_methods[] = {
 	SN_ctor,
 	SN_Abs,
@@ -4563,8 +4563,8 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 	}
 
 	if (!strcmp (class_ns, "System.Numerics")) {
-		// FIXME: Support Vector2/Vector3 and Plane
-		if (!strcmp (class_name, "Vector4") || !strcmp (class_name, "Quaternion"))
+		// FIXME: Support Vector2/Vector3
+		if (!strcmp (class_name, "Vector4") || !strcmp (class_name, "Quaternion") || !strcmp (class_name, "Plane"))
 			return emit_vector_2_3_4 (cfg, cmethod, fsig, args);
 	}
 
@@ -4587,8 +4587,8 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 	}
 
 	if (!strcmp (class_ns, "System.Numerics")) {
-		// FIXME: Support Vector2/Vector3 and Plane
-		if (!strcmp (class_name, "Vector4") || !strcmp (class_name, "Quaternion"))
+		// FIXME: Support Vector2/Vector3
+		if (!strcmp (class_name, "Vector4") || !strcmp (class_name, "Quaternion") || !strcmp (class_name, "Plane"))
 			return emit_vector_2_3_4 (cfg, cmethod, fsig, args);
 	}
 	
@@ -4627,8 +4627,8 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 	}
 
 	if (!strcmp (class_ns, "System.Numerics")) {
-		// FIXME: Support Vector2/Vector3 and Plane
-		if (!strcmp (class_name, "Vector4") || !strcmp (class_name, "Quaternion"))
+		// FIXME: Support Vector2/Vector3
+		if (!strcmp (class_name, "Vector4") || !strcmp (class_name, "Quaternion") || !strcmp (class_name, "Plane"))
 			return emit_vector_2_3_4 (cfg, cmethod, fsig, args);
 	}
 
