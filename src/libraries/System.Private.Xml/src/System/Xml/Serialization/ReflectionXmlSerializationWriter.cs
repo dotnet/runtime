@@ -291,6 +291,11 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
+                    if (TryWritePrimitiveValue(primitiveMapping.TypeDesc!, o))
+                    {
+                        return;
+                    }
+
                     if (!WritePrimitiveValue(primitiveMapping.TypeDesc!, o, out stringValue))
                     {
                         Debug.Assert(o is byte[]);
@@ -808,6 +813,10 @@ namespace System.Xml.Serialization
                                 }
                                 else
                                 {
+                                    if (TryWritePrimitiveValue(arrayElementTypeDesc!, ai))
+                                    {
+                                        continue;
+                                    }
                                     if (!WritePrimitiveValue(arrayElementTypeDesc!, ai, out stringValue))
                                     {
                                         Debug.Assert(ai is byte[]);
@@ -983,6 +992,10 @@ namespace System.Xml.Serialization
             }
             else
             {
+                if (TryWritePrimitiveValue(method, name, ns, typeDesc, o, xmlQualifiedName))
+                {
+                    return;
+                }
                 hasValidStringValue = WritePrimitiveValue(typeDesc, o, out stringValue);
             }
 
@@ -1189,6 +1202,131 @@ namespace System.Xml.Serialization
                 _ => o.ToString()!,
             };
             return stringValue;
+        }
+
+        private static bool TryFormatPrimitiveValue(string? formatterName, bool hasCustomFormatter, object? o, Span<char> destination, out int charsWritten)
+        {
+            charsWritten = 0;
+            if (o == null || formatterName == "String")
+            {
+                return false;
+            }
+
+            if (!hasCustomFormatter)
+            {
+                switch (formatterName)
+                {
+                    case "Boolean":
+                        return XmlConvert.TryFormat((bool)o, destination, out charsWritten);
+                    case "Int32":
+                        return XmlConvert.TryFormat((int)o, destination, out charsWritten);
+                    case "Int16":
+                        return XmlConvert.TryFormat((short)o, destination, out charsWritten);
+                    case "Int64":
+                        return XmlConvert.TryFormat((long)o, destination, out charsWritten);
+                    case "Single":
+                        return XmlConvert.TryFormat((float)o, destination, out charsWritten);
+                    case "Double":
+                        return XmlConvert.TryFormat((double)o, destination, out charsWritten);
+                    case "Decimal":
+                        return XmlConvert.TryFormat((decimal)o, destination, out charsWritten);
+                    case "Byte":
+                        return XmlConvert.TryFormat((byte)o, destination, out charsWritten);
+                    case "SByte":
+                        return XmlConvert.TryFormat((sbyte)o, destination, out charsWritten);
+                    case "UInt16":
+                        return XmlConvert.TryFormat((ushort)o, destination, out charsWritten);
+                    case "UInt32":
+                        return XmlConvert.TryFormat((uint)o, destination, out charsWritten);
+                    case "UInt64":
+                        return XmlConvert.TryFormat((ulong)o, destination, out charsWritten);
+                    // Types without direct mapping (ambiguous)
+                    case "Guid":
+                        return XmlConvert.TryFormat((Guid)o, destination, out charsWritten);
+                    case "Char":
+                        return XmlConvert.TryFormat((char)o, destination, out charsWritten);
+                    case "TimeSpan":
+                        return XmlConvert.TryFormat((TimeSpan)o, destination, out charsWritten);
+                    case "DateTimeOffset":
+                        return XmlConvert.TryFormat((DateTimeOffset)o, destination, out charsWritten);
+                    default:
+                        return false;
+                }
+            }
+
+            switch (o)
+            {
+                case DateTime dt when formatterName == "DateTime":
+                    return TryFormatDateTime(dt, destination, out charsWritten);
+                case DateTime d when formatterName == "Date":
+                    return TryFormatDate(d, destination, out charsWritten);
+                case DateTime t when formatterName == "Time":
+                    return TryFormatTime(t, destination, out charsWritten);
+                case DateTime:
+                    throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, "Invalid DateTime"));
+                case char c when formatterName == "Char":
+                    return TryFormatChar(c, destination, out charsWritten);
+                default:
+                    return false;
+            }
+        }
+
+        private bool TryWritePrimitiveValue(WritePrimitiveMethodRequirement method, string name, string? ns, TypeDesc typeDesc, object? o, XmlQualifiedName? xmlQualifiedName)
+        {
+            if (typeDesc == ReflectionXmlSerializationReader.StringTypeDesc
+                || hasRequirement(method, WritePrimitiveMethodRequirement.WriteNullableStringLiteral)) return false;
+
+            char[] buffer = RentPrimitivesBuffer();
+            bool result = TryFormatPrimitiveValue(typeDesc.FormatterName, typeDesc.HasCustomFormatter, o, buffer, out int charsWritten);
+            if (result)
+            {
+                if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteElementString))
+                {
+                    WriteElementRaw(name, ns, buffer, 0, charsWritten, xmlQualifiedName);
+                }
+                else if (hasRequirement(method, WritePrimitiveMethodRequirement.WriteAttribute))
+                {
+                    WriteAttribute(name, ns, buffer, 0, charsWritten);
+                }
+                else
+                {
+                    Debug.Fail("https://github.com/dotnet/runtime/issues/18037: Add More Tests for Serialization Code");
+                }
+            }
+
+            ReturnPrimitivesBuffer(buffer);
+            return result;
+        }
+
+        private bool TryWritePrimitiveValue(TypeDesc typeDesc, object? o)
+        {
+            if (typeDesc == ReflectionXmlSerializationReader.StringTypeDesc) return false;
+
+            char[] buffer = RentPrimitivesBuffer();
+            bool result = TryFormatPrimitiveValue(typeDesc.FormatterName, typeDesc.HasCustomFormatter, o, buffer, out int charsWritten);
+            if (result)
+                WriteValue(buffer, 0, charsWritten);
+
+            ReturnPrimitivesBuffer(buffer);
+            return result;
+        }
+
+        private static bool TryFormatTime(DateTime value, Span<char> destination, out int charsWritten)
+        {
+            if (!LocalAppContextSwitches.IgnoreKindInUtcTimeSerialization && value.Kind == DateTimeKind.Utc)
+                return XmlConvert.TryFormat(DateTime.MinValue + value.TimeOfDay, "HH:mm:ss.fffffffZ", destination, out charsWritten);
+
+            return XmlConvert.TryFormat(DateTime.MinValue + value.TimeOfDay, "HH:mm:ss.fffffffzzzzzz", destination, out charsWritten);
+        }
+
+        private static bool TryFormatDate(DateTime value, Span<char> destination, out int charsWritten)
+        {
+            return XmlConvert.TryFormat(value, "yyyy-MM-dd", destination, out charsWritten);
+        }
+
+        private static bool TryFormatChar(char value, Span<char> destination, out int charsWritten)
+        {
+            return XmlConvert.TryFormat((ushort)value, destination, out charsWritten);
         }
 
         [RequiresUnreferencedCode("calls WritePotentiallyReferencingElement")]

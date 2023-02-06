@@ -627,6 +627,7 @@ namespace System.Xml.Serialization
         protected void WriteAttribute(string localName, string? value) { }
         protected void WriteAttribute(string localName, string ns, byte[]? value) { }
         protected void WriteAttribute(string localName, string? ns, string? value) { }
+        protected void WriteAttribute(string localName, string? ns, char[] value, int index, int count) { }
         protected void WriteAttribute(string? prefix, string localName, string? ns, string? value) { }
         protected void WriteElementEncoded(System.Xml.XmlNode? node, string name, string? ns, bool isNullable, bool any) { }
         protected void WriteElementLiteral(System.Xml.XmlNode? node, string name, string? ns, bool isNullable, bool any) { }
@@ -690,9 +691,13 @@ namespace System.Xml.Serialization
         protected void WriteTypedPrimitive(string? name, string? ns, object o, bool xsiType) { }
         protected void WriteValue(byte[]? value) { }
         protected void WriteValue(string? value) { }
+        protected void WriteValue(char[] value, int index, int count) { }
         protected void WriteXmlAttribute(System.Xml.XmlNode node) { }
         protected void WriteXmlAttribute(System.Xml.XmlNode node, object? container) { }
         protected void WriteXsiType(string name, string? ns) { }
+        protected void WriteElementRaw(string localName, string? ns, char[] value, int index, int count, System.Xml.XmlQualifiedName? xsiType) { }
+        protected char[] RentPrimitivesBuffer() { throw null; }
+        protected void ReturnPrimitivesBuffer(char[] buffer) { }
     }
     public partial class XmlSerializer
     {

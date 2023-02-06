@@ -40,6 +40,7 @@ namespace System.Xml.Serialization
 
         //char buffer for serializing primitive values
         private char[]? _primitivesBuffer;
+        private const int PrimitivesBufferSize = 64;
 
         // this method must be called before any generated serialization methods are called
         internal void Init(XmlWriter w, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? idBase)
@@ -251,6 +252,10 @@ namespace System.Xml.Serialization
             return new XmlQualifiedName(typeName, typeNs);
         }
 
+        protected char[] RentPrimitivesBuffer() => Interlocked.Exchange(ref _primitivesBuffer, null) ?? new char[PrimitivesBufferSize];
+
+        protected void ReturnPrimitivesBuffer(char[] buffer) => Interlocked.Exchange(ref _primitivesBuffer, buffer);
+
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected void WriteTypedPrimitive(string? name, string? ns, object o, bool xsiType)
         {
@@ -264,7 +269,7 @@ namespace System.Xml.Serialization
             bool? tryFormatResult = null;
             int charsWritten = -1;
 
-            char[] buffer = Interlocked.Exchange(ref _primitivesBuffer, null) ?? new char[128];
+            char[] buffer = RentPrimitivesBuffer();
             switch (Type.GetTypeCode(t))
             {
                 case TypeCode.String:
@@ -382,12 +387,12 @@ namespace System.Xml.Serialization
                             xmlNodes[i].WriteTo(_w);
                         }
                         _w.WriteEndElement();
-                        Interlocked.Exchange(ref _primitivesBuffer, buffer);
+                        ReturnPrimitivesBuffer(buffer);
                         return;
                     }
                     else
                     {
-                        Interlocked.Exchange(ref _primitivesBuffer, buffer);
+                        ReturnPrimitivesBuffer(buffer);
                         throw CreateUnknownTypeException(t);
                     }
 
@@ -432,7 +437,7 @@ namespace System.Xml.Serialization
             }
 
             _w.WriteEndElement();
-            Interlocked.Exchange(ref _primitivesBuffer, buffer);
+            ReturnPrimitivesBuffer(buffer);
         }
 
         private string GetQualifiedName(string name, string? ns)
@@ -1011,6 +1016,40 @@ namespace System.Xml.Serialization
             }
         }
 
+        protected void WriteAttribute(string localName, string? ns, char[] value, int index, int count)
+        {
+            if (localName != "xmlns" && !localName.StartsWith("xmlns:", StringComparison.Ordinal))
+            {
+                int colon = localName.IndexOf(':');
+
+                if (colon < 0)
+                {
+                    if (ns == XmlReservedNs.NsXml)
+                    {
+                        string? prefix = _w.LookupPrefix(ns);
+
+                        if (prefix == null || prefix.Length == 0)
+                        {
+                            prefix = "xml";
+                        }
+                        _w.WriteStartAttribute(prefix, localName, ns);
+                    }
+                    else
+                    {
+                        _w.WriteStartAttribute(null, localName, ns);
+                    }
+                }
+                else
+                {
+                    string prefix = localName.Substring(0, colon);
+                    _w.WriteStartAttribute(prefix, localName.Substring(colon + 1), ns);
+                }
+            }
+
+            _w.WriteRaw(value, index, count);
+            _w.WriteEndAttribute();
+        }
+
         protected void WriteAttribute(string localName, string? value)
         {
             if (value == null) return;
@@ -1042,6 +1081,11 @@ namespace System.Xml.Serialization
         {
             if (value == null) return;
             XmlCustomFormatter.WriteArrayBase64(_w, value, 0, value.Length);
+        }
+
+        protected void WriteValue(char[] value, int index, int count)
+        {
+            _w.WriteRaw(value, index, count);
         }
 
         protected void WriteStartDocument()
@@ -1460,6 +1504,15 @@ namespace System.Xml.Serialization
             }
 
             _namespaces = null;
+        }
+
+        protected void WriteElementRaw(string localName, string? ns, char[] value, int index, int count, XmlQualifiedName? xsiType)
+        {
+            _w.WriteStartElement(localName, ns);
+            if (xsiType != null)
+                WriteXsiType(xsiType.Name, xsiType.Namespace);
+            _w.WriteRaw(value, index, count);
+            _w.WriteEndElement();
         }
 
         private string NextPrefix()
