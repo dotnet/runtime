@@ -72,9 +72,11 @@ namespace Microsoft.Extensions.Logging.Generators
                 var eventNames = new HashSet<string>();
 
                 // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
-                foreach (var group in classes.GroupBy(x => x.SyntaxTree))
+                foreach (IGrouping<SyntaxTree, ClassDeclarationSyntax> group in classes.GroupBy(x => x.SyntaxTree))
                 {
-                    SemanticModel? sm = null;
+                    SyntaxTree syntaxTree = group.Key;
+                    SemanticModel sm = _compilation.GetSemanticModel(syntaxTree);
+
                     foreach (ClassDeclarationSyntax classDec in group)
                     {
                         // stop if we're asked to
@@ -98,7 +100,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                 continue;
                             }
 
-                            sm ??= _compilation.GetSemanticModel(classDec.SyntaxTree);
                             IMethodSymbol logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken)!;
                             Debug.Assert(logMethodSymbol != null, "log method is present.");
                             (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = (-1, null, string.Empty, null, false);
