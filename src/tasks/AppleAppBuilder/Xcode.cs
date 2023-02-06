@@ -271,27 +271,13 @@ internal sealed class Xcode
         string appResources = string.Join(Environment.NewLine, asmDataFiles.Select(r => "    " + r));
         appResources += string.Join(Environment.NewLine, resources.Where(r => !r.EndsWith("-llvm.o")).Select(r => "    " + Path.GetRelativePath(binDir, r)));
 
-        string cmakeLists;
-        if (useNativeAOTRuntime)
-        {
-            cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
-            .Replace("%ProjectName%", projectName)
-            .Replace("%AppResources%", appResources)
-            .Replace("%MainSource%", nativeMainSource)
-            .Replace("runtime.h", string.Empty)
-            .Replace("runtime.m", string.Empty)
-            .Replace("include_directories(\"%MonoInclude%\")", string.Empty)
-            .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
-        }
-        else
-        {
-            cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
+        string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
+            .Replace("%UseNativeAOTRuntime%", useNativeAOTRuntime ? "TRUE" : "FALSE")
             .Replace("%ProjectName%", projectName)
             .Replace("%AppResources%", appResources)
             .Replace("%MainSource%", nativeMainSource)
             .Replace("%MonoInclude%", monoInclude)
             .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
-        }
 
         string toLink = "";
 
