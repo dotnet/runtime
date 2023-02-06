@@ -152,10 +152,11 @@ internal sealed class Xcode
         bool enableRuntimeLogging,
         bool enableAppSandbox,
         string? diagnosticPorts,
-        string? runtimeComponents=null,
-        string? nativeMainSource = null)
+        string? runtimeComponents = null,
+        string? nativeMainSource = null,
+        bool useNativeAOTRuntime = false)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, useNativeAOTRuntime);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -210,8 +211,9 @@ internal sealed class Xcode
         bool enableRuntimeLogging,
         bool enableAppSandbox,
         string? diagnosticPorts,
-        string? runtimeComponents=null,
-        string? nativeMainSource = null)
+        string? runtimeComponents = null,
+        string? nativeMainSource = null,
+        bool useNativeAOTRuntime = false)
     {
         // bundle everything as resources excluding native files
         var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib" };
@@ -269,12 +271,27 @@ internal sealed class Xcode
         string appResources = string.Join(Environment.NewLine, asmDataFiles.Select(r => "    " + r));
         appResources += string.Join(Environment.NewLine, resources.Where(r => !r.EndsWith("-llvm.o")).Select(r => "    " + Path.GetRelativePath(binDir, r)));
 
-        string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
+        string cmakeLists;
+        if (useNativeAOTRuntime)
+        {
+            cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
+            .Replace("%ProjectName%", projectName)
+            .Replace("%AppResources%", appResources)
+            .Replace("%MainSource%", nativeMainSource)
+            .Replace("runtime.h", string.Empty)
+            .Replace("runtime.m", string.Empty)
+            .Replace("include_directories(\"%MonoInclude%\")", string.Empty)
+            .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
+        }
+        else
+        {
+            cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")
             .Replace("%ProjectName%", projectName)
             .Replace("%AppResources%", appResources)
             .Replace("%MainSource%", nativeMainSource)
             .Replace("%MonoInclude%", monoInclude)
             .Replace("%HardenedRuntime%", hardenedRuntime ? "TRUE" : "FALSE");
+        }
 
         string toLink = "";
 
@@ -332,7 +349,12 @@ internal sealed class Xcode
             // libmono must always be statically linked, for other librarires we can use dylibs
             bool dylibExists = libName != "libmonosgen-2.0" && dylibs.Any(dylib => Path.GetFileName(dylib) == libName + ".dylib");
 
-            if (forceAOT || !(preferDylibs && dylibExists))
+            if (useNativeAOTRuntime)
+            {
+                // link NativeAOT framework libs without '-force_load'
+                toLink += $"    {lib}{Environment.NewLine}";
+            }
+            else if (forceAOT || !(preferDylibs && dylibExists))
             {
                 // these libraries are pinvoked
                 // -force_load will be removed once we enable direct-pinvokes for AOT
@@ -394,6 +416,11 @@ internal sealed class Xcode
             defines.AppendLine($"\nadd_definitions(-DDIAGNOSTIC_PORTS=\"{diagnosticPorts}\")");
         }
 
+        if (useNativeAOTRuntime)
+        {
+            defines.AppendLine("add_definitions(-DUSE_NATIVE_AOT=1)");
+        }
+
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
 
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
@@ -417,28 +444,31 @@ internal sealed class Xcode
             File.WriteAllText(Path.Combine(binDir, "app.entitlements"), entitlementsTemplate.Replace("%Entitlements%", ent.ToString()));
         }
 
-        File.WriteAllText(Path.Combine(binDir, "runtime.h"),
-            Utils.GetEmbeddedResource("runtime.h"));
-
-        // forward pinvokes to "__Internal"
-        var dllMap = new StringBuilder();
-        foreach (string aFile in Directory.GetFiles(workspace, "*.a"))
+        if (!useNativeAOTRuntime)
         {
-            string aFileName = Path.GetFileNameWithoutExtension(aFile);
-            dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+            File.WriteAllText(Path.Combine(binDir, "runtime.h"),
+                Utils.GetEmbeddedResource("runtime.h"));
 
-            // also register with or without "lib" prefix
-            aFileName = aFileName.StartsWith("lib") ? aFileName.Remove(0, 3) : "lib" + aFileName;
-            dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+            // forward pinvokes to "__Internal"
+            var dllMap = new StringBuilder();
+            foreach (string aFile in Directory.GetFiles(workspace, "*.a"))
+            {
+                string aFileName = Path.GetFileNameWithoutExtension(aFile);
+                dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+
+                // also register with or without "lib" prefix
+                aFileName = aFileName.StartsWith("lib") ? aFileName.Remove(0, 3) : "lib" + aFileName;
+                dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"{aFileName}\", NULL, \"__Internal\", NULL);");
+            }
+
+            dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"System.Globalization.Native\", NULL, \"__Internal\", NULL);");
+
+            File.WriteAllText(Path.Combine(binDir, "runtime.m"),
+                Utils.GetEmbeddedResource("runtime.m")
+                    .Replace("//%DllMap%", dllMap.ToString())
+                    .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
+                    .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
         }
-
-        dllMap.AppendLine($"    mono_dllmap_insert (NULL, \"System.Globalization.Native\", NULL, \"__Internal\", NULL);");
-
-        File.WriteAllText(Path.Combine(binDir, "runtime.m"),
-            Utils.GetEmbeddedResource("runtime.m")
-                .Replace("//%DllMap%", dllMap.ToString())
-                .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
-                .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
 
         return binDir;
     }

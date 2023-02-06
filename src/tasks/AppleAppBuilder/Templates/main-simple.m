@@ -2,7 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #import <UIKit/UIKit.h>
+#if !USE_NATIVE_AOT
 #import "runtime.h"
+#else
+extern void* NativeAOT_StaticInitialization();
+extern void managed_entry_point();
+#endif
 
 @interface ViewController : UIViewController
 @end
@@ -46,7 +51,15 @@ void (*clickHandlerPtr)(void);
     [self.view addSubview:button];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+#if !USE_NATIVE_AOT
         mono_ios_runtime_init ();
+#else
+#if INVARIANT_GLOBALIZATION
+        setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
+#endif
+        NativeAOT_StaticInitialization();
+        managed_entry_point();
+#endif
     });
 }
 -(void) buttonClicked:(UIButton*)sender
