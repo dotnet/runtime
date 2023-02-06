@@ -68,6 +68,9 @@
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM Exception Handling feature.
       - $(WasmEnableSIMD)                   - Enable support for the WASM SIMD feature.
       - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to .webcil
+      - $(WasmAllowUndefinedSymbols)        - Controls whether undefined symbols are allowed or not,
+                                              if true, appends 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=0' as arguments for wasm-ld,
+                                              if false (default), removes 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=1'.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).

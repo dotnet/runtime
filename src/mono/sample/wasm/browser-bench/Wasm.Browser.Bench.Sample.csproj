@@ -8,7 +8,6 @@
     <EnableAggressiveTrimming Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</PublishTrimmed>
     <RunAOTCompilation Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</RunAOTCompilation>
-    <TrimMode>partial</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,4 +21,9 @@
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\libraries\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer" />
+  </ItemGroup>
 </Project>
