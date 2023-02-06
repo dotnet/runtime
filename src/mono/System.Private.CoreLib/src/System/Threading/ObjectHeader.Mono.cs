@@ -69,8 +69,13 @@ internal static class ObjectHeader
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryDecrementNest(ref MonoThreadsSync mon)
         {
-            if (mon.nest == 0)
+            Debug.Assert (mon.nest > 0);
+            if (mon.nest == 1)
+            {
+                // leave mon.nest == 1, the caller will set mon.owner to 0 to indicate the monitor
+                // is unlocked.  nest will start from 1 for the next time it is entered.
                 return false;
+            }
             mon.nest--;
             return true;
         }
