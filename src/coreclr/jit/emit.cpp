@@ -25,6 +25,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define RBM_ALLFLOAT_USE (emitComp->rbmAllFloat)
 #define RBM_FLT_CALLEE_TRASH_USE (emitComp->rbmFltCalleeTrash)
 #define CNT_CALLEE_TRASH_FLOAT_USE (emitComp->cntCalleeTrashFloat)
+#define ACTUAL_REG_COUNT (emitComp->actualRegCount)
 #endif
 
 /*****************************************************************************

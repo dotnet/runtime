@@ -3330,12 +3330,17 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmAllFloat         = RBM_ALLFLOAT_INIT;
     rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
     cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
+    actualRegCount      = ACTUAL_REG_COUNT;
 
     if (DoJitStressEvexEncoding())
     {
         rbmAllFloat |= RBM_HIGHFLOAT;
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
+    }
+    else
+    {
+        actualRegCount -= CNT_HIGHFLOAT;
     }
 #endif // TARGET_AMD64
 }

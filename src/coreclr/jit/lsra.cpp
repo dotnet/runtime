@@ -106,6 +106,7 @@ const char* LinearScan::resolveTypeName[] = {"Split", "Join", "Critical", "Share
 #define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
 #define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
 #define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
+#define ACTUAL_REG_COUNT (compiler->actualRegCount)
 #endif
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

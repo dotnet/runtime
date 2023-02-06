@@ -10651,6 +10651,7 @@ public:
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
     unsigned  cntCalleeTrashFloat;
+    unsigned  actualRegCount;
 #endif // TARGET_AMD64
 
 }; // end of class Compiler
