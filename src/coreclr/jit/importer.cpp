@@ -1889,10 +1889,13 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     // Call the helper
     // - Setup argNode with the pointer to the signature returned by the lookup
-    GenTree*     argNode =
-        gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-    GenTreeCall* helperCall      = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
-    GenTree*     handleForResult = fgInsertCommaFormTemp(&handleForNullCheck);
+    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
+    GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
+
+    // handleForNullCheck is used for both nullcheck and as a return value. The tree is a bit verbose so we'd better
+    // save it to a local to make IR smaller. Although, the local leads to undesired size regression in MinOpts
+    GenTree* handleForResult =
+        opts.OptimizationEnabled() ? fgInsertCommaFormTemp(&handleForNullCheck) : gtCloneExpr(handleForNullCheck);
 
     // Check for null and possibly call helper
     GenTree* nullCheck = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
