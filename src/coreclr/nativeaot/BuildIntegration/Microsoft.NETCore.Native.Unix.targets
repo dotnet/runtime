@@ -21,6 +21,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <CppLibCreator>ar</CppLibCreator>
     <DsymUtilOptions Condition="'$(TargetOS)' == 'osx'">--flat</DsymUtilOptions>
     <_SymbolPrefix Condition="'$(TargetOS)' == 'osx'">_</_SymbolPrefix>
+    <UseLLVMLinker Condition="'$(UseLLVMLinker)' == '' and '$(TargetOS)' == 'freebsd'">true</UseLLVMLinker>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
