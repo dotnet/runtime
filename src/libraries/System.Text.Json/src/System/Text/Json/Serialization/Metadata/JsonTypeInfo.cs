@@ -662,8 +662,12 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     Debug.Assert(property.IsConfigured);
 
-                    if (property.IsIgnored)
+                    if (!property.IsPropertyTypeInfoConfigured)
+                    {
+                        // Either an ignored property or property is part of a cycle.
+                        // In both cases we can ignore these instances.
                         continue;
+                    }
 
                     if (!property.JsonTypeInfo.IsCompatibleWithCurrentOptions)
                     {

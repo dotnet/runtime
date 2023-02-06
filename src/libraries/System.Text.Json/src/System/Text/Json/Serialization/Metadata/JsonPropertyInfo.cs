@@ -18,7 +18,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal static readonly JsonPropertyInfo s_missingProperty = GetPropertyPlaceholder();
 
         internal JsonTypeInfo? ParentTypeInfo { get; private set; }
-        private JsonTypeInfo? _jsonTypeInfo;
 
         /// <summary>
         /// Converter after applying CustomConverter (i.e. JsonConverterAttribute)
@@ -802,6 +801,15 @@ namespace System.Text.Json.Serialization.Metadata
                 _jsonTypeInfo = value;
             }
         }
+
+        private JsonTypeInfo? _jsonTypeInfo;
+
+        /// <summary>
+        /// Returns true if <see cref="JsonTypeInfo"/> has been configured.
+        /// This might be false even if <see cref="IsConfigured"/> is true
+        /// in cases of recursive types or <see cref="IsIgnored"/> is true.
+        /// </summary>
+        internal bool IsPropertyTypeInfoConfigured => _jsonTypeInfo?.IsConfigured == true;
 
         /// <summary>
         /// Property was marked JsonIgnoreCondition.Always and also hasn't been configured by the user.
