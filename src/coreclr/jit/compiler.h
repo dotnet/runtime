@@ -121,8 +121,8 @@ void* operator new[](size_t n, Compiler* context, CompMemKind cmk);
 
 /*****************************************************************************/
 
-unsigned genLog2(unsigned value);
-unsigned genLog2(unsigned __int64 value);
+uint32_t genLog2(uint32_t value);
+uint32_t genLog2(uint64_t value);
 
 unsigned ReinterpretHexAsDecimal(unsigned in);
 

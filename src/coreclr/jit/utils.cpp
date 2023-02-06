@@ -2716,7 +2716,7 @@ uint32_t BitOperations::Log2(uint32_t value)
 {
     // The 0->0 contract is fulfilled by setting the LSB to 1.
     // Log(1) is 0, and setting the LSB for values > 1 does not change the log2 result.
-    return 31 ^ BitOperations::LeadingZeroCount(value | 1);
+    return BitOperations::BitScanReverse(value | 1);
 }
 
 //------------------------------------------------------------------------
@@ -2732,7 +2732,7 @@ uint32_t BitOperations::Log2(uint64_t value)
 {
     // The 0->0 contract is fulfilled by setting the LSB to 1.
     // Log(1) is 0, and setting the LSB for values > 1 does not change the log2 result.
-    return 63 ^ BitOperations::LeadingZeroCount(value | 1);
+    return BitOperations::BitScanReverse(value | 1);
 }
 
 //------------------------------------------------------------------------

@@ -91,12 +91,23 @@ inline RoundLevel getRoundFloatLevel()
  *  Return the lowest bit that is set
  */
 
-template <typename T>
-inline T genFindLowestBit(T value)
+inline uint32_t genFindLowestBit(uint32_t value)
 {
     return (value & (0 - value));
 }
 
+inline uint64_t genFindLowestBit(uint64_t value)
+{
+    return (value & (0 - value));
+}
+
+#ifdef __APPLE__
+inline size_t genFindLowestBit(size_t value)
+{
+    return (value & (0 - value));
+}
+#endif // __APPLE__
+
 //------------------------------------------------------------------------
 // genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
 //                     highest bit).
@@ -107,16 +118,10 @@ inline T genFindLowestBit(T value)
 // Note:
 //    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
 //    but the highest bit.
-inline unsigned int genFindHighestBit(unsigned int mask)
+inline uint32_t genFindHighestBit(uint32_t mask)
 {
     assert(mask != 0);
-#if defined(_MSC_VER)
-    unsigned long index;
-#else
-    unsigned int index;
-#endif
-    BitScanReverse(&index, mask);
-    return 1L << index;
+    return static_cast<uint32_t>(1) << BitOperations::BitScanReverse(mask);
 }
 
 //------------------------------------------------------------------------
@@ -129,82 +134,54 @@ inline unsigned int genFindHighestBit(unsigned int mask)
 // Note:
 //    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
 //    but the highest bit.
-inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
+inline uint64_t genFindHighestBit(uint64_t mask)
 {
     assert(mask != 0);
-#if defined(_MSC_VER)
-    unsigned long index;
-#else
-    unsigned int index;
-#endif
-    BitScanReverse64(&index, mask);
-    return 1LL << index;
+    return static_cast<uint64_t>(1) << BitOperations::BitScanReverse(mask);
 }
 
 /*****************************************************************************
 *
-*  Return true if the given 64-bit value has exactly zero or one bits set.
+*  Return true if the given value has exactly zero or one bits set.
 */
 
-template <typename T>
-inline bool genMaxOneBit(T value)
+inline bool genMaxOneBit(uint32_t value)
+{
+    return (value & (value - 1)) == 0;
+}
+
+inline bool genMaxOneBit(uint64_t value)
 {
     return (value & (value - 1)) == 0;
 }
 
 /*****************************************************************************
 *
-*  Return true if the given 32-bit value has exactly zero or one bits set.
+*  Return true if the given value has exactly one bit set.
 */
 
-inline bool genMaxOneBit(unsigned value)
+inline bool genExactlyOneBit(uint32_t value)
 {
-    return (value & (value - 1)) == 0;
+    return genMaxOneBit(value) && (value != 0);
 }
 
-/*****************************************************************************
-*
-*  Return true if the given 64-bit value has exactly one bit set.
-*/
-
-template <typename T>
-inline bool genExactlyOneBit(T value)
+inline bool genExactlyOneBit(uint64_t value)
 {
-    return ((value != 0) && genMaxOneBit(value));
-}
-
-/*****************************************************************************
-*
-*  Return true if the given 32-bit value has exactly zero or one bits set.
-*/
-
-inline bool genExactlyOneBit(unsigned value)
-{
-    return ((value != 0) && genMaxOneBit(value));
-}
-
-/*****************************************************************************
- *
- *  Given a value that has exactly one bit set, return the position of that
- *  bit, in other words return the logarithm in base 2 of the given value.
- */
-inline unsigned genLog2(unsigned value)
-{
-    return BitPosition(value);
+    return genMaxOneBit(value) && (value != 0);
 }
 
 // Given an unsigned 64-bit value, returns the lower 32-bits in unsigned format
 //
-inline unsigned ulo32(unsigned __int64 value)
+inline uint32_t ulo32(uint64_t value)
 {
-    return static_cast<unsigned>(value);
+    return static_cast<uint32_t>(value);
 }
 
 // Given an unsigned 64-bit value, returns the upper 32-bits in unsigned format
 //
-inline unsigned uhi32(unsigned __int64 value)
+inline uint32_t uhi32(uint64_t value)
 {
-    return static_cast<unsigned>(value >> 32);
+    return static_cast<uint32_t>(value >> 32);
 }
 
 /*****************************************************************************
@@ -213,30 +190,25 @@ inline unsigned uhi32(unsigned __int64 value)
  *  bit, in other words return the logarithm in base 2 of the given value.
  */
 
-inline unsigned genLog2(unsigned __int64 value)
+inline uint32_t genLog2(uint32_t value)
 {
-#ifdef HOST_64BIT
-    return BitPosition(value);
-#else // HOST_32BIT
-    unsigned     lo32 = ulo32(value);
-    unsigned     hi32 = uhi32(value);
+    // This isn't a true log2 but rather a "log2 for pow2"
+    assert(genExactlyOneBit(value));
+    return BitOperations::BitScanForward(value);
+}
 
-    if (lo32 != 0)
-    {
-        assert(hi32 == 0);
-        return genLog2(lo32);
-    }
-    else
-    {
-        return genLog2(hi32) + 32;
-    }
-#endif
+inline uint32_t genLog2(uint64_t value)
+{
+    // This isn't a true log2 but rather a "log2 for pow2"
+    assert(genExactlyOneBit(value));
+    return BitOperations::BitScanForward(value);
 }
 
 #ifdef __APPLE__
-inline unsigned genLog2(size_t value)
+inline uint32_t genLog2(size_t value)
 {
-    return genLog2((unsigned __int64)value);
+    // This isn't a true log2 but rather a "log2 for pow2"
+    return genLog2(static_cast<uint64_t>(value));
 }
 #endif // __APPLE__
 
@@ -255,18 +227,24 @@ inline regMaskTP genFindLowestReg(regMaskTP value)
  *  A rather simple routine that counts the number of bits in a given number.
  */
 
-template <typename T>
-inline unsigned genCountBits(T bits)
+inline uint32_t genCountBits(int32_t bits)
 {
-    unsigned cnt = 0;
+    return BitOperations::PopCount(static_cast<uint32_t>(bits));
+}
 
-    while (bits)
-    {
-        cnt++;
-        bits -= genFindLowestBit(bits);
-    }
+inline uint32_t genCountBits(int64_t bits)
+{
+    return BitOperations::PopCount(static_cast<uint64_t>(bits));
+}
 
-    return cnt;
+inline uint32_t genCountBits(uint32_t bits)
+{
+    return BitOperations::PopCount(bits);
+}
+
+inline uint32_t genCountBits(uint64_t bits)
+{
+    return BitOperations::PopCount(bits);
 }
 
 /*****************************************************************************
