@@ -64,6 +64,11 @@ public class AppleAppBuilderTask : Task
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
+    /// List of pathes to native libraries that will make up the framework project for the app
+    /// </summary>
+    public ITaskItem[] FrameworkLibraries { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// Additional linker arguments that apply to the app being built
     /// </summary>
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
@@ -227,6 +232,12 @@ public class AppleAppBuilderTask : Task
             }
         }
 
+        List<string> frameworkLibraries = new List<string>();
+        foreach (ITaskItem libItem in FrameworkLibraries)
+        {
+            frameworkLibraries.Add(libItem.ItemSpec);
+        }
+
         if (((!ForceInterpreter && (isDevice || ForceAOT)) && !assemblerFiles.Any()))
         {
             throw new InvalidOperationException("Need list of AOT files for device builds.");
@@ -262,7 +273,7 @@ public class AppleAppBuilderTask : Task
 
         if (GenerateXcodeProject)
         {
-            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs,
+            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, frameworkLibraries, extraLinkerArgs,
                 AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource);
 
             if (BuildAppBundle)
@@ -274,13 +285,16 @@ public class AppleAppBuilderTask : Task
                 }
                 else
                 {
-                    AppBundlePath = generator.BuildAppBundle(XcodeProjectPath, Optimized, DevTeamProvisioning);
+                    string appDir = generator.BuildAppBundle(XcodeProjectPath, Optimized, DevTeamProvisioning);
+                    AppBundlePath = Xcode.GetAppPath(appDir, XcodeProjectPath);
+
+                    generator.LogAppSize(AppBundlePath);
                 }
             }
         }
         else if (GenerateCMakeProject)
         {
-             generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs,
+             generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, frameworkLibraries, extraLinkerArgs,
                 AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource);
         }
 

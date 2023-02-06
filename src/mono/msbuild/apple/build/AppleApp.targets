@@ -227,7 +227,7 @@ _monovm_runtimeconfig_initialize
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
     <ItemGroup Condition="'$(NativeLibrary)' != ''">
-      <_ExtraAppLinkerArgs Include="$(LibraryOutputPath)" />
+      <_FrameworkLibraries Include="$(LibraryOutputPath)" />
     </ItemGroup>
 
     <AppleAppBuilderTask
@@ -241,6 +241,7 @@ _monovm_runtimeconfig_initialize
       ExtraLinkerArguments="@(_ExtraAppLinkerArgs)"
       ForceAOT="$(RunAOTCompilation)"
       ForceInterpreter="$(MonoForceInterpreter)"
+      FrameworkLibraries="@(_FrameworkLibraries)"
       GenerateCMakeProject="$(GenerateCMakeProject)"
       GenerateXcodeProject="$(GenerateXcodeProject)"
       InvariantGlobalization="$(InvariantGlobalization)"

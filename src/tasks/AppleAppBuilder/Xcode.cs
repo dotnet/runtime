@@ -105,7 +105,14 @@ public class XcodeBuildApp : Task
 
     public override bool Execute()
     {
-        new Xcode(Log, TargetOS, Arch).BuildAppBundle(XcodeProjectPath, Optimized, DevTeamProvisioning, DestinationFolder);
+        Xcode project = new Xcode(Log, TargetOS, Arch);
+        string appDir = project.BuildAppBundle(XcodeProjectPath, Optimized, DevTeamProvisioning);
+
+        string appPath = Xcode.GetAppPath(appDir, XcodeProjectPath);
+        string newAppPath = Xcode.GetAppPath(DestinationFolder!, XcodeProjectPath);
+        Directory.Move(appPath, newAppPath);
+
+        project.LogAppSize(newAppPath);
 
         return true;
     }
@@ -157,6 +164,7 @@ internal sealed class Xcode
         IEnumerable<string> asmFiles,
         IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
+        IEnumerable<string> frameworkLibraries,
         IEnumerable<string> extraLinkerArgs,
         string workspace,
         string binDir,
@@ -173,7 +181,7 @@ internal sealed class Xcode
         string? runtimeComponents=null,
         string? nativeMainSource = null)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, frameworkLibraries, extraLinkerArgs, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -216,6 +224,7 @@ internal sealed class Xcode
         IEnumerable<string> asmFiles,
         IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
+        IEnumerable<string> frameworkLibraries,
         IEnumerable<string> extraLinkerArgs,
         string workspace,
         string binDir,
@@ -381,6 +390,12 @@ internal sealed class Xcode
             frameworks = "\"-framework GSS\"";
         }
 
+        string frameworkLibrariesPaths = "";
+        foreach(string frameworkPath in frameworkLibraries)
+        {
+            frameworkLibrariesPaths += $"{frameworkPath} ";
+        }
+
         string appLinkerArgs = "";
         foreach(string linkerArg in extraLinkerArgs)
         {
@@ -389,6 +404,7 @@ internal sealed class Xcode
 
         cmakeLists = cmakeLists.Replace("%FrameworksToLink%", frameworks);
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
+        cmakeLists = cmakeLists.Replace("%FRAMEWORK_LIBRARIES%", frameworkLibrariesPaths);
         cmakeLists = cmakeLists.Replace("%APP_LINKER_ARGS%", appLinkerArgs);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
         cmakeLists = cmakeLists.Replace("%AotTargetsList%", aotList);
@@ -470,9 +486,9 @@ internal sealed class Xcode
     }
 
     public string BuildAppBundle(
-        string xcodePrjPath, bool optimized, string? devTeamProvisioning = null, string? destination = null)
+        string xcodePrjPath, bool optimized, string? devTeamProvisioning = null)
     {
-        string sdk = "";
+        string sdk;
         var args = new StringBuilder();
         args.Append("ONLY_ACTIVE_ARCH=YES");
 
@@ -566,21 +582,20 @@ internal sealed class Xcode
             Directory.Move(appDirectoryWithoutSdk, appDirectory);
         }
 
-        string appPath = Path.Combine(appDirectory, Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
+        return appDirectory;
+    }
 
-        if (destination != null)
-        {
-            var newAppPath = Path.Combine(destination, Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
-            Directory.Move(appPath, newAppPath);
-            appPath = newAppPath;
-        }
-
+    public void LogAppSize(string appPath)
+    {
         long appSize = new DirectoryInfo(appPath)
             .EnumerateFiles("*", SearchOption.AllDirectories)
             .Sum(file => file.Length);
 
         Logger.LogMessage(MessageImportance.High, $"\nAPP size: {(appSize / 1000_000.0):0.#} Mb.\n");
+    }
 
-        return appPath;
+    public static string GetAppPath(string appDirectory, string xcodePrjPath)
+    {
+        return Path.Combine(appDirectory, Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
     }
 }

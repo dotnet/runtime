@@ -30,6 +30,19 @@ add_library(
     %LIBRARY_NAME% %LIBRARY_TYPE%
     ${DOTNET_EXTRA_SOURCES}
 )
+
+#set_target_properties(%LIBRARY_NAME% PROPERTIES
+#    FRAMEWORK TRUE
+#    FRAMEWORK_VERSION C
+#    MACOSX_FRAMEWORK_IDENTIFIER lib-%LIBRARY_NAME%
+#    XCODE_ATTRIBUTE_INSTALL_PATH "@executable_path/Frameworks"
+#    XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
+#)
+
+set_target_properties(%LIBRARY_NAME% PROPERTIES
+    XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
+)
+
 target_link_libraries(
     %LIBRARY_NAME%
     aot_library
