@@ -2243,6 +2243,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
+#if defined(TARGET_ARM64)
     if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
         if (ContainCheckCompareChainForAnd(cmp))
@@ -2253,6 +2254,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             DISPNODE(cmp);
         }
     }
+#endif
 
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }

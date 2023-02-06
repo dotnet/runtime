@@ -2599,18 +2599,7 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
     assert(!relop->isContained());
 
 #if defined(TARGET_ARM64)
-    if (relop->OperIs(GT_AND))
-    {
-        assert(false);
-        // The condition was generated into a register.
-        assert(relop->gtType != TYP_VOID);
-        regNumber reg = relop->GetRegNum();
-        assert(reg != REG_NA);
-        emitAttr attr = emitActualTypeSize(relop->TypeGet());
-        GetEmitter()->emitIns_J_R(INS_cbnz, attr, compiler->compCurBB->bbJumpDest, reg);
-        return;
-    }
-    else if (relop->OperIsConditionalCompare())
+    if (relop->OperIsConditionalCompare())
     {
         // Find the last contained compare in the chain.
         assert(relop->gtType == TYP_VOID);

@@ -241,17 +241,10 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_JTRUE:
-        {
-            GenTree* op1 = tree->gtGetOp1();
-            srcCount     = 0;
-            if ((op1->gtFlags & GTF_SET_FLAGS) == 0)
-            {
-                assert(op1->OperIsConditionalCompare());
-                srcCount = BuildOperandUses(op1);
-            }
+            srcCount = 0;
+            assert((tree->gtGetOp1()->gtFlags & GTF_SET_FLAGS) != 0);
             assert(dstCount == 0);
-        }
-        break;
+            break;
 
         case GT_JMP:
             srcCount = 0;

@@ -4757,43 +4757,25 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
             genConsumeRegs(op1);
             genConsumeRegs(op2);
 
-            assert(op2->isContained());
-
-            // If Op1 is contained, generate into flags.
+            // If Op1 is contained, generate it into flags.
             if (op1->isContained())
             {
                 genCodeForContainedCompareChain(op1, &chain, &prevCond);
                 assert(chain);
                 assert(op2->isContained());
             }
-            // If Op2 is contained, generate into flags.
-            if (op2->isContained())
-            {
-                genCodeForContainedCompareChain(op2, &chain, &prevCond);
-                assert(chain);
-            }
-            // If nothing was contained, put the result of op2 into flags.
-            else
-            {
-                emitter* emit = GetEmitter();
-                emit->emitIns_R_I(INS_cmp, emitActualTypeSize(op1), op2->GetRegNum(), 0);
-                prevCond = GenCondition::NE;
-            }
 
+            // Generate op2 into flags.
+            assert(op2->isContained());
+            genCodeForContainedCompareChain(op2, &chain, &prevCond);
+            assert(chain);
+
+            // Reverse condition for NE.
             if (opcond->OperIs(GT_CCMP_NE))
             {
                 prevCond = GenCondition::Reverse(prevCond);
             }
         }
-        // else
-        // {
-        //     // Condition is a compare chain. Try to contain it.
-        //     assert(opcond->OperIs(GT_AND));
-        //     bool chain = false;
-        //     JITDUMP("Generating compare chain:\n");
-        //     genCodeForContainedCompareChain(opcond, &chain, &prevCond);
-        //     assert(chain);
-        // }
     }
     else
     {
