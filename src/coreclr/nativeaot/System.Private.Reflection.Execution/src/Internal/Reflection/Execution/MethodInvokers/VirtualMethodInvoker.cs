@@ -63,7 +63,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 {
                     resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (wrapInTargetInvocationException)
                 {
                     throw new TargetInvocationException(ex);
                 }
