@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             }
 
                             sm ??= _compilation.GetSemanticModel(classDec.SyntaxTree);
-                            IMethodSymbol? logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken);
+                            IMethodSymbol logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken)!;
                             Debug.Assert(logMethodSymbol != null, "log method is present.");
                             (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = (-1, null, string.Empty, null, false);
 
