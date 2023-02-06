@@ -304,19 +304,11 @@ namespace <xsl:value-of select="@namespace" />
     <xsl:param name="indent" />
     <xsl:choose>
       <xsl:when test="self::asn:Boolean" xml:space="preserve">
-#if NET7_0_OR_GREATER
             <xsl:value-of select="$indent"/>const int AsnBoolDerEncodeSize = 3;
-            <xsl:value-of select="$indent"/>AsnWriter <xsl:value-of select="$writerName"/> = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);
-#else
-            <xsl:value-of select="$indent"/>AsnWriter <xsl:value-of select="$writerName"/> = new AsnWriter(AsnEncodingRules.DER);
-#endif</xsl:when>
+            <xsl:value-of select="$indent"/>AsnWriter <xsl:value-of select="$writerName"/> = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);</xsl:when>
       <xsl:when test="self::asn:Integer[@backingType = 'int']" xml:space="preserve">
-#if NET7_0_OR_GREATER
             <xsl:value-of select="$indent"/>const int AsnManagedIntegerDerMaxEncodeSize = 6;
-            <xsl:value-of select="$indent"/>AsnWriter <xsl:value-of select="$writerName"/> = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
-#else
-            <xsl:value-of select="$indent"/>AsnWriter <xsl:value-of select="$writerName"/> = new AsnWriter(AsnEncodingRules.DER);
-#endif</xsl:when>
+            <xsl:value-of select="$indent"/>AsnWriter <xsl:value-of select="$writerName"/> = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);</xsl:when>
       <xsl:otherwise xml:space="preserve">
             <xsl:value-of select="$indent"/>AsnWriter <xsl:value-of select="$writerName"/> = new AsnWriter(AsnEncodingRules.DER);</xsl:otherwise>
     </xsl:choose>

@@ -99,12 +99,8 @@ namespace System.Security.Cryptography.Asn1
 
             // DEFAULT value handler for SaltLength.
             {
-#if NET7_0_OR_GREATER
                 const int AsnManagedIntegerDerMaxEncodeSize = 6;
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
-#else
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
-#endif
                 tmp.WriteInteger(SaltLength);
 
                 if (!tmp.EncodedValueEquals(DefaultSaltLength))
@@ -118,12 +114,8 @@ namespace System.Security.Cryptography.Asn1
 
             // DEFAULT value handler for TrailerField.
             {
-#if NET7_0_OR_GREATER
                 const int AsnManagedIntegerDerMaxEncodeSize = 6;
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
-#else
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
-#endif
                 tmp.WriteInteger(TrailerField);
 
                 if (!tmp.EncodedValueEquals(DefaultTrailerField))

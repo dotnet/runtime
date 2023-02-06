@@ -67,12 +67,8 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             // DEFAULT value handler for Ordering.
             {
-#if NET7_0_OR_GREATER
                 const int AsnBoolDerEncodeSize = 3;
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);
-#else
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
-#endif
                 tmp.WriteBoolean(Ordering);
 
                 if (!tmp.EncodedValueEquals(DefaultOrdering))
