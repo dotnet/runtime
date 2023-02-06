@@ -8773,15 +8773,9 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
-#if defined(FEATURE_SIMD)
-        const int maxElementSize = maxSIMDStructBytes();
-#else
-        const int maxElementSize = sizeof(int64_t);
-#endif
-        assert(maxElementSize >= sizeof(int64_t));
-
-        CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
-        int                  size        = (int)genTypeSize(tree->TypeGet());
+        CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
+        int                  size           = (int)genTypeSize(tree->TypeGet());
+        const int            maxElementSize = 32; // SIMD32
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
