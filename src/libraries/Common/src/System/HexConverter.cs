@@ -135,7 +135,7 @@ namespace System
                 (Vector128<byte> hexLow, _) = AsciiToHexVector128(vec, hexMap);
                 (Vector128<ushort> v0, _) = Vector128.Widen(hexLow);
 
-                v0.StoreUnsafe(ref destRef, pos / 2);
+                v0.StoreUnsafe(ref destRef, pos * 2);
 
                 pos += (nuint)Vector128<int>.Count;
                 if (pos == (nuint)bytes.Length)
