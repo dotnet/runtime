@@ -1345,10 +1345,9 @@ void HelperCallProperties::init()
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
             case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
-                isPure        = true;
+                isPure        = false;
                 noThrow       = true;
                 nonNullReturn = true;
-                mutatesHeap   = true;
                 break;
 
             // type casting helpers
