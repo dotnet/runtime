@@ -3081,23 +3081,6 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
     if (castOp->OperMayOverflow() && castOp->gtOverflow())
         return false;
 
-#ifdef TARGET_64BIT
-    if (castOp->OperIs(GT_CAST))
-    {
-        GenTreeCast* innerCast = castOp->AsCast();
-
-        // CAST(long <- CAST(int <- short <- long)) => CAST(long <- short <- long))
-        if (cast->TypeIs(TYP_LONG) && (castToType == TYP_LONG) && (srcType == TYP_INT) &&
-            varTypeIsSmall(innerCast->CastToType()) && (cast->IsUnsigned() == innerCast->IsUnsigned()))
-        {
-            cast->gtOp1      = innerCast->CastOp();
-            cast->gtCastType = innerCast->CastToType();
-            range.Remove(innerCast);
-            return true;
-        }
-    }
-#endif // TARGET_64BIT
-
     // Only optimize if the castToType is a small integer type.
     // Only optimize if the srcType is an integer type.
     if (!varTypeIsSmall(castToType) || !varTypeIsIntegral(srcType))
