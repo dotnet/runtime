@@ -65,6 +65,15 @@ internal static class ObjectHeader
         {
             mon.nest++;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryDecrementNest(ref MonoThreadsSync mon)
+        {
+            if (mon.nest == 0)
+                return false;
+            mon.nest--;
+            return true;
+        }
     }
 
     // <summary>
@@ -75,7 +84,7 @@ internal static class ObjectHeader
 #region Keep in sync with monitor.h
         private const uint OwnerMask = 0x0000ffffu;
         private const uint EntryCountMask = 0xffff0000u;
-        //private const uint EntryCountWaiters = 0x80000000u;
+        private const uint EntryCountWaiters = 0x80000000u;
         //private const uint EntryCountZero = 0x7fff0000u;
         //private const int EntryCountShift = 16;
 #endregion // keep in sync with monitor.h
@@ -85,6 +94,8 @@ internal static class ObjectHeader
         {
             return (status & EntryCountMask) | (uint)owner;
         }
+
+        public static bool HaveWaiters(uint status) => (status & EntryCountWaiters) != 0;
     }
 
     // <summary>
@@ -370,13 +381,36 @@ internal static class ObjectHeader
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool TryExitInflated(ObjectHeaderOnStack h)
+    {
+        LockWord lw = GetLockWord(h);
+        ref MonoThreadsSync mon = ref lw.GetInflatedLock();
+
+        // if we're in a nested lock, decrement the count and we're done
+        if (SyncBlock.TryDecrementNest (ref mon))
+            return true;
+
+        ref uint status = ref SyncBlock.Status (ref mon);
+        uint old_status = status;
+        // if there are waiters, fall back to the slow path to wake them
+        if (MonitorStatus.HaveWaiters (old_status))
+            return false;
+        uint new_status = MonitorStatus.SetOwner (old_status, 0);
+        uint prev_status = Interlocked.CompareExchange (ref status, new_status, old_status);
+        if (prev_status == old_status)
+            return true; // success, and there were no waiters, we're done
+        else
+            return false; // we need to retry, but maybe a waiter arrived, fall back to the slow path
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryExit(object obj)
     {
         ObjectHeaderOnStack h = ObjectHeaderOnStack.Create(ref obj);
         LockWord lw = GetLockWord(h);
 
         if (lw.IsInflated)
-            return false; // there might be waiters to wake
+            return TryExitInflated(h);
         // if the lock word is flat, there has been no contention
         LockWord nlw;
         if (lw.IsNested)
