@@ -197,8 +197,6 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: Debug
-          runtimeFlavor: coreclr
-          runtimeVariant: ''
           platforms:
           - linux_x64
           - windows_x64
@@ -216,7 +214,6 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
-              nativeAotTest: true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
@@ -233,8 +230,6 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: Checked
-          runtimeFlavor: coreclr
-          runtimeVariant: ''
           platforms:
           - windows_x64
           variables:
@@ -251,7 +246,6 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot /p:BuildNativeAotFrameworkObjects=true
-              nativeAotTest: true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
@@ -268,8 +262,6 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: Release
-          runtimeFlavor: coreclr
-          runtimeVariant: ''
           platforms:
           - linux_x64
           - windows_x64
@@ -282,13 +274,12 @@ extends:
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
-            nameSuffix: NativeAOT_Helix
+            nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
-              nativeAotTest: true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(

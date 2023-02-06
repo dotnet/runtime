@@ -3,10 +3,7 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
-  runtimeFlavor: ''
-  runtimeVariant: ''
   testBuildArgs: ''
-  nativeAotTest: false
   helixQueues: ''
 
 steps:
@@ -20,10 +17,10 @@ steps:
       archType: ${{ parameters.archType }}
       osGroup: ${{ parameters.osGroup }}
       osSubgroup: ${{ parameters.osSubgroup }}
-      runtimeFlavor: ${{ parameters.runtimeFlavor }}
-      runtimeVariant: ${{ parameters.runtimeVariant }}
+      runtimeFlavor: coreclr
+      runtimeVariant: ''
       testBuildArgs: ${{ parameters.testBuildArgs }}
-      nativeAotTest: ${{ parameters.nativeAotTest }}
+      nativeAotTest: true
       helixQueues: ${{ parameters.helixQueues }}
 
   # Publishing tooling doesn't support different configs between runtime and libs, so only run tests in Release config
