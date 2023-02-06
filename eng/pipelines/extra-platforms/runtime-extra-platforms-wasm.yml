@@ -177,7 +177,7 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
-  # Wasi
+  # Wasi - run only smoke tests by default
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
@@ -186,6 +186,9 @@ jobs:
       nameSuffix: '_Smoke'
       extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
       shouldRunSmokeOnly: true
+      # ignore test failures for runtime-extra-platforms, but not when this
+      # is run as part of a wasm specific pipeline like runtime-wasm
+      shouldContinueOnError: ${{ not(parameters.isWasmOnlyBuild) }}
       alwaysRun: ${{ variables.isRollingBuild }}
       scenarios:
         - normal
