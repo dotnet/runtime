@@ -153,11 +153,8 @@ namespace ILCompiler
                     {
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
-                }
-
-                if (!defType.IsCanonicalSubtype(CanonicalFormKind.Any) && !defType.CheckConstraints())
-                {
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    
+                    // TODO: validate constraints
                 }
 
                 // Check the type doesn't have bogus MethodImpls or overrides and we can get the finalizer.
