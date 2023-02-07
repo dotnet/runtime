@@ -42,10 +42,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetHashCode(object? o)
         {
-#if false
+            // NOTE: the interpreter does not run this code.  It intrinsifies the whole RuntimeHelpers.GetHashCode function
             if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
                 return hash;
-#endif
             return InternalGetHashCode(o);
         }
 
@@ -63,10 +62,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int TryGetHashCode(object? o)
         {
-#if false
+            // NOTE: the interpreter does not run this code.  It intrinsifies the whole RuntimeHelpers.TryGetHashCode function
             if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
                 return hash;
-#endif
             return InternalTryGetHashCode(o);
         }
 
