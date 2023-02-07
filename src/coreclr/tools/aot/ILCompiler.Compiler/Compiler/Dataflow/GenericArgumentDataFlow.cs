@@ -18,7 +18,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILCompiler.Dataflow
 {
-    public static class GenericArgumentDataFlow
+    internal static class GenericArgumentDataFlow
     {
         public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, TypeDesc contextType)
         {
