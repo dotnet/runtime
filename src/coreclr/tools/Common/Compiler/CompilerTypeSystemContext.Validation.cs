@@ -153,7 +153,7 @@ namespace ILCompiler
                     {
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
-                    
+
                     // TODO: validate constraints
                 }
 
