@@ -5,7 +5,7 @@
 .assembly extern xunit.core {}
 .assembly extern System.Console { }
 
-.assembly Runtime_71636.dll { }
+.assembly Runtime_71636 { }
 
 .class public Runtime_71636 extends [System.Runtime]System.Object
 {

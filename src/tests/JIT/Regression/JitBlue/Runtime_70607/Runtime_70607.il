@@ -15,7 +15,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 7:0:0:0
 }
-.assembly Runtime_70607.dll
+.assembly Runtime_70607
 {
 }
 // MVID: {AC28796A-6A85-4AEA-A696-61332CBEA0D5}

@@ -5,7 +5,7 @@
 .assembly extern xunit.core {}
 .assembly extern System.Console { }
 
-.assembly Runtime_74635.dll { }
+.assembly Runtime_74635 { }
 
 #define TRUE "1"
 #define FALSE "0"
