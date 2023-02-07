@@ -486,9 +486,9 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
             //
             // Create the new edge [newTarget from blockSwitch]
             //
-            flowList* const newEdge = fgAddRefPred(newTarget, blockSwitch);
+            FlowEdge* const newEdge = fgAddRefPred(newTarget, blockSwitch);
 
-            // Now set the correct value of newEdge->flDupCount
+            // Now set the correct value of newEdge's lDupCount
             // and replace any other jumps in jumpTab[] that go to oldTarget.
             //
             i++;
@@ -501,11 +501,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
                     //
                     jumpTab[i] = newTarget;
                     newTarget->bbRefs++;
-
-                    //
-                    // Increment the flDupCount
-                    //
-                    newEdge->flDupCount++;
+                    newEdge->incrementDupCount();
                 }
                 i++; // Check the next entry in jumpTab[]
             }
@@ -599,10 +595,10 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
 //
 // Notes:
 //
-// A block can only appear once in the preds list (for normal preds, not
-// cheap preds): if a predecessor has multiple ways to get to this block, then
-// flDupCount will be >1, but the block will still appear exactly once. Thus, this
-// function assumes that all branches from the predecessor (practically, that all
+// A block can only appear once in the preds list. If a predecessor has multiple
+// ways to get to this block, then the pred edge DupCount will be >1.
+//
+// This function assumes that all branches from the predecessor (practically, that all
 // switch cases that target this block) are changed to branch from the new predecessor,
 // with the same dup count.
 //
@@ -619,11 +615,11 @@ void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock*
 
     bool modified = false;
 
-    for (flowList* const pred : block->PredEdges())
+    for (FlowEdge* const pred : block->PredEdges())
     {
-        if (oldPred == pred->getBlock())
+        if (oldPred == pred->getSourceBlock())
         {
-            pred->setBlock(newPred);
+            pred->setSourceBlock(newPred);
             modified = true;
             break;
         }
@@ -2732,7 +2728,7 @@ void Compiler::fgLinkBasicBlocks()
 
     // Special args to fgAddRefPred so it will use the initialization fast path.
     //
-    flowList* const oldEdge           = nullptr;
+    FlowEdge* const oldEdge           = nullptr;
     bool const      initializingPreds = true;
 
     for (BasicBlock* const curBBdesc : Blocks())
@@ -5088,9 +5084,9 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         fgRemoveRefPred(succBlock, block);
 
-        for (flowList* const pred : block->PredEdges())
+        for (FlowEdge* const pred : block->PredEdges())
         {
-            BasicBlock* predBlock = pred->getBlock();
+            BasicBlock* predBlock = pred->getSourceBlock();
 
             /* Are we changing a loop backedge into a forward jump? */
 
@@ -5106,7 +5102,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             {
                 // Even if the pred is not a switch, we could have a conditional branch
                 // to the fallthrough, so duplicate there could be preds
-                for (unsigned i = 0; i < pred->flDupCount; i++)
+                for (unsigned i = 0; i < pred->getDupCount(); i++)
                 {
                     fgAddRefPred(succBlock, predBlock);
                 }
@@ -5269,7 +5265,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                     //
                     if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
                     {
-                        flowList* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
+                        FlowEdge* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
 
                         jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
                         if (bSrc->bbWeight == BB_ZERO_WEIGHT)
@@ -6091,8 +6087,8 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     if (fgHaveValidEdgeWeights)
     {
         // We will compare the edge weight for our two choices
-        flowList* edgeFromAlt = fgGetPredForBlock(bCur, bAlt);
-        flowList* edgeFromCur = fgGetPredForBlock(bNext, bCur);
+        FlowEdge* edgeFromAlt = fgGetPredForBlock(bCur, bAlt);
+        FlowEdge* edgeFromCur = fgGetPredForBlock(bNext, bCur);
         noway_assert(edgeFromCur != nullptr);
         noway_assert(edgeFromAlt != nullptr);
 
