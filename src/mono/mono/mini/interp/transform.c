@@ -7488,13 +7488,27 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				MonoJitICallId const jit_icall_id = (MonoJitICallId)read32 (td->ip + 1);
 				MonoJitICallInfo const * const info = mono_find_jit_icall_info (jit_icall_id);
 
-				if (info->sig->ret->type != MONO_TYPE_VOID) {
+				// mono_method_get_unmanaged_thunk creates wrappers with
+				// enter_gc_unsafe/exit_gc_unsafe transitions.  Treat them as attach/detach.
+				if (jit_icall_id == MONO_JIT_ICALL_mono_threads_enter_gc_unsafe_region_unbalanced) {
+					rtm->needs_thread_attach = 1;
+					// Add dummy return value
+					interp_add_ins (td, MINT_LDNULL);
+					push_simple_type (td, STACK_TYPE_I);
+					td->last_ins->dreg = td->sp[-1].local;
+				} else if (jit_icall_id == MONO_JIT_ICALL_mono_threads_exit_gc_unsafe_region_unbalanced) {
+					g_assert (rtm->needs_thread_attach);
+					// pop the unused gc var
+					td->sp--;
+				} else if (info->sig->ret->type != MONO_TYPE_VOID) {
+					g_assert_checked (jit_icall_id == MONO_JIT_ICALL_mono_threads_enter_gc_safe_region_unbalanced);
 					// Push a dummy coop gc var
 					interp_add_ins (td, MINT_LDNULL);
 					push_simple_type (td, STACK_TYPE_I);
 					td->last_ins->dreg = td->sp [-1].local;
 					interp_add_ins (td, MINT_MONO_ENABLE_GCTRANS);
 				} else {
+					g_assert_checked (jit_icall_id == MONO_JIT_ICALL_mono_threads_exit_gc_safe_region_unbalanced);
 					// Pop the unused gc var
 					td->sp--;
 				}
