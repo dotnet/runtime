@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="new">Logging method '{0}' contains malformed format strings</target>
+        <target state="translated">日志记录方法“{0}”包含格式错误的字符串</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsTitle">
         <source>Logging method contains malformed format strings</source>
-        <target state="new">Logging method contains malformed format strings</target>
+        <target state="translated">日志记录方法包含格式错误的字符串</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
