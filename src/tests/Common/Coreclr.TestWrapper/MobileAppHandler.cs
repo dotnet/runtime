@@ -22,17 +22,17 @@ namespace CoreclrTestLib
         // 91 - ADB_FAILURE
         private static readonly int[] _knownExitCodes = new int[] { 78, 81, 82, 83, 84, 86, 88, 89, 90, 91 };
 
-        public int InstallMobileApp(string platform, string category, string testBinaryBase, string reportBase)
+        public int InstallMobileApp(string platform, string category, string testBinaryBase, string reportBase, bool device = false)
         {
-            return HandleMobileApp("install", platform, category, testBinaryBase, reportBase);
+            return HandleMobileApp("install", platform, category, testBinaryBase, reportBase, device);
         }
 
-        public int UninstallMobileApp(string platform, string category, string testBinaryBase, string reportBase)
+        public int UninstallMobileApp(string platform, string category, string testBinaryBase, string reportBase, bool device = false)
         {
-            return HandleMobileApp("uninstall", platform, category, testBinaryBase, reportBase);
+            return HandleMobileApp("uninstall", platform, category, testBinaryBase, reportBase, device);
         }
 
-        private static int HandleMobileApp(string action, string platform, string category, string testBinaryBase, string reportBase)
+        private static int HandleMobileApp(string action, string platform, string category, string testBinaryBase, string reportBase, bool device=false)
         {
             int exitCode = -100;
 
@@ -82,7 +82,19 @@ namespace CoreclrTestLib
                     }
                     else // platform is apple
                     {
-                        cmdStr += $" --output-directory={reportBase}/{action} --target=ios-simulator-64"; //To Do: target should be either emulator or device
+
+                        string targetString;
+
+                        if (device)
+                        {
+                           targetString = "ios-device";
+                        }
+                        else
+                        {
+                           targetString = "ios-simulator-64";
+                        }
+
+                        cmdStr += $" --output-directory={reportBase}/{action} --target={targetString}"; //To Do: target should be either emulator or device
 
                         if (action == "install")
                         {
