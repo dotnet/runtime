@@ -195,16 +195,26 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Debug
           platforms:
           - linux_x64
           - windows_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: nativeaot tree nativeaot
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -218,15 +228,25 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: checked
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Checked
           platforms:
           - windows_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: nativeaot tree nativeaot /p:BuildNativeAotFrameworkObjects=true
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -240,17 +260,27 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
           platforms:
           - linux_x64
           - windows_x64
           - osx_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: nativeaot tree nativeaot
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -373,7 +403,6 @@ extends:
         parameters:
           platforms:
             - browser_wasm
-          buildAndRunWasi: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
             - normal
@@ -456,12 +485,20 @@ extends:
           extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
           alwaysRun: ${{ variables.isRollingBuild }}
 
-      # BUILD ONLY - WASI/Wasm
-      - template: /eng/pipelines/common/templates/wasi-build-only.yml
+      # WASI/WASM
+
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
             - wasi_wasm
+            - wasi_wasm_win
+          nameSuffix: '_Smoke'
+          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
+          shouldContinueOnError: true
+          shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
+          scenarios:
+            - normal
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
@@ -1371,7 +1408,7 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Debug
+          buildConfig: Release
           helixQueueGroup: pr
           platforms:
           - SourceBuild_banana24_x64

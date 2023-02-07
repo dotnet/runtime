@@ -52,10 +52,18 @@ mono_interp_jit_wasm_entry_trampoline (
 	int unbox, int has_this, int has_return, const char *name, void *default_implementation
 );
 
+// Fast-path implemented in C
+JiterpreterThunk
+mono_interp_tier_prepare_jiterpreter_fast (
+	void *frame, MonoMethod *method, const guint16 *ip,
+	const guint16 *start_of_body, int size_of_body
+);
+
 // HACK: Pass void* so that this header can include safely in files without definition for InterpFrame
+// Slow-path implemented in TypeScript, actually performs JIT
 extern JiterpreterThunk
 mono_interp_tier_prepare_jiterpreter (
-	void *frame, MonoMethod *method, const guint16 *ip,
+	void *frame, MonoMethod *method, const guint16 *ip, gint32 trace_index,
 	const guint16 *start_of_body, int size_of_body
 );
 
@@ -121,6 +129,12 @@ mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip);
 
 void
 mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);
+
+gpointer
+mono_jiterp_imethod_to_ftnptr (InterpMethod *imethod);
+
+void
+mono_jiterp_enum_hasflag (MonoClass *klass, gint32 *dest, stackval *sp1, stackval *sp2);
 
 #endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
 

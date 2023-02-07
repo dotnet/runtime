@@ -163,6 +163,10 @@ public class AppleAppBuilderTask : Task
     /// </summary>
     public bool EnableAppSandbox { get; set; }
 
+    /// Strip local symbols and debug information, and extract it in XcodeProjectPath directory
+    /// </summary>
+    public bool StripSymbolTable { get; set; }
+
     public override bool Execute()
     {
         bool isDevice = (TargetOS == TargetNames.iOS || TargetOS == TargetNames.tvOS);
@@ -222,7 +226,7 @@ public class AppleAppBuilderTask : Task
             }
         }
 
-        if (((!ForceInterpreter && (isDevice || ForceAOT)) && !assemblerFiles.Any()))
+        if (!ForceInterpreter && (isDevice || ForceAOT) && assemblerFiles.Count == 0)
         {
             throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
@@ -263,7 +267,7 @@ public class AppleAppBuilderTask : Task
                 }
                 else
                 {
-                    AppBundlePath = generator.BuildAppBundle(XcodeProjectPath, Optimized, DevTeamProvisioning);
+                    AppBundlePath = generator.BuildAppBundle(XcodeProjectPath, Optimized, StripSymbolTable, DevTeamProvisioning);
                 }
             }
         }

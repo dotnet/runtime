@@ -177,12 +177,13 @@ internal sealed class IcallTableGenerator
             if (icall == null)
             {
                 string? methodSig = BuildSignature(method, className);
-                if (methodSig != null && icallClass.Icalls.ContainsKey(methodSig))
-                    icall = icallClass.Icalls[methodSig];
+                if (methodSig != null)
+                    icallClass.Icalls.TryGetValue(methodSig, out icall);
+
+                if (icall == null)
+                    // Registered at runtime
+                    continue;
             }
-            if (icall == null)
-                // Registered at runtime
-                continue;
 
             icall.Method = method;
             icall.TokenIndex = (int)method.MetadataToken & 0xffffff;

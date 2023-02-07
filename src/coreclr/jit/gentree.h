@@ -3794,6 +3794,8 @@ public:
     unsigned int GetFieldCount(Compiler* compiler) const;
     var_types GetFieldTypeByIndex(Compiler* compiler, unsigned idx);
 
+    bool IsNeverNegative(Compiler* comp) const;
+
     //-------------------------------------------------------------------
     // clearOtherRegFlags: clear GTF_* flags associated with gtOtherRegs
     //
@@ -4004,13 +4006,22 @@ struct GenTreeField : public GenTreeUnOp
 {
     CORINFO_FIELD_HANDLE gtFldHnd;
     DWORD                gtFldOffset;
-    bool                 gtFldMayOverlap;
+    bool                 gtFldMayOverlap : 1;
+
+private:
+    bool gtFldIsSpanLength : 1;
+
+public:
 #ifdef FEATURE_READYTORUN
     CORINFO_CONST_LOOKUP gtFieldLookup;
 #endif
 
     GenTreeField(genTreeOps oper, var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
-        : GenTreeUnOp(oper, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
+        : GenTreeUnOp(oper, type, obj)
+        , gtFldHnd(fldHnd)
+        , gtFldOffset(offs)
+        , gtFldMayOverlap(false)
+        , gtFldIsSpanLength(false)
     {
 #ifdef FEATURE_READYTORUN
         gtFieldLookup.addr = nullptr;
@@ -4035,6 +4046,24 @@ struct GenTreeField : public GenTreeUnOp
     {
         assert(((gtFlags & GTF_FLD_VOLATILE) == 0) || OperIs(GT_FIELD));
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
+    }
+
+    bool IsSpanLength() const
+    {
+        // This is limited to span length today rather than a more general "IsNeverNegative"
+        // to help avoid confusion around propagating the value to promoted lcl vars.
+        //
+        // Extending this support more in the future will require additional work and
+        // considerations to help ensure it is correctly used since people may want
+        // or intend to use this as more of a "point in time" feature like GTF_IND_NONNULL
+
+        assert(OperIs(GT_FIELD));
+        return gtFldIsSpanLength;
+    }
+
+    void SetIsSpanLength(bool value)
+    {
+        gtFldIsSpanLength = value;
     }
 
     bool IsInstance() const
