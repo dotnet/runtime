@@ -308,6 +308,10 @@ public:
     {
         return false;
     }
+    virtual bool ShouldInstrument(BasicBlock* block)
+    {
+        return ShouldProcess(block);
+    }
     virtual void Prepare(bool preImport)
     {
     }
@@ -318,9 +322,6 @@ public:
     {
     }
     virtual void InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory)
-    {
-    }
-    virtual void SuppressProbes()
     {
     }
     unsigned SchemaCount() const
@@ -1220,21 +1221,27 @@ private:
     unsigned m_probeCount;
     unsigned m_edgeProbeCount;
     bool     m_badcode;
+    bool     m_minimal;
 
 public:
-    EfficientEdgeCountInstrumentor(Compiler* comp)
+    EfficientEdgeCountInstrumentor(Compiler* comp, bool minimal)
         : Instrumentor(comp)
         , SpanningTreeVisitor()
         , m_blockCount(0)
         , m_probeCount(0)
         , m_edgeProbeCount(0)
         , m_badcode(false)
+        , m_minimal(minimal)
     {
     }
     void Prepare(bool isPreImport) override;
     bool ShouldProcess(BasicBlock* block) override
     {
         return ((block->bbFlags & BBF_IMPORTED) == BBF_IMPORTED);
+    }
+    bool ShouldInstrument(BasicBlock* block) override
+    {
+        return ShouldProcess(block) && ((!m_minimal) || (m_schemaCount > 1));
     }
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
@@ -2161,10 +2168,19 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     const bool edgesEnabled    = (JitConfig.JitEdgeProfiling() > 0);
     const bool prejit          = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
     const bool useEdgeProfiles = edgesEnabled && !prejit;
+    const bool minimalProfiling =
+        prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
 
-    if (useEdgeProfiles)
+    if (minimalProfiling && (fgBBcount < 2))
     {
-        fgCountInstrumentor = new (this, CMK_Pgo) EfficientEdgeCountInstrumentor(this);
+        // Don't instrumenting small single-block methods.
+        JITDUMP("Not using any block profiling (fgBBcount < 2)\n");
+        fgCountInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+    }
+    else if (useEdgeProfiles)
+    {
+        JITDUMP("Using edge profiling\n");
+        fgCountInstrumentor = new (this, CMK_Pgo) EfficientEdgeCountInstrumentor(this, minimalProfiling);
     }
     else
     {
@@ -2265,6 +2281,12 @@ PhaseStatus Compiler::fgInstrumentMethod()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    if (schema.size() == 0)
+    {
+        JITDUMP("Not instrumenting method: no schemas were created\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     JITDUMP("Instrumenting method: %d count probes and %d class probes\n", fgCountInstrumentor->SchemaCount(),
             fgHistogramInstrumentor->SchemaCount());
 
@@ -2296,11 +2318,6 @@ PhaseStatus Compiler::fgInstrumentMethod()
             return PhaseStatus::MODIFIED_NOTHING;
         }
 
-        // Do any cleanup we might need to do...
-        //
-        fgCountInstrumentor->SuppressProbes();
-        fgHistogramInstrumentor->SuppressProbes();
-
         // We may have modified control flow preparing for instrumentation.
         //
         const bool modifiedFlow = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
@@ -2313,12 +2330,12 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     for (BasicBlock* const block : Blocks())
     {
-        if (fgCountInstrumentor->ShouldProcess(block))
+        if (fgCountInstrumentor->ShouldInstrument(block))
         {
             fgCountInstrumentor->Instrument(block, schema, profileMemory);
         }
 
-        if (fgHistogramInstrumentor->ShouldProcess(block))
+        if (fgHistogramInstrumentor->ShouldInstrument(block))
         {
             fgHistogramInstrumentor->Instrument(block, schema, profileMemory);
         }
@@ -2326,7 +2343,7 @@ PhaseStatus Compiler::fgInstrumentMethod()
 
     // Verify we instrumented everything we created schemas for.
     //
-    assert(fgCountInstrumentor->InstrCount() == fgCountInstrumentor->SchemaCount());
+    assert(fgCountInstrumentor->InstrCount() <= fgCountInstrumentor->SchemaCount());
 
     // Verify we instrumented for each probe
     //
