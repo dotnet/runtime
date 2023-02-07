@@ -2737,7 +2737,9 @@ gc_pump_callback (void)
 	sgen_perform_collection_inner (gc_request.requested_size, gc_request.generation_to_collect, gc_request.reason, TRUE, TRUE);
 	gc_request.generation_to_collect = 0;
 }
+#endif
 
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 extern gboolean mono_wasm_enable_gc;
 #endif
 

@@ -27,13 +27,6 @@ PhaseStatus Compiler::fgMorphInit()
 {
     bool madeChanges = false;
 
-#if !FEATURE_EH
-    // If we aren't yet supporting EH in a compiler bring-up, remove as many EH handlers as possible, so
-    // we can pass tests that contain try/catch EH, but don't actually throw any exceptions.
-    fgRemoveEH();
-    madeChanges = true;
-#endif // !FEATURE_EH
-
     // We could allow ESP frames. Just need to reserve space for
     // pushing EBP if the method becomes an EBP-frame after an edit.
     // Note that requiring a EBP Frame disallows double alignment.  Thus if we change this
@@ -10795,6 +10788,100 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         return vecCon;
     }
 
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+
+    switch (intrinsicId)
+    {
+#if defined(TARGET_ARM64)
+        case NI_Vector64_Create:
+#endif // TARGET_ARM64
+        case NI_Vector128_Create:
+        {
+            // The `Dot` API returns a scalar. However, many common usages require it to
+            // be then immediately broadcast back to a vector so that it can be used in
+            // a subsequent operation. One of the most common is normalizing a vector
+            // which is effectively `value / value.Length` where `Length` is
+            // `Sqrt(Dot(value, value))`
+            //
+            // In order to ensure that developers can still utilize this efficiently, we
+            // will look for two common patterns:
+            //  * Create(Dot(..., ...))
+            //  * Create(Sqrt(Dot(..., ...)))
+            //
+            // When these exist, we'll avoid converting to a scalar at all and just
+            // keep everything as a vector. However, we only do this for Vector64/Vector128
+            // and only for float/double.
+            //
+            // We don't do this for Vector256 since that is xarch only and doesn't trivially
+            // support operations which cross the upper and lower 128-bit lanes
+
+            if (node->GetOperandCount() != 1)
+            {
+                break;
+            }
+
+            if (!varTypeIsFloating(node->GetSimdBaseType()))
+            {
+                break;
+            }
+
+            GenTree* op1  = node->Op(1);
+            GenTree* sqrt = nullptr;
+
+            if (op1->OperIs(GT_INTRINSIC))
+            {
+                if (op1->AsIntrinsic()->gtIntrinsicName != NI_System_Math_Sqrt)
+                {
+                    break;
+                }
+
+                sqrt = op1;
+                op1  = op1->gtGetOp1();
+            }
+
+            if (!op1->OperIs(GT_HWINTRINSIC))
+            {
+                break;
+            }
+
+            GenTreeHWIntrinsic* hwop1 = op1->AsHWIntrinsic();
+
+#if defined(TARGET_ARM64)
+            if ((hwop1->GetHWIntrinsicId() != NI_Vector64_Dot) && (hwop1->GetHWIntrinsicId() != NI_Vector128_Dot))
+#else
+            if (hwop1->GetHWIntrinsicId() != NI_Vector128_Dot)
+#endif
+            {
+                break;
+            }
+
+            unsigned  simdSize = node->GetSimdSize();
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            hwop1->gtType = simdType;
+
+            if (sqrt != nullptr)
+            {
+                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+                node = gtNewSimdSqrtNode(simdType, hwop1, simdBaseJitType, simdSize, node->IsSimdAsHWIntrinsic())
+                           ->AsHWIntrinsic();
+                DEBUG_DESTROY_NODE(sqrt);
+            }
+            else
+            {
+                node = hwop1;
+            }
+
+            INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            return node;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
     return node;
 }
 
@@ -13004,7 +13091,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 // and we have already computed the edge weights, so
                 // we will try to adjust some of the weights
                 //
-                flowList*   edgeTaken = fgGetPredForBlock(bTaken, block);
+                FlowEdge*   edgeTaken = fgGetPredForBlock(bTaken, block);
                 BasicBlock* bUpdated  = nullptr; // non-NULL if we updated the weight of an internal block
 
                 // We examine the taken edge (block -> bTaken)
@@ -13046,7 +13133,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     weight_t newMinWeight;
                     weight_t newMaxWeight;
 
-                    flowList* edge;
+                    FlowEdge* edge;
                     // Now fix the weights of the edges out of 'bUpdated'
                     switch (bUpdated->bbJumpKind)
                     {
@@ -13687,12 +13774,16 @@ void Compiler::fgMorphBlocks()
 
     // Under OSR, we no longer need to specially protect the original method entry
     //
-    if (opts.IsOSR() && (fgEntryBB != nullptr) && (fgEntryBB->bbFlags & BBF_IMPORTED))
+    if (opts.IsOSR() && (fgEntryBB != nullptr))
     {
-        JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
-        assert(fgEntryBB->bbRefs > 0);
-        fgEntryBB->bbRefs--;
-        // We don't need to remember this block anymore.
+        if (fgOSROriginalEntryBBProtected)
+        {
+            JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+            assert(fgEntryBB->bbRefs > 0);
+            fgEntryBB->bbRefs--;
+        }
+
+        // And we don't need to remember this block anymore.
         fgEntryBB = nullptr;
     }
 

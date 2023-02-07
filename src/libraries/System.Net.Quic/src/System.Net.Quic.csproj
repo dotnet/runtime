@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)</TargetFrameworks>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <!-- DllImports are in shared msquic interop file -->
     <NoWarn>$(NoWarn);SYSLIB1054</NoWarn>
   </PropertyGroup>

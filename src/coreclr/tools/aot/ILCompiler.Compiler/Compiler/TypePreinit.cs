@@ -2420,7 +2420,7 @@ namespace ILCompiler
                 _offset = offset;
             }
 
-            public Value GetField(FieldDesc field)
+            public ValueTypeValue GetField(FieldDesc field)
             {
                 Debug.Assert(!field.IsStatic);
                 Debug.Assert(!field.FieldType.IsGCPointer);
