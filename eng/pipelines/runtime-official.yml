@@ -481,10 +481,6 @@ extends:
       #
       # Build Workloads
       #
-      # note: if this is changed to use evaluatePaths job,
-      # then `eng/pipelines/common/evaluate-default-paths.yml`
-      # needs to be updated to not exclude `src/workloads/*`
-      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/mono/templates/workloads-build.yml
