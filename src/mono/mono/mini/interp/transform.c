@@ -8926,6 +8926,70 @@ interp_fold_binop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue 
 }
 
 static void
+write_v128_element (gpointer v128_addr, LocalValue *val, int index, int el_size)
+{
+	gpointer el_addr = (gint8*)v128_addr + index * el_size;
+	g_assert ((gint8*)el_addr < ((gint8*)v128_addr + 16));
+	switch (el_size) {
+		case 1: *(gint8*)el_addr = (gint8)val->i; break;
+		case 2: *(gint16*)el_addr = (gint16)val->i; break;
+		case 4: *(gint32*)el_addr = val->i; break;
+		case 8: *(gint64*)el_addr = val->l; break;
+		default:
+			g_assert_not_reached ();
+	}
+}
+
+static InterpInst*
+interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, LocalValue *local_defs, InterpInst *ins)
+{
+	int *local_ref_count = td->local_ref_count;
+
+	int *args = ins->info.call_info->call_args;
+	int index = 0;
+	int var = args [index];
+	while (var != -1) {
+		LocalValue *val = &local_defs [var];
+		if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8)
+			return ins;
+		index++;
+		var = args [index];
+	}
+
+	// If we reached this point, it means that all args of the simd_create are constants
+	// We can replace the simd_create with simd_ldc
+	int el_size = 16 / index;
+	int dreg = ins->dreg;
+
+	ins = interp_insert_ins (td, ins, MINT_SIMD_V128_LDC);
+	interp_clear_ins (ins->prev);
+        interp_ins_set_dreg (ins, dreg);
+
+	gpointer v128_addr = &ins->data [0];
+
+	index = 0;
+	var = args [index];
+	while (var != -1) {
+		LocalValue *val = &local_defs [var];
+		write_v128_element (v128_addr, val, index, el_size);
+		val->ref_count--;
+		local_ref_count [var]--;
+		index++;
+		var = args [index];
+	}
+
+	if (td->verbose_level) {
+		g_print ("Fold simd create:\n\t");
+		dump_interp_inst (ins);
+	}
+
+	local_defs [dreg].ins = ins;
+	local_defs [dreg].type = LOCAL_VALUE_NONE;
+
+	return ins;
+}
+
+static void
 cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, LocalValue *local_defs)
 {
 	int *local_ref_count = td->local_ref_count;
@@ -9171,6 +9235,8 @@ retry:
 				ins = interp_fold_unop (td, local_defs, ins);
 			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_unop_cond_br (td, bb, local_defs, ins);
+			} else if (MINT_IS_SIMD_CREATE (opcode)) {
+				ins = interp_fold_simd_create (td, bb, local_defs, ins);
 			} else if (MINT_IS_BINOP (opcode)) {
 				gboolean folded;
 				ins = interp_fold_binop (td, local_defs, ins, &folded);
