@@ -102,6 +102,10 @@ typedef enum {
 
 #define PROFILE_INTERP 0
 
+#ifndef HOST_BROWSER
+#define INTERP_ENABLE_SIMD
+#endif
+
 #define INTERP_IMETHOD_TAG_1(im) ((gpointer)((mono_u)(im) | 1))
 #define INTERP_IMETHOD_IS_TAGGED_1(im) ((mono_u)(im) & 1)
 #define INTERP_IMETHOD_UNTAG_1(im) ((InterpMethod*)((mono_u)(im) & ~1))

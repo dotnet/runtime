@@ -1,4 +1,8 @@
+
+#include "interp-internals.h"
 #include "interp-simd.h"
+
+#ifdef INTERP_ENABLE_SIMD
 
 typedef gint64 v128_i8 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef guint64 v128_u8 __attribute__ ((vector_size (SIZEOF_V128)));
@@ -595,3 +599,5 @@ PPPP_SIMD_Method interp_simd_p_ppp_table [] = {
 };
 #undef INTERP_SIMD_INTRINSIC_P_PPP
 #define INTERP_SIMD_INTRINSIC_P_PPP(a,b)
+
+#endif // INTERP_ENABLE_SIMD

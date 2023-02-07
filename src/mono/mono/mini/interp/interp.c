@@ -65,7 +65,10 @@
 #include "mintops.h"
 #include "interp-intrins.h"
 #include "tiering.h"
+
+#ifdef INTERP_ENABLE_SIMD
 #include "interp-simd.h"
+#endif
 
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
@@ -5792,7 +5795,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 7;
 			goto call;
 		}
-
+#ifdef INTERP_ENABLE_SIMD
 		MINT_IN_CASE(MINT_SIMD_V128_LDC) {
 			memcpy (locals + ip [1], ip + 2, SIZEOF_V128);
 			ip += 10;
@@ -5859,6 +5862,18 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			interp_simd_p_ppp_table [ip [5]] (locals + ip [1], locals + ip [2], locals + ip [3], locals + ip [4]);
 			ip += 6;
 			MINT_IN_BREAK;
+#else
+		MINT_IN_CASE(MINT_SIMD_V128_LDC)
+		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_P)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PP)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PPP)
+			g_assert_not_reached ();
+			MINT_IN_BREAK;
+#endif
 
 		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {
 			gpointer ptr = LOCAL_VAR (ip [2], gpointer);
