@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <target state="translated">Das Argument „{0}“ verwendet den nicht unterstützten Parametermodifizierer „out“.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="new">Argument is using the unsupported out parameter modifier</target>
+        <target state="translated">Das Argument verwendet den nicht unterstützten Parametermodifizierer „out“.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -68,8 +68,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="translated">Nicht wohlgeformte Formatzeichenfolgen (beispielsweise mit überzähligen geschweiften Klammern) sind unzulässig.</target>
+        <source>Logging method '{0}' contains malformed format strings</source>
+        <target state="new">Logging method '{0}' contains malformed format strings</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsTitle">
+        <source>Logging method contains malformed format strings</source>
+        <target state="new">Logging method contains malformed format strings</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
