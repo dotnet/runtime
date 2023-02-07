@@ -1003,8 +1003,8 @@ private:
             {
                 bool isDef = (user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == node);
 
-                if (m_compiler->opts.OptimizationEnabled() && !isDef && node->OperIs(GT_IND) && varTypeIsIntegral(node) &&
-                    varTypeIsIntegral(varDsc))
+                if (m_compiler->opts.OptimizationEnabled() && !isDef && node->OperIs(GT_IND) &&
+                    node->gtGetOp1()->OperIs(GT_LCL_VAR_ADDR) && varTypeIsIntegral(node) && varTypeIsIntegral(varDsc))
                 {
                     GenTree* lclNode = BashToLclVar(node->gtGetOp1(), lclNum);
                     *val.Use()       = m_compiler->gtNewCastNode(genActualType(node), lclNode, false, node->TypeGet());
@@ -1381,7 +1381,7 @@ private:
 
 #ifdef TARGET_64BIT
             if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
-#else // TARGET_64BIT
+#else  // TARGET_64BIT
             if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc) && !varTypeIsLong(varDsc))
 #endif // !TARGET_64BIT
             {
@@ -1557,8 +1557,6 @@ private:
                 m_stmtModified = true;
             }
         }
-
-        return;
     }
 
     //------------------------------------------------------------------------
