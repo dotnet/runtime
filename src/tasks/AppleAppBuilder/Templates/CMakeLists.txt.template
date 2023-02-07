@@ -16,7 +16,7 @@ add_executable(
 if(NOT %UseNativeAOTRuntime%)
     target_sources(
         %ProjectName%
-        PUBLIC
+        PRIVATE
         %AotModulesSource%
         runtime.h
         runtime.m)
