@@ -382,11 +382,8 @@ internal static class ObjectHeader
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool TryExitInflated(ObjectHeaderOnStack h)
+    private static bool TryExitInflated(scoped ref MonoThreadsSync mon)
     {
-        LockWord lw = GetLockWord(h);
-        ref MonoThreadsSync mon = ref lw.GetInflatedLock();
-
         // if we're in a nested lock, decrement the count and we're done
         if (SyncBlock.TryDecrementNest (ref mon))
             return true;
@@ -405,13 +402,10 @@ internal static class ObjectHeader
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryExit(object obj)
+    private static bool TryExitFlat(ObjectHeaderOnStack h, LockWord lw)
     {
-        ObjectHeaderOnStack h = ObjectHeaderOnStack.Create(ref obj);
-        LockWord lw = GetLockWord(h);
 
-        if (lw.IsInflated)
-            return TryExitInflated(h);
+        Debug.Assert (!lw.IsInflated);
         // if the lock word is flat, there has been no contention
         LockWord nlw;
         if (lw.IsNested)
@@ -426,4 +420,32 @@ internal static class ObjectHeader
         return false;
     }
 
+
+    // checks that obj is locked by the current thread
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    #pragma warning disable IDE0060 // spurious "unused parameter" warning because we never use obj, just take aref to it.
+    public static bool TryExitChecked(object obj)
+    #pragma warning restore IDE0060
+    {
+        ObjectHeaderOnStack h = ObjectHeaderOnStack.Create(ref obj);
+        LockWord lw = GetLockWord(h);
+        bool owned = false;
+
+        ref MonoThreadsSync mon = ref Unsafe.NullRef<MonoThreadsSync>();
+        if (lw.IsFlat)
+        {
+            owned = (lw.GetOwner() == Thread.CurrentThread.GetSmallId());
+        }
+        else if (lw.IsInflated)
+        {
+            mon = ref lw.GetInflatedLock();
+            owned = (MonitorStatus.GetOwner(mon.status) == Thread.CurrentThread.GetSmallId());
+        }
+        if (!owned)
+            throw new SynchronizationLockException(SR.Arg_SynchronizationLockException);
+        if (lw.IsInflated)
+            return TryExitInflated(ref mon);
+        else
+            return TryExitFlat(h, lw);
+    }
 }

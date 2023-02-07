@@ -29,9 +29,7 @@ namespace System.Threading
         {
             if (obj == null)
                 ArgumentNullException.ThrowIfNull(obj);
-            if (!ObjectHeader.IsEntered(obj))
-                throw new SynchronizationLockException(SR.Arg_SynchronizationLockException);
-            if (ObjectHeader.TryExit(obj))
+            if (ObjectHeader.TryExitChecked(obj))
                 return;
 
             InternalExit(obj);
