@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="Dataflow.cs" />
     <Compile Include="DeadCodeElimination.cs" />
+    <Compile Include="DependencyInjectionPattern.cs" />
     <Compile Include="ILLinkDescriptor.cs" />
     <Compile Include="FeatureSwitches.cs" />
     <Compile Include="Main.cs" />
