@@ -478,7 +478,7 @@ namespace System.Collections.Concurrent
             else
             {
                 Debug.Assert(comparer is not null);
-                int hashcode = _comparerIsDefaultForClasses ? key.GetHashCode() : comparer.GetHashCode(key);
+                int hashcode = GetHashCode(comparer, key);
                 for (Node? n = GetBucket(tables, hashcode); n is not null; n = n._next)
                 {
                     if (hashcode == n._hashcode && comparer.Equals(n._key, key))
@@ -1303,10 +1303,9 @@ namespace System.Collections.Concurrent
                     }
                 }
 
-                Tables newTables = _tables;
-                if (tables != newTables)
+                if (tables != _tables)
                 {
-                    tables = newTables;
+                    tables = _tables;
                     if (!ReferenceEquals(comparer, tables._comparer))
                     {
                         comparer = tables._comparer;
@@ -1377,10 +1376,9 @@ namespace System.Collections.Concurrent
                     }
                 }
 
-                Tables newTables = _tables;
-                if (tables != newTables)
+                if (tables != _tables)
                 {
-                    tables = newTables;
+                    tables = _tables;
                     if (!ReferenceEquals(comparer, tables._comparer))
                     {
                         comparer = tables._comparer;
@@ -1444,10 +1442,9 @@ namespace System.Collections.Concurrent
                     }
                 }
 
-                Tables newTables = _tables;
-                if (tables != newTables)
+                if (tables != _tables)
                 {
-                    tables = newTables;
+                    tables = _tables;
                     if (!ReferenceEquals(comparer, tables._comparer))
                     {
                         comparer = tables._comparer;
