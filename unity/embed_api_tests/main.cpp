@@ -2489,23 +2489,6 @@ void SetupMono(Mode mode)
     printf("Setting up directories for Mono...\n");
     mono_set_dirs(monoLibFolder.c_str(), "");
 
-    char* assembliesPathsNullTerm;
-
-    if (mode == CoreCLR)
-    {
-#if defined(_DEBUG)
-        assembliesPaths = abs_path_from_file("../unity-embed-hos/bin/Debug/net7.0");
-#else
-        assembliesPaths = abs_path_from_file("../unity-embed-hos/bin/Release/net7.0");
-#endif
-        auto assembliesPathsChar = assembliesPaths.c_str();
-        assembliesPathsNullTerm = new char[strlen(assembliesPathsChar) + 2];
-        strcpy(assembliesPathsNullTerm, assembliesPathsChar);
-        assembliesPathsNullTerm[strlen(assembliesPathsChar) + 1] = '\0';
-        mono_set_assemblies_path_null_separated(assembliesPathsNullTerm);
-        delete [] assembliesPathsNullTerm;
-    }
-
     g_domain = mono_jit_init_version("myapp", "v4.0.30319");
     g_assembly = mono_domain_assembly_open(g_domain, testDllPath.c_str());
 }
