@@ -1884,7 +1884,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		klass_name_space = m_class_get_name_space (target_method->klass);
 	const char *klass_name = m_class_get_name (target_method->klass);
 
-	if (interp_emit_simd_intrinsics (td, target_method, csignature))
+	if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, target_method, csignature))
 		return TRUE;
 
 	if (target_method->klass == mono_defaults.string_class) {
