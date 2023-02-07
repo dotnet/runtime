@@ -2184,7 +2184,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     }
     else
     {
-        JITDUMP("Using block profiling\n");
+        JITDUMP("Using block profiling, because %s\n", prejit ? "prejitting" : "edge profiling disabled");
         fgCountInstrumentor = new (this, CMK_Pgo) BlockCountInstrumentor(this);
     }
 
