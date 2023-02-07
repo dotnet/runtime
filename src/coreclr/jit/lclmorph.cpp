@@ -1001,10 +1001,25 @@ private:
 
             if (isWide)
             {
-                m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField
-                                                     ? varDsc->lvParentLcl
-                                                     : val.LclNum() DEBUGARG(AddressExposedReason::WIDE_INDIR));
-                MorphWideLocalIndir(val);
+                bool isDef = (user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == node);
+
+                if (m_compiler->opts.OptimizationEnabled() && !isDef && node->OperIs(GT_IND) && varTypeIsIntegral(node) &&
+                    varTypeIsIntegral(varDsc))
+                {
+                    GenTree* lclNode = BashToLclVar(node->gtGetOp1(), lclNum);
+                    *val.Use()       = m_compiler->gtNewCastNode(genActualType(node), lclNode, false, node->TypeGet());
+
+                    DEBUG_DESTROY_NODE(node);
+
+                    m_stmtModified = true;
+                }
+                else
+                {
+                    m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField
+                                                         ? varDsc->lvParentLcl
+                                                         : val.LclNum() DEBUGARG(AddressExposedReason::WIDE_INDIR));
+                    MorphWideLocalIndir(val);
+                }
             }
             else
             {
