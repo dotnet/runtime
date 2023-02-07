@@ -264,6 +264,7 @@
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
       <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
+      <WasmMainHtmlPath>$(PublishDir)index.html</WasmMainHtmlPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
 
@@ -280,6 +281,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <WasmExtraFilesToDeploy Include="$(WasmMainJSPath)" />
+      <WasmExtraFilesToDeploy Include="$(WasmMainHtmlPath)" />
+
       <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" Condition="'$(BuildAOTTestsOnHelix)' == 'true'" />
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
 
@@ -298,6 +302,8 @@
               TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
+
+    <WriteLinesToFile File="$(WasmMainHtmlPath)" Lines="&lt;html&gt;&lt;body&gt;&lt;script type='module' src='test-main.js'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" WriteOnlyWhenDifferent="true" Overwrite="true" />
   </Target>
 
   <!-- linker automatically picks up the .pdb files, but they are not added to the publish list.
