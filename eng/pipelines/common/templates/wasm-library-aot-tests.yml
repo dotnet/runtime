@@ -17,11 +17,11 @@ jobs:
 # Build for Browser/wasm, with EnableAggressiveTrimming=true
 #
 # non-windows - run only with v8
-- ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
+- ${{ if containsValue(parameters.platforms, 'browser_wasm') }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
-        - Browser_wasm
+        - browser_wasm
       nameSuffix: ${{ parameters.nameSuffix }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
@@ -34,11 +34,11 @@ jobs:
         - normal
 
 # windows - run only with browser
-- ${{ if containsValue(parameters.platforms, 'Browser_wasm_win') }}:
+- ${{ if containsValue(parameters.platforms, 'browser_wasm_win') }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
-        - Browser_wasm_win
+        - browser_wasm_win
       nameSuffix: ${{ parameters.nameSuffix }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}

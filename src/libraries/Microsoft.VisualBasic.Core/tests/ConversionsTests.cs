@@ -159,10 +159,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, byte.MaxValue };
             yield return new object[] { false, byte.MinValue };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, byte.MinValue };
-            }
 
             // null.
             yield return new object[] { null, byte.MinValue };
@@ -340,10 +336,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, (sbyte)(-1) };
             yield return new object[] { false, (sbyte)0 };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, (sbyte)0 };
-            }
 
             // null.
             yield return new object[] { null, (sbyte)0 };
@@ -514,10 +506,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, ushort.MaxValue };
             yield return new object[] { false, ushort.MinValue };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, ushort.MinValue };
-            }
 
             // null.
             yield return new object[] { null, ushort.MinValue };
@@ -698,10 +686,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, (short)(-1) };
             yield return new object[] { false, (short)0 };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, (short)0 };
-            }
 
             // null.
             yield return new object[] { null, (short)0 };
@@ -876,10 +860,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, uint.MaxValue };
             yield return new object[] { false, uint.MinValue };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, uint.MinValue };
-            }
 
             // null.
             yield return new object[] { null, uint.MinValue };
@@ -1066,10 +1046,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, -1 };
             yield return new object[] { false, 0 };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, 0 };
-            }
 
             // null.
             yield return new object[] { null, 0 };
@@ -1252,10 +1228,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, ulong.MaxValue };
             yield return new object[] { false, ulong.MinValue };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, ulong.MinValue };
-            }
 
             // null.
             yield return new object[] { null, ulong.MinValue };
@@ -1480,10 +1452,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, (long)(-1) };
             yield return new object[] { false, (long)0 };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, (long)0 };
-            }
 
             // null.
             yield return new object[] { null, (long)0 };
@@ -1706,10 +1674,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, (float)(-1) };
             yield return new object[] { false, (float)0 };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, (float)0 };
-            }
 
             // null.
             yield return new object[] { null, (float)0 };
@@ -1899,10 +1863,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, (double)(-1) };
             yield return new object[] { false, (double)0 };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, (double)0 };
-            }
 
             // null.
             yield return new object[] { null, (double)0 };
@@ -2095,10 +2055,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, (decimal)(-1) };
             yield return new object[] { false, (decimal)0 };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, (decimal)0 };
-            }
 
             // null.
             yield return new object[] { null, (decimal)0 };
@@ -2321,10 +2277,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, true };
             yield return new object[] { false, false };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, false };
-            }
 
             // null.
             yield return new object[] { null, false };
@@ -2636,10 +2588,6 @@ namespace Microsoft.VisualBasic.Tests
             // bool.
             yield return new object[] { true, "True" };
             yield return new object[] { false, "False" };
-            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
-            {
-                yield return new object[] { BoolEnum, "False" };
-            }
 
             // string.
             yield return new object[] { "", "" };
@@ -2746,28 +2694,6 @@ namespace Microsoft.VisualBasic.Tests
                 }
 
                 return s_doubleEnum;
-            }
-        }
-
-        private static object s_boolEnum;
-
-        public static object BoolEnum
-        {
-            get
-            {
-                if (s_boolEnum == null)
-                {
-                    AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
-                    ModuleBuilder module = assembly.DefineDynamicModule("Name");
-
-                    EnumBuilder eb = module.DefineEnum("BoolEnumType", TypeAttributes.Public, typeof(bool));
-                    eb.DefineLiteral("False", false);
-                    eb.DefineLiteral("True", true);
-
-                    s_boolEnum = Activator.CreateInstance(eb.CreateTypeInfo());
-                }
-
-                return s_boolEnum;
             }
         }
 

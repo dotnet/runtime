@@ -60,7 +60,7 @@ build_Tests()
     export MSBUILDDEBUGPATH
 
     if [[ "$__SkipNative" != 1 && "$__BuildTestWrappersOnly" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
-        "$__TargetOS" != "Browser" && "$__TargetOS" != "wasi" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" && "$__TargetOS" != "iOSSimulator" ]]; then
+        "$__TargetOS" != "browser" && "$__TargetOS" != "wasi" && "$__TargetOS" != "android" && "$__TargetOS" != "ios" && "$__TargetOS" != "iossimulator" ]]; then
         build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
@@ -234,19 +234,34 @@ handle_arguments_local() {
         test*|-test*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestProject="$__BuildTestProject${parts[1]}%3B"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                shift
+                __BuildTestProject="$__BuildTestProject$1%3B"
+            else
+                __BuildTestProject="$__BuildTestProject${parts[1]}%3B"
+            fi
             ;;
 
         dir*|-dir*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestDir="$__BuildTestDir${parts[1]}%3B"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                shift
+                __BuildTestDir="$__BuildTestDir$1%3B"
+            else
+                __BuildTestDir="$__BuildTestDir${parts[1]}%3B"
+            fi
             ;;
 
         tree*|-tree*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestTree="$__BuildTestTree${parts[1]}%3B"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                shift
+                __BuildTestTree="$__BuildTestTree$1%3B"
+            else
+                __BuildTestTree="$__BuildTestTree${parts[1]}%3B"
+            fi
             ;;
 
         runtests|-runtests)
@@ -284,7 +299,12 @@ handle_arguments_local() {
         log*|-log*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildLogRootName="${parts[1]}"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                shift
+                __BuildLogRootName="$1"
+            else
+                __BuildLogRootName="${parts[1]}"
+            fi
             ;;
 
         *)
@@ -347,7 +367,7 @@ if [[ "${__TargetArch}" != "${__HostArch}" ]]; then
     __CrossBuild=1
 fi
 
-if [[ "$__CrossBuild" == 1 && "$__TargetOS" != "Android" ]]; then
+if [[ "$__CrossBuild" == 1 && "$__TargetOS" != "android" ]]; then
     __UnprocessedBuildArgs+=("/p:CrossBuild=true")
 fi
 
@@ -358,12 +378,12 @@ else
 fi
 
 # Get the number of processors available to the scheduler
-platform="$(uname)"
-if [[ "$platform" == "FreeBSD" ]]; then
+platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
+if [[ "$platform" == "freebsd" ]]; then
   __NumProc="$(($(sysctl -n hw.ncpu)+1))"
-elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
+elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
-elif [[ "$platform" == "Darwin" ]]; then
+elif [[ "$platform" == "darwin" ]]; then
   __NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
 elif command -v nproc > /dev/null 2>&1; then
   __NumProc="$(nproc)"

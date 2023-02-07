@@ -69,7 +69,6 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
         /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
         /// <returns>The <see cref="IHostBuilder"/>.</returns>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public static IHostBuilder UseDefaultServiceProvider(this IHostBuilder hostBuilder, Action<ServiceProviderOptions> configure)
             => hostBuilder.UseDefaultServiceProvider((context, options) => configure(options));
 
@@ -79,7 +78,6 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
         /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
         /// <returns>The <see cref="IHostBuilder"/>.</returns>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public static IHostBuilder UseDefaultServiceProvider(this IHostBuilder hostBuilder, Action<HostBuilderContext, ServiceProviderOptions> configure)
         {
             return hostBuilder.UseServiceProviderFactory(context =>
@@ -192,7 +190,6 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="builder">The existing builder to configure.</param>
         /// <param name="args">The command line args.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public static IHostBuilder ConfigureDefaults(this IHostBuilder builder, string[]? args)
         {
             return builder.ConfigureHostConfiguration(config => ApplyDefaultHostConfiguration(config, args))
@@ -230,10 +227,7 @@ namespace Microsoft.Extensions.Hosting
         internal static void AddDefaultHostConfigurationSources(IConfigurationBuilder hostConfigBuilder, string[]? args)
         {
             hostConfigBuilder.AddEnvironmentVariables(prefix: "DOTNET_");
-            if (args is { Length: > 0 })
-            {
-                hostConfigBuilder.AddCommandLine(args);
-            }
+            AddCommandLineConfig(hostConfigBuilder, args);
         }
 
         internal static void ApplyDefaultAppConfiguration(HostBuilderContext hostingContext, IConfigurationBuilder appConfigBuilder, string[]? args)
@@ -259,13 +253,18 @@ namespace Microsoft.Extensions.Hosting
 
             appConfigBuilder.AddEnvironmentVariables();
 
-            if (args is { Length: > 0 })
-            {
-                appConfigBuilder.AddCommandLine(args);
-            }
+            AddCommandLineConfig(appConfigBuilder, args);
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Calling IConfiguration.GetValue is safe when the T is bool.")]
             static bool GetReloadConfigOnChangeValue(HostBuilderContext hostingContext) => hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+        }
+
+        internal static void AddCommandLineConfig(IConfigurationBuilder configBuilder, string[]? args)
+        {
+            if (args is { Length: > 0 })
+            {
+                configBuilder.AddCommandLine(args);
+            }
         }
 
         internal static void AddDefaultServices(HostBuilderContext hostingContext, IServiceCollection services)

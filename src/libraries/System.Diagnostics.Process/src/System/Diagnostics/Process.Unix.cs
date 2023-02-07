@@ -837,7 +837,7 @@ namespace System.Diagnostics
         /// <param name="fd">The file descriptor.</param>
         /// <param name="direction">The pipe direction.</param>
         /// <returns>The opened stream.</returns>
-        private static Stream OpenStream(int fd, PipeDirection direction)
+        private static AnonymousPipeClientStream OpenStream(int fd, PipeDirection direction)
         {
             Debug.Assert(fd >= 0);
             return new AnonymousPipeClientStream(direction, new SafePipeHandle((IntPtr)fd, ownsHandle: true));

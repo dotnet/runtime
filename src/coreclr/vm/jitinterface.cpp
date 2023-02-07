@@ -1576,18 +1576,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 }
             }
         }
-
-        //
-        // Currently, we only this optimization for regular statics, but it
-        // looks like it may be permissible to do this optimization for
-        // thread statics as well.
-        //
-        if ((flags & CORINFO_ACCESS_ADDRESS) &&
-            !pField->IsThreadStatic() &&
-            (fieldAccessor != CORINFO_FIELD_STATIC_TLS))
-        {
-            fieldFlags |= CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
-        }
     }
     else
     {
@@ -6006,7 +5994,7 @@ bool CEEInfo::getStringChar(CORINFO_OBJECT_HANDLE obj, int index, uint16_t* valu
             result = true;
         }
     }
-    
+
     EE_TO_JIT_TRANSITION();
 
     return result;
@@ -8969,7 +8957,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
         if (ret == NULL)
         {
             // should never get here for EnC methods or if interception via remoting stub is required
-            _ASSERTE(!ftn->IsEnCMethod());
+            _ASSERTE(!ftn->InEnCEnabledModule());
 
             ret = (void *)ftn->GetAddrOfSlot();
 
@@ -11720,7 +11708,7 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
             UINT size = field->GetSize();
             _ASSERTE(baseAddr > 0);
             _ASSERTE(size > 0);
-          
+
             if (size >= (UINT)bufferSize && valueOffset >= 0 && (UINT)valueOffset <= size - (UINT)bufferSize)
             {
                 memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);

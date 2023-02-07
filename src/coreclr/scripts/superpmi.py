@@ -132,11 +132,11 @@ was built with the same JIT/EE version as the JIT we are using, and run "mcs -pr
 to get that version. Otherwise, use "unknown-jit-ee-version".
 """
 
-host_os_help = "OS (windows, OSX, Linux). Default: current OS."
+host_os_help = "OS (windows, osx, linux). Default: current OS."
 
 arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture."
 
-target_os_help = "Target OS, for use with cross-compilation JIT (windows, OSX, Linux). Default: current OS."
+target_os_help = "Target OS, for use with cross-compilation JIT (windows, osx, linux). Default: current OS."
 
 target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64). Passed as asm diffs target to SuperPMI. Default: current architecture."
 
@@ -341,7 +341,7 @@ asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Gener
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets DOTNET_JitGCDump; requires instructions to be prefixed by offsets).")
 asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets DOTNET_JitDebugDump).")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
-asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
+asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, one for each metric.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
 
@@ -625,10 +625,10 @@ class SuperPMICollect:
 
         self.core_root = coreclr_args.core_root
 
-        if coreclr_args.host_os == "OSX":
+        if coreclr_args.host_os == "osx":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
             self.corerun_tool_name = "corerun"
-        elif coreclr_args.host_os == "Linux":
+        elif coreclr_args.host_os == "linux":
             self.collection_shim_name = "libsuperpmi-shim-collector.so"
             self.corerun_tool_name = "corerun"
         elif coreclr_args.host_os == "windows":
@@ -1788,7 +1788,8 @@ class SuperPMIReplayAsmDiffs:
                                 jit_analyze_summary_file = os.path.join(asm_root_dir, "summary.md")
                                 command = [ jit_analyze_path, "--md", jit_analyze_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
                                 if self.coreclr_args.metrics:
-                                    command += [ "--metrics", ",".join(self.coreclr_args.metrics) ]
+                                    for metric in self.coreclr_args.metrics:
+                                        command += [ "--metrics", metric ]
                                 elif base_bytes is not None and diff_bytes is not None:
                                     command += [ "--override-total-base-metric", str(base_bytes), "--override-total-diff-metric", str(diff_bytes) ]
 
@@ -2323,85 +2324,95 @@ class SuperPMIReplayThroughputDiff:
                 os.remove(overall_md_summary_file)
 
             with open(overall_md_summary_file, "w") as write_fh:
-                if base_jit_compiler_version != diff_jit_compiler_version:
-                    write_fh.write("Warning: Different compilers used for base and diff JITs. Results may be misleading.\n")
-                    write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
-                    write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
-
-                # We write two tables, an overview one with just significantly
-                # impacted collections and a detailed one that includes raw
-                # instruction count and all collections.
-                def is_significant_pct(base, diff):
-                    if base == 0:
-                        return diff != 0
-
-                    return round((diff - base) / base * 100, 2) != 0
-
-                def is_significant(row, base, diff):
-                    return is_significant_pct(int(base[row]["Diff executed instructions"]), int(diff[row]["Diff executed instructions"]))
-                def format_pct(base_instructions, diff_instructions):
-                    plus_if_positive = "+" if diff_instructions > base_instructions else ""
-                    if base_instructions > 0:
-                        pct = (diff_instructions - base_instructions) / base_instructions * 100
-                    else:
-                        pct = 0.0
-
-                    text = "{}{:.2f}%".format(plus_if_positive, pct)
-                    if diff_instructions != base_instructions:
-                        color = "red" if diff_instructions > base_instructions else "green"
-                        return html_color(color, text)
-
-                    return text
-
-                if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in tp_diffs):
-                    def write_pivot_section(row):
-                        if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
-                            return
-
-                        write_fh.write("\n<details>\n")
-                        sum_base = sum(int(base_metrics[row]["Diff executed instructions"]) for (_, base_metrics, _) in tp_diffs)
-                        sum_diff = sum(int(diff_metrics[row]["Diff executed instructions"]) for (_, _, diff_metrics) in tp_diffs)
-
-                        write_fh.write("<summary>{} ({})</summary>\n\n".format(row, format_pct(sum_base, sum_diff)))
-                        write_fh.write("|Collection|PDIFF|\n")
-                        write_fh.write("|---|--:|\n")
-                        for mch_file, base, diff in tp_diffs:
-                            base_instructions = int(base[row]["Diff executed instructions"])
-                            diff_instructions = int(diff[row]["Diff executed instructions"])
-
-                            if is_significant(row, base, diff):
-                                write_fh.write("|{}|{}|\n".format(
-                                    mch_file,
-                                    format_pct(base_instructions, diff_instructions)))
-
-                        write_fh.write("\n\n</details>\n")
-
-                    write_pivot_section("Overall")
-                    write_pivot_section("MinOpts")
-                    write_pivot_section("FullOpts")
-
-                else:
-                    write_fh.write("No significant throughput differences found\n")
-
-                write_fh.write("\n<details>\n")
-                write_fh.write("<summary>Details</summary>\n\n")
-                for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
-                    write_fh.write("{} contexts:\n\n".format(disp))
-                    write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
-                    write_fh.write("|---|--:|--:|--:|\n")
-                    for mch_file, base, diff in tp_diffs:
-                        base_instructions = int(base[row]["Diff executed instructions"])
-                        diff_instructions = int(diff[row]["Diff executed instructions"])
-                        write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
-                            mch_file, base_instructions, diff_instructions,
-                            format_pct(base_instructions, diff_instructions)))
-                    write_fh.write("\n")
-                write_fh.write("\n</details>\n")
-
-            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+                self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_compiler_version, diff_jit_compiler_version)
+                logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
         return True
         ################################################################################################ end of replay_with_throughput_diff()
+
+    def write_tpdiff_markdown_summary(self, write_fh, tp_diffs, base_jit_compiler_version, diff_jit_compiler_version):
+        if base_jit_compiler_version != diff_jit_compiler_version:
+            write_fh.write("Warning: Different compilers used for base and diff JITs. Results may be misleading.\n")
+            write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
+            write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
+
+        # We write two tables, an overview one with just significantly
+        # impacted collections and a detailed one that includes raw
+        # instruction count and all collections.
+        def is_significant_pct(base, diff):
+            if base == 0:
+                return diff != 0
+
+            return round((diff - base) / base * 100, 2) != 0
+
+        def is_significant(row, base, diff):
+            return is_significant_pct(int(base[row]["Diff executed instructions"]), int(diff[row]["Diff executed instructions"]))
+
+        def compute_pct(base_instructions, diff_instructions):
+            if base_instructions > 0:
+                return (diff_instructions - base_instructions) / base_instructions * 100
+            else:
+                return 0.0
+
+        def format_pct(pct):
+            plus_if_positive = "+" if pct > 0 else ""
+
+            text = "{}{:.2f}%".format(plus_if_positive, pct)
+            if pct != 0:
+                color = "red" if pct > 0 else "green"
+                return html_color(color, text)
+
+            return text
+
+        def compute_and_format_pct(base_instructions, diff_instructions):
+            return format_pct(compute_pct(base_instructions, diff_instructions))
+
+        if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in tp_diffs):
+            def write_pivot_section(row):
+                if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
+                    return
+
+                write_fh.write("\n<details>\n")
+                pcts = [compute_pct(int(base_metrics[row]["Diff executed instructions"]), int(diff_metrics[row]["Diff executed instructions"])) for (_, base_metrics, diff_metrics) in tp_diffs]
+                min_pct_str = format_pct(min(pcts))
+                max_pct_str = format_pct(max(pcts))
+                if min_pct_str == max_pct_str:
+                    write_fh.write("<summary>{} ({})</summary>\n\n".format(row, min_pct_str))
+                else:
+                    write_fh.write("<summary>{} ({} to {})</summary>\n\n".format(row, min_pct_str, max_pct_str))
+                write_fh.write("|Collection|PDIFF|\n")
+                write_fh.write("|---|--:|\n")
+                for mch_file, base, diff in tp_diffs:
+                    base_instructions = int(base[row]["Diff executed instructions"])
+                    diff_instructions = int(diff[row]["Diff executed instructions"])
+
+                    if is_significant(row, base, diff):
+                        write_fh.write("|{}|{}|\n".format(
+                            mch_file,
+                            compute_and_format_pct(base_instructions, diff_instructions)))
+
+                write_fh.write("\n\n</details>\n")
+
+            write_pivot_section("Overall")
+            write_pivot_section("MinOpts")
+            write_pivot_section("FullOpts")
+        else:
+            write_fh.write("No significant throughput differences found\n")
+
+        write_fh.write("\n<details>\n")
+        write_fh.write("<summary>Details</summary>\n\n")
+        for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
+            write_fh.write("{} contexts:\n\n".format(disp))
+            write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
+            write_fh.write("|---|--:|--:|--:|\n")
+            for mch_file, base, diff in tp_diffs:
+                base_instructions = int(base[row]["Diff executed instructions"])
+                diff_instructions = int(diff[row]["Diff executed instructions"])
+                write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
+                    mch_file, base_instructions, diff_instructions,
+                    compute_and_format_pct(base_instructions, diff_instructions)))
+            write_fh.write("\n")
+        write_fh.write("\n</details>\n")
 
 ################################################################################
 # Argument handling helpers
@@ -2524,7 +2535,7 @@ def determine_jit_name(coreclr_args):
 
         if coreclr_args.target_arch.startswith("arm"):
             os_name = "universal"
-        elif coreclr_args.target_os == "OSX" or coreclr_args.target_os == "Linux":
+        elif coreclr_args.target_os == "osx" or coreclr_args.target_os == "linux":
             os_name = "unix"
         elif coreclr_args.target_os == "windows":
             os_name = "win"
@@ -2533,9 +2544,9 @@ def determine_jit_name(coreclr_args):
 
         jit_base_name = 'clrjit_{}_{}_{}'.format(os_name, coreclr_args.target_arch, coreclr_args.arch)
 
-    if coreclr_args.host_os == "OSX":
+    if coreclr_args.host_os == "osx":
         return "lib" + jit_base_name + ".dylib"
-    elif coreclr_args.host_os == "Linux":
+    elif coreclr_args.host_os == "linux":
         return "lib" + jit_base_name + ".so"
     elif coreclr_args.host_os == "windows":
         return jit_base_name + ".dll"
@@ -2597,7 +2608,7 @@ def determine_superpmi_tool_name(coreclr_args):
         (str) Name of the superpmi tool to use
     """
 
-    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+    if coreclr_args.host_os == "osx" or coreclr_args.host_os == "linux":
         return "superpmi"
     elif coreclr_args.host_os == "windows":
         return "superpmi.exe"
@@ -2629,7 +2640,7 @@ def determine_mcs_tool_name(coreclr_args):
         (str) Name of the mcs tool to use
     """
 
-    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+    if coreclr_args.host_os == "osx" or coreclr_args.host_os == "linux":
         return "mcs"
     elif coreclr_args.host_os == "windows":
         return "mcs.exe"
@@ -2661,7 +2672,7 @@ def determine_dotnet_tool_name(coreclr_args):
         (str) Name of the dotnet tool to use
     """
 
-    if coreclr_args.host_os == "OSX" or coreclr_args.host_os == "Linux":
+    if coreclr_args.host_os == "osx" or coreclr_args.host_os == "linux":
         return "dotnet"
     elif coreclr_args.host_os == "windows":
         return "dotnet.exe"

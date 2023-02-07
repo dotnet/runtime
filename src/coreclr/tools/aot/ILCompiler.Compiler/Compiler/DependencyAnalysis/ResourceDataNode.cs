@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
                             string resourceName = module.MetadataReader.GetString(resource.Name);
 
                             // Check if emitting the manifest resource is blocked by policy.
-                            if (factory.MetadataManager.IsManifestResourceBlocked(module, resourceName))
+                            if (factory.MetadataManager.IsManifestResourceBlocked(factory, module, resourceName))
                                 continue;
 
                             string assemblyName = module.GetName().FullName;

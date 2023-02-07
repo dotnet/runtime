@@ -7,7 +7,7 @@
     <NoWarn>$(NoWarn);436;SYSLIB0037</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
-    <DefineConstants Condition="'$(TargetOS)' == 'Browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants> 
+    <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants> 
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
@@ -145,7 +145,7 @@
     <PackageReference Include="System.Security.Cryptography.Algorithms" Version="$(SystemSecurityCryptographyAlgorithmsVersion)" />
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
   </ItemGroup>
 </Project>

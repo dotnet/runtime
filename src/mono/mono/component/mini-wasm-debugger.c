@@ -41,7 +41,7 @@ EMSCRIPTEN_KEEPALIVE gboolean mono_wasm_send_dbg_command_with_parms (int id, Mdb
 
 
 //JS functions imported that we use
-extern void mono_wasm_fire_debugger_agent_message (void);
+extern void mono_wasm_fire_debugger_agent_message_with_data (const char *data, int len);
 extern void mono_wasm_asm_loaded (const char *asm_name, const char *assembly_data, guint32 assembly_len, const char *pdb_data, guint32 pdb_len);
 
 G_END_DECLS
@@ -382,7 +382,7 @@ mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, i
 		goto done;
 	}
 	MdbgProtBuffer bufWithParms;
-	buffer_init (&bufWithParms, 128);
+	m_dbgprot_buffer_init (&bufWithParms, 128);
 	m_dbgprot_buffer_add_data (&bufWithParms, data, size);
 	if (!write_value_to_buffer(&bufWithParms, valtype, newvalue)) {
 		mono_wasm_add_dbg_command_received(0, id, 0, 0);
@@ -410,11 +410,11 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	}
 	ss_calculate_framecount (NULL, NULL, TRUE, NULL, NULL);
 	MdbgProtBuffer buf;
-	buffer_init (&buf, 128);
 	gboolean no_reply;
 	MdbgProtErrorCode error = 0;
 	if (command_set == MDBGPROT_CMD_SET_VM && command == MDBGPROT_CMD_VM_INVOKE_METHOD )
 	{
+		m_dbgprot_buffer_init (&buf, 128);
 		DebuggerTlsData* tls = mono_wasm_get_tls ();
 		InvokeData invoke_data;
 		memset (&invoke_data, 0, sizeof (InvokeData));
@@ -426,6 +426,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 		char* assembly_name = m_dbgprot_decode_string (data, &data, data + size);
 		if (assembly_name == NULL)
 		{
+			m_dbgprot_buffer_init (&buf, 128);
 			m_dbgprot_buffer_add_int (&buf, 0);
 			m_dbgprot_buffer_add_int (&buf, 0);
 		}
@@ -435,16 +436,20 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 			int symfile_size = 0;
 			const unsigned char* assembly_bytes = mono_wasm_get_assembly_bytes (assembly_name, &assembly_size);
 			const unsigned char* pdb_bytes = mono_get_symfile_bytes_from_bundle (assembly_name, &symfile_size);
+			m_dbgprot_buffer_init (&buf, assembly_size + symfile_size);
 			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) assembly_bytes, assembly_size);
 			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) pdb_bytes, symfile_size);
 		}
 	}
 	else
+	{
+		m_dbgprot_buffer_init (&buf, 128);
 		error = mono_process_dbg_packet (id, command_set, command, &no_reply, data, data + size, &buf);
+	}
 
 	mono_wasm_add_dbg_command_received (error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
 
-	buffer_free (&buf);
+	m_dbgprot_buffer_free (&buf);
 	result = TRUE;
 done:
 	MONO_EXIT_GC_UNSAFE;
@@ -454,9 +459,7 @@ done:
 static gboolean
 receive_debugger_agent_message (void *data, int len)
 {
-	mono_wasm_add_dbg_command_received(1, 0, data, len);
-	mono_wasm_save_thread_context();
-	mono_wasm_fire_debugger_agent_message ();
+	mono_wasm_fire_debugger_agent_message_with_data ((const char*)data, len);
 	return FALSE;
 }
 

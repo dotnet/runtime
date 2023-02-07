@@ -31,11 +31,6 @@ namespace System.Text.Json.SourceGeneration
         public bool IsVirtual { get; init; }
 
         /// <summary>
-        /// The property has JsonRequiredAttribute.
-        /// </summary>
-        public bool IsRequired { get; init; }
-
-        /// <summary>
         /// The property name specified via JsonPropertyNameAttribute, if available.
         /// </summary>
         public string? JsonPropertyName { get; init; }
@@ -53,6 +48,16 @@ namespace System.Text.Json.SourceGeneration
         /// Whether the property has a set method.
         /// </summary>
         public bool IsReadOnly { get; init; }
+
+        /// <summary>
+        /// Whether the property is marked `required`.
+        /// </summary>
+        public bool IsRequired { get; init; }
+
+        /// <summary>
+        /// The property is marked with JsonRequiredAttribute.
+        /// </summary>
+        public bool HasJsonRequiredAttribute { get; init; }
 
         /// <summary>
         /// Whether the property has an init-only set method.

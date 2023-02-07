@@ -247,7 +247,7 @@ namespace Internal.IL
                 _compilation.DetectGenericCycles(_canonMethod, method);
             }
 
-            return _factory.MethodEntrypoint(method);
+            return _factory.MethodEntrypointOrTentativeMethod(method);
         }
 
         private void ImportCall(ILOpcode opcode, int token)
@@ -501,6 +501,18 @@ namespace Internal.IL
                 // We have the canonical version of the method - find the runtime determined version.
                 // This is simplified because we know the method is on a valuetype.
                 Debug.Assert(targetMethod.OwningType.IsValueType);
+
+                if (forceUseRuntimeLookup)
+                {
+                    // The below logic would incorrectly resolve the lookup into the first match we found,
+                    // but there was a compile-time ambiguity due to shared code. The correct fix should
+                    // use the ConstrainedMethodUseLookupResult dictionary entry so that the exact
+                    // dispatch can be computed with the help of the generic dictionary.
+                    // We fail the compilation here to avoid bad codegen. This is not actually an invalid program.
+                    // https://github.com/dotnet/runtimelab/issues/1431
+                    ThrowHelper.ThrowInvalidProgramException();
+                }
+
                 MethodDesc targetOfLookup;
                 if (_constrained.IsRuntimeDeterminedType)
                     targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(targetMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)_constrained);
@@ -940,6 +952,9 @@ namespace Internal.IL
             else if (obj is MethodDesc)
             {
                 var method = (MethodDesc)obj;
+
+                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (MethodDesc)_canonMethodIL.GetObject(token));
+
                 if (method.IsRuntimeDeterminedExactMethod)
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodHandle, method), "ldtoken");
@@ -953,7 +968,9 @@ namespace Internal.IL
             }
             else
             {
-                Debug.Assert(obj is FieldDesc);
+                var field = (FieldDesc)obj;
+
+                _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (FieldDesc)_canonMethodIL.GetObject(token));
 
                 // First check if this is a ldtoken Field followed by InitializeArray or CreateSpan.
                 BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
@@ -971,7 +988,6 @@ namespace Internal.IL
                     }
                 }
 
-                var field = (FieldDesc)obj;
                 if (field.OwningType.IsRuntimeDeterminedSubtype)
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.FieldHandle, field), "ldtoken");
@@ -1339,7 +1355,7 @@ namespace Internal.IL
             return false;
         }
 
-        private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
+        private DefType GetWellKnownType(WellKnownType wellKnownType)
         {
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
         }

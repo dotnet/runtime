@@ -251,7 +251,7 @@ internal static partial class Interop
             return sslCtx;
         }
 
-        internal static void UpdateClientCertiticate(SafeSslHandle ssl, SslAuthenticationOptions sslAuthenticationOptions)
+        internal static void UpdateClientCertificate(SafeSslHandle ssl, SslAuthenticationOptions sslAuthenticationOptions)
         {
             // Disable certificate selection callback. We either got certificate or we will try to proceed without it.
             Interop.Ssl.SslSetClientCertCallback(ssl, 0);
@@ -306,7 +306,8 @@ internal static partial class Interop
                     if (!Interop.Ssl.Capabilities.Tls13Supported ||
                        string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ||
                        sslAuthenticationOptions.CertificateContext != null ||
-                        sslAuthenticationOptions.CertSelectionDelegate != null)
+                       sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
+                       sslAuthenticationOptions.CertSelectionDelegate != null)
                     {
                         cacheSslContext = false;
                     }
@@ -681,6 +682,11 @@ internal static partial class Interop
             *outp = null;
             *outlen = 0;
             IntPtr sslData = Ssl.SslGetData(ssl);
+
+            if (sslData == IntPtr.Zero)
+            {
+                return Ssl.SSL_TLSEXT_ERR_ALERT_FATAL;
+            }
 
             // reset application data to avoid dangling pointer.
             Ssl.SslSetData(ssl, IntPtr.Zero);

@@ -320,7 +320,7 @@ namespace ILCompiler
                 }
             }
 
-            private DictionaryLayoutNode GetPrecomputedLayout(TypeSystemEntity methodOrType)
+            private PrecomputedDictionaryLayoutNode GetPrecomputedLayout(TypeSystemEntity methodOrType)
             {
                 if (!_layouts.TryGetValue(methodOrType, out IEnumerable<GenericLookupResult> layout))
                 {
@@ -401,6 +401,8 @@ namespace ILCompiler
                             }
                         }
 
+                        _constructedTypes.Add(type);
+
                         if (type.IsInterface)
                         {
                             if (((MetadataType)type).IsDynamicInterfaceCastableImplementation())
@@ -427,9 +429,6 @@ namespace ILCompiler
                             //    program view.
                             //
 
-                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                                _constructedTypes.Add(type);
-
                             if (type is not MetadataType { IsAbstract: true })
                             {
                                 // Record all interfaces this class implements to _interfaceImplementators
@@ -443,7 +442,9 @@ namespace ILCompiler
                             }
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                            _canonConstructedTypes.Add(canonType.GetClosestDefType());
+
+                            if (!canonType.IsDefType || !((MetadataType)canonType).IsAbstract)
+                                _canonConstructedTypes.Add(canonType.GetClosestDefType());
 
                             TypeDesc baseType = canonType.BaseType;
                             bool added = true;
