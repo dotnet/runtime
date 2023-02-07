@@ -13,6 +13,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
     {
         [Fact]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Vector128))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/81785", TestPlatforms.Browser)]
         public unsafe void Vector128IsHardwareAcceleratedTest()
         {
             MethodInfo methodInfo = typeof(Vector128).GetMethod("get_IsHardwareAccelerated");
