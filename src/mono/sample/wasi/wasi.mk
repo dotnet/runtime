@@ -9,7 +9,8 @@ endif
 CONFIG?=Release
 
 WASM_DEFAULT_BUILD_ARGS?=/p:TargetArchitecture=wasm /p:TargetOS=wasi /p:Configuration=$(CONFIG)
-WASMTIME_PROV_PATH=$(realpath $(TOP)/artifacts/obj/wasmtime/wasmtime)
+WASMTIME_PROV_DIR=$(realpath $(TOP)/artifacts/obj/wasmtime)
+WASMTIME_PROV_PATH=${WASMTIME_PROV_DIR}/wasmtime
 
 all: publish
 
@@ -23,4 +24,4 @@ clean:
 	rm -rf bin $(TOP)/artifacts/obj/mono/$(PROJECT_NAME:%.csproj=%)
 
 run-console:
-	cd bin/wasi-wasm/AppBundle && $(WASMTIME_PROV_PATH) run $(PROJECT_NAME:.csproj=.wasm) $(ARGS)
+	cd bin/wasi-wasm/AppBundle && PATH=${WASMTIME_PROV_DIR}:${PATH} ./run-wasmtime.sh $(ARGS)

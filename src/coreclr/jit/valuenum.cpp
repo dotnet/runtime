@@ -7562,9 +7562,9 @@ struct ValueNumberState
                 }
 
                 bool allNonLoopPredsDone = true;
-                for (flowList* pred = m_comp->BlockPredsWithEH(cand); pred != nullptr; pred = pred->flNext)
+                for (FlowEdge* pred = m_comp->BlockPredsWithEH(cand); pred != nullptr; pred = pred->getNextPredEdge())
                 {
-                    BasicBlock* predBlock = pred->getBlock();
+                    BasicBlock* predBlock = pred->getSourceBlock();
                     if (!m_comp->optLoopTable[lnum].lpContains(predBlock))
                     {
                         if (!GetVisitBit(predBlock->bbNum, BVB_complete))
@@ -7619,9 +7619,9 @@ struct ValueNumberState
 #endif // DEBUG_VN_VISIT
 
             bool allPredsVisited = true;
-            for (flowList* pred = m_comp->BlockPredsWithEH(succ); pred != nullptr; pred = pred->flNext)
+            for (FlowEdge* pred = m_comp->BlockPredsWithEH(succ); pred != nullptr; pred = pred->getNextPredEdge())
             {
-                BasicBlock* predBlock = pred->getBlock();
+                BasicBlock* predBlock = pred->getSourceBlock();
                 if (!GetVisitBit(predBlock->bbNum, BVB_complete))
                 {
                     allPredsVisited = false;
@@ -8138,9 +8138,9 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
     // use a new unique VN.
     BasicBlock* nonLoopPred          = nullptr;
     bool        multipleNonLoopPreds = false;
-    for (flowList* pred = BlockPredsWithEH(entryBlock); pred != nullptr; pred = pred->flNext)
+    for (FlowEdge* pred = BlockPredsWithEH(entryBlock); pred != nullptr; pred = pred->getNextPredEdge())
     {
-        BasicBlock* predBlock = pred->getBlock();
+        BasicBlock* predBlock = pred->getSourceBlock();
         if (!optLoopTable[loopNum].lpContains(predBlock))
         {
             if (nonLoopPred == nullptr)

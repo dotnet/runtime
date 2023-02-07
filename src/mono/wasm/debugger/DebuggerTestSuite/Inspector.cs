@@ -170,7 +170,7 @@ namespace DebuggerTests
             }
         }
 
-        private (string line, string type) FormatConsoleAPICalled(JObject args)
+        internal (string line, string type) FormatConsoleAPICalled(JObject args)
         {
             string? type = args?["type"]?.Value<string>();
             List<string> consoleArgs = new();
