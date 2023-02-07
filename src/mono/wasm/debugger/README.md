@@ -7,4 +7,4 @@
 ## Projects
 
 - `DebuggerTestSuite` - project with all the tests, and the test harness
-- `Wasm.Debugger.Tests` - a wrapper project to fit in the global build
+- `Wasm.Debugger.Tests` - a wrapper project to fit in the global  build
