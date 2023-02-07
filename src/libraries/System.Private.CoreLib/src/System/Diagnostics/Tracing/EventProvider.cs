@@ -50,27 +50,7 @@ namespace System.Diagnostics.Tracing
             internal uint Reserved;
         }
 
-        /// <summary>
-        /// A struct characterizing ETW sessions (identified by the etwSessionId) as
-        /// activity-tracing-aware or legacy. A session that's activity-tracing-aware
-        /// has specified one non-zero bit in the reserved range 44-47 in the
-        /// 'allKeywords' value it passed in for a specific EventProvider.
-        /// </summary>
-        public struct SessionInfo
-        {
-            internal int sessionIdBit;      // the index of the bit used for tracing in the "reserved" field of AllKeywords
-            internal int etwSessionId;      // the machine-wide ETW session ID
-
-            internal SessionInfo(int sessionIdBit_, int etwSessionId_)
-            { sessionIdBit = sessionIdBit_; etwSessionId = etwSessionId_; }
-        }
-
         internal EventProviderImpl m_eventProvider;      // The implementation of the specific logging mechanism functions.
-        private byte m_level;                            // Tracing Level
-        private long m_anyKeywordMask;                   // Trace Enable Flags
-        private long m_allKeywordMask;                   // Match all keyword
-        private List<SessionInfo>? m_liveSessions;       // current live sessions (KeyValuePair<sessionIdBit, etwSessionId>)
-        private bool m_enabled;                          // Enabled flag from Trace callback
         private string? m_providerName;                  // Control name
         private Guid m_providerId;                       // Control Guid
         internal bool m_disposed;                        // when true provider has unregistered
@@ -156,7 +136,7 @@ namespace System.Diagnostics.Tracing
                 return;
 
             // Disable the provider.
-            m_enabled = false;
+            m_eventProvider.Disable();
 
             // Do most of the work under a lock to avoid shutdown race.
 
@@ -195,363 +175,24 @@ namespace System.Diagnostics.Tracing
             Dispose(false);
         }
 
-        internal unsafe void EnableCallback(
-                        int controlCode,
-                        byte setLevel,
-                        long anyKeyword,
-                        long allKeyword,
-                        Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData)
-        {
-            // This is an optional callback API. We will therefore ignore any failures that happen as a
-            // result of turning on this provider as to not crash the app.
-            // EventSource has code to validate whether initialization it expected to occur actually occurred
-            try
-            {
-                ControllerCommand command = ControllerCommand.Update;
-                IDictionary<string, string?>? args = null;
-                bool skipFinalOnControllerCommand = false;
-                if (controlCode == Interop.Advapi32.EVENT_CONTROL_CODE_ENABLE_PROVIDER)
-                {
-                    m_enabled = true;
-                    m_level = setLevel;
-                    m_anyKeywordMask = anyKeyword;
-                    m_allKeywordMask = allKeyword;
-
-                    List<KeyValuePair<SessionInfo, bool>> sessionsChanged = GetSessions();
-
-                    // The GetSessions() logic was here to support the idea that different ETW sessions
-                    // could have different user-defined filters.   (I believe it is currently broken but that is another matter.)
-                    // However in particular GetSessions() does not support EventPipe, only ETW, which is
-                    // the immediate problem.   We work-around establishing the invariant that we always get a
-                    // OnControllerCallback under all circumstances, even if we can't find a delta in the
-                    // ETW logic.  This fixes things for the EventPipe case.
-                    //
-                    // All this session based logic should be reviewed and likely removed, but that is a larger
-                    // change that needs more careful staging.
-                    if (sessionsChanged.Count == 0)
-                        sessionsChanged.Add(new KeyValuePair<SessionInfo, bool>(new SessionInfo(0, 0), true));
-
-                    foreach (KeyValuePair<SessionInfo, bool> session in sessionsChanged)
-                    {
-                        int sessionChanged = session.Key.sessionIdBit;
-                        int etwSessionId = session.Key.etwSessionId;
-                        bool bEnabling = session.Value;
-
-                        skipFinalOnControllerCommand = true;
-                        args = null;                                // reinitialize args for every session...
-
-                        // if we get more than one session changed we have no way
-                        // of knowing which one "filterData" belongs to
-                        if (sessionsChanged.Count > 1)
-                            filterData = null;
-
-                        // read filter data only when a session is being *added*
-                        if (bEnabling &&
-                            GetDataFromController(etwSessionId, filterData, out command, out byte[]? data, out int keyIndex))
-                        {
-                            args = new Dictionary<string, string?>(4);
-                            // data can be null if the filterArgs had a very large size which failed our sanity check
-                            if (data != null)
-                            {
-                                while (keyIndex < data.Length)
-                                {
-                                    int keyEnd = FindNull(data, keyIndex);
-                                    int valueIdx = keyEnd + 1;
-                                    int valueEnd = FindNull(data, valueIdx);
-                                    if (valueEnd < data.Length)
-                                    {
-                                        string key = System.Text.Encoding.UTF8.GetString(data, keyIndex, keyEnd - keyIndex);
-                                        string value = System.Text.Encoding.UTF8.GetString(data, valueIdx, valueEnd - valueIdx);
-                                        args[key] = value;
-                                    }
-                                    keyIndex = valueEnd + 1;
-                                }
-                            }
-                        }
-
-                        // execute OnControllerCommand once for every session that has changed.
-                        OnControllerCommand(command, args, bEnabling ? sessionChanged : -sessionChanged, etwSessionId);
-                    }
-                }
-                else if (controlCode == Interop.Advapi32.EVENT_CONTROL_CODE_DISABLE_PROVIDER)
-                {
-                    m_enabled = false;
-                    m_level = 0;
-                    m_anyKeywordMask = 0;
-                    m_allKeywordMask = 0;
-                    m_liveSessions = null;
-                }
-                else if (controlCode == Interop.Advapi32.EVENT_CONTROL_CODE_CAPTURE_STATE)
-                {
-                    command = ControllerCommand.SendManifest;
-                }
-                else
-                    return;     // per spec you ignore commands you don't recognize.
-
-                if (!skipFinalOnControllerCommand)
-                    OnControllerCommand(command, args, 0, 0);
-            }
-            catch
-            {
-                // We want to ignore any failures that happen as a result of turning on this provider as to
-                // not crash the app.
-            }
-        }
-
-        protected virtual void OnControllerCommand(ControllerCommand command, IDictionary<string, string?>? arguments, int sessionId, int etwSessionId) { }
+        internal virtual void OnControllerCommand(ControllerCommand command, IDictionary<string, string?>? arguments, int sessionId, int etwSessionId) { }
 
         protected EventLevel Level
         {
-            get => (EventLevel)m_level;
-            set => m_level = (byte)value;
+            get => m_eventProvider.Level;
+            set => m_eventProvider.Level = value;
         }
 
         protected EventKeywords MatchAnyKeyword
         {
-            get => (EventKeywords)m_anyKeywordMask;
-            set => m_anyKeywordMask = unchecked((long)value);
+            get => m_eventProvider.MatchAnyKeyword;
+            set => m_eventProvider.MatchAnyKeyword = value;
         }
 
         protected EventKeywords MatchAllKeyword
         {
-            get => (EventKeywords)m_allKeywordMask;
-            set => m_allKeywordMask = unchecked((long)value);
-        }
-
-        private static int FindNull(byte[] buffer, int idx)
-        {
-            while (idx < buffer.Length && buffer[idx] != 0)
-                idx++;
-            return idx;
-        }
-
-        /// <summary>
-        /// Determines the ETW sessions that have been added and/or removed to the set of
-        /// sessions interested in the current provider. It does so by (1) enumerating over all
-        /// ETW sessions that enabled 'this.m_Guid' for the current process ID, and (2)
-        /// comparing the current list with a list it cached on the previous invocation.
-        ///
-        /// The return value is a list of tuples, where the SessionInfo specifies the
-        /// ETW session that was added or remove, and the bool specifies whether the
-        /// session was added or whether it was removed from the set.
-        /// </summary>
-        private List<KeyValuePair<SessionInfo, bool>> GetSessions()
-        {
-            List<SessionInfo>? liveSessionList = null;
-
-            GetSessionInfo(
-                GetSessionInfoCallback,
-                ref liveSessionList);
-
-            List<KeyValuePair<SessionInfo, bool>> changedSessionList = new List<KeyValuePair<SessionInfo, bool>>();
-
-            // first look for sessions that have gone away (or have changed)
-            // (present in the m_liveSessions but not in the new liveSessionList)
-            if (m_liveSessions != null)
-            {
-                foreach (SessionInfo s in m_liveSessions)
-                {
-                    int idx;
-                    if ((idx = IndexOfSessionInList(liveSessionList, s.etwSessionId)) < 0 ||
-                        (liveSessionList![idx].sessionIdBit != s.sessionIdBit))
-                        changedSessionList.Add(new KeyValuePair<SessionInfo, bool>(s, false));
-                }
-            }
-            // next look for sessions that were created since the last callback  (or have changed)
-            // (present in the new liveSessionList but not in m_liveSessions)
-            if (liveSessionList != null)
-            {
-                foreach (SessionInfo s in liveSessionList)
-                {
-                    int idx;
-                    if ((idx = IndexOfSessionInList(m_liveSessions, s.etwSessionId)) < 0 ||
-                        (m_liveSessions![idx].sessionIdBit != s.sessionIdBit))
-                        changedSessionList.Add(new KeyValuePair<SessionInfo, bool>(s, true));
-                }
-            }
-
-            m_liveSessions = liveSessionList;
-            return changedSessionList;
-        }
-
-        /// <summary>
-        /// This method is the callback used by GetSessions() when it calls into GetSessionInfo().
-        /// It updates a List{SessionInfo} based on the etwSessionId and matchAllKeywords that
-        /// GetSessionInfo() passes in.
-        /// </summary>
-        private static void GetSessionInfoCallback(int etwSessionId, long matchAllKeywords,
-                                ref List<SessionInfo>? sessionList)
-        {
-            uint sessionIdBitMask = (uint)SessionMask.FromEventKeywords(unchecked((ulong)matchAllKeywords));
-            // an ETW controller that specifies more than the mandated bit for our EventSource
-            // will be ignored...
-            int val = BitOperations.PopCount(sessionIdBitMask);
-            if (val > 1)
-                return;
-
-            sessionList ??= new List<SessionInfo>(8);
-
-            if (val == 1)
-            {
-                // activity-tracing-aware etw session
-                val = BitOperations.TrailingZeroCount(sessionIdBitMask);
-            }
-            else
-            {
-                // legacy etw session
-                val = BitOperations.PopCount((uint)SessionMask.All);
-            }
-
-            sessionList.Add(new SessionInfo(val + 1, etwSessionId));
-        }
-
-        private delegate void SessionInfoCallback(int etwSessionId, long matchAllKeywords, ref List<SessionInfo>? sessionList);
-
-        /// <summary>
-        /// This method enumerates over all active ETW sessions that have enabled 'this.m_Guid'
-        /// for the current process ID, calling 'action' for each session, and passing it the
-        /// ETW session and the 'AllKeywords' the session enabled for the current provider.
-        /// </summary>
-        private
-#if !TARGET_WINDOWS
-        static
-#endif
-        unsafe void GetSessionInfo(SessionInfoCallback action, ref List<SessionInfo>? sessionList)
-        {
-#if TARGET_WINDOWS
-            int buffSize = 256;     // An initial guess that probably works most of the time.
-            byte* stackSpace = stackalloc byte[buffSize];
-            byte* buffer = stackSpace;
-            try
-            {
-                while (true)
-                {
-                    int hr = 0;
-
-                    fixed (Guid* provider = &m_providerId)
-                    {
-                        hr = Interop.Advapi32.EnumerateTraceGuidsEx(Interop.Advapi32.TRACE_QUERY_INFO_CLASS.TraceGuidQueryInfo,
-                            provider, sizeof(Guid), buffer, buffSize, out buffSize);
-                    }
-                    if (hr == 0)
-                        break;
-                    if (hr != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
-                        return;
-
-                    if (buffer != stackSpace)
-                    {
-                        byte* toFree = buffer;
-                        buffer = null;
-                        Marshal.FreeHGlobal((IntPtr)toFree);
-                    }
-                    buffer = (byte*)Marshal.AllocHGlobal(buffSize);
-                }
-
-                var providerInfos = (Interop.Advapi32.TRACE_GUID_INFO*)buffer;
-                var providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&providerInfos[1];
-                int processId = unchecked((int)Interop.Kernel32.GetCurrentProcessId());
-                // iterate over the instances of the EventProvider in all processes
-                for (int i = 0; i < providerInfos->InstanceCount; i++)
-                {
-                    if (providerInstance->Pid == processId)
-                    {
-                        var enabledInfos = (Interop.Advapi32.TRACE_ENABLE_INFO*)&providerInstance[1];
-                        // iterate over the list of active ETW sessions "listening" to the current provider
-                        for (int j = 0; j < providerInstance->EnableCount; j++)
-                            action(enabledInfos[j].LoggerId, enabledInfos[j].MatchAllKeyword, ref sessionList);
-                    }
-                    if (providerInstance->NextOffset == 0)
-                        break;
-                    Debug.Assert(0 <= providerInstance->NextOffset && providerInstance->NextOffset < buffSize);
-                    byte* structBase = (byte*)providerInstance;
-                    providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&structBase[providerInstance->NextOffset];
-                }
-            }
-            finally
-            {
-                if (buffer != null && buffer != stackSpace)
-                {
-                    Marshal.FreeHGlobal((IntPtr)buffer);
-                }
-            }
-
-#endif
-        }
-
-        /// <summary>
-        /// Returns the index of the SesisonInfo from 'sessions' that has the specified 'etwSessionId'
-        /// or -1 if the value is not present.
-        /// </summary>
-        private static int IndexOfSessionInList(List<SessionInfo>? sessions, int etwSessionId)
-        {
-            if (sessions == null)
-                return -1;
-            // for non-coreclr code we could use List<T>.FindIndex(Predicate<T>), but we need this to compile
-            // on coreclr as well
-            for (int i = 0; i < sessions.Count; ++i)
-                if (sessions[i].etwSessionId == etwSessionId)
-                    return i;
-
-            return -1;
-        }
-
-        /// <summary>
-        /// Gets any data to be passed from the controller to the provider.  It starts with what is passed
-        /// into the callback, but unfortunately this data is only present for when the provider is active
-        /// at the time the controller issues the command.  To allow for providers to activate after the
-        /// controller issued a command, we also check the registry and use that to get the data.  The function
-        /// returns an array of bytes representing the data, the index into that byte array where the data
-        /// starts, and the command being issued associated with that data.
-        /// </summary>
-        private
-#if !TARGET_WINDOWS
-        static
-#endif
-        unsafe bool GetDataFromController(int etwSessionId,
-            Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
-        {
-            data = null;
-            dataStart = 0;
-            if (filterData == null)
-            {
-#if TARGET_WINDOWS
-                string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
-                if (IntPtr.Size == 8)
-                    regKey = @"Software\Wow6432Node" + regKey;
-                else
-                    regKey = "Software" + regKey;
-
-                string valueName = "ControllerData_Session_" + etwSessionId.ToString(CultureInfo.InvariantCulture);
-
-                // we need to assert this permission for partial trust scenarios
-                using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(regKey))
-                {
-                    data = key?.GetValue(valueName, null) as byte[];
-                    if (data != null)
-                    {
-                        // We only used the persisted data from the registry for updates.
-                        command = ControllerCommand.Update;
-                        return true;
-                    }
-                }
-#endif
-            }
-            else
-            {
-                // ETW limited filter data to 1024 bytes but EventPipe doesn't. DiagnosticSourceEventSource
-                // can legitimately use large filter data buffers to encode a large set of events and properties
-                // that should be gathered so I am bumping the limit from 1K -> 100K.
-                if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100*1024)
-                {
-                    data = new byte[filterData->Size];
-                    Marshal.Copy((IntPtr)(void*)filterData->Ptr, data, 0, data.Length);
-                }
-                command = (ControllerCommand)filterData->Type;
-                return true;
-            }
-
-            command = ControllerCommand.Update;
-            return false;
+            get => m_eventProvider.MatchAllKeyword;
+            set => m_eventProvider.MatchAllKeyword = value;
         }
 
         /// <summary>
@@ -559,7 +200,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public bool IsEnabled()
         {
-            return m_enabled;
+            return m_eventProvider.IsEnabled();
         }
 
         /// <summary>
@@ -573,31 +214,7 @@ namespace System.Diagnostics.Tracing
         /// </param>
         public bool IsEnabled(byte level, long keywords)
         {
-            //
-            // If not enabled at all, return false.
-            //
-            if (!m_enabled)
-            {
-                return false;
-            }
-
-            // This also covers the case of Level == 0.
-            if ((level <= m_level) ||
-                (m_level == 0))
-            {
-                //
-                // Check if Keyword is enabled
-                //
-
-                if ((keywords == 0) ||
-                    (((keywords & m_anyKeywordMask) != 0) &&
-                     ((keywords & m_allKeywordMask) == m_allKeywordMask)))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return m_eventProvider.IsEnabled(level, keywords);
         }
 
         public static WriteEventErrorCode GetLastWriteEventError()
@@ -1124,13 +741,74 @@ namespace System.Diagnostics.Tracing
     // A wrapper around the ETW-specific API calls.
     internal sealed class EtwEventProvider : EventProviderImpl
     {
-        private readonly WeakReference<EventProvider> _eventProvider;
-        private long _registrationHandle;
-        private GCHandle _gcHandle;
+        /// <summary>
+        /// A struct characterizing ETW sessions (identified by the etwSessionId) as
+        /// activity-tracing-aware or legacy. A session that's activity-tracing-aware
+        /// has specified one non-zero bit in the reserved range 44-47 in the
+        /// 'allKeywords' value it passed in for a specific EventProvider.
+        /// </summary>
+        public struct SessionInfo
+        {
+            internal int sessionIdBit;      // the index of the bit used for tracing in the "reserved" field of AllKeywords
+            internal int etwSessionId;      // the machine-wide ETW session ID
+
+            internal SessionInfo(int sessionIdBit_, int etwSessionId_)
+            { sessionIdBit = sessionIdBit_; etwSessionId = etwSessionId_; }
+        }
+
+        private readonly WeakReference<EventProvider> m_eventProvider;
+        private long m_registrationHandle;
+        private GCHandle m_gcHandle;
+        private List<SessionInfo>? m_liveSessions;       // current live sessions (KeyValuePair<sessionIdBit, etwSessionId>)
+        private Guid m_providerId;
 
         internal EtwEventProvider(EventProvider eventProvider)
         {
-            _eventProvider = new WeakReference<EventProvider>(eventProvider);
+            m_eventProvider = new WeakReference<EventProvider>(eventProvider);
+        }
+
+        internal override void Disable()
+        {
+            base.Disable();
+            m_liveSessions = null;
+        }
+
+        protected override unsafe void HandleSessionEnable(
+                                    EventProvider target,
+                                    byte *additionalData,
+                                    byte level,
+                                    long matchAnyKeywords,
+                                    long matchAllKeywords,
+                                    Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData)
+        {
+            Debug.Assert(additionalData == null);
+
+            List<KeyValuePair<SessionInfo, bool>> sessionsChanged = GetSessions();
+
+            foreach (KeyValuePair<SessionInfo, bool> session in sessionsChanged)
+            {
+                int sessionChanged = session.Key.sessionIdBit;
+                int etwSessionId = session.Key.etwSessionId;
+                bool bEnabling = session.Value;
+
+                // reinitialize args for every session...
+                IDictionary<string, string?>? args = null;
+                ControllerCommand command = ControllerCommand.Update;
+
+                // if we get more than one session changed we have no way
+                // of knowing which one "filterData" belongs to
+                if (sessionsChanged.Count > 1)
+                    filterData = null;
+
+                // read filter data only when a session is being *added*
+                if (bEnabling)
+                {
+                    args = ParseFilterData(etwSessionId, filterData, out command);
+                }
+
+                // execute OnControllerCommand once for every session that has changed.
+                target.OnControllerCommand(command, args, bEnabling ? sessionChanged : -sessionChanged, etwSessionId);
+            }
         }
 
         [UnmanagedCallersOnly]
@@ -1139,43 +817,49 @@ namespace System.Diagnostics.Tracing
         {
             EtwEventProvider _this = (EtwEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
 
-            if (_this._eventProvider.TryGetTarget(out EventProvider? target))
-                target.EnableCallback(isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+            if (_this.m_eventProvider.TryGetTarget(out EventProvider? target))
+            {
+                _this.EnableCallback(target, null, isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+            }
         }
+
 
         // Register an event provider.
         internal override unsafe void Register(EventSource eventSource)
         {
-            Debug.Assert(!_gcHandle.IsAllocated);
-            _gcHandle = GCHandle.Alloc(this);
+            Debug.Assert(!m_gcHandle.IsAllocated);
+            m_gcHandle = GCHandle.Alloc(this);
 
             long registrationHandle = 0;
             Guid providerId = eventSource.Guid;
             uint status = Interop.Advapi32.EventRegister(
                 &providerId,
                 &Callback,
-                (void*)GCHandle.ToIntPtr(_gcHandle),
+                (void*)GCHandle.ToIntPtr(m_gcHandle),
                 &registrationHandle);
             if (status != 0)
             {
-                _gcHandle.Free();
+                m_gcHandle.Free();
                 throw new ArgumentException(Interop.Kernel32.GetMessage((int)status));
             }
-            Debug.Assert(_registrationHandle == 0);
-            _registrationHandle = registrationHandle;
+
+            Debug.Assert(m_registrationHandle == 0);
+            m_registrationHandle = registrationHandle;
+            m_providerId = providerId;
         }
 
         // Unregister an event provider.
         internal override void Unregister()
         {
-            if (_registrationHandle != 0)
+            if (m_registrationHandle != 0)
             {
-                Interop.Advapi32.EventUnregister(_registrationHandle);
-                _registrationHandle = 0;
+                Interop.Advapi32.EventUnregister(m_registrationHandle);
+                m_registrationHandle = 0;
             }
-            if (_gcHandle.IsAllocated)
+
+            if (m_gcHandle.IsAllocated)
             {
-                _gcHandle.Free();
+                m_gcHandle.Free();
             }
         }
 
@@ -1189,7 +873,7 @@ namespace System.Diagnostics.Tracing
             EventProvider.EventData* userData)
         {
             int error = Interop.Advapi32.EventWriteTransfer(
-                _registrationHandle,
+                m_registrationHandle,
                 in eventDescriptor,
                 activityId,
                 relatedActivityId,
@@ -1238,7 +922,7 @@ namespace System.Diagnostics.Tracing
                 try
                 {
                     status = Interop.Advapi32.EventSetInformation(
-                        _registrationHandle,
+                        m_registrationHandle,
                         eventInfoClass,
                         data,
                         dataSize);
@@ -1251,13 +935,305 @@ namespace System.Diagnostics.Tracing
 
             return status;
         }
+
+        protected override unsafe bool GetFilterDataPlatformSpecific(int etwSessionId,
+            Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
+        {
+            command = ControllerCommand.Update;
+            data = null;
+            dataStart = 0;
+
+            string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
+            if (IntPtr.Size == 8)
+            {
+                regKey = @"Software\Wow6432Node" + regKey;
+            }
+            else
+            {
+                regKey = "Software" + regKey;
+            }
+
+            string valueName = "ControllerData_Session_" + etwSessionId.ToString(CultureInfo.InvariantCulture);
+
+            // we need to assert this permission for partial trust scenarios
+            using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(regKey))
+            {
+                data = key?.GetValue(valueName, null) as byte[];
+                if (data != null)
+                {
+                    // We only used the persisted data from the registry for updates.
+                    command = ControllerCommand.Update;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Determines the ETW sessions that have been added and/or removed to the set of
+        /// sessions interested in the current provider. It does so by (1) enumerating over all
+        /// ETW sessions that enabled 'this.m_Guid' for the current process ID, and (2)
+        /// comparing the current list with a list it cached on the previous invocation.
+        ///
+        /// The return value is a list of tuples, where the SessionInfo specifies the
+        /// ETW session that was added or remove, and the bool specifies whether the
+        /// session was added or whether it was removed from the set.
+        /// </summary>
+        private List<KeyValuePair<SessionInfo, bool>> GetSessions()
+        {
+            List<SessionInfo>? liveSessionList = null;
+
+            GetSessionInfo(
+                GetSessionInfoCallback,
+                ref liveSessionList);
+
+            List<KeyValuePair<SessionInfo, bool>> changedSessionList = new List<KeyValuePair<SessionInfo, bool>>();
+
+            // first look for sessions that have gone away (or have changed)
+            // (present in the m_liveSessions but not in the new liveSessionList)
+            if (m_liveSessions != null)
+            {
+                foreach (SessionInfo s in m_liveSessions)
+                {
+                    int idx;
+                    if ((idx = IndexOfSessionInList(liveSessionList, s.etwSessionId)) < 0 ||
+                        (liveSessionList![idx].sessionIdBit != s.sessionIdBit))
+                        changedSessionList.Add(new KeyValuePair<SessionInfo, bool>(s, false));
+                }
+            }
+            // next look for sessions that were created since the last callback  (or have changed)
+            // (present in the new liveSessionList but not in m_liveSessions)
+            if (liveSessionList != null)
+            {
+                foreach (SessionInfo s in liveSessionList)
+                {
+                    int idx;
+                    if ((idx = IndexOfSessionInList(m_liveSessions, s.etwSessionId)) < 0 ||
+                        (m_liveSessions![idx].sessionIdBit != s.sessionIdBit))
+                        changedSessionList.Add(new KeyValuePair<SessionInfo, bool>(s, true));
+                }
+            }
+
+            m_liveSessions = liveSessionList;
+            return changedSessionList;
+        }
+
+        /// <summary>
+        /// This method is the callback used by GetSessions() when it calls into GetSessionInfo().
+        /// It updates a List{SessionInfo} based on the etwSessionId and matchAllKeywords that
+        /// GetSessionInfo() passes in.
+        /// </summary>
+        private static void GetSessionInfoCallback(int etwSessionId, long matchAllKeywords,
+                                ref List<SessionInfo>? sessionList)
+        {
+            uint sessionIdBitMask = (uint)SessionMask.FromEventKeywords(unchecked((ulong)matchAllKeywords));
+            // an ETW controller that specifies more than the mandated bit for our EventSource
+            // will be ignored...
+            int val = BitOperations.PopCount(sessionIdBitMask);
+            if (val > 1)
+                return;
+
+            sessionList ??= new List<SessionInfo>(8);
+
+            if (val == 1)
+            {
+                // activity-tracing-aware etw session
+                val = BitOperations.TrailingZeroCount(sessionIdBitMask);
+            }
+            else
+            {
+                // legacy etw session
+                val = BitOperations.PopCount((uint)SessionMask.All);
+            }
+
+            sessionList.Add(new SessionInfo(val + 1, etwSessionId));
+        }
+
+        private delegate void SessionInfoCallback(int etwSessionId, long matchAllKeywords, ref List<SessionInfo>? sessionList);
+
+        /// <summary>
+        /// This method enumerates over all active ETW sessions that have enabled 'this.m_Guid'
+        /// for the current process ID, calling 'action' for each session, and passing it the
+        /// ETW session and the 'AllKeywords' the session enabled for the current provider.
+        /// </summary>
+        private unsafe void GetSessionInfo(SessionInfoCallback action, ref List<SessionInfo>? sessionList)
+        {
+            int buffSize = 256;     // An initial guess that probably works most of the time.
+            byte* stackSpace = stackalloc byte[buffSize];
+            byte* buffer = stackSpace;
+            try
+            {
+                while (true)
+                {
+                    int hr = 0;
+
+                    fixed (Guid* provider = &m_providerId)
+                    {
+                        hr = Interop.Advapi32.EnumerateTraceGuidsEx(Interop.Advapi32.TRACE_QUERY_INFO_CLASS.TraceGuidQueryInfo,
+                            provider, sizeof(Guid), buffer, buffSize, out buffSize);
+                    }
+                    if (hr == 0)
+                        break;
+                    if (hr != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                        return;
+
+                    if (buffer != stackSpace)
+                    {
+                        byte* toFree = buffer;
+                        buffer = null;
+                        Marshal.FreeHGlobal((IntPtr)toFree);
+                    }
+                    buffer = (byte*)Marshal.AllocHGlobal(buffSize);
+                }
+
+                var providerInfos = (Interop.Advapi32.TRACE_GUID_INFO*)buffer;
+                var providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&providerInfos[1];
+                int processId = unchecked((int)Interop.Kernel32.GetCurrentProcessId());
+                // iterate over the instances of the EventProvider in all processes
+                for (int i = 0; i < providerInfos->InstanceCount; i++)
+                {
+                    if (providerInstance->Pid == processId)
+                    {
+                        var enabledInfos = (Interop.Advapi32.TRACE_ENABLE_INFO*)&providerInstance[1];
+                        // iterate over the list of active ETW sessions "listening" to the current provider
+                        for (int j = 0; j < providerInstance->EnableCount; j++)
+                            action(enabledInfos[j].LoggerId, enabledInfos[j].MatchAllKeyword, ref sessionList);
+                    }
+                    if (providerInstance->NextOffset == 0)
+                        break;
+                    Debug.Assert(0 <= providerInstance->NextOffset && providerInstance->NextOffset < buffSize);
+                    byte* structBase = (byte*)providerInstance;
+                    providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&structBase[providerInstance->NextOffset];
+                }
+            }
+            finally
+            {
+                if (buffer != null && buffer != stackSpace)
+                {
+                    Marshal.FreeHGlobal((IntPtr)buffer);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the index of the SesisonInfo from 'sessions' that has the specified 'etwSessionId'
+        /// or -1 if the value is not present.
+        /// </summary>
+        private static int IndexOfSessionInList(List<SessionInfo>? sessions, int etwSessionId)
+        {
+            if (sessions == null)
+                return -1;
+            // for non-coreclr code we could use List<T>.FindIndex(Predicate<T>), but we need this to compile
+            // on coreclr as well
+            for (int i = 0; i < sessions.Count; ++i)
+                if (sessions[i].etwSessionId == etwSessionId)
+                    return i;
+
+            return -1;
+        }
+
     }
 #endif
 
-#pragma warning disable CA1852 // EventProviderImpl is not derived from in all targets
 
     internal class EventProviderImpl
     {
+        protected byte m_level;                            // Tracing Level
+        protected long m_anyKeywordMask;                   // Trace Enable Flags
+        protected long m_allKeywordMask;                   // Match all keyword
+        protected bool m_enabled;                          // Enabled flag from Trace callback
+
+        internal EventLevel Level
+        {
+            get => (EventLevel)m_level;
+            set => m_level = (byte)value;
+        }
+
+        internal EventKeywords MatchAnyKeyword
+        {
+            get => (EventKeywords)m_anyKeywordMask;
+            set => m_anyKeywordMask = unchecked((long)value);
+        }
+
+        internal EventKeywords MatchAllKeyword
+        {
+            get => (EventKeywords)m_allKeywordMask;
+            set => m_allKeywordMask = unchecked((long)value);
+        }
+
+        protected virtual unsafe void HandleSessionEnable(
+                                    EventProvider target,
+                                    byte *additionalData,
+                                    byte level,
+                                    long matchAnyKeywords,
+                                    long matchAllKeywords,
+                                    Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData)
+        {
+        }
+
+        /// <summary>
+        /// IsEnabled, method used to test if provider is enabled
+        /// </summary>
+        public bool IsEnabled()
+        {
+            return m_enabled;
+        }
+
+        /// <summary>
+        /// IsEnabled, method used to test if event is enabled
+        /// </summary>
+        /// <param name="level">
+        /// Level  to test
+        /// </param>
+        /// <param name="keywords">
+        /// Keyword  to test
+        /// </param>
+        public bool IsEnabled(byte level, long keywords)
+        {
+            //
+            // If not enabled at all, return false.
+            //
+            if (!m_enabled)
+            {
+                return false;
+            }
+
+            // This also covers the case of Level == 0.
+            if ((level <= m_level) ||
+                (m_level == 0))
+            {
+                //
+                // Check if Keyword is enabled
+                //
+
+                if ((keywords == 0) ||
+                    (((keywords & m_anyKeywordMask) != 0) &&
+                     ((keywords & m_allKeywordMask) == m_allKeywordMask)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal void Enable(byte level, long anyKeyword, long allKeyword)
+        {
+            m_enabled = true;
+            m_level = level;
+            m_anyKeywordMask = anyKeyword;
+            m_allKeywordMask = allKeyword;
+        }
+
+        internal virtual void Disable()
+        {
+            m_enabled = false;
+            m_level = 0;
+            m_anyKeywordMask = 0;
+            m_allKeywordMask = 0;
+        }
+
         internal virtual void Register(EventSource eventSource)
         {
         }
@@ -1288,8 +1264,121 @@ namespace System.Diagnostics.Tracing
         {
             return IntPtr.Zero;
         }
+
+        protected unsafe void EnableCallback(
+                        EventProvider target,
+                        byte *additionalData,
+                        int controlCode,
+                        byte level,
+                        long matchAnyKeywords,
+                        long matchAllKeywords,
+                        Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData)
+        {
+            Debug.Assert(controlCode != Interop.Advapi32.EVENT_CONTROL_CODE_ENABLE_PROVIDER);
+
+            if (controlCode == Interop.Advapi32.EVENT_CONTROL_CODE_ENABLE_PROVIDER)
+            {
+                Enable(level, matchAnyKeywords, matchAllKeywords);
+                HandleSessionEnable(target, additionalData, level, matchAnyKeywords, matchAllKeywords, filterData);
+                return;
+            }
+
+            ControllerCommand command = ControllerCommand.Update;
+            if (controlCode == Interop.Advapi32.EVENT_CONTROL_CODE_DISABLE_PROVIDER)
+            {
+                Disable();
+            }
+            else if (controlCode == Interop.Advapi32.EVENT_CONTROL_CODE_CAPTURE_STATE)
+            {
+                command = ControllerCommand.SendManifest;
+            }
+            else
+            {
+                return;     // per spec you ignore commands you don't recognize.
+            }
+
+            target.OnControllerCommand(command, null, 0, 0);
+        }
+
+        private static int FindNull(byte[] buffer, int idx)
+        {
+            while (idx < buffer.Length && buffer[idx] != 0)
+            {
+                idx++;
+            }
+
+            return idx;
+        }
+
+        protected unsafe IDictionary<string, string?>? ParseFilterData(int etwSessionId,
+            Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command)
+        {
+            IDictionary<string, string?>? args = null;
+            if (GetFilterData(etwSessionId, filterData, out command, out byte[]? data, out int dataStart))
+            {
+                args = new Dictionary<string, string?>(4);
+                // data can be null if the filterArgs had a very large size which failed our sanity check
+                if (data != null)
+                {
+                    while (dataStart < data.Length)
+                    {
+                        int keyEnd = FindNull(data, dataStart);
+                        int valueIdx = keyEnd + 1;
+                        int valueEnd = FindNull(data, valueIdx);
+                        if (valueEnd < data.Length)
+                        {
+                            string key = System.Text.Encoding.UTF8.GetString(data, dataStart, keyEnd - dataStart);
+                            string value = System.Text.Encoding.UTF8.GetString(data, valueIdx, valueEnd - valueIdx);
+                            args[key] = value;
+                        }
+                        dataStart = valueEnd + 1;
+                    }
+                }
+            }
+
+            return args;
+        }
+
+        protected virtual unsafe bool GetFilterDataPlatformSpecific(int etwSessionId,
+            Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
+        {
+            command = ControllerCommand.Update;
+            data = null;
+            dataStart = 0;
+            return false;
+        }
+
+        /// <summary>
+        /// Gets any data to be passed from the controller to the provider.  It starts with what is passed
+        /// into the callback, but unfortunately this data is only present for when the provider is active
+        /// at the time the controller issues the command.  To allow for providers to activate after the
+        /// controller issued a command, we also check the registry and use that to get the data.  The function
+        /// returns an array of bytes representing the data, the index into that byte array where the data
+        /// starts, and the command being issued associated with that data.
+        /// </summary>
+        protected unsafe bool GetFilterData(int etwSessionId,
+            Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
+        {
+            data = null;
+            dataStart = 0;
+            if (filterData == null)
+            {
+                return GetFilterDataPlatformSpecific(etwSessionId, filterData, out command, out data, out dataStart);
+            }
+            else
+            {
+                // ETW limited filter data to 1024 bytes but EventPipe doesn't. DiagnosticSourceEventSource
+                // can legitimately use large filter data buffers to encode a large set of events and properties
+                // that should be gathered so I am bumping the limit from 1K -> 100K.
+                if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100*1024)
+                {
+                    data = new byte[filterData->Size];
+                    Marshal.Copy((IntPtr)(void*)filterData->Ptr, data, 0, data.Length);
+                }
+                command = (ControllerCommand)filterData->Type;
+                return true;
+            }
+
+        }
     }
-
-#pragma warning restore CA1852
-
 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Tracing
@@ -16,13 +17,42 @@ namespace System.Diagnostics.Tracing
             _eventProvider = new WeakReference<EventProvider>(eventProvider);
         }
 
+        protected override unsafe void HandleSessionEnable(
+                                    EventProvider target,
+                                    byte *additionalData,
+                                    byte level,
+                                    long matchAnyKeywords,
+                                    long matchAllKeywords,
+                                    Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData)
+        {
+                ulong id = 0;
+                if (additionalData != null)
+                {
+                    id = BitConverter.ToUInt64(new ReadOnlySpan<byte>(additionalData, sizeof(ulong)));
+                }
+
+                bool bEnabling = id != 0;
+
+                IDictionary<string, string?>? args = null;
+                ControllerCommand command = ControllerCommand.Update;
+
+                if (bEnabling)
+                {
+                    args = ParseFilterData(0 /*etwSessionId*/, filterData, out command);
+                }
+
+                target.OnControllerCommand(command, args, bEnabling ? 1 : -1, 0);
+        }
+
         [UnmanagedCallersOnly]
         private static unsafe void Callback(byte* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
             EventPipeEventProvider _this = (EventPipeEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
             if (_this._eventProvider.TryGetTarget(out EventProvider? target))
-                target.EnableCallback(isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+            {
+                _this.EnableCallback(target, sourceId, isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+            }
         }
 
         // Register an event provider.
