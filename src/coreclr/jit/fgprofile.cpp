@@ -2165,10 +2165,11 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // * disabled by option
     // * we are prejitting
     //
-    const bool edgesEnabled     = (JitConfig.JitEdgeProfiling() > 0);
-    const bool prejit           = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool useEdgeProfiles  = edgesEnabled && !prejit;
-    const bool minimalProfiling = prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
+    const bool edgesEnabled    = (JitConfig.JitEdgeProfiling() > 0);
+    const bool prejit          = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool useEdgeProfiles = edgesEnabled && !prejit;
+    const bool minimalProfiling =
+        prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
 
     if (minimalProfiling && (fgBBcount < 2))
     {
