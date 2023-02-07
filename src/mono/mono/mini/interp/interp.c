@@ -7609,7 +7609,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				 *  JS workers in order to register them at the appropriate slots in the function pointer
 				 *  table. when growing the function pointer table we will also need to synchronize that.
 				 */
-				JiterpreterThunk prepare_result = mono_interp_tier_prepare_jiterpreter(frame, frame->imethod->method, ip, frame->imethod->jinfo->code_start, frame->imethod->jinfo->code_size);
+				JiterpreterThunk prepare_result = mono_interp_tier_prepare_jiterpreter_fast(frame, frame->imethod->method, ip, frame->imethod->jinfo->code_start, frame->imethod->jinfo->code_size);
 				switch ((guint32)(void*)prepare_result) {
 					case JITERPRETER_TRAINING:
 						// jiterpreter still updating hit count before deciding to generate a trace,

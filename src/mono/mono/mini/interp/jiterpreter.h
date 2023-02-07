@@ -52,10 +52,18 @@ mono_interp_jit_wasm_entry_trampoline (
 	int unbox, int has_this, int has_return, const char *name, void *default_implementation
 );
 
+// Fast-path implemented in C
+JiterpreterThunk
+mono_interp_tier_prepare_jiterpreter_fast (
+	void *frame, MonoMethod *method, const guint16 *ip,
+	const guint16 *start_of_body, int size_of_body
+);
+
 // HACK: Pass void* so that this header can include safely in files without definition for InterpFrame
+// Slow-path implemented in TypeScript, actually performs JIT
 extern JiterpreterThunk
 mono_interp_tier_prepare_jiterpreter (
-	void *frame, MonoMethod *method, const guint16 *ip,
+	void *frame, MonoMethod *method, const guint16 *ip, gint32 trace_index,
 	const guint16 *start_of_body, int size_of_body
 );
 
