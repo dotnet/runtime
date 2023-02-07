@@ -1234,7 +1234,7 @@ namespace DebuggerTests
             else
                 Assert.True(pause_location["callFrames"].Value<JArray>().Count >= 21); //in release 21 in debug 22
             if (justMyCode)
-                await StepAndCheck(StepKind.Out, "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "Math.IntAdd", times: 5);
+                await StepAndCheck(StepKind.Out, "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "Math.IntAdd");
         }
     }
 }
