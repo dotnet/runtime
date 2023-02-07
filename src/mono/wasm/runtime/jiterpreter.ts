@@ -243,6 +243,7 @@ function getTraceImports () {
         ["relop_fp", "relop_fp", getRawCwrap("mono_jiterp_relop_fp")],
         ["safepoint", "safepoint", getRawCwrap("mono_jiterp_auto_safepoint")],
         ["hashcode", "hashcode", getRawCwrap("mono_jiterp_get_hashcode")],
+        ["try_hash", "try_hash", getRawCwrap("mono_jiterp_try_get_hashcode")],
         ["hascsize", "hascsize", getRawCwrap("mono_jiterp_object_has_component_size")],
         ["hasflag", "hasflag", getRawCwrap("mono_jiterp_enum_hasflag")],
         ["array_rank", "array_rank", getRawCwrap("mono_jiterp_get_array_rank")],
@@ -465,6 +466,11 @@ function initialize_builder (builder: WasmBuilder) {
     );
     builder.defineType(
         "hashcode", {
+            "ppObj": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "try_hash", {
             "ppObj": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
