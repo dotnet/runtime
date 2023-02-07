@@ -98,7 +98,7 @@ When an application is published as self-contained (`dotnet publish --self-conta
 
 The test build script (`src/tests/build.cmd` or `src/tests/build.sh`) sets up a directory where it gathers the CoreCLR that has just been built with the pieces of the class libraries that the tests need. It places these binaries in the directory `artifacts/tests/coreclr/<OS>.<Arch>.<Configuration>/Tests/Core_Root`. Note that the test building process is a lengthy one, so it is recommended to only generate the Core_Root with the `-generatelayoutonly` flag to the tests build script, and build individual tests and/or test trees as you need them.
 
-**NOTE**: In order to generate the Core_Root, you must also have built the libraries beforehand with `-subset libs`. More details in the [testing CoreCLR doc](/docs/workflow/testing/coreclr/testing.md).
+**NOTE**: In order to generate the Core_Root, you must also have built the libraries beforehand with `-subset libs`. Running the tests build script by default searches the libraries in _Release_ mode, regardless of the runtime configuration you specify. If you built your libraries in another configuration, then you have to pass down the appropriate flag `/p:LibrariesConfiguration=<your_config>`. More details in the [testing CoreCLR doc](/docs/workflow/testing/coreclr/testing.md).
 
 Once you have your Core_Root, it's just a matter of calling it directly or adding it to your `PATH` environment variable, and you're ready to run your apps with it.
 

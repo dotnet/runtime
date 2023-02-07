@@ -40,7 +40,6 @@ set __RebuildTests=0
 set __BuildTestProject=%%3B
 set __BuildTestDir=%%3B
 set __BuildTestTree=%%3B
-
 set __BuildLogRootName=TestBuild
 
 set __SkipRestorePackages=0
@@ -73,7 +72,7 @@ if "%1" == "" goto ArgsDone
 @REM All arguments following this tag will be passed directly to msbuild (as unprocessed arguments)
 if /i "%1" == "--"                    (set processedArgs=!processedArgs! %1&shift&goto ArgsDone)
 
-@REM The following arguments do not support `/`, `-`, or `--` prefixes
+@REM The following arguments do not support '/', '-', or '--' prefixes
 if /i "%1" == "x64"                   (set __BuildArch=x64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "x86"                   (set __BuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "arm"                   (set __BuildArch=arm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -85,9 +84,9 @@ if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs
 
 if /i "%1" == "ci"                    (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-@REM For the arguments below, we support `/`, `-`, and `--` prefixes.
+@REM For the arguments below, we support '/', '-', and '--' prefixes.
 @REM But we also recognize them without prefixes at all. To achieve that,
-@REM we remove the `/` and `-` characters from the string for comparison.
+@REM we remove the '/' and '-' characters from the string for comparison.
 
 set arg=%~1
 set arg=%arg:/=%
@@ -101,39 +100,39 @@ if /i "%arg%" == "help"  goto Usage
 if /i "%arg%" == "TestArgParsing"        (set __TestArgParsing=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM The following arguments are switches that do not consume any subsequent arguments
-if /i "%arg%" == "rebuild"               (set __RebuildTests=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "skiprestorepackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "skipnative"            (set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "skiptestwrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "Rebuild"               (set __RebuildTests=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "SkipRestorePackages"   (set __SkipRestorePackages=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "SkipManaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "SkipNative"            (set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "SkipTestWrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "SkipGenerateLayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%arg%" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "generatelayoutonly"    (set __GenerateLayoutOnly=1&set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "msbuild"               (set __Ninja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "CopyNativeOnly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "BuildTestWrappersOnly" (set __SkipNative=1&set __SkipManaged=1&set __BuildTestWrappersOnly=1&set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "MSBuild"               (set __Ninja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "crossgen2"             (set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "composite"             (set __CompositeBuildMode=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "pdb"                   (set __CreatePdb=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "nativeaot"             (set __TestBuildMode=nativeaot&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "perfmap"               (set __CreatePerfmap=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "allTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "excludemonofailures"   (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "mono"                  (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "NativeAOT"             (set __TestBuildMode=nativeaot&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "Perfmap"               (set __CreatePerfmap=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "AllTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "ExcludeMonoFailures"   (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "Mono"                  (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM The following arguments also consume one subsequent argument
 if /i "%arg%" == "test"                  (set __BuildTestProject=!__BuildTestProject!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "dir"                   (set __BuildTestDir=!__BuildTestDir!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "log"                   (set __BuildLogRootName=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%arg%" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%arg%" == "exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "priority"              (set __Priority=%2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
 
 @REM The following arguments also consume two subsequent arguments
-if /i "%arg%" == "cmakeargs"             (set __CMakeArgs="%2=%3" %__CMakeArgs%&set "processedArgs=!processedArgs! %1 %2 %3"&shift&shift&shift&goto Arg_Loop)
+if /i "%arg%" == "CMakeArgs"             (set __CMakeArgs="%2=%3" %__CMakeArgs%&set "processedArgs=!processedArgs! %1 %2 %3"&shift&shift&shift&goto Arg_Loop)
 
 @REM Obsolete arguments that now produce errors
-if /i "%arg%" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages switch&&exit /b 1)
+if /i "%arg%" == "BuildAgainstPackages"  (echo error: Remove /BuildAgainstPackages switch&&exit /b 1)
 
 @REM Any unrecognized argument will be unprocessed and passed to msbuild
 shift
@@ -151,38 +150,35 @@ if [!processedArgs!]==[] (
 )
 
 if defined __TestArgParsing (
-    @ECHO ----------------
-    @ECHO PROCESSED ARGS
-    @ECHO "%processedArgs%"
-    @ECHO ----------------
-    @ECHO UNPROCESSED ARGS
-    @ECHO "%__UnprocessedBuildArgs%"
-    @ECHO ----------------
-    @ECHO __BuildArch=%__BuildArch%
-    @ECHO __BuildType=%__BuildType%
-    @ECHO __Exclude=%__Exclude%
-    @ECHO __RebuildTests=%__RebuildTests%
-    @ECHO __BuildTestProject=%__BuildTestProject%
-    @ECHO __BuildTestDir=%__BuildTestDir%
-    @ECHO __BuildTestTree=%__BuildTestTree%
-    @ECHO __BuildLogRootName=%__BuildLogRootName%
-    @ECHO __SkipRestorePackages=%__SkipRestorePackages%
-    @ECHO __SkipManaged=%__SkipManaged%
-    @ECHO __SkipTestWrappers=%__SkipTestWrappers%
-    @ECHO __BuildTestWrappersOnly=%__BuildTestWrappersOnly%
-    @ECHO __SkipNative=%__SkipNative%
-    @ECHO __CompositeBuildMode=%__CompositeBuildMode%
-    @ECHO __TestBuildMode=%__TestBuildMode%
-    @ECHO __CreatePdb=%__CreatePdb%
-    @ECHO __CreatePerfmap=%__CreatePerfmap%
-    @ECHO __CopyNativeTestBinaries=%__CopyNativeTestBinaries%
-    @ECHO __CopyNativeProjectsAfterCombinedTestBuild=%__CopyNativeProjectsAfterCombinedTestBuild%
-    @ECHO __SkipGenerateLayout=%__SkipGenerateLayout%
-    @ECHO __GenerateLayoutOnly=%__GenerateLayoutOnly%
-    @ECHO __Ninja=%__Ninja%
-    @ECHO __CMakeArgs=%__CMakeArgs%
-
-    EXIT /b 1
+    echo.
+    echo.PROCESSED ARGS: "%processedArgs%"
+    echo.
+    echo.UNPROCESSED ARGS: "%__UnprocessedBuildArgs%"
+    echo.
+    echo.__BuildArch=%__BuildArch%
+    echo.__BuildType=%__BuildType%
+    echo.__Exclude=%__Exclude%
+    echo.__RebuildTests=%__RebuildTests%
+    echo.__BuildTestProject=%__BuildTestProject%
+    echo.__BuildTestDir=%__BuildTestDir%
+    echo.__BuildTestTree=%__BuildTestTree%
+    echo.__BuildLogRootName=%__BuildLogRootName%
+    echo.__SkipRestorePackages=%__SkipRestorePackages%
+    echo.__SkipManaged=%__SkipManaged%
+    echo.__SkipTestWrappers=%__SkipTestWrappers%
+    echo.__BuildTestWrappersOnly=%__BuildTestWrappersOnly%
+    echo.__SkipNative=%__SkipNative%
+    echo.__CompositeBuildMode=%__CompositeBuildMode%
+    echo.__TestBuildMode=%__TestBuildMode%
+    echo.__CreatePdb=%__CreatePdb%
+    echo.__CreatePerfmap=%__CreatePerfmap%
+    echo.__CopyNativeTestBinaries=%__CopyNativeTestBinaries%
+    echo.__CopyNativeProjectsAfterCombinedTestBuild=%__CopyNativeProjectsAfterCombinedTestBuild%
+    echo.__SkipGenerateLayout=%__SkipGenerateLayout%
+    echo.__GenerateLayoutOnly=%__GenerateLayoutOnly%
+    echo.__Ninja=%__Ninja%
+    echo.__CMakeArgs=%__CMakeArgs%
+    echo.
 )
 
 @if defined _echo @echo on
@@ -227,7 +223,7 @@ REM Set up the directory for MSBuild debug logs.
 set MSBUILDDEBUGPATH=%__MsbuildDebugLogsDir%
 
 set __CommonMSBuildArgs="/p:TargetOS=%__TargetOS%"
-set __CommonMSBuildArgs=%__CommonMSBuildArgs% "/p:Configuration=%__BuildType%" "/p:LibrariesConfiguration=%__BuildType%"
+set __CommonMSBuildArgs=%__CommonMSBuildArgs% "/p:Configuration=%__BuildType%"
 set __CommonMSBuildArgs=%__CommonMSBuildArgs% "/p:TargetArchitecture=%__BuildArch%"
 
 if "%__Mono%"=="1" (
@@ -243,6 +239,10 @@ if %__Ninja% == 0 (
 set __msbuildArgs=%__CommonMSBuildArgs% /nologo /verbosity:minimal /clp:Summary /maxcpucount %__UnprocessedBuildArgs%
 
 echo Common MSBuild args: %__msbuildArgs%
+
+if defined __TestArgParsing (
+    EXIT /b 0
+)
 
 call %__RepoRootDir%\eng\native\init-vs-env.cmd %__BuildArch%
 if NOT '%ERRORLEVEL%' == '0' exit /b 1
@@ -369,36 +369,48 @@ echo Build the CoreCLR tests.
 echo.
 echo Usage:
 echo     %__commandName% [option1] [option2] ...
-echo All arguments are optional. Options are case-insensitive. The options are:
+echo All arguments are optional and case-insensitive, and the '-' prefix is optional. The options are:
 echo.
-echo.-? -h -help --help: view this message.
-echo Build architecture: one of x64, x86, arm, arm64 ^(default: x64^).
-echo Build type: one of Debug, Checked, Release ^(default: Debug^).
-echo skipgeneratelayout: Do not generate the Core_Root layout
-echo skipmanaged: skip the managed tests build
-echo skipnative: skip the native tests build
-echo skiprestorepackages: skip package restore
-echo skiptestwrappers: skip generating test wrappers
-echo buildtestwrappersonly: generate test wrappers without building managed or native test components or generating layouts
-echo copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
-echo crossgen2: Precompiles the framework managed assemblies
-echo composite: Precompiles the framework managed assemblies in composite build mode
-echo pdb: create PDB files when precompiling the framework managed assemblies
-echo generatelayoutonly: Generate the Core_Root layout without building managed or native test components
-echo Exclude- Optional parameter - specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^)
+echo.-? -h --help: View this message.
+echo.
+echo Build architecture: one of "x64", "x86", "arm", "arm64" ^(default: x64^).
+echo Build type: one of "Debug", "Checked", "Release" ^(default: Debug^).
+echo.
+echo -Rebuild: Clean up all test artifacts prior to building tests.
+echo -SkipRestorePackages: Skip package restore.
+echo -SkipManaged: Skip the managed tests build.
+echo -SkipNative: Skip the native tests build.
+echo -SkipTestWrappers: Skip generating test wrappers.
+echo -SkipGenerateLayout: Skip generating the Core_Root layout.
+echo.
+echo -CopyNativeOnly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
+echo -GenerateLayoutOnly: Only generate the Core_Root layout without building managed or native test components.
+echo -BuildTestWrappersOnly: Only generate test wrappers without building managed or native test components or generating layouts.
+echo -MSBuild: Use MSBuild instead of Ninja.
+echo -Crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.
+echo -Composite: Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).
+echo -PDB: Create PDB files when precompiling the framework managed assemblies.
+echo -NativeAOT: Builds the tests for Native AOT compilation.
+echo -Perfmap: Emit perfmap symbol files when compiling the framework assemblies using Crossgen2.
+echo -AllTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).
+echo -ExcludeMonoFailures, Mono: Build the tests for the Mono runtime honoring mono-specific issues.
+echo.
+echo -Exclude ^<xxx^>: Specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^).
 echo     Set to "" to disable default exclusion file.
-echo -- ... : all arguments following this tag will be passed directly to msbuild.
-echo -priority=^<N^> : specify a set of tests that will be built and run, with priority N.
-echo     0: Build only priority 0 cases as essential testcases (default)
-echo     1: Build all tests with priority 0 and 1
-echo     666: Build all tests with priority 0, 1 ... 666
-echo test ^<xxx^>: Only build test project ^<xxx^> ^(relative or absolute project path under src\tests^)
-echo dir ^<xxx^>: Build all test projects in the folder ^<xxx^> ^(relative or absolute folder under src\tests^)
-echo tree ^<xxx^>: Build all test projects in the subtree ^<xxx^> ^(relative or absolute folder under src\tests^)
-echo rebuild: Clean up all test artifacts prior to building tests
-echo allTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true)
-echo -verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
-echo log: base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step)
+echo -Priority ^<N^> : specify a set of tests that will be built and run, with priority N.
+echo     0: Build only priority 0 cases as essential testcases (default).
+echo     1: Build all tests with priority 0 and 1.
+echo     666: Build all tests with priority 0, 1 ... 666.
+echo -Test ^<xxx^>: Only build the specified test project ^(relative or absolute project path under src\tests^).
+echo -Dir ^<xxx^>: Build all test projects in the given directory ^(relative or absolute directory under src\tests^).
+echo -Tree ^<xxx^>: Build all test projects in the given subtree ^(relative or absolute directory under src\tests^).
+echo -Log ^<xxx^>: Base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step).
+echo.
+echo -CMakeArgs ^<arg^>=^<value^>: Specify argument values to pass directly to CMake.
+echo     Can be used multiple times to provide multiple CMake arguments.
+echo.
+echo -- : All arguments following this tag will be passed directly to MSBuild.
+echo.     Any unrecognized arguments will also be passed directly to MSBuild.
 exit /b 1
 
 REM Exit_Failure:
