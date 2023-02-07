@@ -633,7 +633,7 @@ bool emitter::AreUpper32BitsFFFF(regNumber reg)
         return false;
     }
 
-    instrDesc* id  = emitLastIns;
+    instrDesc* id = emitLastIns;
 
     if (id->idReg1() != reg)
     {
