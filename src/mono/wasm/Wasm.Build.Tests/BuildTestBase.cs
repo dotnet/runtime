@@ -39,8 +39,12 @@ namespace Wasm.Build.Tests
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
 
+        private static bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        // changing Windows's language programistically is complicated and Node is using OS's language to determine 
+        // what is client's preferred locale and then to load corresponding ICU => skip automatic icu testing with Node
+        protected static RunHost hostsForOSLocaleSensitiveTests = isWindows ? RunHost.Chrome : RunHost.NodeJS | RunHost.Chrome;
         // FIXME: use an envvar to override this
-        protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
+        protected static int s_defaultPerTestTimeoutMs = isWindows ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
@@ -158,16 +162,15 @@ namespace Wasm.Build.Tests
             }
 
             bundleDir ??= Path.Combine(GetBinDir(baseDir: buildDir, config: buildArgs.Config, targetFramework: targetFramework), "AppBundle");
-            if (host is RunHost.V8 && OperatingSystem.IsWindows())
+            IHostRunner hostRunner = GetHostRunnerFromRunHost(host);
+            if (!hostRunner.CanRunWBT())
                 throw new InvalidOperationException("Running tests with V8 on windows isn't supported");
 
             // Use wasm-console.log to get the xharness output for non-browser cases
-            (string testCommand, string xharnessArgs, bool useWasmConsoleOutput) = host switch
-            {
-                RunHost.V8     => ("wasm test", $"--js-file={jsRelativePath} --engine=V8 -v trace", true),
-                RunHost.NodeJS => ("wasm test", $"--js-file={jsRelativePath} --engine=NodeJS -v trace", true),
-                _              => ("wasm test-browser", $"-v trace -b {host} --browser-arg=--lang={environmentLocale} --web-server-use-cop", false)
-            };
+            string testCommand = hostRunner.GetTestCommand();
+            XHarnessArgsOptions options = new XHarnessArgsOptions(jsRelativePath, environmentLocale, host);
+            string xharnessArgs = isWindows ? hostRunner.GetXharnessArgsWindowsOS(options) : hostRunner.GetXharnessArgsOtherOS(options);
+            bool useWasmConsoleOutput = hostRunner.UseWasmConsoleOutput();
 
             extraXHarnessArgs += " " + xharnessArgs;
 
@@ -337,7 +340,7 @@ namespace Wasm.Build.Tests
             if (buildArgs.AOT)
             {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
-                extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
+                extraProperties += $"\n<EmccVerbose>{isWindows}</EmccVerbose>\n";
             }
 
             if (UseWebcil) {
@@ -1143,6 +1146,13 @@ namespace Wasm.Build.Tests
                     return 42;
                 }
             }";
+        
+        private IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
+        {
+            RunHost.V8 => new V8HostRunner(),
+            RunHost.NodeJS => new NodeJSHostRunner(),
+            _ => new OtherHostRunner(),
+        };
     }
 
     public record BuildArgs(string ProjectName,

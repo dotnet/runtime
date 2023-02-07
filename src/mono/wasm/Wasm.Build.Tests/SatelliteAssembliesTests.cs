@@ -19,19 +19,19 @@ namespace Wasm.Build.Tests
         {
         }
 
-        public static IEnumerable<object?[]> SatelliteAssemblyTestData(bool aot, bool relinking, RunHost host)
+        public static IEnumerable<object?[]> SatelliteAssemblyTestData(bool aot, bool relinking)
             => ConfigWithAOTData(aot)
                     .Multiply(
                         new object?[] { relinking, "es-ES" },
                         new object?[] { relinking, null },
                         new object?[] { relinking, "ja-JP" })
-                    .WithRunHosts(host)
+                    .WithRunHosts(BuildTestBase.hostsForOSLocaleSensitiveTests)
                     .UnwrapItemsAsArrays();
 
         [Theory]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false, RunHost.All })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true,  RunHost.All })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false, RunHost.All })]
+        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false })]
+        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true })]
+        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false })]
         public void ResourcesFromMainAssembly(BuildArgs buildArgs,
                                               bool nativeRelink,
                                               string? argCulture,
@@ -66,14 +66,15 @@ namespace Wasm.Build.Tests
                             buildArgs, expectedExitCode: 42,
                             args: argCulture,
                             host: host, id: id,
+                            environmentLocale: argCulture ?? "en-US",
                             // check that downloading assets doesn't have timing race conditions
                             extraXHarnessMonoArgs: host is RunHost.Chrome ? "--fetch-random-delay=200" : string.Empty);
         }
 
         [Theory]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false, RunHost.All })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true,  RunHost.All })]
-        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false, RunHost.All })]
+        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false })]
+        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true })]
+        [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false })]
         public void ResourcesFromProjectReference(BuildArgs buildArgs,
                                                   bool nativeRelink,
                                                   string? argCulture,
@@ -121,6 +122,7 @@ namespace Wasm.Build.Tests
             RunAndTestWasmApp(buildArgs,
                               expectedExitCode: 42,
                               args: argCulture,
+                              environmentLocale: argCulture ?? "en-US",
                               host: host, id: id);
         }
 
