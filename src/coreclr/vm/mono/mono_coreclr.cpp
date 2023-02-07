@@ -2200,15 +2200,16 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
 
         SString etcPath (*s_EtcDir);
 
-        SString assemblyPaths (*s_AssemblyPaths);
-
         SString tpa;
         list_tpa(appPath, tpa);
 
         SString appPaths;
         appPaths += appPath;
-        appPaths += PATH_SEPARATOR;
-        appPaths += assemblyPaths;
+        if (s_AssemblyPaths != NULL)
+        {
+            appPaths += PATH_SEPARATOR;
+            appPaths += *s_AssemblyPaths;
+        }
 
         SString appNiPaths;
         appNiPaths += appPath;
