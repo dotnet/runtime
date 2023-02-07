@@ -31,9 +31,15 @@ namespace System.Buffers.Text
             // Vectorized implementation for D, N, P and B formats:
             // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
 
+            Vector128<byte> hexMap = Vector128.Create(
+                (byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                (byte)'8', (byte)'9', (byte)'a', (byte)'b',
+                (byte)'c', (byte)'d', (byte)'e', (byte)'f');
+
             Vector128<byte> srcVec = Unsafe.As<Guid, Vector128<byte>>(ref value);
             (Vector128<byte> hexLow, Vector128<byte> hexHigh) =
-                HexConverter.AsciiToHexVector128(srcVec, Vector128.Create("0123456789abcdef"u8));
+                HexConverter.AsciiToHexVector128(srcVec, hexMap);
 
             // because of Guid's layout (int _a, short _b, _c, <8 byte fields>)
             // we have to shuffle some bytes for _a, _b and _c

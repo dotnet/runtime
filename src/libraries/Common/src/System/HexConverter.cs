@@ -116,8 +116,14 @@ namespace System
             ref ushort destRef = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(chars));
 
             Vector128<byte> hexMap = casing == Casing.Upper ?
-                Vector128.Create("0123456789ABCDEF"u8) :
-                Vector128.Create("0123456789abcdef"u8);
+                Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                                 (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                                 (byte)'8', (byte)'9', (byte)'A', (byte)'B',
+                                 (byte)'C', (byte)'D', (byte)'E', (byte)'F') :
+                Vector128.Create((byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                                 (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                                 (byte)'8', (byte)'9', (byte)'a', (byte)'b',
+                                 (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
             nuint pos = 0;
             nuint lengthSubVector128 = (nuint)bytes.Length - (nuint)Vector128<int>.Count;
