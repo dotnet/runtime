@@ -20,8 +20,8 @@ const Target::ArgOrder Target::g_tgtUnmanagedArgOrder = ARG_ORDER_R2L;
 const regNumber intArgRegs [] = {REG_A0, REG_A1, REG_A2, REG_A3, REG_A4, REG_A5, REG_A6, REG_A7};
 const regMaskTP intArgMasks[] = {RBM_A0, RBM_A1, RBM_A2, RBM_A3, RBM_A4, RBM_A5, RBM_A6, RBM_A7};
 
-const regNumber fltArgRegs [] = {REG_F0, REG_F1, REG_F2, REG_F3, REG_F4, REG_F5, REG_F6, REG_F7 };
-const regMaskTP fltArgMasks[] = {RBM_F0, RBM_F1, RBM_F2, RBM_F3, RBM_F4, RBM_F5, RBM_F6, RBM_F7 };
+const regNumber fltArgRegs [] = {REG_FLTARG_0, REG_FLTARG_1, REG_FLTARG_2, REG_FLTARG_3, REG_FLTARG_4, REG_FLTARG_5, REG_FLTARG_6, REG_FLTARG_7 };
+const regMaskTP fltArgMasks[] = {RBM_FLTARG_0, RBM_FLTARG_1, RBM_FLTARG_2, RBM_FLTARG_3, RBM_FLTARG_4, RBM_FLTARG_5, RBM_FLTARG_6, RBM_FLTARG_7 };
 // clang-format on
 
 #endif // TARGET_RISCV64

@@ -317,8 +317,8 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     id->idIns(ins);
 
     code_t code = emitInsCode(ins);
-    code |= (code_t)reg1 << 20;
-    code |= (code_t)reg2 << 15;
+    code |= (code_t)(reg1 & 0x1f) << 20;
+    code |= (code_t)(reg2 & 0x1f) << 15;
     code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7);
 
     id->idAddr()->iiaSetInstrEncode(code);
@@ -458,7 +458,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
             code |= ((imm >> 20) & 0x1)  << 31;
             break;
         default:
-            fprintf(stderr, "[CLAMP] emitIns_I %llx %llx\n", ins, code);
+            fprintf(stderr, "emitIns_I %llx %llx\n", ins, code);
             unreached();
     }
 
@@ -507,7 +507,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             code |= ((imm >> 20) & 0x1)  << 31;
             break;
         default:
-            fprintf(stderr, "[CLAMP] emitIns_R_I %llx %llx\n", ins, code);
+            fprintf(stderr, "emitIns_R_I %llx %llx\n", ins, code);
             unreached();
             break;
     } // end switch (ins)
@@ -576,8 +576,8 @@ void emitter::emitIns_R_R(
         // TODO CHECK ROUNDING MODE
         assert(isGeneralRegisterOrR0(reg1));
         assert(isFloatReg(reg2));
-        code |= reg1 << 7;
-        code |= reg2 << 15;
+        code |= (reg1 & 0x1f) << 7;
+        code |= (reg2 & 0x1f) << 15;
     }
     else if ((INS_fcvt_s_w <= ins && INS_fmv_w_x >= ins) ||
              (INS_fcvt_d_w == ins || INS_fcvt_d_wu == ins) ||
@@ -588,15 +588,15 @@ void emitter::emitIns_R_R(
         // TODO CHECK ROUNDING MODE
         assert(isFloatReg(reg1));
         assert(isGeneralRegisterOrR0(reg2));
-        code |= reg1 << 7;
-        code |= reg2 << 15;
+        code |= (reg1 & 0x1f) << 7;
+        code |= (reg2 & 0x1f) << 15;
     }
     else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins)
     {
         assert(isFloatReg(reg1));
         assert(isFloatReg(reg2));
-        code |= reg1 << 7;
-        code |= reg2 << 15;
+        code |= (reg1 & 0x1f) << 7;
+        code |= (reg2 & 0x1f) << 15;
     }
     else
     {
@@ -626,22 +626,23 @@ void emitter::emitIns_R_R_I(
     if ((INS_addi <= ins && INS_srai >= ins) ||
         (INS_addiw <= ins && INS_sraiw >= ins) ||
         (INS_lb <= ins && INS_lhu >= ins) ||
-        INS_ld == ins || INS_lw == ins || INS_jalr == ins)
+        INS_ld == ins || INS_lw == ins || INS_jalr == ins ||
+        INS_fld == ins || INS_flw == ins)
     {
-        code |= reg1 << 7;           // rd
-        code |= reg2 << 15;          // rs1
+        code |= (reg1 & 0x1f) << 7;  // rd
+        code |= (reg2 & 0x1f) << 15;          // rs1
         code |= imm << 20;           // imm
     }
-    else if (INS_sd == ins || INS_sw == ins || INS_sh == ins || INS_sb == ins)
+    else if (INS_sd == ins || INS_sw == ins || INS_sh == ins || INS_sb == ins || INS_fsw == ins || INS_fsd == ins)
     {
-        code |= reg1 << 20;          // rs2
-        code |= reg2 << 15;          // rs1
+        code |= (reg1 & 0x1f) << 20; // rs2
+        code |= (reg2 & 0x1f) << 15;          // rs1
         code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7);           // imm
     }
     else if (INS_beq <= ins && INS_bgeu >= ins)
     {
-        code |= reg1 << 15;
-        code |= reg2 << 20;
+        code |= (reg1 & 0x1f) << 15;
+        code |= (reg2 & 0x1f) << 20;
         code |= ((imm >> 11) & 0x1)  << 7;
         code |= ((imm >> 1)  & 0xf)  << 8;
         code |= ((imm >> 5)  & 0x3f) << 25;
@@ -649,7 +650,7 @@ void emitter::emitIns_R_R_I(
     }
     else
     {
-        fprintf(stderr, "[RISCV64] CODE %x\n", code);
+        fprintf(stderr, "Not implemented instruction in R_R_I: 0x%x\n", code);
         _ASSERTE(!"TODO RISCV64 NYI");
     }
     instrDesc* id = emitNewInstr(attr);
@@ -675,7 +676,10 @@ void emitter::emitIns_R_R_R(
 
     if ((INS_add <= ins && ins <= INS_and) ||
         (INS_mul <= ins && ins <= INS_remuw) ||
-        (INS_addw <= ins && ins <= INS_sraw))
+        (INS_addw <= ins && ins <= INS_sraw) ||
+        (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
+        (INS_feq_s <= ins && ins <= INS_fle_s) ||
+        (INS_feq_d <= ins && ins <= INS_fle_d))
     {
 #ifdef DEBUG
         switch (ins)
@@ -746,18 +750,15 @@ void emitter::emitIns_R_R_R(
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R --1!");
         }
-        assert(isGeneralRegister(reg1));
-        assert(isGeneralRegisterOrR0(reg2));
-        assert(isGeneralRegisterOrR0(reg3));
 
 #endif
-        code |= (reg1 << 7);
-        code |= (reg2 << 15);
-        code |= (reg3 << 20);
+        code |= ((reg1 & 0x1f) << 7);
+        code |= ((reg2 & 0x1f) << 15);
+        code |= ((reg3 & 0x1f) << 20);
     }
     else
     {
-        fprintf(stderr, "[RISCV64] %x\n", code);
+        fprintf(stderr, "Not implemented instruction in R_R_R: 0x%x\n", code);
         _ASSERTE(!"TODO RISCV64 NYI");
     }
 
@@ -837,7 +838,7 @@ void emitter::emitIns_R_C(
         id->idCodeSize(8);
     }
     else
-        id->idCodeSize(20);
+        id->idCodeSize(16);
 
     if (EA_IS_GCREF(attr))
     {
@@ -1489,7 +1490,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         dst += 4;
 
         code = emitInsCode(INS_jalr);
-        code |= (code_t)reg2 << 7;
+        code |= (code_t)(reg2 & 0x1f) << 7;
         code |= (code_t)REG_T2 << 15;
         code |= (low & 0x3ff) << 20;
         // the offset default is 0;
@@ -1606,7 +1607,7 @@ void emitter::emitJumpDistBind() // TODO NEED TO CHECK WHAT NUMBERS MEAN
 AGAIN:
 
 #ifdef DEBUG
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif
 
 #ifdef DEBUG
@@ -1975,7 +1976,7 @@ AGAIN:
         emitDispIGlist(false);
     }
 
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif // DEBUG
 }
 
@@ -2220,12 +2221,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     assert(code == 0x00000013);
 #endif
                     code            = 0x00000013 | (1 << 15);
-                    *(code_t*)dstRW = code | ((code_t)reg1 << 7) | (((code_t)doff & 0xfff) << 20);
+                    *(code_t*)dstRW = code | ((code_t)(reg1 & 0x1f) << 7) | (((code_t)doff & 0xfff) << 20);
                 }
                 else
                 {
                     code = emitInsCode(ins);
-                    code |= (code_t)(reg1 << 7);
+                    code |= (code_t)((reg1 & 0x1f) << 7);
                     code |= (code_t)REG_RA << 15; // NOTE:here must be REG_R21 !!! // TODO R21 => RA
                     code |= (code_t)(doff & 0xfff) << 20;
                     *(code_t*)dstRW = code;
@@ -2242,46 +2243,42 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     assert((imm >> 40) == 0);
 
-                    doff = (int)((imm + 0x800) >> 12);
-                    code |= (code_t)REG_RA << 7; // TODO R21 => RA
-                    code |= (code_t)(doff & 0xfffff) << 12;
+                    doff = imm & 0x7ff;
 
+                    UINT32 high = imm >> 11;
+
+                    code |= (code_t)REG_RA << 7; // TODO R21 => RA
+                    code |= (code_t)(((high + 0x800) >> 12) << 12);
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
                     code = emitInsCode(INS_addi);
                     code |= (code_t)REG_RA << 7;
                     code |= (code_t)REG_RA << 15;
-                    code |= (code_t)(imm & 0xfff) << 20;
-                    *(code_t*)dstRW = code;
-                    dstRW += 4;
-
-                    code = emitInsCode(INS_addi);
-                    code |= (code_t)reg1 << 7;
-                    code |= (((imm + 0x80000800) >> 32) & 0xff) << 20;
+                    code |= (code_t)(high & 0xFFF) << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
                     code = emitInsCode(INS_slli);
-                    code |= (code_t)reg1 << 7;
-                    code |= (code_t)reg1 << 15;
-                    code |= (code_t)32 << 20;
+                    code |= (code_t)REG_RA << 7;
+                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)11 << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
-                    ins  = INS_add;
-                    code = emitInsCode(INS_add);
+                    ins  = INS_addi;
+                    code = emitInsCode(INS_addi);
                     code |= (code_t)reg1 << 7;
-                    code |= (code_t)reg1 << 15;
-                    code |= (code_t)REG_RA << 20;
+                    code |= (code_t)REG_RA << 15;
+                    code |= (code_t)doff << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
                 }
                 else
                 {
-                    doff = imm & 0x7ff;
                     assert((imm >> 40) == 0);
 
+                    doff = imm & 0x7ff;
                     UINT32 high = imm >> 11;
 
                     code |= (code_t)(REG_RA << 7); // TODO CHECK R21 => RA
@@ -2292,7 +2289,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code = emitInsCode(INS_addi);
                     code |= (code_t)REG_RA << 7;
                     code |= (code_t)REG_RA << 15;
-                    code |= (code_t)(high & 0xFFF);
+                    code |= (code_t)(high & 0xFFF) << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
@@ -2392,21 +2389,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         break;
         case INS_OPTS_JALR:
+        {
+            instrDescJmp* jmp = (instrDescJmp*)id;
+
+            regNumber reg1 = id->idReg1();
             {
-                instrDescJmp* jmp = (instrDescJmp*)id;
+                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset();
+                imm -= 4;
 
-                regNumber reg1 = id->idReg1();
+                assert((imm & 0x3) == 0);
+
+                ins = jmp->idIns();
+                assert(jmp->idCodeSize() > 4); // The original INS_OPTS_JIRL: not used by now!!!
+                switch (jmp->idCodeSize())
                 {
-                    ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset();
-                    imm -= 4;
-
-                    assert((imm & 0x3) == 0);
-
-                    ins = jmp->idIns();
-                    assert(jmp->idCodeSize() > 4); // The original INS_OPTS_JIRL: not used by now!!!
-                    switch (jmp->idCodeSize())
-                    {
-                        case 8:
+                    case 8:
                         {
                             regNumber reg2 = id->idReg2();
                             // assert((INS_bceqz <= ins) && (ins <= INS_bgeu));
@@ -2429,7 +2426,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                                     code |= ((imm >> 1)  & 0xf)  << 8;
                                     code |= ((imm >> 5)  & 0x3f) << 25;
                                     code |= ((imm >> 12) & 0x1)  << 31;
-                                     *(code_t*)dstRW = code;
+                                    *(code_t*)dstRW = code;
                                     dstRW += 4;
                                 }
                                 else
@@ -2479,90 +2476,89 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                             break;
                         }
 
-                        default:
-                            unreached();
-                            break;
-                    }
+                    default:
+                        unreached();
+                        break;
                 }
-                sz = sizeof(instrDescJmp);
             }
-            break;
+            sz = sizeof(instrDescJmp);
+        }
+        break;
         case INS_OPTS_J_cond:
-            {
-                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
-                assert((OFFSET_DIST_SMALL_MAX_NEG << 2) <= imm && imm <= (OFFSET_DIST_SMALL_MAX_POS << 2));
-                assert(!(imm & 1));
+        {
+            ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
+            assert((OFFSET_DIST_SMALL_MAX_NEG << 2) <= imm && imm <= (OFFSET_DIST_SMALL_MAX_POS << 2));
+            assert(!(imm & 1));
 
-                ins  = id->idIns();
-                code = emitInsCode(ins);
-                code |= ((code_t)id->idReg1()) << 15;
-                code |= ((code_t)id->idReg2()) << 20;
+            ins  = id->idIns();
+            code = emitInsCode(ins);
+            code |= ((code_t)id->idReg1()) << 15;
+            code |= ((code_t)id->idReg2()) << 20;
+            code |= ((imm >> 11) & 0x1)  << 7;
+            code |= ((imm >> 1)  & 0xf)  << 8;
+            code |= ((imm >> 5)  & 0x3f) << 25;
+            code |= ((imm >> 12) & 0x1)  << 31;
+            *(code_t*)dstRW = code;
+            dstRW += 4;
+
+            sz = sizeof(instrDescJmp);
+        }
+        break;
+        case INS_OPTS_J:
+        //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dstRW-relative.
+        {
+            ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
+            assert((imm & 3) == 0);
+
+            ins  = id->idIns();
+            code = emitInsCode(ins);
+            if (ins == INS_jal)
+            {
+                code |= ((imm >> 12) & 0xff)  << 12;
+                code |= ((imm >> 11)  & 0x1)  << 20;
+                code |= ((imm >> 1)  & 0x3ff) << 21;
+                code |= ((imm >> 20) & 0x1)  << 31;
+                code |= REG_RA << 7;
+            }
+            else if (ins == INS_j)
+            {
+                code |= ((imm >> 12) & 0xff)  << 12;
+                code |= ((imm >> 11)  & 0x1)  << 20;
+                code |= ((imm >> 1)  & 0x3ff) << 21;
+                code |= ((imm >> 20) & 0x1)  << 31;
+            }
+            else if (ins == INS_jalr)
+            {
+                code |= ((code_t)(imm & 0xfff) << 20);
+            }
+            else if (ins == INS_bnez || ins == INS_beqz)
+            {
+                code |= (code_t)id->idReg1() << 15;
                 code |= ((imm >> 11) & 0x1)  << 7;
                 code |= ((imm >> 1)  & 0xf)  << 8;
                 code |= ((imm >> 5)  & 0x3f) << 25;
                 code |= ((imm >> 12) & 0x1)  << 31;
-                 *(code_t*)dstRW = code;
-                dstRW += 4;
-
-                sz = sizeof(instrDescJmp);
             }
-            break;
-        case INS_OPTS_J:
-            //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dstRW-relative.
+            else if ((INS_beq <= ins) && (ins <= INS_bgeu))
             {
-                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
-                assert((imm & 3) == 0);
-
-                ins  = id->idIns();
-                code = emitInsCode(ins);
-                if (ins == INS_jal)
-                {
-                    code |= ((imm >> 12) & 0xff)  << 12;
-                    code |= ((imm >> 11)  & 0x1)  << 20;
-                    code |= ((imm >> 1)  & 0x3ff) << 21;
-                    code |= ((imm >> 20) & 0x1)  << 31;
-                    code |= REG_RA << 7;
-                }
-                else if (ins == INS_j)
-                {
-                    code |= ((imm >> 12) & 0xff)  << 12;
-                    code |= ((imm >> 11)  & 0x1)  << 20;
-                    code |= ((imm >> 1)  & 0x3ff) << 21;
-                    code |= ((imm >> 20) & 0x1)  << 31;
-                }
-                else if (ins == INS_jalr)
-                {
-                    code |= ((code_t)(imm & 0xfff) << 20);
-                }
-                else if (ins == INS_bnez || ins == INS_beqz)
-                {
-                    code |= (code_t)id->idReg1() << 15;
-                    code |= ((imm >> 11) & 0x1)  << 7;
-                    code |= ((imm >> 1)  & 0xf)  << 8;
-                    code |= ((imm >> 5)  & 0x3f) << 25;
-                    code |= ((imm >> 12) & 0x1)  << 31;
-                }
-                else if ((INS_beq <= ins) && (ins <= INS_bgeu))
-                {
-                    code |= ((code_t)id->idReg1()) << 15;
-                    code |= ((code_t)id->idReg2()) << 20;
-                    code |= ((imm >> 1)  & 0xf)  << 8;
-                    code |= ((imm >> 5)  & 0x3f) << 25;
-                    code |= ((imm >> 11) & 0x1)  << 7;
-                    code |= ((imm >> 12) & 0x1)  << 31;
-                }
-                else
-                {
-                    assert(!"unimplemented on RISCV64 yet");
-                }
-
-                *(code_t*)dstRW = code;
-                dstRW += 4;
-
-                sz = sizeof(instrDescJmp);
+                code |= ((code_t)id->idReg1()) << 15;
+                code |= ((code_t)id->idReg2()) << 20;
+                code |= ((imm >> 1)  & 0xf)  << 8;
+                code |= ((imm >> 5)  & 0x3f) << 25;
+                code |= ((imm >> 11) & 0x1)  << 7;
+                code |= ((imm >> 12) & 0x1)  << 31;
             }
-            break;
+            else
+            {
+                assert(!"unimplemented on RISCV64 yet");
+            }
 
+            *(code_t*)dstRW = code;
+            dstRW += 4;
+
+            sz = sizeof(instrDescJmp);
+        }
+        break;
         case INS_OPTS_C:
             if (id->idIsLargeCall())
             {
@@ -2587,8 +2583,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dstRW += 4;
             ins = id->idIns();
             sz  = emitSizeOfInsDsc(id);
-            break;
-    }
+            break; }
 
     // Determine if any registers now hold GC refs, or whether a register that was overwritten held a GC ref.
     // We assume here that "id->idGCref()" is not GC_NONE only if the instruction described by "id" writes a
@@ -3175,45 +3170,46 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         }
         case 0x53:
         {
-            unsigned int opcode2 = (code >> 20) & 0xfff;
-            unsigned int opcode3 = (code >> 12) & 0x7;
-            const char* rd = RegNames[(code >> 7) & 0x1f];
-            const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            const char* rs2 = RegNames[(code >> 20) & 0x1f];
+            unsigned int opcode2 = (code >> 25) & 0x7f;
+            unsigned int opcode3 = (code >> 20) & 0x1f;
+            unsigned int opcode4 = (code >> 12) & 0x7;
+            const char* fd = RegNames[((code >> 7) & 0x1f) | 0x20];
+            const char* fs1 = RegNames[((code >> 15) & 0x1f) | 0x20];
+            const char* fs2 = RegNames[((code >> 20) & 0x1f) | 0x20];
+
+            const char* xd = RegNames[(code >> 7) & 0x1f];
+            const char* xs1 = RegNames[(code >> 15) & 0x1f];
+            const char* xs2 = RegNames[(code >> 20) & 0x1f];
+
             switch(opcode2)
             {
-                case 0x000: // FADD.S
-                    assert(opcode3 == 0);
-                    printf("fadd.s       %s, %s, %s\n", rd, rs1, rs2);
+                case 0x00: // FADD.S
+                    printf("fadd.s       %s, %s, %s\n", fd, fs1, fs2);
                     return;
-                case 0x080: // FSUB.S
-                    assert(opcode3 == 0);
-                    printf("fsub.s       %s, %s, %s\n", rd, rs1, rs2);
+                case 0x04: // FSUB.S
+                    printf("fsub.s       %s, %s, %s\n", fd, fs1, fs2);
                     return;
-                case 0x100: // FMUL.S
-                    assert(opcode3 == 0);
-                    printf("fmul.s       %s, %s, %s\n", rd, rs1, rs2);
+                case 0x08: // FMUL.S
+                    printf("fmul.s       %s, %s, %s\n", fd, fs1, fs2);
                     return;
-                case 0x180: // FDIV.S
-                    assert(opcode3 == 0);
-                    printf("fdiv.s       %s, %s, %s\n", rd, rs1, rs2);
+                case 0x0C: // FDIV.S
+                    printf("fdiv.s       %s, %s, %s\n", fd, fs1, fs2);
                     return;
-                case 0x580: // FSQRT.S
-                    assert(opcode3 == 0);
-                    printf("fsqrt.s      %s, %s\n", rd, rs1);
+                case 0x2C: // FSQRT.S
+                    printf("fsqrt.s      %s, %s\n", fd, fs1);
                     return;
-                case 0x200: // FSGNJ.S & FSGNJN.S & FSGNJX.S
-                    if (opcode3 == 0) // FSGNJ.S
+                case 0x10: // FSGNJ.S & FSGNJN.S & FSGNJX.S
+                    if (opcode4 == 0) // FSGNJ.S
                     {
-                        printf("fsgnj.s      %s, %s, %s\n", rd, rs1, rs2);
+                        printf("fsgnj.s      %s, %s, %s\n", fd, fs1, fs2);
                     }
-                    else if (opcode3 == 1) // FSGNJN.S
+                    else if (opcode4 == 1) // FSGNJN.S
                     {
-                        printf("fsgnjn.s     %s, %s, %s\n", rd, rs1, rs2);
+                        printf("fsgnjn.s     %s, %s, %s\n", fd, fs1, fs2);
                     }
-                    else if (opcode3 == 2) // FSGNJX.S
+                    else if (opcode4 == 2) // FSGNJX.S
                     {
-                        printf("fsgnjx.s     %s, %s, %s\n", rd, rs1, rs2);
+                        printf("fsgnjx.s     %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else
                     {
@@ -3221,37 +3217,14 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x280: // FMIN.S & FMXA.S
-                    if (opcode3 == 0) // FMIN.S
+                case 0x14: // FMIN.S & FMAX.S
+                    if (opcode4 == 0) // FMIN.S
                     {
-                        printf("fmin.s       %s, %s, %s\n", rd, rs1, rs2);
+                        printf("fmin.s       %s, %s, %s\n", fd, fs1, fs2);
                     }
-                    else if (opcode3 == 1) // FMAX.S
+                    else if (opcode4 == 1) // FMAX.S
                     {
-                        printf("fmax.s       %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    else
-                    {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
-                    }
-                    return;
-                case 0xc00: // FCVT.W.S
-                    assert(opcode3 == 0);
-                    printf("fcvt.w.s     %s, %s\n", rd, rs1);
-                    return;
-                case 0xc01: // FCVT.WU.S
-                    assert(opcode3 == 0);
-                    printf("fcvt.wu.s    %s, %s\n", rd, rs1);
-                    return;
-                case 0xe00: // FMV.X.W & FCLASS.S
-                    if (opcode3 == 0) // FMV.X.W
-                    {
-                        printf("fmv.x.w      %s, %s\n", rd, rs1);
-                    }
-                    else if (opcode3 == 1) // FCLASS.S
-                    {
-                        printf("fclass.s     %s, %s\n", rd, rs1);
+                        printf("fmax.s       %s, %s, %s\n", fd, fs1, fs2);
                     }
                     else
                     {
@@ -3259,69 +3232,22 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0xa00: // FLE.S & FLT.S & FEQ.S
-                    if (opcode3 == 0) // FLE.S
+                case 0x60: // FCVT.W.S & FCVT.WU.S & FCVT.L.S & FCVT.LU.S
+                    if (opcode3 == 0) // FCVT.W.S
                     {
-                        printf("fle.s        %s, %s, %s\n", rd, rs1, rs2);
+                        printf("fcvt.w.s     %s, %s\n", xd, fs1);
                     }
-                    else if (opcode3 == 1) // FLT.S
+                    else if (opcode3 == 1) // FCVT.WU.S
                     {
-                        printf("flt.s        %s, %s, %s\n", rd, rs1, rs2);
+                        printf("fcvt.wu.s    %s, %s\n", xd, fs1);
                     }
-                    else if (opcode3 == 2) // FEQ.S
+                    else if (opcode3 == 2) // FCVT.L.S
                     {
-                    printf("feq.s        %s, %s, %s\n", rd, rs1, rs2);
+                        printf("fcvt.l.s     %s, %s\n", xd, fs1);
                     }
-                    else
+                    else if (opcode3 == 3) // FCVT.LU.S
                     {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
-                    }
-                    return;
-                case 0xd00: // FCVT.S.W
-                    assert(opcode3 == 0);
-                    printf("fcvt.s.w     %s, %s\n", rd, rs1);
-                    return;
-                case 0xd01: // FCVT.S.WU
-                    assert(opcode3 == 0);
-                    printf("fcvt.s.wu    %s, %s\n", rd, rs1);
-                    return;
-                case 0xf00: // FMV.W.X
-                    assert(opcode3 == 0);
-                    printf("fmv.w.x      %s, %s\n", rd, rs1);
-                    return;
-                case 0x20: // FADD.D
-                    assert(opcode3 == 0);
-                    printf("fadd.d       %s, %s, %s\n", rd, rs1, rs2);
-                    return;
-                case 0xa0: // FSUB.D
-                    assert(opcode3 == 0);
-                    printf("fsub.d       %s, %s, %s\n", rd, rs1, rs2);
-                    return;
-                case 0x120: // FMUL.D
-                    assert(opcode3 == 0);
-                    printf("fmul.d       %s, %s, %s\n", rd, rs1, rs2);
-                    return;
-                case 0x1a0: // FDIV.D
-                    assert(opcode3 == 0);
-                    printf("fdiv.d       %s, %s, %s\n", rd, rs1, rs2);
-                    return;
-                case 0x5a0: // FSQRT.D
-                    assert(opcode3 == 0);
-                    printf("fsqrt.d      %s, %s\n", rd, rs1);
-                    return;
-                case 0x220: // FSGNJ.D & FSGNJN.D & FSGNJX.D
-                    if (opcode3 == 0) // FSGNJ.D
-                    {
-                        printf("fsgnj.d      %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    else if (opcode3 == 1) // FSGNJN.D
-                    {
-                        printf("fsgnjn.d     %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    else if (opcode3 == 2) // FSGNJX.D
-                    {
-                        printf("fsgnjx.d     %s, %s, %s\n", rd, rs1, rs2);
+                        printf("fcvt.lu.s    %s, %s\n", xd, fs1);
                     }
                     else
                     {
@@ -3329,14 +3255,14 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x2a0: // FMIN.D & FMAX.D
-                    if (opcode3 == 0) // FMIN.D
+                case 0x70: // FMV.X.W & FCLASS.S
+                    if (opcode4 == 0) // FMV.X.W
                     {
-                        printf("fmin.d       %s, %s, %s\n", rd, rs1, rs2);
+                        printf("fmv.x.w      %s, %s\n", xd, xs1);
                     }
-                    else if (opcode3 == 1) // FMAX.D
+                    else if (opcode4 == 1) // FCLASS.S
                     {
-                        printf("fmax.d       %s, %s, %s\n", rd, rs1, rs2);
+                        printf("fclass.s     %s, %s\n", xd, fs1);
                     }
                     else
                     {
@@ -3344,10 +3270,105 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x401: // FCVT.S.D
+                case 0x50: // FLE.S & FLT.S & FEQ.S
+                    if (opcode4 == 0) // FLE.S
+                    {
+                        printf("fle.s        %s, %s, %s\n", xd, fs1, fs2);
+                    }
+                    else if (opcode4 == 1) // FLT.S
+                    {
+                        printf("flt.s        %s, %s, %s\n", xd, fs1, fs2);
+                    }
+                    else if (opcode4 == 2) // FEQ.S
+                    {
+                    printf("feq.s        %s, %s, %s\n", fd, xs1, fs2);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0x68: // FCVT.S.W & FCVT.S.WU & FCVT.S.L & FCVT.S.LU
+                    if (opcode3 == 0) // FCVT.S.W
+                    {
+                        printf("fcvt.s.w     %s, %s\n", fd, xs1);
+                    }
+                    else if (opcode3 == 1) // FCVT.S.WU
+                    {
+                        printf("fcvt.s.wu    %s, %s\n", fd, xs1);
+                    }
+                    else if (opcode3 == 2) // FCVT.S.L
+                    {
+                        printf("fcvt.s.l     %s, %s\n", fd, xs1);
+                    }
+                    else if (opcode3 == 3) // FCVT.S.LU
+                    {
+                        printf("fcvt.s.lu    %s, %s\n", fd, xs1);
+                    }
+
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0x78: // FMV.W.X
+                    printf("fmv.w.x      %s, %s\n", fd, xs1);
+                    return;
+                case 0x1: // FADD.D
+                    printf("fadd.d       %s, %s, %s\n", fd, fs1, fs2);
+                    return;
+                case 0x5: // FSUB.D
+                    printf("fsub.d       %s, %s, %s\n", fd, fs1, fs2);
+                    return;
+                case 0x9: // FMUL.D
+                    printf("fmul.d       %s, %s, %s\n", fd, fs1, fs2);
+                    return;
+                case 0xd: // FDIV.D
+                    printf("fdiv.d       %s, %s, %s\n", fd, fs1, fs2);
+                    return;
+                case 0x2d: // FSQRT.D
+                    printf("fsqrt.d      %s, %s\n", fd, fs1);
+                    return;
+                case 0x11: // FSGNJ.D & FSGNJN.D & FSGNJX.D
+                    if (opcode4 == 0) // FSGNJ.D
+                    {
+                        printf("fsgnj.d      %s, %s, %s\n", fd, fs1, fs2);
+                    }
+                    else if (opcode4 == 1) // FSGNJN.D
+                    {
+                        printf("fsgnjn.d     %s, %s, %s\n", fd, fs1, fs2);
+                    }
+                    else if (opcode4 == 2) // FSGNJX.D
+                    {
+                        printf("fsgnjx.d     %s, %s, %s\n", fd, fs1, fs2);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0x15: // FMIN.D & FMAX.D
+                    if (opcode4 == 0) // FMIN.D
+                    {
+                        printf("fmin.d       %s, %s, %s\n", fd, fs1, fs2);
+                    }
+                    else if (opcode4 == 1) // FMAX.D
+                    {
+                        printf("fmax.d       %s, %s, %s\n", fd, fs1, fs2);
+                    }
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0x20: // FCVT.S.D
                     if (opcode3 == 1) // FCVT.S.D
                     {
-                        printf("fcvt.s.d     %s, %s\n", rd, rs1);
+                        printf("fcvt.s.d     %s, %s\n", fd, fs1);
                     }
                     else
                     {
@@ -3355,10 +3376,10 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x420: // FCVT.D.S
-                    if (opcode3 == 1) // FCVT.D.S
+                case 0x21: // FCVT.D.S
+                    if (opcode4 == 1) // FCVT.D.S
                     {
-                        printf("fcvt.d.s     %s, %s\n", rd, rs1);
+                        printf("fcvt.d.s     %s, %s\n", fd, fs1);
                     }
                     else
                     {
@@ -3366,29 +3387,18 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0xa20: // FLE.D & FLT.D & FEQ.D
-                    if (opcode3 == 0) // FLE.D
+                case 0x51: // FLE.D & FLT.D & FEQ.D
+                    if (opcode4 == 0) // FLE.D
                     {
-                        printf("fle.d        %s, %s, %s\n", rd, rs1, rs2);
+                        printf("fle.d        %s, %s, %s\n", xd, fs1, fs2);
                     }
-                    else if (opcode3 == 1) // FLT.D
+                    else if (opcode4 == 1) // FLT.D
                     {
-                        printf("flt.d        %s, %s, %s\n", rd, rs1, rs2);
+                        printf("flt.d        %s, %s, %s\n", xd, fs1, fs2);
                     }
-                    else if (opcode3 == 2) // FEQ.D
+                    else if (opcode4 == 2) // FEQ.D
                     {
-                        printf("feq.d        %s, %s, %s\n", rd, rs1, rs2);
-                    }
-                    else
-                    {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
-                    }
-                    return;
-                case 0xc20: // FCVT.W.D
-                    if (opcode3 == 1) // FCVT.W.D
-                    {
-                        printf("fcvt.w.d     %s, %s\n", rd, rs1);
+                        printf("feq.d        %s, %s, %s\n", xd, fs1, fs2);
                     }
                     else
                     {
@@ -3396,10 +3406,64 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0xc21: // FCVT.WU.D
+                case 0x61: // FCVT.W.D & FCVT.WU.D & FCVT.L.D & FCVT.LU.D
+
+                    if (opcode3 == 0) // FCVT.W.D
+                    {
+                        printf("fcvt.w.d     %s, %s\n", xd, fs1);
+                    }
                     if (opcode3 == 1) // FCVT.WU.D
                     {
-                        printf("fcvt.wu.d    %s, %s\n", rd, rs1);
+                        printf("fcvt.wu.d    %s, %s\n", xd, fs1);
+                    }
+                    else if (opcode3 == 2) // FCVT.L.D
+                    {
+                        printf("fcvt.l.d     %s, %s\n", xd, fs1);
+                    }
+                    else if (opcode3 == 3) // FCVT.LU.D
+                    {
+                        printf("fcvt.lu.d    %s, %s\n", xd, fs1);
+                    }
+
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+                    return;
+                case 0x69: // FCVT.D.W & FCVT.D.WU & FCVT.D.L & FCVT.D.LU
+                    if (opcode3 == 0) // FCVT.D.W
+                    {
+                        printf("fcvt.d.w     %s, %s\n", fd, xs1);
+                    }
+                    else if (opcode3 == 1) // FCVT.D.WU
+                    {
+                        printf("fcvt.d.wu    %s, %s\n", fd, xs1);
+                    }
+                    else if (opcode3 == 2)
+                    {
+                        printf("fcvt.d.l     %s, %s\n", fd, xs1);
+                    }
+                    else if (opcode3 == 3)
+                    {
+                        printf("fcvt.d.lu    %s, %s\n", fd, xs1);
+                    }
+
+                    else
+                    {
+                        printf("Not implemented instruction: 0x%08X\n", code);
+                        _ASSERTE(!"TODO RISCV64 NYI");
+                    }
+
+                    return;
+                case 0x71: // FMV.X.D & FCLASS.D
+                    if (opcode4 == 0) // FMV.X.D
+                    {
+                        printf("fmv.x.d      %s, %s\n", xd, fs1);
+                    }
+                    else if (opcode4 == 1) // FCLASS.D
+                    {
+                        printf("fclass.d     %s, %s\n", xd, fs1);
                     }
                     else
                     {
@@ -3407,78 +3471,9 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0xd20: // FCVT.D.W
-                    if (opcode3 == 1) // FCVT.D.W
-                    {
-                        printf("fcvt.d.w     %s, %s\n", rd, rs1);
-                    }
-                    else
-                    {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
-                    }
-                    return;
-                case 0xd21: // FCVT.D.WU
-                    if (opcode3 == 1) // FCVT.D.WU
-                    {
-                        printf("fcvt.d.wu    %s, %s\n", rd, rs1);
-                    }
-                    else
-                    {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
-                    }
-                    return;
-                case 0xc02: // FCVT.L.S
-                    assert(opcode3 == 0);
-                    printf("fcvt.l.s     %s, %s\n", rd, rs1);
-                    return;
-                case 0xc03: // FCVT.LU.S
-                    assert(opcode3 == 0);
-                    printf("fcvt.lu.s    %s, %s\n", rd, rs1);
-                    return;
-                case 0xd02: // FCVT.S.L
-                    assert(opcode3 == 0);
-                    printf("fcvt.s.l     %s, %s\n", rd, rs1);
-                    return;
-                case 0xd03: // FCVT.S.LU
-                    assert(opcode3 == 0);
-                    printf("fcvt.s.lu    %s, %s\n", rd, rs1);
-                    return;
-                case 0xc22: // FCVT.L.D
-                    assert(opcode3 == 0);
-                    printf("fcvt.l.d     %s, %s\n", rd, rs1);
-                    return;
-                case 0xc23: // FCVT.LU.D
-                    assert(opcode3 == 0);
-                    printf("fcvt.lu.d    %s, %s\n", rd, rs1);
-                    return;
-                case 0xe20: // FMV.X.D & FCLASS.D
-                    if (opcode3 == 0) // FMV.X.D
-                    {
-                        printf("fmv.x.d      %s, %s\n", rd, rs1);
-                    }
-                    else if (opcode3 == 1) // FCLASS.D
-                    {
-                        printf("fclass.d     %s, %s\n", rd, rs1);
-                    }
-                    else
-                    {
-                        printf("Not implemented instruction: 0x%08X\n", code);
-                        _ASSERTE(!"TODO RISCV64 NYI");
-                    }
-                    return;
-                case 0xd22: // FCVT.D.L
-                    assert(opcode3 == 0);
-                    printf("fcvt.d.l     %s, %s\n", rd, rs1);
-                    return;
-                case 0xd23: // FCVT.D.LU
-                    assert(opcode3 == 0);
-                    printf("fcvt.d.lu    %s, %s\n", rd, rs1);
-                    return;
-                case 0xf20: // FMV.D.X
-                    assert(opcode3 == 0);
-                    printf("fmv.d.x      %s, %s\n", rd, rs1);
+                case 0x79: // FMV.D.X
+                    assert(opcode4 == 0);
+                    printf("fmv.d.x      %s, %s\n", fd, xs1);
                     return;
                 default:
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);
@@ -3492,7 +3487,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             unsigned int opcode2 = (code >> 12) & 0x7;
 
             const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            const char* rs2 = RegNames[(code >> 20) & 0x1f];
+            const char* rs2 = RegNames[((code >> 20) & 0x1f) | 0x20];
             int offset = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
             if (offset & 0x800)
             {
@@ -3517,7 +3512,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
             const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            const char* rd = RegNames[(code >> 7) & 0x1f];
+            const char* rd = RegNames[((code >> 7) & 0x1f) | 0x20];
             int offset = ((code >> 20) & 0xfff);
             if (offset & 0x800)
             {
@@ -4001,22 +3996,36 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 assert(REG_RA != src1->GetRegNum());
                 assert(REG_RA != src2->GetRegNum());
 
-                instruction ins2;
+                assert(REG_T6 != dst->GetRegNum());
+                assert(REG_T6 != src1->GetRegNum());
+                assert(REG_T6 != src2->GetRegNum());
 
                 if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                 {
                     if (attr == EA_4BYTE)
-                        _ASSERTE(!"TODO RISCV64 NYI");
-                    ins2 = INS_mulhu;
+                    {
+                        emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, src1->GetRegNum(), 32);
+                        emitIns_R_R_I(INS_slli, EA_8BYTE, REG_T6, src2->GetRegNum(), 32);
+                        emitIns_R_R_R(INS_mulhu, EA_8BYTE, REG_RA, REG_RA, REG_T6);
+                        emitIns_R_R_I(INS_srai, attr, REG_RA, REG_RA, 32);
+                    }
+                    else
+                    {
+                        emitIns_R_R_R(INS_mulhu, attr, REG_RA, src1->GetRegNum(), src2->GetRegNum());
+                    }
                 }
                 else
                 {
                     if (attr == EA_4BYTE)
-                        _ASSERTE(!"TODO RISCV64 NYI");
-                    ins2 = INS_mulh;
+                    {
+                        emitIns_R_R_R(INS_mul, EA_8BYTE, REG_RA, src1->GetRegNum(), src2->GetRegNum());
+                        emitIns_R_R_I(INS_srai, attr, REG_RA, REG_RA, 32);
+                    }
+                    else
+                    {
+                        emitIns_R_R_R(INS_mulhu, attr, REG_RA, src1->GetRegNum(), src2->GetRegNum());
+                    }
                 }
-
-                emitIns_R_R_R(ins2, attr, REG_RA, src1->GetRegNum(), src2->GetRegNum());
             }
 
             // n * n bytes will store n bytes result

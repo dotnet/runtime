@@ -2217,7 +2217,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                         ins = INS_remuw;
                     }
 
-                    // TODO-LOONGARCH64: here is just for signed-extension ?
+                    // TODO-RISCV64: here is just for signed-extension ?
                     emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, Reg1, Reg1, 0);
                     emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, divisorReg, divisorReg, 0);
                 }
@@ -3358,85 +3358,12 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
 
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
-    assert(!varTypeIsFloating(op1Type));
-#if 0
     if (varTypeIsFloating(op1Type))
     {
         assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
-        bool IsUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
-
-        if (IsUnordered)
-        {
-            if (tree->OperIs(GT_LT))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cult_s : INS_fcmp_cult_d, cmpSize, op1->GetRegNum(),
-                                    op2->GetRegNum(), 1 /*cc*/);
-            }
-            else if (tree->OperIs(GT_LE))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cule_s : INS_fcmp_cule_d, cmpSize, op1->GetRegNum(),
-                                    op2->GetRegNum(), 1 /*cc*/);
-            }
-            else if (tree->OperIs(GT_EQ))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cueq_s : INS_fcmp_cueq_d, cmpSize, op1->GetRegNum(),
-                                    op2->GetRegNum(), 1 /*cc*/);
-            }
-            else if (tree->OperIs(GT_NE))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cune_s : INS_fcmp_cune_d, cmpSize, op1->GetRegNum(),
-                                    op2->GetRegNum(), 1 /*cc*/);
-            }
-            else if (tree->OperIs(GT_GT))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cult_s : INS_fcmp_cult_d, cmpSize, op2->GetRegNum(),
-                                    op1->GetRegNum(), 1 /*cc*/);
-            }
-            else if (tree->OperIs(GT_GE))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cule_s : INS_fcmp_cule_d, cmpSize, op2->GetRegNum(),
-                                    op1->GetRegNum(), 1 /*cc*/);
-            }
-        }
-        else
-        {
-            if (tree->OperIs(GT_LT))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_clt_s : INS_fcmp_clt_d, cmpSize, op1->GetRegNum(),
-                                    op2->GetRegNum(), 1 /*cc*/);
-            }
-            else if (tree->OperIs(GT_LE))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cle_s : INS_fcmp_cle_d, cmpSize, op1->GetRegNum(),
-                                    op2->GetRegNum(), 1 /*cc*/);
-            }
-            else if (tree->OperIs(GT_EQ))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_ceq_s : INS_fcmp_ceq_d, cmpSize, op1->GetRegNum(),
-                                    op2->GetRegNum(), 1 /*cc*/);
-            }
-            else if (tree->OperIs(GT_NE))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cne_s : INS_fcmp_cne_d, cmpSize, op1->GetRegNum(),
-                                    op2->GetRegNum(), 1 /*cc*/);
-            }
-            else if (tree->OperIs(GT_GT))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_clt_s : INS_fcmp_clt_d, cmpSize, op2->GetRegNum(),
-                                    op1->GetRegNum(), 1 /*cc*/);
-            }
-            else if (tree->OperIs(GT_GE))
-            {
-                emit->emitIns_R_R_I(cmpSize == EA_4BYTE ? INS_fcmp_cle_s : INS_fcmp_cle_d, cmpSize, op2->GetRegNum(),
-                                    op1->GetRegNum(), 1 /*cc*/);
-            }
-        }
-
-        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, targetReg, REG_R0);
-        emit->emitIns_R_I(INS_movcf2gr, EA_PTRSIZE, targetReg, 1 /*cc*/);
+        NYI_RISCV64("genCodeForCompare not implemented on RISCV64 yet");
     }
     else
-#endif
     {
         if (op1->isContainedIntOrIImmed())
         {
@@ -3724,10 +3651,10 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
 
         assert(targetReg == REG_NA);
 
-        assert(!varTypeIsFloating(op1Type));
-#if 0
         if (varTypeIsFloating(op1Type))
         {
+            //NYI_RISCV64("genCodeForJumpTrue not implemented on RISCV64 yet");
+            // TODO MUST HANDLE UnOrdered!!!!!!!!!! TODO
             assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
             // here default use cc = 1 for float comparing.
             if (tree->OperIs(GT_EQ))
@@ -3779,32 +3706,6 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
                     emit->emitIns_R_R_R(INS_fle_d, EA_8BYTE, REG_RA, op1->GetRegNum(), op2->GetRegNum());
             }
 
-            if ((((tree->gtFlags & GTF_RELOP_NAN_UN) != 0) && ins == INS_bnez) ||
-                (((tree->gtFlags & GTF_RELOP_NAN_UN) == 0) && ins == INS_beqz))
-            {
-                regNumber tmpReg = rsGetRsvdReg(); // TODO NEED TO CHECK
-                if (cmpSize == EA_4BYTE)
-                {
-                    emit->emitIns_R_R(INS_fclass_s, EA_4BYTE, tmpReg, op1->GetRegNum());
-                    emit->emitIns_R_R_I(INS_andi, EA_4BYTE, tmpReg, tmpReg, 0x300);
-                    emit->emitIns_R_R_R(INS_or, EA_4BYTE, REG_RA, REG_RA, tmpReg);
-
-                    emit->emitIns_R_R(INS_fclass_s, EA_4BYTE, tmpReg, op2->GetRegNum());
-                    emit->emitIns_R_R_I(INS_andi, EA_4BYTE, tmpReg, tmpReg, 0x300);
-                    emit->emitIns_R_R_R(INS_or, EA_4BYTE, REG_RA, REG_RA, tmpReg);
-                }
-                else
-                {
-                    emit->emitIns_R_R(INS_fclass_d, EA_8BYTE, tmpReg, op1->GetRegNum());
-                    emit->emitIns_R_R_I(INS_andi, EA_4BYTE, tmpReg, tmpReg, 0x300);
-                    emit->emitIns_R_R_R(INS_or, EA_4BYTE, REG_RA, REG_RA, tmpReg);
-
-                    emit->emitIns_R_R(INS_fclass_d, EA_8BYTE, tmpReg, op2->GetRegNum());
-                    emit->emitIns_R_R_I(INS_andi, EA_4BYTE, tmpReg, tmpReg, 0x300);
-                    emit->emitIns_R_R_R(INS_or, EA_4BYTE, REG_RA, REG_RA, tmpReg);
-                }
-            }
-
             if (IsEq)
                 emit->emitIns_J(ins, compiler->compCurBB->bbJumpDest, (int)REG_RA);
             else
@@ -3814,7 +3715,6 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
             }
         }
         else
-#endif
         {
             int SaveCcResultReg = (int)REG_RA << 5;
             if (op1->isContainedIntOrIImmed())
@@ -4725,7 +4625,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_INTRINSIC:
-            genIntrinsic(treeNode);
+            genIntrinsic(treeNode->AsIntrinsic());
             break;
 
 #ifdef FEATURE_SIMD
@@ -5071,7 +4971,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 // Return value:
 //    None
 //
-void CodeGen::genIntrinsic(GenTree* treeNode)
+void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
     NYI("unimplemented on RISCV64 yet");
 }
@@ -6713,7 +6613,41 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 //
 void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 {
-    NYI("unimplemented on RISCV64 yet");
+    // float <--> double conversions are always non-overflow ones
+    assert(treeNode->OperGet() == GT_CAST);
+    assert(!treeNode->gtOverflow());
+
+    regNumber targetReg = treeNode->GetRegNum();
+    assert(genIsValidFloatReg(targetReg));
+
+    GenTree* op1 = treeNode->AsOp()->gtOp1;
+    assert(!op1->isContained());                  // Cannot be contained
+    assert(genIsValidFloatReg(op1->GetRegNum())); // Must be a valid float reg.
+
+    var_types dstType = treeNode->CastToType();
+    var_types srcType = op1->TypeGet();
+    assert(varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
+
+    genConsumeOperands(treeNode->AsOp());
+
+    // treeNode must be a reg
+    assert(!treeNode->isContained());
+
+    if (srcType != dstType)
+    {
+        instruction ins = (srcType == TYP_FLOAT) ? INS_fcvt_d_w  // convert Single to Double
+                                                 : INS_fcvt_w_d; // convert Double to Single
+
+        GetEmitter()->emitIns_R_R(ins, emitActualTypeSize(treeNode), treeNode->GetRegNum(), op1->GetRegNum());
+    }
+    else if (treeNode->GetRegNum() != op1->GetRegNum())
+    {
+        // If double to double cast or float to float cast. Emit a move instruction.
+        instruction ins = (srcType == TYP_FLOAT) ? INS_fsgnj_s : INS_fsgnj_d;
+        GetEmitter()->emitIns_R_R_R(ins, emitActualTypeSize(treeNode), treeNode->GetRegNum(), op1->GetRegNum(), op1->GetRegNum());
+    }
+
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -7652,8 +7586,9 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         else
                         {
                             assert(genIsValidFloatReg(varDsc->GetArgReg()));
-                            regArg[(varDsc->GetArgReg() & 7) | 0x8]     = varDsc->GetArgReg();
-                            regArgInit[(varDsc->GetArgReg() & 7) | 0x8] = varDsc->GetArgInitReg();
+                            assert(varDsc->GetArgReg() >= REG_ARG_FP_FIRST && varDsc->GetArgReg() <= REG_ARG_FP_LAST);
+                            regArg[(varDsc->GetArgReg() - REG_ARG_FP_FIRST) | 0x8]     = varDsc->GetArgReg();
+                            regArgInit[(varDsc->GetArgReg() - REG_ARG_FP_FIRST) | 0x8] = varDsc->GetArgInitReg();
                         }
                         regArgNum++;
                     }
@@ -7684,7 +7619,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
             }
             else
             {
-                // TODO for LoongArch64: should delete this by optimization "struct {long a; int32_t b;};"
+                // TODO for RISCV64: should delete this by optimization "struct {long a; int32_t b;};"
                 // liking AMD64_ABI within morph.
                 if (genIsValidIntReg(varDsc->GetArgReg()) && (varDsc->TypeGet() == TYP_INT))
                 {
@@ -7968,9 +7903,9 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     else
                     {
                         int k = regArgInit[j] - REG_ARG_FIRST;
-                        assert((k >= 0) && (k < MAX_REG_ARG));
+                        // assert((k >= 0) && (k < MAX_REG_ARG));
                         instruction ins2 = (regArgMaskIsInt & (1 << regArg[j])) != 0 ? INS_slliw : INS_ori;
-                        if ((regArg[k] == 0) || (k > i))
+                        if ((regArg[k] == 0) || (k > i) || k < 0)
                         {
                             GetEmitter()->emitIns_R_R_I(ins2, EA_PTRSIZE, (regNumber)regArgInit[j],
                                                         (regNumber)regArg[j], 0);
@@ -8024,7 +7959,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                                                   true);
                         break;
                     }
-                    else if (regArgInit[i] > regArg[i] || (regArgInit[i] >= REG_F0 && regArgInit[i] <= REG_F9)) // TODO NEED TO VERIFY
+                    else if (regArgInit[i] > regArg[i] || (regArgInit[i] <= REG_F9)) // TODO NEED TO VERIFY
                     {
                         GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[i],
                                                   (regNumber)regArg[i], (regNumber)regArg[i]);
@@ -8035,8 +7970,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         assert(regArgNum > 0);
 
                         int j = genIsValidIntReg((regNumber)regArgInit[i]) ? (regArgInit[i] - REG_ARG_FIRST)
-                                                                           : ((regArgInit[i] & 0x7) | 0x8);
-                        if (regArg[j] == 0)
+                                                                           : ((((int)regArgInit[i]) - REG_ARG_FP_FIRST) + 0x8);
+                        if (j < MAX_REG_ARG || regArg[j] == 0)
                         {
                             GetEmitter()->emitIns_Mov(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i],
                                                       true);
@@ -8047,8 +7982,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
                             assert(genIsValidFloatReg((regNumber)regArg[j]));
                             assert(genIsValidFloatReg((regNumber)regArgInit[j]));
 
-                            int k = (regArgInit[j] & 0x7) | 0x8;
-                            if ((regArg[k] == 0) || (k > i))
+                            int k = (((int)regArgInit[j]) - REG_ARG_FP_FIRST) + 0x8;
+                            if ((regArg[k] == 0) || (k > i) || (k < MAX_REG_ARG))
                             {
                                 GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[j],
                                                           (regNumber)regArg[j], (regNumber)regArg[j]);

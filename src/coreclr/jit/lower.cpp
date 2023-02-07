@@ -7625,7 +7625,7 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM)
         bool shouldSwitchToInteger = true;
-#else // TARGET_ARM64 || TARGET_LOONGARCH64
+#else // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
         bool       shouldSwitchToInteger = FloatingPointUtils::isPositiveZero(dblCns);
 #endif
 

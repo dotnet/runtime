@@ -2558,7 +2558,7 @@ void emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
 #ifdef TARGET_AMD64
             // doesn't have to be all negative on amd
             printf("-%04X ... %04X\n", -offsLo, offsHi);
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (offsHi < 0)
                 printf("-%04X ... -%04X\n", -offsLo, -offsHi);
             else
@@ -7183,7 +7183,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 isJccAffectedIns = true;
 #elif defined(TARGET_RISCV64)
 
-#endif // TARGET_LOONGARCH64
+                isJccAffectedIns = true;
+#endif // TARGET_RISCV64
 
                 // Jcc affected instruction boundaries were printed above; handle other cases here.
                 if (!isJccAffectedIns)
@@ -10177,7 +10178,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 
-#if !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
         case CORINFO_HELP_PROF_FCN_ENTER:
             result = RBM_PROFILER_ENTER_TRASH;
             break;
@@ -10194,7 +10195,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
         case CORINFO_HELP_PROF_FCN_TAILCALL:
             result = RBM_PROFILER_TAILCALL_TRASH;
             break;
-#endif // !defined(TARGET_LOONGARCH64)
+#endif // !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
 #if defined(TARGET_X86)
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
