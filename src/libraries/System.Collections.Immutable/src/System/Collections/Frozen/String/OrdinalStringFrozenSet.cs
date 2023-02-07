@@ -31,9 +31,9 @@ namespace System.Collections.Frozen
             HashCount = hashCount;
 
             _hashTable = FrozenHashTable.Create(
-                entries,
-                GetHashCode,
-                (index, item) => _items[index] = item);
+                entries.Length,
+                index => GetHashCode(entries[index]),
+                (destIndex, srcIndex) => _items[destIndex] = entries[srcIndex]);
         }
 
         private protected int HashIndex { get; }

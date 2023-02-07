@@ -22,7 +22,6 @@ namespace System.Net.Http
     {
         private readonly HttpHandlerType _underlyingHandler;
 
-
 #if TARGET_BROWSER
         private HttpMessageHandler Handler { get; }
 #else

@@ -1409,12 +1409,40 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await SendResume(sessionId, token);
             }
         }
+        private Result AddCallStackInfoToException(Result _error, ExecutionContext context, int scopeId)
+        {
+            try {
+                var retStackTrace = new JArray();
+                foreach(var call in context.CallStack)
+                {
+                    if (call.Id < scopeId)
+                        continue;
+                    retStackTrace.Add(JObject.FromObject(new
+                    {
+                        functionName = call.Method.Name,
+                        scriptId = call.Location.Id.ToString(),
+                        url = context.Store.ToUrl(call.Location),
+                        lineNumber = call.Location.Line,
+                        columnNumber = call.Location.Column
+                    }));
+                }
+                if (!_error.Value.ContainsKey("exceptionDetails"))
+                    _error.Value["exceptionDetails"] = new JObject();
+                _error.Value["exceptionDetails"]["stackTrace"] = JObject.FromObject(new {callFrames = retStackTrace});
+                return _error;
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Unable to add stackTrace information to exception. {e}");
+            }
+            return _error;
+        }
 
         private async Task<bool> OnEvaluateOnCallFrame(MessageId msg_id, int scopeId, string expression, CancellationToken token)
         {
+            ExecutionContext context = GetContext(msg_id);
             try
             {
-                ExecutionContext context = GetContext(msg_id);
                 if (context.CallStack == null)
                     return false;
 
@@ -1432,22 +1460,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else
                 {
-                    SendResponse(msg_id, Result.Err($"Unable to evaluate '{expression}'"), token);
+                    SendResponse(msg_id, AddCallStackInfoToException(Result.Err($"Unable to evaluate '{expression}'"), context, scopeId), token);
                 }
             }
             catch (ReturnAsErrorException ree)
             {
-                SendResponse(msg_id, ree.Error, token);
-            }
-            catch (ExpressionEvaluationFailedException eefe)
-            {
-                logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{eefe}.");
-                SendResponse(msg_id, Result.Exception(eefe), token);
+                SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context, scopeId), token);
             }
             catch (Exception e)
             {
                 logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{e}.");
-                SendResponse(msg_id, Result.Exception(e), token);
+                var exc = new ReturnAsErrorException(e.Message, e.GetType().Name);
+                SendResponse(msg_id, AddCallStackInfoToException(exc.Error, context, scopeId), token);
             }
 
             return true;
