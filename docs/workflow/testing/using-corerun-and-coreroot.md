@@ -53,9 +53,9 @@ dotnet new console
 dotnet build
 ```
 
-Now, instead of running our app the usual way, we will use our newly built `corerun` to execute it using our build of the runtime. For this, we will follow the steps denoted below:
+Now, instead of running our app the usual way, we will use `corerun` to execute it using our build of the runtime. The `corerun` executable is created as part of building the `clr` subset, and it will exist in the `<repo root>/artifacts/bin/coreclr/<OS>.<Arch>.<Configuration>` folder. For this, we will follow the steps denoted below:
 
-* First we will add the `Core_Root` folder to the `PATH` environment variable for ease of use. Note that you can always skip this step and fully qualify the name instead.
+* First we will add `corerun`'s folder to the `PATH` environment variable for ease of use. Note that you can always skip this step and fully qualify the name instead.
   * This example assumes you built on the _Debug_ configuration for the _x64_ architecture. Make sure you adjust the path accordingly to your kind of build.
 * Then, we also need the libraries. Since we only built the runtime, we will tell `corerun` to use the ones shipped with .NET's default installation on your machine.
   * This example assumes your default .NET installation's version is called "_7.0.0_". Same deal as with your runtime build path, adjust to the version you have installed on your machine.
@@ -78,7 +78,7 @@ export CORE_LIBRARIES="/usr/local/share/dotnet/shared/Microsoft.NETCore.App/7.0.
 corerun HelloWorld.dll
 ```
 
-On Powershell:
+On PowerShell:
 
 ```powershell
 # Note the '+=' since we're appending to the already existing PATH variable.
@@ -117,13 +117,13 @@ export PATH="$PATH:<repo_root>/artifacts/tests/coreclr/linux.x64.Debug/Tests/Cor
 corerun HelloWorld.dll
 ```
 
-On Powershell:
+On PowerShell:
 
 ```powershell
 # Note the '+=' since we're appending to the already existing PATH variable.
 # Also, replace the ';' with ':' if on Linux or macOS.
 $Env:PATH += ';<repo_root>\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root'
-.\corerun HelloWorld.dll
+corerun HelloWorld.dll
 ```
 
 The advantage of generating the Core_Root, instead of sticking to the _corerun_ from the _clr_ build, is that you can also test and debug libraries at the same time.
