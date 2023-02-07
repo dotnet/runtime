@@ -8,9 +8,6 @@
   <PropertyGroup>
     <BaseInnerSourceBuildCommand>./build.sh</BaseInnerSourceBuildCommand>
 
-    <SourceBuildPortable>true</SourceBuildPortable>
-    <SourceBuildPortable Condition="'$(SourceBuildNonPortable)' == 'true'">false</SourceBuildPortable>
-
     <!-- TargetRid names what gets built. -->
     <TargetRid Condition="'$(TargetRid)' == '' and '$(SourceBuildNonPortable)' == 'true'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</TargetRid>
     <TargetRid Condition="'$(TargetRid)' == ''">$(__DistroRid)</TargetRid>
@@ -39,14 +36,11 @@
       <InnerBuildArgs>$(InnerBuildArgs) --nodereuse false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --outputrid $(TargetRid)</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) --portablebuild $(SourceBuildPortable)</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) /p:NoPgoOptimize=true</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:KeepNativeSymbols=true</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(RuntimeOS)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(OfficialBuildId)' != ''">$(InnerBuildArgs) /p:OfficialBuildId=$(OfficialBuildId)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ContinuousIntegrationBuild)' != ''">$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) /p:EnableNgenOptimization=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:EnablePackageValidation=false</InnerBuildArgs>
       <!-- Re-enable for source-build when 8.0 Preview 1 shipped. See https://github.com/dotnet/installer/pull/14991 for more information. -->
