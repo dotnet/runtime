@@ -11,7 +11,22 @@ public class Program
             return 100;
         }
 
-        var proc = Process.Start(new ProcessStartInfo
+        Console.WriteLine("Running llvm-dwarfdump");
+        var proc = Process.Start("llvm-dwarfdump", "--version");
+
+        if (proc is null)
+        {
+            Console.WriteLine("llvm-dwarfdump could not run");
+            return 1;
+        }
+
+        proc.WaitForExit();
+        if (proc.ExitCode != 0)
+        {
+            return 2;
+        }
+
+        proc = Process.Start(new ProcessStartInfo
         {
             FileName = "/bin/sh",
             Arguments = $"-c \"llvm-dwarfdump --verify {Environment.ProcessPath}",
@@ -20,14 +35,8 @@ public class Program
             UseShellExecute = false
         });
 
-        if (proc is null)
-        {
-            Console.WriteLine("llvm-dwarfdump could not run");
-            return 1;
-        }
-
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
-        const int ExpectedCount = 23126;
+        const int ExpectedCount = 46253;
         int count = 0;
         string line;
         while ((line = proc.StandardOutput.ReadLine()) != null)
