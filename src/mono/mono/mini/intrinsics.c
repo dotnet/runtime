@@ -1055,7 +1055,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, hi);
 				#endif
 			#else
-				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (guint32)data_ptr);
+				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (guint64)data_ptr);
 			#endif
 
 			MonoClassField* field_len = mono_class_get_field_from_name_full (span->klass, "_length", NULL);
