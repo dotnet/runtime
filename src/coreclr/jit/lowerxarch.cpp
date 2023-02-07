@@ -1321,7 +1321,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 assert(op1Intrinsic->Op(2)->isContained());
 
                 ssize_t op1Ival = op1Idx->AsIntConCommon()->IconValue();
-                ival |= ((op1Ival & 0x0F) & ((1 << count_d) - 1));
+                ival |= ((op1Ival & 0x0F) & ~(1 << count_d));
                 op3->AsIntConCommon()->SetIconValue(ival);
 
                 // Then we'll just carry the original non-zero input and
