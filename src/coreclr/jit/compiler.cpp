@@ -4433,6 +4433,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // If we're going to instrument code, we may need to prepare before
     // we import.
