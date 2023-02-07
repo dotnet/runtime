@@ -17,17 +17,17 @@
 //    blockPred -- The predecessor block to find in the predecessor list.
 //
 // Return Value:
-//    The flowList edge corresponding to "blockPred". If "blockPred" is not in the predecessor list of "block",
+//    The FlowEdge edge corresponding to "blockPred". If "blockPred" is not in the predecessor list of "block",
 //    then returns nullptr.
 //
-flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred)
+FlowEdge* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred)
 {
     assert(block);
     assert(blockPred);
 
-    for (flowList* const pred : block->PredEdges())
+    for (FlowEdge* const pred : block->PredEdges())
     {
-        if (blockPred == pred->getBlock())
+        if (blockPred == pred->getSourceBlock())
         {
             return pred;
         }
@@ -47,22 +47,22 @@ flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred)
 //    ptrToPred -- Out parameter: set to the address of the pointer that points to the returned predecessor edge.
 //
 // Return Value:
-//    The flowList edge corresponding to "blockPred". If "blockPred" is not in the predecessor list of "block",
+//    The FlowEdge edge corresponding to "blockPred". If "blockPred" is not in the predecessor list of "block",
 //    then returns nullptr.
 //
-flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, flowList*** ptrToPred)
+FlowEdge* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, FlowEdge*** ptrToPred)
 {
     assert(block);
     assert(blockPred);
     assert(ptrToPred);
 
-    flowList** predPrevAddr;
-    flowList*  pred;
+    FlowEdge** predPrevAddr;
+    FlowEdge*  pred;
 
     for (predPrevAddr = &block->bbPreds, pred = *predPrevAddr; pred != nullptr;
-         predPrevAddr = &pred->flNext, pred = *predPrevAddr)
+         predPrevAddr = pred->getNextPredEdgeRef(), pred = *predPrevAddr)
     {
-        if (blockPred == pred->getBlock())
+        if (blockPred == pred->getSourceBlock())
         {
             *ptrToPred = predPrevAddr;
             return pred;
@@ -94,22 +94,16 @@ flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, 
 //    -- fgModified is set if a new flow edge is created (but not if an existing flow edge dup count is incremented),
 //       indicating that the flow graph shape has changed.
 //
-flowList* Compiler::fgAddRefPred(BasicBlock* block,
+FlowEdge* Compiler::fgAddRefPred(BasicBlock* block,
                                  BasicBlock* blockPred,
-                                 flowList*   oldEdge /* = nullptr */,
+                                 FlowEdge*   oldEdge /* = nullptr */,
                                  bool        initializingPreds /* = false */)
 {
     assert(block != nullptr);
     assert(blockPred != nullptr);
+    assert(fgPredsComputed ^ initializingPreds);
 
     block->bbRefs++;
-
-    if (!fgComputePredsDone && !initializingPreds)
-    {
-        // Why is someone trying to update the preds list when the preds haven't been created?
-        // Ignore them! This can happen when fgMorph is called before the preds list is created.
-        return nullptr;
-    }
 
     // Keep the predecessor list in lowest to highest bbNum order. This allows us to discover the loops in
     // optFindNaturalLoops from innermost to outermost.
@@ -121,11 +115,11 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     // Thus, inserting all the edges for a block is quadratic in the number of edges. We need to either
     // not bother sorting for debuggable code, or sort in optFindNaturalLoops, or better, make the code in
     // optFindNaturalLoops not depend on order. This also requires ensuring that nobody else has taken a
-    // dependency on this order. Note also that we don't allow duplicates in the list; we maintain a flDupCount
+    // dependency on this order. Note also that we don't allow duplicates in the list; we maintain a DupCount
     // count of duplication. This also necessitates walking the flow list for every edge we add.
     //
-    flowList*  flow  = nullptr;
-    flowList** listp = &block->bbPreds;
+    FlowEdge*  flow  = nullptr;
+    FlowEdge** listp = &block->bbPreds;
 
     if (initializingPreds)
     {
@@ -133,14 +127,14 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
         // increasing blockPred->bbNum order. The only possible
         // dup list entry is the last one.
         //
-        flowList* flowLast = block->bbLastPred;
+        FlowEdge* flowLast = block->bbLastPred;
         if (flowLast != nullptr)
         {
-            listp = &flowLast->flNext;
+            listp = flowLast->getNextPredEdgeRef();
 
-            assert(flowLast->getBlock()->bbNum <= blockPred->bbNum);
+            assert(flowLast->getSourceBlock()->bbNum <= blockPred->bbNum);
 
-            if (flowLast->getBlock() == blockPred)
+            if (flowLast->getSourceBlock() == blockPred)
             {
                 flow = flowLast;
             }
@@ -150,12 +144,12 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     {
         // References are added randomly, so we have to search.
         //
-        while ((*listp != nullptr) && ((*listp)->getBlock()->bbNum < blockPred->bbNum))
+        while ((*listp != nullptr) && ((*listp)->getSourceBlock()->bbNum < blockPred->bbNum))
         {
-            listp = &(*listp)->flNext;
+            listp = (*listp)->getNextPredEdgeRef();
         }
 
-        if ((*listp != nullptr) && ((*listp)->getBlock() == blockPred))
+        if ((*listp != nullptr) && ((*listp)->getSourceBlock() == blockPred))
         {
             flow = *listp;
         }
@@ -164,15 +158,15 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
     if (flow != nullptr)
     {
         // The predecessor block already exists in the flow list; simply add to its duplicate count.
-        noway_assert(flow->flDupCount > 0);
-        flow->flDupCount++;
+        noway_assert(flow->getDupCount());
+        flow->incrementDupCount();
     }
     else
     {
 
 #if MEASURE_BLOCK_SIZE
         genFlowNodeCnt += 1;
-        genFlowNodeSize += sizeof(flowList);
+        genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
 
         // Any changes to the flow graph invalidate the dominator sets.
@@ -180,9 +174,9 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
 
         // Create new edge in the list in the correct ordered location.
         //
-        flow             = new (this, CMK_FlowList) flowList(blockPred, *listp);
-        flow->flDupCount = 1;
-        *listp           = flow;
+        flow = new (this, CMK_FlowEdge) FlowEdge(blockPred, *listp);
+        flow->incrementDupCount();
+        *listp = flow;
 
         if (initializingPreds)
         {
@@ -258,34 +252,25 @@ flowList* Compiler::fgAddRefPred(BasicBlock* block,
 //    -- fgModified is set if a flow edge is removed (but not if an existing flow edge dup count is decremented),
 //       indicating that the flow graph shape has changed.
 //
-flowList* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
+FlowEdge* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
 {
     noway_assert(block != nullptr);
     noway_assert(blockPred != nullptr);
-
     noway_assert(block->countOfInEdges() > 0);
+    assert(fgPredsComputed);
     block->bbRefs--;
 
-    // Do nothing if we haven't calculated the predecessor list yet.
-    // Yes, this does happen.
-    // For example the predecessor lists haven't been created yet when we do fgMorph.
-    // But fgMorph calls fgFoldConditional, which in turn calls fgRemoveRefPred.
-    if (!fgComputePredsDone)
-    {
-        return nullptr;
-    }
-
-    flowList** ptrToPred;
-    flowList*  pred = fgGetPredForBlock(block, blockPred, &ptrToPred);
+    FlowEdge** ptrToPred;
+    FlowEdge*  pred = fgGetPredForBlock(block, blockPred, &ptrToPred);
     noway_assert(pred != nullptr);
-    noway_assert(pred->flDupCount > 0);
+    noway_assert(pred->getDupCount() > 0);
 
-    pred->flDupCount--;
+    pred->decrementDupCount();
 
-    if (pred->flDupCount == 0)
+    if (pred->getDupCount() == 0)
     {
         // Splice out the predecessor edge since it's no longer necessary.
-        *ptrToPred = pred->flNext;
+        *ptrToPred = pred->getNextPredEdge();
 
         // Any changes to the flow graph invalidate the dominator sets.
         fgModified = true;
@@ -314,23 +299,23 @@ flowList* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
 // Notes:
 //    block->bbRefs is decremented to account for the reduction in incoming edges.
 //
-flowList* Compiler::fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred)
+FlowEdge* Compiler::fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred)
 {
     assert(block != nullptr);
     assert(blockPred != nullptr);
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
     assert(block->countOfInEdges() > 0);
 
-    flowList** ptrToPred;
-    flowList*  pred = fgGetPredForBlock(block, blockPred, &ptrToPred);
+    FlowEdge** ptrToPred;
+    FlowEdge*  pred = fgGetPredForBlock(block, blockPred, &ptrToPred);
     assert(pred != nullptr);
-    assert(pred->flDupCount > 0);
+    assert(pred->getDupCount() > 0);
 
-    assert(block->bbRefs >= pred->flDupCount);
-    block->bbRefs -= pred->flDupCount;
+    assert(block->bbRefs >= pred->getDupCount());
+    block->bbRefs -= pred->getDupCount();
 
     // Now splice out the predecessor edge.
-    *ptrToPred = pred->flNext;
+    *ptrToPred = pred->getNextPredEdge();
 
     // Any changes to the flow graph invalidate the dominator sets.
     fgModified = true;
@@ -366,7 +351,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
                 while (bNext->countOfInEdges() > 0)
                 {
-                    fgRemoveRefPred(bNext, bNext->bbPreds->getBlock());
+                    fgRemoveRefPred(bNext, bNext->bbPreds->getSourceBlock());
                 }
             }
 

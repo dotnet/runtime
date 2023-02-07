@@ -23,9 +23,9 @@ namespace System.Collections.Frozen
             _items = new T[entries.Length];
 
             _hashTable = FrozenHashTable.Create(
-                entries,
-                o => o is null ? 0 : Comparer.GetHashCode(o),
-                (index, item) => _items[index] = item,
+                entries.Length,
+                index => entries[index] is T t ? Comparer.GetHashCode(t) : 0,
+                (destIndex, srcIndex) => _items[destIndex] = entries[srcIndex],
                 optimizeForReading);
         }
 

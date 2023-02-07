@@ -23,8 +23,8 @@
 
   <ItemGroup>
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
-    <_DefaultPropsForNuGetBuild Include="TargetOS=browser" />
-    <_DefaultPropsForNuGetBuild Include="TargetArchitecture=wasm" />
+    <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
+    <_DefaultPropsForNuGetBuild Include="TargetArchitecture=$(TargetArchitecture)" />
     <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
   </ItemGroup>
 
@@ -157,7 +157,7 @@
           DependsOnTargets="$(InstallWorkloadUsingArtifactsDependsOn)"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
-  <Target Name="_GetNuGetsToBuild" Returns="@(_NuGetsToBuild)" DependsOnTargets="_GetRuntimePackNuGetsToBuild">
+  <Target Name="_GetNuGetsToBuild" Returns="@(_NuGetsToBuild)" DependsOnTargets="_GetRuntimePackNuGetsToBuild" Condition="'$(TargetOS)' == 'browser'">
     <PropertyGroup>
       <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
       <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier).$(PackageVersionForWorkloadManifests).nupkg</_AOTCrossNuGetPath>
