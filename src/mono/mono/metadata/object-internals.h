@@ -1277,8 +1277,8 @@ TYPED_HANDLE_DECL (MonoReflectionEnumBuilder);
 typedef struct _MonoReflectionGenericClass MonoReflectionGenericClass;
 struct _MonoReflectionGenericClass {
 	MonoReflectionType type;
-	MonoReflectionType *generic_type; /*Can be either a MonoType or a TypeBuilder*/
-	MonoArray *type_arguments;
+	MonoReflectionType *_genericType; /*Can be either a MonoType or a TypeBuilder*/
+	MonoArray *_typeArguments;
 };
 
 /* Safely access System.Reflection.Emit.TypeBuilderInstantiation from native code */

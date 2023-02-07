@@ -1576,7 +1576,7 @@ reflection_instance_handle_mono_type (MonoReflectionGenericClassHandle ref_gclas
 	MonoType *result = NULL;
 	MonoType **types = NULL;
 
-	MonoArrayHandle typeargs = MONO_HANDLE_NEW_GET (MonoArray, ref_gclass, type_arguments);
+	MonoArrayHandle typeargs = MONO_HANDLE_NEW_GET (MonoArray, ref_gclass, _typeArguments);
 	int count = GUINTPTR_TO_INT (mono_array_handle_length (typeargs));
 	types = g_new0 (MonoType*, count);
 	MonoReflectionTypeHandle t = MONO_HANDLE_NEW (MonoReflectionType, NULL);
@@ -1587,9 +1587,9 @@ reflection_instance_handle_mono_type (MonoReflectionGenericClassHandle ref_gclas
 			goto leave;
 		}
 	}
-	/* Need to resolve the generic_type in order for it to create its generic context. */
+	/* Need to resolve the _genericType in order for it to create its generic context. */
 	MonoReflectionTypeHandle ref_gtd;
-	ref_gtd = MONO_HANDLE_NEW_GET (MonoReflectionType, ref_gclass, generic_type);
+	ref_gtd = MONO_HANDLE_NEW_GET (MonoReflectionType, ref_gclass, _genericType);
 	MonoType *gtd;
 	gtd = mono_reflection_type_handle_mono_type (ref_gtd, error);
 	goto_if_nok (error, leave);

@@ -2488,8 +2488,8 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs);
 	} else if (strcmp ("MonoGenericClass", klass_name) == 0) {
 		MonoReflectionGenericClassHandle gclass = MONO_HANDLE_CAST (MonoReflectionGenericClass, obj);
-		MonoReflectionTypeHandle generic_type = MONO_HANDLE_NEW_GET (MonoReflectionType, gclass, generic_type);
-		cinfo = mono_reflection_get_custom_attrs_info_checked (MONO_HANDLE_CAST (MonoObject, generic_type), error);
+		MonoReflectionTypeHandle _genericType = MONO_HANDLE_NEW_GET (MonoReflectionType, gclass, _genericType);
+		cinfo = mono_reflection_get_custom_attrs_info_checked (MONO_HANDLE_CAST (MonoObject, _genericType), error);
 		goto_if_nok (error, leave);
 	} else { /* handle other types here... */
 		g_error ("get custom attrs not yet supported for %s", m_class_get_name (klass));
