@@ -11,7 +11,9 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetQuic_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == ''">ExcludeApiList.PNSE.txt</ApiExclusionListPath>
-    <UseQuicTransportPackage  Condition="'$(UseQuicTransportPackage)' == ''">false</UseQuicTransportPackage>
+    <!-- This controls if we consume official binaries from MsQuic or if we use binaries published from dotnet/msquic repo.
+         Release branches should generally consume MsQuic release code, transport allows us to consume and test pre-released versions -->
+    <UseQuicTransportPackage  Condition="'$(UseQuicTransportPackage)' == ''">true</UseQuicTransportPackage>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
@@ -138,7 +140,7 @@
     <Reference Include="System.Diagnostics.StackTrace" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
 
-  <!-- Support for deploying msquic on Windows -->
+  <!-- Support for deploying msquic on Windows. We make msquic.dll part or runtime binaries. (either from official releases or our transport) -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and '$(UseQuicTransportPackage)' == 'true' and '$(DotNetBuildFromSource)' != 'true'">
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
