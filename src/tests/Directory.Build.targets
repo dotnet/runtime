@@ -664,7 +664,7 @@
     <IlcReference Include="$(TargetingPackPath)/*.dll" />
 
     <!-- xunit calls MakeGenericType to check if something is IEquatable -->
-    <IlcArg Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
+    <IlcArg Condition="'$(EagerlyValidateTypeConstruction)' != 'false'" Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
   </ItemGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
