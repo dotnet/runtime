@@ -610,16 +610,16 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 }
 
 //------------------------------------------------------------------------
-// AreUpper32BitsFFFF: check if some previously emitted
-//     instruction set the upper 32 bits of reg to 0xFFFF.
+// AreUpper32BitsSignExtended: check if some previously emitted
+//     instruction sign-extended the upper 32 bits.
 //
 // Arguments:
 //    reg - register of interest
 //
 // Return Value:
-//    true if previous instruction upper 32 bits are 0xFFFF.
+//    true if previous instruction upper 32 bits are sign-extended.
 //    false if it did not, or if we can't safely determine.
-bool emitter::AreUpper32BitsFFFF(regNumber reg)
+bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 {
     // Only allow GPRs.
     // If not a valid register, then return false.
