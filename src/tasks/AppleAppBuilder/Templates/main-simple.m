@@ -6,7 +6,7 @@
 #import "runtime.h"
 #else
 extern void* NativeAOT_StaticInitialization();
-extern void managed_entry_point();
+extern int __managed__Main(int argc, char* argv[]);
 #endif
 
 @interface ViewController : UIViewController
@@ -58,7 +58,7 @@ void (*clickHandlerPtr)(void);
         setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
 #endif
         NativeAOT_StaticInitialization();
-        managed_entry_point();
+        int ret_val = __managed__Main(0, NULL);
 #endif
     });
 }
