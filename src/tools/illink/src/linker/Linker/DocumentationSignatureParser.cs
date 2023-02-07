@@ -161,7 +161,7 @@ namespace Mono.Linker
 				var typeOrNamespaceName = nameBuilder.ToString ();
 				GetMatchingTypes (module, declaringType: containingType, name: typeOrNamespaceName, arity: arity, results: results, resolver);
 				Debug.Assert (results.Count <= 1);
-				if (results.Any ()) {
+				if (results.Count > 0) {
 					// the name resolved to a type
 					var result = results.Single ();
 					Debug.Assert (result is TypeDefinition);
