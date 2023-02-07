@@ -1276,10 +1276,10 @@ namespace System.Diagnostics.Eventing.Reader
             }
             else
             {
-                Array array = new T[val.Count];
+                T[] array = new T[val.Count];
                 for (int i = 0; i < val.Count; i++)
                 {
-                    array.SetValue(Marshal.PtrToStructure<T>(ptr), i);
+                    array[i] = Marshal.PtrToStructure<T>(ptr);
                     ptr = new IntPtr((long)ptr + size);
                 }
                 return array;
