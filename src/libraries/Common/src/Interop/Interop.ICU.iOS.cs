@@ -10,5 +10,8 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_LoadICUData", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int LoadICUData(string path);
+
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetICUDataPathFallback", StringMarshalling = StringMarshalling.Utf8)]
+        internal static partial string GetICUDataPathFallback();
     }
 }

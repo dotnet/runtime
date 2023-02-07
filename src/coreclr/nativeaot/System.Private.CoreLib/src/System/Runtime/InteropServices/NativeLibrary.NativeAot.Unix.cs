@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices
 
             public void Throw(string libraryName)
             {
-#if TARGET_OSX
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 throw new DllNotFoundException(SR.Format(SR.DllNotFound_Mac, libraryName, _errorMessage));
 #else
                 throw new DllNotFoundException(SR.Format(SR.DllNotFound_Linux, libraryName, _errorMessage));

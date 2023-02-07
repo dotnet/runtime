@@ -102,6 +102,58 @@ build_native()
             echo "Error: Unknown Android architecture $hostArch."
             exit 1
         fi
+    elif [[ "$__TargetOS" == iossimulator ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default iOS simulator deployment target
+        # keep in sync with src/mono/Directory.Build.props, eng/native/build-commons.sh
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == x64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+        elif [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown iOS Simulator architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$__TargetOS" == ios ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default iOS device deployment target
+        # keep in sync with src/mono/Directory.Build.props, eng/native/build-commons.sh
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown iOS architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$__TargetOS" == tvossimulator ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default tvOS simulator deployment target
+        # keep in sync with src/mono/Directory.Build.props, eng/native/build-commons.sh
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == x64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+        elif [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown tvOS Simulator architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$__TargetOS" == tvos ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default tvOS device deployment target
+        # keep in sync with src/mono/Directory.Build.props, eng/native/build-commons.sh
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown tvOS architecture $__TargetArch."
+            exit 1
+        fi
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then

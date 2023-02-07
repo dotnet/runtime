@@ -1287,9 +1287,12 @@ ExitVirtualProtect:
     return bRetVal;
 }
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if (defined(HOST_OSX) || defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
 PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
 {
+#if defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)
+    RhFailFast(); // TODO: add pthread_jit_write_protect_np workaround
+#elif defined(HOST_OSX)
     thread_local int enabledCount = 0;
     if (writeEnable)
     {
@@ -1306,8 +1309,11 @@ PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
         }
         _ASSERTE(enabledCount >= 0);
     }
+#else
+    #error "Unknown OS"
+#endif
 }
-#endif // HOST_OSX && HOST_ARM64
+#endif // (defined(HOST_OSX) || defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
 
 #if HAVE_VM_ALLOCATE
 //---------------------------------------------------------------------------------------

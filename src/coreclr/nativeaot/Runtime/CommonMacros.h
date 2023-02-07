@@ -155,7 +155,7 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 
 #define DATA_ALIGNMENT  8
 #ifndef OS_PAGE_SIZE
-#ifdef HOST_OSX
+#if defined(HOST_OSX) || defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)
 #define OS_PAGE_SIZE    0x4000
 #else
 #define OS_PAGE_SIZE    0x1000

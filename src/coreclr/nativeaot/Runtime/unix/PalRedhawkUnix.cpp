@@ -728,7 +728,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
         size_t alignedSize = size + (Alignment - OS_PAGE_SIZE);
         int flags = MAP_ANON | MAP_PRIVATE;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if (defined(HOST_OSX) || defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
         if (unixProtect & PROT_EXEC)
         {
             flags |= MAP_JIT;
@@ -790,6 +790,10 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
     return mprotect(pPageStart, memSize, unixProtect) == 0;
 }
 
+#if (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
+extern "C" void sys_icache_invalidate(const void* start, size_t len);
+#endif
+
 REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
 {
 #if defined(__linux__) && defined(HOST_ARM)
@@ -812,6 +816,8 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
         __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
         begin = endOrNextPageBegin;
     }
+#elif (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
+    sys_icache_invalidate (pAddress, size);
 #else
     __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
 #endif
@@ -956,8 +962,8 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
     // Only accept activations from the current process
     if (g_pHijackCallback != NULL && (siginfo->si_pid == getpid()
-#ifdef HOST_OSX
-        // On OSX si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+#if defined(HOST_OSX) || defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)
+        // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
         // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
         || siginfo->si_pid == 0
 #endif

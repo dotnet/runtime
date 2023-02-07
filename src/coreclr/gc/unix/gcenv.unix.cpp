@@ -235,7 +235,7 @@ bool GCToOSInterface::Initialize()
     {
         s_flushUsingMemBarrier = TRUE;
     }
-#ifndef TARGET_OSX
+#if !(defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS))
     else
     {
         assert(g_helperPage == 0);
@@ -267,7 +267,7 @@ bool GCToOSInterface::Initialize()
             return false;
         }
     }
-#endif // !TARGET_OSX
+#endif // !(defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS))
 
     InitializeCGroup();
 
@@ -407,7 +407,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#ifdef TARGET_OSX
+#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
     else
     {
         mach_msg_type_number_t cThreads;
@@ -421,9 +421,28 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         // Iterate through each of the threads in the list.
         for (mach_msg_type_number_t i = 0; i < cThreads; i++)
         {
-            // Request the threads pointer values to force the thread to emit a memory barrier
-            size_t registers = 128;
-            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
+            if (__builtin_available (macOS 10.14, iOS 12, tvOS 9, *))
+            {
+                // Request the threads pointer values to force the thread to emit a memory barrier
+                size_t registers = 128;
+                machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
+            }
+            else
+            {
+                // fallback implementation for older OS versions
+#if defined(HOST_AMD64)
+                x86_thread_state64_t threadState;
+                mach_msg_type_number_t count = x86_THREAD_STATE64_COUNT;
+                machret = thread_get_state(pThreads[i], x86_THREAD_STATE64, (thread_state_t)&threadState, &count);
+#elif defined(HOST_ARM64)
+                arm_thread_state64_t threadState;
+                mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
+                machret = thread_get_state(pThreads[i], ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
+#else
+                #error Unexpected architecture
+#endif
+            }
+
             if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
             {
                 CHECK_MACH("thread_get_register_pointer_values()", machret);
@@ -436,7 +455,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // TARGET_OSX
+#endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,
@@ -824,7 +843,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
-#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !(defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS))
     if (cacheSize == 0)
     {
         // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
@@ -874,7 +893,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
-#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_OSX)
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !(defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS))
     if (cacheLevel != 3)
     {
         // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info

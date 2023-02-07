@@ -9,7 +9,7 @@ set(DOTNET_PROJECT_NAME "apphost")
 # dependencies is not possible for some reason.
 # This cannot be enabled for MacOS (Darwin) since its RPATH works in a different way,
 # doesn't apply to libraries loaded via dlopen and most importantly, it is not transitive.
-if (NOT CLR_CMAKE_TARGET_OSX)
+if (NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
 endif()

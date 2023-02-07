@@ -15,4 +15,8 @@ PALEXPORT int32_t GlobalizationNative_LoadICUData(const char* path);
 
 PALEXPORT const char* GlobalizationNative_GetICUDTName(const char* culture);
 
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+PALEXPORT const char* GlobalizationNative_GetICUDataPathFallback(void);
+#endif
+
 #endif

@@ -2473,7 +2473,7 @@ InitializeFlushProcessWriteBuffers()
         }
     }
 
-#ifdef TARGET_OSX
+#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -2503,7 +2503,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // TARGET_OSX
+#endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2553,7 +2553,7 @@ FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#ifdef TARGET_OSX
+#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
     else
     {
         mach_msg_type_number_t cThreads;
@@ -2567,9 +2567,28 @@ FlushProcessWriteBuffers()
         // Iterate through each of the threads in the list.
         for (mach_msg_type_number_t i = 0; i < cThreads; i++)
         {
-            // Request the threads pointer values to force the thread to emit a memory barrier
-            size_t registers = 128;
-            machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
+            if (__builtin_available (macOS 10.14, iOS 12, tvOS 9, *))
+            {
+                // Request the threads pointer values to force the thread to emit a memory barrier
+                size_t registers = 128;
+                machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
+            }
+            else
+            {
+                // fallback implementation for older OS versions
+#if defined(HOST_AMD64)
+                x86_thread_state64_t threadState;
+                mach_msg_type_number_t count = x86_THREAD_STATE64_COUNT;
+                machret = thread_get_state(pThreads[i], x86_THREAD_STATE64, (thread_state_t)&threadState, &count);
+#elif defined(HOST_ARM64)
+                arm_thread_state64_t threadState;
+                mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
+                machret = thread_get_state(pThreads[i], ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
+#else
+                #error Unexpected architecture
+#endif
+            }
+
             if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
             {
                 CHECK_MACH("thread_get_register_pointer_values()", machret);
@@ -2582,7 +2601,7 @@ FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // TARGET_OSX
+#endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 }
 
 /*++

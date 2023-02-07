@@ -306,7 +306,7 @@ namespace ILCompiler
                     "considered to be input files. If no input files begin with '--' then this option is not necessary.\n");
 
                 string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64" };
-                string[] ValidOS = new string[] { "windows", "linux", "freebsd", "osx", "ios", "iossimulator" };
+                string[] ValidOS = new string[] { "windows", "linux", "freebsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator" };
 
                 Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
 

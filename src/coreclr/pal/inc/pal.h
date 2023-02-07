@@ -2940,14 +2940,14 @@ VirtualFree(
         IN DWORD dwFreeType);
 
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if (defined(HOST_OSX) || defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
 
 PALIMPORT
 VOID
 PALAPI
 PAL_JitWriteProtect(bool writeEnable);
 
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+#endif // (defined(HOST_OSX) || defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
 
 
 PALIMPORT
