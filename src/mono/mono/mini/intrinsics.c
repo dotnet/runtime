@@ -1009,6 +1009,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->type = STACK_I4;
 			return ins;
 		} else if (!strcmp (cmethod->name, "CreateSpan") && fsig->param_count == 1) {
+			if (cfg->compile_aot)
+				return NULL;
+
 			MonoGenericContext* ctx = mono_method_get_context (cmethod);
 			g_assert (ctx);
 			g_assert (ctx->method_inst);
