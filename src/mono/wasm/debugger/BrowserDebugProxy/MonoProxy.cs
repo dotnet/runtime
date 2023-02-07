@@ -198,6 +198,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     await SendResume(sessionId, token);
                                     return true;
                                 }
+                            case "mono_wasm_fire_debugger_agent_message_with_data":
+                            case "_mono_wasm_fire_debugger_agent_message_with_data":
+                                {
+                                    await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                                    return true;
+                                }
+                            default:
+                                {
+                                    //avoid pausing when we don't have the url
+                                    //avoid pausing when justMyCode is enabled and it's a wasm function.
+                                    if ((string.IsNullOrEmpty(args?["callFrames"]?[0]?["url"]?.Value<string>())) || (JustMyCode && args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true))
+                                    {
+                                        await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                                        return true;
+                                    }
+                                    break;
+                                }
                         }
                         break;
                     }
@@ -1092,10 +1109,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 string function_name = frame["functionName"]?.Value<string>();
                 string url = frame["url"]?.Value<string>();
+                var isWasmExpressionStack = frame["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true;
                 if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||
                         url.StartsWith("wasm://", StringComparison.Ordinal) ||
                         url.EndsWith(".wasm", StringComparison.Ordinal) ||
-                        function_name == "_mono_wasm_fire_debugger_agent_message"))
+                        JustMyCode && isWasmExpressionStack ||
+                        function_name.StartsWith("_mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal) ||
+                        function_name.StartsWith("mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal)))
                 {
                     callFrames.Add(frame);
                 }
