@@ -34,7 +34,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#if MONO_FEATURE_SRE
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -1953,4 +1952,3 @@ namespace System.Reflection.Emit
         public override bool IsByRefLike => false;
     }
 }
-#endif

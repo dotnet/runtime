@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Reflection.Emit
@@ -30,10 +31,28 @@ namespace System.Reflection.Emit
         }
         #endregion
 
+        #region Internal Overrides
         internal override Type[] GetParameterTypes()
         {
             return _ctor.GetParameterTypes();
         }
+
+#if MONO
+        // Called from the runtime to return the corresponding finished ConstructorInfo object
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
+        internal ConstructorInfo RuntimeResolve()
+        {
+            Type type = _type.InternalResolve();
+            return type.GetConstructor(_ctor);
+        }
+
+        internal override int GetParametersCount()
+        {
+            return _ctor.GetParametersCount();
+        }
+#endif
+#endregion
 
         #region MemberInfo Overrides
         public override MemberTypes MemberType => _ctor.MemberType;

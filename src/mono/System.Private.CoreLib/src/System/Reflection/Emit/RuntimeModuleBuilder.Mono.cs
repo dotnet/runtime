@@ -717,11 +717,11 @@ namespace System.Reflection.Emit
             if (obj is RuntimeGenericTypeParameterBuilder gtpb)
                 return gtpb.RuntimeResolve();
             if (obj is FieldOnTypeBuilderInstantiation fotbi)
-                return fotbi.DeclaringType!.RuntimeResolve();
+                return fotbi.RuntimeResolve();
             if (obj is MethodOnTypeBuilderInstantiation motbi)
-                return motbi.DeclaringType!.RuntimeResolve();
+                return motbi.RuntimeResolve();
             if (obj is ConstructorOnTypeBuilderInstantiation cotbi)
-                return cotbi.DeclaringType!.RuntimeResolve();
+                return cotbi.RuntimeResolve();
             if (obj is Type t)
                 return t.RuntimeResolve();
             throw new NotImplementedException(obj.GetType().FullName);

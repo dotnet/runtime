@@ -70,11 +70,6 @@ namespace System.Reflection.Emit
             return (MethodInfo)t.Module.ResolveMethod(info.MetadataToken)!;
         }
 
-        internal override Type[] GetParameterTypes()
-        {
-            return _method.GetParameterTypes();
-        }
-
         #region MemberInfo Overrides
         public override MemberTypes MemberType => _method.MemberType;
         public override string Name => _method.Name;
@@ -98,7 +93,7 @@ namespace System.Reflection.Emit
         public override CallingConventions CallingConvention => _method.CallingConvention;
         public override Type[] GetGenericArguments()
         {
-#if MONO_FEATURE_SRE
+#if MONO
             if (!_method.IsGenericMethodDefinition)
                 return Type.EmptyTypes;
             Type[] source = _typeArguments ?? _method.GetGenericArguments();
@@ -115,7 +110,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-#if MONO_FEATURE_SRE
+#if MONO
                 if (_method.ContainsGenericParameters)
                     return true;
                 if (!_method.IsGenericMethodDefinition)
@@ -137,7 +132,7 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArgs)
         {
-#if MONO_FEATURE_SRE
+#if MONO
             if (!_method.IsGenericMethodDefinition || (_typeArguments != null))
                 throw new InvalidOperationException("Method is not a generic method definition");
 
@@ -170,5 +165,38 @@ namespace System.Reflection.Emit
         public override ICustomAttributeProvider ReturnTypeCustomAttributes => throw new NotSupportedException();
         public override MethodInfo GetBaseDefinition() { throw new NotSupportedException(); }
         #endregion
+
+        #region Internal overrides
+        internal override Type[] GetParameterTypes()
+        {
+            return _method.GetParameterTypes();
+        }
+
+#if MONO
+        // Called from the runtime to return the corresponding finished MethodInfo object
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "MethodOnTypeBuilderInst is Reflection.Emit's underlying implementation of MakeGenericMethod. " +
+                "Callers of the outer calls to MakeGenericMethod will be warned as appropriate.")]
+        internal MethodInfo RuntimeResolve()
+        {
+            Type type = _type.InternalResolve();
+            MethodInfo m = type.GetMethod(_method);
+            if (_typeArguments != null)
+            {
+                var args = new Type[_typeArguments.Length];
+                for (int i = 0; i < _typeArguments.Length; ++i)
+                    args[i] = _typeArguments[i].InternalResolve();
+                m = m.MakeGenericMethod(args);
+            }
+            return m;
+        }
+
+        internal override int GetParametersCount()
+        {
+            return _method.GetParametersCount();
+        }
+#endif
+        #endregion
+
     }
 }

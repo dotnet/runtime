@@ -13,15 +13,15 @@ namespace System.Reflection.Emit
     /*
      * TypeBuilderInstantiation represents an instantiation of a generic TypeBuilder.
      */
-#if MONO_FEATURE_SRE
+#if MONO
     [StructLayout(LayoutKind.Sequential)]
 #endif
     internal sealed partial class TypeBuilderInstantiation : TypeInfo
     {
-#region Keep in sync with object-internals.h MonoReflectionGenericClass
+        #region Keep in sync with object-internals.h MonoReflectionGenericClass
         private Type generic_type;
         private Type[] type_arguments;
-#endregion
+        #endregion
         private string? _strFullQualName;
         internal Hashtable _hashtable;
 
@@ -32,7 +32,7 @@ namespace System.Reflection.Emit
             return IsAssignableFrom(typeInfo.AsType());
         }
 
-#region Static Members
+        #region Static Members
         internal static Type MakeGenericType(Type type, Type[] typeArguments)
         {
             Debug.Assert(type != null, "this is only called from RuntimeType.MakeGenericType and TypeBuilder.MakeGenericType so 'type' cannot be null");
@@ -49,25 +49,25 @@ namespace System.Reflection.Emit
 
             return new TypeBuilderInstantiation(type, typeArguments);
         }
-#endregion
+        #endregion
 
-#region Constructor
+        #region Constructor
         internal TypeBuilderInstantiation(Type type, Type[] inst)
         {
             generic_type = type;
             type_arguments = inst;
             _hashtable = new Hashtable();
         }
-#endregion
+        #endregion
 
-#region Object Overrides
+        #region Object Overrides
         public override string ToString()
         {
             return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.ToString)!;
         }
-#endregion
+        #endregion
 
-#region MemberInfo Overrides
+        #region MemberInfo Overrides
         public override Type? DeclaringType => generic_type.DeclaringType;
 
         public override Type? ReflectedType => generic_type.ReflectedType;
@@ -75,9 +75,9 @@ namespace System.Reflection.Emit
         public override string Name => generic_type.Name;
 
         public override Module Module => generic_type.Module;
-#endregion
+        #endregion
 
-#region Type Overrides
+        #region Type Overrides
         public override Type MakePointerType()
         {
             return SymbolType.FormCompoundType("*", this, 0)!;
@@ -264,7 +264,45 @@ namespace System.Reflection.Emit
             throw new NotSupportedException();
         }
 
-#if MONO_FEATURE_SRE
+#if MONO
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "Reflection.Emit is not subject to trimming")]
+        internal override Type InternalResolve()
+        {
+            Type gtd = generic_type.InternalResolve();
+            Type[] args = new Type[type_arguments.Length];
+            for (int i = 0; i < type_arguments.Length; ++i)
+                args[i] = type_arguments[i].InternalResolve();
+            return gtd.MakeGenericType(args);
+        }
+
+        // Called from the runtime to return the corresponding finished Type object
+        internal override Type RuntimeResolve()
+        {
+            if (generic_type is TypeBuilder tb && !tb.IsCreated())
+                throw new NotImplementedException();
+            for (int i = 0; i < type_arguments.Length; ++i)
+            {
+                Type t = type_arguments[i];
+                if (t is TypeBuilder ttb && !ttb.IsCreated())
+                    throw new NotImplementedException();
+            }
+            return InternalResolve();
+        }
+
+        internal override bool IsUserType
+        {
+            get
+            {
+                foreach (Type t in type_arguments)
+                {
+                    if (t.IsUserType)
+                        return true;
+                }
+                return false;
+            }
+        }
+
         internal override MethodInfo GetMethod(MethodInfo fromNoninstanciated)
         {
             return new MethodOnTypeBuilderInstantiation(fromNoninstanciated, this);
@@ -280,7 +318,7 @@ namespace System.Reflection.Emit
             return FieldOnTypeBuilderInstantiation.GetField(fromNoninstanciated, this);
         }
 #endif
-#endregion
+        #endregion
 
         #region ICustomAttributeProvider Implementation
         public override object[] GetCustomAttributes(bool inherit) { throw new NotSupportedException(); }
@@ -288,6 +326,6 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { throw new NotSupportedException(); }
 
         public override bool IsDefined(Type attributeType, bool inherit) { throw new NotSupportedException(); }
-#endregion
+        #endregion
     }
 }

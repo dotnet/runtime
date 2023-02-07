@@ -87,5 +87,14 @@ namespace System.Reflection.Emit
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture) { throw new InvalidOperationException(); }
         public override FieldAttributes Attributes => _field.Attributes;
         #endregion
+
+#if MONO
+        // Called from the runtime to return the corresponding finished FieldInfo object
+        internal FieldInfo RuntimeResolve()
+        {
+            Type type = _type.RuntimeResolve();
+            return type.GetField(_field);
+        }
+#endif
     }
 }
