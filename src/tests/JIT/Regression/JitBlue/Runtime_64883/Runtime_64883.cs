@@ -24,7 +24,9 @@ public class Runtime_64883
         // This needs an ALC because the "static access" helper is different in ALCs.
         CollectibleALC alc = new CollectibleALC();
         Assembly asm = alc.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
-        MethodInfo mi = asm.GetType(nameof(Runtime_64883)).GetMethod(nameof(MainT));
+        // nameof(global::Runtime_64883) isn't allowed...
+        string typeName = "Runtime_64883." + nameof(Runtime_64883);
+        MethodInfo mi = asm.GetType(typeName).GetMethod(nameof(MainT));
         mi.Invoke(null, new object[0]);
         return 100;
     }
