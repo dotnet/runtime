@@ -470,7 +470,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 #endif // FEATURE_HW_INTRINSICS
         LclVar,
         LclFld,
-        CastOfLclVar
+        NarrowCastOfLclVar
     };
 
     ArrayStack<Value> m_valueStack;
@@ -1242,17 +1242,22 @@ private:
                 lclNode = indir->AsLclVarCommon();
                 break;
 
-            case IndirTransform::CastOfLclVar:
-                assert(varTypeIsSmall(indir));
+            case IndirTransform::NarrowCastOfLclVar:
+                assert(varTypeIsIntegral(indir));
                 assert(varTypeIsIntegral(varDsc));
                 assert(*val.Use() == indir);
                 assert(!isDef);
 
+                lclNode    = BashToLclVar(indir->gtGetOp1(), lclNum);
+                *val.Use() = m_compiler->gtNewCastNode(genActualType(indir), lclNode, false, indir->TypeGet());
+
+                // Check to make sure this is narrow.
+                assert(genTypeSize(lclNode) >= genTypeSize(indir));
+
 #ifdef DEBUG
                 removeIndir = true;
 #endif // DEBUG
-                lclNode    = BashToLclVar(indir->gtGetOp1(), lclNum);
-                *val.Use() = m_compiler->gtNewCastNode(TYP_INT, lclNode, false, indir->TypeGet());
+
                 break;
 
             case IndirTransform::LclFld:
@@ -1360,12 +1365,12 @@ private:
             }
 
 #ifdef TARGET_64BIT
-            if (!isDef && varTypeIsSmall(indir) && varTypeIsIntegral(varDsc))
+            if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
 #else // TARGET_64BIT
-            if (!isDef && varTypeIsSmall(indir) && varTypeIsIntegral(varDsc) && !varTypeIsLong(varDsc))
+            if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc) && !varTypeIsLong(varDsc))
 #endif // !TARGET_64BIT
             {
-                return IndirTransform::CastOfLclVar;
+                return IndirTransform::NarrowCastOfLclVar;
             }
 
 #ifdef FEATURE_HW_INTRINSICS
