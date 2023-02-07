@@ -234,19 +234,34 @@ handle_arguments_local() {
         test*|-test*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestProject="$__BuildTestProject${parts[1]}%3B"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                shift
+                __BuildTestProject="$__BuildTestProject$1%3B"
+            else
+                __BuildTestProject="$__BuildTestProject${parts[1]}%3B"
+            fi
             ;;
 
         dir*|-dir*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestDir="$__BuildTestDir${parts[1]}%3B"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                shift
+                __BuildTestDir="$__BuildTestDir$1%3B"
+            else
+                __BuildTestDir="$__BuildTestDir${parts[1]}%3B"
+            fi
             ;;
 
         tree*|-tree*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildTestTree="$__BuildTestTree${parts[1]}%3B"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                shift
+                __BuildTestTree="$__BuildTestTree$1%3B"
+            else
+                __BuildTestTree="$__BuildTestTree${parts[1]}%3B"
+            fi
             ;;
 
         runtests|-runtests)
@@ -284,7 +299,12 @@ handle_arguments_local() {
         log*|-log*)
             local arg="$1"
             local parts=(${arg//:/ })
-            __BuildLogRootName="${parts[1]}"
+            if [[ ${#parts[@]} -eq 1 ]]; then
+                shift
+                __BuildLogRootName="$1"
+            else
+                __BuildLogRootName="${parts[1]}"
+            fi
             ;;
 
         *)
