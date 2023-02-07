@@ -1,0 +1,110 @@
+<Project>
+  <PropertyGroup>
+    <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''">true</IsRunningLibraryTests>
+    <WasiEngine Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''">wasmtime</WasiEngine>
+    <NeedsWasmtime Condition="'$(WasiEngine)' == 'wasmtime'">true</NeedsWasmtime>
+
+    <PrepareForBuildHelixWorkItems_WasiDependsOn>
+        PrepareHelixCorrelationPayload_Wasi;
+        _AddWorkItemsForLibraryTests
+    </PrepareForBuildHelixWorkItems_WasiDependsOn>
+
+    <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);PrepareForBuildHelixWorkItems_Wasi</BuildHelixWorkItemsDependsOn>
+    <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
+    <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
+    <UseTestEnvFile>false</UseTestEnvFile>
+
+    <!--<NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>-->
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
+    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(WindowsShell)' != 'true'">
+    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
+    <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+    <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/wasmtime:$PATH" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(WindowsShell)' == 'true'">
+    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="set SCENARIO=$(Scenario)" />
+    <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+    <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\wasmtime%3B%PATH%" />
+  </ItemGroup>
+
+  <PropertyGroup>
+
+    <!--
+      We are hosting the payloads for the WASM/browser on kestrel in the xharness process.
+      We also run some network tests to this server and so, we are running it on both HTTP and HTTPS.
+      For the HTTPS endpoint we need development SSL certificate.
+    -->
+    <InstallDevCerts>$(IsRunningLibraryTests)</InstallDevCerts>
+
+    <!-- Install SDK so that, we could use `dotnet dev-certs https` -->
+    <NeedsDotNetSdk Condition="'$(NeedsWorkload)' != 'true'">true</NeedsDotNetSdk>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="'$(NeedsEMSDK)' == 'true'">
+      <PropertyGroup>
+        <NeedsDotNetSdk>true</NeedsDotNetSdk>
+        <!-- <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson> -->
+        <IncludeXHarnessCli>true</IncludeXHarnessCli>
+        <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(NeedsEMSDKNode)' == 'true'">
+      <PropertyGroup>
+        <IncludeXHarnessCli>true</IncludeXHarnessCli>
+        <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
+
+  <Target Name="PrepareHelixCorrelationPayload_Wasi">
+    <!-- FIXME: check wasmtime  -->
+
+    <ItemGroup>
+      <HelixCorrelationPayload Condition="'$(NeedsWasmtime)' == 'true'" Include="$(WasmTimeDir)" Destination="wasmtime" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PrepareForBuildHelixWorkItems_Wasi"
+          DependsOnTargets="$(PrepareForBuildHelixWorkItems_WasiDependsOn);$(HelixExtensionTargets)" />
+
+  <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true'">
+    <ItemGroup Label="Add samples">
+      <_WasiWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+      <HelixWorkItem Include="@(_WasiWorkItem -> '$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <!-- Create work items for run-only WASM sample apps  -->
+    <ItemGroup>
+      <_WasiSampleZipFile Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''" Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
+
+      <HelixWorkItem Include="@(_WasiSampleZipFile -> '%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+
+      <_DefaultWorkItems Remove="@(_DefaultWorkItems)" />
+      <_DefaultWorkItems Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+
+      <HelixWorkItem Include="@(_DefaultWorkItems -> '$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+</Project>

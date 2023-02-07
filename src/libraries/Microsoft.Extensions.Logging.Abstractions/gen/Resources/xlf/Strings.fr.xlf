@@ -68,8 +68,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="translated">Chaînes de format incorrect (par exemple { non fermée, etc.)</target>
+        <source>Logging method '{0}' contains malformed format strings</source>
+        <target state="new">Logging method '{0}' contains malformed format strings</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsTitle">
+        <source>Logging method contains malformed format strings</source>
+        <target state="new">Logging method contains malformed format strings</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -159,12 +164,12 @@
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesMessage">
         <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="new">Multiple logging methods are using event name {0} in class {1}</target>
+        <target state="translated">Plusieurs méthodes de journalisation utilisent le nom d’événement {0} dans la classe {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesTitle">
         <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="new">Multiple logging methods should not use the same event name within a class</target>
+        <target state="translated">Il ne faut pas que plusieurs méthodes de journalisation utilisent le même nom d’événement au sein d’une classe</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
