@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml;
 namespace XUnitWrapperLibrary;
 
 public class TestSummary
@@ -70,7 +71,9 @@ public class TestSummary
         foreach (var test in _testResults)
         {
             resultsFile.Append($@"<test name=""{test.Name}"" type=""{test.ContainingTypeName}"" method=""{test.MethodName}"" time=""{test.Duration.TotalSeconds:F6}"" ");
-            string outputElement = !string.IsNullOrWhiteSpace(test.Output) ? $"<output><![CDATA[{test.Output}]]></output>" : string.Empty;
+            string outputElement = !string.IsNullOrWhiteSpace(test.Output)
+                ? $"<output><![CDATA[{XmlConvert.EncodeName(test.Output)}]]></output>"
+                : string.Empty;
             if (test.Exception is not null)
             {
                 string exceptionMessage = test.Exception.Message;
