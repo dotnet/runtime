@@ -265,11 +265,8 @@ internal static class ObjectHeader
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool TryEnterInflatedFast(ObjectHeaderOnStack h)
+    private static bool TryEnterInflatedFast(scoped ref MonoThreadsSync mon, int small_id)
     {
-        LockWord lw = GetLockWord (h);
-        int small_id = Thread.CurrentThread.GetSmallId();
-        ref MonoThreadsSync mon = ref lw.GetInflatedLock();
 
         uint old_status = SyncBlock.Status (ref mon);
         if (MonitorStatus.GetOwner(old_status) == 0)
@@ -304,9 +301,11 @@ internal static class ObjectHeader
         Debug.Assert (o != null);
         ObjectHeaderOnStack h = ObjectHeaderOnStack.Create (ref o);
         LockWord lw = GetLockWord (h);
+        if (!lw.IsInflated  && lw.HasHash)
+            return false; // need to inflate, fall back to native
+        int owner = Thread.CurrentThread.GetSmallId();
         if (lw.IsFree)
         {
-            int owner = Thread.CurrentThread.GetSmallId();
             LockWord nlw = LockWord.NewFlat(owner);
             if (LockWordCompareExchange (h, nlw, lw) == lw.AsIntPtr)
             {
@@ -317,11 +316,10 @@ internal static class ObjectHeader
         }
         else if (lw.IsInflated)
         {
-            return TryEnterInflatedFast(h);
+            return TryEnterInflatedFast(ref lw.GetInflatedLock(), owner);
         }
         else if (lw.IsFlat)
         {
-            int owner = Thread.CurrentThread.GetSmallId();
             if (lw.GetOwner() == owner)
             {
                 if (lw.IsNestMax)
