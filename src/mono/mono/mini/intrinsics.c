@@ -1019,10 +1019,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			// The following relies on the previous instruction being an OP_MOVE. Specifically. one that
 			// is emitted from CEE_TDTOKEN as the last EMIT_NEW_TEMPLOAD, which has its inst_p1 set.
-
+			// Bail out and use the non-intrinsic variant if this is not satisfied.
 			MonoClassField* field = (MonoClassField*) args [0]->inst_p1;
-			g_assert (args [0]->opcode == OP_VMOVE);
-			g_assert (field && field->type && field->name);
+			if (args [0]->opcode != OP_VMOVE || !field || !field->type)
+					return NULL;
 
 			int alignment = 0;
 			int element_size = mono_type_size (t, &alignment);
@@ -1033,7 +1033,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			int swizzle = element_size;
 		#endif
 
-			const char* data_ptr = mono_field_get_rva (field, swizzle);
+			gpointer data_ptr = (gpointer)mono_field_get_rva (field, swizzle);
 			const int num_elements = mono_type_size (field->type, &alignment) / element_size;
 			const int obj_size = MONO_ABI_SIZEOF (MonoObject);
 			
@@ -1043,19 +1043,19 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			MonoClassField* field_ref = mono_class_get_field_from_name_full (span->klass, "_reference", NULL);
 
-			// TODO: When OP_STOREP_MEMBASE_IMM works right, replace that entire construct with what is in the #else block here
+			// TODO: When OP_STOREP_MEMBASE_IMM works right, replace that entire construct with OP_STOREP_MEMBASE_IMM
 			#if TARGET_SIZEOF_VOID_P == 8
-				gintptr p = (gintptr)data_ptr;
-
+				guint32 lo = (guint64)data_ptr & 0xffffffff;
+				guint32 hi = ((guint64)data_ptr >> 32) & 0xffffffff;
 				#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (gint)(p & 0xffffffff));
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size + 4, (gint)((p >> 32) & 0xffffffff));
+					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, lo);
+					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size + 4, hi);
 				#else
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size + 4, (gint)(p & 0xffffffff));
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (gint)((p >> 32) & 0xffffffff));
+					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size + 4, lo);
+					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, hi);
 				#endif
 			#else
-				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREP_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (gpointer)data_ptr);
+				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (guint32)data_ptr);
 			#endif
 
 			MonoClassField* field_len = mono_class_get_field_from_name_full (span->klass, "_length", NULL);
