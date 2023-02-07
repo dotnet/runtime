@@ -206,9 +206,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 }
                             default:
                                 {
-                                    //avoid pausing when we don't have the url
-                                    //avoid pausing when justMyCode is enabled and it's a wasm function.
-                                    if ((string.IsNullOrEmpty(args?["callFrames"]?[0]?["url"]?.Value<string>())) || (JustMyCode && args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true))
+                                    //avoid pausing when justMyCode is enabled and it's a wasm function
+                                    if (JustMyCode && args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
                                     {
                                         await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
                                         return true;
