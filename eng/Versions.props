@@ -220,7 +220,7 @@
     <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-preview.2.23106.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicVersion>2.1.1</MicrosoftNativeQuicMsQuicVersion>
-    <SystemNetMsQuicTransportVersion>8.0.0-alpha.1.23106.6</SystemNetMsQuicTransportVersion>
+    <SystemNetMsQuicTransportVersion>8.0.0-alpha.1.23107.1</SystemNetMsQuicTransportVersion>
     <!-- Mono LLVM -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>14.0.0-alpha.1.23106.2</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>14.0.0-alpha.1.23106.2</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
