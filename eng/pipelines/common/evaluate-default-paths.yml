@@ -7,9 +7,13 @@ parameters:
   _const_paths:
     _wasm_specific_only: [
         eng/testing/ProvisioningVersions.props
+        eng/testing/Was*Runner*
         eng/testing/scenarios/BuildWasmAppsJobsList.txt
-        eng/testing/tests.wasm.targets
+        eng/testing/tests.browser.targets
+        eng/testing/tests.was*.targets
+        eng/testing/was*provisioning.targets
         src/libraries/sendtohelix-wasm.targets
+        src/libraries/sendtohelix-wasi.targets
         src/mono/mono/**/*wasm*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
@@ -70,6 +74,7 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
+      - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
 
