@@ -29,6 +29,9 @@
   <Target Name="GetRuntimeSourceBuildCommandConfiguration"
           BeforeTargets="GetSourceBuildCommandConfiguration">
     <PropertyGroup>
+      <!-- Properties that control the source-build configuration should be added to the repository and guarded with the DotNetBuildFromSource Condition.
+           This allows to build the repository using './build.sh <args> /p:DotNetBuildFromSource=true'.
+           Properties that control flags from source-build, and the expected output for source-build should be added to this file. -->
       <InnerBuildArgs>$(InnerBuildArgs) --arch $(TargetArch)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --configuration $(Configuration)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --allconfigurations</InnerBuildArgs>
