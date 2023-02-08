@@ -2739,6 +2739,22 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
     }
 }
 
+//------------------------------------------------------------------------------
+// BuildEvexIncompatibleMask: Returns RMB_NONE or a mask representing the
+// lower SIMD registers for a node that lowers to an instruction that does not
+// have an EVEX form (thus cannot use the upper SIMD registers).
+// The caller invokes this function when it knows the node is EVEX incompatible.
+//
+// Simply using lowSIMDRegs() on an incompatible node's operand will incorrectly mask
+// same cases, e.g., memory loads.
+//
+// Arguments:
+//    tree   - tree to check for EVEX lowering compatibility
+//
+// Return Value:
+//    RBM_NONE if compatible with EVEX (or not a floating/SIMD register),
+//    lowSIMDRegs() (XMM0-XMM16) otherwise.
+//
 inline regMaskTP LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
 {
 #if defined(TARGET_AMD64)
@@ -2747,6 +2763,8 @@ inline regMaskTP LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
         return RBM_NONE;
     }
 
+    // If a node is contained and is a memory load etc., use RBM_NONE as it will use an integer register for the
+    // load, not a SIMD register.
     if (tree->isContained() &&
         (tree->OperIsIndir() || (tree->OperIs(GT_HWINTRINSIC) && tree->AsHWIntrinsic()->OperIsMemoryLoad()) ||
          tree->OperIs(GT_LEA)))
