@@ -5,8 +5,6 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <ServicingVersion>1</ServicingVersion>
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.
 
