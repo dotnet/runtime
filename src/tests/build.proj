@@ -390,7 +390,7 @@
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
       <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
-      <DevTeamProvisioning>-</DevTeamProvisioning>
+      <DevTeamProvisioning>adhoc</DevTeamProvisioning>
     </PropertyGroup>
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
