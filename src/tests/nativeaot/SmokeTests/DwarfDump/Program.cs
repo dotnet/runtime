@@ -1,35 +1,44 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 public class Program
 {
     public static int Main(string[] args)
     {
-        if (!OperatingSystem.IsLinux())
+        var llvmDwarfDumpPath = Path.Combine(
+            Environment.GetEnvironmentVariable("CORE_ROOT"),
+            "runtimes",
+            RuntimeInformation.RuntimeIdentifier,
+            "native",
+            "llvm-dwarfdump");
+
+        if (!File.Exists(llvmDwarfDumpPath))
         {
             // Linux-only test
-            return 100;
+            Console.WriteLine("Could not find llvm-dwarfdump at path: " + llvmDwarfDumpPath);
+            return 1;
         }
 
         Console.WriteLine("Running llvm-dwarfdump");
-        var proc = Process.Start("llvm-dwarfdump", "--version");
+        var proc = Process.Start(llvmDwarfDumpPath, "--version");
 
         if (proc is null)
         {
             Console.WriteLine("llvm-dwarfdump could not run");
-            return 1;
+            return 2;
         }
 
         proc.WaitForExit();
         if (proc.ExitCode != 0)
         {
-            return 2;
+            return 3;
         }
 
         proc = Process.Start(new ProcessStartInfo
         {
             FileName = "/bin/sh",
-            Arguments = $"-c \"llvm-dwarfdump --verify {Environment.ProcessPath}",
+            Arguments = $"-c \"{llvmDwarfDumpPath} --verify {Environment.ProcessPath}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false
