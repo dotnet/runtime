@@ -19,6 +19,7 @@ namespace System
         public static bool IsUbuntu => IsDistroAndVersion("ubuntu");
         public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsAlpine => IsDistroAndVersion("alpine");
+        public static bool IsAlpine314 => IsDistroAndVersion("alpine", 3, 14);
         public static bool IsDebian8 => IsDistroAndVersion("debian", 8);
         public static bool IsDebian9 => IsDistroAndVersion("debian", 9);
         public static bool IsDebian10 => IsDistroAndVersion("debian", 10);

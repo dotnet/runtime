@@ -51,9 +51,11 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux), nameof(PlatformDetection.IsInContainer))]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/xxxxx", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine314))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
         public void SupportedLinuxPlatforms_IsSupportedIsTrue()
         {
+            _output.WriteLine($"Running on {PlatformDetection.GetDistroVersionString()}");
             Assert.True(QuicListener.IsSupported);
             Assert.True(QuicConnection.IsSupported);
         }
