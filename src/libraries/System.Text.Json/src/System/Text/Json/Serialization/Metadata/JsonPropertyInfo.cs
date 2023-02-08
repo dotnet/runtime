@@ -791,8 +791,14 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                Debug.Assert(_jsonTypeInfo?.IsConfigured == true);
-                return _jsonTypeInfo;
+                Debug.Assert(_jsonTypeInfo?.IsConfigurationStarted == true);
+                // Even though this property has already been configured,
+                // it is possible for contending threads to call this property
+                // while the JsonTypeInfo graph is still being configured.
+                // Call EnsureConfigured() to force synchronization if necessary.
+                JsonTypeInfo jsonTypeInfo = _jsonTypeInfo;
+                jsonTypeInfo.EnsureConfigured();
+                return jsonTypeInfo;
             }
             set
             {
