@@ -5484,6 +5484,20 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         }
     }
 
+#ifdef TARGET_AMD64
+    if (comp->opts.OptimizationEnabled() && (index != nullptr))
+    {
+        if (index->OperIs(GT_CAST) && varTypeIsLong(index->AsCast()->CastToType()) && !varTypeIsLong(parent))
+        {
+            GenTree* castOp = index->gtGetOp1();
+            addrMode->SetIndex(castOp);
+            BlockRange().Remove(index);
+            index = castOp;
+            index->ClearContained();
+        }
+    }
+#endif // TARGET_AMD64
+
 #ifdef TARGET_ARM64
 
     if (index != nullptr)
