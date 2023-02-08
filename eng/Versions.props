@@ -81,7 +81,7 @@
   <PropertyGroup>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies -->
-    <MicrosoftDotNetApiCompatTaskVersion>8.0.100-alpha.1.22571.3</MicrosoftDotNetApiCompatTaskVersion>
+    <MicrosoftDotNetApiCompatTaskVersion>8.0.100-preview.2.23107.1</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.23102.4</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23102.4</MicrosoftDotNetCodeAnalysisVersion>
@@ -215,8 +215,7 @@
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>8.0.0-preview.2.23105.4</MicrosoftNETILLinkTasksVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23080.1</MicrosoftDotNetCecilVersion>
-    <MicrosoftDotNetCecilPdbVersion>0.11.4-alpha.23080.1</MicrosoftDotNetCecilPdbVersion>
+    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23106.4</MicrosoftDotNetCecilVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>8.0.0-preview.2.23106.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->

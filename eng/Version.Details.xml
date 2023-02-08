@@ -80,14 +80,9 @@
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23080.1">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23106.4">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>8f5aa2558a5a9c6b8c821e10c26e47103a47ae7d</Sha>
-      <SourceBuild RepoName="cecil" ManagedOnly="true" />
-    </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil.Pdb" Version="0.11.4-alpha.23080.1">
-      <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>8f5aa2558a5a9c6b8c821e10c26e47103a47ae7d</Sha>
+      <Sha>03108ae78eafab635d07071282ca24b06d23c9ff</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-preview.2" Version="8.0.0-preview.2.23107.1">
@@ -336,9 +331,9 @@
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>1dc431ec828e9cc816fc69f89ad9b8286e74d707</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-alpha.1.22511.23">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-preview.2.23107.1">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>3f2524bd65a6ab77b9160bcc23824dbc03990f3d</Sha>
+      <Sha>2fd62c3936f5336b836f6b12df170aa0e90da767</Sha>
     </Dependency>
     <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23068.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
