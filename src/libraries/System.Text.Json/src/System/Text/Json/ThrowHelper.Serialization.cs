@@ -598,7 +598,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_UnmappedJsonProperty(Type type, string unmappedPropertyName)
         {
-            throw new JsonException(SR.Format(SR.UnmappedJsonProperty, type, unmappedPropertyName));
+            throw new JsonException(SR.Format(SR.UnmappedJsonProperty, unmappedPropertyName, type));
         }
 
         [DoesNotReturn]
