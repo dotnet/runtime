@@ -5,6 +5,9 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <SetIsTrimmable>false</SetIsTrimmable>
     <IsPackable>true</IsPackable>
+    <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ServicingVersion>0</ServicingVersion>
     <PackageDescription>Provides types that can be used to model the structure of a source code document and to output source code for that model in a supported language.
 
 Commonly Used Types:
