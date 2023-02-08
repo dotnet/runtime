@@ -1137,6 +1137,23 @@ mono_jiterp_get_array_rank (gint32 *dest, MonoObject **src)
 	return 1;
 }
 
+// Returns 1 on success so that the trace can do br_if to bypass its bailout
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_set_object_field (
+	uint8_t *locals, guint32 fieldOffsetBytes,
+	guint32 targetLocalOffsetBytes, guint32 sourceLocalOffsetBytes
+) {
+	MonoObject * targetObject = *(MonoObject **)(locals + targetLocalOffsetBytes);
+	if (!targetObject)
+		return 0;
+	MonoObject ** target = (MonoObject **)(((uint8_t *)targetObject) + fieldOffsetBytes);
+	mono_gc_wbarrier_set_field_internal (
+		targetObject, target,
+		*(MonoObject **)(locals + sourceLocalOffsetBytes)
+	);
+	return 1;
+}
+
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_debug_count ()
 {
