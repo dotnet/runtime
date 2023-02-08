@@ -2575,6 +2575,7 @@ unsigned Compiler::lvaGetFieldLocal(const LclVarDsc* varDsc, unsigned int fldOff
 void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReason reason))
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
+    assert(!varDsc->lvIsStructField);
 
     varDsc->SetAddressExposed(true DEBUGARG(reason));
 
