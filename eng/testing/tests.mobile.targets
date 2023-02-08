@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
+    <RunAOTCompilation Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">true</RunAOTCompilation>
   </PropertyGroup>
 
   <PropertyGroup>

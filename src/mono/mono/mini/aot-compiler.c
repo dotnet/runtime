@@ -5265,9 +5265,9 @@ add_native_to_managed_wrappers (MonoAotCompile *acfg)
 MONO_DISABLE_WARNING (4310) // cast truncates constant value
 					g_assert (*named != (char)0xFF);
 MONO_RESTORE_WARNING
-					slen = mono_metadata_decode_value (named, &named) + (int)strlen(acfg->user_symbol_prefix);
+					slen = mono_metadata_decode_value (named, &named);
 					export_name = (char *)g_malloc (slen + 1);
-					sprintf (export_name, "%s%s", acfg->user_symbol_prefix, named);
+					memcpy (export_name, named, slen);
 					export_name [slen] = 0;
 					named += slen;
 				}
