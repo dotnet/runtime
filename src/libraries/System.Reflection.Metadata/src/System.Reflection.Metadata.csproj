@@ -9,6 +9,8 @@
 
 The System.Reflection.Metadata library is built-in as part of the shared framework in .NET Runtime. The package can be installed when you need to use it in other target frameworks.</PackageDescription>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <ServicingVersion>1</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
