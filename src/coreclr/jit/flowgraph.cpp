@@ -2990,6 +2990,26 @@ PhaseStatus Compiler::fgSimpleLowering()
                     break;
                 }
 
+                case GT_LSH:
+                {
+#ifdef TARGET_AMD64
+                    if (opts.OptimizationEnabled() && tree->TypeIs(TYP_LONG) && tree->gtGetOp1()->OperIs(GT_CAST) &&
+                        (tree->gtGetOp1()->AsCast()->CastToType() == TYP_LONG) && tree->gtGetOp2()->IsIntegralConst(2))
+                    {
+                        GenTree* castOp = tree->gtGetOp1()->AsCast()->CastOp();
+
+                        if (varTypeIsIntegral(castOp) && !varTypeIsLong(castOp))
+                        {
+                            range.Remove(tree->gtGetOp1());
+                            tree->AsOp()->gtOp1 = castOp;
+
+                            madeChanges = true;
+                        }
+                    }
+#endif
+                    break;
+                }
+
                 default:
                 {
                     // No other operators need processing.
