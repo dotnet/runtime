@@ -467,6 +467,7 @@ dotnet_diagnostic.CA1858.severity = warning
 
 # CA1859: Use concrete types when possible for improved performance
 dotnet_diagnostic.CA1859.severity = warning
+dotnet_diagnostic.CA1859.api_surface = private, internal
 
 # CA1860: Prefer Length/Count/IsEmpty property check over Any()
 dotnet_diagnostic.CA1860.severity = warning
@@ -515,6 +516,9 @@ dotnet_diagnostic.CA2019.severity = warning
 
 # CA2020: Prevent behavioral changes
 dotnet_diagnostic.CA2020.severity = warning
+
+# CA2021: Do not call Enumerable.Cast<T> or Enumerable.OfType<T> with incompatible types
+dotnet_diagnostic.CA2021.severity = suggestion
 
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none
