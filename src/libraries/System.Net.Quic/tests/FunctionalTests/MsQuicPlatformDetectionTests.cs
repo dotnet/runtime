@@ -30,7 +30,7 @@ namespace System.Net.Quic.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
-        public async Task SupportedLinuxPlatforms_IsSupportedIsTrue()
+        public async Task SupportedLinuxPlatformsWithMsquic_IsSupportedIsTrue()
         {
             using Process find = new Process();
             find.StartInfo.FileName = "find";
@@ -49,6 +49,13 @@ namespace System.Net.Quic.Tests
             {
                 _output.WriteLine("No msquic library found.");
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux), nameof(PlatformDetection.IsInContainer))]
+        public void SupportedLinuxPlatforms_IsSupportedIsTrue()
+        {
+            Assert.True(QuicListener.IsSupported);
+            Assert.True(QuicConnection.IsSupported);
         }
     }
 }
