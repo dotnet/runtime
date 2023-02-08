@@ -847,6 +847,27 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         //   public void WriteAllText(string file, string text, bool append) { }
         //   public void WriteAllText(string file, string text, bool append, System.Text.Encoding encoding) { }
 
+        /// <summary>
+        /// The implementation of SpecialDirectories properties ProgramFiles, MyDocuments, etc. relies
+        /// on FileSystem.NormalizePath(). Ensure NormalizePath() handles the root path correctly.
+        /// </summary>
+        [Fact]
+        public void NormalizePath_RootPath()
+        {
+            var path = System.IO.Path.GetPathRoot(TestDirectory);
+            Assert.True(System.IO.Path.IsPathRooted(path));
+
+            // Use reflection to get the internal FileSystem.NormalizePath(string) method.
+            var methodInfo = typeof(FileIO.FileSystem).GetMethod(
+                "NormalizePath",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+                binder: null,
+                types: new[] { typeof(string) },
+                modifiers: null);
+            var normalizedPath = (string)methodInfo.Invoke(null, new[] { path });
+            Assert.Equal(path, normalizedPath);
+        }
+
         private string CreateTestFile(string TestData, string TestFileName, string PathFromBase = null)
         {
             Assert.False(String.IsNullOrEmpty(TestFileName));
