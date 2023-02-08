@@ -241,7 +241,7 @@ jobs:
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      runOnlyOnWasmPipelines: true
+      runOnlyOnWasmOnlyPipelines: true
 
   # Disable for now
   #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml

@@ -4,7 +4,7 @@ parameters:
   isWasmOnlyBuild: false
   browser: 'chrome'
   shouldContinueOnError: false
-  runOnlyOnWasmPipelines: false
+  runOnlyOnWasmOnlyPipelines: false
   extraBuildArgs: ''
   nameSuffix: ''
   platforms: []
@@ -25,7 +25,7 @@ jobs:
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
       - name: runOnlyOnWasmPipelinesVar
-        value: ${{ parameters.runOnlyOnWasmPipelines }}
+        value: ${{ parameters.runOnlyOnWasmOnlyPipelines }}
       - name: shouldRunOnDefaultPipelines
         value: $[
           or(
