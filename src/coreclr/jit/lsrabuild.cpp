@@ -159,7 +159,7 @@ Interval* LinearScan::newInterval(RegisterType theRegisterType)
     newInt->intervalIndex = static_cast<unsigned>(intervals.size() - 1);
 #endif // DEBUG
 
-    DBEXEC(VERBOSE, newInt->dump());
+    DBEXEC(VERBOSE, newInt->dump(this->compiler));
     return newInt;
 }
 
@@ -1212,7 +1212,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                         // If there are no callee-saved registers, the call could kill all the registers.
                         // This is a valid state, so in that case assert should not trigger. The RA will spill in order
                         // to free a register later.
-                        assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType)) == RBM_NONE);
+                        assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType) == RBM_NONE));
                     }
                 }
             }
@@ -1860,8 +1860,9 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
     JITDUMP("\n");
 }
 
-static const regNumber lsraRegOrder[]      = {REG_VAR_ORDER};
-const unsigned         lsraRegOrderSize    = ArrLen(lsraRegOrder);
+static const regNumber lsraRegOrder[]   = {REG_VAR_ORDER};
+const unsigned         lsraRegOrderSize = ArrLen(lsraRegOrder);
+// TODO-XARCH-AVX512 we might want to move this to be configured with the rbm variables too
 static const regNumber lsraRegOrderFlt[]   = {REG_VAR_ORDER_FLT};
 const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
 
@@ -1870,7 +1871,7 @@ const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
 //
 void LinearScan::buildPhysRegRecords()
 {
-    for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* curr = &physRegs[reg];
         curr->init(reg);
@@ -3010,7 +3011,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         {
             printf("Last use of V%02u between PUTARG and CALL. Removing occupied arg regs from preferences: ",
                    compiler->lvaTrackedIndexToLclNum(varIndex));
-            dumpRegMask(unpref);
+            compiler->dumpRegMask(unpref);
             printf("\n");
         }
 #endif

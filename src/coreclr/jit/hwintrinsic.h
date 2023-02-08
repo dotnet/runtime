@@ -158,6 +158,9 @@ enum HWIntrinsicFlag : unsigned int
     // contained
     HW_Flag_MaybeCommutative = 0x80000,
 
+    // The intrinsic has no EVEX compatible form
+    HW_Flag_NoEvexSemantics = 0x100000
+
 #elif defined(TARGET_ARM64)
     // The intrinsic has an immediate operand
     // - the value can be (and should be) encoded in a corresponding instruction when the operand value is constant
@@ -172,8 +175,7 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_SIMDScalar = 0x1000,
 
     // The intrinsic supports some sort of containment analysis
-    HW_Flag_SupportsContainment = 0x2000
-
+    HW_Flag_SupportsContainment = 0x2000,
 #else
 #error Unsupported platform
 #endif
@@ -758,6 +760,22 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_HasRMWSemantics) != 0;
 #else
 #error Unsupported platform
+#endif
+    }
+    //------------------------------------------------------------------------
+    // HasEvexSemantics: Checks if the NamedIntrinsic has a lowering to
+    // to an instruction with an EVEX form.
+    //
+    // Return Value:
+    // true if the NamedIntrinsic lowering has an EVEX form.
+    //
+    static bool HasEvexSemantics(NamedIntrinsic id)
+    {
+#if defined(TARGET_XARCH)
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_NoEvexSemantics) == 0;
+#else
+        return false;
 #endif
     }
 
