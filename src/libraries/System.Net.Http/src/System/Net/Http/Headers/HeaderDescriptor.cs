@@ -132,7 +132,9 @@ namespace System.Net.Http.Headers
                 {
                     for (int i = 0; i < knownValues.Length; i++)
                     {
-                        if (ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(knownValues[i], headerValue))
+                        if (GlobalHttpSettings.IgnoreCaseForKnownHeaderValues
+                            ? ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(knownValues[i], headerValue)
+                            : ByteArrayHelpers.EqualsOrdinalAscii(knownValues[i], headerValue))
                         {
                             return knownValues[i];
                         }
@@ -239,9 +241,17 @@ namespace System.Net.Http.Headers
 
             Debug.Assert(candidate is null || candidate.Length == contentTypeValue.Length);
 
-            return candidate != null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate, contentTypeValue) ?
-                candidate :
-                null;
+            if (candidate is not null)
+            {
+                if (GlobalHttpSettings.IgnoreCaseForKnownHeaderValues
+                    ? ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate, contentTypeValue)
+                    : ByteArrayHelpers.EqualsOrdinalAscii(candidate, contentTypeValue))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
         }
 
         private static bool TryDecodeUtf8(ReadOnlySpan<byte> input, [NotNullWhen(true)] out string? decoded)
