@@ -505,22 +505,24 @@ def read_csv_diffs(path):
         reader = csv.DictReader(csv_file)
         return list(reader)
 
-def determine_clrjit_compiler_version(clrjit_path):
-    """ Obtain the version of the compiler that was used to compile the clrjit at the specified path.
+def decode_clrjit_build_string(clrjit_path):
+    """ Obtain information about the compiler that was used to compile the clrjit at the specified path.
 
     Returns:
-        A string extract from the binary or "unknown" if the string could not be found.
+        None if the build string was not found; otherwise a tuple (version, with_native_pgo).
         See 'jitBuildString' in buildstring.cpp in the JIT to see where this is defined.
     """
 
     with open(clrjit_path, "rb") as fh:
         contents = fh.read()
 
-    match = re.search(b'RyuJIT built by ([^\0]*)? targeting ([^\0]*)-([^\0]*)\0', contents)
+    match = re.search(b'RyuJIT built by ([^\0]+?) targeting ([^\0]+?)-([^\0]+?)(| \(with native PGO\)| \(without native PGO\)|)\0', contents)
     if match is None:
-        return "unknown"
+        return None
 
-    return match.group(1).decode("ascii")
+    version = match.group(1).decode("ascii")
+    with_pgo_data = "with native PGO" in match.group(4).decode("ascii")
+    return (version, with_pgo_data)
 
 ################################################################################
 # Helper classes
@@ -2220,13 +2222,26 @@ class SuperPMIReplayThroughputDiff:
             for o in self.coreclr_args.diff_jit_option:
                 diff_option_flags += "-jit2option", o
 
-        base_jit_compiler_version = determine_clrjit_compiler_version(self.base_jit_path)
-        diff_jit_compiler_version = determine_clrjit_compiler_version(self.diff_jit_path)
+        base_jit_build_string_decoded = decode_clrjit_build_string(self.base_jit_path)
+        diff_jit_build_string_decoded = decode_clrjit_build_string(self.diff_jit_path)
 
-        if base_jit_compiler_version != diff_jit_compiler_version:
-            logging.warning("Warning: Different compilers used for base and diff JITs. Results may be misleading.")
-            logging.warning("  Base JIT's compiler: {}".format(base_jit_compiler_version))
-            logging.warning("  Diff JIT's compiler: {}".format(diff_jit_compiler_version))
+        if not base_jit_build_string_decoded:
+            logging.warning("Warning: Could not decode base JIT build string")
+        if not diff_jit_build_string_decoded:
+            logging.warning("Warning: Could not decode diff JIT build string")
+        if base_jit_build_string_decoded and diff_jit_build_string_decoded:
+            (base_jit_compiler_version, base_jit_with_native_pgo) = base_jit_build_string_decoded
+            (diff_jit_compiler_version, diff_jit_with_native_pgo) = diff_jit_build_string_decoded
+
+            if base_jit_compiler_version != diff_jit_compiler_version:
+                logging.warning("Warning: Different compilers used for base and diff JITs. Results may be misleading.")
+                logging.warning("  Base JIT's compiler: {}".format(base_jit_compiler_version))
+                logging.warning("  Diff JIT's compiler: {}".format(diff_jit_compiler_version))
+
+            if base_jit_with_native_pgo:
+                logging.warning("Warning: Base JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.")
+            if diff_jit_with_native_pgo:
+                logging.warning("Warning: Diff JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.")
 
         tp_diffs = []
 
@@ -2324,17 +2339,30 @@ class SuperPMIReplayThroughputDiff:
                 os.remove(overall_md_summary_file)
 
             with open(overall_md_summary_file, "w") as write_fh:
-                self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_compiler_version, diff_jit_compiler_version)
+                self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded)
                 logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
         return True
         ################################################################################################ end of replay_with_throughput_diff()
 
-    def write_tpdiff_markdown_summary(self, write_fh, tp_diffs, base_jit_compiler_version, diff_jit_compiler_version):
-        if base_jit_compiler_version != diff_jit_compiler_version:
-            write_fh.write("Warning: Different compilers used for base and diff JITs. Results may be misleading.\n")
-            write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
-            write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
+    def write_tpdiff_markdown_summary(self, write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded):
+        if not base_jit_build_string_decoded:
+            write_fh.write("{} Could not decode base JIT build string".format(html_color("red", "Warning:")))
+        if not diff_jit_build_string_decoded:
+            write_fh.write("{} Could not decode diff JIT build string".format(html_color("red", "Warning:")))
+        if base_jit_build_string_decoded and diff_jit_build_string_decoded:
+            (base_jit_compiler_version, base_jit_with_native_pgo) = base_jit_build_string_decoded
+            (diff_jit_compiler_version, diff_jit_with_native_pgo) = diff_jit_build_string_decoded
+
+            if base_jit_compiler_version != diff_jit_compiler_version:
+                write_fh.write("{} Different compilers used for base and diff JITs. Results may be misleading.\n".format(html_color("red", "Warning:")))
+                write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
+                write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
+
+            if base_jit_with_native_pgo:
+                write_fh.write("{} Base JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
+            if diff_jit_with_native_pgo:
+                write_fh.write("{} Diff JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
 
         # We write two tables, an overview one with just significantly
         # impacted collections and a detailed one that includes raw
