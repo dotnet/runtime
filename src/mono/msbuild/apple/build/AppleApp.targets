@@ -7,7 +7,7 @@
 
   <PropertyGroup>
     <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
-    <AppleGenerateAppBundle Condition="'$(NativeLib)' != ''">false</AppleGenerateAppBundle>
+    <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AppleGenerateAppBundle>
   </PropertyGroup>
 
   <Target Name="AppleBuildApp" AfterTargets="$(AppleBuildAppAfterThisTarget)" />
@@ -29,10 +29,26 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <_TargetsDevice Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</_TargetsDevice>
+      <_TargetsDevice Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">true</_TargetsDevice>
     </PropertyGroup>
 
+    <!-- 
+      LibraryBuilder takes the approach of accepting items to help what is being linked
+      as opposed to figuring it out in the task.
+    -->
+
+    <!-- common linker arguments for app and library builds -->
     <ItemGroup>
+      <_CommonLinkerArgs Include="-framework Foundation" />
+      <_CommonLinkerArgs Include="-framework GSS" />
+      <_CommonLinkerArgs Include="-framework Security" />
+      <_CommonLinkerArgs Include="-framework UIKit" />
+      <_CommonLinkerArgs Include="-lz" />
+      <_CommonLinkerArgs Include="-lc++" />
+      <_CommonLinkerArgs Include="-liconv" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <!-- add all non stub libs first -->
       <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
       <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
@@ -68,18 +84,11 @@
         Include="$(AppleAppDir)\*-stub-static.a" />
     </ItemGroup>
 
-    <!-- common linker arguments for app and library builds -->
-    <ItemGroup>
-      <_CommonLinkerArgs Include="-framework Foundation" />
-      <_CommonLinkerArgs Include="-framework GSS" />
-      <_CommonLinkerArgs Include="-framework Security" />
-      <_CommonLinkerArgs Include="-framework UIKit" />
-      <_CommonLinkerArgs Include="-lz" />
-      <_CommonLinkerArgs Include="-lc++" />
-      <_CommonLinkerArgs Include="-liconv" />
-    </ItemGroup>
-
-    <ItemGroup>
+    <!-- 
+      This exists for the time being in order to support runtime initialization in library mode.
+      It will go away once we have support for auto initialization.  
+    -->
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <_RuntimeSymbolsToKeep Include="
 _register_aot_modules;
 _mono_jit_init_version;
@@ -142,7 +151,7 @@ _monovm_runtimeconfig_initialize;" />
     </PropertyGroup>
 
     <PropertyGroup>
-      <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(NativeLib)' != ''">true</_EnableUnmanagedCallersOnlyMethodsExport>
+      <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(_IsLibraryMode)' == 'true'">true</_EnableUnmanagedCallersOnlyMethodsExport>
     </PropertyGroup>
 
     <ItemGroup>

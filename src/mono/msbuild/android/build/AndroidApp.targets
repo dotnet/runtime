@@ -25,44 +25,28 @@
       <_AotModuleTablePath>$(AndroidAppBundleDir)\modules.c</_AotModuleTablePath>
     </PropertyGroup>
 
+    <!-- 
+      LibraryBuilder takes the approach of accepting items to help what is being linked
+      as opposed to figuring it out in the task.
+    -->
+
+    <!-- common linker arguments for app and library builds -->
     <ItemGroup>
-      <_RuntimeSymbolsToKeep Include="
-register_aot_modules;
-mono_jit_init_version;
-mono_jit_exec;
-mono_assembly_get_name;
-mono_assembly_name_get_culture;
-mono_assembly_name_get_name;
-mono_assembly_open;
-mono_class_get_method_from_name;
-mono_class_get_name;
-mono_class_get_namespace;
-mono_debug_init;
-mono_dllmap_insert;
-mono_domain_get;
-mono_gc_init_finalizer_thread;
-mono_get_exception_class;
-mono_install_assembly_preload_hook;
-mono_install_load_aot_data_hook;
-mono_install_unhandled_exception_hook;
-mono_jit_cleanup;
-mono_jit_parse_options;
-mono_jit_set_aot_mode;
-mono_object_get_class;
-mono_object_get_virtual_method;
-mono_runtime_invoke;
-mono_set_crash_chaining;
-mono_set_signal_chaining;
-mono_string_to_utf8;
-mono_trace_set_log_handler;
-monovm_initialize;
-monovm_runtimeconfig_initialize;
-mono_aot_register_module;
-mono_polling_required;
-mono_thread_interruption_request_flag;" />
+      <_CommonLinkerArgs Include="libz.so" />
+      <_CommonLinkerArgs Include="log" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_LoadICU" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLatestJapaneseEra" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_ChangeCase" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_CloseSortHandle" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocales" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleInfoInt" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleTimeFormat" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_ToUnicode" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_NormalizeString" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetTimeZoneDisplayName" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <!-- add all non stub libs first -->
       <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
       <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
@@ -98,20 +82,45 @@ mono_thread_interruption_request_flag;" />
         Include="$(AndroidAppDir)\*-stub-static.a" />
     </ItemGroup>
 
-    <!-- common linker arguments for app and library builds -->
-    <ItemGroup>
-      <_CommonLinkerArgs Include="libz.so" />
-      <_CommonLinkerArgs Include="log" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_LoadICU" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLatestJapaneseEra" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_ChangeCase" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_CloseSortHandle" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocales" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleInfoInt" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleTimeFormat" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_ToUnicode" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_NormalizeString" />
-      <_CommonLinkerArgs Include="-u GlobalizationNative_GetTimeZoneDisplayName" />
+    <!-- 
+      This exists for the time being in order to support runtime initialization in library mode.
+      It will go away once we have support for auto initialization.  
+    -->
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <_RuntimeSymbolsToKeep Include="
+register_aot_modules;
+mono_jit_init_version;
+mono_jit_exec;
+mono_assembly_get_name;
+mono_assembly_name_get_culture;
+mono_assembly_name_get_name;
+mono_assembly_open;
+mono_class_get_method_from_name;
+mono_class_get_name;
+mono_class_get_namespace;
+mono_debug_init;
+mono_dllmap_insert;
+mono_domain_get;
+mono_gc_init_finalizer_thread;
+mono_get_exception_class;
+mono_install_assembly_preload_hook;
+mono_install_load_aot_data_hook;
+mono_install_unhandled_exception_hook;
+mono_jit_cleanup;
+mono_jit_parse_options;
+mono_jit_set_aot_mode;
+mono_object_get_class;
+mono_object_get_virtual_method;
+mono_runtime_invoke;
+mono_set_crash_chaining;
+mono_set_signal_chaining;
+mono_string_to_utf8;
+mono_trace_set_log_handler;
+monovm_initialize;
+monovm_runtimeconfig_initialize;
+mono_aot_register_module;
+mono_polling_required;
+mono_thread_interruption_request_flag;" />
     </ItemGroup>
   </Target>
 
