@@ -85,9 +85,9 @@
       <Sha>03108ae78eafab635d07071282ca24b06d23c9ff</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-preview.2" Version="8.0.0-preview.2.23107.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-preview.2" Version="8.0.0-preview.2.23107.2">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>3ae16c4a4f58bdeb6621b9a9eec832fb3b56d470</Sha>
+      <Sha>f55ecf5518e38508a96afc81e5cfc33bbbc76a8d</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
