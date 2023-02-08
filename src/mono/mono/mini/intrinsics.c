@@ -1009,9 +1009,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->type = STACK_I4;
 			return ins;
 		} else if (!strcmp (cmethod->name, "CreateSpan") && fsig->param_count == 1) {
-			if (cfg->compile_aot)
-				return NULL;
-
 			MonoGenericContext* ctx = mono_method_get_context (cmethod);
 			g_assert (ctx);
 			g_assert (ctx->method_inst);
@@ -1046,7 +1043,11 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			MonoClassField* field_ref = mono_class_get_field_from_name_full (span->klass, "_reference", NULL);
 			MonoInst* ptr_inst;
-			EMIT_NEW_PCONST (cfg, ptr_inst, data_ptr); 
+			if (cfg->compile_aot) {
+				EMIT_NEW_SFLDACONST (cfg, ptr_inst, field);
+			} else {
+				EMIT_NEW_PCONST (cfg, ptr_inst, data_ptr); 
+			}
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, span_addr->dreg, field_ref->offset - obj_size, ptr_inst->dreg);
 
 			MonoClassField* field_len = mono_class_get_field_from_name_full (span->klass, "_length", NULL);
