@@ -691,6 +691,8 @@ namespace ILCompiler
                 }
             }
         }
+
+        public DependencyAnalyzerBase<NodeFactory> Graph => _graph;
     }
 
     public sealed class ConstrainedCallInfo
