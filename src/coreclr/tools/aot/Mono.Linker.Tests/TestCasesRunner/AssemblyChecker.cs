@@ -168,7 +168,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AddMethod (method);
 			}
 
-				void AddMethod (MethodDesc method)
+			void AddMethod (MethodDesc method)
 			{
 				MethodDesc methodDef = method.GetTypicalMethodDefinition ();
 
