@@ -1,3 +1,4 @@
+/* eslint-disable no-constant-condition */
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -18,7 +19,6 @@ import {
 import {
     offsetOfDataItems, offsetOfImethod,
     sizeOfDataItem, maxModuleSize,
-    sizeOfStackval,
 
     disabledOpcodes, countCallTargets,
     callTargetCounts, trapTraceErrors,
@@ -118,7 +118,7 @@ export function generate_wasm_body (
     let result = 0;
     const traceIp = ip;
 
-    knownNotNull.clear();
+    eraseInferredState();
 
     // Skip over the enter opcode
     ip += <any>(OpcodeInfo[MintOpcode.MINT_TIER_ENTER_JITERPRETER][1] * 2);
@@ -180,6 +180,7 @@ export function generate_wasm_body (
             builder.ip_const(rip);
             builder.local("eip", WasmOpcode.set_local);
             append_branch_target_block(builder, ip);
+            eraseInferredState();
         }
 
         if (disabledOpcodes.indexOf(opcode) >= 0) {
@@ -820,6 +821,11 @@ export function generate_wasm_body (
 const knownNotNull : Set<number> = new Set();
 let cknullOffset = -1;
 
+function eraseInferredState () {
+    cknullOffset = -1;
+    knownNotNull.clear();
+}
+
 function invalidate_local (offset: number) {
     if (cknullOffset === offset)
         cknullOffset = -1;
@@ -827,7 +833,7 @@ function invalidate_local (offset: number) {
 }
 
 function invalidate_local_range (start: number, bytes: number) {
-    for (let i = 0; i < bytes; i += sizeOfStackval)
+    for (let i = 0; i < bytes; i += 1)
         invalidate_local(start + i);
 }
 
@@ -867,6 +873,8 @@ function append_ldloca (builder: WasmBuilder, localOffset: number) {
 }
 
 function append_memset_local (builder: WasmBuilder, localOffset: number, value: number, count: number) {
+    invalidate_local_range(localOffset, count);
+
     // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
     if (try_append_memset_fast(builder, localOffset, value, count, false))
         return;
@@ -877,6 +885,8 @@ function append_memset_local (builder: WasmBuilder, localOffset: number, value: 
 }
 
 function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: number, sourceLocalOffset: number, count: number) {
+    invalidate_local_range(destLocalOffset, count);
+
     if (try_append_memmove_fast(builder, destLocalOffset, sourceLocalOffset, count, false))
         return true;
 
@@ -886,11 +896,10 @@ function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: numb
     append_memmove_dest_src(builder, count);
 }
 
-// Loads the specified i32 value and bails out of it is null. Does not leave it on the stack.
+// Loads the specified i32 value and bails out if it is null. Does not leave it on the stack.
 function append_local_null_check (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr) {
     if (knownNotNull.has(localOffset)) {
-        console.log(`skipping null check for ${localOffset}`);
-        append_ldloc(builder, localOffset, WasmOpcode.i32_load);
+        // console.log(`skipping null check for ${localOffset}`);
         return;
     }
 
@@ -907,11 +916,11 @@ function append_local_null_check (builder: WasmBuilder, localOffset: number, ip:
 function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr, leaveOnStack: boolean) {
     if (knownNotNull.has(localOffset)) {
         if (cknullOffset === localOffset) {
-            console.log(`cknull_ptr already contains ${localOffset}`);
+            // console.log(`cknull_ptr already contains ${localOffset}`);
             if (leaveOnStack)
                 builder.local("cknull_ptr");
         } else {
-            console.log(`skipping null check for ${localOffset}`);
+            // console.log(`skipping null check for ${localOffset}`);
             append_ldloc(builder, localOffset, WasmOpcode.i32_load);
             builder.local("cknull_ptr", leaveOnStack ? WasmOpcode.tee_local : WasmOpcode.set_local);
             cknullOffset = localOffset;
@@ -1113,6 +1122,9 @@ function emit_fieldop (
         fieldOffset = getArgU16(ip, 3),
         localOffset = getArgU16(ip, isLoad ? 1 : 2);
 
+    // Check this before potentially emitting a cknull
+    const notNull = knownNotNull.has(objectOffset);
+
     if (
         (opcode !== MintOpcode.MINT_LDFLDA_UNSAFE) &&
         (opcode !== MintOpcode.MINT_STFLD_O)
@@ -1173,17 +1185,25 @@ function emit_fieldop (
              *  cknull_ptr = *(MonoObject *)&locals[objectOffset];
              *  if (!cknull_ptr) bailout;
              *  copy_pointer(cknull_ptr + fieldOffset, *(MonoObject *)&locals[localOffset])
+             * The null check optimization also allows us to safely omit the bailout check
+             *  if we know that the target object isn't null. Even if the target object were
+             *  somehow null in this case (bad! shouldn't be possible!) it won't be a crash
+             *  because the implementation of stfld_o does its own null check.
              */
-            builder.block();
+            if (!notNull)
+                builder.block();
             builder.local("pLocals");
             builder.i32_const(fieldOffset);
             builder.i32_const(objectOffset);
             builder.i32_const(localOffset);
             builder.callImport("stfld_o");
-            builder.appendU8(WasmOpcode.br_if);
-            builder.appendLeb(0);
-            append_bailout(builder, ip, BailoutReason.NullCheck);
-            builder.endBlock();
+            if (!notNull) {
+                builder.appendU8(WasmOpcode.br_if);
+                builder.appendLeb(0);
+                append_bailout(builder, ip, BailoutReason.NullCheck);
+                builder.endBlock();
+            } else
+                builder.appendU8(WasmOpcode.drop);
             return true;
         }
         case MintOpcode.MINT_LDFLD_VT: {
@@ -1867,6 +1887,8 @@ function emit_branch (
     const info = OpcodeInfo[opcode];
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
+
+    eraseInferredState();
 
     // If the branch is taken we bail out to allow the interpreter to do it.
     // So for brtrue, we want to do 'cond == 0' to produce a bailout only
