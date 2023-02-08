@@ -179,7 +179,7 @@ jobs:
 
     # windows arm
     - ${{ if eq(parameters.platform, 'windows_arm') }}:
-      - Windows.10.Arm64v8.Open
+      - Windows.11.Arm64.Open
 
     # windows arm64
     - ${{ if eq(parameters.platform, 'windows_arm64') }}:
