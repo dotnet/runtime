@@ -837,7 +837,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <exception cref="IO.Path.GetFullPath">See IO.Path.GetFullPath for possible exceptions.</exception>
         ''' <remarks>Keep this function since we might change the implementation / behavior later.</remarks>
         Friend Shared Function NormalizePath(ByVal Path As String) As String
-            Return GetLongPath(RemoveEndingSeparator(IO.Path.GetFullPath(Path)))
+            Return GetLongPath(RemoveEndingSeparator(IO.Path.GetFullPath(Path)), Path)
         End Function
 
         ''' <summary>
@@ -1481,7 +1481,7 @@ Namespace Microsoft.VisualBasic.FileIO
         '''  GetLongPathName is a PInvoke call and requires unmanaged code permission.
         '''  Use DirectoryInfo.GetFiles and GetDirectories (which call FindFirstFile) so that we always have permission.
         '''</remarks>
-        Private Shared Function GetLongPath(ByVal FullPath As String) As String
+        Private Shared Function GetLongPath(ByVal FullPath As String, OriginalPath As String) As String
             Debug.Assert(Not FullPath = "" AndAlso IO.Path.IsPathRooted(FullPath), "Must be full path")
             Try
                 ' If root path, return itself. UNC path do not recognize 8.3 format in root path, so this is fine.
@@ -1517,7 +1517,8 @@ Namespace Microsoft.VisualBasic.FileIO
                     Debug.Assert(Not (TypeOf ex Is ArgumentException OrElse
                         TypeOf ex Is ArgumentNullException OrElse
                         TypeOf ex Is IO.PathTooLongException OrElse
-                        TypeOf ex Is NotSupportedException), $"{ex.GetType().FullName}: {ex.Message}")
+                        TypeOf ex Is NotSupportedException),
+                                 $"FullPath=|{FullPath}|, OriginalPath=|{OriginalPath}|, IO.Path.GetFullPath(OriginalPath)=|{IO.Path.GetFullPath(OriginalPath)}|, RemoveEndingSeparator(IO.Path.GetFullPath(OriginalPath))=|{RemoveEndingSeparator(IO.Path.GetFullPath(OriginalPath))}|, System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)=|{System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments)}|, Exception={ex}")
 
                     Return FullPath
                 Else
