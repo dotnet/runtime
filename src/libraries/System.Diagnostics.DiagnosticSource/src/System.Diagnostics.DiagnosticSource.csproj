@@ -12,7 +12,7 @@
 Commonly Used Types:
 System.Diagnostics.DiagnosticListener
 System.Diagnostics.DiagnosticSource</PackageDescription>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 
