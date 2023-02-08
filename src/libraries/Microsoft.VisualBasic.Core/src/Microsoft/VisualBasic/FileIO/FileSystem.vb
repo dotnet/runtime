@@ -1517,7 +1517,7 @@ Namespace Microsoft.VisualBasic.FileIO
                     Debug.Assert(Not (TypeOf ex Is ArgumentException OrElse
                         TypeOf ex Is ArgumentNullException OrElse
                         TypeOf ex Is IO.PathTooLongException OrElse
-                        TypeOf ex Is NotSupportedException), "These exceptions should be caught above")
+                        TypeOf ex Is NotSupportedException), $"{ex.GetType().FullName}: {ex.Message}")
 
                     Return FullPath
                 Else
