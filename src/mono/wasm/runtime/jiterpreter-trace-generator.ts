@@ -24,7 +24,7 @@ import {
     callTargetCounts, trapTraceErrors,
     trace, traceOnError, traceOnRuntimeError,
     emitPadding, traceBranchDisplacements,
-    traceEip,
+    traceEip, nullCheckValidation,
 
     mostRecentOptions,
 
@@ -913,6 +913,11 @@ function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: numb
 // Loads the specified i32 value and bails out if it is null. Does not leave it on the stack.
 function append_local_null_check (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr) {
     if (knownNotNull.has(localOffset)) {
+        if (nullCheckValidation) {
+            append_ldloc(builder, localOffset, WasmOpcode.i32_load);
+            builder.i32_const(builder.base);
+            builder.callImport("notnull");
+        }
         // console.log(`skipping null check for ${localOffset}`);
         counters.nullChecksEliminated++;
         return;
@@ -941,6 +946,12 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
             append_ldloc(builder, localOffset, WasmOpcode.i32_load);
             builder.local("cknull_ptr", leaveOnStack ? WasmOpcode.tee_local : WasmOpcode.set_local);
             cknullOffset = localOffset;
+        }
+
+        if (nullCheckValidation) {
+            builder.local("cknull_ptr");
+            builder.i32_const(builder.base);
+            builder.callImport("notnull");
         }
         return;
     }
@@ -1213,11 +1224,13 @@ function emit_fieldop (
              */
             if (!notNull)
                 builder.block();
+
             builder.local("pLocals");
             builder.i32_const(fieldOffset);
             builder.i32_const(objectOffset);
             builder.i32_const(localOffset);
             builder.callImport("stfld_o");
+
             if (!notNull) {
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendLeb(0);
@@ -1225,7 +1238,12 @@ function emit_fieldop (
                 builder.endBlock();
             } else {
                 counters.nullChecksEliminated++;
-                builder.appendU8(WasmOpcode.drop);
+
+                if (nullCheckValidation) {
+                    builder.i32_const(builder.base);
+                    builder.callImport("notnull");
+                } else
+                    builder.appendU8(WasmOpcode.drop);
             }
             return true;
         }
