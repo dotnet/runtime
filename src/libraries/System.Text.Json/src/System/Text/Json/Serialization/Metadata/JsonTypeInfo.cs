@@ -322,7 +322,14 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                return _elementTypeInfo;
+                Debug.Assert(_elementTypeInfo is null or { IsConfigurationStarted: true });
+                // Even though this instance has already been configured,
+                // it is possible for contending threads to call the property
+                // while the wider JsonTypeInfo graph is still being configured.
+                // Call EnsureConfigured() to force synchronization if necessary.
+                JsonTypeInfo? elementTypeInfo = _elementTypeInfo;
+                elementTypeInfo?.EnsureConfigured();
+                return elementTypeInfo;
             }
             set
             {
@@ -340,7 +347,14 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                return _keyTypeInfo;
+                Debug.Assert(_keyTypeInfo is null or { IsConfigurationStarted: true });
+                // Even though this instance has already been configured,
+                // it is possible for contending threads to call the property
+                // while the wider JsonTypeInfo graph is still being configured.
+                // Call EnsureConfigured() to force synchronization if necessary.
+                JsonTypeInfo? keyTypeInfo = _keyTypeInfo;
+                keyTypeInfo?.EnsureConfigured();
+                return keyTypeInfo;
             }
             set
             {
@@ -491,6 +505,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         internal bool IsConfigured => _configurationState == ConfigurationState.Configured;
+        internal bool IsConfigurationStarted => _configurationState is not ConfigurationState.NotConfigured;
         private volatile ConfigurationState _configurationState;
         private enum ConfigurationState : byte { NotConfigured = 0, Configuring = 1, Configured = 2 };
 
