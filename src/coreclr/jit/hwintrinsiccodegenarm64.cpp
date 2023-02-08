@@ -428,7 +428,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_VectorTableLookup:
                 ins = INS_tbl;
                 break;
-
+            case NI_AdvSimd_VectorTableLookupExtension:
+            case NI_AdvSimd_Arm64_VectorTableLookupExtension:
+                ins = INS_tbx;
+                break;
             case NI_AdvSimd_AddWideningLower:
                 assert(varTypeIsIntegral(intrin.baseType));
                 if (intrin.op1->TypeGet() == TYP_SIMD8)
@@ -497,14 +500,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_VectorTableLookup:
             case NI_AdvSimd_Arm64_VectorTableLookup:
             {
-                unsigned regCount = 1;
+                unsigned regCount = 0;
                 if (intrin.op1->OperIsFieldList())
                 {
                     GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
                     GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
                     op1Reg                       = firstField->GetRegNum();
                     INDEBUG(regNumber argReg = op1Reg);
-                    unsigned regCount = 0;
                     for (GenTreeFieldList::Use& use : fieldList->Uses())
                     {
                         regCount++;
@@ -518,7 +520,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-                    op1Reg = intrin.op1->GetRegNum();
+                    regCount = 1;
+                    op1Reg   = intrin.op1->GetRegNum();
                 }
 
                 switch (regCount)
@@ -541,7 +544,59 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
             }
+            case NI_AdvSimd_VectorTableLookupExtension:
+            case NI_AdvSimd_Arm64_VectorTableLookupExtension:
+            {
+                assert(isRMW);
+                assert(targetReg != op2Reg);
+                assert(targetReg != op3Reg);
+                unsigned regCount = 0;
+                op1Reg            = intrin.op1->GetRegNum();
+                op3Reg            = intrin.op3->GetRegNum();
+                if (intrin.op2->OperIsFieldList())
+                {
+                    GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
+                    GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                    op2Reg                       = firstField->GetRegNum();
+                    INDEBUG(regNumber argReg = op2Reg);
+                    for (GenTreeFieldList::Use& use : fieldList->Uses())
+                    {
+                        regCount++;
+#ifdef DEBUG
 
+                        GenTree* argNode = use.GetNode();
+                        assert(argReg == argNode->GetRegNum());
+                        argReg = REG_NEXT(argReg);
+#endif
+                    }
+                }
+                else
+                {
+                    regCount = 1;
+                    op2Reg   = intrin.op2->GetRegNum();
+                }
+
+                switch (regCount)
+                {
+                    case 2:
+                        ins = INS_tbx_2regs;
+                        break;
+                    case 3:
+                        ins = INS_tbx_3regs;
+                        break;
+                    case 4:
+                        ins = INS_tbx_4regs;
+                        break;
+                    default:
+                        assert(regCount == 1);
+                        assert(ins == INS_tbx);
+                        break;
+                }
+
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
+                break;
+            }
             case NI_AdvSimd_BitwiseSelect:
                 // Even though BitwiseSelect is an RMW intrinsic per se, we don't want to mark it as such
                 // since we can handle all possible allocation decisions for targetReg.

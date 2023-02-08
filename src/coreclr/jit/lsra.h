@@ -1009,10 +1009,10 @@ private:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
-    void buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
-                                            LsraLocation currentLoc,
-                                            GenTree*     node,
-                                            bool         isUse);
+    RefPosition* buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
+                                                    LsraLocation currentLoc,
+                                                    GenTree*     node,
+                                                    bool         isUse);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
@@ -1187,7 +1187,7 @@ private:
 ****************************************************************************/
 
 #if defined(TARGET_ARM64)
-    void setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    bool setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned);
 #endif // TARGET_ARM64
 
     regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
@@ -1862,7 +1862,14 @@ private:
     bool isCandidateMultiRegLclVar(GenTreeLclVar* lclNode);
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    RefPosition* BuildUse(GenTree*      operand,
+                          regMaskTP     candidates         = RBM_NONE,
+                          int           multiRegIdx        = 0,
+                          RefPosition** restoreRefPosition = nullptr);
+#else
     RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
+#endif
 
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
@@ -1942,6 +1949,9 @@ private:
 
 #ifdef FEATURE_HW_INTRINSICS
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
+#ifdef TARGET_ARM64
+    int BuildConsecutiveRegisters(GenTree* treeNode, GenTree* rmwNode = nullptr);
+#endif
 #endif // FEATURE_HW_INTRINSICS
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);

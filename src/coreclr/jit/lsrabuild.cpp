@@ -1589,18 +1589,21 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 //    isUse          - If the refPosition that is about to be created represents a use or not.
 //                   - If not, it would be the one at the end of the block.
 //
-void LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
-                                                    LsraLocation currentLoc,
-                                                    GenTree*     node,
-                                                    bool         isUse)
+// Returns:
+//  The refposition created for VectorRestore
+//
+RefPosition* LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
+                                                            LsraLocation currentLoc,
+                                                            GenTree*     node,
+                                                            bool         isUse)
 {
+    RefPosition* restorePos = nullptr;
     if (lclVarInterval->isPartiallySpilled)
     {
         unsigned     varIndex            = lclVarInterval->getVarIndex(compiler);
         Interval*    upperVectorInterval = getUpperVectorInterval(varIndex);
         RefPosition* savePos             = upperVectorInterval->recentRefPosition;
-        RefPosition* restorePos =
-            newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
+        restorePos = newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
         lclVarInterval->isPartiallySpilled = false;
 
         if (isUse)
@@ -1619,6 +1622,7 @@ void LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
         restorePos->regOptional = true;
 #endif
     }
+    return restorePos;
 }
 
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -3025,9 +3029,10 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 //           the defList, and build a use RefPosition for the associated Interval.
 //
 // Arguments:
-//    operand      - The node of interest
-//    candidates   - The register candidates for the use
-//    multiRegIdx  - The index of the multireg def/use
+//    operand             - The node of interest
+//    candidates          - The register candidates for the use
+//    multiRegIdx         - The index of the multireg def/use
+//    restoreRefPosition  - If there was any upperVector restore refposition created, return it.
 //
 // Return Value:
 //    The newly created use RefPosition
@@ -3035,7 +3040,14 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 // Notes:
 //    The node must not be contained, and must have been processed by buildRefPositionsForNode().
 //
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+RefPosition* LinearScan::BuildUse(GenTree*      operand,
+                                  regMaskTP     candidates,
+                                  int           multiRegIdx,
+                                  RefPosition** restoreRefPosition)
+#else
 RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int multiRegIdx)
+#endif
 {
     assert(!operand->isContained());
     Interval* interval;
@@ -3062,7 +3074,11 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
             UpdatePreferencesOfDyingLocal(interval);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
+        RefPosition* upperVectorRefPos = buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
+        if (restoreRefPosition != nullptr)
+        {
+            *restoreRefPosition = upperVectorRefPos;
+        }
 #endif
     }
     else if (operand->IsMultiRegLclVar())
@@ -3076,7 +3092,11 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
             VarSetOps::RemoveElemD(compiler, currentLiveVars, fieldVarDsc->lvVarIndex);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
+        RefPosition* upperVectorRefPos = buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
+        if (restoreRefPosition != nullptr)
+        {
+            *restoreRefPosition = upperVectorRefPos;
+        }
 #endif
     }
     else
@@ -3483,7 +3503,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
         defCandidates = allRegs(type);
     }
 #else
-    defCandidates  = allRegs(type);
+    defCandidates = allRegs(type);
 #endif // TARGET_X86
 
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);

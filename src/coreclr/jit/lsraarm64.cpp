@@ -52,25 +52,53 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 //    firstRefPosition  - First refPosition of the series of consecutive registers.
 //    firstReg          - Register assigned to the first refposition.
 //
-void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned)
+//  Returns:
+//      True if all the consecutive registers starting from `firstRegAssigned` were free. Even if one
+//      of them is busy, returns false and does not change the registerAssignment of a subsequent
+//      refPosition.
+//
+bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned)
 {
     assert(isSingleRegister(genRegMask(firstRegAssigned)));
     assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
     assert(emitter::isVectorRegister(firstRegAssigned));
 
-    RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
+    // Verify that all the consecutive registers needed are free, if not, return false.
+    // Need to do this before we set registerAssignment of any of the refPositions that
+    // are part of the range.
+    RefPosition* consecutiveRefPosition = firstRefPosition;
+    regNumber    regToAssign            = firstRegAssigned;
+    while (consecutiveRefPosition != nullptr)
+    {
+        if (isRegInUse(regToAssign, consecutiveRefPosition->getInterval()->registerType))
+        {
+            return false;
+        }
+        consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+        regToAssign            = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+    }
+
+    consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
 
     // should have at least one consecutive register requirement
     assert(consecutiveRefPosition != nullptr);
 
-    regNumber regToAssign = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
+    regToAssign = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
 
     INDEBUG(int refPosCount = 1);
     while (consecutiveRefPosition != nullptr)
     {
         consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
-        consecutiveRefPosition                     = getNextConsecutiveRefPosition(consecutiveRefPosition);
-        regToAssign                                = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+        if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
+        {
+            // For restore refPosition, make sure to have same assignment for it and the next one
+            // which is the use of the variable.
+            consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+            assert(consecutiveRefPosition->refType == RefTypeUse);
+            consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
+        }
+        consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+        regToAssign            = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
 
 #ifdef DEBUG
         refPosCount++;
@@ -78,6 +106,7 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     }
 
     assert(refPosCount == firstRefPosition->regCount);
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -1044,42 +1073,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             if ((intrin.id == NI_AdvSimd_VectorTableLookup) || (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup))
             {
-                if (intrin.op1->OperIsFieldList())
-                {
-                    unsigned     regCount    = 0;
-                    RefPosition* currRefPos  = nullptr;
-                    RefPosition* firstRefPos = nullptr;
-                    RefPosition* lastRefPos  = nullptr;
-
-                    NextConsecutiveRefPositionsMap* refPositionMap = getNextConsecutiveRefPositionsMap();
-                    for (GenTreeFieldList::Use& use : intrin.op1->AsFieldList()->Uses())
-                    {
-                        currRefPos                   = BuildUse(use.GetNode());
-                        currRefPos->needsConsecutive = true;
-                        currRefPos->regCount         = 0;
-
-                        if (firstRefPos == nullptr)
-                        {
-                            firstRefPos = currRefPos;
-                        }
-
-                        refPositionMap->Set(lastRefPos, currRefPos,
-                                            LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
-                        refPositionMap->Set(currRefPos, nullptr);
-
-                        lastRefPos = currRefPos;
-                        regCount++;
-                    }
-
-                    // Just `regCount` to actual registers count for first ref-position.
-                    // For others, set 0 so we can identify that this is non-first refposition.
-                    firstRefPos->regCount = regCount;
-                    srcCount += regCount;
-                }
-                else
-                {
-                    srcCount += BuildOperandUses(intrin.op1);
-                }
+                srcCount += BuildConsecutiveRegisters(intrin.op1);
             }
             else
             {
@@ -1088,7 +1082,30 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
     }
 
-    if ((intrin.category == HW_Category_SIMDByIndexedElement) && (genTypeSize(intrin.baseType) == 2))
+    if ((intrin.id == NI_AdvSimd_VectorTableLookup) || (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup) ||
+        (intrin.id == NI_AdvSimd_VectorTableLookupExtension) ||
+        (intrin.id == NI_AdvSimd_Arm64_VectorTableLookupExtension))
+    {
+        if ((intrin.id == NI_AdvSimd_VectorTableLookup) || (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup))
+        {
+            assert(intrin.op2 != nullptr);
+            srcCount += BuildOperandUses(intrin.op2);
+        }
+        else
+        {
+            assert(intrin.op2 != nullptr);
+            assert(intrin.op3 != nullptr);
+            srcCount += BuildConsecutiveRegisters(intrin.op2, intrin.op1);
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
+        }
+        assert(dstCount == 1);
+        buildInternalRegisterUses();
+        BuildDef(intrinsicTree);
+        *pDstCount = 1;
+
+        return srcCount;
+    }
+    else if ((intrin.category == HW_Category_SIMDByIndexedElement) && (genTypeSize(intrin.baseType) == 2))
     {
         // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions (e.g.
         // "MLA (by element)") have encoding that restricts what registers that can be used for the indexed element when
@@ -1198,6 +1215,94 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
 
     *pDstCount = dstCount;
+    return srcCount;
+}
+
+int LinearScan::BuildConsecutiveRegisters(GenTree* treeNode, GenTree* rmwNode)
+{
+    int       srcCount     = 0;
+    Interval* rmwInterval  = nullptr;
+    bool      rmwIsLastUse = false;
+    if ((rmwNode != nullptr))
+    {
+        if (isCandidateLocalRef(rmwNode))
+        {
+            rmwInterval  = getIntervalForLocalVarNode(rmwNode->AsLclVar());
+            rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
+        }
+    }
+    if (treeNode->OperIsFieldList())
+    {
+        unsigned     regCount    = 0;
+        RefPosition* firstRefPos = nullptr;
+        RefPosition* currRefPos  = nullptr;
+        RefPosition* lastRefPos  = nullptr;
+
+        NextConsecutiveRefPositionsMap* refPositionMap = getNextConsecutiveRefPositionsMap();
+        for (GenTreeFieldList::Use& use : treeNode->AsFieldList()->Uses())
+        {
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+            RefPosition* restoreRefPos = nullptr;
+            currRefPos                 = BuildUse(use.GetNode(), RBM_NONE, 0, &restoreRefPos);
+#else
+            currRefPos = BuildUse(use.GetNode());
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+            currRefPos->needsConsecutive = true;
+            currRefPos->regCount         = 0;
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+            if (restoreRefPos != nullptr)
+            {
+                // If there was a restoreRefPosition created, make sure
+                // to link it as well so it gets same registerAssignment
+                restoreRefPos->needsConsecutive = true;
+                restoreRefPos->regCount         = 0;
+                if (firstRefPos == nullptr)
+                {
+                    firstRefPos = restoreRefPos;
+                }
+                refPositionMap->Set(lastRefPos, restoreRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+                refPositionMap->Set(restoreRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+            }
+            else
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+            {
+                if (firstRefPos == nullptr)
+                {
+                    firstRefPos = currRefPos;
+                }
+                refPositionMap->Set(lastRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+            }
+
+            refPositionMap->Set(currRefPos, nullptr);
+
+            lastRefPos = currRefPos;
+            regCount++;
+            if (rmwNode != nullptr)
+            {
+                // If we have rmwNode, determine if the currRefPos should be set to delay-free.
+                if ((currRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !currRefPos->lastUse))
+                {
+                    setDelayFree(currRefPos);
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                    if (restoreRefPos != nullptr)
+                    {
+                        setDelayFree(restoreRefPos);
+                    }
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                }
+            }
+        }
+
+        // Just `regCount` to actual registers count for first ref-position.
+        // For others, set 0 so we can identify that this is non-first refposition.
+        firstRefPos->regCount = regCount;
+        srcCount += regCount;
+    }
+    else
+    {
+        srcCount += BuildOperandUses(treeNode);
+    }
+
     return srcCount;
 }
 #endif

@@ -1929,7 +1929,61 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             break;
         }
+        case NI_AdvSimd_VectorTableLookupExtension:
+        case NI_AdvSimd_Arm64_VectorTableLookupExtension:
+        {
+            info.needsConsecutiveRegisters = true;
+            assert(sig->numArgs == 3);
 
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3     = getArgForHWIntrinsic(argType, argClass);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = impPopStack().val;
+            op1     = impPopStack().val;
+
+            if (op2->TypeGet() == TYP_STRUCT)
+            {
+                if (!op2->OperIs(GT_LCL_VAR))
+                {
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("VectorTableLookup temp tree"));
+
+                    impAssignTempGen(tmp, op2, CHECK_SPILL_NONE);
+                    op2 = gtNewLclvNode(tmp, argType);
+                }
+
+                LclVarDsc* op2VarDsc  = lvaGetDesc(op2->AsLclVar());
+                unsigned   lclNum     = lvaGetLclNum(op2VarDsc);
+                unsigned   fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+                unsigned   fieldSize  = op2VarDsc->lvSize() / fieldCount;
+                var_types  fieldType  = TYP_SIMD16;
+
+                GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
+                int               offset    = 0;
+                for (unsigned fieldId = 0; fieldId < fieldCount; fieldId++)
+                {
+                    GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, fieldType, offset);
+                    fieldList->AddField(this, fldNode, offset, fieldType);
+
+                    offset += fieldSize;
+                }
+                op2 = fieldList;
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                assert(op2->TypeGet() == TYP_SIMD16);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+            }
+            break;
+        }
         default:
         {
             return nullptr;

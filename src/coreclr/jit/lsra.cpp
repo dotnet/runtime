@@ -5324,7 +5324,9 @@ void LinearScan::allocateRegisters()
                     {
                         if (currentRefPosition.regCount != 0)
                         {
-                            setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
+                            bool consecutiveAssigned =
+                                setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
+                            assert(consecutiveAssigned);
                         }
 
                         // For consecutive register, it doesn't matter what the assigned register was.
@@ -5404,7 +5406,15 @@ void LinearScan::allocateRegisters()
                     // subsequent registers to the remaining position and skip the allocation for the
                     // 1st refPosition altogether.
 
-                    setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
+                    if (!setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister))
+                    {
+                        // The consecutive registers are busy. Force to allocate even for the 1st
+                        // refPosition
+                        assignedRegister                      = REG_NA;
+                        RegRecord* physRegRecord              = getRegisterRecord(currentInterval->physReg);
+                        currentRefPosition.registerAssignment = allRegs(currentInterval->registerType);
+                        unassignPhysRegNoSpill(physRegRecord);
+                    }
                 }
             }
             else
@@ -5481,7 +5491,9 @@ void LinearScan::allocateRegisters()
 #ifdef TARGET_ARM64
                 if (hasConsecutiveRegister && currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
                 {
-                    setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
+                    bool consecutiveAssigned =
+                        setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
+                    assert(consecutiveAssigned);
                 }
 #endif // TARGET_ARM64
             }
