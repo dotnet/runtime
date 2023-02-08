@@ -8726,6 +8726,17 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
         }
     }
 
+    if (tree->IsCnsIntOrI())
+    {
+        FieldSeq* fldSeq = tree->AsIntCon()->gtFieldSeq;
+        if ((fldSeq != nullptr) && (fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+        {
+            *pFseq      = fldSeq;
+            *byteOffset = tree->AsIntCon()->IconValue() - fldSeq->GetOffset();
+            return true;
+        }
+    }
+
     // Base address is expected to be static field's address
     ValueNum treeVN = tree->gtVNPair.GetLiberal();
     if (tree->gtVNPair.BothEqual() && vnStore->IsVNHandle(treeVN) &&
