@@ -131,6 +131,7 @@
         ForceInterpreter="$(MonoForceInterpreter)"
         EnableAppSandbox="$(EnableAppSandbox)"
         InvariantGlobalization="$(InvariantGlobalization)"
+        HybridGlobalization="$(HybridGlobalization)"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="$(GenerateXcodeProject)"
         GenerateCMakeProject="$(GenerateCMakeProject)"

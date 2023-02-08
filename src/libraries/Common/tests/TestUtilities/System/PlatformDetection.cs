@@ -344,6 +344,9 @@ namespace System
         private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(()
             => (bool?)Type.GetType("System.Globalization.GlobalizationMode")?.GetProperty("Invariant", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) == true);
 
+        private static readonly Lazy<bool> m_isHybrid = new Lazy<bool>(()
+            => (bool?)Type.GetType("System.Globalization.GlobalizationMode")?.GetProperty("Hybrid", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) == true);
+
         private static readonly Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
         public static Version ICUVersion => m_icuVersion.Value;
 
@@ -351,6 +354,7 @@ namespace System
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
+        public static bool IsHybridGlobalization => m_isHybrid.Value;
 
         public static bool IsSubstAvailable
         {

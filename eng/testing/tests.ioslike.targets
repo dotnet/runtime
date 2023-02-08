@@ -98,6 +98,7 @@
          library test project. Eg. $(InvariantGlobalization) -->
     <ItemGroup>
       <_ApplePropertyNames Include="InvariantGlobalization" />
+      <_ApplePropertyNames Include="HybridGlobalization" />
       <_ApplePropertyNames Include="AssemblyName" />
       <_ApplePropertyNames Include="MonoEnableLLVM" />
 

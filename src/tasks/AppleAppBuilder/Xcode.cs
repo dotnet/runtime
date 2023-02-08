@@ -144,6 +144,7 @@ internal sealed class Xcode
         bool forceAOT,
         bool forceInterpreter,
         bool invariantGlobalization,
+        bool hybridGlobalization,
         bool optimized,
         bool enableRuntimeLogging,
         bool enableAppSandbox,
@@ -151,7 +152,7 @@ internal sealed class Xcode
         string? runtimeComponents=null,
         string? nativeMainSource = null)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -202,6 +203,7 @@ internal sealed class Xcode
         bool forceAOT,
         bool forceInterpreter,
         bool invariantGlobalization,
+        bool hybridGlobalization,
         bool optimized,
         bool enableRuntimeLogging,
         bool enableAppSandbox,
@@ -378,6 +380,11 @@ internal sealed class Xcode
         if (invariantGlobalization)
         {
             defines.AppendLine("add_definitions(-DINVARIANT_GLOBALIZATION=1)");
+        }
+
+        if (hybridGlobalization)
+        {
+            defines.AppendLine("add_definitions(-DHYBRID_GLOBALIZATION=1)");
         }
 
         if (enableRuntimeLogging)
