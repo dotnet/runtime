@@ -763,13 +763,6 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 		MONO_ADD_INS ((cfg)->cbb, __inst); \
 	} while (0)
 
-#define MONO_EMIT_NEW_TEMPLOAD(cfg,num) do { \
-		MonoInst *__inst; \
-		NEW_TEMPLOAD ((cfg), __inst, (num)); \
-		MONO_ADD_INS ((cfg)->cbb, __inst); \
-	} while (0)
-
-
 /* Branch support */
 
 /*

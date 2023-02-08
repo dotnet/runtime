@@ -528,7 +528,7 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 		if (!COMPILE_LLVM (cfg))
 			emulate = TRUE;
 #endif
-	break;
+		break;
 	default:
 		emulate = TRUE;
 		break;
