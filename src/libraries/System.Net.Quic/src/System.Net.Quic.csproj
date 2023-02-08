@@ -141,7 +141,7 @@
     <Reference Include="System.Diagnostics.StackTrace" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
 
-  <!-- Support for deploying msquic on Windows. We make msquic.dll part or runtime binaries. (either from official releases or our transport) -->
+  <!-- Support for deploying msquic on Windows. We make msquic.dll part of runtime binaries: either from official releases or our transport feed. -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and
                         '$(TargetOS)' == 'windows' and
                         '$(DotNetBuildFromSource)' != 'true'">
