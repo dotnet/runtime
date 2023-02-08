@@ -1961,22 +1961,8 @@ namespace System.Collections.Concurrent
 
                     // Compute the new table size at least twice the previous table size.
                     // Double the size of the buckets table and choose a prime that's at least as large.
-                    bool maximizeTableSize = false;
-                    newLength = tables._buckets.Length * 2;
-                    if (newLength < 0)
-                    {
-                        maximizeTableSize = true;
-                    }
-                    else
-                    {
-                        newLength = HashHelpers.GetPrime(newLength);
-                        if (newLength > Array.MaxLength)
-                        {
-                            maximizeTableSize = true;
-                        }
-                    }
-
-                    if (maximizeTableSize)
+                    if ((newLength = tables._buckets.Length * 2) < 0 ||
+                        (newLength = HashHelpers.GetPrime(newLength)) > Array.MaxLength)
                     {
                         newLength = Array.MaxLength;
 
