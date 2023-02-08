@@ -7,14 +7,6 @@ include_directories(${EP_GENERATED_HEADER_PATH})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(AOT_EVENTPIPE_SHIM_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
-add_definitions(-DFEATURE_RX_THUNKS)
-
-# we need this definition to inline cmake file in eventpipe
-if(NOT DEFINED FEATURE_PERFTRACING)
-    set(FEATURE_PERFTRACING 1)
-    set(NEEDED_PERF_AOT_FLAG 1)
-endif()    
-
 set (EVENTPIPE_SOURCES "")
 set (EVENTPIPE_HEADERS "")
 set (CORECLR_EVENTPIPE_SHIM_SOURCES "")
@@ -22,12 +14,6 @@ set (CORECLR_EVENTPIPE_SHIM_HEADERS "")
 
 set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
 include (${SHARED_EVENTPIPE_SOURCE_PATH}/CMakeLists.txt)
-
-# unset the FEATURE_PERFTRACING if we set it above
-if(DEFINED NEEDED_PERF_AOT_FLAG)
-    set(FEATURE_PERFTRACING 0)
-    set(NEEDED_PERF_AOT_FLAG 0)
-endif()    
 
 list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
     ds-ipc-pal-namedpipe.c
@@ -97,8 +83,6 @@ list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
   ${RUNTIME_DIR}/DisabledEventPipeInterface.cpp
   ${RUNTIME_DIR}/disabledeventpipeinternal.cpp
 )
-
-add_definitions(-DFEATURE_PERFTRACING)
 
 add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
 add_library(eventpipe-disabled STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})

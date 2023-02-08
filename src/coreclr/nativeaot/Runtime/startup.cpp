@@ -25,7 +25,10 @@
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
 #include "yieldprocessornormalized.h"
+
+#ifdef FEATURE_PERFTRACING
 #include "EventPipeInterface.h"
+#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -98,11 +101,13 @@ static bool InitDLL(HANDLE hPalInstance)
         return false;
 #endif
 
+#ifdef FEATURE_PERFTRACING
     // Initialize EventPipe
     EventPipeAdapter_Initialize();
     // Initialize DS
     DiagnosticServerAdapter_Initialize();
     DiagnosticServerAdapter_PauseForDiagnosticsMonitor();
+#endif
 
     //
     // Initialize support for registering GC and HandleTable callouts.
@@ -148,10 +153,12 @@ static bool InitDLL(HANDLE hPalInstance)
 
     STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
 
+#ifdef FEATURE_PERFTRACING
     // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
     // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
     // EventPipe initialization, so this is done after the GC has been fully initialized.
     EventPipeAdapter_FinishInitialize();
+#endif
 
 #ifndef USE_PORTABLE_HELPERS
     if (!DetectCPUFeatures())
@@ -472,8 +479,10 @@ static void __cdecl OnProcessExit()
     Thread* currentThread = ThreadStore::RawGetCurrentThread();
     g_threadPerformingShutdown = currentThread;
 
+#ifdef FEATURE_PERFTRACING
     EventPipeAdapter_Shutdown();
     DiagnosticServerAdapter_Shutdown();
+#endif
 }
 #endif
 

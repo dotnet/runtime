@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: gcenv.base.h provides these definitions only if it has been included and windows.h
-// has not been included (even though though windows.h does not define these services); in
-// all other cases the services need to be defined here.
-
-#if !(defined(__GCENV_BASE_INCLUDED__) && !defined(_INC_WINDOWS))
+#ifndef __GCENV_BASE_INCLUDED__
 
 //
 // This macro returns val rounded up as necessary to be a multiple of alignment; alignment must be a power of 2
@@ -40,7 +36,7 @@ inline T* ALIGN_DOWN(T* val, uintptr_t alignment)
     return reinterpret_cast<T*>(ALIGN_DOWN(reinterpret_cast<uintptr_t>(val), alignment));
 }
 
-#endif // !(defined(__GCENV_BASE_INCLUDED__) && !defined(_INC_WINDOWS))
+#endif // !__GCENV_BASE_INCLUDED__
 
 inline bool IS_ALIGNED(uintptr_t val, uintptr_t alignment)
 {

@@ -49,9 +49,6 @@
 
 #endif // !_MSC_VER
 
-// defined in gcrhenv.cpp
-bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount);
-
 #ifndef _INC_WINDOWS
 //#ifndef DACCESS_COMPILE
 
@@ -103,6 +100,9 @@ typedef struct _GUID {
 } GUID;
 
 #define DECLARE_HANDLE(_name) typedef HANDLE _name
+
+// defined in gcrhenv.cpp
+bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t dwSwitchCount);
 
 struct FILETIME
 {
@@ -601,19 +601,6 @@ extern uint32_t g_RhNumberOfProcessors;
 #include "PalRedhawkFunctions.h"
 #endif // !_INC_WINDOWS
 #endif // !DACCESS_COMPILE
-
-// TODO: Duplicate the definition from PalRedhawkFunctions.h to allow the EventPipe code to
-// access PalEventWrite even though the PalRedhawkFunctions.h services are generally not
-// available in NativeAOT runtime contexts where windows.h has been included.
-#ifdef _INC_WINDOWS
-#ifdef BUILDING_SHARED_NATIVEAOT_EVENTPIPE_CODE
-extern "C" uint32_t __stdcall EventWrite(REGHANDLE, const EVENT_DESCRIPTOR *, uint32_t, EVENT_DATA_DESCRIPTOR *);
-inline uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4)
-{
-    return EventWrite(arg1, arg2, arg3, arg4);
-}
-#endif // BUILDING_SHARED_NATIVEAOT_EVENTPIPE_CODE
-#endif // _INC_WINDOWS
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.

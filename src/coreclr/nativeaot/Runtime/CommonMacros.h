@@ -62,11 +62,7 @@
 #endif
 #endif
 
-// TODO: gcenv.base.h provides these definitions only if it has been included and windows.h
-// has not been included (even though though windows.h does not define these services); in
-// all other cases the services need to be defined here.
-
-#if !defined(__GCENV_BASE_INCLUDED__)
+#ifndef __GCENV_BASE_INCLUDED__
 
 //
 // This macro returns val rounded up as necessary to be a multiple of alignment; alignment must be a power of 2
@@ -79,7 +75,7 @@ inline uintptr_t ALIGN_DOWN(uintptr_t val, uintptr_t alignment);
 template <typename T>
 inline T* ALIGN_DOWN(T* val, uintptr_t alignment);
 
-#endif // !defined(__GCENV_BASE_INCLUDED__)
+#endif // !__GCENV_BASE_INCLUDED__
 
 inline bool IS_ALIGNED(uintptr_t val, uintptr_t alignment);
 template <typename T>

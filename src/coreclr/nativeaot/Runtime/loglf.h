@@ -10,10 +10,8 @@ DEFINE_LOG_FACILITY(LF_GCALLOC      ,0x00000004)
 DEFINE_LOG_FACILITY(LF_GCROOTS      ,0x00000008)
 DEFINE_LOG_FACILITY(LF_STARTUP      ,0x00000010)  // Log startup and shutdown failures
 DEFINE_LOG_FACILITY(LF_STACKWALK    ,0x00000020)
-DEFINE_LOG_FACILITY(LF_DIAGNOSTICS_PORT, 0x00000040)
 //                  LF_ALWAYS        0x80000000   // make certain you don't try to use this bit for a real facility
 //                  LF_ALL           0xFFFFFFFF
 //
 #undef DEFINE_LOG_FACILITY
 
-#define INFINITE            0xFFFFFFFF  // Infinite timeout

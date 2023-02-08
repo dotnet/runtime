@@ -331,10 +331,10 @@ typedef DacScanCallbackData EnumGcRefScanContext;
 typedef void EnumGcRefCallbackFunc(PTR_PTR_Object, EnumGcRefScanContext* callbackData, uint32_t flags);
 
 #else // DACCESS_COMPILE
-#if !(defined(__GCENV_BASE_INCLUDED__) && !defined(FEATURE_PERFTRACING))
+#ifndef __GCENV_BASE_INCLUDED__
 struct ScanContext;
 typedef void promote_func(PTR_PTR_Object, ScanContext*, unsigned);
-#endif // !__GCENV_BASE_INCLUDED__ && FEATURE_PERFTRACING
+#endif // !__GCENV_BASE_INCLUDED__
 typedef promote_func EnumGcRefCallbackFunc;
 typedef ScanContext  EnumGcRefScanContext;
 
