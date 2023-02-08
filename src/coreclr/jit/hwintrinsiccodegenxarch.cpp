@@ -23,13 +23,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfo.h"
 #include "gcinfoencoder.h"
 
-// Please see the comment for these instance variables in `compiler.h`
-#if defined(TARGET_AMD64)
-#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
-#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
-#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
-#endif
-
 //------------------------------------------------------------------------
 // assertIsContainableHWIntrinsicOp: Asserts that op is containable by node
 //

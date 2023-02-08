@@ -7,13 +7,6 @@
 
 #ifdef TARGET_XARCH
 
-// Please see the comment for these instance variables in `compiler.h`
-#if defined(TARGET_AMD64)
-#define RBM_ALLFLOAT_USE (emitComp->rbmAllFloat)
-#define RBM_FLT_CALLEE_TRASH_USE (emitComp->rbmFltCalleeTrash)
-#define CNT_CALLEE_TRASH_FLOAT_USE (emitComp->cntCalleeTrashFloat)
-#endif
-
 /* static */
 inline bool emitter::instrIs3opImul(instruction ins)
 {
@@ -211,10 +204,6 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
 
     return id->idAddr()->iiaAddrMode.amDisp;
 }
-
-#undef RBM_ALLFLOAT_USE
-#undef RBM_FLT_CALLEE_TRASH_USE
-#undef CNT_CALLEE_TRASH_FLOAT_USE
 
 #endif // TARGET_XARCH
 

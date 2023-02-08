@@ -23,12 +23,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfoencoder.h"
 #include "patchpointinfo.h"
 
-#if defined(TARGET_AMD64)
-#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
-#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
-#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
-#endif
-
 //---------------------------------------------------------------------
 // genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.
 //

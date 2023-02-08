@@ -64,33 +64,6 @@ inline bool registerTypesEquivalent(RegisterType a, RegisterType b)
     return varTypeIsIntegralOrI(a) == varTypeIsIntegralOrI(b);
 }
 
-// Please see the comment for these instance variables in `compiler.h`
-#if defined(TARGET_AMD64)
-#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
-#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
-#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
-#endif
-
-//------------------------------------------------------------------------
-// calleeSaveRegs: Get the set of callee-save registers of the given RegisterType
-//
-inline regMaskTP calleeSaveRegs(RegisterType rt)
-{
-    return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_SAVED : RBM_FLT_CALLEE_SAVED;
-}
-
-//------------------------------------------------------------------------
-// callerSaveRegs: Get the set of caller-save registers of the given RegisterType
-//
-inline regMaskTP callerSaveRegs(RegisterType rt, Compiler* compiler)
-{
-    return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
-}
-
-#undef RBM_ALLFLOAT_USE
-#undef RBM_FLT_CALLEE_TRASH_USE
-#undef CNT_CALLEE_TRASH_FLOAT_USE
-
 //------------------------------------------------------------------------
 // RefInfo: Captures the necessary information for a definition that is "in-flight"
 //          during `buildIntervals` (i.e. a tree-node definition has been encountered,
@@ -1953,6 +1926,40 @@ private:
     int BuildPutArgSplit(GenTreePutArgSplit* tree);
 #endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
+
+#if defined(TARGET_AMD64)
+    regMaskTP get_RBM_ALLFLOAT() const
+    {
+        return compiler->rbmAllFloat;
+    }
+    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    {
+        return compiler->rbmFltCalleeTrash;
+    }
+    unsigned get_AVAILABLE_REG_COUNT() const
+    {
+        return compiler->availableRegCount;
+    }
+#endif // TARGET_AMD64
+
+    //------------------------------------------------------------------------
+    // calleeSaveRegs: Get the set of callee-save registers of the given RegisterType
+    //
+    // NOTE: we currently don't need a LinearScan `this` pointer for this definition, and some callers
+    // don't have one available, so make is static.
+    //
+    static regMaskTP calleeSaveRegs(RegisterType rt)
+    {
+        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_SAVED : RBM_FLT_CALLEE_SAVED;
+    }
+
+    //------------------------------------------------------------------------
+    // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
+    //
+    regMaskTP callerSaveRegs(RegisterType rt) const
+    {
+        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
+    }
 };
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2213,7 +2220,7 @@ public:
 
         if (preferCalleeSave)
         {
-            regMaskTP calleeSaveMask = (calleeSaveRegs(this->registerType) & (newPreferences));
+            regMaskTP calleeSaveMask = (LinearScan::calleeSaveRegs(this->registerType) & newPreferences);
             if (calleeSaveMask != RBM_NONE)
             {
                 newPreferences = calleeSaveMask;
@@ -2537,10 +2544,6 @@ public:
     void dump(LinearScan* linearScan);
 #endif // DEBUG
 };
-
-#ifdef DEBUG
-void dumpRegMask(regMaskTP regs, Compiler* compiler);
-#endif // DEBUG
 
 /*****************************************************************************/
 #endif //_LSRA_H_

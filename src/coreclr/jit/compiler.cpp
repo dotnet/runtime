@@ -3330,7 +3330,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmAllFloat         = RBM_ALLFLOAT_INIT;
     rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
     cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
-    actualRegCount      = ACTUAL_REG_COUNT;
+    availableRegCount   = ACTUAL_REG_COUNT;
 
     if (DoJitStressEvexEncoding())
     {
@@ -3340,7 +3340,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
     else
     {
-        actualRegCount -= CNT_HIGHFLOAT;
+        availableRegCount -= CNT_HIGHFLOAT;
     }
 #endif // TARGET_AMD64
 }
@@ -3544,6 +3544,37 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
         rejectThisPromo = (((info.compMethodHash() ^ lclNum) & 1) == 0);
     }
     return rejectThisPromo;
+}
+
+//------------------------------------------------------------------------
+// dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
+// a potentially large number of registers.
+//
+// Arguments:
+//   regs - The set of registers to display
+//
+void Compiler::dumpRegMask(regMaskTP regs) const
+{
+    if (regs == RBM_ALLINT)
+    {
+        printf("[allInt]");
+    }
+    else if (regs == (RBM_ALLINT & ~RBM_FPBASE))
+    {
+        printf("[allIntButFP]");
+    }
+    else if (regs == RBM_ALLFLOAT)
+    {
+        printf("[allFloat]");
+    }
+    else if (regs == RBM_ALLDOUBLE)
+    {
+        printf("[allDouble]");
+    }
+    else
+    {
+        dspRegMask(regs);
+    }
 }
 
 #endif // DEBUG

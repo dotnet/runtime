@@ -1973,6 +1973,11 @@ public:
     CORINFO_FIELD_HANDLE emitBlkConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types elemType);
 
 private:
+#if defined(TARGET_AMD64)
+    regMaskTP get_RBM_FLT_CALLEE_TRASH() const;
+    unsigned  get_AVAILABLE_REG_COUNT() const;
+#endif // TARGET_AMD64
+
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
     CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue);
     CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue);

@@ -21,14 +21,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "lsra.h"
 
-// Please see the comment for these instance variables in `compiler.h`
-#if defined(TARGET_AMD64)
-#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
-#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
-#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
-#define ACTUAL_REG_COUNT (compiler->actualRegCount)
-#endif
-
 //------------------------------------------------------------------------
 // RefInfoList
 //------------------------------------------------------------------------
@@ -1220,7 +1212,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                         // If there are no callee-saved registers, the call could kill all the registers.
                         // This is a valid state, so in that case assert should not trigger. The RA will spill in order
                         // to free a register later.
-                        assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType)) == RBM_NONE);
+                        assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType) == RBM_NONE));
                     }
                 }
             }
@@ -1879,7 +1871,7 @@ const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
 //
 void LinearScan::buildPhysRegRecords()
 {
-    for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* curr = &physRegs[reg];
         curr->init(reg);
@@ -3019,7 +3011,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         {
             printf("Last use of V%02u between PUTARG and CALL. Removing occupied arg regs from preferences: ",
                    compiler->lvaTrackedIndexToLclNum(varIndex));
-            dumpRegMask(unpref, this->compiler);
+            compiler->dumpRegMask(unpref);
             printf("\n");
         }
 #endif
