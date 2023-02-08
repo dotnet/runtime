@@ -7,7 +7,8 @@ parameters:
   _const_paths:
     _wasm_specific_only: [
         eng/testing/ProvisioningVersions.props
-        eng/testing/Was?Runner*
+        eng/testing/WasmRunner*
+        eng/testing/WasiRunner*
         eng/testing/scenarios/BuildWasmAppsJobsList.txt
         eng/testing/tests.browser.targets
         eng/testing/tests.was*.targets
