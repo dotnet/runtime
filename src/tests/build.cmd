@@ -70,19 +70,19 @@ set __BuildNeedTargetArg=
 if "%1" == "" goto ArgsDone
 
 @REM All arguments following this tag will be passed directly to msbuild (as unprocessed arguments)
-if /i "%1" == "--"                    (set processedArgs=!processedArgs! %1&shift&goto ArgsDone)
+if /i "%1" == "--"                       (set processedArgs=!processedArgs! %1&shift&goto ArgsDone)
 
 @REM The following arguments do not support '/', '-', or '--' prefixes
-if /i "%1" == "x64"                   (set __BuildArch=x64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "x86"                   (set __BuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "arm"                   (set __BuildArch=arm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "arm64"                 (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "x64"                      (set __BuildArch=x64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "x86"                      (set __BuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm"                      (set __BuildArch=arm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "arm64"                    (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "debug"                 (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "release"               (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "debug"                    (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "release"                  (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "checked"                  (set __BuildType=Checked&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "ci"                    (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "ci"                       (set __ArcadeScriptArgs="-ci"&set __ErrMsgPrefix=##vso[task.logissue type=error]&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM For the arguments below, we support '/', '-', and '--' prefixes.
 @REM But we also recognize them without prefixes at all. To achieve that,
@@ -134,9 +134,9 @@ if /i "%arg%" == "CMakeArgs"             (set __CMakeArgs="%2=%3" %__CMakeArgs%&
 @REM Obsolete arguments that now produce errors
 if /i "%arg%" == "BuildAgainstPackages"  (echo error: Remove /BuildAgainstPackages switch&&exit /b 1)
 
-@REM Any unrecognized argument will be unprocessed and passed to msbuild
-shift
-goto Arg_Loop
+@REM If we encounter an unrecognized argument, then all remaining arguments are passed directly to MSBuild
+@REM This allows '/p:LibrariesConfiguration=Release' and other arguments to be passed through without having
+@REM '/p:LibrariesConfiguration' and 'Release' get handled as separate arguments.
 
 :ArgsDone
 
