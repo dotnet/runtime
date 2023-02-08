@@ -118,6 +118,9 @@
   <ItemGroup>
     <!-- Allow running/debugging from VS -->
     <ProjectCapability Include="DotNetCoreWeb"/>
+
+    <SupportedPlatform Condition="'$(IsWasmProject)' == 'true'" Remove="@(SupportedPlatform)" />
+    <SupportedPlatform Condition="'$(IsWasmProject)' == 'true'" Include="browser" />
   </ItemGroup>
 
   <PropertyGroup Label="Identify app bundle directory to run from">
