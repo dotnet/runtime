@@ -5487,7 +5487,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 #ifdef TARGET_AMD64
     if (comp->opts.OptimizationEnabled() && (index != nullptr))
     {
-        if (index->OperIs(GT_CAST) && varTypeIsLong(index->AsCast()->CastToType()) && !varTypeIsLong(parent))
+        if (index->OperIs(GT_CAST) && varTypeIsLong(index->AsCast()->CastToType()))
         {
             GenTree* castOp = index->gtGetOp1();
             addrMode->SetIndex(castOp);
