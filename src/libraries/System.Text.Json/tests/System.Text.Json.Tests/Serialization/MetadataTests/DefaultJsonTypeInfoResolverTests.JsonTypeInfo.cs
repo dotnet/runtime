@@ -422,6 +422,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
             Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = null);
             Assert.Throws<InvalidOperationException>(() => typeInfo.PolymorphismOptions = new());
+            Assert.Throws<InvalidOperationException>(() => typeInfo.OriginatingResolver = new DefaultJsonTypeInfoResolver());
 
             if (typeInfo.Properties.Count > 0)
             {
@@ -1430,6 +1431,38 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonTypeInfo jsonTypeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, new());
             Assert.Throws<InvalidOperationException>(() => jsonTypeInfo.UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(Dictionary<int, string>))]
+        public static void DefaultJsonTypeInfo_OriginatingResolver_GetterReturnsResolver(Type type)
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            var options = new JsonSerializerOptions();
+
+            JsonTypeInfo typeInfo = resolver.GetTypeInfo(type, options);
+            Assert.Same(resolver, typeInfo.OriginatingResolver);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(int[]))]
+        [InlineData(typeof(Dictionary<int, string>))]
+        public static void OriginatingResolver_GetterReturnsTheSetValue(Type type)
+        {
+            var resolver = new DefaultJsonTypeInfoResolver();
+            var options = new JsonSerializerOptions();
+
+            JsonTypeInfo typeInfo = resolver.GetTypeInfo(type, options);
+            typeInfo.OriginatingResolver = null;
+            Assert.Null(typeInfo.OriginatingResolver);
+
+            typeInfo.OriginatingResolver = JsonSerializerOptions.Default.TypeInfoResolver;
+            Assert.Same(JsonSerializerOptions.Default.TypeInfoResolver, typeInfo.OriginatingResolver);
         }
     }
 }

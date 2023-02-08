@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -295,8 +296,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal PolymorphicTypeResolver? PolymorphicTypeResolver { get; private set; }
 
-        // Flag indicating that JsonTypeInfo<T>.SerializeHandler is populated and is compatible with the associated Options instance.
-        internal bool CanUseSerializeHandler { get; private protected set; }
+        // Indicates that SerializeHandler is populated.
+        internal bool HasSerializeHandler { get; private protected set; }
+
+        // Indicates that SerializeHandler is populated and is compatible with the associated contract metadata.
+        internal bool CanUseSerializeHandler { get; private set; }
 
         // Configure would normally have thrown why initializing properties for source gen but type had SerializeHandler
         // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
@@ -322,7 +326,14 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                return _elementTypeInfo;
+                Debug.Assert(_elementTypeInfo is null or { IsConfigurationStarted: true });
+                // Even though this instance has already been configured,
+                // it is possible for contending threads to call the property
+                // while the wider JsonTypeInfo graph is still being configured.
+                // Call EnsureConfigured() to force synchronization if necessary.
+                JsonTypeInfo? elementTypeInfo = _elementTypeInfo;
+                elementTypeInfo?.EnsureConfigured();
+                return elementTypeInfo;
             }
             set
             {
@@ -340,7 +351,14 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                return _keyTypeInfo;
+                Debug.Assert(_keyTypeInfo is null or { IsConfigurationStarted: true });
+                // Even though this instance has already been configured,
+                // it is possible for contending threads to call the property
+                // while the wider JsonTypeInfo graph is still being configured.
+                // Call EnsureConfigured() to force synchronization if necessary.
+                JsonTypeInfo? keyTypeInfo = _keyTypeInfo;
+                keyTypeInfo?.EnsureConfigured();
+                return keyTypeInfo;
             }
             set
             {
@@ -482,15 +500,56 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonUnmappedMemberHandling EffectiveUnmappedMemberHandling { get; private set; }
 
+        /// <summary>
+        /// Gets or sets the <see cref="IJsonTypeInfoResolver"/> from which this metadata instance originated.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
+        /// </exception>
+        /// <remarks>
+        /// Metadata used to determine the <see cref="JsonSerializerContext.GeneratedSerializerOptions"/>
+        /// configuration for the current metadata instance.
+        /// </remarks>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public IJsonTypeInfoResolver? OriginatingResolver
+        {
+            get => _originatingResolver;
+            set
+            {
+                VerifyMutable();
+
+                if (value is JsonSerializerContext)
+                {
+                    // The source generator uses this property setter to brand the metadata instance as user-unmodified.
+                    // Even though users could call the same property setter to unset this flag, this is generally speaking fine.
+                    // This flag is only used to determine fast-path invalidation, worst case scenario this would lead to a false negative.
+                    IsCustomized = false;
+                }
+
+                _originatingResolver = value;
+            }
+        }
+
+        private IJsonTypeInfoResolver? _originatingResolver;
+
         internal void VerifyMutable()
         {
             if (IsReadOnly)
             {
                 ThrowHelper.ThrowInvalidOperationException_TypeInfoImmutable();
             }
+
+            IsCustomized = true;
         }
 
+        /// <summary>
+        /// Indicates that the current JsonTypeInfo might contain user modifications.
+        /// Defaults to true, and is only unset by the built-in contract resolvers.
+        /// </summary>
+        internal bool IsCustomized { get; set; } = true;
+
         internal bool IsConfigured => _configurationState == ConfigurationState.Configured;
+        internal bool IsConfigurationStarted => _configurationState is not ConfigurationState.NotConfigured;
         private volatile ConfigurationState _configurationState;
         private enum ConfigurationState : byte { NotConfigured = 0, Configuring = 1, Configured = 2 };
 
@@ -544,7 +603,6 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(IsReadOnly);
 
             PropertyInfoForTypeInfo.Configure();
-            CanUseSerializeHandler &= Options.CanUseFastPathSerializationLogic;
 
             if (Kind == JsonTypeInfoKind.Object)
             {
@@ -568,11 +626,95 @@ namespace System.Text.Json.Serialization.Metadata
                 _keyTypeInfo.EnsureConfigured();
             }
 
+            DetermineIsCompatibleWithCurrentOptions();
+            CanUseSerializeHandler = HasSerializeHandler && IsCompatibleWithCurrentOptions;
+
             if (PolymorphismOptions != null)
             {
                 PolymorphicTypeResolver = new PolymorphicTypeResolver(this);
             }
         }
+
+        /// <summary>
+        /// Determines if the transitive closure of all JsonTypeInfo metadata referenced
+        /// by the current type (property types, key types, element types, ...) are
+        /// compatible with the settings as specified in JsonSerializerOptions.
+        /// </summary>
+        private void DetermineIsCompatibleWithCurrentOptions()
+        {
+            // Defines a recursive algorithm validating that the `IsCurrentNodeCompatible`
+            // predicate is valid for every node in the type graph. This method only checks
+            // the immediate children, with recursion being driven by the Configure() method.
+            // Therefore, this method must be called _after_ the child nodes have been configured.
+
+            Debug.Assert(IsReadOnly);
+            Debug.Assert(!IsConfigured);
+
+            if (!IsCurrentNodeCompatible())
+            {
+                IsCompatibleWithCurrentOptions = false;
+                return;
+            }
+
+            if (_properties != null)
+            {
+                foreach (JsonPropertyInfo property in _properties)
+                {
+                    Debug.Assert(property.IsConfigured);
+
+                    if (!property.IsPropertyTypeInfoConfigured)
+                    {
+                        // Either an ignored property or property is part of a cycle.
+                        // In both cases we can ignore these instances.
+                        continue;
+                    }
+
+                    if (!property.JsonTypeInfo.IsCompatibleWithCurrentOptions)
+                    {
+                        IsCompatibleWithCurrentOptions = false;
+                        return;
+                    }
+                }
+            }
+
+            if (_elementTypeInfo?.IsCompatibleWithCurrentOptions == false ||
+                _keyTypeInfo?.IsCompatibleWithCurrentOptions == false)
+            {
+                IsCompatibleWithCurrentOptions = false;
+                return;
+            }
+
+            Debug.Assert(IsCompatibleWithCurrentOptions);
+
+            // Defines the core predicate that must be checked for every node in the type graph.
+            bool IsCurrentNodeCompatible()
+            {
+                if (Options.CanUseFastPathSerializationLogic)
+                {
+                    // Simple case/backward compatibility: options uses a combination of compatible built-in converters.
+                    return true;
+                }
+
+                if (IsCustomized)
+                {
+                    // Return false if we have detected contract customization by the user.
+                    return false;
+                }
+
+                return OriginatingResolver switch
+                {
+                    JsonSerializerContext ctx => ctx.IsCompatibleWithGeneratedOptions(Options),
+                    DefaultJsonTypeInfoResolver => true, // generates default contracts by definition
+                    _ => false
+                };
+            }
+        }
+
+        /// <summary>
+        /// Holds the result of the above algorithm -- NB must default to true
+        /// to establish a base case for recursive types and any JsonIgnored property types.
+        /// </summary>
+        private bool IsCompatibleWithCurrentOptions { get; set; } = true;
 
 #if DEBUG
         internal string GetPropertyDebugInfo(ReadOnlySpan<byte> unescapedPropertyName)
