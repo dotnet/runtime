@@ -5488,7 +5488,8 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     if (comp->opts.OptimizationEnabled() && (index != nullptr))
     {
         if (index->OperIs(GT_CAST) && !index->gtOverflow() && (index->AsCast()->CastToType() == TYP_LONG) &&
-            varTypeIsIntegral(index->CastFromType()) && !varTypeIsLong(index->CastFromType()) && parent->OperIs(GT_IND))
+            varTypeIsIntegral(index->CastFromType()) && !varTypeIsLong(index->CastFromType()) &&
+            varTypeIsIntegral(targetType) && !varTypeIsLong(targetType))
         {
             GenTree* castOp = index->gtGetOp1();
             addrMode->SetIndex(castOp);
