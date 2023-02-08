@@ -6,7 +6,7 @@
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <IsPackable>true</IsPackable>
     <PackageDescription>Hosting and startup infrastructures for applications.</PackageDescription>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 
