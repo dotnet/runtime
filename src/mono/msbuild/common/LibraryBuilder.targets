@@ -6,6 +6,7 @@
           Condition="'$(RunAOTCompilation)' == 'true'">
 
     <PropertyGroup>
+      <_IsSharedLibrary>false</_IsSharedLibrary>
       <_IsSharedLibrary Condition="'$(NativeLib)' == 'shared'">true</_IsSharedLibrary>
     </PropertyGroup>
 

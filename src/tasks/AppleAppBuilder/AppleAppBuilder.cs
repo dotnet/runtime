@@ -330,8 +330,13 @@ public class AppleAppBuilderTask : Task
                 }
                 else
                 {
-                    string appDir = generator.BuildAppBundle(XcodeProjectPath, Optimized, StripSymbolTable, DevTeamProvisioning);
+                    string appDir = generator.BuildAppBundle(XcodeProjectPath, Optimized, DevTeamProvisioning);
                     AppBundlePath = Xcode.GetAppPath(appDir, XcodeProjectPath);
+
+                    if (StripSymbolTable)
+                    {
+                        generator.StripApp(XcodeProjectPath, AppBundlePath);
+                    }
 
                     generator.LogAppSize(AppBundlePath);
                 }

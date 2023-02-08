@@ -110,7 +110,7 @@ public class XcodeBuildApp : Task
     public override bool Execute()
     {
         Xcode project = new Xcode(Log, TargetOS, Arch);
-        string appDir = project.BuildAppBundle(XcodeProjectPath, Optimized, StripSymbolTable, DevTeamProvisioning);
+        string appDir = project.BuildAppBundle(XcodeProjectPath, Optimized, DevTeamProvisioning);
 
         string appPath = Xcode.GetAppPath(appDir, XcodeProjectPath);
         string newAppPath = Xcode.GetAppPath(DestinationFolder!, XcodeProjectPath);
@@ -118,7 +118,7 @@ public class XcodeBuildApp : Task
 
         if (StripSymbolTable)
         {
-            project.StripApp(newAppPath);
+            project.StripApp(XcodeProjectPath, newAppPath);
         }
 
         project.LogAppSize(newAppPath);
@@ -511,7 +511,7 @@ internal sealed class Xcode
     }
 
     public string BuildAppBundle(
-        string xcodePrjPath, bool optimized, bool stripSymbolTable, string? devTeamProvisioning = null)
+        string xcodePrjPath, bool optimized, string? devTeamProvisioning = null)
     {
         string sdk;
         var args = new StringBuilder();
@@ -619,7 +619,7 @@ internal sealed class Xcode
         Logger.LogMessage(MessageImportance.High, $"\nAPP size: {(appSize / 1000_000.0):0.#} Mb.\n");
     }
 
-    public void StripApp(string appPath)
+    public void StripApp(string xcodePrjPath, string appPath)
     {
         string filename = Path.GetFileNameWithoutExtension(appPath);
         Utils.RunProcess(Logger, "dsymutil", $"{appPath}/{filename} -o {Path.GetDirectoryName(xcodePrjPath)}/{filename}.dSYM", workingDir: Path.GetDirectoryName(appPath));
