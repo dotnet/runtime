@@ -20,7 +20,7 @@ namespace System.Text.Json
             {
                 newLines = 1;
                 data = data.Slice(0, lastLineFeedIndex);
-#if NET8_OR_GREATER
+#if NET8_0_OR_GREATER
                 newLines += data.Count(JsonConstants.LineFeed);
 #else
                 int pos;

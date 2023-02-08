@@ -471,6 +471,12 @@ export function generate_wasm_body (
                 builder.callImport("hashcode");
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
+            case MintOpcode.MINT_INTRINS_TRY_GET_HASHCODE:
+                builder.local("pLocals");
+                append_ldloca(builder, getArgU16(ip, 2));
+                builder.callImport("try_hash");
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                break;
             case MintOpcode.MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
                 builder.local("pLocals");
                 append_ldloca(builder, getArgU16(ip, 2));
