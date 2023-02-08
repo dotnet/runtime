@@ -47,8 +47,8 @@ jobs:
 
     # Linux musl arm64
     - ${{ if and(eq(parameters.platform, 'Linux_musl_arm64'), eq(parameters.jobParameters.isFullMatrix, true)) }}:
-      - (Alpine.313.Arm64.Open)ubuntu.1804.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-arm64v8-20210910135808-8a6f4f3
-      - (Alpine.314.Arm64.Open)ubuntu.1804.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8-20210910135810-8a6f4f3
+      - (Alpine.313.Arm64.Open)ubuntu.1804.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-arm64v8
+      - (Alpine.314.Arm64.Open)ubuntu.1804.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
