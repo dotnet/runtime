@@ -224,9 +224,12 @@ namespace System.Collections.Concurrent
         /// smaller.
         /// </remarks>
         private static int GetCapacityFromCollection(IEnumerable<KeyValuePair<TKey, TValue>> collection) =>
-            collection is ICollection<KeyValuePair<TKey, TValue>> c ? Math.Max(DefaultCapacity, c.Count) :
-            collection is IReadOnlyCollection<KeyValuePair<TKey, TValue>> rc ? Math.Max(DefaultCapacity, rc.Count) :
-            DefaultCapacity;
+            collection switch
+            {
+                ICollection<KeyValuePair<TKey, TValue>> c => Math.Max(DefaultCapacity, c.Count),
+                IReadOnlyCollection<KeyValuePair<TKey, TValue>> rc => Math.Max(DefaultCapacity, rc.Count),
+                _ => DefaultCapacity,
+            };
 
         /// <summary>Computes the hash code for the specified key using the dictionary's comparer.</summary>
         /// <param name="comparer">
@@ -1957,19 +1960,20 @@ namespace System.Collections.Concurrent
                     }
 
                     // Compute the new table size at least twice the previous table size.
+                    // Double the size of the buckets table and choose a prime that's at least as large.
                     bool maximizeTableSize = false;
-                    try
+                    newLength = tables._buckets.Length * 2;
+                    if (newLength < 0)
                     {
-                        // Double the size of the buckets table and choose a prime that's at least as large.
-                        newLength = HashHelpers.GetPrime(checked(tables._buckets.Length * 2));
+                        maximizeTableSize = true;
+                    }
+                    else
+                    {
+                        newLength = HashHelpers.GetPrime(newLength);
                         if (newLength > Array.MaxLength)
                         {
                             maximizeTableSize = true;
                         }
-                    }
-                    catch (OverflowException)
-                    {
-                        maximizeTableSize = true;
                     }
 
                     if (maximizeTableSize)
