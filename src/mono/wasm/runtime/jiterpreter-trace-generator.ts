@@ -198,9 +198,8 @@ export function generate_wasm_body (
                 break;
             }
             case MintOpcode.MINT_LOCALLOC: {
-                invalidate_local_range(getArgU16(ip, 1), 512);
                 // dest
-                append_ldloca(builder, getArgU16(ip, 1), true);
+                append_ldloca(builder, getArgU16(ip, 1));
                 // len
                 append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                 // frame
@@ -312,8 +311,7 @@ export function generate_wasm_body (
             }
             case MintOpcode.MINT_LDOBJ_VT: {
                 const size = getArgU16(ip, 3);
-                invalidate_local_range(getArgU16(ip, 1), size);
-                append_ldloca(builder, getArgU16(ip, 1), true);
+                append_ldloca(builder, getArgU16(ip, 1), size, true);
                 append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
                 append_memmove_dest_src(builder, size);
                 break;
@@ -321,7 +319,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_STOBJ_VT: {
                 const klass = get_imethod_data(frame, getArgU16(ip, 3));
                 append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
-                append_ldloca(builder, getArgU16(ip, 2), true);
+                append_ldloca(builder, getArgU16(ip, 2), 0, true);
                 builder.ptr_const(klass);
                 builder.callImport("value_copy");
                 break;
@@ -329,15 +327,15 @@ export function generate_wasm_body (
             case MintOpcode.MINT_STOBJ_VT_NOREF: {
                 const sizeBytes = getArgU16(ip, 3);
                 append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
-                append_ldloca(builder, getArgU16(ip, 2), true);
+                append_ldloca(builder, getArgU16(ip, 2), 0, true);
                 append_memmove_dest_src(builder, sizeBytes);
                 break;
             }
 
             case MintOpcode.MINT_STRLEN:
                 builder.block();
-                append_ldloca(builder, getArgU16(ip, 2), true);
-                append_ldloca(builder, getArgU16(ip, 1));
+                append_ldloca(builder, getArgU16(ip, 2), 0, true);
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
                 builder.callImport("strlen");
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
@@ -346,9 +344,9 @@ export function generate_wasm_body (
                 break;
             case MintOpcode.MINT_GETCHR:
                 builder.block();
-                append_ldloca(builder, getArgU16(ip, 2), true);
-                append_ldloca(builder, getArgU16(ip, 3), true);
-                append_ldloca(builder, getArgU16(ip, 1));
+                append_ldloca(builder, getArgU16(ip, 2), 0, true);
+                append_ldloca(builder, getArgU16(ip, 3), 0, true);
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
                 builder.callImport("getchr");
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
@@ -362,28 +360,30 @@ export function generate_wasm_body (
                 ) {
                 */
             case MintOpcode.MINT_GETITEM_SPAN:
-            case MintOpcode.MINT_GETITEM_LOCALSPAN:
+            case MintOpcode.MINT_GETITEM_LOCALSPAN: {
+                const elementSize = getArgI16(ip, 4);
                 // FIXME
                 builder.block();
                 // destination = &locals[1]
-                append_ldloca(builder, getArgU16(ip, 1));
+                append_ldloca(builder, getArgU16(ip, 1), elementSize, true);
                 if (opcode === MintOpcode.MINT_GETITEM_SPAN) {
                     // span = (MonoSpanOfVoid *)locals[2]
                     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
                 } else {
                     // span = (MonoSpanOfVoid)locals[2]
-                    append_ldloca(builder, getArgU16(ip, 2), true);
+                    append_ldloca(builder, getArgU16(ip, 2), 0);
                 }
                 // index = locals[3]
                 append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
                 // element_size = ip[4]
-                builder.i32_const(getArgI16(ip, 4));
+                builder.i32_const(elementSize);
                 builder.callImport("getspan");
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
                 append_bailout(builder, ip, BailoutReason.SpanOperationFailed);
                 builder.endBlock();
                 break;
+            }
 
             case MintOpcode.MINT_INTRINS_SPAN_CTOR: {
                 // if (len < 0) bailout
@@ -398,7 +398,7 @@ export function generate_wasm_body (
                 append_bailout(builder, ip, BailoutReason.SpanOperationFailed);
                 builder.endBlock();
                 // gpointer span = locals + ip [1];
-                append_ldloca(builder, getArgU16(ip, 1));
+                append_ldloca(builder, getArgU16(ip, 1), 16, true);
                 builder.local("math_lhs32", WasmOpcode.tee_local);
                 // *(gpointer*)span = ptr;
                 append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
@@ -412,13 +412,14 @@ export function generate_wasm_body (
                 break;
             }
             case MintOpcode.MINT_LD_DELEGATE_METHOD_PTR: {
-                append_ldloca(builder, getArgU16(ip, 1));
-                append_ldloca(builder, getArgU16(ip, 2));
+                // FIXME: ldloca invalidation size
+                append_ldloca(builder, getArgU16(ip, 1), 8, true);
+                append_ldloca(builder, getArgU16(ip, 2), 8, true);
                 builder.callImport("ld_del_ptr");
                 break;
             }
             case MintOpcode.MINT_LDTSFLDA: {
-                append_ldloca(builder, getArgU16(ip, 1));
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
                 // This value is unsigned but I32 is probably right
                 builder.ptr_const(getArgI32(ip, 2));
                 builder.callImport("ldtsflda");
@@ -434,8 +435,8 @@ export function generate_wasm_body (
             case MintOpcode.MINT_INTRINS_GET_TYPE:
                 builder.block();
                 // dest, src
-                append_ldloca(builder, getArgU16(ip, 1));
-                append_ldloca(builder, getArgU16(ip, 2), true);
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
+                append_ldloca(builder, getArgU16(ip, 2), 0);
                 builder.callImport("gettype");
                 // bailout if gettype failed
                 builder.appendU8(WasmOpcode.br_if);
@@ -446,9 +447,9 @@ export function generate_wasm_body (
             case MintOpcode.MINT_INTRINS_ENUM_HASFLAG: {
                 const klass = get_imethod_data(frame, getArgU16(ip, 4));
                 builder.ptr_const(klass);
-                append_ldloca(builder, getArgU16(ip, 1));
-                append_ldloca(builder, getArgU16(ip, 2), true);
-                append_ldloca(builder, getArgU16(ip, 3), true);
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
+                append_ldloca(builder, getArgU16(ip, 2), 0);
+                append_ldloca(builder, getArgU16(ip, 3), 0);
                 builder.callImport("hasflag");
                 break;
             }
@@ -463,27 +464,27 @@ export function generate_wasm_body (
             }
             case MintOpcode.MINT_INTRINS_GET_HASHCODE:
                 builder.local("pLocals");
-                append_ldloca(builder, getArgU16(ip, 2), true);
+                append_ldloca(builder, getArgU16(ip, 2), 0);
                 builder.callImport("hashcode");
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
             case MintOpcode.MINT_INTRINS_TRY_GET_HASHCODE:
                 builder.local("pLocals");
-                append_ldloca(builder, getArgU16(ip, 2), true);
+                append_ldloca(builder, getArgU16(ip, 2), 0);
                 builder.callImport("try_hash");
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
             case MintOpcode.MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
                 builder.local("pLocals");
-                append_ldloca(builder, getArgU16(ip, 2), true);
+                append_ldloca(builder, getArgU16(ip, 2), 0);
                 builder.callImport("hascsize");
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
             case MintOpcode.MINT_ARRAY_RANK: {
                 builder.block();
                 // dest, src
-                append_ldloca(builder, getArgU16(ip, 1));
-                append_ldloca(builder, getArgU16(ip, 2), true);
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
+                append_ldloca(builder, getArgU16(ip, 2), 0);
                 builder.callImport("array_rank");
                 // If the array was null we will bail out, otherwise continue
                 builder.appendU8(WasmOpcode.br_if);
@@ -501,8 +502,8 @@ export function generate_wasm_body (
             case MintOpcode.MINT_ISINST_INTERFACE: {
                 builder.block();
                 // dest, src
-                append_ldloca(builder, getArgU16(ip, 1));
-                append_ldloca(builder, getArgU16(ip, 2), true);
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
+                append_ldloca(builder, getArgU16(ip, 2), 0);
                 // klass
                 builder.ptr_const(get_imethod_data(frame, getArgU16(ip, 3)));
                 // opcode
@@ -521,8 +522,8 @@ export function generate_wasm_body (
                 // MonoVTable *vtable = (MonoVTable*)frame->imethod->data_items [ip [3]];
                 builder.ptr_const(get_imethod_data(frame, getArgU16(ip, 3)));
                 // dest, src
-                append_ldloca(builder, getArgU16(ip, 1));
-                append_ldloca(builder, getArgU16(ip, 2), true);
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
+                append_ldloca(builder, getArgU16(ip, 2), 0);
                 builder.i32_const(opcode === MintOpcode.MINT_BOX_VT ? 1 : 0);
                 builder.callImport("box");
                 break;
@@ -532,8 +533,8 @@ export function generate_wasm_body (
                 // MonoClass *c = (MonoClass*)frame->imethod->data_items [ip [3]];
                 builder.ptr_const(get_imethod_data(frame, getArgU16(ip, 3)));
                 // dest, src
-                append_ldloca(builder, getArgU16(ip, 1));
-                append_ldloca(builder, getArgU16(ip, 2), true);
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
+                append_ldloca(builder, getArgU16(ip, 2), 0);
                 builder.callImport("try_unbox");
                 // If the unbox operation succeeded, continue, otherwise bailout
                 builder.appendU8(WasmOpcode.br_if);
@@ -546,7 +547,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_NEWOBJ_INLINED: {
                 builder.block();
                 // MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
-                append_ldloca(builder, getArgU16(ip, 1));
+                append_ldloca(builder, getArgU16(ip, 1), 4, true);
                 builder.ptr_const(get_imethod_data(frame, getArgU16(ip, 2)));
                 // LOCAL_VAR (ip [1], MonoObject*) = o;
                 builder.callImport("newobj_i");
@@ -561,11 +562,11 @@ export function generate_wasm_body (
             case MintOpcode.MINT_NEWOBJ_VT_INLINED: {
                 const ret_size = getArgU16(ip, 3);
                 // memset (this_vt, 0, ret_size);
-                append_ldloca(builder, getArgU16(ip, 2));
+                append_ldloca(builder, getArgU16(ip, 2), ret_size, true);
                 append_memset_dest(builder, 0, ret_size);
                 // LOCAL_VAR (ip [1], gpointer) = this_vt;
                 builder.local("pLocals");
-                append_ldloca(builder, getArgU16(ip, 2));
+                append_ldloca(builder, getArgU16(ip, 2), ret_size, true);
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
             }
@@ -654,8 +655,8 @@ export function generate_wasm_body (
             case MintOpcode.MINT_CONV_OVF_U4_I4:
                 builder.block();
                 // dest, src
-                append_ldloca(builder, getArgU16(ip, 1));
-                append_ldloca(builder, getArgU16(ip, 2), true);
+                append_ldloca(builder, getArgU16(ip, 1), 8, true);
+                append_ldloca(builder, getArgU16(ip, 2), 0);
                 builder.i32_const(opcode);
                 builder.callImport("conv_ovf");
                 // If the conversion succeeded, continue, otherwise bailout
@@ -869,14 +870,18 @@ function append_stloc_tail (builder: WasmBuilder, offset: number, opcode: WasmOp
     invalidate_local(offset);
 }
 
-// Pass iAmBeingCarefulIPromise === true if you don't want to invalidate this local offset
-// Be absolutely certain you either are never writing to the address, or you invalidate it yourself
-function append_ldloca (builder: WasmBuilder, localOffset: number, iAmBeingCarefulIPromise?: boolean) {
+// Pass bytesInvalidated=0 if you are reading from the local and the address will never be
+//  used for writes
+// Pass transient=true if the address will not persist after use (so it can't be used to later
+//  modify the contents of this local)
+function append_ldloca (builder: WasmBuilder, localOffset: number, bytesInvalidated?: number, transient?: boolean) {
+    if (typeof (bytesInvalidated) !== "number")
+        bytesInvalidated = 512;
     // FIXME: We need to know how big this variable is so we can invalidate the whole space it occupies
-    if (iAmBeingCarefulIPromise !== true) {
-        invalidate_local_range(localOffset, 512);
+    if (bytesInvalidated > 0)
+        invalidate_local_range(localOffset, bytesInvalidated);
+    if ((bytesInvalidated > 0) && (transient !== true))
         addressTakenLocals.add(localOffset);
-    }
     builder.lea("pLocals", localOffset);
 }
 
@@ -888,7 +893,7 @@ function append_memset_local (builder: WasmBuilder, localOffset: number, value: 
         return;
 
     // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
-    append_ldloca(builder, localOffset);
+    append_ldloca(builder, localOffset, count, true);
     append_memset_dest(builder, value, count);
 }
 
@@ -899,8 +904,8 @@ function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: numb
         return true;
 
     // spec: pop n, pop s, pop d, copy n bytes from s to d
-    append_ldloca(builder, destLocalOffset);
-    append_ldloca(builder, sourceLocalOffset);
+    append_ldloca(builder, destLocalOffset, count, true);
+    append_ldloca(builder, sourceLocalOffset, 0);
     append_memmove_dest_src(builder, count);
 }
 
@@ -1222,7 +1227,7 @@ function emit_fieldop (
         case MintOpcode.MINT_LDFLD_VT: {
             const sizeBytes = getArgU16(ip, 4);
             // dest
-            append_ldloca(builder, localOffset);
+            append_ldloca(builder, localOffset, sizeBytes, true);
             // src
             builder.local("cknull_ptr");
             builder.i32_const(fieldOffset);
@@ -1237,7 +1242,7 @@ function emit_fieldop (
             builder.i32_const(fieldOffset);
             builder.appendU8(WasmOpcode.i32_add);
             // src = locals + ip [2]
-            append_ldloca(builder, localOffset);
+            append_ldloca(builder, localOffset, 0);
             builder.ptr_const(klass);
             builder.callImport("value_copy");
             return true;
@@ -1249,7 +1254,7 @@ function emit_fieldop (
             builder.i32_const(fieldOffset);
             builder.appendU8(WasmOpcode.i32_add);
             // src
-            append_ldloca(builder, localOffset);
+            append_ldloca(builder, localOffset, 0);
             append_memmove_dest_src(builder, sizeBytes);
             return true;
         }
@@ -1352,14 +1357,14 @@ function emit_sfieldop (
             // dest
             builder.ptr_const(pStaticData);
             // src
-            append_ldloca(builder, localOffset);
+            append_ldloca(builder, localOffset, 0);
             // FIXME: Use mono_gc_wbarrier_set_field_internal
             builder.callImport("copy_pointer");
             return true;
         case MintOpcode.MINT_LDSFLD_VT: {
             const sizeBytes = getArgU16(ip, 4);
             // dest
-            append_ldloca(builder, localOffset);
+            append_ldloca(builder, localOffset, sizeBytes, true);
             // src
             builder.ptr_const(pStaticData);
             append_memmove_dest_src(builder, sizeBytes);
@@ -2396,7 +2401,7 @@ function emit_indirectop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintO
         // Load destination address
         builder.local("cknull_ptr");
         // Load address of value so that copy_managed_pointer can grab it
-        append_ldloca(builder, valueVarIndex);
+        append_ldloca(builder, valueVarIndex, 0);
         builder.callImport("copy_pointer");
     } else {
         // Pre-load address for the store operation
@@ -2431,7 +2436,7 @@ function append_getelema1 (
     builder.local("temp_ptr");
 
     // (array, size, index) -> void*
-    append_ldloca(builder, objectOffset);
+    append_ldloca(builder, objectOffset, 0);
     builder.i32_const(elementSize);
     append_ldloc(builder, indexOffset, WasmOpcode.i32_load);
     builder.callImport("array_address");
@@ -2468,7 +2473,7 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
         case MintOpcode.MINT_LDLEN:
             append_local_null_check(builder, objectOffset, ip);
             builder.local("pLocals");
-            append_ldloca(builder, objectOffset);
+            append_ldloca(builder, objectOffset, 0);
             builder.callImport("array_length");
             append_stloc_tail(builder, valueOffset, WasmOpcode.i32_store);
             return true;
@@ -2560,10 +2565,10 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
     if (isPointer) {
         // Copy pointer to/from array element
         if (isLoad)
-            append_ldloca(builder, valueOffset);
+            append_ldloca(builder, valueOffset, 4, true);
         append_getelema1(builder, ip, objectOffset, indexOffset, elementSize);
         if (!isLoad)
-            append_ldloca(builder, valueOffset);
+            append_ldloca(builder, valueOffset, 4, true);
         builder.callImport("copy_pointer");
     } else if (isLoad) {
         // Pre-load destination for the value at the end
