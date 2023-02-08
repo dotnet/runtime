@@ -1045,21 +1045,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			EMIT_NEW_TEMPLOADA (cfg, span_addr, span->inst_c0);
 
 			MonoClassField* field_ref = mono_class_get_field_from_name_full (span->klass, "_reference", NULL);
-
-			// TODO: When OP_STOREP_MEMBASE_IMM works right, replace that entire construct with OP_STOREP_MEMBASE_IMM
-			#if TARGET_SIZEOF_VOID_P == 8
-				guint32 lo = (guint64)data_ptr & 0xffffffff;
-				guint32 hi = ((guint64)data_ptr >> 32) & 0xffffffff;
-				#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, lo);
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size + 4, hi);
-				#else
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size + 4, lo);
-					MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, hi);
-				#endif
-			#else
-				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_ref->offset - obj_size, (guint64)data_ptr);
-			#endif
+			MonoInst* ptr_inst;
+			EMIT_NEW_PCONST (cfg, ptr_inst, data_ptr); 
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, span_addr->dreg, field_ref->offset - obj_size, ptr_inst->dreg);
 
 			MonoClassField* field_len = mono_class_get_field_from_name_full (span->klass, "_length", NULL);
 			MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_len->offset - obj_size, num_elements);
