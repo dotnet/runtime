@@ -142,12 +142,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     bool bClock = false;
     Clockwork   cw;
 
-#ifdef HOST_WINDOWS
-    // SWI has requested that the exact form of the function call below be used. For details
-    // see http://swi/SWI%20Docs/Detecting%20Heap%20Corruption.doc
-    (void)HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-#endif
-
     memset(pwzInputFiles,0,1024*sizeof(WCHAR*));
     memset(pwzDeltaFiles,0,1024*sizeof(WCHAR*));
     memset(&cw,0,sizeof(Clockwork));

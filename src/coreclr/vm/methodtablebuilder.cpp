@@ -2009,7 +2009,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
 #endif //_DEBUG
 
-    STRESS_LOG3(LF_CLASSLOADER,  LL_INFO1000, "MethodTableBuilder: finished method table for module %p token %x = %pT \n",
+    STRESS_LOG3(LF_CLASSLOADER,  LL_INFO1000, "MTB:BMTT finished method table for module %p token %x = %p\n",
         pModule,
         GetCl(),
         GetHalfBakedMethodTable());
@@ -5116,7 +5116,7 @@ MethodTableBuilder::InitNewMethodDesc(
                    pMethod->GetMethodSignature().GetToken(),
                    pMethod->GetImplAttrs(),
                    pMethod->GetDeclAttrs(),
-                   FALSE,
+                   FALSE,    // fEnC
                    pMethod->GetRVA(),
                    GetMDImport(),
                    pName
@@ -6002,8 +6002,8 @@ MethodTableBuilder::InitMethodDesc(
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_EVERYTHING, "EEC::IMD: pNewMD:0x%x for tok:0x%x (%s::%s)\n",
-        pNewMD, tok, pszDebugClassName, pszDebugMethodName));
+    LOG((LF_CORDB, LL_EVERYTHING, "MTB::IMD: pNewMD:%p (%u) EnC: %s tok:%x (%s::%s)\n",
+        pNewMD, Classification, (fEnC ? "true" : "false"), tok, pszDebugClassName, pszDebugMethodName));
 
     // Now we know the classification we can perform any classification specific initialization.
 
@@ -6097,21 +6097,17 @@ MethodTableBuilder::InitMethodDesc(
         break;
 
     case mcInstantiated:
-#ifdef EnC_SUPPORTED
-        if (fEnC)
-        {
-            // We reuse the instantiated methoddescs to get the slot
-            InstantiatedMethodDesc* pNewIMD = (InstantiatedMethodDesc*) pNewMD;
-            pNewIMD->SetupEnCAddedMethod();
-        }
-        else
-#endif // EnC_SUPPORTED
         {
             // Initialize the typical instantiation.
-            InstantiatedMethodDesc* pNewIMD = (InstantiatedMethodDesc*) pNewMD;
+            InstantiatedMethodDesc* pNewIMD = pNewMD->AsInstantiatedMethodDesc();
+
             //data has the same lifetime as method table, use our allocator
-            pNewIMD->SetupGenericMethodDefinition(pIMDII, GetLoaderAllocator(), GetMemTracker(), GetModule(),
-                                                  tok);
+            pNewIMD->SetupGenericMethodDefinition(
+                pIMDII,
+                GetLoaderAllocator(),
+                GetMemTracker(),
+                GetModule(),
+                tok);
         }
         break;
 
@@ -6126,6 +6122,11 @@ MethodTableBuilder::InitMethodDesc(
 
     if (IsMdStatic(dwMemberAttrs))
         pNewMD->SetStatic();
+
+#ifdef EnC_SUPPORTED
+    if (fEnC)
+        pNewMD->SetIsEnCAddedMethod();
+#endif // EnC_SUPPORTED
 
 #ifdef _DEBUG
     // Mark as many methods as synchronized as possible.
@@ -6860,9 +6861,15 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
     SIZE_T sizeOfMethodDescs = 0; // current running size of methodDesc chunk
     int startIndex = 0; // start of the current chunk (index into bmtMethod array)
 
+    // Limit the maximum MethodDescs per chunk by the number of precodes that can fit to a single memory page,
+    // since we allocate consecutive temporary entry points for all MethodDescs in the whole chunk.
+    DWORD maxPrecodesPerPage = Precode::GetMaxTemporaryEntryPointsCount();
+    DWORD methodDescCount = 0;
+
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
+        DWORD currentSlotMethodDescCount = 1;
         int tokenRange = GetTokenRange(it.Token());
 
         // This code assumes that iterator returns tokens in ascending order. If this assumption does not hold,
@@ -6885,6 +6892,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         // See comment in AllocAndInitMethodDescChunk
         if (NeedsTightlyBoundUnboxingStub(*it))
         {
+            currentSlotMethodDescCount = 2;
             size *= 2;
 
             if (bmtGenerics->GetNumGenericArgs() == 0) {
@@ -6896,7 +6904,8 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         }
 
         if (tokenRange != currentTokenRange ||
-            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs)
+            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs ||
+            methodDescCount + currentSlotMethodDescCount > maxPrecodesPerPage)
         {
             if (sizeOfMethodDescs != 0)
             {
@@ -6906,9 +6915,11 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
 
             currentTokenRange = tokenRange;
             sizeOfMethodDescs = 0;
+            methodDescCount = 0;
         }
 
         sizeOfMethodDescs += size;
+        methodDescCount += currentSlotMethodDescCount;
     }
 
     if (sizeOfMethodDescs != 0)

@@ -141,6 +141,12 @@ dotnet_diagnostic.CA1816.severity = none
 # CA1834: Use 'StringBuilder.Append(char)'
 dotnet_diagnostic.CA1834.severity = none
 
+# CA1859: Change return type of method
+dotnet_diagnostic.CA1859.severity = none
+
+# CA1860: Prefer count to 0 rather than 'Any()'
+dotnet_diagnostic.CA1860.severity = none
+
 # RS2008 Ignore analyzer release tracking
 dotnet_diagnostic.RS2008.severity = none
 

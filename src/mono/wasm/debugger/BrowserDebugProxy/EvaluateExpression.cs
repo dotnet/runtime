@@ -24,7 +24,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal static class ExpressionEvaluator
+    internal static partial class ExpressionEvaluator
     {
         internal static Script<object> script = CSharpScript.Create(
             "",
@@ -33,9 +33,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 typeof(Enumerable).Assembly,
                 typeof(JObject).Assembly
                 ));
-        private sealed class ExpressionSyntaxReplacer : CSharpSyntaxWalker
+        private sealed partial class ExpressionSyntaxReplacer : CSharpSyntaxWalker
         {
-            private static Regex regexForReplaceVarName = new Regex(@"[^A-Za-z0-9_]", RegexOptions.Singleline);
+            [GeneratedRegex(@"[^A-Za-z0-9_]", RegexOptions.Singleline)]
+            private static partial Regex RegexForReplaceVarName();
+
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCalls = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
@@ -111,7 +113,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(ma_str, "_");
+                        string prefix = RegexForReplaceVarName().Replace(ma_str, "_");
                         id_name = $"{prefix}_{suffix}";
 
                         memberAccessToParamName[ma_str] = id_name;
@@ -128,7 +130,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(iesStr, "_");
+                        string prefix = RegexForReplaceVarName().Replace(iesStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         methodCallToParamName[iesStr] = id_name;
                     }
@@ -144,7 +146,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = regexForReplaceVarName.Replace(eaStr, "_");
+                        string prefix = RegexForReplaceVarName().Replace(eaStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         elementAccessToParamName[eaStr] = id_name;
                     }
@@ -300,7 +302,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static async Task<IList<JObject>> Resolve<T>(IList<T> collectionToResolve, MemberReferenceResolver resolver,
                                 Func<T, MemberReferenceResolver, CancellationToken, Task<JObject>> resolutionFunc, CancellationToken token)
         {
-            IList<JObject> values = new List<JObject>();
+            var values = new List<JObject>();
             foreach (T element in collectionToResolve)
                 values.Add(await resolutionFunc(element, resolver, token));
             return values;
@@ -393,7 +395,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(expression + @";", cancellationToken: token);
 
-            SyntaxNode expressionTree = syntaxTree.GetCompilationUnitRoot(token);
+            CompilationUnitSyntax expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
             ExpressionSyntaxReplacer replacer = new ExpressionSyntaxReplacer();
@@ -480,7 +482,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             get
             {
-                _error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
                 return _error;
             }
             set { }
@@ -504,8 +505,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     result = result,
                     exceptionDetails = new
                     {
-                        exception = result,
-                        stackTrace = StackTrace
+                        exception = result
                     }
                 }));
         }

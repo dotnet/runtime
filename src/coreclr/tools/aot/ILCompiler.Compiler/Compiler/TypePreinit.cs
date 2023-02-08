@@ -1428,7 +1428,7 @@ namespace ILCompiler
             return Status.Fail(methodIL.OwningMethod, "Control fell through");
         }
 
-        private static Value NewUninitializedLocationValue(TypeDesc locationType)
+        private static ValueTypeValue NewUninitializedLocationValue(TypeDesc locationType)
         {
             if (locationType.IsGCPointer || locationType.IsByRef)
             {
@@ -2420,7 +2420,7 @@ namespace ILCompiler
                 _offset = offset;
             }
 
-            public Value GetField(FieldDesc field)
+            public ValueTypeValue GetField(FieldDesc field)
             {
                 Debug.Assert(!field.IsStatic);
                 Debug.Assert(!field.FieldType.IsGCPointer);

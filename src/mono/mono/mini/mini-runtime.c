@@ -734,8 +734,13 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
  * nor does the C++ overload fmod (mono_fmod instead). These functions therefore
  * must be extern "C".
  */
+#ifdef DISABLE_JIT
+#define register_icall(func, sig, avoid_wrapper) \
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (avoid_wrapper), NULL))
+#else
 #define register_icall(func, sig, avoid_wrapper) \
 	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (avoid_wrapper), #func))
+#endif
 
 #define register_icall_no_wrapper(func, sig) register_icall (func, sig, TRUE)
 #define register_icall_with_wrapper(func, sig) register_icall (func, sig, FALSE)
@@ -4342,8 +4347,8 @@ init_class (MonoClass *klass)
 	 * The JIT can't handle SIMD types with != 16 size yet.
 	 */
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
-		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
-		if (!strcmp (name, "Vector4"))
+		// FIXME: Support Vector2/Vector3
+		if (!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
 	}
 #endif
@@ -4392,6 +4397,30 @@ mini_llvm_init (void)
 	return FALSE;
 #endif
 }
+
+#ifdef ENSURE_PRIMARY_STACK_SIZE
+/*++ 
+ Function: 
+   EnsureStackSize 
+  
+ Abstract: 
+   This fixes a problem on MUSL where the initial stack size reported by the 
+   pthread_attr_getstack is about 128kB, but this limit is not fixed and 
+   the stack can grow dynamically. The problem is that it makes the 
+   functions ReflectionInvocation::[Try]EnsureSufficientExecutionStack 
+   to fail for real life scenarios like e.g. compilation of corefx. 
+   Since there is no real fixed limit for the stack, the code below 
+   ensures moving the stack limit to a value that makes reasonable 
+   real life scenarios work. 
+  
+ --*/
+static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE void
+ensure_stack_size (size_t size)
+{
+	volatile uint8_t *s = (uint8_t *)g_alloca(size);
+	*s = 0;
+}
+#endif // ENSURE_PRIMARY_STACK_SIZE
 
 void
 mini_add_profiler_argument (const char *desc)
@@ -4547,12 +4576,19 @@ mini_init (const char *filename)
 	callbacks.get_jit_stats = get_jit_stats;
 	callbacks.get_exception_stats = get_exception_stats;
 	callbacks.init_class = init_class;
+	callbacks.get_trace = mono_get_trace;
+	callbacks.get_frame_info = mono_get_frame_info;
 
 	mono_install_callbacks (&callbacks);
 
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
 #endif
+
+#ifdef ENSURE_PRIMARY_STACK_SIZE 
+	// TODO: https://github.com/dotnet/runtime/issues/72920
+	ensure_stack_size (5 * 1024 * 1024);
+#endif // ENSURE_PRIMARY_STACK_SIZE
 
 	mono_thread_info_runtime_init (&ticallbacks);
 
@@ -4739,13 +4775,6 @@ mini_init (const char *filename)
 static void
 register_icalls (void)
 {
-	mono_add_internal_call_internal ("System.Diagnostics.StackFrame::get_frame_info",
-				ves_icall_get_frame_info);
-	mono_add_internal_call_internal ("System.Diagnostics.StackTrace::get_trace",
-				ves_icall_get_trace);
-	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_install_handlers",
-				mono_runtime_install_handlers);
-
 	/*
 	 * It's important that we pass `TRUE` as the last argument here, as
 	 * it causes the JIT to omit a wrapper for these icalls. If the JIT
@@ -4943,7 +4972,8 @@ register_icalls (void)
 	register_icall (mono_array_new_n_icall, mono_icall_sig_object_ptr_int_ptr, FALSE);
 	register_icall (mono_get_native_calli_wrapper, mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_resume_unwind, mono_icall_sig_void_ptr, TRUE);
-	register_icall (mono_gsharedvt_constrained_call, mono_icall_sig_object_ptr_ptr_ptr_ptr_ptr, FALSE);
+	register_icall (mono_gsharedvt_constrained_call, mono_icall_sig_object_ptr_ptr_ptr_ptr_ptr_ptr, FALSE);
+	register_icall (mono_gsharedvt_constrained_call_fast, mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_gsharedvt_value_copy, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 
 	//WARNING We do runtime selection here but the string *MUST* be to a fallback function that has same signature and behavior

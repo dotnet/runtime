@@ -509,7 +509,7 @@ inline CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(
     runtimeLookup.indirectSecondOffset = lookup.indirectSecondOffset != 0;
     for (int i                   = 0; i < CORINFO_MAXINDIRECTIONS; i++)
         runtimeLookup.offsets[i] = (size_t)lookup.offsets[i];
-    return CORINFO_RUNTIME_LOOKUP();
+    return runtimeLookup;
 }
 
 inline Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup)

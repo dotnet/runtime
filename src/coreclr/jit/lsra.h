@@ -709,7 +709,11 @@ public:
 
     void handleOutgoingCriticalEdges(BasicBlock* block);
 
-    void resolveEdge(BasicBlock* fromBlock, BasicBlock* toBlock, ResolveType resolveType, VARSET_VALARG_TP liveSet);
+    void resolveEdge(BasicBlock*      fromBlock,
+                     BasicBlock*      toBlock,
+                     ResolveType      resolveType,
+                     VARSET_VALARG_TP liveSet,
+                     regMaskTP        terminatorConsumedRegs);
 
     void resolveEdges();
 
@@ -1361,7 +1365,11 @@ private:
     // the block)
     VarToRegMap setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarToRegMap);
 
-    regNumber getTempRegForResolution(BasicBlock* fromBlock, BasicBlock* toBlock, var_types type);
+    regNumber getTempRegForResolution(BasicBlock*      fromBlock,
+                                      BasicBlock*      toBlock,
+                                      var_types        type,
+                                      VARSET_VALARG_TP sharedCriticalLiveSet,
+                                      regMaskTP        terminatorConsumedRegs);
 
 #ifdef TARGET_ARM64
     typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
