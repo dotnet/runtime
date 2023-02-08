@@ -469,8 +469,11 @@ ovr_tag_from_mono_vector_class (MonoClass *klass) {
 	case 16: ret |= INTRIN_vector128; break;
 	}
 
-	if (!strcmp ("Vector4", m_class_get_name (klass)) || !strcmp ("Vector2", m_class_get_name (klass)))
+	const char *class_name = m_class_get_name (klass);
+	if (!strcmp ("Vector2", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Quaternion", class_name) || !strcmp ("Plane", class_name)) {
+		// FIXME: Support Vector3
 		return ret | INTRIN_float32;
+	}
 
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	switch (etype->type) {
@@ -650,7 +653,7 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		return LLVMVectorType (LLVMFloatType (), 4);
 	} else if (!strcmp (klass_name, "Vector3")) {
 		return LLVMVectorType (LLVMFloatType (), 4);
-	} else if (!strcmp (klass_name, "Vector4")) {
+	} else if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
 		return LLVMVectorType (LLVMFloatType (), 4);
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
