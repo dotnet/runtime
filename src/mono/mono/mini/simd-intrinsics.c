@@ -1621,24 +1621,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (size != 16)
 			return NULL;
 
-		int intrins = -1;
 		switch (arg0_type) {
 		case MONO_TYPE_I2:
-			intrins = INTRINS_WASM_NARROW_SIGNED_V16;
-			break;
 		case MONO_TYPE_I4:
-			intrins = INTRINS_WASM_NARROW_SIGNED_V8;
-			break;
+		case MONO_TYPE_I8:
 		case MONO_TYPE_U2:
-			intrins = INTRINS_WASM_NARROW_UNSIGNED_V16;
-			break;
 		case MONO_TYPE_U4:
-			intrins = INTRINS_WASM_NARROW_UNSIGNED_V8;
-			break;
+		case MONO_TYPE_U8:
+			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_EXTRACT_NARROW, -1, -1, fsig, args);
 		}
-
-		if (intrins != -1)
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, intrins, arg0_type, fsig, args);
 
 		return NULL;
 #else
