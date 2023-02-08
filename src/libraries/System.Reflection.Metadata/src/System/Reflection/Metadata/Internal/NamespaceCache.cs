@@ -207,7 +207,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(realChild.HasFullName);
 
-#if NET8_OR_GREATER
+#if NET8_0_OR_GREATER
             int numberOfSegments = fullName.AsSpan().Count('.');
 #else
             int numberOfSegments = 0;
