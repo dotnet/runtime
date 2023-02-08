@@ -41,7 +41,7 @@ namespace ILCompiler
             }
         }
 
-        private IReadOnlyCollection<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
+        private List<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
         {
             List<ModuleDesc> assembliesWithInitializers = new List<ModuleDesc>();
 
@@ -263,7 +263,7 @@ namespace ILCompiler
             // Compile
             //
 
-            CompilationBuilder builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
+            var builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
             string compilationUnitPrefix = multiFile ? Path.GetFileNameWithoutExtension(outputFilePath) : "";
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);

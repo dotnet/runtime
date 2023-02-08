@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ILCompiler;
@@ -73,7 +74,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				compilationRoots.Add (new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode (descriptor));
 			}
 
-			ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches);
+			Logger logger = new Logger (
+				logWriter,
+				ilProvider,
+				isVerbose: true,
+				suppressedWarnings: Enumerable.Empty<int> (),
+				options.SingleWarn,
+				singleWarnEnabledModules: Enumerable.Empty<string> (),
+				singleWarnDisabledModules: Enumerable.Empty<string> (),
+				suppressedCategories: Enumerable.Empty<string> ());
+			
+      ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches);
 
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 

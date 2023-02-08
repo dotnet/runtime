@@ -37,9 +37,6 @@ namespace System.Text.Json
         /// </summary>
         private int _continuationCount;
 
-        // State cache when deserializing objects with parameterized constructors.
-        private List<ArgumentState>? _ctorArgStateCache;
-
         /// <summary>
         /// Bytes consumed in the current loop.
         /// </summary>
@@ -202,8 +199,6 @@ namespace System.Text.Json
                     Current = _stack[_count - 1];
                 }
             }
-
-            SetConstructorArgumentState();
         }
 
         /// <summary>
@@ -393,20 +388,7 @@ namespace System.Text.Json
         {
             if (Current.JsonTypeInfo.Converter.ConstructorIsParameterized)
             {
-                // A zero index indicates a new stack frame.
-                if (Current.CtorArgumentStateIndex == 0)
-                {
-                    _ctorArgStateCache ??= new List<ArgumentState>();
-
-                    var newState = new ArgumentState();
-                    _ctorArgStateCache.Add(newState);
-
-                    (Current.CtorArgumentStateIndex, Current.CtorArgumentState) = (_ctorArgStateCache.Count, newState);
-                }
-                else
-                {
-                    Current.CtorArgumentState = _ctorArgStateCache![Current.CtorArgumentStateIndex - 1];
-                }
+                Current.CtorArgumentState ??= new();
             }
         }
 

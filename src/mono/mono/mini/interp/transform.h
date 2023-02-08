@@ -23,6 +23,8 @@
 
 #define INTERP_LOCAL_FLAG_UNKNOWN_USE 32
 #define INTERP_LOCAL_FLAG_LOCAL_ONLY 64
+// We use this flag to avoid addition of align field in InterpLocal, for now
+#define INTERP_LOCAL_FLAG_SIMD 128
 
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
@@ -147,11 +149,12 @@ struct _InterpCallInfo {
 	// in the order they are pushed to the stack. This makes it easy to find
 	// all source vars for these types of opcodes. This is terminated with -1.
 	int *call_args;
+	int call_offset;
 	union {
 		// Array of call dependencies that need to be resolved before
 		GSList *call_deps;
-		// Stack call offset with call arguments
-		int call_offset;
+		// Stack end offset of call arguments
+		int call_end_offset;
 	};
 };
 

@@ -436,6 +436,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_longCnsMap(nullptr)
     , m_handleMap(nullptr)
     , m_embeddedToCompileTimeHandleMap(alloc)
+    , m_fieldAddressToFieldSeqMap(alloc)
     , m_floatCnsMap(nullptr)
     , m_doubleCnsMap(nullptr)
     , m_byrefCnsMap(nullptr)
@@ -6024,31 +6025,159 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
             case NI_LZCNT_LeadingZeroCount:
 #endif
             {
-                UINT32 cns = (UINT32)GetConstantInt32(arg0VN);
-                int    lzc = 0;
-                while (cns != 0)
-                {
-                    cns = cns >> 1;
-                    lzc++;
-                }
-                return VNForIntCon(32 - lzc);
+                assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+
+                int32_t  value  = GetConstantInt32(arg0VN);
+                uint32_t result = BitOperations::LeadingZeroCount(static_cast<uint32_t>(value));
+
+                return VNForIntCon(static_cast<int32_t>(result));
             }
 
 #ifdef TARGET_ARM64
             case NI_ArmBase_Arm64_LeadingZeroCount:
+            {
+                assert(varTypeIsInt(type));
+
+                int64_t  value  = GetConstantInt64(arg0VN);
+                uint32_t result = BitOperations::LeadingZeroCount(static_cast<uint64_t>(value));
+
+                return VNForIntCon(static_cast<int32_t>(result));
+            }
 #else
             case NI_LZCNT_X64_LeadingZeroCount:
-#endif
             {
-                UINT64 cns = (UINT64)GetConstantInt64(arg0VN);
-                int    lzc = 0;
-                while (cns != 0)
-                {
-                    cns = cns >> 1;
-                    lzc++;
-                }
-                return VNForIntCon(64 - lzc);
+                assert(varTypeIsLong(type));
+
+                int64_t  value  = GetConstantInt64(arg0VN);
+                uint32_t result = BitOperations::LeadingZeroCount(static_cast<uint64_t>(value));
+
+                return VNForLongCon(static_cast<int64_t>(result));
             }
+#endif
+
+#if defined(TARGET_ARM64)
+            case NI_ArmBase_ReverseElementBits:
+            {
+                assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+
+                int32_t  value  = GetConstantInt32(arg0VN);
+                uint32_t result = BitOperations::ReverseBits(static_cast<uint32_t>(value));
+
+                return VNForIntCon(static_cast<uint32_t>(result));
+            }
+
+            case NI_ArmBase_Arm64_ReverseElementBits:
+            {
+                assert(varTypeIsLong(type));
+
+                int64_t  value  = GetConstantInt64(arg0VN);
+                uint64_t result = BitOperations::ReverseBits(static_cast<uint64_t>(value));
+
+                return VNForLongCon(static_cast<int64_t>(result));
+            }
+#endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH)
+            case NI_BMI1_TrailingZeroCount:
+            {
+                assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+
+                int32_t  value  = GetConstantInt32(arg0VN);
+                uint32_t result = BitOperations::TrailingZeroCount(static_cast<uint32_t>(value));
+
+                return VNForIntCon(static_cast<int32_t>(result));
+            }
+
+            case NI_BMI1_X64_TrailingZeroCount:
+            {
+                assert(varTypeIsLong(type));
+
+                int64_t  value  = GetConstantInt64(arg0VN);
+                uint32_t result = BitOperations::TrailingZeroCount(static_cast<uint64_t>(value));
+
+                return VNForLongCon(static_cast<int64_t>(result));
+            }
+
+            case NI_POPCNT_PopCount:
+            {
+                assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+
+                int32_t  value  = GetConstantInt32(arg0VN);
+                uint32_t result = BitOperations::PopCount(static_cast<uint32_t>(value));
+
+                return VNForIntCon(static_cast<int32_t>(result));
+            }
+
+            case NI_POPCNT_X64_PopCount:
+            {
+                assert(varTypeIsLong(type));
+
+                int64_t  value  = GetConstantInt64(arg0VN);
+                uint32_t result = BitOperations::PopCount(static_cast<uint64_t>(value));
+
+                return VNForLongCon(static_cast<int64_t>(result));
+            }
+
+            case NI_X86Base_BitScanForward:
+            {
+                assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+                int32_t value = GetConstantInt32(arg0VN);
+
+                if (value == 0)
+                {
+                    // bsf is undefined for 0
+                    break;
+                }
+
+                uint32_t result = BitOperations::BitScanForward(static_cast<uint32_t>(value));
+                return VNForIntCon(static_cast<int32_t>(result));
+            }
+
+            case NI_X86Base_X64_BitScanForward:
+            {
+                assert(varTypeIsLong(type));
+                int64_t value = GetConstantInt64(arg0VN);
+
+                if (value == 0)
+                {
+                    // bsf is undefined for 0
+                    break;
+                }
+
+                uint32_t result = BitOperations::BitScanForward(static_cast<uint64_t>(value));
+                return VNForLongCon(static_cast<int64_t>(result));
+            }
+
+            case NI_X86Base_BitScanReverse:
+            {
+                assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
+                int32_t value = GetConstantInt32(arg0VN);
+
+                if (value == 0)
+                {
+                    // bsr is undefined for 0
+                    break;
+                }
+
+                uint32_t result = BitOperations::BitScanReverse(static_cast<uint32_t>(value));
+                return VNForIntCon(static_cast<int32_t>(result));
+            }
+
+            case NI_X86Base_X64_BitScanReverse:
+            {
+                assert(varTypeIsLong(type));
+                int64_t value = GetConstantInt64(arg0VN);
+
+                if (value == 0)
+                {
+                    // bsr is undefined for 0
+                    break;
+                }
+
+                uint32_t result = BitOperations::BitScanReverse(static_cast<uint64_t>(value));
+                return VNForLongCon(static_cast<int64_t>(result));
+            }
+#endif // TARGET_XARCH
 
             default:
                 break;
@@ -7433,9 +7562,9 @@ struct ValueNumberState
                 }
 
                 bool allNonLoopPredsDone = true;
-                for (flowList* pred = m_comp->BlockPredsWithEH(cand); pred != nullptr; pred = pred->flNext)
+                for (FlowEdge* pred = m_comp->BlockPredsWithEH(cand); pred != nullptr; pred = pred->getNextPredEdge())
                 {
-                    BasicBlock* predBlock = pred->getBlock();
+                    BasicBlock* predBlock = pred->getSourceBlock();
                     if (!m_comp->optLoopTable[lnum].lpContains(predBlock))
                     {
                         if (!GetVisitBit(predBlock->bbNum, BVB_complete))
@@ -7490,9 +7619,9 @@ struct ValueNumberState
 #endif // DEBUG_VN_VISIT
 
             bool allPredsVisited = true;
-            for (flowList* pred = m_comp->BlockPredsWithEH(succ); pred != nullptr; pred = pred->flNext)
+            for (FlowEdge* pred = m_comp->BlockPredsWithEH(succ); pred != nullptr; pred = pred->getNextPredEdge())
             {
-                BasicBlock* predBlock = pred->getBlock();
+                BasicBlock* predBlock = pred->getSourceBlock();
                 if (!GetVisitBit(predBlock->bbNum, BVB_complete))
                 {
                     allPredsVisited = false;
@@ -8009,9 +8138,9 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
     // use a new unique VN.
     BasicBlock* nonLoopPred          = nullptr;
     bool        multipleNonLoopPreds = false;
-    for (flowList* pred = BlockPredsWithEH(entryBlock); pred != nullptr; pred = pred->flNext)
+    for (FlowEdge* pred = BlockPredsWithEH(entryBlock); pred != nullptr; pred = pred->getNextPredEdge())
     {
-        BasicBlock* predBlock = pred->getBlock();
+        BasicBlock* predBlock = pred->getSourceBlock();
         if (!optLoopTable[loopNum].lpContains(predBlock))
         {
             if (nonLoopPred == nullptr)
@@ -8254,12 +8383,20 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         case TYP_BOOL:
             if (tree->IsIconHandle())
             {
-                const ssize_t embeddedHandle = tree->AsIntCon()->IconValue();
-                tree->gtVNPair.SetBoth(vnStore->VNForHandle(embeddedHandle, tree->GetIconHandleFlag()));
-                if (tree->GetIconHandleFlag() == GTF_ICON_CLASS_HDL)
+                const GenTreeIntCon* cns         = tree->AsIntCon();
+                const GenTreeFlags   handleFlags = tree->GetIconHandleFlag();
+                tree->gtVNPair.SetBoth(vnStore->VNForHandle(cns->IconValue(), handleFlags));
+                if (handleFlags == GTF_ICON_CLASS_HDL)
                 {
-                    const ssize_t compileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
-                    vnStore->AddToEmbeddedHandleMap(embeddedHandle, compileTimeHandle);
+                    vnStore->AddToEmbeddedHandleMap(cns->IconValue(), cns->gtCompileTimeHandle);
+                }
+                else if ((handleFlags == GTF_ICON_STATIC_HDL) && (cns->gtFieldSeq != nullptr) &&
+                         (cns->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+                {
+                    assert(cns->IconValue() == cns->gtFieldSeq->GetOffset());
+
+                    // For now we're interested only in SimpleStaticKnownAddress
+                    vnStore->AddToFieldAddressToFieldSeqMap(cns->gtVNPair.GetLiberal(), cns->gtFieldSeq);
                 }
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
@@ -8570,13 +8707,13 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
         ValueNum op1vn = op1->gtVNPair.GetLiberal();
         ValueNum op2vn = op2->gtVNPair.GetLiberal();
 
-        if (!op1->IsIconHandle(GTF_ICON_STATIC_HDL) && op1->gtVNPair.BothEqual() && vnStore->IsVNConstant(op1vn) &&
+        if (op1->gtVNPair.BothEqual() && vnStore->IsVNConstant(op1vn) && !vnStore->IsVNHandle(op1vn) &&
             varTypeIsIntegral(vnStore->TypeOfVN(op1vn)))
         {
             val += vnStore->CoercedConstantValue<ssize_t>(op1vn);
             tree = op2;
         }
-        else if (!op2->IsIconHandle(GTF_ICON_STATIC_HDL) && op2->gtVNPair.BothEqual() && vnStore->IsVNConstant(op2vn) &&
+        else if (op2->gtVNPair.BothEqual() && vnStore->IsVNConstant(op2vn) && !vnStore->IsVNHandle(op2vn) &&
                  varTypeIsIntegral(vnStore->TypeOfVN(op2vn)))
         {
             val += vnStore->CoercedConstantValue<ssize_t>(op2vn);
@@ -8590,12 +8727,20 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     }
 
     // Base address is expected to be static field's address
-    if ((tree->IsCnsIntOrI()) && (tree->AsIntCon()->gtFieldSeq != nullptr) &&
-        (tree->AsIntCon()->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+    ValueNum treeVN = tree->gtVNPair.GetLiberal();
+    if (tree->gtVNPair.BothEqual() && vnStore->IsVNHandle(treeVN) &&
+        (vnStore->GetHandleFlags(treeVN) == GTF_ICON_STATIC_HDL))
     {
-        *pFseq      = tree->AsIntCon()->gtFieldSeq;
-        *byteOffset = tree->AsIntCon()->IconValue() + val - tree->AsIntCon()->gtFieldSeq->GetOffset();
-        return true;
+        FieldSeq* fldSeq = vnStore->GetFieldSeqFromAddress(treeVN);
+        if (fldSeq != nullptr)
+        {
+            assert(fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
+            assert(fldSeq->GetOffset() == vnStore->CoercedConstantValue<ssize_t>(treeVN));
+
+            *pFseq      = fldSeq;
+            *byteOffset = val;
+            return true;
+        }
     }
     return false;
 }
@@ -8625,12 +8770,12 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     ssize_t   byteOffset = 0;
     FieldSeq* fieldSeq   = nullptr;
-    if ((varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
         int                  size           = (int)genTypeSize(tree->TypeGet());
-        const int            maxElementSize = sizeof(int64_t);
+        const int            maxElementSize = 32; // SIMD32
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
@@ -8640,7 +8785,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                 switch (tree->TypeGet())
                 {
 #define READ_VALUE(typ)                                                                                                \
-    typ val = 0;                                                                                                       \
+    typ val = {};                                                                                                      \
     memcpy(&val, buffer, sizeof(typ));
 
                     case TYP_BOOL:
@@ -8704,7 +8849,36 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                         tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(val));
                         return true;
                     }
+#if defined(FEATURE_SIMD)
+                    case TYP_SIMD8:
+                    {
+                        READ_VALUE(simd8_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(val));
+                        return true;
+                    }
+                    case TYP_SIMD12:
+                    {
+                        READ_VALUE(simd12_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(val));
+                        return true;
+                    }
+                    case TYP_SIMD16:
+                    {
+                        READ_VALUE(simd16_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(val));
+                        return true;
+                    }
+#if defined(TARGET_XARCH)
+                    case TYP_SIMD32:
+                    {
+                        READ_VALUE(simd32_t);
+                        tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(val));
+                        return true;
+                    }
+#endif
+#endif
                     default:
+                        assert(!varTypeIsSIMD(tree));
                         break;
                 }
             }
@@ -8712,7 +8886,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     }
 
     // Throughput check, the logic below is only for USHORT (char)
-    if (!tree->TypeIs(TYP_USHORT))
+    if (!tree->OperIs(GT_IND) || !tree->TypeIs(TYP_USHORT))
     {
         return false;
     }
@@ -9070,7 +9244,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // Note VNF_PtrToStatic statics are currently always "simple".
                     fgValueNumberFieldLoad(tree, /* baseAddr */ nullptr, fldSeq, offset);
                 }
-                else if (tree->OperIs(GT_IND) && fgValueNumberConstLoad(tree->AsIndir()))
+                else if (tree->OperIs(GT_IND, GT_BLK, GT_OBJ) && fgValueNumberConstLoad(tree->AsIndir()))
                 {
                     // VN is assigned inside fgValueNumberConstLoad
                 }
@@ -9769,6 +9943,13 @@ ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
                                   bool      srcIsUnsigned,    /* = false */
                                   bool      hasOverflowCheck) /* = false */
 {
+
+    if ((castFromType == TYP_I_IMPL) && (castToType == TYP_BYREF) && IsVNHandle(srcVN))
+    {
+        // Omit cast for (h)CNS_INT [TYP_I_IMPL -> TYP_BYREF]
+        return srcVN;
+    }
+
     // The resulting type after performing the cast is always widened to a supported IL stack size
     var_types resultType = genActualType(castToType);
 
@@ -9808,8 +9989,9 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
                                           bool         srcIsUnsigned,    /* = false */
                                           bool         hasOverflowCheck) /* = false */
 {
-    ValueNum srcLibVN  = srcVNPair.GetLiberal();
-    ValueNum srcConVN  = srcVNPair.GetConservative();
+    ValueNum srcLibVN = srcVNPair.GetLiberal();
+    ValueNum srcConVN = srcVNPair.GetConservative();
+
     ValueNum castLibVN = VNForCast(srcLibVN, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
     ValueNum castConVN;
 

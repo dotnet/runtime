@@ -51,16 +51,9 @@ namespace System.Text.Json.Serialization
 
         private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Value;
 
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal sealed override JsonTypeInfo CreateReflectionJsonTypeInfo(JsonSerializerOptions options)
+        internal sealed override JsonTypeInfo CreateJsonTypeInfo(JsonSerializerOptions options)
         {
-            return new ReflectionJsonTypeInfo<T>(this, options);
-        }
-
-        internal sealed override JsonTypeInfo CreateCustomJsonTypeInfo(JsonSerializerOptions options)
-        {
-            return new CustomJsonTypeInfo<T>(this, options);
+            return new JsonTypeInfo<T>(this, options);
         }
 
         internal sealed override JsonParameterInfo CreateJsonParameterInfo()

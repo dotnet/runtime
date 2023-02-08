@@ -6,6 +6,8 @@
 
   <PropertyGroup>
     <_WasmBuildNativeCoreDependsOn>
+      _WasmAotCompileApp;
+      _WasmStripAOTAssemblies;
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
       _GenerateManagedToNative;
@@ -188,7 +190,7 @@
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
-      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">536870912</EmccInitialHeapSize>
+      <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
     </PropertyGroup>
 
     <ItemGroup>
@@ -230,11 +232,6 @@
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLDFlags Include="-s ASSERTIONS=$(_EmccAssertionLevelDefault)" Condition="'$(_WasmDevel)' == 'true'" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
-      <_EmccLDSFlags Include="-Wl,--allow-undefined" />
-      <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
-
-      <!-- ILLinker should have removed unused imports, so error for Publish -->
-      <_EmccLDSFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
 
       <_DriverCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
       <_DriverCDependencies Include="$(_DriverGenCPath)" Condition="'$(_DriverGenCNeeded)' == 'true'" />
@@ -264,6 +261,15 @@
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(WasmAllowUndefinedSymbols)' == 'true'">
+      <_EmccLDSFlags Include="-Wl,--allow-undefined" />
+      <_EmccLDSFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmAllowUndefinedSymbols)' != 'true'">
+      <_EmccLDSFlags Include="-s LLD_REPORT_UNDEFINED" />
+      <_EmccLDSFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=1" />
     </ItemGroup>
 
     <Error Text="Could not find NativeFileReference %(NativeFileReference.Identity)" Condition="'%(NativeFileReference.Identity)' != '' and !Exists(%(NativeFileReference.Identity))" />
@@ -372,7 +378,39 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmWriteRspFilesForLinking" DependsOnTargets="_CheckEmccIsExpectedVersion">
+  <Target Name="_WasmCalculateInitialHeapSize" 
+      Condition="'$(EmccInitialHeapSize)' == ''"
+      DependsOnTargets="_CheckEmccIsExpectedVersion">
+    <ItemGroup>
+      <_AOTObjectFile Include="%(_BitcodeFile.ObjectFile)" />
+    </ItemGroup>
+
+    <!-- for AOT builds we use llvm-size tool to collect size of the DATA segment in each object file -->
+    <Exec Command="llvm-size$(_ExeExt) -d --format=sysv @(_AOTObjectFile, ' ')"
+          Condition="'$(_WasmShouldAOT)' == 'true'"
+          IgnoreStandardErrorWarningFormat="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="low" StandardErrorImportance="low"
+          EnvironmentVariables="@(EmscriptenEnvVars)" >
+      <Output TaskParameter="ConsoleOutput" ItemName="LlvmAotSizeOutput" />
+    </Exec>
+    <ItemGroup Condition="'$(_WasmShouldAOT)' == 'true'">
+      <_AOTDataSegmentSize Condition="$([System.String]::Copy('%(LlvmAotSizeOutput.Identity)').StartsWith('DATA '))"
+        Include="$([System.String]::Copy('%(LlvmAotSizeOutput.Identity)').Replace(&quot;DATA &quot;, &quot;&quot;).Replace(&quot; 0&quot;, &quot;&quot;).Trim())" />
+    </ItemGroup>
+
+    <WasmCalculateInitialHeapSize
+        Assemblies="@(WasmAssembliesToBundle)"
+        AOTDataSegmentSizes="@(_AOTDataSegmentSize)">
+      <Output TaskParameter="InitialHeapSize" PropertyName="_WasmCalculatedInitialHeapSize" />
+    </WasmCalculateInitialHeapSize>
+    <PropertyGroup>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == '' and '$(_WasmCalculatedInitialHeapSize)' != '' and $(_WasmCalculatedInitialHeapSize) > 16777216">$(_WasmCalculatedInitialHeapSize)</EmccInitialHeapSize>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">16777216</EmccInitialHeapSize>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_WasmWriteRspFilesForLinking" DependsOnTargets="_CheckEmccIsExpectedVersion;_WasmCalculateInitialHeapSize">
     <PropertyGroup>
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>
@@ -383,6 +421,8 @@
     </PropertyGroup>
     <ItemGroup>
       <!-- order matters -->
+      <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
+
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
 
@@ -428,7 +468,10 @@
     <Message Text="Linking for initial memory %24(EmccInitialHeapSize)=$(EmccInitialHeapSize) bytes. Set this msbuild property to change the value." Importance="High" />
     <Message Text="Linking with emcc with $(EmccLinkOptimizationFlag). This may take a while ..." Importance="High" />
     <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
-    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccDefaultLinkFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccDefaultLinkFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMSBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_EmccLinkStepConsoleOutput" />
+      <Output TaskParameter="ExitCode" PropertyName="_EmccLinkStepExitCode" />
+    </Exec>
     <ItemGroup>
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.wasm" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.js" />
@@ -445,6 +488,12 @@
           Condition="'$(WasmNativeStrip)' == 'true'"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(EmscriptenEnvVars)" />
+
+    <OnError ExecuteTargets="_OnError_WasmLinkDotNet_UndefinedSymbols"
+             Condition="'$(WasmAllowUndefinedSymbols)' != 'true' and '$(_EmccLinkStepExitCode)' != '0' and $([System.Text.RegularExpressions.Regex]::IsMatch($(_EmccLinkStepConsoleOutput), 'wasm-ld *: *error *:.*undefined symbol:'))" />
+  </Target>
+  <Target Name="_OnError_WasmLinkDotNet_UndefinedSymbols">
+    <Error Text="Use '-p:WasmAllowUndefinedSymbols=true' to allow undefined symbols" />
   </Target>
 
   <Target Name="_CompleteWasmBuildNative">
