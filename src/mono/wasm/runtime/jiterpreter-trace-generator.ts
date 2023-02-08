@@ -13,7 +13,8 @@ import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder,
     copyIntoScratchBuffer, append_memset_dest,
-    append_memmove_dest_src, try_append_memset_fast, try_append_memmove_fast
+    append_memmove_dest_src, try_append_memset_fast,
+    try_append_memmove_fast, counters
 } from "./jiterpreter-support";
 import {
     offsetOfDataItems, offsetOfImethod,
@@ -913,6 +914,7 @@ function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: numb
 function append_local_null_check (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr) {
     if (knownNotNull.has(localOffset)) {
         // console.log(`skipping null check for ${localOffset}`);
+        counters.nullChecksEliminated++;
         return;
     }
 
@@ -922,13 +924,14 @@ function append_local_null_check (builder: WasmBuilder, localOffset: number, ip:
     builder.appendULeb(0);
     append_bailout(builder, ip, BailoutReason.NullCheck);
     builder.endBlock();
-    if (!addressTakenLocals.has(localOffset))
+    if (!addressTakenLocals.has(localOffset) && builder.options.eliminateNullChecks)
         knownNotNull.add(localOffset);
 }
 
 // Loads the specified i32 value and then bails out if it is null, leaving it in the cknull_ptr local.
 function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr, leaveOnStack: boolean) {
     if (knownNotNull.has(localOffset)) {
+        counters.nullChecksEliminated++;
         if (cknullOffset === localOffset) {
             // console.log(`cknull_ptr already contains ${localOffset}`);
             if (leaveOnStack)
@@ -952,7 +955,7 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
     if (leaveOnStack)
         builder.local("cknull_ptr");
 
-    if (!addressTakenLocals.has(localOffset)) {
+    if (!addressTakenLocals.has(localOffset) && builder.options.eliminateNullChecks) {
         knownNotNull.add(localOffset);
         cknullOffset = localOffset;
     }
@@ -1220,8 +1223,10 @@ function emit_fieldop (
                 builder.appendLeb(0);
                 append_bailout(builder, ip, BailoutReason.NullCheck);
                 builder.endBlock();
-            } else
+            } else {
+                counters.nullChecksEliminated++;
                 builder.appendU8(WasmOpcode.drop);
+            }
             return true;
         }
         case MintOpcode.MINT_LDFLD_VT: {

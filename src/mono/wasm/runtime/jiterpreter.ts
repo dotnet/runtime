@@ -844,8 +844,8 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
     if (!mostRecentOptions.enableStats && (b !== undefined))
         return;
 
-    console.log(`// generated: ${counters.bytesGenerated} wasm bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
-    console.log(`// time spent: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm`);
+    console.log(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
+    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated`);
     if (concise)
         return;
 
