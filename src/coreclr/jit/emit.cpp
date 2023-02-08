@@ -20,14 +20,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
-// Please see the comment for these instance variables in `compiler.h`
-#if defined(TARGET_AMD64)
-#define RBM_ALLFLOAT_USE (emitComp->rbmAllFloat)
-#define RBM_FLT_CALLEE_TRASH_USE (emitComp->rbmFltCalleeTrash)
-#define CNT_CALLEE_TRASH_FLOAT_USE (emitComp->cntCalleeTrashFloat)
-#define ACTUAL_REG_COUNT (emitComp->actualRegCount)
-#endif
-
 /*****************************************************************************
  *
  *  Represent an emitter location.
@@ -106,6 +98,17 @@ void emitLocation::Print(LONG compMethodID) const
     printf("(G_M%03u_IG%02u,ins#%d,ofs#%d)", compMethodID, ig->igNum, insNum, insOfs);
 }
 #endif // DEBUG
+
+#if defined(TARGET_AMD64)
+inline regMaskTP emitter::get_RBM_FLT_CALLEE_TRASH() const
+{
+    return emitComp->rbmFltCalleeTrash;
+}
+inline unsigned emitter::get_AVAILABLE_REG_COUNT() const
+{
+    return emitComp->availableRegCount;
+}
+#endif // TARGET_AMD64
 
 /*****************************************************************************
  *
@@ -3212,10 +3215,18 @@ void emitter::emitDispRegSet(regMaskTP regs)
 
     for (reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
     {
-        if ((regs & genRegMask(reg)) == 0)
+        if (regs == RBM_NONE)
+        {
+            break;
+        }
+
+        regMaskTP curReg = genRegMask(reg);
+        if ((regs & curReg) == 0)
         {
             continue;
         }
+
+        regs -= curReg;
 
         if (sp)
         {
@@ -9955,7 +9966,3 @@ void emitter::emitEnableGC()
     }
 }
 #endif // !defined(JIT32_GCENCODER)
-
-#undef RBM_ALLFLOAT_USE
-#undef RBM_FLT_CALLEE_TRASH_USE
-#undef CNT_CALLEE_TRASH_FLOAT_USE

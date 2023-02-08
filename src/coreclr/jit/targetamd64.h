@@ -84,8 +84,7 @@
 
   #define RBM_ALLFLOAT_INIT       RBM_LOWFLOAT
 
-  // NOTE: Callee must define the use, which should point to the Compiler object rbmAllFloat field 
-  #define RBM_ALLFLOAT            RBM_ALLFLOAT_USE
+  #define RBM_ALLFLOAT             get_RBM_ALLFLOAT()
   
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT
   #define REG_FP_FIRST             REG_XMM0
@@ -147,8 +146,7 @@
   #define RBM_FLT_CALLEE_TRASH_INIT (RBM_XMM0|RBM_XMM1|RBM_XMM2|RBM_XMM3|RBM_XMM4|RBM_XMM5)
 #endif // !UNIX_AMD64_ABI
 
-  /* NOTE: Callee must define the use, which should point to the Compiler object rbmFltCalleeTrash field */
-  #define RBM_FLT_CALLEE_TRASH    RBM_FLT_CALLEE_TRASH_USE
+  #define RBM_FLT_CALLEE_TRASH    get_RBM_FLT_CALLEE_TRASH()
 
   #define RBM_OSR_INT_CALLEE_SAVED  (RBM_INT_CALLEE_SAVED | RBM_EBP)
 
@@ -248,8 +246,7 @@
   #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ESI,RBM_EDI,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
 #endif // !UNIX_AMD64_ABI
 
-  /* NOTE: Callee must define the use, which should point to the Compiler object cntCalleeTrashFloat field */
-  #define CNT_CALLEE_TRASH_FLOAT   CNT_CALLEE_TRASH_FLOAT_USE
+  #define CNT_CALLEE_TRASH_FLOAT   get_CNT_CALLEE_TRASH_FLOAT()
 
   #define CALLEE_SAVED_REG_MAXSZ   (CNT_CALLEE_SAVED*REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ (CNT_CALLEE_SAVED_FLOAT*16)

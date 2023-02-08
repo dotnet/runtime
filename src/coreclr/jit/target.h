@@ -186,6 +186,13 @@ enum _regMask_enum : unsigned
 #error Unsupported target architecture
 #endif
 
+#if defined(TARGET_AMD64)
+// AVAILABLE_REG_COUNT is defined to be dynamic, based on whether AVX-512 high registers are available.
+#define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
+#else
+#define AVAILABLE_REG_COUNT ACTUAL_REG_COUNT
+#endif
+
 /*****************************************************************************/
 
 // TODO-Cleanup: The types defined below are mildly confusing: why are there both?

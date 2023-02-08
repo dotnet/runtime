@@ -101,14 +101,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 const char* LinearScan::resolveTypeName[] = {"Split", "Join", "Critical", "SharedCritical"};
 #endif // DEBUG
 
-// Please see the comment for these instance variables in `compiler.h`
-#if defined(TARGET_AMD64)
-#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
-#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
-#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
-#define ACTUAL_REG_COUNT (compiler->actualRegCount)
-#endif
-
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
@@ -4072,7 +4064,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     {
         // Just clear any constant registers and return.
         resetAvailableRegs();
-        for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+        for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
         {
             RegRecord* physRegRecord    = getRegisterRecord(reg);
             Interval*  assignedInterval = physRegRecord->assignedInterval;
@@ -4320,7 +4312,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         resetRegState();
         setRegsInUse(liveRegs);
     }
-    for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
         if ((liveRegs & genRegMask(reg)) == 0)
@@ -4602,7 +4594,7 @@ void LinearScan::allocateRegisters()
     }
 
     resetRegState();
-    for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
@@ -4765,7 +4757,7 @@ void LinearScan::allocateRegisters()
 #ifdef DEBUG
                 // Validate the current state just after we've freed the registers. This ensures that any pending
                 // freed registers will have had their state updated to reflect the intervals they were holding.
-                for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+                for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
                 {
                     regMaskTP regMask = genRegMask(reg);
                     // If this isn't available or if it's still waiting to be freed (i.e. it was in
@@ -6685,7 +6677,7 @@ void LinearScan::resolveRegisters()
     // are encountered.
     if (enregisterLocalVars)
     {
-        for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+        for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
         {
             RegRecord* physRegRecord    = getRegisterRecord(reg);
             Interval*  assignedInterval = physRegRecord->assignedInterval;
@@ -8976,45 +8968,7 @@ void LinearScan::dumpLsraStatsSummary(FILE* file)
 }
 #endif // TRACK_LSRA_STATS
 
-#undef RBM_ALLFLOAT_USE
-#undef RBM_FLT_CALLEE_TRASH_USE
-#undef CNT_CALLEE_TRASH_FLOAT_USE
-
 #ifdef DEBUG
-// Please see the comment for these instance variables in `compiler.h`
-// Here, the `compiler` object used must match the parameter name that
-// follows. If it is changed below, change it here.
-#if defined(TARGET_AMD64)
-#define RBM_ALLFLOAT_USE (compiler->rbmAllFloat)
-#define RBM_FLT_CALLEE_TRASH_USE (compiler->rbmFltCalleeTrash)
-#define CNT_CALLEE_TRASH_FLOAT_USE (compiler->cntCalleeTrashFloat)
-#endif
-void dumpRegMask(regMaskTP regs, Compiler* compiler)
-{
-    if (regs == RBM_ALLINT)
-    {
-        printf("[allInt]");
-    }
-    else if (regs == (RBM_ALLINT & ~RBM_FPBASE))
-    {
-        printf("[allIntButFP]");
-    }
-    else if (regs == RBM_ALLFLOAT)
-    {
-        printf("[allFloat]");
-    }
-    else if (regs == RBM_ALLDOUBLE)
-    {
-        printf("[allDouble]");
-    }
-    else
-    {
-        dspRegMask(regs);
-    }
-}
-#undef RBM_ALLFLOAT_USE
-#undef RBM_FLT_CALLEE_TRASH_USE
-#undef CNT_CALLEE_TRASH_FLOAT_USE
 
 static const char* getRefTypeName(RefType refType)
 {
@@ -9086,7 +9040,7 @@ void RefPosition::dump(LinearScan* linearScan)
     printf(FMT_BB " ", this->bbNum);
 
     printf("regmask=");
-    dumpRegMask(registerAssignment, linearScan->compiler);
+    linearScan->compiler->dumpRegMask(registerAssignment);
 
     printf(" minReg=%d", minRegCandidateCount);
 
@@ -9222,7 +9176,7 @@ void Interval::dump(Compiler* compiler)
     printf(" physReg:%s", getRegName(physReg));
 
     printf(" Preferences=");
-    dumpRegMask(this->registerPreferences, compiler);
+    compiler->dumpRegMask(this->registerPreferences);
 
     if (relatedInterval)
     {
@@ -10440,7 +10394,7 @@ void LinearScan::verifyFinalAllocation()
     }
 
     // Clear register assignments.
-    for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord        = getRegisterRecord(reg);
         physRegRecord->assignedInterval = nullptr;
@@ -10544,7 +10498,7 @@ void LinearScan::verifyFinalAllocation()
                     }
 
                     // Clear register assignments.
-                    for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+                    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
                     {
                         RegRecord* physRegRecord        = getRegisterRecord(reg);
                         physRegRecord->assignedInterval = nullptr;
@@ -10869,7 +10823,7 @@ void LinearScan::verifyFinalAllocation()
             }
 
             // Clear register assignments.
-            for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+            for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
             {
                 RegRecord* physRegRecord        = getRegisterRecord(reg);
                 physRegRecord->assignedInterval = nullptr;
@@ -11895,7 +11849,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 
     if (preferCalleeSave)
     {
-        regMaskTP calleeSaveCandidates = calleeSaveRegs(currentInterval->registerType);
+        regMaskTP calleeSaveCandidates = linearScan->calleeSaveRegs(currentInterval->registerType);
         if (currentInterval->isWriteThru)
         {
             // We'll only prefer a callee-save register if it's already been used.
@@ -11911,7 +11865,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     }
     else
     {
-        callerCalleePrefs = callerSaveRegs(currentInterval->registerType, linearScan->compiler);
+        callerCalleePrefs = linearScan->callerSaveRegs(currentInterval->registerType);
     }
 
     // If this has a delayed use (due to being used in a rmw position of a
