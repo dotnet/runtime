@@ -1219,7 +1219,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""Prop"":20}";
             var obj1 = await Serializer.DeserializeWrapper<SmallType_IgnoredProp_Bind_ParamWithDefaultValue>(json);
-            Assert.Equal(0, obj1.Prop);
+            Assert.Equal(5, obj1.Prop);
 
             var obj2 = await Serializer.DeserializeWrapper<SmallType_IgnoredProp_Bind_Param>(json);
             Assert.Equal(0, obj2.Prop);
@@ -1248,7 +1248,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""Prop"":20}";
             var obj1 = await Serializer.DeserializeWrapper<LargeType_IgnoredProp_Bind_ParamWithDefaultValue>(json);
-            Assert.Equal(0, obj1.Prop);
+            Assert.Equal(5, obj1.Prop);
 
             var obj2 = await Serializer.DeserializeWrapper<LargeType_IgnoredProp_Bind_Param>(json);
             Assert.Equal(0, obj2.Prop);
@@ -1531,6 +1531,65 @@ namespace System.Text.Json.Serialization.Tests
                 UInt = @uint;
                 ULong = @ulong;
             }
+        }
+
+        [Fact]
+        public async Task TestTypeWithEnumParameters()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/68647
+
+            var value = new TypeWithEnumParameters();
+
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"Value":"One","NullableValue":"Two"}""", json);
+
+            value = await Serializer.DeserializeWrapper<TypeWithEnumParameters>(json);
+            Assert.Equal(MyEnum.One, value.Value);
+            Assert.Equal(MyEnum.Two, value.NullableValue);
+
+            value = await Serializer.DeserializeWrapper<TypeWithEnumParameters>("{}");
+            Assert.Equal(MyEnum.One, value.Value);
+            Assert.Equal(MyEnum.Two, value.NullableValue);
+        }
+
+        public sealed class TypeWithEnumParameters
+        {
+            public MyEnum Value { get; }
+            public MyEnum? NullableValue { get; }
+
+            [JsonConstructor]
+            public TypeWithEnumParameters(MyEnum value = MyEnum.One, MyEnum? nullableValue = MyEnum.Two)
+            {
+                Value = value;
+                NullableValue = nullableValue;
+            }
+        }
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public enum MyEnum
+        {
+            One = 1,
+            Two = 2,
+        }
+
+        [Fact]
+        public async Task TestClassWithIgnoredPropertyDefaultParam()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/60082
+
+            string json = "{}";
+            ClassWithIgnoredPropertyDefaultParam result = await Serializer.DeserializeWrapper<ClassWithIgnoredPropertyDefaultParam>(json);
+            Assert.Equal(5, result.Y);
+        }
+
+        public class ClassWithIgnoredPropertyDefaultParam
+        {
+            public int X { get; }
+
+            [JsonIgnore]
+            public int Y { get; }
+
+            public ClassWithIgnoredPropertyDefaultParam(int x, int y = 5) => (X, Y) = (x, y);
         }
     }
 }

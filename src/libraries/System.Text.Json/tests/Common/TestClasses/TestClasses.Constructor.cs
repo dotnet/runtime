@@ -2057,7 +2057,7 @@ namespace System.Text.Json.Serialization.Tests
         public void Verify()
         {
             Assert.Equal(0, X);
-            Assert.Equal(0, Y); // We don't set parameter default value here.
+            Assert.Equal(5, Y); // We use the default parameter of the constructor.
         }
     }
     
