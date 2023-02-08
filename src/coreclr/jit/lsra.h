@@ -1188,8 +1188,8 @@ private:
 
 #if defined(TARGET_ARM64)
     bool setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned);
-#endif // TARGET_ARM64
-
+    regMaskTP getFreeCandidates(regMaskTP candidates, RefPosition* refPosition);
+#else
     regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
     {
         regMaskTP result = candidates & m_AvailableRegs;
@@ -1203,6 +1203,7 @@ private:
 #endif // TARGET_ARM
         return result;
     }
+#endif // TARGET_ARM64
 
 #ifdef DEBUG
     class RegisterSelection;

@@ -109,6 +109,37 @@ bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     return true;
 }
 
+
+regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPosition)
+{
+    regMaskTP result = candidates & m_AvailableRegs;
+    if (!refPosition->isFirstRefPositionOfConsecutiveRegisters())
+    {
+        return result;
+    }
+
+
+    regMaskTP availbleRegs = m_AvailableRegs;
+    /*
+    1. Find first `1` from LSB                  : a =  bsf(input)
+    2. Set everything until that point to `1`   : temp |= ((1 << a) - 1)
+    3. Find first `0` from LSB -> BitScanForward <-- c = bsf(~temp)
+    4. if ((c - a) > regCount), then accumulate = (((1 << c) - 1) & (1 << a))
+    5. input = input & ~((1 << c) - 1)
+    6. Repeat
+    */
+
+    uint32_t index = BitOperations::BitScanForward(static_cast<uint64_t>(availableRegs));
+
+
+    //regMaskTP availbleRegs = m_AvailableRegs >> 1;
+    for (int i = 0; i < refPosition->regCount; i++)
+    {
+        result &= availbleRegs;
+        availbleRegs >>= 1;
+    }
+    return result;
+}
 //------------------------------------------------------------------------
 // BuildNode: Build the RefPositions for a node
 //
