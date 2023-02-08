@@ -18,6 +18,7 @@ import {
 import {
     offsetOfDataItems, offsetOfImethod,
     sizeOfDataItem, maxModuleSize,
+    sizeOfStackval,
 
     disabledOpcodes, countCallTargets,
     callTargetCounts, trapTraceErrors,
@@ -108,16 +109,6 @@ function get_imethod_data (frame: NativePointer, index: number) {
     return getU32(dataOffset);
 }
 
-function append_branch_target_block (builder: WasmBuilder, ip: MintOpcodePtr) {
-    // End the current branch block, then create a new one that conditionally executes
-    //  if eip matches the offset of its first instruction.
-    builder.endBlock();
-    builder.local("eip");
-    builder.ip_const(ip);
-    builder.appendU8(WasmOpcode.i32_eq);
-    builder.block(WasmValtype.void, WasmOpcode.if_);
-}
-
 export function generate_wasm_body (
     frame: NativePointer, traceName: string, ip: MintOpcodePtr,
     endOfBody: MintOpcodePtr, builder: WasmBuilder, instrumentedTraceId: number
@@ -126,6 +117,8 @@ export function generate_wasm_body (
     let isFirstInstruction = true;
     let result = 0;
     const traceIp = ip;
+
+    knownNotNull.clear();
 
     // Skip over the enter opcode
     ip += <any>(OpcodeInfo[MintOpcode.MINT_TIER_ENTER_JITERPRETER][1] * 2);
@@ -824,6 +817,30 @@ export function generate_wasm_body (
     return result;
 }
 
+const knownNotNull : Set<number> = new Set();
+let cknullOffset = -1;
+
+function invalidate_local (offset: number) {
+    if (cknullOffset === offset)
+        cknullOffset = -1;
+    knownNotNull.delete(offset);
+}
+
+function invalidate_local_range (start: number, bytes: number) {
+    for (let i = 0; i < bytes; i += sizeOfStackval)
+        invalidate_local(start + i);
+}
+
+function append_branch_target_block (builder: WasmBuilder, ip: MintOpcodePtr) {
+    // End the current branch block, then create a new one that conditionally executes
+    //  if eip matches the offset of its first instruction.
+    builder.endBlock();
+    builder.local("eip");
+    builder.ip_const(ip);
+    builder.appendU8(WasmOpcode.i32_eq);
+    builder.block(WasmValtype.void, WasmOpcode.if_);
+}
+
 function append_ldloc (builder: WasmBuilder, offset: number, opcode: WasmOpcode) {
     builder.local("pLocals");
     builder.appendU8(opcode);
@@ -840,9 +857,12 @@ function append_stloc_tail (builder: WasmBuilder, offset: number, opcode: WasmOp
     // wasm spec prohibits alignment higher than natural alignment, just to be annoying
     const alignment = (opcode > WasmOpcode.f64_store) ? 0 : 2;
     builder.appendMemarg(offset, alignment);
+    invalidate_local(offset);
 }
 
 function append_ldloca (builder: WasmBuilder, localOffset: number) {
+    // FIXME: We need to know how big this variable is so we can invalidate the whole space it occupies
+    invalidate_local_range(localOffset, 512);
     builder.lea("pLocals", localOffset);
 }
 
@@ -868,16 +888,37 @@ function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: numb
 
 // Loads the specified i32 value and bails out of it is null. Does not leave it on the stack.
 function append_local_null_check (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr) {
+    if (knownNotNull.has(localOffset)) {
+        console.log(`skipping null check for ${localOffset}`);
+        append_ldloc(builder, localOffset, WasmOpcode.i32_load);
+        return;
+    }
+
     builder.block();
     append_ldloc(builder, localOffset, WasmOpcode.i32_load);
     builder.appendU8(WasmOpcode.br_if);
     builder.appendULeb(0);
     append_bailout(builder, ip, BailoutReason.NullCheck);
     builder.endBlock();
+    knownNotNull.add(localOffset);
 }
 
 // Loads the specified i32 value and then bails out if it is null, leaving it in the cknull_ptr local.
 function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr, leaveOnStack: boolean) {
+    if (knownNotNull.has(localOffset)) {
+        if (cknullOffset === localOffset) {
+            console.log(`cknull_ptr already contains ${localOffset}`);
+            if (leaveOnStack)
+                builder.local("cknull_ptr");
+        } else {
+            console.log(`skipping null check for ${localOffset}`);
+            append_ldloc(builder, localOffset, WasmOpcode.i32_load);
+            builder.local("cknull_ptr", leaveOnStack ? WasmOpcode.tee_local : WasmOpcode.set_local);
+            cknullOffset = localOffset;
+        }
+        return;
+    }
+
     builder.block();
     append_ldloc(builder, localOffset, WasmOpcode.i32_load);
     builder.local("cknull_ptr", WasmOpcode.tee_local);
@@ -887,6 +928,8 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
     builder.endBlock();
     if (leaveOnStack)
         builder.local("cknull_ptr");
+    knownNotNull.add(localOffset);
+    cknullOffset = localOffset;
 }
 
 const ldcTable : { [opcode: number]: [WasmOpcode, number] } = {
@@ -958,7 +1001,9 @@ function emit_ldc (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) 
     // These are constants being stored into locals and are always at least 4 bytes
     //  so we can use a 4 byte alignment (8 would be nice if we could guarantee
     //  that locals are 8-byte aligned)
-    builder.appendMemarg(getArgU16(ip, 1), 2);
+    const localOffset = getArgU16(ip, 1);
+    builder.appendMemarg(localOffset, 2);
+    invalidate_local(localOffset);
 
     return true;
 }
@@ -2470,6 +2515,7 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
             append_getelema1(builder, ip, objectOffset, indexOffset, elementSize);
             // memcpy (locals + ip [1], src_addr, size);
             append_memmove_dest_src(builder, elementSize);
+            invalidate_local_range(getArgU16(ip, 1), elementSize);
             return true;
         }
         default:

@@ -112,6 +112,7 @@ export const // offsetOfStack = 12,
     offsetOfImethod = 4,
     offsetOfDataItems = 20,
     sizeOfDataItem = 4,
+    sizeOfStackval = 8,
     // HACK: Typically we generate ~12 bytes of extra gunk after the function body so we are
     //  subtracting 20 from the maximum size to make sure we don't produce too much
     // Also subtract some more size since the wasm we generate for one opcode could be big
