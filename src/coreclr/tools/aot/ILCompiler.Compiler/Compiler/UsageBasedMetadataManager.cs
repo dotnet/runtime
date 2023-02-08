@@ -350,29 +350,6 @@ namespace ILCompiler
                     }
                 }
             }
-
-            // Event sources need their special nested types
-            if (mdType != null && mdType.HasCustomAttribute("System.Diagnostics.Tracing", "EventSourceAttribute"))
-            {
-                AddEventSourceSpecialTypeDependencies(ref dependencies, factory, mdType.GetNestedType("Keywords"));
-                AddEventSourceSpecialTypeDependencies(ref dependencies, factory, mdType.GetNestedType("Tasks"));
-                AddEventSourceSpecialTypeDependencies(ref dependencies, factory, mdType.GetNestedType("Opcodes"));
-
-                static void AddEventSourceSpecialTypeDependencies(ref DependencyList dependencies, NodeFactory factory, MetadataType type)
-                {
-                    if (type != null)
-                    {
-                        const string reason = "Event source";
-                        dependencies ??= new DependencyList();
-                        dependencies.Add(factory.TypeMetadata(type), reason);
-                        foreach (FieldDesc field in type.GetFields())
-                        {
-                            if (field.IsLiteral)
-                                dependencies.Add(factory.FieldMetadata(field), reason);
-                        }
-                    }
-                }
-            }
         }
 
         private static bool IsTrimmableAssembly(ModuleDesc assembly)

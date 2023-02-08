@@ -421,6 +421,7 @@ namespace Microsoft.Win32.SafeHandles
 
             if (AlpnHandle.IsAllocated)
             {
+                Interop.Ssl.SslSetData(handle, IntPtr.Zero);
                 AlpnHandle.Free();
             }
 

@@ -7,8 +7,6 @@
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
     <NoWarn>CS8969</NoWarn>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
-    <!-- This library has been annotated to be AOT safe -->
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides high-performance and low-allocating types that serialize objects to JavaScript Object Notation (JSON) text and deserialize JSON text to objects, with UTF-8 support built-in. Also provides types to read and write JSON text encoded as UTF-8, and to create an in-memory document object model (DOM), that is read-only, for random access of the JSON elements within a structured view of the data.
 
@@ -351,6 +349,11 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderHelper.sn.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="System\Text\Json\Reader\JsonReaderHelper.sri.cs" />
   </ItemGroup>
 
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
@@ -368,6 +371,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />

@@ -195,16 +195,26 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Debug
           platforms:
           - linux_x64
           - windows_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: nativeaot tree nativeaot
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -218,15 +228,25 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: checked
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Checked
           platforms:
           - windows_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: nativeaot tree nativeaot /p:BuildNativeAotFrameworkObjects=true
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -240,17 +260,27 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
           platforms:
           - linux_x64
           - windows_x64
           - osx_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: nativeaot tree nativeaot
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -464,7 +494,7 @@ extends:
             - wasi_wasm_win
           nameSuffix: _Relinking
           extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
-          alwaysRun: ${{ variables.isRollingBuild }}
+          alwaysRun: true
           scenarios:
             - normal
 
@@ -474,7 +504,8 @@ extends:
             - wasi_wasm
             - wasi_wasm_win
           extraBuildArgs: /p:RunWasmSamples=true
-          alwaysRun: ${{ variables.isRollingBuild }}
+          shouldContinueOnError: true
+          alwaysRun: true
           scenarios:
             - normal
 
