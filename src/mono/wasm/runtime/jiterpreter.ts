@@ -47,7 +47,7 @@ export const
     trapTraceErrors = false,
     // When eliminating a null check, replace it with a runtime 'not null' assertion
     //  that will print a diagnostic message if the value is actually null
-    nullCheckValidation = true,
+    nullCheckValidation = false,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code

@@ -788,7 +788,7 @@ export function generate_wasm_body (
                 result++;
 
             ip += <any>(info[1] * 2);
-            if (<any>ip < (<any>endOfBody - 2))
+            if (<any>ip <= (<any>endOfBody))
                 rip = ip;
             // For debugging
             if (emitPadding)
@@ -862,6 +862,10 @@ function append_ldloc (builder: WasmBuilder, offset: number, opcode: WasmOpcode)
 }
 
 // You need to have pushed pLocals onto the stack *before* the value you intend to store
+// Wasm store opcodes are shaped like xNN.store [offset] [alignment],
+//  where the offset+alignment pair is referred to as a 'memarg' by the spec.
+// The actual store operation is equivalent to `pBase[offset] = value` (alignment has no
+//  observable impact on behavior, other than causing compilation failures if out of range)
 function append_stloc_tail (builder: WasmBuilder, offset: number, opcode: WasmOpcode) {
     builder.appendU8(opcode);
     // stackval is 8 bytes, but pLocals might not be 8 byte aligned so we use 4
