@@ -288,7 +288,7 @@ namespace Mono.Linker.Dataflow
 
 			BasicBlockIterator blockIterator = new BasicBlockIterator (methodIL);
 
-			MultiValue ReturnValue = default;
+			ReturnValue = default;
 			foreach (Instruction operation in methodIL.Instructions) {
 				int curBasicBlock = blockIterator.MoveNext (operation);
 
