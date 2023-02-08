@@ -3,6 +3,7 @@
 
 
 .assembly extern System.Console { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern mscorlib { auto }
 
@@ -97,6 +98,9 @@
 
   .method public static int32  main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  18
     .locals init (class [mscorlib]System.Exception V_0,

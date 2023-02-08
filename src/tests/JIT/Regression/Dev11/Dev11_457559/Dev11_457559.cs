@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 /// <summary>
 /// InvalidCastException is thrown when 'ngen /profile' image doesn't restore System.Enum TypeRef
@@ -11,7 +12,8 @@ using System;
 /// </summary>
 public class Test_Dev11_457559
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (RunTest(1))
         {

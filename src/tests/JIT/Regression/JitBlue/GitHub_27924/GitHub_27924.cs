@@ -6,6 +6,7 @@ using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Xunit;
 
 public class Program
 {
@@ -38,7 +39,8 @@ public class Program
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         for(int i = 0; i < s.Length; i++) s[i] = new byte[2];
 

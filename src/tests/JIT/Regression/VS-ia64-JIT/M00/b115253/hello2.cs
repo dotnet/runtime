@@ -3,12 +3,14 @@
 //
 
 using System;
+using Xunit;
 
 namespace hello
 {
     public class Class1
     {
-        static public int Main()
+        [Fact]
+        static public int TestEntryPoint()
         {
             int i = 123;
             Console.WriteLine(i);

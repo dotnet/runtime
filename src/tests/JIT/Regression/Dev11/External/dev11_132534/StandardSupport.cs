@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace Test
 {
@@ -159,7 +160,8 @@ namespace Test
 
     public static class App
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int iret = 100;
             Console.WriteLine("Starting JMP tests...\r\n");

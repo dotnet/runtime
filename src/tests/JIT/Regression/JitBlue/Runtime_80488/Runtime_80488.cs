@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_80488
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int code = Foo(new S16 { F1 = 100 });
         if (code != 100)

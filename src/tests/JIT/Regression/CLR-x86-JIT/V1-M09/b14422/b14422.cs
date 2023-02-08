@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 /**
  * A simple Com+ application.
  */
@@ -19,7 +20,8 @@ namespace DefaultNamespace
          * @param args Array of parameters passed to the application
          * via the command line.
          */
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int i = 10;
             int j = i - 5;              // j = 5

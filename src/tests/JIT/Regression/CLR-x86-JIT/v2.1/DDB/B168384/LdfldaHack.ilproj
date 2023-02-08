@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- TODO: This test isn't executing properly with test merging. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

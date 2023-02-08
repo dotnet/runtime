@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -43,7 +44,8 @@ namespace Test
                 new ulong[4],
                 new AA().Method1(param1, new long[4], new ulong[4], new BB().m_uField2));
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

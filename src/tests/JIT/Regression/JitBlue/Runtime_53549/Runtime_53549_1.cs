@@ -5,6 +5,7 @@ using System;
 using System.Globalization;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class A
 {
@@ -46,7 +47,8 @@ public class Repro
         return i;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         A[] a = new A[1000];
 

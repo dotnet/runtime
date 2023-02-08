@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class Bug
 {
@@ -19,7 +20,8 @@ public class Bug
         Func(ref str[0]);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         (new Bug()).run();
         Console.WriteLine("Passed");

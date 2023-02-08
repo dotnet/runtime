@@ -3,13 +3,15 @@
 
 
 using System;
+using Xunit;
 
 
 namespace DefaultNamespace
 {
     public class MainClass
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Decimal c1 = new Decimal();
 

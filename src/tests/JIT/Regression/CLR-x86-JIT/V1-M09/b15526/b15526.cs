@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     //@BEGINRENAME; Verify this renames
@@ -16,7 +17,8 @@ namespace DefaultNamespace
             int iVal2 = 3;
             Console.WriteLine(Math.Min(iVal1, iVal2));
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Bug oCbTest = new Bug();
             oCbTest.runTest();

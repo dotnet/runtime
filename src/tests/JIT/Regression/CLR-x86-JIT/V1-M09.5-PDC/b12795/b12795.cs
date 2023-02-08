@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace DefaultNamespace
 {
     using System;
 
     public class NStructTun
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Mainy();
             GC.Collect();

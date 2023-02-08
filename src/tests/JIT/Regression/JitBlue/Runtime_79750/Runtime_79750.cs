@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_79750
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         byte dest = 0;
         byte source = 100;

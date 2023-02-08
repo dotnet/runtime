@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Nullstone
 {
     public class Test
     {
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Test t = new Test();
             t.Init();

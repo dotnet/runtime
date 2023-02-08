@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -29,7 +30,8 @@ namespace Test
             }
             return 0.0f;
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Method1(new bool[3]);
             return 100;

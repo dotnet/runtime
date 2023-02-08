@@ -3,6 +3,7 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
 public class Program
 {
@@ -24,7 +25,8 @@ public class Program
         var hmm = box.GetHashCode();
     }
     
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var someMemory = new int[1];
         var someMoreMemory = new int[1];

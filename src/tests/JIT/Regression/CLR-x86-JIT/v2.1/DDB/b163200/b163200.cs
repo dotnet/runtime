@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ClassWithCctor<T>
 {
@@ -17,7 +18,8 @@ public class ClassWithCctor<T>
 
 public class Repro
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

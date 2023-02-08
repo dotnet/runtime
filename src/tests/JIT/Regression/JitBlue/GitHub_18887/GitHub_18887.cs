@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 internal class BufferState
 {
@@ -89,7 +90,8 @@ public class Program
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Program p = new Program();
         if (p.currentState.IsIdle)

@@ -13,11 +13,13 @@
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
+using Xunit;
 
 public class Runtime_64883
 {
     public static uint s_29;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // This needs an ALC because the "static access" helper is different in ALCs.
         CollectibleALC alc = new CollectibleALC();

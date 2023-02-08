@@ -8,6 +8,7 @@
 
 
 using System;
+using Xunit;
 
 
 public class Program
@@ -37,7 +38,8 @@ public class Program
         return true;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string s = "skip"; // Test checks commpilation process.
         VerifyMacvalueSSlV2(s);

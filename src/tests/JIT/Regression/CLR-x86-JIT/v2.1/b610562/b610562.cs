@@ -8,11 +8,13 @@
 //static member is passed by ref to an interlocked method.
 
 using System;
+using Xunit;
 namespace VTest
 {
     public class TestMain : refTest<TestMain>
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int ret = 100;
             try

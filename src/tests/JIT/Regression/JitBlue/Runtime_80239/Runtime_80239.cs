@@ -3,10 +3,12 @@
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_80239
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Unsafe.SkipInit(out Vector3 test);
         test.X = 500.0f;

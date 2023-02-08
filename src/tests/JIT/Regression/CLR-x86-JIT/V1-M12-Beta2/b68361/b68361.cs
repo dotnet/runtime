@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace A
 {
     using System;
@@ -161,7 +162,8 @@ namespace A
             return sum + i;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool failed = false;
 

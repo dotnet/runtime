@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 /*
 ---------------------------
 Assert Failure (PID 848, Thread 1036/40c)        
@@ -52,6 +53,7 @@ namespace Test
             while ((bool)m_axStatic2) { }
         }
 
-        public static int Main() { try { Static2(null); } catch (NullReferenceException) { } return 100; }
+        [Fact]
+        public static int TestEntryPoint() { try { Static2(null); } catch (NullReferenceException) { } return 100; }
     }
 }

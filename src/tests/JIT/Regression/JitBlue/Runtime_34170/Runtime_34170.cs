@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Explicit)]
 internal struct FloatNonAlignedFieldWithSmallOffset
@@ -75,7 +76,8 @@ internal struct StructNonAlignedField
 
 public class Test_Runtime_34170
 {
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         
         var a = new FloatNonAlignedFieldWithSmallOffset(1);

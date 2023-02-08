@@ -3,12 +3,14 @@
 //
 
 using System;
+using Xunit;
 
 public class History
 {
     private static Object with = null;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         CreateHistory(null, null, 0, 0, 0, 0, 0, DateTime.Now, 0, "ciao");
         return 100;

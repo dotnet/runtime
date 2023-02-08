@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System;
+using Xunit;
 
 namespace DefaultNamespace
 {
@@ -21,7 +22,8 @@ namespace DefaultNamespace
                 Console.WriteLine("Test FAiLED");
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             new Bug().runTest();
             return 100;

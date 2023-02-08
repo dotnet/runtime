@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 public unsafe class testout1
 {
     public struct VT2
@@ -43,7 +44,8 @@ public unsafe class testout1
         return 1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         VT1 vt1 = new VT1();
         vt1.a2 = 9;

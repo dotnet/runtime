@@ -3,6 +3,7 @@
 
 using System;
 using System.Security;
+using Xunit;
 
 
 public class Foo
@@ -22,7 +23,8 @@ public class Foo
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Foo f = new Foo();
         caller(f);

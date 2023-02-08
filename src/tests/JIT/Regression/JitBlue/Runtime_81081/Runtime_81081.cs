@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 public class Runtime_81081
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test(1234, default);
         return 100;

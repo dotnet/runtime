@@ -22,6 +22,7 @@
 
 #pragma warning disable 458, 169
 using System;
+using Xunit;
 
 public class NullableTest
 {
@@ -11308,7 +11309,8 @@ public class Test_b311420
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         NullableTest.Run();

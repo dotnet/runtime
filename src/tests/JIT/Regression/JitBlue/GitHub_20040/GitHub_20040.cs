@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // GitHub 20040: operand ordering bug with GT_INDEX_ADDR
 // Requires minopts/tier0 to repro
@@ -11,7 +12,8 @@ namespace GitHub_20040
 {
     public class Program
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var array = new byte[] {0x00, 0x01};
             var reader = new BinaryTokenStreamReader(array);

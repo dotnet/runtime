@@ -4,12 +4,14 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_64700
 {
     private static StructWithVtors _structWithVtorsStatic;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         _structWithVtorsStatic = new StructWithVtors { StructWithOneVtor = { OneVtor = new Vector2(1, 0) } };
 

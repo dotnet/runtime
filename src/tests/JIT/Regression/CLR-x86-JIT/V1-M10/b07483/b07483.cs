@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class Test_b07483
 {
     private int _t = 0;
     private int _f = 0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test_b07483 test = new Test_b07483();
         return (test.Run());

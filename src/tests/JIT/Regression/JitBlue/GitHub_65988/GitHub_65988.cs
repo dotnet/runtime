@@ -4,6 +4,7 @@
 // Note: In below test case, we were skipping the first block that is an alignment candidate,
 //       but were not unmarking it such. As a result, we would hit assert during backedge setup.
 // Found by Antigen
+using Xunit;
 public class TestClass_65988
 {
     public struct S1
@@ -40,7 +41,8 @@ public class TestClass_65988
             return;
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new TestClass_65988().Method0();
         return 100;

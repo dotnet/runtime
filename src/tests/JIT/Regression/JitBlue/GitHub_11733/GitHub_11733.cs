@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class C
 {
@@ -18,7 +19,8 @@ public class C
         return (float)Math.Pow(a, (float)Math.Pow(b, a));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return L(0) == M(float.NegativeInfinity, 0) ? 100 : 0;
     }

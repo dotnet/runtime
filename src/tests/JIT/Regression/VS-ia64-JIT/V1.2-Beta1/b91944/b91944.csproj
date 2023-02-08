@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <RestorePackages>false</RestorePackages>
   </PropertyGroup>
   <PropertyGroup>

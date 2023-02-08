@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace N
 {
@@ -67,7 +68,8 @@ namespace N
             return x == y;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int errors = 0;
 

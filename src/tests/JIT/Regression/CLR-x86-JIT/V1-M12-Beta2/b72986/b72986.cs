@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 public unsafe class testout1
 {
     public struct VT_0_2
@@ -30,7 +31,8 @@ public unsafe class testout1
         Console.WriteLine(cl_0_2.a1_0_2 - ((long)(Convert.ToInt32(vtstatic_0_2.a0_0_2) - (long)((cl_0_2.a1_0_2 - ((long)(Convert.ToInt32(vtstatic_0_2.a0_0_2) - (long)((long)(Convert.ToInt32(vtstatic_0_2.a0_0_2) + (long)(39L))))))))));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         CL_0_2 cl_0_2 = new CL_0_2();
         double* a3_0_2 = stackalloc double[1];

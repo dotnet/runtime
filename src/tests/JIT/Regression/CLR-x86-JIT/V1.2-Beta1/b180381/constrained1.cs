@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class Test_constrained1
 {
@@ -12,7 +13,8 @@ public class Test_constrained1
         Console.WriteLine(type);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         M("Hello"); // Works fine
         M(3); // CLR crashes

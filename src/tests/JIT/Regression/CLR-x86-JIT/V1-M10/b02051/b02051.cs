@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     using System;
@@ -9,7 +10,8 @@ namespace DefaultNamespace
     {
         public
         static
-        int Main()
+        [Fact]
+        int TestEntryPoint()
         {
             UInt32 x = (0xFFFFFFFF);
             Int64 y = x;

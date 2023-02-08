@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct Key
 {
@@ -60,7 +61,8 @@ public class Runtime_65694
         return 0;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var r = new Runtime_65694();
         r.D();

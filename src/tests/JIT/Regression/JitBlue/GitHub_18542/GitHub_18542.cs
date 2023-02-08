@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class C
 {
@@ -96,7 +97,8 @@ public static class GitHub_18542
         s5.M();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ViaClass();
         ViaStruct1();

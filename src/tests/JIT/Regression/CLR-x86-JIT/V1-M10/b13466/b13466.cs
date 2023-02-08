@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Default
 {
     //@BEGINRENAME; Verify this renames
@@ -31,7 +32,8 @@ namespace Default
 
         public
         static
-        int Main()
+        [Fact]
+        int TestEntryPoint()
         {
             func(0, 0, null, null);
             return 100;

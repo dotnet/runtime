@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using Xunit;
 
 namespace Runtime_52320
 {
@@ -14,7 +15,8 @@ namespace Runtime_52320
             Unsafe.InitBlock(ref Unsafe.As<int, byte>(ref a), 0, 2);
             return a == 1 << 20;
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool res = UseAsgOpt(1 << 20);
             Debug.Assert(res);

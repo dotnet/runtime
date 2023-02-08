@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public static class GitHub_18884
 {
@@ -14,7 +15,8 @@ public static class GitHub_18884
     static long s_5;
     static int returnVal = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_3 = 0; // avoid runtime checks in M15
         ReproWindows(0, 0, 1, 0);

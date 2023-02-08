@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 namespace test
 {
@@ -10,7 +11,8 @@ namespace test
     public class Locals10K
     {
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
 
             System.Int32

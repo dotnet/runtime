@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 public class GitHub_19601
 {
     static ushort s_2;
     static short[] s_5 = new short[]{1};
     static ulong s_8;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var vr2 = s_5[0];
         M9();

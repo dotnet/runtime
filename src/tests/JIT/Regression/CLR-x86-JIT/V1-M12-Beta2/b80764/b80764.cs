@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 
 namespace JitTest
@@ -33,7 +34,8 @@ namespace JitTest
             Console.WriteLine("buffer " + num.ToString() + " is OK");
         }
 
-        public static unsafe int Main()
+        [Fact]
+        public static unsafe int TestEntryPoint()
         {
             byte* buf1 = stackalloc byte[100], buf2 = null, buf3 = null;
             initbuf(buf1, 1);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 public class Padre
 {
     private double _x = 10;
@@ -24,7 +25,8 @@ public class Hijo : Padre
 }
 public class Test_b64579
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Hijo h = new Hijo();
         h.Incrementa(1.0);

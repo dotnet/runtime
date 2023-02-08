@@ -8,6 +8,7 @@
 //     File: D:\a\_work\1\s\src\coreclr\jit\codegenarm64.cpp Line: 4543
 //
 
+using Xunit;
 public class C0
 {
     public int F0;
@@ -19,7 +20,8 @@ public class Program
     public static IRuntime s_rt = new Runtime();
     public static ulong s_3;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();
 

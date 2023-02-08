@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 namespace JitTest.HFA
 {
@@ -67,7 +68,8 @@ namespace JitTest.HFA
         }
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
 
             HFA12 hfa11;

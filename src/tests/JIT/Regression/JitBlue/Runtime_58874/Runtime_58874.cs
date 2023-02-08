@@ -4,10 +4,12 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public unsafe class Runtime_58874
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         using EndOfPage endOfPage = EndOfPage.Create();
         if (endOfPage != null)

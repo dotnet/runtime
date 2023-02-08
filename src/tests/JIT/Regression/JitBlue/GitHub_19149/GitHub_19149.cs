@@ -32,6 +32,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 unsafe struct CommandBytes : IEquatable<CommandBytes>
 {
@@ -144,7 +145,8 @@ unsafe struct CommandBytes : IEquatable<CommandBytes>
 
 public static class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var lookup = new Dictionary<CommandBytes, string>();
         void Add(string val)

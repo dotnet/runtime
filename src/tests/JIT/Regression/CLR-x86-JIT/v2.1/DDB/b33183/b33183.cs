@@ -17,6 +17,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class MainApp
 {
@@ -31,7 +32,8 @@ public class MainApp
         Foo();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

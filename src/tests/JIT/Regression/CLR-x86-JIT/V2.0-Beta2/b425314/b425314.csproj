@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for GCStressIncompatible, HeapVerifyIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <!-- NOTE: This test takes too long and internally times out under GCStress/heap verify. It is not fundamentally incompatible if stress testing is fast enough.  -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <HeapVerifyIncompatible>true</HeapVerifyIncompatible>

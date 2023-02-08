@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using System.Numerics;
 using System.Diagnostics;
+using Xunit;
 
 public class Runtime_49101
 {
@@ -31,7 +32,8 @@ public class Runtime_49101
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S s;
         s.v = Get();

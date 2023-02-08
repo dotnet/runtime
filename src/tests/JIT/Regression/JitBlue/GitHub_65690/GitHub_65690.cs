@@ -9,6 +9,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class TestClass_65690
 {
     public struct S1
@@ -112,7 +113,8 @@ public class TestClass_65690
             return;
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new TestClass_65690().Method0();
         return 100;

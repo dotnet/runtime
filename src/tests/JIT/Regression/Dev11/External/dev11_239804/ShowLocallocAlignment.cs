@@ -12,6 +12,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace ShowLocallocAlignment
 {
@@ -94,7 +95,8 @@ namespace ShowLocallocAlignment
             return 101;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return App.RunAlignmentCheckScenario();
         }

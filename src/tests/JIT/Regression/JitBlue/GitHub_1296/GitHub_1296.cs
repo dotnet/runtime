@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using Xunit;
 
 // Simple struct containing two integers (size 8).
 struct MyStruct
@@ -21,7 +22,8 @@ public class Program
 
     static int Pass = 100;
     static int Fail = -1;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Entry point for our repro.
         // Pass in a bunch of integers.  The 5th parameter is a MyStruct, a value type of size 8.

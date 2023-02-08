@@ -5,6 +5,7 @@
 // a jagged array a[i][j].
 
 using System;
+using Xunit;
 
 public class Runtime_66254
 {
@@ -64,7 +65,8 @@ public class Runtime_66254
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = 100;
 

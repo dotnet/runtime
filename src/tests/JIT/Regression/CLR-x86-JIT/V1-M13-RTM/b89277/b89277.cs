@@ -3,9 +3,11 @@
 //
 
 using System;
+using Xunit;
 public class A
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Main1();
         return 100;

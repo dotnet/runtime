@@ -8,10 +8,12 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Xunit;
 
 public static class GitHub_23159
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var str = "application/json,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7";
         var span = Encoding.ASCII.GetBytes(str).AsSpan();

@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
+using Xunit;
 
 #pragma warning disable 1717, 0252, 1718, 0162, 0219
 
@@ -586,7 +587,8 @@ public struct BB
 
 public class App
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

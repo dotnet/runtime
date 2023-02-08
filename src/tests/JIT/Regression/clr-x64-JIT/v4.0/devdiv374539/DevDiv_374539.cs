@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Test_DevDiv_374539
 {
@@ -226,7 +227,8 @@ public class Test_DevDiv_374539
         Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

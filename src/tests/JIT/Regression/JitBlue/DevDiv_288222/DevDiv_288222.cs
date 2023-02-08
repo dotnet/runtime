@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Xunit;
 
 // This test is a repro case for DevDiv VSO bug 288222.
 // The failure mode is that the size was not being set for a "this" pointer
@@ -21,7 +22,8 @@ public class Program
         doCopy(array, start);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

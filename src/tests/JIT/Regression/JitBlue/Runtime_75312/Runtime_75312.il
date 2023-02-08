@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
+.assembly extern xunit.core {}
 .assembly extern System.Runtime.Extensions {}
 .assembly extern System.Console {}
 .assembly Runtime_75312 {}
@@ -12,6 +13,9 @@
     .method public hidebysig static 
         int32 Main () cil managed 
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .maxstack 2
         .locals init (

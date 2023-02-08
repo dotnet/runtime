@@ -3,10 +3,12 @@
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_80616
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Vector<uint> foo = default;
         FooBar(ref foo, default);

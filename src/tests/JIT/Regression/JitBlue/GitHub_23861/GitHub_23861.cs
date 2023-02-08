@@ -4,13 +4,15 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Xunit;
 
 namespace GitHub_23861
 {
     public class Program
     {
         static int returnVal = 100;
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             LessThanAllDouble();
 

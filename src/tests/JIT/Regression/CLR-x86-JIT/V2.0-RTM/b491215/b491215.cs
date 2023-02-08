@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Xunit;
 
 public class Test
 {
@@ -15,7 +16,8 @@ public class Test
             throw new Exception("Casting failed");
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Object o = null;
 

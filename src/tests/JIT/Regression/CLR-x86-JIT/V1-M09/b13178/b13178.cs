@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     //@BEGINRENAME; Verify this renames
@@ -12,7 +13,8 @@ namespace DefaultNamespace
 
     public class Ternary3b
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Ternary3b hmm = new Ternary3b();
             hmm.Problem();

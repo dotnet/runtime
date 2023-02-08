@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace ConsoleApplication1
 {
@@ -14,7 +15,8 @@ namespace ConsoleApplication1
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

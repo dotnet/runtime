@@ -9,13 +9,15 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 //Disable the warning about having variables that are not used
 #pragma warning disable 219
 public class Test_vars2
 {
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

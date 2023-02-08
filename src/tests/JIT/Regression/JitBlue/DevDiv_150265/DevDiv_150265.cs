@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
     static bool flag;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {            
         flag = true;
         return Test();

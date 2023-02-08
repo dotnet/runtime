@@ -5,6 +5,7 @@
 // included in IsIPInMarkedJitHelper on non-32-bit-x86 platforms.
 
 using System;
+using Xunit;
 
 class C0
 {
@@ -49,7 +50,8 @@ public class GitHub_19444
     static S3 s_1;
     static C3 s_2;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

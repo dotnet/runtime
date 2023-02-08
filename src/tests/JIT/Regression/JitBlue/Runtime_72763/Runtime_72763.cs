@@ -9,11 +9,13 @@
 // Debug: Outputs 1286
 // Release: Outputs 1464
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
     public static ushort s_41 = 1646;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = Foo(0, 0);
         return result == 38784 ? 100 : -1;

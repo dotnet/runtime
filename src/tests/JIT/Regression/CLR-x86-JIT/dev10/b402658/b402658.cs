@@ -7,6 +7,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class small_repro
 {
@@ -33,7 +34,8 @@ public class small_repro
         return new short[] { 0x100, 0x101, 0x102 };
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         small_repro s = new small_repro();
         try

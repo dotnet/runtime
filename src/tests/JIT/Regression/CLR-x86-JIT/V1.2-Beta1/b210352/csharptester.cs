@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using Xunit;
 
 public class M
 {
@@ -2660,7 +2661,8 @@ public class M
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

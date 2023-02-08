@@ -5,6 +5,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class GitHub_19171
 {
     public static long g_static = -1;
@@ -26,7 +27,8 @@ public class GitHub_19171
             returnVal = -1;
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Function(7);
         Function(11);

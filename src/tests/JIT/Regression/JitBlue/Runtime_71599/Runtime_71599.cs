@@ -12,6 +12,7 @@
 // 
 
 using System;
+using Xunit;
 
 public class C0
 {
@@ -45,7 +46,8 @@ public class Runtime_71599
     public static S0[] s_3;
     public static S1 s_7;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

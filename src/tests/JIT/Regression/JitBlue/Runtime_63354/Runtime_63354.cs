@@ -3,6 +3,7 @@
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_63354
 {
@@ -28,7 +29,8 @@ public class Runtime_63354
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Box(object o) {}
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         for (int i = 0; i < 1; i++)
         {

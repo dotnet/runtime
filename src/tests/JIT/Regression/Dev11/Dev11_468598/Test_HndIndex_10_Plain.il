@@ -4,6 +4,7 @@
 
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -30,6 +31,9 @@
 .class public auto ansi Test_Test_HndIndex_10_Plain extends [mscorlib] System.Object {
     .method public hidebysig static int32 Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .maxstack 8
         .locals init (class Test.DerivedClass derivedInstance, int32 exitCode)

@@ -9,6 +9,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Xunit;
 
 [StructLayout(LayoutKind.Explicit, Size = 32)]
 public readonly unsafe struct SmallString
@@ -41,7 +42,8 @@ public readonly unsafe struct SmallString
 public static class Program
 {
     static int result = 0;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var value = new SmallString("foobar");
 

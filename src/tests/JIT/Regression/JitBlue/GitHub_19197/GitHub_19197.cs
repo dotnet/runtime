@@ -7,6 +7,7 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
 public class GitHub_19171
 {
@@ -53,7 +54,8 @@ public class GitHub_19171
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Vector3EqualsTest();
         return returnVal;

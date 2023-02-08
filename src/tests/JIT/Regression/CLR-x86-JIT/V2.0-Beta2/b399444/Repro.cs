@@ -4,12 +4,14 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Tests
 {
     public class Test
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if ((TestManyFields() == 100)
                 && (TestManyFieldsPlusOne() == 100))

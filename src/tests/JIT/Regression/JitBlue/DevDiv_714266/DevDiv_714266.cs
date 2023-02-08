@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Based on DevDiv_714266, the issue reporoduced with JitStressRegs=0x1.
 // `minRegCandidateCount` for `RefTypeUpperVectorSaveDef` did not count one temporary register
@@ -52,7 +53,8 @@ public class DevDiv_714266
         });
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MethodWithManyLiveVectors();
         return 100;

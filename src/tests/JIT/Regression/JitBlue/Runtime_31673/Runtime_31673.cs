@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Runtime_31673
 {
@@ -17,7 +18,8 @@ namespace Runtime_31673
             return Vector4.Clamp(v, Vector4.Zero, Vector4.One);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int returnVal = 100;
 

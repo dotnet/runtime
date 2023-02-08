@@ -11,7 +11,8 @@ namespace projs
 {
     public class Program
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Program p = new Program();
             p.NarrowDouble();

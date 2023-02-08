@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class X
 {
@@ -63,5 +64,6 @@ public class X
         return r;
     }
 
-    public static int Main() => F();
+    [Fact]
+    public static int TestEntryPoint() => F();
 }

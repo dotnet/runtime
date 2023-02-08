@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     //@BEGINRENAME; Verify this renames
@@ -24,7 +25,8 @@ namespace DefaultNamespace
             Object o = ((UInt64)rand.Next((int)UInt64.MinValue, Int32.MaxValue));
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             new Bug().runTest();
             return 100;

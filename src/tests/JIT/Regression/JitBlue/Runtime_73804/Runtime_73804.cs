@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_73804
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         short value = 0x1000;
         int r = Problem(&value);

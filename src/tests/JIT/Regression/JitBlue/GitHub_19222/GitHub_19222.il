@@ -5,6 +5,7 @@
 // since a final method can be overridden by an explicit .override
 
 .assembly extern mscorlib { auto }
+.assembly extern xunit.core {}
 
 .assembly GitHub_19222 { }
 
@@ -12,6 +13,9 @@
 .method public assembly static int32 modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl) 
         main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  2
   .locals ([0] class C c)

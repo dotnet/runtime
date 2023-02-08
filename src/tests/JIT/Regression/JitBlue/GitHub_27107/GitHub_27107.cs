@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct S
 {
@@ -41,7 +42,8 @@ public class Program
         return s.i;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Program p = new Program();
         p.t.s.i = 100;

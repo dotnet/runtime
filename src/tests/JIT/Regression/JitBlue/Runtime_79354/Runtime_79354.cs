@@ -3,6 +3,7 @@
 
 using System;
 using System.Reflection;
+using Xunit;
 
 public interface IGetContents {
     (string, int, string) GetContents();
@@ -23,7 +24,8 @@ public class Program {
 
     public delegate (string, int, string) MyDelegate(IGetContents arg);
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MyStruct str = new MyStruct();
         str.s1 = "test1";

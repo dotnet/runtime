@@ -3,6 +3,7 @@
 
 
 using System;
+using Xunit;
 
 
 namespace Tests
@@ -42,7 +43,8 @@ namespace Tests
             System.Console.WriteLine(".cctor");
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             System.Console.WriteLine("----------------");
 

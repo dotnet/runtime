@@ -14,6 +14,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Xunit;
 
 // The values represent platforms where there was change in the serialization for one or more types.
 public enum TargetFrameworkMoniker
@@ -103,7 +104,8 @@ public class GitHub_25468
     }
 #pragma warning restore SYSLIB0011
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

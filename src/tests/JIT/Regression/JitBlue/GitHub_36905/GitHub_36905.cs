@@ -4,10 +4,12 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class GitHub_36905
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool success = true;
 

@@ -5,12 +5,14 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
     public const byte Value = 0x50;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int testCount = 0;
         foreach (MethodInfo mi in typeof(Program)

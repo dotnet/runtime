@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 unsafe public class GitHub_24846
 {
@@ -16,7 +17,8 @@ unsafe public class GitHub_24846
         Unsafe.InitBlockUnaligned(destination, 0xff, 0);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = 100;
         var destination = new byte[1];

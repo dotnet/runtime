@@ -3,12 +3,14 @@
 //
 
 using System;
+using Xunit;
 public struct CC
 {
     static sbyte m_su;
     static byte[] m_asi;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Xunit;
 
 namespace GitHub_20269
 {
@@ -17,7 +18,8 @@ namespace GitHub_20269
     public class Program
     {
         static int i;
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             i = 1;
             return (int)new Program().GetVector()[0] + 99;
