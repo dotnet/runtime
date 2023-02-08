@@ -235,8 +235,8 @@ handle_arguments_local() {
             local arg="$1"
             local parts=(${arg//:/ })
             if [[ ${#parts[@]} -eq 1 ]]; then
-                shift
-                __BuildTestProject="$__BuildTestProject$1%3B"
+                __BuildTestProject="$__BuildTestProject$2%3B"
+                __ShiftArgs=1
             else
                 __BuildTestProject="$__BuildTestProject${parts[1]}%3B"
             fi
@@ -246,8 +246,8 @@ handle_arguments_local() {
             local arg="$1"
             local parts=(${arg//:/ })
             if [[ ${#parts[@]} -eq 1 ]]; then
-                shift
-                __BuildTestDir="$__BuildTestDir$1%3B"
+                __BuildTestDir="$__BuildTestDir$2%3B"
+                __ShiftArgs=1
             else
                 __BuildTestDir="$__BuildTestDir${parts[1]}%3B"
             fi
@@ -257,8 +257,8 @@ handle_arguments_local() {
             local arg="$1"
             local parts=(${arg//:/ })
             if [[ ${#parts[@]} -eq 1 ]]; then
-                shift
-                __BuildTestTree="$__BuildTestTree$1%3B"
+                __BuildTestTree="$__BuildTestTree$2%3B"
+                __ShiftArgs=1
             else
                 __BuildTestTree="$__BuildTestTree${parts[1]}%3B"
             fi
@@ -300,8 +300,8 @@ handle_arguments_local() {
             local arg="$1"
             local parts=(${arg//:/ })
             if [[ ${#parts[@]} -eq 1 ]]; then
-                shift
-                __BuildLogRootName="$1"
+                __BuildLogRootName="$2"
+                __ShiftArgs=1
             else
                 __BuildLogRootName="${parts[1]}"
             fi
