@@ -14,13 +14,14 @@ add_library(
     monodroid.c
 )
 
+%AotSources%
+
 %Defines%
 
 include_directories("%MonoInclude%")
 
 target_link_libraries(
     monodroid
-    libz.so
-    log
+    %NativeLibrariesToLink%
     %APP_LINKER_ARGS%
 )

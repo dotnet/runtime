@@ -6,9 +6,8 @@
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <PropertyGroup>
-    <AppleGenerateAppBundle Condition="'$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AppleGenerateAppBundle>
-    <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == '' and '$(NativeLibrary)' != ''">false</AppleGenerateAppBundle>
-    <AppleGenerateAppBundle Condition="'$(AppleGenerateAppBundle)' == ''">true</AppleGenerateAppBundle>
+    <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
+    <AppleGenerateAppBundle Condition="'$(NativeLib)' != ''">false</AppleGenerateAppBundle>
   </PropertyGroup>
 
   <Target Name="AppleBuildApp" AfterTargets="$(AppleBuildAppAfterThisTarget)" />
@@ -34,7 +33,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <!-- static vs dylibs -->
       <!-- add all non stub libs first -->
       <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
       <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
@@ -73,48 +71,47 @@
     <!-- common linker arguments for app and library builds -->
     <ItemGroup>
       <_CommonLinkerArgs Include="-framework Foundation" />
-      <_CommonLinkerArgs Include="-framework Security" />
       <_CommonLinkerArgs Include="-framework GSS" />
+      <_CommonLinkerArgs Include="-framework Security" />
+      <_CommonLinkerArgs Include="-framework UIKit" />
       <_CommonLinkerArgs Include="-lz" />
       <_CommonLinkerArgs Include="-lc++" />
       <_CommonLinkerArgs Include="-liconv" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <_RuntimeSymbolsToKeep>
-_register_aot_modules
-_mono_jit_init_version
-_mono_jit_exec
-_mono_assembly_get_name
-_mono_assembly_name_get_culture
-_mono_assembly_name_get_name
-_mono_assembly_open
-_mono_class_get_method_from_name
-_mono_class_get_name
-_mono_class_get_namespace
-_mono_debug_init
-_mono_dllmap_insert
-_mono_domain_get
-_mono_gc_init_finalizer_thread
-_mono_get_exception_class
-_mono_install_assembly_preload_hook
-_mono_install_load_aot_data_hook
-_mono_install_unhandled_exception_hook
-_mono_jit_cleanup
-_mono_jit_parse_options
-_mono_jit_set_aot_mode
-_mono_object_get_class
-_mono_object_get_virtual_method
-_mono_runtime_invoke
-_mono_set_crash_chaining
-_mono_set_signal_chaining
-_mono_string_to_utf8
-_mono_trace_set_log_handler
-_monovm_initialize
-_monovm_runtimeconfig_initialize
-
-      </_RuntimeSymbolsToKeep>
-    </PropertyGroup>
+    <ItemGroup>
+      <_RuntimeSymbolsToKeep Include="
+_register_aot_modules;
+_mono_jit_init_version;
+_mono_jit_exec;
+_mono_assembly_get_name;
+_mono_assembly_name_get_culture;
+_mono_assembly_name_get_name;
+_mono_assembly_open;
+_mono_class_get_method_from_name;
+_mono_class_get_name;
+_mono_class_get_namespace;
+_mono_debug_init;
+_mono_dllmap_insert;
+_mono_domain_get;
+_mono_gc_init_finalizer_thread;
+_mono_get_exception_class;
+_mono_install_assembly_preload_hook;
+_mono_install_load_aot_data_hook;
+_mono_install_unhandled_exception_hook;
+_mono_jit_cleanup;
+_mono_jit_parse_options;
+_mono_jit_set_aot_mode;
+_mono_object_get_class;
+_mono_object_get_virtual_method;
+_mono_runtime_invoke;
+_mono_set_crash_chaining;
+_mono_set_signal_chaining;
+_mono_string_to_utf8;
+_mono_trace_set_log_handler;
+_monovm_initialize;
+_monovm_runtimeconfig_initialize;" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_BeforeAppleBuildApp">
@@ -145,7 +142,7 @@ _monovm_runtimeconfig_initialize
     </PropertyGroup>
 
     <PropertyGroup>
-      <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(NativeLibrary)' != ''">true</_EnableUnmanagedCallersOnlyMethodsExport>
+      <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(NativeLib)' != ''">true</_EnableUnmanagedCallersOnlyMethodsExport>
     </PropertyGroup>
 
     <ItemGroup>
@@ -224,11 +221,11 @@ _monovm_runtimeconfig_initialize
       <RuntimeComponents Condition="'$(RuntimeComponents)' == ''">marshal-ilgen</RuntimeComponents>
     </PropertyGroup>
 
-    <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
-
-    <ItemGroup Condition="'$(NativeLibrary)' != ''">
-      <_FrameworkLibraries Include="$(LibraryOutputPath)" />
+    <ItemGroup>
+      <_ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
     </ItemGroup>
+
+    <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
     <AppleAppBuilderTask
       AppDir="$(AppleAppDir)"
@@ -241,7 +238,6 @@ _monovm_runtimeconfig_initialize
       ExtraLinkerArguments="@(_ExtraAppLinkerArgs)"
       ForceAOT="$(RunAOTCompilation)"
       ForceInterpreter="$(MonoForceInterpreter)"
-      FrameworkLibraries="@(_FrameworkLibraries)"
       GenerateCMakeProject="$(GenerateCMakeProject)"
       GenerateXcodeProject="$(GenerateXcodeProject)"
       InvariantGlobalization="$(InvariantGlobalization)"

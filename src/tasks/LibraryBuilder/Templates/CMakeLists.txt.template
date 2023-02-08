@@ -12,7 +12,7 @@ set(DOTNET_AOT_OBJECTS
 )
 set(DOTNET_EXTRA_SOURCES
     %ExtraSources%
-    test.c
+    autoinit.c
 )
 
 include_directories("%MonoInclude%")
@@ -29,18 +29,6 @@ target_link_libraries(
 add_library(
     %LIBRARY_NAME% %LIBRARY_TYPE%
     ${DOTNET_EXTRA_SOURCES}
-)
-
-#set_target_properties(%LIBRARY_NAME% PROPERTIES
-#    FRAMEWORK TRUE
-#    FRAMEWORK_VERSION C
-#    MACOSX_FRAMEWORK_IDENTIFIER lib-%LIBRARY_NAME%
-#    XCODE_ATTRIBUTE_INSTALL_PATH "@executable_path/Frameworks"
-#    XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
-#)
-
-set_target_properties(%LIBRARY_NAME% PROPERTIES
-    XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
 )
 
 target_link_libraries(

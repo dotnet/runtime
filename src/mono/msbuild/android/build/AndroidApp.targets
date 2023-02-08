@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <AndroidGenerateAppBundle Condition="'$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
-    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(NativeLibrary)' != ''">false</AndroidGenerateAppBundle>
+    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(_IsLibraryMode)' == 'true'">false</AndroidGenerateAppBundle>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
   </PropertyGroup>
 
@@ -25,47 +25,44 @@
       <_AotModuleTablePath>$(AndroidAppBundleDir)\modules.c</_AotModuleTablePath>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <_RuntimeSymbolsToKeep>
-register_aot_modules
-mono_jit_init_version
-mono_jit_exec
-mono_assembly_get_name
-mono_assembly_name_get_culture
-mono_assembly_name_get_name
-mono_assembly_open
-mono_class_get_method_from_name
-mono_class_get_name
-mono_class_get_namespace
-mono_debug_init
-mono_dllmap_insert
-mono_domain_get
-mono_gc_init_finalizer_thread
-mono_get_exception_class
-mono_install_assembly_preload_hook
-mono_install_load_aot_data_hook
-mono_install_unhandled_exception_hook
-mono_jit_cleanup
-mono_jit_parse_options
-mono_jit_set_aot_mode
-mono_object_get_class
-mono_object_get_virtual_method
-mono_runtime_invoke
-mono_set_crash_chaining
-mono_set_signal_chaining
-mono_string_to_utf8
-mono_trace_set_log_handler
-monovm_initialize
-monovm_runtimeconfig_initialize
-mono_aot_register_module
-mono_polling_required
-mono_thread_interruption_request_flag
-
-      </_RuntimeSymbolsToKeep>
-    </PropertyGroup>
+    <ItemGroup>
+      <_RuntimeSymbolsToKeep Include="
+register_aot_modules;
+mono_jit_init_version;
+mono_jit_exec;
+mono_assembly_get_name;
+mono_assembly_name_get_culture;
+mono_assembly_name_get_name;
+mono_assembly_open;
+mono_class_get_method_from_name;
+mono_class_get_name;
+mono_class_get_namespace;
+mono_debug_init;
+mono_dllmap_insert;
+mono_domain_get;
+mono_gc_init_finalizer_thread;
+mono_get_exception_class;
+mono_install_assembly_preload_hook;
+mono_install_load_aot_data_hook;
+mono_install_unhandled_exception_hook;
+mono_jit_cleanup;
+mono_jit_parse_options;
+mono_jit_set_aot_mode;
+mono_object_get_class;
+mono_object_get_virtual_method;
+mono_runtime_invoke;
+mono_set_crash_chaining;
+mono_set_signal_chaining;
+mono_string_to_utf8;
+mono_trace_set_log_handler;
+monovm_initialize;
+monovm_runtimeconfig_initialize;
+mono_aot_register_module;
+mono_polling_required;
+mono_thread_interruption_request_flag;" />
+    </ItemGroup>
 
     <ItemGroup>
-      <!-- static vs dylibs -->
       <!-- add all non stub libs first -->
       <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
       <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
@@ -205,7 +202,7 @@ mono_thread_interruption_request_flag
     </ItemGroup>
 
     <PropertyGroup>
-      <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(NativeLibrary)' != ''">true</_EnableUnmanagedCallersOnlyMethodsExport>
+      <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(_IsLibraryMode)' == 'true'">true</_EnableUnmanagedCallersOnlyMethodsExport>
     </PropertyGroup>
 
     <MonoAOTCompiler
@@ -239,8 +236,11 @@ mono_thread_interruption_request_flag
       <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(NativeLibrary)' != ''">
-      <_ExtraAppLinkerArgs Include="$(LibraryOutputPath)" />
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <_NativeDependencies Include="$(LibraryOutputPath)" />
+    </ItemGroup>
+    <ItemGroup>
+      <_ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
     </ItemGroup>
 
     <AndroidAppBuilderTask
@@ -252,8 +252,10 @@ mono_thread_interruption_request_flag
         ForceAOT="$(RunAOTCompilation)"
         ForceFullAOT="$(ForceFullAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"
+        IsLibraryMode="$(_IsLibraryMode)"
         MainLibraryFileName="$(MainLibraryFileName)"
         MonoRuntimeHeaders="$(_MonoHeaderPath)"
+        NativeDependencies="@(_NativeDependencies)"
         OutputDir="$(AndroidAppBundleDir)"
         ProjectName="$(AssemblyName)"
         RuntimeComponents="$(RuntimeComponents)"

@@ -54,6 +54,12 @@ public class LibraryBuilderTask : AppBuilderTask
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
+    /// Additional symbols for the library to retain outside of what was specified via
+    /// [UnmanagedCallersOnly]
+    /// </summary>
+    public string[] ExtraSymbolsToExport { get; set; } = Array.Empty<string>();
+
+    /// <summary>
     /// Determines if the library is static or shared
     /// </summary>
     public bool IsSharedLibrary
@@ -116,7 +122,8 @@ public class LibraryBuilderTask : AppBuilderTask
 
     private void GatherAotSourcesObjects(StringBuilder aotSources, StringBuilder aotObjects, StringBuilder extraSources, StringBuilder linkerArgs)
     {
-        bool hasExports = false;
+        List<string> exportedSymbols = new List<string>(ExtraSymbolsToExport);
+        bool hasExports = (exportedSymbols.Count > 0);
 
         foreach (CompiledAssembly compiledAssembly in CompiledAssemblies)
         {
@@ -133,17 +140,33 @@ public class LibraryBuilderTask : AppBuilderTask
             if (!string.IsNullOrEmpty(compiledAssembly.ExportsFile))
             {
                 hasExports = true;
-                SpecifyExportedSymbols(compiledAssembly.ExportsFile, linkerArgs);
+
+                if (TargetOS == "android")
+                {
+                    GatherExportedSymbols(compiledAssembly.ExportsFile, exportedSymbols);
+                }
+                else
+                {
+                    WriteExportedSymbolsArg(compiledAssembly.ExportsFile, linkerArgs);
+                }
             }
         }
 
+        // for android, all symbols to keep go in one linker script
+        //
+        // for ios, multiple files can be specified
         if (hasExports && TargetOS == "android")
         {
-            linkerArgs.AppendLine($"    \"-Wl,-retain-symbols-file {MobileSymbolFileName}\"");
+            WriteLinkerScriptFile(MobileSymbolFileName, exportedSymbols);
+            WriteLinkerScriptArg(MobileSymbolFileName, linkerArgs);
         }
-        else if (hasExports)
+        else if (hasExports && ExtraSymbolsToExport.Length > 0)
         {
-            linkerArgs.AppendLine($"    \"-Wl,-exported_symbols_list {MobileSymbolFileName}\"");
+            File.WriteAllText(
+                MobileSymbolFileName,
+                string.Join("\n", exportedSymbols.Select(symbol => symbol))
+            );
+            WriteExportedSymbolsArg(MobileSymbolFileName, linkerArgs);
         }
 
         foreach (ITaskItem item in ExtraSources)
@@ -172,21 +195,30 @@ public class LibraryBuilderTask : AppBuilderTask
         }
     }
 
-    private void SpecifyExportedSymbols(string exportsFile, StringBuilder linkerArgs)
+    private static void GatherExportedSymbols(string exportsFile, List<string> exportedSymbols)
     {
-        if (TargetOS == "android")
+        foreach (string symbol in File.ReadLines(exportsFile))
         {
-            string exportContent = $"{File.ReadAllText(exportsFile)}\n";
+            exportedSymbols.Add(symbol);
+        }
+    }
 
-            if (exportContent.Trim().Length > 0)
-            {
-                File.AppendAllText(MobileSymbolFileName, exportContent);
-            }
-        }
-        else
-        {
-            linkerArgs.AppendLine($"    \"-Wl,-exported_symbols_list {exportsFile}\"");
-        }
+    private static void WriteExportedSymbolsArg(string exportsFile, StringBuilder linkerArgs)
+    {
+        linkerArgs.AppendLine($"    \"-Wl,-exported_symbols_list {exportsFile}\"");
+    }
+
+    private static void WriteLinkerScriptArg(string exportsFile, StringBuilder linkerArgs)
+    {
+        linkerArgs.AppendLine($"    \"-Wl,--version-script={exportsFile}\"");
+    }
+
+    private static void WriteLinkerScriptFile(string exportsFile, List<string> exportedSymbols)
+    {
+        string globalExports = string.Join(";\n", exportedSymbols.Select(symbol => symbol));
+        File.WriteAllText(exportsFile,
+            Utils.GetEmbeddedResource("linker-script.txt")
+                .Replace("%GLOBAL_SYMBOLS%", globalExports));
     }
 
     private void WriteCMakeFileFromTemplate(string aotSources, string aotObjects, string extraSources, string linkerArgs)
@@ -203,8 +235,8 @@ public class LibraryBuilderTask : AppBuilderTask
                 .Replace("%ExtraSources%", extraSources)
                 .Replace("%LIBRARY_LINKER_ARGS%", linkerArgs));
 
-        File.WriteAllText(Path.Combine(OutputDirectory, "test.c"),
-            Utils.GetEmbeddedResource("test.c"));
+        File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"),
+            Utils.GetEmbeddedResource("autoinit.c"));
     }
 
     private string BuildLibrary()

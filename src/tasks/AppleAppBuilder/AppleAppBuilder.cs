@@ -64,7 +64,7 @@ public class AppleAppBuilderTask : Task
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
-    /// List of pathes to native libraries that will make up the framework project for the app
+    /// List of paths to native libraries that will make up the framework project for the app
     /// </summary>
     public ITaskItem[] FrameworkLibraries { get; set; } = Array.Empty<ITaskItem>();
 

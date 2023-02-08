@@ -49,6 +49,16 @@ public class AndroidAppBuilderTask : Task
     public bool ForceFullAOT { get; set; }
 
     /// <summary>
+    /// Mode to control whether runtime is a self-contained library or not
+    /// </summary>
+    public bool IsLibraryMode { get; set; }
+
+    /// <summary>
+    /// Extra native dependencies to link into the app
+    /// </summary>
+    public string[] NativeDependencies { get; set; } = Array.Empty<string>();
+
+    /// <summary>
     /// Static linked runtime
     /// </summary>
     public bool StaticLinkedRuntime { get; set; }
@@ -125,6 +135,8 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.RuntimeComponents = RuntimeComponents;
         apkBuilder.DiagnosticPorts = DiagnosticPorts;
         apkBuilder.Assemblies = Assemblies;
+        apkBuilder.IsLibraryMode = IsLibraryMode;
+        apkBuilder.NativeDependencies = NativeDependencies;
         apkBuilder.ExtraLinkerArguments = ExtraLinkerArguments;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(RuntimeIdentifier, MainLibraryFileName, MonoRuntimeHeaders);
 

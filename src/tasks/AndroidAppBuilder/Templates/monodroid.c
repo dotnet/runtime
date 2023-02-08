@@ -340,8 +340,6 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     setenv ("TMPDIR", cache_dir, true);
     setenv ("TEST_RESULTS_DIR", testresults_dir, true);
 
-    test_print_value();
-
     int args_len = (*env)->GetArrayLength(env, j_args);
     int managed_argc = args_len + 1;
     char** managed_argv = (char**)malloc(managed_argc * sizeof(char*));

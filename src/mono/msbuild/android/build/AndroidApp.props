@@ -4,7 +4,8 @@
     <UseMonoRuntime>true</UseMonoRuntime>
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
-    <_NativeLibraryTarget Condition="'$(NativeLibrary)' != ''">_BuildNativeLibrary;</_NativeLibraryTarget>
+    <_IsLibraryMode Condition="'$(NativeLib)' != ''">true</_IsLibraryMode>
+    <_NativeLibraryTarget Condition="'$(_IsLibraryMode)' == 'true'">_BuildNativeLibrary;</_NativeLibraryTarget>
 
     <AndroidBuildAppAfterThisTarget Condition="'$(AndroidBuildAppAfterThisTarget)' == ''">Publish</AndroidBuildAppAfterThisTarget>
     <AndroidBuildAppDependsOn>

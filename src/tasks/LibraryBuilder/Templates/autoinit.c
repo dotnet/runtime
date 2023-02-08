@@ -3,6 +3,11 @@
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 
+/*
+    Note that this will expand into auto-initialization the runtime, but for now
+    it makes sure to keep the monovm_initialize and monovm_runtimeconfig_initialize symbols
+*/
+
 void keep_init()
 {
     const char* appctx_keys[3];

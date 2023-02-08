@@ -5,24 +5,21 @@
   <Target Name="_BuildNativeLibrary"
           Condition="'$(RunAOTCompilation)' == 'true'">
 
+    <PropertyGroup>
+      <_IsSharedLibrary Condition="'$(NativeLib)' == 'shared'">true</_IsSharedLibrary>
+    </PropertyGroup>
+
     <ItemGroup>
       <_ExtraLibrarySources Include="$(_AotModuleTablePath)" />
       <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
     </ItemGroup>
 
-    <!-- 
-      Consider passing as items into library builder 
-    -->
-    <WriteLinesToFile
-      Condition="'$(_RuntimeSymbolsToKeep.Length)' &gt; 0" 
-      File="$(BundleDir)mobile_symbols.txt" 
-      Lines="$(_RuntimeSymbolsToKeep)" 
-      Overwrite="true" />
-
     <LibraryBuilderTask
       Assemblies="@(AppAssembliesInternal)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
+      ExtraSymbolsToExport="@(_RuntimeSymbolsToKeep)"
+      IsSharedLibrary="$(_IsSharedLibrary)"
       Name="$(AssemblyName)"
       MonoRuntimeHeaders="$(_MonoHeaderPath)"
       OutputDirectory="$(BundleDir)"
