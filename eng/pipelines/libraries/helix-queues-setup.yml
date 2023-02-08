@@ -173,7 +173,7 @@ jobs:
 
     # windows arm64
     - ${{ if eq(parameters.platform, 'windows_arm64') }}:
-      - Windows.10.Arm64.Open
+      - Windows.11.Arm64.Open
 
     # WebAssembly
     - ${{ if eq(parameters.platform, 'Browser_wasm') }}:
