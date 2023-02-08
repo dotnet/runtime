@@ -210,4 +210,11 @@ ICALL_EXPORT MonoBoolean ves_icall_System_Array_FastCopy (MonoObjectHandleOnStac
 
 ICALL_EXPORT MonoBoolean ves_icall_System_Reflection_LoaderAllocatorScout_Destroy (gpointer native);
 
+ICALL_EXPORT void ves_icall_System_Diagnostics_StackTrace_GetTrace (MonoObjectHandleOnStack ex_handle, MonoObjectHandleOnStack res, int skip_frames, MonoBoolean need_file_info);
+
+ICALL_EXPORT MonoBoolean ves_icall_System_Diagnostics_StackFrame_GetFrameInfo (gint32 skip, MonoBoolean need_file_info,
+																			   MonoObjectHandleOnStack out_method, MonoObjectHandleOnStack file,
+																			   gint32 *iloffset, gint32 *native_offset,
+																			   gint32 *line, gint32 *column);
+
 #endif // __MONO_METADATA_ICALL_DECL_H__

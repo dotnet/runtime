@@ -1,5 +1,3 @@
-var require = require || undefined;
-var __dirname = __dirname || '';
 var __callbackAPI = { MONO, BINDING, INTERNAL, IMPORTS };
 if (typeof createDotnetRuntime === "function") {
     __callbackAPI.Module = Module = { ready: Module.ready };

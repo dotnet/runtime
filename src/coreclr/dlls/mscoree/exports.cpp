@@ -25,6 +25,25 @@
 
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
+#ifdef TARGET_UNIX
+#define NO_HOSTING_API_FRAME_ADDRESS ((void*)ULONG_PTR_MAX)
+void* g_hostingApiFrameAddress = NO_HOSTING_API_FRAME_ADDRESS;
+
+class HostingApiFrameHolder
+{
+public:
+    HostingApiFrameHolder(void* frameAddress)
+    {
+        g_hostingApiFrameAddress = frameAddress;
+    }
+
+    ~HostingApiFrameHolder()
+    {
+        g_hostingApiFrameAddress = NO_HOSTING_API_FRAME_ADDRESS;
+    }
+};
+#endif // TARGET_UNIX
+
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
 
@@ -235,6 +254,10 @@ int coreclr_initialize(
     bool hostPolicyEmbedded = false;
     PInvokeOverrideFn* pinvokeOverride = nullptr;
     host_runtime_contract* hostContract = nullptr;
+
+#ifdef TARGET_UNIX
+    HostingApiFrameHolder apiFrameHolder(__builtin_frame_address(0));
+#endif
 
     ConvertConfigPropertiesToUnicode(
         propertyKeys,
@@ -464,6 +487,10 @@ int coreclr_execute_assembly(
         return HRESULT_FROM_WIN32(ERROR_INVALID_PARAMETER);
     }
     *exitCode = -1;
+
+#ifdef TARGET_UNIX
+    HostingApiFrameHolder apiFrameHolder(__builtin_frame_address(0));
+#endif
 
     ICLRRuntimeHost4* host = reinterpret_cast<ICLRRuntimeHost4*>(hostHandle);
 

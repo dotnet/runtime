@@ -2204,6 +2204,7 @@ namespace System
         public static bool IsPow2(double value) { throw null; }
         public static bool IsRealNumber(double value) { throw null; }
         public static bool IsSubnormal(double d) { throw null; }
+        public static double Lerp(double value1, double value2, double amount) { throw null; }
         public static double Log(double x) { throw null; }
         public static double Log(double x, double newBase) { throw null; }
         public static double Log10(double x) { throw null; }
@@ -2801,6 +2802,7 @@ namespace System
         public static bool IsPow2(System.Half value) { throw null; }
         public static bool IsRealNumber(System.Half value) { throw null; }
         public static bool IsSubnormal(System.Half value) { throw null; }
+        public static System.Half Lerp(System.Half value1, System.Half value2, System.Half amount) { throw null; }
         public static System.Half Log(System.Half x) { throw null; }
         public static System.Half Log(System.Half x, System.Half newBase) { throw null; }
         public static System.Half Log10(System.Half x) { throw null; }
@@ -4809,6 +4811,7 @@ namespace System
         public static bool IsPow2(float value) { throw null; }
         public static bool IsRealNumber(float value) { throw null; }
         public static bool IsSubnormal(float f) { throw null; }
+        public static float Lerp(float value1, float value2, float amount) { throw null; }
         public static float Log(float x) { throw null; }
         public static float Log(float x, float newBase) { throw null; }
         public static float Log10(float x) { throw null; }
@@ -10383,6 +10386,7 @@ namespace System.Numerics
         static abstract TSelf FusedMultiplyAdd(TSelf left, TSelf right, TSelf addend);
         static abstract TSelf Ieee754Remainder(TSelf left, TSelf right);
         static abstract int ILogB(TSelf x);
+        static virtual TSelf Lerp(TSelf value1, TSelf value2, TSelf amount) { throw null; }
         static virtual TSelf ReciprocalEstimate(TSelf x) { throw null; }
         static virtual TSelf ReciprocalSqrtEstimate(TSelf x) { throw null; }
         static abstract TSelf ScaleB(TSelf x, int n);
@@ -13884,6 +13888,7 @@ namespace System.Text
     }
     public sealed class CompositeFormat
     {
+        internal CompositeFormat() { }
         public static System.Text.CompositeFormat Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.CompositeFormat? compositeFormat) { throw null; }
         public string Format { get { throw null; } }

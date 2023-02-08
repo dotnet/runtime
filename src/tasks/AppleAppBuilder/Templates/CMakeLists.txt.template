@@ -10,31 +10,27 @@ set(APP_RESOURCES
 add_executable(
     %ProjectName%
     %MainSource%
-    runtime.h
-    runtime.m
     ${APP_RESOURCES}
 )
 
+if(NOT %UseNativeAOTRuntime%)
+    target_sources(
+        %ProjectName%
+        PRIVATE
+        %AotModulesSource%
+        runtime.h
+        runtime.m)
+endif()
+
+%AotSources%
+
 %Defines%
 
-include_directories("%MonoInclude%")
+if(NOT %UseNativeAOTRuntime%)
+    include_directories("%MonoInclude%")
+endif()
 
-add_library(
-    lib%ProjectName% SHARED IMPORTED
-)
-
-set_target_properties(lib%ProjectName% PROPERTIES 
-    IMPORTED_LOCATION %FRAMEWORK_LIBRARIES%)
-
-set_target_properties(lib%ProjectName% PROPERTIES
-    FRAMEWORK TRUE
-    FRAMEWORK_VERSION C
-    MACOSX_FRAMEWORK_IDENTIFIER lib%ProjectName%
-    XCODE_ATTRIBUTE_INSTALL_PATH "@executable_path/Frameworks"
-    XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
-)
-
-set_target_properties(%ProjectName% lib%ProjectName% PROPERTIES
+set_target_properties(%ProjectName% PROPERTIES
     XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
 )
 
@@ -44,7 +40,6 @@ set_target_properties(%ProjectName% PROPERTIES
     XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
     XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING "NO"
     XCODE_EMIT_EFFECTIVE_PLATFORM_NAME "YES"
-    XCODE_EMBED_FRAMEWORKS lib%ProjectName%
     RESOURCE "${APP_RESOURCES}"
 )
 
@@ -71,13 +66,5 @@ endif()
 
 target_link_libraries(
     %ProjectName%
-    lib%ProjectName%
-    "-framework Foundation"
-    "-framework Security"
-    "-framework UIKit"
-    "-framework GSS"
-    "-lz"
-    "-lc++"
-    "-liconv"
     %APP_LINKER_ARGS%
 )

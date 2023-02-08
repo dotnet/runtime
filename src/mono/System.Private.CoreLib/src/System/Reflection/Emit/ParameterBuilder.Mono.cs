@@ -96,7 +96,7 @@ namespace System.Reflection.Emit
         {
             if (position > 0)
             {
-                TypeBuilder.SetConstantValue(methodb.GetParameterType(position - 1),
+                RuntimeTypeBuilder.SetConstantValue(methodb.GetParameterType(position - 1),
                                   defaultValue, ref defaultValue);
             }
 

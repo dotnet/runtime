@@ -137,9 +137,11 @@ namespace System.ComponentModel.Design
 #pragma warning disable SYSLIB0011
                 var formatter = new BinaryFormatter();
 
+#pragma warning disable IL3050
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
                 object obj = formatter.Deserialize(wrappedStream);
 #pragma warning restore IL2026
+#pragma warning restore IL3050
 #pragma warning restore SYSLIB0011
 
                 if (obj is object[] value)
