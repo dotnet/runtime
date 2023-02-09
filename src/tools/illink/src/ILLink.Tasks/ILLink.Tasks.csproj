@@ -38,7 +38,6 @@
     <ProjectReference Include="..\linker\Mono.Linker.csproj" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
 
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" />
-    <PackageReference Include="Microsoft.DotNet.Cecil.Pdb" Version="$(MicrosoftDotNetCecilPdbVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
     <!-- We use private assets for the Microsoft.Build packages to prevent them from being published with the tasks dll, because
          these are already a part of the SDK. -->
     <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" ExcludeAssets="runtime" />

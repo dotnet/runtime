@@ -120,6 +120,17 @@ void emitLocation::Print(LONG compMethodID) const
 }
 #endif // DEBUG
 
+#if defined(TARGET_AMD64)
+inline regMaskTP emitter::get_RBM_FLT_CALLEE_TRASH() const
+{
+    return emitComp->rbmFltCalleeTrash;
+}
+inline unsigned emitter::get_AVAILABLE_REG_COUNT() const
+{
+    return emitComp->availableRegCount;
+}
+#endif // TARGET_AMD64
+
 /*****************************************************************************
  *
  *  Return the name of an instruction format.
@@ -3226,10 +3237,18 @@ void emitter::emitDispRegSet(regMaskTP regs)
 
     for (reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
     {
-        if ((regs & genRegMask(reg)) == 0)
+        if (regs == RBM_NONE)
+        {
+            break;
+        }
+
+        regMaskTP curReg = genRegMask(reg);
+        if ((regs & curReg) == 0)
         {
             continue;
         }
+
+        regs -= curReg;
 
         if (sp)
         {
@@ -3400,6 +3419,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 #endif // TARGET_XARCH
 
         /* Save the live GC registers in the unused register fields */
+        assert((gcrefRegs & RBM_CALLEE_TRASH) == 0);
         emitEncodeCallGCregs(gcrefRegs, id);
 
         return id;
@@ -3472,6 +3492,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
         assert(!id->idIsLargeCns());
 
         /* Save the live GC registers in the unused register fields */
+        assert((gcrefRegs & RBM_CALLEE_TRASH) == 0);
         emitEncodeCallGCregs(gcrefRegs, id);
 
         return id;

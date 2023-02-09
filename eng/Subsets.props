@@ -64,6 +64,7 @@
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'wasi'">$(DefaultMonoSubsets)mono.wasiruntime+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">$(DefaultMonoSubsets)mono.aotcross+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages+</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(TargetsMobile)' == 'true' or '$(ForceBuildMobileManifests)' == 'true'">$(DefaultMonoSubsets)mono.manifests+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'Mono'">$(DefaultMonoSubsets)mono.tools+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetsMobile)' != 'true'">$(DefaultMonoSubsets)host.native+</DefaultMonoSubsets>
 
@@ -82,6 +83,7 @@
     <DefaultPacksSubsets>packs.product</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">$(DefaultPacksSubsets)+packs.tests</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultPacksSubsets)+packs.installers</DefaultPacksSubsets>
+    <DefaultPacksSubsets Condition="'$(RuntimeFlavor)' != 'Mono' and '$(ForceBuildMobileManifests)' == 'true'">$(DefaultPacksSubsets)+mono.manifests</DefaultPacksSubsets>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -141,6 +143,7 @@
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Mono.AotCross" Description="The cross-compiler runtime for Mono AOT." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
+    <SubsetName Include="Mono.Manifests" Description="The NuGet packages with manifests defining the mobile and Blazor workloads." />
     <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
     <SubsetName Include="Mono.Tools" Description="Tooling that helps support Mono development and testing." />
     <SubsetName Include="Mono.WasmRuntime" Description="The Emscripten runtime." />
@@ -380,6 +383,10 @@
   <!-- Mono sets -->
   <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TargetsLinuxBionic)' == 'true'">
     <ProjectToBuild Include="$(MonoProjectRoot)llvm\llvm-init.proj" Category="mono" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+mono.manifests+'))">
+    <ProjectToBuild Include="$(MonoProjectRoot)nuget\manifest-packages.proj" Category="mono" Pack="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.packages+'))">

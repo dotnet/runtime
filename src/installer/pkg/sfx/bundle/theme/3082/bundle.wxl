@@ -1,28 +1,28 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
   <String Id="Caption">Instalador de [WixBundleName]</String>
   <String Id="Title">[BUNDLEMONIKER]</String>
   <String Id="Motto">Solo necesita un shell, un editor de texto y 10 minutos.
 
 ¿Preparados? ¿Listos? ¡Ya!</String>
-  <String Id="ConfirmCancelMessage">¿Está seguro de que desea cancelar?</String>
+  <String Id="ConfirmCancelMessage">¿Está seguro de que desea cancelar la operación?</String>
   <String Id="ExecuteUpgradeRelatedBundleMessage">Versión anterior</String>
-  <String Id="HelpHeader">Ayuda de configuración</String>
-  <String Id="HelpText">/install | /repair | /uninstall | /layout [directorio]:  Instala, repara, desinstala o
-   crea una copia local completa del lote de aplicaciones del directorio. La opción predeterminada es /install.
+  <String Id="HelpHeader">Ayuda del programa de instalación</String>
+  <String Id="HelpText">/install | /repair | /uninstall | /layout [directory] - instala, repara, desinstala o
+   crea una copia local completa del paquete en el directorio. Install es la opción predeterminada.
 
-/passive | /quiet:  muestra la interfaz de usuario mínima sin mensajes o no muestra ninguna interfaz de usuario
-   ni mensajes. De forma predeterminada, se muestra la interfaz de usuario y todos los mensajes.
+/passive | /quiet -  muestra una IU mínima sin peticiones, o bien no muestra la IU 
+  ni las peticiones. De forma predeterminada, se muestran la IU y todas las peticiones.
 
-/norestart:  suprime todos los intentos de reinicio. De forma predeterminada, la interfaz de usuario muestra un mensaje antes de reiniciar el equipo.
-/log log.txt:  crea un registro en un archivo específico. De forma predeterminada, se crea un archivo de registro en %TEMP%.</String>
+/norestart   - suprime los intentos de reiniciar. De forma predeterminada, la IU preguntará antes de reiniciar.
+/log log.txt - se registra en un archivo específico. De forma predeterminada, se crea un archivo de registro en %TEMP%.</String>
   <String Id="HelpCloseButton">&amp;Cerrar</String>
   <String Id="InstallAcceptCheckbox">&amp;Acepto los términos y condiciones de licencia</String>
   <String Id="InstallOptionsButton">&amp;Opciones</String>
   <String Id="InstallInstallButton">&amp;Instalar</String>
   <String Id="InstallCloseButton">&amp;Cerrar</String>
   <String Id="OptionsHeader">Opciones de instalación</String>
-  <String Id="OptionsLocationLabel">Ubicación de la instalación:</String>
+  <String Id="OptionsLocationLabel">Ubicación de instalación:</String>
   <String Id="OptionsBrowseButton">E&amp;xaminar</String>
   <String Id="OptionsOkButton">&amp;Aceptar</String>
   <String Id="OptionsCancelButton">&amp;Cancelar</String>
@@ -43,7 +43,7 @@
   <String Id="SuccessRestartButton">&amp;Reiniciar</String>
   <String Id="SuccessCloseButton">&amp;Cerrar</String>
   <String Id="FailureHeader">Error de instalación</String>
-  <String Id="FailureInstallHeader">No se pudo instalar</String>
+  <String Id="FailureInstallHeader">Error de instalación</String>
   <String Id="FailureUninstallHeader">No se pudo desinstalar</String>
   <String Id="FailureRepairHeader">No se pudo reparar</String>
   <String Id="FailureHyperlinkLogText">Error de instalación debido a uno o varios problemas. Corrija los problemas e intente de nuevo la instalación. Para obtener más información, consulte el &lt;a href="#"&gt;archivo de registro&lt;/a&gt;.</String>
