@@ -218,7 +218,7 @@ ep_provider_callback_data_alloc (
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
 	bool enabled,
-	byte *session_id)
+	uint8_t *session_id)
 {
 	EventPipeProviderCallbackData *instance = ep_rt_object_alloc (EventPipeProviderCallbackData);
 	ep_raise_error_if_nok (instance != NULL);
@@ -291,7 +291,7 @@ ep_provider_callback_data_init (
 	int64_t keywords,
 	EventPipeEventLevel provider_level,
 	bool enabled,
-	byte *session_id)
+	uint8_t *session_id)
 {
 	EP_ASSERT (provider_callback_data != NULL);
 

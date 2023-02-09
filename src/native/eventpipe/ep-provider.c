@@ -29,7 +29,7 @@ provider_prepare_callback_data (
 	EventPipeEventLevel provider_level,
 	const ep_char8_t *filter_data,
 	EventPipeProviderCallbackData *provider_callback_data,
-	byte *session_id);
+	uint8_t *session_id);
 
 // _Requires_lock_held (ep)
 static
@@ -71,7 +71,7 @@ provider_prepare_callback_data (
 	EventPipeEventLevel provider_level,
 	const ep_char8_t *filter_data,
 	EventPipeProviderCallbackData *provider_callback_data,
-	byte *session_id)
+	uint8_t *session_id)
 {
 	EP_ASSERT (provider != NULL);
 	EP_ASSERT (provider_callback_data != NULL);
@@ -314,7 +314,7 @@ provider_set_config (
 	provider->provider_level = level_for_all_sessions;
 
 	provider_refresh_all_events (provider);
-	provider_prepare_callback_data (provider, provider->keywords, provider->provider_level, filter_data, callback_data, (byte *)&session_mask);
+	provider_prepare_callback_data (provider, provider->keywords, provider->provider_level, filter_data, callback_data, (uint8_t *)&session_mask);
 
 	ep_requires_lock_held ();
 	return callback_data;
@@ -363,7 +363,7 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 	int64_t keywords = ep_provider_callback_data_get_keywords (provider_callback_data);
 	EventPipeEventLevel provider_level = ep_provider_callback_data_get_provider_level (provider_callback_data);
 	void *callback_data = ep_provider_callback_data_get_callback_data (provider_callback_data);
-	byte *session_id = ep_provider_callback_data_get_session_id (provider_callback_data);
+	uint8_t *session_id = ep_provider_callback_data_get_session_id (provider_callback_data);
 
 	bool is_event_filter_desc_init = false;
 	EventFilterDescriptor event_filter_desc;
