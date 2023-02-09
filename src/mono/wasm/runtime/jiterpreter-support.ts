@@ -517,7 +517,7 @@ export class WasmBuilder {
 
     getArrayView (fullCapacity?: boolean) {
         if (this.stackSize > 1)
-            throw new Error("Stack not empty");
+            throw new Error("Jiterpreter block stack not empty");
         return this.stack[0].getArrayView(fullCapacity);
     }
 

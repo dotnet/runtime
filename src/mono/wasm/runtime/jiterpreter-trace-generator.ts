@@ -648,18 +648,26 @@ export function generate_wasm_body (
             // Generating code for these is kind of complex due to the intersection of JS and int64,
             //  and it would bloat the implementation so we handle them all in C instead and match
             //  the interp implementation. Most of these are rare in runtime tests or browser bench
+            // The non-OVF ones SHOULD be simple, but wasm doesn't specify them
+            //  for nan/inf, and v8 helpfully chooses to throw. So we need to implement them in C.
             case MintOpcode.MINT_CONV_OVF_I4_I8:
             case MintOpcode.MINT_CONV_OVF_U4_I8:
             case MintOpcode.MINT_CONV_OVF_I4_U8:
             case MintOpcode.MINT_CONV_OVF_I4_R8:
+            case MintOpcode.MINT_CONV_OVF_I8_R8:
             case MintOpcode.MINT_CONV_OVF_I4_R4:
+            case MintOpcode.MINT_CONV_OVF_I8_R4:
             case MintOpcode.MINT_CONV_OVF_U4_I4:
+            case MintOpcode.MINT_CONV_I4_R4:
+            case MintOpcode.MINT_CONV_I4_R8:
+            case MintOpcode.MINT_CONV_I8_R4:
+            case MintOpcode.MINT_CONV_I8_R8:
                 builder.block();
                 // dest, src
                 append_ldloca(builder, getArgU16(ip, 1), 8, true);
                 append_ldloca(builder, getArgU16(ip, 2), 0);
                 builder.i32_const(opcode);
-                builder.callImport("conv_ovf");
+                builder.callImport("conv");
                 // If the conversion succeeded, continue, otherwise bailout
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
@@ -793,8 +801,11 @@ export function generate_wasm_body (
             // For debugging
             if (emitPadding)
                 builder.appendU8(WasmOpcode.nop);
-        } else
+        } else {
+            if (instrumentedTraceId)
+                console.log(`instrumented trace ${traceName} aborted for opcode ${opname} @${_ip}`);
             record_abort(traceIp, _ip, traceName, opcode);
+        }
     }
 
     if (emitPadding)
@@ -1457,10 +1468,14 @@ const unopTable : { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_CONV_R8_R4]: [WasmOpcode.f64_promote_f32,   WasmOpcode.f32_load, WasmOpcode.f64_store],
     [MintOpcode.MINT_CONV_R4_R8]: [WasmOpcode.f32_demote_f64,    WasmOpcode.f64_load, WasmOpcode.f32_store],
 
+    // The behavior of these opcodes is unspecified for nan/inf.
+    // And v8 interprets 'unspecified' as 'throw a runtime error'
+    /*
     [MintOpcode.MINT_CONV_I4_R4]: [WasmOpcode.i32_trunc_s_f32,   WasmOpcode.f32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_CONV_I8_R4]: [WasmOpcode.i64_trunc_s_f32,   WasmOpcode.f32_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_CONV_I4_R8]: [WasmOpcode.i32_trunc_s_f64,   WasmOpcode.f64_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_CONV_I8_R8]: [WasmOpcode.i64_trunc_s_f64,   WasmOpcode.f64_load, WasmOpcode.i64_store],
+    */
 
     [MintOpcode.MINT_CONV_I8_I4]: [WasmOpcode.nop,               WasmOpcode.i64_load32_s, WasmOpcode.i64_store],
     [MintOpcode.MINT_CONV_I8_U4]: [WasmOpcode.nop,               WasmOpcode.i64_load32_u, WasmOpcode.i64_store],

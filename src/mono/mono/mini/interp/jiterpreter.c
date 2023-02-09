@@ -384,7 +384,7 @@ mono_jiterp_box_ref (MonoVTable *vtable, MonoObject **dest, void *src, gboolean 
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
+mono_jiterp_conv (void *dest, void *src, int opcode) {
 	switch (opcode) {
 		case MINT_CONV_OVF_I4_I8: {
 			gint64 val = *(gint64*)src;
@@ -418,6 +418,18 @@ mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
 			return 1;
 		}
 
+		case MINT_CONV_I4_R8:
+		case MINT_CONV_I4_R4: {
+			double val;
+			if (opcode == MINT_CONV_I4_R4)
+				val = *(float*)src;
+			else
+				val = *(double*)src;
+			// Whatever interp.c would do is what we want.
+			*(gint32*)dest = (gint32)val;
+			return 1;
+		}
+
 		case MINT_CONV_OVF_I4_R8:
 		case MINT_CONV_OVF_I4_R4: {
 			double val;
@@ -431,6 +443,29 @@ mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
 				return 1;
 			}
 			return 0;
+		}
+
+		case MINT_CONV_I8_R8:
+		case MINT_CONV_I8_R4: {
+			double val;
+			if (opcode == MINT_CONV_I8_R4)
+				val = *(float*)src;
+			else
+				val = *(double*)src;
+			// Whatever interp.c would do is what we want.
+			*(gint64*)dest = (gint64)val;
+			return 1;
+		}
+
+		case MINT_CONV_OVF_I8_R8:
+		case MINT_CONV_OVF_I8_R4: {
+			double val;
+			if (opcode == MINT_CONV_OVF_I8_R4)
+				val = *(float*)src;
+			else
+				val = *(double*)src;
+
+			return mono_try_trunc_i64(val, dest);
 		}
 	}
 
