@@ -11097,7 +11097,6 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     freeCandidates        = RBM_NONE;
     matchingConstants     = RBM_NONE;
     unassignedSet         = RBM_NONE;
-    foundRegBit           = RBM_NONE;
     coversSet             = RBM_NONE;
     preferenceSet         = RBM_NONE;
     coversRelatedSet      = RBM_NONE;
@@ -12066,6 +12065,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 Selection_Done:
     if (skipAllocation)
     {
+        foundRegBit = RBM_NONE;
         return RBM_NONE;
     }
 

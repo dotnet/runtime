@@ -1269,13 +1269,14 @@ private:
         regMaskTP    callerCalleePrefs = RBM_NONE;
         LsraLocation lastLocation;
 
+        regMaskTP foundRegBit;
+
         regMaskTP prevRegBit = RBM_NONE;
 
         // These are used in the post-selection updates, and must be set for any selection.
         regMaskTP freeCandidates;
         regMaskTP matchingConstants;
         regMaskTP unassignedSet;
-        regMaskTP foundRegBit;
 
         // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
         // as they all require similar computation.
