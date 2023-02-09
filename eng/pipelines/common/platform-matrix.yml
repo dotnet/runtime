@@ -95,7 +95,7 @@ jobs:
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         ${{ if eq(parameters.container, '') }}:
-          image: ubuntu-18.04-cross-arm64-20220427171722-6e40d49
+          image: ubuntu-20.04-cross-arm64-20230201170357-8b7d579
         ${{ if ne(parameters.container, '') }}:
           image: ${{ parameters.container }}
         registry: mcr

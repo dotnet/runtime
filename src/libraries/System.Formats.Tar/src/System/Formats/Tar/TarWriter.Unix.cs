@@ -82,8 +82,10 @@ namespace System.Formats.Tar
             entry._header._gid = (int)status.Gid;
             if (!_groupIdentifiers.TryGetValue(status.Gid, out string? gName))
             {
-                gName = Interop.Sys.GetGroupName(status.Gid);
-                _groupIdentifiers.Add(status.Gid, gName);
+                if (Interop.Sys.TryGetGroupName(status.Gid, out gName))
+                {
+                    _groupIdentifiers.Add(status.Gid, gName);
+                }
             }
             entry._header._gName = gName;
 

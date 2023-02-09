@@ -14,6 +14,7 @@
 #include <utilcode.h>
 #include <corhost.h>
 #include <configuration.h>
+#include "../../vm/ceemain.h"
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
 #endif // FEATURE_GDBJIT
@@ -24,12 +25,6 @@
 
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
-
-// Specifies whether coreclr is embedded or standalone
-extern bool g_coreclr_embedded;
-
-// Specifies whether hostpolicy is embedded in executable or standalone
-extern bool g_hostpolicy_embedded;
 
 // Holder for array of wide strings
 class ConstWStringArrayHolder : public NewArrayHolder<LPCWSTR>
@@ -156,6 +151,26 @@ static void ConvertConfigPropertiesToUnicode(
 
     *propertyKeysWRef = propertyKeysW;
     *propertyValuesWRef = propertyValuesW;
+}
+
+coreclr_error_writer_callback_fn g_errorWriter = nullptr;
+
+//
+// Set callback for writing error logging
+//
+// Parameters:
+//  errorWriter             - callback that will be called for each line of the error info
+//                          - passing in NULL removes a callback that was previously set
+//
+// Returns:
+//  S_OK
+//
+extern "C"
+DLLEXPORT
+int coreclr_set_error_writer(coreclr_error_writer_callback_fn error_writer)
+{
+    g_errorWriter = error_writer;
+    return S_OK;
 }
 
 #ifdef FEATURE_GDBJIT
@@ -431,4 +446,17 @@ int coreclr_execute_assembly(
     IfFailRet(hr);
 
     return hr;
+}
+
+void LogErrorToHost(const char* format, ...)
+{
+    if (g_errorWriter != NULL)
+    {
+        char messageBuffer[1024];
+        va_list args;
+        va_start(args, format);
+        _vsnprintf_s(messageBuffer, ARRAY_SIZE(messageBuffer), _TRUNCATE, format, args);
+        g_errorWriter(messageBuffer);
+        va_end(args);
+    }
 }
