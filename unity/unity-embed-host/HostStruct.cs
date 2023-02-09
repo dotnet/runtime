@@ -12,5 +12,4 @@ unsafe struct HostStruct
     public delegate* unmanaged<ushort*, StringPtr> string_from_utf16;
     public delegate* unmanaged<void* /*domain*/, sbyte* /*text*/, uint /*length*/, StringPtr> string_new_len;
     public delegate* unmanaged<void* /*domain*/, ushort* /*text*/, uint /*length*/, StringPtr> string_new_utf16;
-    public delegate* unmanaged<sbyte* /*text*/, StringPtr> string_new_wrapper;
 }

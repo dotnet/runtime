@@ -29,7 +29,6 @@ static unsafe class CoreCLRHost
         functionStruct->string_from_utf16 = &string_from_utf16;
         functionStruct->string_new_len = &string_new_len;
         functionStruct->string_new_utf16 = &string_new_utf16;
-        functionStruct->string_new_wrapper = &string_new_wrapper;
 
         return 0;
     }
@@ -69,14 +68,6 @@ static unsafe class CoreCLRHost
     static StringPtr string_new_utf16(void* domain /* unused */, ushort* text, uint length)
     {
         var s = new string((char*)text, 0, (int)length);
-        return StringToPtr(s);
-
-    }
-
-    [UnmanagedCallersOnly]
-    static StringPtr string_new_wrapper(sbyte* text)
-    {
-        var s = new string(text);
         return StringToPtr(s);
 
     }

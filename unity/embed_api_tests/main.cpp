@@ -1817,6 +1817,15 @@ TEST(mono_string_new_len_with_unicode_ascii_creates_string)
     }
 }
 
+TEST(mono_string_new_wrapper_with_unicode_ascii_creates_string)
+{
+    if (g_Mode == CoreCLR)
+    {
+        MonoString* str = mono_string_new_wrapper(kHelloWorldStringWithUnicode);
+        CHECK(str->length == 10);
+    }
+}
+
 void *ThreadFunc(void *arguments)
 {
     CHECK(mono_domain_get() == NULL);
