@@ -910,39 +910,140 @@ int LinearScan::BuildSelect(GenTreeOp* select)
 {
     int srcCount = 0;
 
+    GenCondition cc = GenCondition::NE;
     if (select->OperIs(GT_SELECT))
     {
-        srcCount += BuildOperandUses(select->AsConditional()->gtCond);
+        GenTree* cond = select->AsConditional()->gtCond;
+        if (cond->isContained())
+        {
+            assert(cond->OperIsCompare());
+            srcCount += BuildCmpOperands(cond);
+            cc = GenCondition::FromRelop(cond);
+        }
+        else
+        {
+            BuildUse(cond);
+            srcCount++;
+        }
     }
 
-    // cmov family of instructions are special in that they only conditionally
-    // define the destination register, so when generating code for GT_SELECT
-    // we normally need to preface it by a move into the destination with one
-    // of the operands. We can avoid this if one of the operands is already in
-    // the destination register, so try to prefer that.
-    //
-    // Because of the above we also need to set delayRegFree on the intervals
-    // for contained operands. Otherwise we could pick a target register that
-    // conflicted with one of those registers.
-    //
-    if (select->gtOp1->isContained())
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
+    RefPositionIterator op1UsesPrev = refPositions.backPosition();
+    assert(op1UsesPrev != refPositions.end());
+
+    RefPosition* uncontainedTrueRP = nullptr;
+    if (trueVal->isContained())
     {
-        srcCount += BuildDelayFreeUses(select->gtOp1);
+        srcCount += BuildOperandUses(trueVal);
     }
     else
     {
-        tgtPrefUse = BuildUse(select->gtOp1);
+        tgtPrefUse = uncontainedTrueRP = BuildUse(trueVal);
         srcCount++;
     }
 
-    if (select->gtOp2->isContained())
+    RefPositionIterator op2UsesPrev = refPositions.backPosition();
+
+    RefPosition* uncontainedFalseRP = nullptr;
+    if (falseVal->isContained())
     {
-        srcCount += BuildDelayFreeUses(select->gtOp2);
+        srcCount += BuildOperandUses(falseVal);
     }
     else
     {
-        tgtPrefUse2 = BuildUse(select->gtOp2);
+        tgtPrefUse2 = uncontainedFalseRP = BuildUse(falseVal);
         srcCount++;
+    }
+
+    if ((tgtPrefUse != nullptr) && (tgtPrefUse2 != nullptr))
+    {
+        // CQ analysis shows that it's best to always prefer only the 'true'
+        // val here.
+        tgtPrefUse2 = nullptr;
+    }
+
+    // Codegen will emit something like:
+    //
+    // mov dstReg, falseVal
+    // cmov dstReg, trueVal
+    //
+    // We need to ensure that dstReg does not interfere with any register that
+    // appears in the second instruction. At the same time we want to
+    // preference the dstReg to be the same register as either falseVal/trueVal
+    // to be able to elide the mov whenever possible.
+    //
+    // While we could resolve the situation with either an internal register or
+    // by marking the uses as delay free unconditionally, this is a node used
+    // for very basic code patterns, so the logic here tries to be smarter to
+    // avoid the extra register pressure/potential copies.
+    //
+    // We have some flexibility as codegen can swap falseVal/trueVal as needed
+    // to avoid the conflict by reversing the sense of the cmov. If we can
+    // guarantee that the dstReg is used only in one of falseVal/trueVal, then
+    // we are good.
+    //
+    // To ensure the above we have some bespoke interference logic here on
+    // intervals for the ref positions we built above. It marks one of the uses
+    // as delay freed when it finds interference (almost never).
+    //
+    RefPositionIterator op1Use = op1UsesPrev;
+    while (op1Use != op2UsesPrev)
+    {
+        ++op1Use;
+
+        if (op1Use->refType != RefTypeUse)
+        {
+            continue;
+        }
+
+        RefPositionIterator op2Use = op2UsesPrev;
+        ++op2Use;
+        while (op2Use != refPositions.end())
+        {
+            if (op2Use->refType == RefTypeUse)
+            {
+                if (op1Use->getInterval() == op2Use->getInterval())
+                {
+                    setDelayFree(&*op1Use);
+                    break;
+                }
+
+                ++op2Use;
+            }
+        }
+    }
+
+    // Certain FP conditions are special and require multiple cmovs. These may
+    // introduce additional uses of either trueVal or falseVal after the first
+    // mov. In these cases we need additional delay-free marking. We do not
+    // support any containment for these currently (we do not want to incur
+    // multiple memory accesses, but we could contain the operand in the 'mov'
+    // instruction with some more care taken for marking things delay reg freed
+    // correctly).
+    switch (cc.GetCode())
+    {
+        case GenCondition::FEQ:
+        case GenCondition::FLT:
+        case GenCondition::FLE:
+            // Normally these require an 'AND' conditional and cmovs with
+            // both the true and false values as sources. However, after
+            // swapping these into an 'OR' conditional the cmovs require
+            // only the original falseVal, so we need only to mark that as
+            // delay-reg freed to allow codegen to resolve this.
+            assert(uncontainedFalseRP != nullptr);
+            setDelayFree(uncontainedFalseRP);
+            break;
+        case GenCondition::FNEU:
+        case GenCondition::FGEU:
+        case GenCondition::FGTU:
+            // These require an 'OR' conditional and only access 'trueVal'.
+            assert(uncontainedTrueRP != nullptr);
+            setDelayFree(uncontainedTrueRP);
+            break;
+        default:
+            break;
     }
 
     BuildDef(select);

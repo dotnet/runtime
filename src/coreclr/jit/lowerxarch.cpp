@@ -5925,14 +5925,48 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
     assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
 #endif
 
-    // TODO-CQ: Support containing relops here for the GT_SELECT case.
+    // Disallow containing compares if the flags may be used by follow-up
+    // nodes, in which case those nodes expect zero/non-zero in the flags.
+    if (select->OperIs(GT_SELECT) && ((select->gtFlags & GTF_SET_FLAGS) == 0))
+    {
+        GenTree* cond = select->AsConditional()->gtCond;
+
+        if (cond->OperIsCompare() && IsSafeToContainMem(select, cond))
+        {
+            MakeSrcContained(select, cond);
+
+            // op1 and op2 are emitted as two separate instructions due to the
+            // conditional nature of cmov, so both operands can usually be
+            // contained memory operands. The exception is for compares
+            // requiring two cmovs, in which case we do not want to incur the
+            // memory access/address calculation twice.
+            //
+            // See the comment in Codegen::GenConditionDesc::map for why these
+            // comparisons are special and end up requiring the two cmovs.
+            //
+            GenCondition cc = GenCondition::FromRelop(cond);
+            switch (cc.GetCode())
+            {
+                case GenCondition::FEQ:
+                case GenCondition::FLT:
+                case GenCondition::FLE:
+                case GenCondition::FNEU:
+                case GenCondition::FGEU:
+                case GenCondition::FGTU:
+                    // Skip containment checking below.
+                    // TODO-CQ: We could allow one of the operands to be a
+                    // contained memory operand, but it requires updating LSRA
+                    // build to take it into account.
+                    return;
+                default:
+                    break;
+            }
+        }
+    }
 
     GenTree* op1 = select->gtOp1;
     GenTree* op2 = select->gtOp2;
 
-    // op1 and op2 are emitted as two separate instructions due to the
-    // conditional nature of cmov, so both operands can be contained memory
-    // operands.
     unsigned operSize = genTypeSize(select);
     assert((operSize == 4) || (operSize == TARGET_POINTER_SIZE));
 
