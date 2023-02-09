@@ -141,6 +141,7 @@ export async function start_asset_download(asset: AssetEntryInternal): Promise<A
     } catch (err: any) {
         if (!runtimeHelpers.enableDownloadRetry) {
             // we will not re-try if disabled
+            throw err;
         }
         if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
             // we will not re-try on shell
