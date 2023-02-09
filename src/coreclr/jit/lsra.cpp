@@ -11083,7 +11083,6 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     constAvailableApplied = false;
 
     regType         = linearScan->getRegisterType(currentInterval, refPosition);
-    currentLocation = refPosition->nodeLocation;
     nextRefPos      = refPosition->nextRefPosition;
     candidates      = refPosition->registerAssignment;
     preferences     = currentInterval->registerPreferences;
@@ -11462,7 +11461,7 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
 
         // Can and should the interval in this register be spilled for this one,
         // if we don't find a better alternative?
-        if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == currentLocation) &&
+        if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == refPosition->nodeLocation) &&
             !assignedInterval->getNextRefPosition()->RegOptional())
         {
             continue;
@@ -11962,8 +11961,8 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
             regNumber    checkConflictReg      = genRegNumFromMask(checkConflictBit);
             LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
 
-            if ((checkConflictLocation == currentLocation) ||
-                (refPosition->delayRegFree && (checkConflictLocation == (currentLocation + 1))))
+            if ((checkConflictLocation == refPosition->nodeLocation) ||
+                (refPosition->delayRegFree && (checkConflictLocation == (refPosition->nodeLocation + 1))))
             {
                 candidates &= ~checkConflictBit;
             }

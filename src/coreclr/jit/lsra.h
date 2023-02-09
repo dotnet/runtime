@@ -1255,7 +1255,6 @@ private:
         RefPosition* refPosition     = nullptr;
 
         RegisterType regType         = RegisterType::TYP_UNKNOWN;
-        LsraLocation currentLocation = MinLocation;
         RefPosition* nextRefPos      = nullptr;
 
         regMaskTP candidates;
