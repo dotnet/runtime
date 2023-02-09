@@ -2330,7 +2330,7 @@ private:
     // The emitForceNewIG check here prevents peepholes from crossing nogc boundaries.
     bool emitCanPeepholeLastIns() const
     {
-        assert((emitLastIns != nullptr) == (emitLastInsIG != nullptr));
+        assert(emitHasLastIns() == (emitLastInsIG != nullptr));
 
         return emitHasLastIns() && // there is an emitLastInstr
                !emitForceNewIG &&  // and we're not about to start a new IG.

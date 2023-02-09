@@ -1079,6 +1079,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     // being adding causes a new EXTEND IG to be created. Also, emitLastIns might not be in this IG
     // at all if this IG is empty.
 
+    assert(emitHasLastIns() == (emitLastInsIG == nullptr));
     if (emitHasLastIns() && (sz != 0))
     {
         // If we get here, emitLastIns must be in the current IG we are saving.
