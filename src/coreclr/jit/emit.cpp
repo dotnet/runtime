@@ -1075,13 +1075,13 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     }
 
     // Fix the last instruction field, if set. Note that even if there are instructions in the IG,
-    // emitGetLastIns might not be set if an optimization has just deleted it, and the new instruction
-    // being adding causes a new EXTEND IG to be created. Also, emitGetLastIns might not be in this IG
+    // emitLastIns might not be set if an optimization has just deleted it, and the new instruction
+    // being adding causes a new EXTEND IG to be created. Also, emitLastIns might not be in this IG
     // at all if this IG is empty.
 
     if (emitHasLastIns() && (sz != 0))
     {
-        // If we get here, emitGetLastIns must be in the current IG we are saving.
+        // If we get here, emitLastIns must be in the current IG we are saving.
         assert(emitLastInsIG == emitCurIG);
         assert(emitCurIGfreeBase <= (BYTE*)emitLastIns);
         assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
