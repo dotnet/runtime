@@ -1716,18 +1716,34 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 
         var_types typ =
             entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ? TYP_INT : TYP_LONG;
-        // Read Basic-Block count value
-        GenTree* valueNode =
-            m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
 
-        // Increment value by 1
-        GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
+        if (JitConfig.JitInterlockedProfiling() > 0)
+        {
+            // Form counter address
+            GenTree* addressNode = m_comp->gtNewIconHandleNode(addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR);
 
-        // Write new Basic-Block count value
-        GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
-        GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
+            // Interlocked increment
+            GenTree* xAddNode = m_comp->gtNewOperNode(GT_XADD, typ, addressNode, m_comp->gtNewIconNode(1, typ));
 
-        m_comp->fgNewStmtAtBeg(instrumentedBlock, asgNode);
+            // Ignore result.
+            m_comp->fgNewStmtAtBeg(instrumentedBlock, xAddNode);
+        }
+        else
+        {
+            // Read Basic-Block count value
+            GenTree* valueNode =
+                m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+
+            // Increment value by 1
+            GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
+
+            // Write new Basic-Block count value
+            GenTree* lhsNode =
+                m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+            GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
+
+            m_comp->fgNewStmtAtBeg(instrumentedBlock, asgNode);
+        }
 
         if (probe->kind != EdgeKind::Duplicate)
         {
