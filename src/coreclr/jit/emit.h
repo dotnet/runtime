@@ -2287,7 +2287,7 @@ private:
 #define EMIT_MAX_IG_INS_COUNT 256
 
 #if EMIT_BACKWARDS_NAVIGATION
-#define EMIT_MAX_PEEPHOLE_INS_COUNT 32
+#define EMIT_MAX_PEEPHOLE_INS_COUNT 64
 #endif // EMIT_BACKWARDS_NAVIGATION
 
     instrDesc* emitLastIns;
@@ -2351,6 +2351,7 @@ private:
         {
             assert(id != nullptr);
 
+#ifdef TARGET_XARCH
             switch (id->idInsFmt())
             {
                 // We cannot safely look at previous instructions at these boundaries.
@@ -2363,6 +2364,7 @@ private:
                     return;
                 }
             }
+#endif // TARGET_XARCH
 
             switch (action(id))
             {
@@ -2375,8 +2377,9 @@ private:
                     {
                         // When we cross IG boundaries, we need to make sure the previous IG was an extended one,
                         // and the GC interrupt status were the same on both the previous and current.
-                        if ((prevIg != ig) && ((prevIg->igFlags & IGF_EXTEND) == 0) &&
-                            ((prevIg->igFlags & IGF_NOGCINTERRUPT) == (ig->igFlags & IGF_NOGCINTERRUPT)))
+                        if ((prevIg != ig) &&
+                            (((prevIg->igFlags & IGF_EXTEND) == 0) ||
+                             ((prevIg->igFlags & IGF_NOGCINTERRUPT) != (ig->igFlags & IGF_NOGCINTERRUPT))))
                             return;
 
                         continue;
