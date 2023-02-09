@@ -1629,7 +1629,7 @@ void Compiler::compShutdown()
 
     fprintf(fout, "\n");
     fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "BasicBlock and flowList/BasicBlockList allocation stats\n");
+    fprintf(fout, "BasicBlock and FlowEdge/BasicBlockList allocation stats\n");
     fprintf(fout, "---------------------------------------------------\n");
 
     fprintf(fout, "Allocated %6u basic blocks (%7u bytes total, avg %4u bytes per method)\n", BasicBlock::s_Count,
@@ -3329,6 +3329,21 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters();
     }
 #endif // defined(DEBUG) && defined(TARGET_ARM64)
+
+#if defined(TARGET_AMD64)
+    rbmAllFloat         = RBM_ALLFLOAT_INIT;
+    rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
+    cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
+
+    if (DoJitStressEvexEncoding())
+    {
+        rbmAllFloat |= RBM_HIGHFLOAT;
+        rbmFltCalleeTrash |= RBM_HIGHFLOAT;
+        cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
+    }
+
+    codeGen->CopyRegisterInfo();
+#endif // TARGET_AMD64
 }
 
 #ifdef DEBUG
@@ -3530,6 +3545,37 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
         rejectThisPromo = (((info.compMethodHash() ^ lclNum) & 1) == 0);
     }
     return rejectThisPromo;
+}
+
+//------------------------------------------------------------------------
+// dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
+// a potentially large number of registers.
+//
+// Arguments:
+//   regs - The set of registers to display
+//
+void Compiler::dumpRegMask(regMaskTP regs) const
+{
+    if (regs == RBM_ALLINT)
+    {
+        printf("[allInt]");
+    }
+    else if (regs == (RBM_ALLINT & ~RBM_FPBASE))
+    {
+        printf("[allIntButFP]");
+    }
+    else if (regs == RBM_ALLFLOAT)
+    {
+        printf("[allFloat]");
+    }
+    else if (regs == RBM_ALLDOUBLE)
+    {
+        printf("[allDouble]");
+    }
+    else
+    {
+        dspRegMask(regs);
+    }
 }
 
 #endif // DEBUG
@@ -4385,6 +4431,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Note: the importer is sensitive to block weights, so this has
     // to happen before importation.
     //
+    activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
 
     // If we're going to instrument code, we may need to prepare before
@@ -4404,8 +4451,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Enable the post-phase checks that use internal logic to decide when checking makes sense.
     //
-    activePhaseChecks |= PhaseChecks::CHECK_EH | PhaseChecks::CHECK_LOOPS | PhaseChecks::CHECK_UNIQUE |
-                         PhaseChecks::CHECK_PROFILE | PhaseChecks::CHECK_LINKED_LOCALS;
+    activePhaseChecks |=
+        PhaseChecks::CHECK_EH | PhaseChecks::CHECK_LOOPS | PhaseChecks::CHECK_UNIQUE | PhaseChecks::CHECK_LINKED_LOCALS;
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //

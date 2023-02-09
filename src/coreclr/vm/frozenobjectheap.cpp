@@ -40,7 +40,11 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
         _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
 
     #ifdef FEATURE_64BIT_ALIGNMENT
-        _ASSERT(!type->RequiresAlign8());
+        if (type->RequiresAlign8())
+        {
+            // Align8 objects are not supported yet
+            return nullptr;
+        }
     #endif
 
         // NOTE: objectSize is expected be the full size including header

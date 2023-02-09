@@ -445,7 +445,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Returning false below will cause the read-ahead functionality to finish the read.
                 state.Current.PropertyState = StackFramePropertyState.ReadValue;
 
-                if (!SingleValueReadWithReadAhead(jsonParameterInfo.ConverterBase.RequiresReadAhead, ref reader, ref state))
+                if (!SingleValueReadWithReadAhead(jsonParameterInfo.EffectiveConverter.RequiresReadAhead, ref reader, ref state))
                 {
                     return false;
                 }

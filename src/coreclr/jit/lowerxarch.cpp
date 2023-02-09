@@ -1314,10 +1314,14 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 // the zmask from op1. We expect that op2 has already been
                 // lowered and therefore the containment checks have happened
 
+                // Since this is a newer operation, we need to account for
+                // the possibility of `op1Intrinsic` zeroing the same element
+                // we're setting here.
+
                 assert(op1Intrinsic->Op(2)->isContained());
 
                 ssize_t op1Ival = op1Idx->AsIntConCommon()->IconValue();
-                ival |= (op1Ival & 0x0F);
+                ival |= ((op1Ival & 0x0F) & ~(1 << count_d));
                 op3->AsIntConCommon()->SetIconValue(ival);
 
                 // Then we'll just carry the original non-zero input and
@@ -1334,6 +1338,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Since we've already updated zmask to take op2 being zero into
                 // account, we can basically do the same thing here by merging this
                 // zmask into the ival from op1.
+
+                // Since this is a later op, direct merging is safe
 
                 ssize_t op1Ival = op1Idx->AsIntConCommon()->IconValue();
                 ival            = op1Ival | zmask;
@@ -5919,14 +5925,48 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
     assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
 #endif
 
-    // TODO-CQ: Support containing relops here for the GT_SELECT case.
+    // Disallow containing compares if the flags may be used by follow-up
+    // nodes, in which case those nodes expect zero/non-zero in the flags.
+    if (select->OperIs(GT_SELECT) && ((select->gtFlags & GTF_SET_FLAGS) == 0))
+    {
+        GenTree* cond = select->AsConditional()->gtCond;
+
+        if (cond->OperIsCompare() && IsSafeToContainMem(select, cond))
+        {
+            MakeSrcContained(select, cond);
+
+            // op1 and op2 are emitted as two separate instructions due to the
+            // conditional nature of cmov, so both operands can usually be
+            // contained memory operands. The exception is for compares
+            // requiring two cmovs, in which case we do not want to incur the
+            // memory access/address calculation twice.
+            //
+            // See the comment in Codegen::GenConditionDesc::map for why these
+            // comparisons are special and end up requiring the two cmovs.
+            //
+            GenCondition cc = GenCondition::FromRelop(cond);
+            switch (cc.GetCode())
+            {
+                case GenCondition::FEQ:
+                case GenCondition::FLT:
+                case GenCondition::FLE:
+                case GenCondition::FNEU:
+                case GenCondition::FGEU:
+                case GenCondition::FGTU:
+                    // Skip containment checking below.
+                    // TODO-CQ: We could allow one of the operands to be a
+                    // contained memory operand, but it requires updating LSRA
+                    // build to take it into account.
+                    return;
+                default:
+                    break;
+            }
+        }
+    }
 
     GenTree* op1 = select->gtOp1;
     GenTree* op2 = select->gtOp2;
 
-    // op1 and op2 are emitted as two separate instructions due to the
-    // conditional nature of cmov, so both operands can be contained memory
-    // operands.
     unsigned operSize = genTypeSize(select);
     assert((operSize == 4) || (operSize == TARGET_POINTER_SIZE));
 

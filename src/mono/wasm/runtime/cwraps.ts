@@ -123,6 +123,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_type_to_stind", "number", ["number"]],
     [true, "mono_jiterp_imethod_to_ftnptr", "number", ["number"]],
     [true, "mono_jiterp_debug_count", "number", []],
+    [true, "mono_jiterp_get_trace_hit_count", "number", ["number"]],
 ];
 
 export interface t_Cwraps {
@@ -264,6 +265,7 @@ export interface t_Cwraps {
     mono_jiterp_type_to_stind(type: MonoType): number;
     mono_jiterp_imethod_to_ftnptr(imethod: VoidPtr): VoidPtr;
     mono_jiterp_debug_count(): number;
+    mono_jiterp_get_trace_hit_count(traceIndex: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

@@ -94,7 +94,7 @@ namespace System.Text.Json.Serialization.Metadata
                 _parent = parent;
             }
 
-            protected override bool IsImmutable => _parent.DeclaringTypeInfo?.IsConfigured == true;
+            protected override bool IsImmutable => _parent.DeclaringTypeInfo?.IsReadOnly == true;
             protected override void VerifyMutable() => _parent.DeclaringTypeInfo?.VerifyMutable();
         }
 
