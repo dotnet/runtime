@@ -59,7 +59,6 @@ struct HostStruct
     ManagedStringPtr_t (*string_from_utf16)(const gunichar2* text);
     ManagedStringPtr_t (*string_new_len)(MonoDomain *domain, const char *text, guint32 length);
     ManagedStringPtr_t (*string_new_utf16)(MonoDomain * domain, const guint16 * text, gint32 length);
-    ManagedStringPtr_t (*string_new_wrapper)(const char* text);
 };
 HostStruct* g_HostStruct;
 
@@ -2972,8 +2971,7 @@ extern "C" EXPORT_API MonoString* EXPORT_CC mono_string_new_utf16(MonoDomain * d
 
 extern "C" EXPORT_API MonoString* EXPORT_CC mono_string_new_wrapper(const char* text)
 {
-    GCX_PREEMP(); // temporary until we sort out our GC thread model
-    return (MonoString*)g_HostStruct->string_new_wrapper(text);
+    return mono_string_new_len(mono_domain_get(), text, (guint32)strlen(text));
 }
 
 extern "C" EXPORT_API gunichar2* EXPORT_CC mono_string_to_utf16(MonoString *string_obj)
