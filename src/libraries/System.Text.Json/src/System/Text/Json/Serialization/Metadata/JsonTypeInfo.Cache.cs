@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonPropertyDictionary<JsonParameterInfo>? ParameterCache { get; private set; }
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
-        internal JsonPropertyDictionary<JsonPropertyInfo>? PropertyCache { get; private protected set; }
+        internal JsonPropertyDictionary<JsonPropertyInfo>? PropertyCache { get; private set; }
 
         // Fast cache of constructor parameters by first JSON ordering; may not contain all parameters. Accessed before ParameterCache.
         // Use an array (instead of List<T>) for highest performance.
@@ -46,10 +46,6 @@ namespace System.Text.Json.Serialization.Metadata
         // Fast cache of properties by first JSON ordering; may not contain all properties. Accessed before PropertyCache.
         // Use an array (instead of List<T>) for highest performance.
         private volatile PropertyRef[]? _propertyRefsSorted;
-
-        internal Func<JsonSerializerContext, JsonPropertyInfo[]>? PropInitFunc;
-
-        internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
 
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -92,7 +88,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             PropertyRef propertyRef;
 
-            ValidateCanBeUsedForMetadataSerialization();
+            ValidateCanBeUsedForPropertyMetadataSerialization();
             ulong key = GetKey(propertyName);
 
             // Keep a local copy of the cache in case it changes by another thread.

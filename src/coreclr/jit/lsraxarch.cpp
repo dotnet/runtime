@@ -156,7 +156,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             assert(dstCount == 1);
             assert(!tree->IsReuseRegVal());
-            RefPosition* def               = BuildDef(tree);
+            RefPosition* def               = BuildDef(tree, BuildEvexIncompatibleMask(tree));
             def->getInterval()->isConstant = true;
         }
         break;
@@ -449,8 +449,8 @@ int LinearScan::BuildNode(GenTree* tree)
 
             // Comparand is preferenced to RAX.
             // The remaining two operands can be in any reg other than RAX.
-            BuildUse(tree->AsCmpXchg()->gtOpLocation, allRegs(TYP_INT) & ~RBM_RAX);
-            BuildUse(tree->AsCmpXchg()->gtOpValue, allRegs(TYP_INT) & ~RBM_RAX);
+            BuildUse(tree->AsCmpXchg()->gtOpLocation, availableIntRegs & ~RBM_RAX);
+            BuildUse(tree->AsCmpXchg()->gtOpValue, availableIntRegs & ~RBM_RAX);
             BuildUse(tree->AsCmpXchg()->gtOpComparand, RBM_RAX);
             BuildDef(tree, RBM_RAX);
         }
@@ -682,7 +682,7 @@ int LinearScan::BuildNode(GenTree* tree)
     // Not that for XARCH, the maximum number of registers defined is 2.
     assert((dstCount < 2) || ((dstCount == 2) && tree->IsMultiRegNode()));
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
-    assert(!tree->IsUnusedValue() || (dstCount != 0));
+    assert(!tree->IsValue() || (dstCount != 0));
     assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }
@@ -910,39 +910,140 @@ int LinearScan::BuildSelect(GenTreeOp* select)
 {
     int srcCount = 0;
 
+    GenCondition cc = GenCondition::NE;
     if (select->OperIs(GT_SELECT))
     {
-        srcCount += BuildOperandUses(select->AsConditional()->gtCond);
+        GenTree* cond = select->AsConditional()->gtCond;
+        if (cond->isContained())
+        {
+            assert(cond->OperIsCompare());
+            srcCount += BuildCmpOperands(cond);
+            cc = GenCondition::FromRelop(cond);
+        }
+        else
+        {
+            BuildUse(cond);
+            srcCount++;
+        }
     }
 
-    // cmov family of instructions are special in that they only conditionally
-    // define the destination register, so when generating code for GT_SELECT
-    // we normally need to preface it by a move into the destination with one
-    // of the operands. We can avoid this if one of the operands is already in
-    // the destination register, so try to prefer that.
-    //
-    // Because of the above we also need to set delayRegFree on the intervals
-    // for contained operands. Otherwise we could pick a target register that
-    // conflicted with one of those registers.
-    //
-    if (select->gtOp1->isContained())
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
+    RefPositionIterator op1UsesPrev = refPositions.backPosition();
+    assert(op1UsesPrev != refPositions.end());
+
+    RefPosition* uncontainedTrueRP = nullptr;
+    if (trueVal->isContained())
     {
-        srcCount += BuildDelayFreeUses(select->gtOp1);
+        srcCount += BuildOperandUses(trueVal);
     }
     else
     {
-        tgtPrefUse = BuildUse(select->gtOp1);
+        tgtPrefUse = uncontainedTrueRP = BuildUse(trueVal);
         srcCount++;
     }
 
-    if (select->gtOp2->isContained())
+    RefPositionIterator op2UsesPrev = refPositions.backPosition();
+
+    RefPosition* uncontainedFalseRP = nullptr;
+    if (falseVal->isContained())
     {
-        srcCount += BuildDelayFreeUses(select->gtOp2);
+        srcCount += BuildOperandUses(falseVal);
     }
     else
     {
-        tgtPrefUse2 = BuildUse(select->gtOp2);
+        tgtPrefUse2 = uncontainedFalseRP = BuildUse(falseVal);
         srcCount++;
+    }
+
+    if ((tgtPrefUse != nullptr) && (tgtPrefUse2 != nullptr))
+    {
+        // CQ analysis shows that it's best to always prefer only the 'true'
+        // val here.
+        tgtPrefUse2 = nullptr;
+    }
+
+    // Codegen will emit something like:
+    //
+    // mov dstReg, falseVal
+    // cmov dstReg, trueVal
+    //
+    // We need to ensure that dstReg does not interfere with any register that
+    // appears in the second instruction. At the same time we want to
+    // preference the dstReg to be the same register as either falseVal/trueVal
+    // to be able to elide the mov whenever possible.
+    //
+    // While we could resolve the situation with either an internal register or
+    // by marking the uses as delay free unconditionally, this is a node used
+    // for very basic code patterns, so the logic here tries to be smarter to
+    // avoid the extra register pressure/potential copies.
+    //
+    // We have some flexibility as codegen can swap falseVal/trueVal as needed
+    // to avoid the conflict by reversing the sense of the cmov. If we can
+    // guarantee that the dstReg is used only in one of falseVal/trueVal, then
+    // we are good.
+    //
+    // To ensure the above we have some bespoke interference logic here on
+    // intervals for the ref positions we built above. It marks one of the uses
+    // as delay freed when it finds interference (almost never).
+    //
+    RefPositionIterator op1Use = op1UsesPrev;
+    while (op1Use != op2UsesPrev)
+    {
+        ++op1Use;
+
+        if (op1Use->refType != RefTypeUse)
+        {
+            continue;
+        }
+
+        RefPositionIterator op2Use = op2UsesPrev;
+        ++op2Use;
+        while (op2Use != refPositions.end())
+        {
+            if (op2Use->refType == RefTypeUse)
+            {
+                if (op1Use->getInterval() == op2Use->getInterval())
+                {
+                    setDelayFree(&*op1Use);
+                    break;
+                }
+
+                ++op2Use;
+            }
+        }
+    }
+
+    // Certain FP conditions are special and require multiple cmovs. These may
+    // introduce additional uses of either trueVal or falseVal after the first
+    // mov. In these cases we need additional delay-free marking. We do not
+    // support any containment for these currently (we do not want to incur
+    // multiple memory accesses, but we could contain the operand in the 'mov'
+    // instruction with some more care taken for marking things delay reg freed
+    // correctly).
+    switch (cc.GetCode())
+    {
+        case GenCondition::FEQ:
+        case GenCondition::FLT:
+        case GenCondition::FLE:
+            // Normally these require an 'AND' conditional and cmovs with
+            // both the true and false values as sources. However, after
+            // swapping these into an 'OR' conditional the cmovs require
+            // only the original falseVal, so we need only to mark that as
+            // delay-reg freed to allow codegen to resolve this.
+            assert(uncontainedFalseRP != nullptr);
+            setDelayFree(uncontainedFalseRP);
+            break;
+        case GenCondition::FNEU:
+        case GenCondition::FGEU:
+        case GenCondition::FGTU:
+            // These require an 'OR' conditional and only access 'trueVal'.
+            assert(uncontainedTrueRP != nullptr);
+            setDelayFree(uncontainedTrueRP);
+            break;
+        default:
+            break;
     }
 
     BuildDef(select);
@@ -989,8 +1090,8 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #endif
     else
     {
-        srcCandidates = allRegs(TYP_INT) & ~RBM_RCX;
-        dstCandidates = allRegs(TYP_INT) & ~RBM_RCX;
+        srcCandidates = availableIntRegs & ~RBM_RCX;
+        dstCandidates = availableIntRegs & ~RBM_RCX;
     }
 
     // Note that Rotate Left/Right instructions don't set ZF and SF flags.
@@ -1277,7 +1378,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Don't assign the call target to any of the argument registers because
             // we will use them to also pass floating point arguments as required
             // by Amd64 ABI.
-            ctrlExprCandidates = allRegs(TYP_INT) & ~(RBM_ARG_REGS);
+            ctrlExprCandidates = availableIntRegs & ~(RBM_ARG_REGS);
         }
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
@@ -1402,7 +1503,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 case GenTreeBlk::BlkOpKindUnroll:
                     if ((size % XMM_REGSIZE_BYTES) != 0)
                     {
-                        regMaskTP regMask = allRegs(TYP_INT);
+                        regMaskTP regMask = availableIntRegs;
 #ifdef TARGET_X86
                         if ((size & 1) != 0)
                         {
@@ -1622,7 +1723,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
             if ((loadSize % XMM_REGSIZE_BYTES) != 0)
             {
-                regMaskTP regMask = allRegs(TYP_INT);
+                regMaskTP regMask = availableIntRegs;
 #ifdef TARGET_X86
                 // Storing at byte granularity requires a byteable register.
                 if ((loadSize & 1) != 0)
@@ -1827,7 +1928,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
         srcCount            = 1;
     }
 
-    srcCount += BuildDelayFreeUses(op2, op1, allRegs(TYP_INT) & ~(RBM_RAX | RBM_RDX));
+    srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(RBM_RAX | RBM_RDX));
 
     buildInternalRegisterUses();
 
@@ -1885,21 +1986,24 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             break;
     }
     assert(tree->gtGetOp2IfPresent() == nullptr);
+
+    // TODO-XARCH-AVX512 this is overly constraining register available as NI_System_Math_Abs
+    // can be lowered to EVEX compatible instruction (the rest cannot)
     int srcCount;
     if (op1->isContained())
     {
-        srcCount = BuildOperandUses(op1);
+        srcCount = BuildOperandUses(op1, BuildEvexIncompatibleMask(op1));
     }
     else
     {
-        tgtPrefUse = BuildUse(op1);
+        tgtPrefUse = BuildUse(op1, BuildEvexIncompatibleMask(op1));
         srcCount   = 1;
     }
     if (internalFloatDef != nullptr)
     {
         buildInternalRegisterUses();
     }
-    BuildDef(tree);
+    BuildDef(tree, BuildEvexIncompatibleMask(tree));
     return srcCount;
 }
 
@@ -2006,6 +2110,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
         // is not allocated the same register as the target.
         bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
+#if defined(TARGET_AMD64)
+        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic();
+#endif
 
         // Create internal temps, and handle any other special requirements.
         // Note that the default case for building uses will handle the RMW flag, but if the uses
@@ -2057,6 +2164,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_Vector128_AsVector2:
+            case NI_Vector128_AsVector3:
             case NI_Vector128_ToVector256:
             case NI_Vector128_ToVector256Unsafe:
             case NI_Vector256_GetLower:
@@ -2088,8 +2197,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(!isRMW);
 
                 // MaskMove hardcodes the destination (op3) in DI/EDI/RDI
-                srcCount += BuildOperandUses(op1);
-                srcCount += BuildOperandUses(op2);
+                srcCount += BuildOperandUses(op1, BuildEvexIncompatibleMask(op1));
+                srcCount += BuildOperandUses(op2, BuildEvexIncompatibleMask(op2));
                 srcCount += BuildOperandUses(op3, RBM_EDI);
 
                 buildUses = false;
@@ -2105,10 +2214,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     assert(isRMW);
 
                     // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
-                    tgtPrefUse = BuildUse(op1);
+                    tgtPrefUse = BuildUse(op1, BuildEvexIncompatibleMask(op1));
 
                     srcCount += 1;
-                    srcCount += op2->isContained() ? BuildOperandUses(op2) : BuildDelayFreeUses(op2, op1);
+                    srcCount += op2->isContained() ? BuildOperandUses(op2, BuildEvexIncompatibleMask(op2))
+                                                   : BuildDelayFreeUses(op2, op1, BuildEvexIncompatibleMask(op2));
                     srcCount += BuildDelayFreeUses(op3, op1, RBM_XMM0);
 
                     buildUses = false;
@@ -2303,14 +2413,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(!isRMW);
 
                 // Any pair of the index, mask, or destination registers should be different
-                srcCount += BuildOperandUses(op1);
-                srcCount += BuildDelayFreeUses(op2);
+                srcCount += BuildOperandUses(op1, BuildEvexIncompatibleMask(op1));
+                srcCount += BuildDelayFreeUses(op2, nullptr, BuildEvexIncompatibleMask(op2));
 
                 // op3 should always be contained
                 assert(op3->isContained());
 
                 // get a tmp register for mask that will be cleared by gather instructions
-                buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
+                buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
                 setInternalRegsDelayFree = true;
 
                 buildUses = false;
@@ -2326,16 +2436,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 GenTree* op5 = intrinsicTree->Op(5);
 
                 // Any pair of the index, mask, or destination registers should be different
-                srcCount += BuildOperandUses(op1);
-                srcCount += BuildDelayFreeUses(op2);
-                srcCount += BuildDelayFreeUses(op3);
-                srcCount += BuildDelayFreeUses(op4);
+                srcCount += BuildOperandUses(op1, BuildEvexIncompatibleMask(op1));
+                srcCount += BuildDelayFreeUses(op2, nullptr, BuildEvexIncompatibleMask(op2));
+                srcCount += BuildDelayFreeUses(op3, nullptr, BuildEvexIncompatibleMask(op3));
+                srcCount += BuildDelayFreeUses(op4, nullptr, BuildEvexIncompatibleMask(op4));
 
                 // op5 should always be contained
                 assert(op5->isContained());
 
                 // get a tmp register for mask that will be cleared by gather instructions
-                buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
+                buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
                 setInternalRegsDelayFree = true;
 
                 buildUses = false;
@@ -2353,25 +2463,40 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             assert((numArgs > 0) && (numArgs < 4));
 
+            regMaskTP op1RegCandidates = RBM_NONE;
+#if defined(TARGET_AMD64)
+            if (!isEvexCompatible)
+            {
+                op1RegCandidates = BuildEvexIncompatibleMask(op1);
+            }
+#endif
+
             if (intrinsicTree->OperIsMemoryLoadOrStore())
             {
-                srcCount += BuildAddrUses(op1);
+                srcCount += BuildAddrUses(op1, op1RegCandidates);
             }
             else if (isRMW && !op1->isContained())
             {
-                tgtPrefUse = BuildUse(op1);
+                tgtPrefUse = BuildUse(op1, op1RegCandidates);
                 srcCount += 1;
             }
             else
             {
-                srcCount += BuildOperandUses(op1);
+                srcCount += BuildOperandUses(op1, op1RegCandidates);
             }
 
             if (op2 != nullptr)
             {
+                regMaskTP op2RegCandidates = RBM_NONE;
+#if defined(TARGET_AMD64)
+                if (!isEvexCompatible)
+                {
+                    op2RegCandidates = BuildEvexIncompatibleMask(op2);
+                }
+#endif
                 if (op2->OperIs(GT_HWINTRINSIC) && op2->AsHWIntrinsic()->OperIsMemoryLoad() && op2->isContained())
                 {
-                    srcCount += BuildAddrUses(op2->AsHWIntrinsic()->Op(1));
+                    srcCount += BuildAddrUses(op2->AsHWIntrinsic()->Op(1), op2RegCandidates);
                 }
                 else if (isRMW)
                 {
@@ -2380,7 +2505,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         // When op2 is not contained and we are commutative, we can set op2
                         // to also be a tgtPrefUse. Codegen will then swap the operands.
 
-                        tgtPrefUse2 = BuildUse(op2);
+                        tgtPrefUse2 = BuildUse(op2, op2RegCandidates);
                         srcCount += 1;
                     }
                     else if (!op2->isContained() || varTypeIsArithmetic(intrinsicTree->TypeGet()))
@@ -2388,7 +2513,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         // When op2 is not contained or if we are producing a scalar value
                         // we need to mark it as delay free because the operand and target
                         // exist in the same register set.
-                        srcCount += BuildDelayFreeUses(op2, op1);
+                        srcCount += BuildDelayFreeUses(op2, op1, op2RegCandidates);
                     }
                     else
                     {
@@ -2396,17 +2521,25 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         // have no concerns of overwriting op2 because they exist in different
                         // register sets.
 
-                        srcCount += BuildOperandUses(op2);
+                        srcCount += BuildOperandUses(op2, op2RegCandidates);
                     }
                 }
                 else
                 {
-                    srcCount += BuildOperandUses(op2);
+                    srcCount += BuildOperandUses(op2, op2RegCandidates);
                 }
 
                 if (op3 != nullptr)
                 {
-                    srcCount += isRMW ? BuildDelayFreeUses(op3, op1) : BuildOperandUses(op3);
+                    regMaskTP op3RegCandidates = RBM_NONE;
+#if defined(TARGET_AMD64)
+                    if (!isEvexCompatible)
+                    {
+                        op3RegCandidates = BuildEvexIncompatibleMask(op3);
+                    }
+#endif
+                    srcCount += isRMW ? BuildDelayFreeUses(op3, op1, op3RegCandidates)
+                                      : BuildOperandUses(op3, op3RegCandidates);
                 }
             }
         }
@@ -2416,6 +2549,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     if (dstCount == 1)
     {
+#if defined(TARGET_AMD64)
+        if (!intrinsicTree->isEvexCompatibleHWIntrinsic() &&
+            (varTypeIsFloating(intrinsicTree->gtType) || varTypeIsSIMD(intrinsicTree->gtType)))
+        {
+            dstCandidates = lowSIMDRegs();
+        }
+#endif
+
         BuildDef(intrinsicTree, dstCandidates);
     }
     else
@@ -2697,6 +2838,45 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
             compiler->GetEmitter()->SetContains256bitAVX(true);
         }
     }
+}
+
+//------------------------------------------------------------------------------
+// BuildEvexIncompatibleMask: Returns RMB_NONE or a mask representing the
+// lower SIMD registers for a node that lowers to an instruction that does not
+// have an EVEX form (thus cannot use the upper SIMD registers).
+// The caller invokes this function when it knows the node is EVEX incompatible.
+//
+// Simply using lowSIMDRegs() on an incompatible node's operand will incorrectly mask
+// same cases, e.g., memory loads.
+//
+// Arguments:
+//    tree   - tree to check for EVEX lowering compatibility
+//
+// Return Value:
+//    RBM_NONE if compatible with EVEX (or not a floating/SIMD register),
+//    lowSIMDRegs() (XMM0-XMM16) otherwise.
+//
+inline regMaskTP LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
+{
+#if defined(TARGET_AMD64)
+    if (!(varTypeIsFloating(tree->gtType) || varTypeIsSIMD(tree->gtType)))
+    {
+        return RBM_NONE;
+    }
+
+    // If a node is contained and is a memory load etc., use RBM_NONE as it will use an integer register for the
+    // load, not a SIMD register.
+    if (tree->isContained() &&
+        (tree->OperIsIndir() || (tree->OperIs(GT_HWINTRINSIC) && tree->AsHWIntrinsic()->OperIsMemoryLoad()) ||
+         tree->OperIs(GT_LEA)))
+    {
+        return RBM_NONE;
+    }
+
+    return lowSIMDRegs();
+#else
+    return RBM_NONE;
+#endif
 }
 
 #endif // TARGET_XARCH

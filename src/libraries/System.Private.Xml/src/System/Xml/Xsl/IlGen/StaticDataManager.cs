@@ -25,18 +25,12 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public int Add(T value)
         {
-            int id;
-
-            if (!_lookup.ContainsKey(value))
+            if (!_lookup.TryGetValue(value, out int id))
             {
                 // The value does not yet exist, so add it to the list
                 id = _list.Count;
                 _lookup.Add(value, id);
                 _list.Add(value);
-            }
-            else
-            {
-                id = _lookup[value];
             }
 
             return id;

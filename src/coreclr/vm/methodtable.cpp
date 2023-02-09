@@ -2238,8 +2238,8 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         LPCUTF8 namespaceName;
         LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
 
-        if ((strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
-            (strcmp(className, "Vector64`1") == 0))
+        if ((strcmp(className, "Vector512`1") == 0) || (strcmp(className, "Vector256`1") == 0) ||
+            (strcmp(className, "Vector128`1") == 0) || (strcmp(className, "Vector64`1") == 0))
         {
             assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
 
@@ -2488,8 +2488,8 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         LPCUTF8 namespaceName;
         LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
 
-        if ((strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
-            (strcmp(className, "Vector64`1") == 0))
+        if ((strcmp(className, "Vector512`1") == 0) || (strcmp(className, "Vector256`1") == 0) ||
+            (strcmp(className, "Vector128`1") == 0) || (strcmp(className, "Vector64`1") == 0))
         {
             assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
 
@@ -3531,7 +3531,8 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
         if (VolatileLoad(boxedStaticHandle) == nullptr)
         {
             LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, false);
+            const bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
+            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, canBeFrozen);
             SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
         }
     }

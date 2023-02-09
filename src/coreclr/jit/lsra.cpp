@@ -239,25 +239,7 @@ weight_t LinearScan::getWeight(RefPosition* refPos)
 regMaskTP LinearScan::allRegs(RegisterType rt)
 {
     assert((rt != TYP_UNDEF) && (rt != TYP_STRUCT));
-    if (rt == TYP_FLOAT)
-    {
-        return availableFloatRegs;
-    }
-    else if (rt == TYP_DOUBLE)
-    {
-        return availableDoubleRegs;
-    }
-#ifdef FEATURE_SIMD
-    // TODO-Cleanup: Add an RBM_ALLSIMD
-    else if (varTypeIsSIMD(rt))
-    {
-        return availableDoubleRegs;
-    }
-#endif // FEATURE_SIMD
-    else
-    {
-        return availableIntRegs;
-    }
+    return *availableRegs[rt];
 }
 
 regMaskTP LinearScan::allByteRegs()
@@ -272,6 +254,23 @@ regMaskTP LinearScan::allByteRegs()
 regMaskTP LinearScan::allSIMDRegs()
 {
     return availableFloatRegs;
+}
+
+//------------------------------------------------------------------------
+// lowSIMDRegs(): Return the set of SIMD registers associated with VEX
+// encoding only, i.e., remove the high EVEX SIMD registers from the available
+// set.
+//
+// Return Value:
+// Register mask of the SSE/VEX-only SIMD registers
+//
+regMaskTP LinearScan::lowSIMDRegs()
+{
+#if defined(TARGET_AMD64)
+    return (availableFloatRegs & RBM_LOWFLOAT);
+#else
+    return availableFloatRegs;
+#endif
 }
 
 void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition)
@@ -382,7 +381,7 @@ regMaskTP LinearScan::internalFloatRegCandidates()
 {
     if (compiler->compFloatingPointUsed)
     {
-        return allRegs(TYP_FLOAT);
+        return availableFloatRegs;
     }
     else
     {
@@ -478,8 +477,19 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
                 }
                 break;
 
+#if defined(TARGET_AMD64)
+            case LSRA_LIMIT_UPPER_SIMD_SET:
+                if ((mask & LsraLimitUpperSimdSet) != RBM_NONE)
+                {
+                    mask = getConstrainedRegMask(mask, LsraLimitUpperSimdSet, minRegCount);
+                }
+                break;
+#endif
+
             default:
+            {
                 unreached();
+            }
         }
 
         if (refPosition != nullptr && refPosition->isFixedRegRef)
@@ -626,6 +636,17 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
+#if defined(TARGET_AMD64)
+    rbmAllFloat       = compiler->rbmAllFloat;
+    rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+    availableRegCount = ACTUAL_REG_COUNT;
+
+    if (!compiler->DoJitStressEvexEncoding())
+    {
+        availableRegCount -= CNT_HIGHFLOAT;
+    }
+#endif // TARGET_AMD64
+
     regSelector  = new (theCompiler, CMK_LSRA) RegisterSelection(this);
     firstColdLoc = MaxLocation;
 
@@ -688,6 +709,41 @@ LinearScan::LinearScan(Compiler* theCompiler)
         availableDoubleRegs &= ~RBM_CALLEE_SAVED;
     }
 #endif // TARGET_AMD64 || TARGET_ARM64
+
+#if defined(TARGET_AMD64)
+    // TODO-XARCH-AVX512 switch this to canUseEvexEncoding() once we independently
+    // allow EVEX use from the stress flag (currently, if EVEX stress is turned off,
+    // we cannot use EVEX at all)
+    if (compiler->DoJitStressEvexEncoding())
+    {
+        availableFloatRegs |= RBM_HIGHFLOAT;
+        availableDoubleRegs |= RBM_HIGHFLOAT;
+    }
+#endif
+
+    for (unsigned int i = 0; i < TYP_COUNT; i++)
+    {
+        var_types thisType = (var_types)genActualTypes[i];
+        if (thisType == TYP_FLOAT)
+        {
+            availableRegs[i] = &availableFloatRegs;
+        }
+        else if (thisType == TYP_DOUBLE)
+        {
+            availableRegs[i] = &availableDoubleRegs;
+        }
+#ifdef FEATURE_SIMD
+        else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD32))
+        {
+            availableRegs[i] = &availableDoubleRegs;
+        }
+#endif
+        else
+        {
+            availableRegs[i] = &availableIntRegs;
+        }
+    }
+
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
 
@@ -1326,7 +1382,6 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             varDsc->SetRegNum(newRegNum);
             count++;
 
-#ifdef USING_VARIABLE_LIVE_RANGE
             BasicBlock* prevReportedBlock = bb->bbPrev;
             if (bb->bbPrev != nullptr && bb->bbPrev->isBBCallAlwaysPairTail())
             {
@@ -1345,7 +1400,6 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
                 // "getInVarToRegMap"
                 compiler->codeGen->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, varNum);
             }
-#endif // USING_VARIABLE_LIVE_RANGE
         }
         else if (newRegNum != REG_STK)
         {
@@ -1844,7 +1898,7 @@ void LinearScan::identifyCandidates()
                 }
             }
             JITDUMP("  ");
-            DBEXEC(VERBOSE, newInt->dump());
+            DBEXEC(VERBOSE, newInt->dump(compiler));
         }
         else
         {
@@ -4021,7 +4075,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     {
         // Just clear any constant registers and return.
         resetAvailableRegs();
-        for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+        for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
         {
             RegRecord* physRegRecord    = getRegisterRecord(reg);
             Interval*  assignedInterval = physRegRecord->assignedInterval;
@@ -4269,7 +4323,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         resetRegState();
         setRegsInUse(liveRegs);
     }
-    for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
         if ((liveRegs & genRegMask(reg)) == 0)
@@ -4551,7 +4605,7 @@ void LinearScan::allocateRegisters()
     }
 
     resetRegState();
-    for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
@@ -4714,7 +4768,7 @@ void LinearScan::allocateRegisters()
 #ifdef DEBUG
                 // Validate the current state just after we've freed the registers. This ensures that any pending
                 // freed registers will have had their state updated to reflect the intervals they were holding.
-                for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+                for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
                 {
                     regMaskTP regMask = genRegMask(reg);
                     // If this isn't available or if it's still waiting to be freed (i.e. it was in
@@ -5643,7 +5697,7 @@ void LinearScan::allocateRegisters()
             if (interval.isActive)
             {
                 printf("Active ");
-                interval.dump();
+                interval.dump(this->compiler);
             }
         }
 
@@ -6634,7 +6688,7 @@ void LinearScan::resolveRegisters()
     // are encountered.
     if (enregisterLocalVars)
     {
-        for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+        for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
         {
             RegRecord* physRegRecord    = getRegisterRecord(reg);
             Interval*  assignedInterval = physRegRecord->assignedInterval;
@@ -7370,9 +7424,12 @@ void LinearScan::insertSwap(
 // getTempRegForResolution: Get a free register to use for resolution code.
 //
 // Arguments:
-//    fromBlock - The "from" block on the edge being resolved.
-//    toBlock   - The "to" block on the edge
-//    type      - the type of register required
+//    fromBlock              - The "from" block on the edge being resolved.
+//    toBlock                - The "to" block on the edge. Can be null for shared critical edge resolution.
+//    type                   - The type of register required
+//    sharedCriticalLiveSet  - The set of live vars that require shared critical resolution. Only used when toBlock is
+//                             nullptr.
+//    terminatorConsumedRegs - Registers consumed by 'fromBlock's terminating node.
 //
 // Return Value:
 //    Returns a register that is free on the given edge, or REG_NA if none is available.
@@ -7382,12 +7439,16 @@ void LinearScan::insertSwap(
 //    available, and to handle that case appropriately.
 //    It is also up to the caller to cache the return value, as this is not cheap to compute.
 
-regNumber LinearScan::getTempRegForResolution(BasicBlock* fromBlock, BasicBlock* toBlock, var_types type)
+regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
+                                              BasicBlock*      toBlock,
+                                              var_types        type,
+                                              VARSET_VALARG_TP sharedCriticalLiveSet,
+                                              regMaskTP        terminatorConsumedRegs)
 {
     // TODO-Throughput: This would be much more efficient if we add RegToVarMaps instead of VarToRegMaps
     // and they would be more space-efficient as well.
     VarToRegMap fromVarToRegMap = getOutVarToRegMap(fromBlock->bbNum);
-    VarToRegMap toVarToRegMap   = getInVarToRegMap(toBlock->bbNum);
+    VarToRegMap toVarToRegMap   = toBlock == nullptr ? nullptr : getInVarToRegMap(toBlock->bbNum);
 
 #ifdef TARGET_ARM
     regMaskTP freeRegs;
@@ -7412,21 +7473,47 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock* fromBlock, BasicBlock*
 #endif // DEBUG
     INDEBUG(freeRegs = stressLimitRegs(nullptr, freeRegs));
 
+    freeRegs &= ~terminatorConsumedRegs;
+
     // We are only interested in the variables that are live-in to the "to" block.
-    VarSetOps::Iter iter(compiler, toBlock->bbLiveIn);
+    VarSetOps::Iter iter(compiler, toBlock == nullptr ? fromBlock->bbLiveOut : toBlock->bbLiveIn);
     unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex) && freeRegs != RBM_NONE)
     {
         regNumber fromReg = getVarReg(fromVarToRegMap, varIndex);
-        regNumber toReg   = getVarReg(toVarToRegMap, varIndex);
-        assert(fromReg != REG_NA && toReg != REG_NA);
+        assert(fromReg != REG_NA);
         if (fromReg != REG_STK)
         {
-            freeRegs &= ~genRegMask(fromReg, getIntervalForLocalVar(varIndex)->registerType);
+            freeRegs &= ~genRegMask(fromReg ARM_ARG(getIntervalForLocalVar(varIndex)->registerType));
         }
-        if (toReg != REG_STK)
+
+        if (toBlock != nullptr)
         {
-            freeRegs &= ~genRegMask(toReg, getIntervalForLocalVar(varIndex)->registerType);
+            regNumber toReg = getVarReg(toVarToRegMap, varIndex);
+            assert(toReg != REG_NA);
+            if (toReg != REG_STK)
+            {
+                freeRegs &= ~genRegMask(toReg ARM_ARG(getIntervalForLocalVar(varIndex)->registerType));
+            }
+        }
+    }
+
+    if (toBlock == nullptr)
+    {
+        // Resolution of critical edge that was determined to be shared (i.e.
+        // all vars requiring resolution are going into the same registers for
+        // all successor edges).
+
+        VarSetOps::Iter iter(compiler, sharedCriticalLiveSet);
+        varIndex = 0;
+        while (iter.NextElem(&varIndex) && freeRegs != RBM_NONE)
+        {
+            regNumber reg = getVarReg(sharedCriticalVarToRegMap, varIndex);
+            assert(reg != REG_NA);
+            if (reg != REG_STK)
+            {
+                freeRegs &= ~genRegMask(reg ARM_ARG(getIntervalForLocalVar(varIndex)->registerType));
+            }
         }
     }
 
@@ -7444,6 +7531,12 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock* fromBlock, BasicBlock*
     }
     else
     {
+        // Prefer a callee-trashed register if possible to prevent new prolog/epilog saves/restores.
+        if ((freeRegs & RBM_CALLEE_TRASH) != 0)
+        {
+            freeRegs &= RBM_CALLEE_TRASH;
+        }
+
         regNumber tempReg = genRegNumFromMask(genFindLowestBit(freeRegs));
         return tempReg;
     }
@@ -7753,7 +7846,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             else if (liveOnlyAtSplitEdge)
             {
                 // Is the var live only at those target blocks which are connected by a split edge to this block
-                liveOnlyAtSplitEdge = ((succBlock->bbPreds->flNext == nullptr) && (succBlock != compiler->fgFirstBB));
+                liveOnlyAtSplitEdge =
+                    ((succBlock->bbPreds->getNextPredEdge() == nullptr) && (succBlock != compiler->fgFirstBB));
             }
 
             regNumber toReg = getVarReg(getInVarToRegMap(succBlock->bbNum), outResolutionSetVarIndex);
@@ -7847,7 +7941,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         else
         {
             // For any vars in the sameResolutionSet, we can simply add the move at the end of "block".
-            resolveEdge(block, nullptr, ResolveSharedCritical, sameResolutionSet);
+            resolveEdge(block, nullptr, ResolveSharedCritical, sameResolutionSet, consumedRegs);
         }
     }
     if (!VarSetOps::IsEmpty(compiler, diffResolutionSet))
@@ -7858,7 +7952,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 
             // Any "diffResolutionSet" resolution for a block with no other predecessors will be handled later
             // as split resolution.
-            if ((succBlock->bbPreds->flNext == nullptr) && (succBlock != compiler->fgFirstBB))
+            if ((succBlock->bbPreds->getNextPredEdge() == nullptr) && (succBlock != compiler->fgFirstBB))
             {
                 continue;
             }
@@ -7903,7 +7997,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 }
                 else
                 {
-                    resolveEdge(block, succBlock, ResolveCritical, edgeResolutionSet);
+                    resolveEdge(block, succBlock, ResolveCritical, edgeResolutionSet, consumedRegs);
                 }
             }
         }
@@ -7936,7 +8030,6 @@ void LinearScan::resolveEdges()
     // The resolutionCandidateVars set was initialized with all the lclVars that are live-in to
     // any block. We now intersect that set with any lclVars that ever spilled or split.
     // If there are no candidates for resolution, simply return.
-
     VarSetOps::IntersectionD(compiler, resolutionCandidateVars, splitOrSpilledVars);
     if (VarSetOps::IsEmpty(compiler, resolutionCandidateVars))
     {
@@ -7994,7 +8087,7 @@ void LinearScan::resolveEdges()
                     uniquePredBlock = uniquePredBlock->GetUniquePred(compiler);
                     noway_assert(uniquePredBlock != nullptr);
                 }
-                resolveEdge(uniquePredBlock, block, ResolveSplit, inResolutionSet);
+                resolveEdge(uniquePredBlock, block, ResolveSplit, inResolutionSet, RBM_NONE);
             }
         }
 
@@ -8013,7 +8106,7 @@ void LinearScan::resolveEdges()
                     VarSetOps::Intersection(compiler, succBlock->bbLiveIn, resolutionCandidateVars));
                 if (!VarSetOps::IsEmpty(compiler, outResolutionSet))
                 {
-                    resolveEdge(block, succBlock, ResolveJoin, outResolutionSet);
+                    resolveEdge(block, succBlock, ResolveJoin, outResolutionSet, RBM_NONE);
                 }
             }
         }
@@ -8126,10 +8219,12 @@ void LinearScan::resolveEdges()
 // resolveEdge: Perform the specified type of resolution between two blocks.
 //
 // Arguments:
-//    fromBlock     - the block from which the edge originates
-//    toBlock       - the block at which the edge terminates
-//    resolveType   - the type of resolution to be performed
-//    liveSet       - the set of tracked lclVar indices which may require resolution
+//    fromBlock              - the block from which the edge originates
+//    toBlock                - the block at which the edge terminates
+//    resolveType            - the type of resolution to be performed
+//    liveSet                - the set of tracked lclVar indices which may require resolution
+//    terminatorConsumedRegs - the registers consumed by the terminator node.
+//                             These registers will be used after any resolution added at the end of the 'fromBlock'.
 //
 // Return Value:
 //    None.
@@ -8148,7 +8243,8 @@ void LinearScan::resolveEdges()
 void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                              BasicBlock*      toBlock,
                              ResolveType      resolveType,
-                             VARSET_VALARG_TP liveSet)
+                             VARSET_VALARG_TP liveSet,
+                             regMaskTP        terminatorConsumedRegs)
 {
     VarToRegMap fromVarToRegMap = getOutVarToRegMap(fromBlock->bbNum);
     VarToRegMap toVarToRegMap;
@@ -8190,24 +8286,21 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             break;
     }
 
-#ifndef TARGET_XARCH
     // We record tempregs for beginning and end of each block.
     // For amd64/x86 we only need a tempReg for float - we'll use xchg for int.
     // TODO-Throughput: It would be better to determine the tempRegs on demand, but the code below
     // modifies the varToRegMaps so we don't have all the correct registers at the time
     // we need to get the tempReg.
-    regNumber tempRegInt =
-        (resolveType == ResolveSharedCritical) ? REG_NA : getTempRegForResolution(fromBlock, toBlock, TYP_INT);
-#endif // !TARGET_XARCH
+    regNumber tempRegInt = getTempRegForResolution(fromBlock, toBlock, TYP_INT, liveSet, terminatorConsumedRegs);
     regNumber tempRegFlt = REG_NA;
 #ifdef TARGET_ARM
     regNumber tempRegDbl = REG_NA;
 #endif
-    if ((compiler->compFloatingPointUsed) && (resolveType != ResolveSharedCritical))
+    if (compiler->compFloatingPointUsed)
     {
 #ifdef TARGET_ARM
         // Try to reserve a double register for TYP_DOUBLE and use it for TYP_FLOAT too if available.
-        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE);
+        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE, liveSet, terminatorConsumedRegs);
         if (tempRegDbl != REG_NA)
         {
             tempRegFlt = tempRegDbl;
@@ -8215,7 +8308,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         else
 #endif // TARGET_ARM
         {
-            tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
+            tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, liveSet, terminatorConsumedRegs);
         }
     }
 
@@ -8482,18 +8575,16 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         tempReg = tempRegFlt;
                 }
 #ifdef TARGET_XARCH
-                else
+                else if (tempRegInt == REG_NA)
                 {
                     useSwap = true;
                 }
-#else // !TARGET_XARCH
-
+#endif
                 else
                 {
                     tempReg = tempRegInt;
                 }
 
-#endif // !TARGET_XARCH
                 if (useSwap || tempReg == REG_NA)
                 {
                     // First, we have to figure out the destination register for what's currently in fromReg,
@@ -8720,8 +8811,10 @@ void LinearScan::dumpLsraStats(FILE* file)
 
     fprintf(file, "----------\n");
 #ifdef DEBUG
-    fprintf(file, "Register selection order: %S\n",
-            JitConfig.JitLsraOrdering() == nullptr ? W("ABCDEFGHIJKLMNOPQ") : JitConfig.JitLsraOrdering());
+    LPCWSTR lsraOrder = JitConfig.JitLsraOrdering() == nullptr ? W("ABCDEFGHIJKLMNOPQ") : JitConfig.JitLsraOrdering();
+    char    lsraOrderUtf8[(REGSELECT_HEURISTIC_COUNT * 3) + 1] = {};
+    WszWideCharToMultiByte(CP_UTF8, 0, lsraOrder, -1, lsraOrderUtf8, ARRAY_SIZE(lsraOrderUtf8), nullptr, nullptr);
+    fprintf(file, "Register selection order: %s\n", lsraOrderUtf8);
 #endif
     fprintf(file, "Total Tracked Vars:  %d\n", compiler->lvaTrackedCount);
     fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
@@ -8926,29 +9019,6 @@ void LinearScan::dumpLsraStatsSummary(FILE* file)
 #endif // TRACK_LSRA_STATS
 
 #ifdef DEBUG
-void dumpRegMask(regMaskTP regs)
-{
-    if (regs == RBM_ALLINT)
-    {
-        printf("[allInt]");
-    }
-    else if (regs == (RBM_ALLINT & ~RBM_FPBASE))
-    {
-        printf("[allIntButFP]");
-    }
-    else if (regs == RBM_ALLFLOAT)
-    {
-        printf("[allFloat]");
-    }
-    else if (regs == RBM_ALLDOUBLE)
-    {
-        printf("[allDouble]");
-    }
-    else
-    {
-        dspRegMask(regs);
-    }
-}
 
 static const char* getRefTypeName(RefType refType)
 {
@@ -9020,7 +9090,7 @@ void RefPosition::dump(LinearScan* linearScan)
     printf(FMT_BB " ", this->bbNum);
 
     printf("regmask=");
-    dumpRegMask(registerAssignment);
+    linearScan->compiler->dumpRegMask(registerAssignment);
 
     printf(" minReg=%d", minRegCandidateCount);
 
@@ -9083,7 +9153,7 @@ void RegRecord::dump()
     tinyDump();
 }
 
-void Interval::dump()
+void Interval::dump(Compiler* compiler)
 {
     printf("Interval %2u:", intervalIndex);
 
@@ -9156,7 +9226,7 @@ void Interval::dump()
     printf(" physReg:%s", getRegName(physReg));
 
     printf(" Preferences=");
-    dumpRegMask(this->registerPreferences);
+    compiler->dumpRegMask(this->registerPreferences);
 
     if (relatedInterval)
     {
@@ -9238,7 +9308,7 @@ void LinearScan::lsraDumpIntervals(const char* msg)
     {
         // only dump something if it has references
         // if (interval->firstRefPosition)
-        interval.dump();
+        interval.dump(this->compiler);
     }
 
     printf("\n");
@@ -10374,7 +10444,7 @@ void LinearScan::verifyFinalAllocation()
     }
 
     // Clear register assignments.
-    for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord        = getRegisterRecord(reg);
         physRegRecord->assignedInterval = nullptr;
@@ -10478,7 +10548,7 @@ void LinearScan::verifyFinalAllocation()
                     }
 
                     // Clear register assignments.
-                    for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+                    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
                     {
                         RegRecord* physRegRecord        = getRegisterRecord(reg);
                         physRegRecord->assignedInterval = nullptr;
@@ -10797,13 +10867,13 @@ void LinearScan::verifyFinalAllocation()
             {
                 dumpRegRecordTitle();
                 printf(shortRefPositionFormat, 0, 0);
-                assert(currentBlock->bbPreds != nullptr && currentBlock->bbPreds->getBlock() != nullptr);
-                printf(bbRefPosFormat, currentBlock->bbNum, currentBlock->bbPreds->getBlock()->bbNum);
+                assert(currentBlock->bbPreds != nullptr && currentBlock->bbPreds->getSourceBlock() != nullptr);
+                printf(bbRefPosFormat, currentBlock->bbNum, currentBlock->bbPreds->getSourceBlock()->bbNum);
                 dumpRegRecords();
             }
 
             // Clear register assignments.
-            for (regNumber reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
+            for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
             {
                 RegRecord* physRegRecord        = getRegisterRecord(reg);
                 physRegRecord->assignedInterval = nullptr;
@@ -11829,7 +11899,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 
     if (preferCalleeSave)
     {
-        regMaskTP calleeSaveCandidates = calleeSaveRegs(currentInterval->registerType);
+        regMaskTP calleeSaveCandidates = linearScan->calleeSaveRegs(currentInterval->registerType);
         if (currentInterval->isWriteThru)
         {
             // We'll only prefer a callee-save register if it's already been used.
@@ -11845,7 +11915,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     }
     else
     {
-        callerCalleePrefs = callerSaveRegs(currentInterval->registerType);
+        callerCalleePrefs = linearScan->callerSaveRegs(currentInterval->registerType);
     }
 
     // If this has a delayed use (due to being used in a rmw position of a

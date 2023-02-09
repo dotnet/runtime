@@ -702,8 +702,8 @@ namespace System.ComponentModel
     }
     public partial interface ITypedList
     {
-        System.ComponentModel.PropertyDescriptorCollection GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors);
-        string GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors);
+        System.ComponentModel.PropertyDescriptorCollection GetItemProperties(System.ComponentModel.PropertyDescriptor[]? listAccessors);
+        string GetListName(System.ComponentModel.PropertyDescriptor[]? listAccessors);
     }
     public abstract partial class License : System.IDisposable
     {
@@ -1943,7 +1943,7 @@ namespace System.ComponentModel.Design
     }
     public partial interface ISelectionService
     {
-        object PrimarySelection { get; }
+        object? PrimarySelection { get; }
         int SelectionCount { get; }
         event System.EventHandler SelectionChanged;
         event System.EventHandler SelectionChanging;
@@ -2203,7 +2203,7 @@ namespace System.ComponentModel.Design.Serialization
     }
     public partial interface IDesignerSerializationProvider
     {
-        object? GetSerializer(System.ComponentModel.Design.Serialization.IDesignerSerializationManager manager, object currentSerializer, System.Type objectType, System.Type serializerType);
+        object? GetSerializer(System.ComponentModel.Design.Serialization.IDesignerSerializationManager manager, object? currentSerializer, System.Type? objectType, System.Type serializerType);
     }
     public partial interface IDesignerSerializationService
     {

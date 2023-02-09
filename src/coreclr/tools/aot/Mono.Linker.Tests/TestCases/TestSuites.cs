@@ -25,6 +25,13 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
+		[MemberData (nameof (TestDatabase.LinkXml), MemberType = typeof (TestDatabase))]
+		public void LinkXml (string t)
+		{
+			Run (t);
+		}
+
+		[Theory]
 		[MemberData (nameof (TestDatabase.Repro), MemberType = typeof (TestDatabase))]
 		public void Repro (string t)
 		{
@@ -36,6 +43,13 @@ namespace Mono.Linker.Tests.TestCases
 		public void RequiresCapability(string t)
 		{
 			Run(t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.Warnings), MemberType = typeof (TestDatabase))]
+		public void Warnings (string t)
+		{
+			Run (t);
 		}
 
 		protected virtual void Run(string testName)

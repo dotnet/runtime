@@ -1724,10 +1724,16 @@ namespace System.Security.Cryptography
         public virtual void GetBytes(byte[] data, int offset, int count) { }
         public static byte[] GetBytes(int count) { throw null; }
         public virtual void GetBytes(System.Span<byte> data) { }
+        public static string GetHexString(int stringLength, bool lowercase = false) { throw null; }
+        public static void GetHexString(System.Span<char> destination, bool lowercase = false) { }
         public static int GetInt32(int toExclusive) { throw null; }
         public static int GetInt32(int fromInclusive, int toExclusive) { throw null; }
+        public static T[] GetItems<T>(System.ReadOnlySpan<T> choices, int length) { throw null; }
+        public static void GetItems<T>(System.ReadOnlySpan<T> choices, System.Span<T> destination) { }
         public virtual void GetNonZeroBytes(byte[] data) { }
         public virtual void GetNonZeroBytes(System.Span<byte> data) { }
+        public static string GetString(System.ReadOnlySpan<char> choices, int length) { throw null; }
+        public static void Shuffle<T>(System.Span<T> values) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public abstract partial class RC2 : System.Security.Cryptography.SymmetricAlgorithm
@@ -2333,6 +2339,24 @@ namespace System.Security.Cryptography
         public virtual System.Security.Cryptography.HashAlgorithm? CreateDigest() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("CreateFormatter is not trim compatible because the algorithm implementation referenced by FormatterAlgorithm might be removed.")]
         public virtual System.Security.Cryptography.AsymmetricSignatureFormatter CreateFormatter(System.Security.Cryptography.AsymmetricAlgorithm key) { throw null; }
+    }
+    public sealed partial class SP800108HmacCounterKdf : System.IDisposable
+    {
+        public SP800108HmacCounterKdf(byte[] key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        public SP800108HmacCounterKdf(System.ReadOnlySpan<byte> key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        public static byte[] DeriveBytes(byte[] key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] label, byte[] context, int derivedKeyLengthInBytes) { throw null; }
+        public static byte[] DeriveBytes(byte[] key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, string label, string context, int derivedKeyLengthInBytes) { throw null; }
+        public static byte[] DeriveBytes(System.ReadOnlySpan<byte> key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> label, System.ReadOnlySpan<byte> context, int derivedKeyLengthInBytes) { throw null; }
+        public static void DeriveBytes(System.ReadOnlySpan<byte> key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> label, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
+        public static byte[] DeriveBytes(System.ReadOnlySpan<byte> key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<char> label, System.ReadOnlySpan<char> context, int derivedKeyLengthInBytes) { throw null; }
+        public static void DeriveBytes(System.ReadOnlySpan<byte> key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<char> label, System.ReadOnlySpan<char> context, System.Span<byte> destination) { }
+        public byte[] DeriveKey(byte[] label, byte[] context, int derivedKeyLengthInBytes) { throw null; }
+        public byte[] DeriveKey(System.ReadOnlySpan<byte> label, System.ReadOnlySpan<byte> context, int derivedKeyLengthInBytes) { throw null; }
+        public void DeriveKey(System.ReadOnlySpan<byte> label, System.ReadOnlySpan<byte> context, System.Span<byte> destination) { }
+        public byte[] DeriveKey(System.ReadOnlySpan<char> label, System.ReadOnlySpan<char> context, int derivedKeyLengthInBytes) { throw null; }
+        public void DeriveKey(System.ReadOnlySpan<char> label, System.ReadOnlySpan<char> context, System.Span<byte> destination) { }
+        public byte[] DeriveKey(string label, string context, int derivedKeyLengthInBytes) { throw null; }
+        public void Dispose() { }
     }
     public abstract partial class SymmetricAlgorithm : System.IDisposable
     {

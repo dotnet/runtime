@@ -5275,7 +5275,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_INTRINSIC:
-            genIntrinsic(treeNode);
+            genIntrinsic(treeNode->AsIntrinsic());
             break;
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -5610,7 +5610,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 // Return value:
 //    None
 //
-void CodeGen::genIntrinsic(GenTree* treeNode)
+void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
 {
     NYI("unimplemented on LOONGARCH64 yet");
 }

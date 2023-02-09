@@ -37,10 +37,7 @@ internal static class ReflectionTest
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
-        // Need to implement RhGetCodeTarget for CppCodeGen
-#if !CODEGEN_CPP
         TestByRefLikeTypeMethod.Run();
-#endif
 #endif
         TestILScanner.Run();
         TestUnreferencedEnum.Run();
@@ -64,6 +61,7 @@ internal static class ReflectionTest
         TestVTableOfNullableUnderlyingTypes.Run();
         TestInterfaceLists.Run();
         TestMethodConsistency.Run();
+        TestIsValueTypeWithoutTypeHandle.Run();
 
         //
         // Mostly functionality tests
@@ -75,14 +73,13 @@ internal static class ReflectionTest
         TestInvokeMemberParamsCornerCase.Run();
         TestDefaultInterfaceInvoke.Run();
         TestCovariantReturnInvoke.Run();
-#if !CODEGEN_CPP
         TypeConstructionTest.Run();
         TestThreadStaticFields.Run();
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
-#endif
         TestBaseOnlyUsedFromCode.Run();
         TestEntryPoint.Run();
+
         return 100;
     }
 
@@ -248,7 +245,6 @@ internal static class ReflectionTest
                     throw new Exception();
             }
 
-#if !CODEGEN_CPP
             {
                 MethodInfo helloMethod = typeof(InvokeTestsGeneric<string>).GetTypeInfo().GetDeclaredMethod("GetHello");
                 string result = (string)helloMethod.Invoke(new InvokeTestsGeneric<string>(), new object[] { "world" });
@@ -276,7 +272,6 @@ internal static class ReflectionTest
                 if (result != "Hello 1 System.Double")
                     throw new Exception();
             }
-#endif
         }
     }
 
@@ -1105,12 +1100,9 @@ internal static class ReflectionTest
             if (!HasTypeHandle(usedNestedType))
                 throw new Exception($"{nameof(NeverUsedContainerType.UsedNestedType)} should have an EEType");
 
-            // Need to implement exceptions for CppCodeGen
-#if !CODEGEN_CPP
             // But the containing type doesn't need an EEType
             if (HasTypeHandle(neverUsedContainerType))
                 throw new Exception($"{nameof(NeverUsedContainerType)} should not have an EEType");
-#endif
         }
     }
 
@@ -1407,7 +1399,6 @@ internal static class ReflectionTest
                     throw new Exception("PartialCanon");
             }
 
-#if !CODEGEN_CPP // https://github.com/dotnet/corert/issues/7799
             Console.WriteLine("Search in system assembly");
             {
                 Type t = Type.GetType("System.Runtime.CompilerServices.SuppressIldasmAttribute", throwOnError: false);
@@ -1429,7 +1420,6 @@ internal static class ReflectionTest
                 if (t == null)
                     throw new Exception("CompilerGlobalScopeAttribute");
             }
-#endif
 #endif
 
             Console.WriteLine("Enum.GetValues");
@@ -2123,13 +2113,81 @@ internal static class ReflectionTest
         }
     }
 
+    class TestIsValueTypeWithoutTypeHandle
+    {
+        [Nothing(
+        ReferenceTypes = new[]
+        {
+            typeof(NonGenericType),
+            typeof(GenericType<int>),
+            typeof(ReferencedBaseType<int>),
+            typeof(GenericWithReferenceBaseType<int>)
+        },
+        ValueTypes = new[]
+        {
+            typeof(GenericStruct<int>),
+            typeof(NonGenericStruct),
+            typeof(Container<int>.GenericEnum)
+        })]
+        public static void Run()
+        {
+            var ps = MethodBase.GetCurrentMethod().GetCustomAttribute<NothingAttribute>();
+            foreach (var t in ps.ReferenceTypes)
+            {
+                AssertNoTypeHandle(t);
+                Console.WriteLine(t.IsValueType);
+            }
+            foreach (var t in ps.ValueTypes)
+            {
+                AssertNoTypeHandle(t);
+                Console.WriteLine(t.IsValueType);
+            }
+
+            if (!typeof(G<>).GetGenericArguments()[0].IsValueType)
+                throw new Exception();
+
+            static void AssertNoTypeHandle(Type t)
+            {
+                RuntimeTypeHandle h = default;
+                try
+                {
+                    h = t.TypeHandle;
+                }
+                catch (Exception) { }
+
+                if (!h.Equals(default(RuntimeTypeHandle)))
+                    throw new Exception();
+            }
+        }
+
+        public class GenericBaseType<T> { }
+        public class GenericType<T> : GenericBaseType<T> { }
+        public class NonGenericType : GenericBaseType<int> { }
+        public class ReferencedBaseType<T> { }
+        public class GenericWithReferenceBaseType<T> : ReferencedBaseType<T> { }
+        public struct GenericStruct<T> { }
+        public struct NonGenericStruct { }
+        public class Container<T>
+        {
+            public enum GenericEnum { }
+        }
+
+        class NothingAttribute : Attribute
+        {
+            public Type[] ReferenceTypes;
+            public Type[] ValueTypes;
+        }
+
+        class G<T> where T : struct { }
+    }
+
     class TestEntryPoint
     {
         public static void Run()
         {
             Console.WriteLine(nameof(TestEntryPoint));
-			if (Assembly.GetEntryAssembly().EntryPoint == null)
-				throw new Exception();
+            if (Assembly.GetEntryAssembly().EntryPoint == null)
+                throw new Exception();
         }
     }
 

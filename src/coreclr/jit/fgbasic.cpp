@@ -21,10 +21,7 @@ void Compiler::fgInit()
 #endif // DEBUG
 
     /* We haven't yet computed the bbPreds lists */
-    fgComputePredsDone = false;
-
-    /* We haven't yet computed the bbCheapPreds lists */
-    fgCheapPredsValid = false;
+    fgPredsComputed = false;
 
     /* We haven't yet computed the edge weight */
     fgEdgeWeightsComputed    = false;
@@ -46,11 +43,12 @@ void Compiler::fgInit()
 
     /* Initialize the basic block list */
 
-    fgFirstBB        = nullptr;
-    fgLastBB         = nullptr;
-    fgFirstColdBlock = nullptr;
-    fgEntryBB        = nullptr;
-    fgOSREntryBB     = nullptr;
+    fgFirstBB                     = nullptr;
+    fgLastBB                      = nullptr;
+    fgFirstColdBlock              = nullptr;
+    fgEntryBB                     = nullptr;
+    fgOSREntryBB                  = nullptr;
+    fgOSROriginalEntryBBProtected = false;
 
 #if defined(FEATURE_EH_FUNCLETS)
     fgFirstFuncletBB  = nullptr;
@@ -64,6 +62,7 @@ void Compiler::fgInit()
     fgBBOrder          = nullptr;
 #endif // DEBUG
 
+    fgBBNumMin        = compIsForInlining() ? impInlineRoot()->fgBBNumMax + 1 : 1;
     fgBBNumMax        = 0;
     fgEdgeCount       = 0;
     fgDomBBcount      = 0;
@@ -87,10 +86,12 @@ void Compiler::fgInit()
 #endif // DEBUG
 
     fgLocalVarLivenessDone = false;
+    fgIsDoingEarlyLiveness = false;
+    fgDidEarlyLiveness     = false;
 
     /* Statement list is not threaded yet */
 
-    fgStmtListThreaded = false;
+    fgNodeThreading = NodeThreading::None;
 
     // Initialize the logic for adding code. This is used to insert code such
     // as the code that raises an exception when an array range check fails.
@@ -166,10 +167,6 @@ void Compiler::fgInit()
     }
 #endif // DEBUG
 
-    if (!compIsForInlining())
-    {
-        m_promotedStructDeathVars = nullptr;
-    }
 #ifdef FEATURE_SIMD
     fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
 #endif
@@ -295,7 +292,11 @@ bool Compiler::fgEnsureFirstBBisScratch()
     block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED);
 
     // This new first BB has an implicit ref, and no others.
-    block->bbRefs = 1;
+    //
+    // But if we call this early, before fgLinkBasicBlocks,
+    // defer and let it handle adding the implicit ref.
+    //
+    block->bbRefs = fgPredsComputed ? 1 : 0;
 
     fgFirstBBScratch = fgFirstBB;
 
@@ -321,7 +322,10 @@ bool Compiler::fgFirstBBisScratch()
     {
         assert(fgFirstBBScratch == fgFirstBB);
         assert(fgFirstBBScratch->bbFlags & BBF_INTERNAL);
-        assert(fgFirstBBScratch->countOfInEdges() == 1);
+        if (fgPredsComputed)
+        {
+            assert(fgFirstBBScratch->countOfInEdges() == 1);
+        }
 
         // Normally, the first scratch block is a fall-through block. However, if the block after it was an empty
         // BBJ_ALWAYS block, it might get removed, and the code that removes it will make the first scratch block
@@ -392,6 +396,7 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
     noway_assert(oldSwitchBlock != nullptr);
     noway_assert(newSwitchBlock != nullptr);
     noway_assert(oldSwitchBlock->bbJumpKind == BBJ_SWITCH);
+    assert(fgPredsComputed);
 
     // Walk the switch's jump table, updating the predecessor for each branch.
     for (BasicBlock* const bJump : oldSwitchBlock->SwitchTargets())
@@ -402,18 +407,12 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
         // fgRemoveRefPred()/fgAddRefPred() will do the right thing: the second and
         // subsequent duplicates will simply subtract from and add to the duplicate
         // count (respectively).
-        if (bJump->countOfInEdges() > 0)
-        {
-            //
-            // Remove the old edge [oldSwitchBlock => bJump]
-            //
-            fgRemoveRefPred(bJump, oldSwitchBlock);
-        }
-        else
-        {
-            // bJump->countOfInEdges() must not be zero after preds are calculated.
-            assert(!fgComputePredsDone);
-        }
+
+        //
+        // Remove the old edge [oldSwitchBlock => bJump]
+        //
+        assert(bJump->countOfInEdges() > 0);
+        fgRemoveRefPred(bJump, oldSwitchBlock);
 
         //
         // Create the new edge [newSwitchBlock => bJump]
@@ -459,6 +458,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
     noway_assert(newTarget != nullptr);
     noway_assert(oldTarget != nullptr);
     noway_assert(blockSwitch->bbJumpKind == BBJ_SWITCH);
+    assert(fgPredsComputed);
 
     // For the jump targets values that match oldTarget of our BBJ_SWITCH
     // replace predecessor 'blockSwitch' with 'newTarget'
@@ -476,10 +476,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
         {
             // Remove the old edge [oldTarget from blockSwitch]
             //
-            if (fgComputePredsDone)
-            {
-                fgRemoveAllRefPreds(oldTarget, blockSwitch);
-            }
+            fgRemoveAllRefPreds(oldTarget, blockSwitch);
 
             //
             // Change the jumpTab entry to branch to the new location
@@ -489,14 +486,9 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
             //
             // Create the new edge [newTarget from blockSwitch]
             //
-            flowList* newEdge = nullptr;
+            FlowEdge* const newEdge = fgAddRefPred(newTarget, blockSwitch);
 
-            if (fgComputePredsDone)
-            {
-                newEdge = fgAddRefPred(newTarget, blockSwitch);
-            }
-
-            // Now set the correct value of newEdge->flDupCount
+            // Now set the correct value of newEdge's DupCount
             // and replace any other jumps in jumpTab[] that go to oldTarget.
             //
             i++;
@@ -509,14 +501,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
                     //
                     jumpTab[i] = newTarget;
                     newTarget->bbRefs++;
-
-                    //
-                    // Increment the flDupCount
-                    //
-                    if (fgComputePredsDone)
-                    {
-                        newEdge->flDupCount++;
-                    }
+                    newEdge->incrementDupCount();
                 }
                 i++; // Check the next entry in jumpTab[]
             }
@@ -541,17 +526,16 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 //
 // Notes:
 // 1. Only branches are changed: BBJ_ALWAYS, the non-fallthrough path of BBJ_COND, BBJ_SWITCH, etc.
-//    We ignore other block types.
+//    We assert for other jump kinds.
 // 2. All branch targets found are updated. If there are multiple ways for a block
 //    to reach 'oldTarget' (e.g., multiple arms of a switch), all of them are changed.
-// 3. The predecessor lists are not changed.
+// 3. The predecessor lists are updated, if they've been built.
 // 4. If any switch table entry was updated, the switch table "unique successor" cache is invalidated.
-//
-// This function is most useful early, before the full predecessor lists have been computed.
 //
 void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, BasicBlock* oldTarget)
 {
     assert(block != nullptr);
+    assert(fgPredsComputed);
 
     switch (block->bbJumpKind)
     {
@@ -560,18 +544,14 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-        case BBJ_LEAVE: // This function will be called before import, so we still have BBJ_LEAVE
+        case BBJ_LEAVE: // This function can be called before import, so we still have BBJ_LEAVE
 
             if (block->bbJumpDest == oldTarget)
             {
                 block->bbJumpDest = newTarget;
+                fgRemoveRefPred(oldTarget, block);
+                fgAddRefPred(newTarget, block);
             }
-            break;
-
-        case BBJ_NONE:
-        case BBJ_EHFINALLYRET:
-        case BBJ_THROW:
-        case BBJ_RETURN:
             break;
 
         case BBJ_SWITCH:
@@ -586,6 +566,8 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
                 {
                     jumpTab[i] = newTarget;
                     changed    = true;
+                    fgRemoveRefPred(oldTarget, block);
+                    fgAddRefPred(newTarget, block);
                 }
             }
 
@@ -597,7 +579,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
         }
 
         default:
-            assert(!"Block doesn't have a valid bbJumpKind!!!!");
+            assert(!"Block doesn't have a jump target!");
             unreached();
             break;
     }
@@ -613,10 +595,10 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
 //
 // Notes:
 //
-// A block can only appear once in the preds list (for normal preds, not
-// cheap preds): if a predecessor has multiple ways to get to this block, then
-// flDupCount will be >1, but the block will still appear exactly once. Thus, this
-// function assumes that all branches from the predecessor (practically, that all
+// A block can only appear once in the preds list. If a predecessor has multiple
+// ways to get to this block, then the pred edge DupCount will be >1.
+//
+// This function assumes that all branches from the predecessor (practically, that all
 // switch cases that target this block) are changed to branch from the new predecessor,
 // with the same dup count.
 //
@@ -630,15 +612,14 @@ void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock*
     noway_assert(block != nullptr);
     noway_assert(oldPred != nullptr);
     noway_assert(newPred != nullptr);
-    assert(!fgCheapPredsValid);
 
     bool modified = false;
 
-    for (flowList* const pred : block->PredEdges())
+    for (FlowEdge* const pred : block->PredEdges())
     {
-        if (oldPred == pred->getBlock())
+        if (oldPred == pred->getSourceBlock())
         {
-            pred->setBlock(newPred);
+            pred->setSourceBlock(newPred);
             modified = true;
             break;
         }
@@ -1165,6 +1146,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
 
                             // These are foldable if the first argument is a constant
+                            case NI_PRIMITIVE_LeadingZeroCount:
+                            case NI_PRIMITIVE_Log2:
+                            case NI_PRIMITIVE_PopCount:
+                            case NI_PRIMITIVE_TrailingZeroCount:
                             case NI_System_Type_get_IsEnum:
                             case NI_System_Type_GetEnumUnderlyingType:
                             case NI_System_Type_get_IsValueType:
@@ -1172,20 +1157,45 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_Type_GetTypeFromHandle:
                             case NI_System_String_get_Length:
                             case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
-                            case NI_System_Numerics_BitOperations_PopCount:
 #if defined(FEATURE_HW_INTRINSICS)
-                            case NI_Vector128_Create:
-                            case NI_Vector128_CreateScalar:
-                            case NI_Vector128_CreateScalarUnsafe:
-#if defined(TARGET_XARCH)
-                            case NI_Vector256_Create:
-                            case NI_Vector256_CreateScalar:
-                            case NI_Vector256_CreateScalarUnsafe:
-#elif defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
+                            case NI_ArmBase_Arm64_LeadingZeroCount:
+                            case NI_ArmBase_Arm64_ReverseElementBits:
+                            case NI_ArmBase_LeadingZeroCount:
+                            case NI_ArmBase_ReverseElementBits:
                             case NI_Vector64_Create:
                             case NI_Vector64_CreateScalar:
                             case NI_Vector64_CreateScalarUnsafe:
-#endif
+#endif // TARGET_ARM64
+                            case NI_Vector2_Create:
+                            case NI_Vector2_CreateBroadcast:
+                            case NI_Vector3_Create:
+                            case NI_Vector3_CreateBroadcast:
+                            case NI_Vector3_CreateFromVector2:
+                            case NI_Vector4_Create:
+                            case NI_Vector4_CreateBroadcast:
+                            case NI_Vector4_CreateFromVector2:
+                            case NI_Vector4_CreateFromVector3:
+                            case NI_Vector128_Create:
+                            case NI_Vector128_CreateScalar:
+                            case NI_Vector128_CreateScalarUnsafe:
+                            case NI_VectorT128_CreateBroadcast:
+#if defined(TARGET_XARCH)
+                            case NI_BMI1_TrailingZeroCount:
+                            case NI_BMI1_X64_TrailingZeroCount:
+                            case NI_LZCNT_LeadingZeroCount:
+                            case NI_LZCNT_X64_LeadingZeroCount:
+                            case NI_POPCNT_PopCount:
+                            case NI_POPCNT_X64_PopCount:
+                            case NI_Vector256_Create:
+                            case NI_Vector256_CreateScalar:
+                            case NI_Vector256_CreateScalarUnsafe:
+                            case NI_VectorT256_CreateBroadcast:
+                            case NI_X86Base_BitScanForward:
+                            case NI_X86Base_X64_BitScanForward:
+                            case NI_X86Base_BitScanReverse:
+                            case NI_X86Base_X64_BitScanReverse:
+#endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
                             {
                                 // Top() in order to keep it as is in case of foldableIntrinsic
@@ -1197,6 +1207,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             }
 
                             // These are foldable if two arguments are constants
+                            case NI_PRIMITIVE_RotateLeft:
+                            case NI_PRIMITIVE_RotateRight:
                             case NI_System_Type_op_Equality:
                             case NI_System_Type_op_Inequality:
                             case NI_System_String_get_Chars:
@@ -1214,25 +1226,320 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                             case NI_IsSupported_True:
                             case NI_IsSupported_False:
+                            case NI_IsSupported_Type:
                             {
                                 foldableIntrinsic = true;
                                 pushedStack.PushConstant();
                                 break;
                             }
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-                            case NI_Vector128_get_Count:
-                            case NI_Vector256_get_Count:
+
+                            case NI_Vector_GetCount:
+                            {
                                 foldableIntrinsic = true;
                                 pushedStack.PushConstant();
-                                // TODO: check if it's a loop condition - we unroll such loops.
+                                // TODO: for FEATURE_SIMD check if it's a loop condition - we unroll such loops.
                                 break;
-#elif defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
-                            case NI_Vector64_get_Count:
-                            case NI_Vector128_get_Count:
+                            }
+
+                            case NI_SRCS_UNSAFE_Add:
+                            case NI_SRCS_UNSAFE_AddByteOffset:
+                            case NI_SRCS_UNSAFE_AreSame:
+                            case NI_SRCS_UNSAFE_ByteOffset:
+                            case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                            case NI_SRCS_UNSAFE_IsAddressLessThan:
+                            case NI_SRCS_UNSAFE_IsNullRef:
+                            case NI_SRCS_UNSAFE_Subtract:
+                            case NI_SRCS_UNSAFE_SubtractByteOffset:
+                            {
+                                // These are effectively primitive binary operations so the
+                                // handling roughly mirrors the handling for CEE_ADD and
+                                // friends that exists elsewhere in this method
+
+                                if (!preciseScan)
+                                {
+                                    switch (ni)
+                                    {
+                                        case NI_SRCS_UNSAFE_AreSame:
+                                        case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                                        case NI_SRCS_UNSAFE_IsAddressLessThan:
+                                        case NI_SRCS_UNSAFE_IsNullRef:
+                                        {
+                                            fgObserveInlineConstants(opcode, pushedStack, isInlining);
+                                            break;
+                                        }
+
+                                        default:
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    // Unlike the normal binary operation handling, this is an intrinsic call that will
+                                    // get replaced
+                                    // with simple IR, so we care about `const op const` as well.
+
+                                    FgStack::FgSlot arg0;
+
+                                    bool isArg0Arg, isArg0Const, isArg1Const;
+                                    bool isArg1Arg, isArg0ConstArg, isArg1ConstArg;
+
+                                    if (ni == NI_SRCS_UNSAFE_IsNullRef)
+                                    {
+                                        // IsNullRef is unary, but it always compares against 0
+
+                                        arg0 = pushedStack.Top(0);
+
+                                        isArg0Arg      = FgStack::IsArgument(arg0);
+                                        isArg0Const    = FgStack::IsConstant(arg0);
+                                        isArg0ConstArg = FgStack::IsConstArgument(arg0, impInlineInfo);
+
+                                        isArg1Arg      = false;
+                                        isArg1Const    = true;
+                                        isArg1ConstArg = false;
+                                    }
+                                    else
+                                    {
+                                        arg0 = pushedStack.Top(1);
+
+                                        isArg0Arg      = FgStack::IsArgument(arg0);
+                                        isArg0Const    = FgStack::IsConstant(arg0);
+                                        isArg0ConstArg = FgStack::IsConstArgument(arg0, impInlineInfo);
+
+                                        FgStack::FgSlot arg1 = pushedStack.Top(0);
+
+                                        isArg1Arg      = FgStack::IsArgument(arg0);
+                                        isArg1Const    = FgStack::IsConstant(arg1);
+                                        isArg1ConstArg = FgStack::IsConstantOrConstArg(arg1, impInlineInfo);
+                                    }
+
+                                    // Const op ConstArg -> ConstArg
+                                    if (isArg0Const && isArg1ConstArg)
+                                    {
+                                        // keep stack unchanged
+                                        foldableIntrinsic = true;
+                                    }
+                                    // ConstArg op Const    -> ConstArg
+                                    // ConstArg op ConstArg -> ConstArg
+                                    else if (isArg0ConstArg && (isArg1Const || isArg1ConstArg))
+                                    {
+                                        if (isArg1Const)
+                                        {
+                                            pushedStack.Push(arg0);
+                                        }
+                                        foldableIntrinsic = true;
+                                    }
+                                    // Const op Const -> Const
+                                    else if (isArg0Const && isArg1Const)
+                                    {
+                                        // both are constants so we still want to track this as foldable, unlike
+                                        // what is done for the regulary binary operator handling, since we have
+                                        // a CEE_CALL node and not something more primitive
+                                        foldableIntrinsic = true;
+                                    }
+                                    // Arg op ConstArg
+                                    // Arg op Const
+                                    else if (isArg0Arg && (isArg1Const || isArg1ConstArg))
+                                    {
+                                        // "Arg op CNS" --> keep arg0 in the stack for the next ops
+                                        pushedStack.Push(arg0);
+                                        handled = true;
+
+                                        // TODO-CQ: The normal binary operator handling pushes arg0
+                                        // and tracks this as CALLEE_BINARY_EXRP_WITH_CNS. We can't trivially
+                                        // do the same here without more work.
+                                    }
+                                    // ConstArg op Arg
+                                    // Const    op Arg
+                                    else if (isArg1Arg && (isArg0Const || isArg0ConstArg))
+                                    {
+                                        // "CNS op ARG" --> keep arg1 in the stack for the next ops
+                                        handled = true;
+
+                                        // TODO-CQ: The normal binary operator handling keeps arg1
+                                        // and tracks this as CALLEE_BINARY_EXRP_WITH_CNS. We can't trivially
+                                        // do the same here without more work.
+                                    }
+
+                                    // X op ConstArg
+                                    if (isArg1ConstArg)
+                                    {
+                                        pushedStack.Push(arg0);
+                                        handled = true;
+                                    }
+                                }
+
+                                break;
+                            }
+
+                            case NI_SRCS_UNSAFE_AsPointer:
+                            {
+                                // These are effectively primitive unary operations so the
+                                // handling roughly mirrors the handling for CEE_CONV_U and
+                                // friends that exists elsewhere in this method
+
+                                FgStack::FgSlot arg = pushedStack.Top();
+
+                                if (FgStack::IsConstArgument(arg, impInlineInfo))
+                                {
+                                    foldableIntrinsic = true;
+                                }
+                                else if (FgStack::IsArgument(arg))
+                                {
+                                    handled = true;
+                                }
+                                else if (FgStack::IsConstant(arg))
+                                {
+                                    // input is a constant so we still want to track this as foldable, unlike
+                                    // what is done for the regulary unary operator handling, since we have
+                                    // a CEE_CALL node and not something more primitive
+                                    foldableIntrinsic = true;
+                                }
+
+                                break;
+                            }
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_ARM64)
+                            case NI_Vector64_As:
+                            case NI_Vector64_AsByte:
+                            case NI_Vector64_AsDouble:
+                            case NI_Vector64_AsInt16:
+                            case NI_Vector64_AsInt32:
+                            case NI_Vector64_AsInt64:
+                            case NI_Vector64_AsNInt:
+                            case NI_Vector64_AsNUInt:
+                            case NI_Vector64_AsSByte:
+                            case NI_Vector64_AsSingle:
+                            case NI_Vector64_AsUInt16:
+                            case NI_Vector64_AsUInt32:
+                            case NI_Vector64_AsUInt64:
+                            case NI_Vector64_op_UnaryPlus:
+#endif // TARGET_XARCH
+                            case NI_Vector128_As:
+                            case NI_Vector128_AsByte:
+                            case NI_Vector128_AsDouble:
+                            case NI_Vector128_AsInt16:
+                            case NI_Vector128_AsInt32:
+                            case NI_Vector128_AsInt64:
+                            case NI_Vector128_AsNInt:
+                            case NI_Vector128_AsNUInt:
+                            case NI_Vector128_AsSByte:
+                            case NI_Vector128_AsSingle:
+                            case NI_Vector128_AsUInt16:
+                            case NI_Vector128_AsUInt32:
+                            case NI_Vector128_AsUInt64:
+                            case NI_Vector128_AsVector4:
+                            case NI_Vector128_op_UnaryPlus:
+                            case NI_VectorT128_As:
+                            case NI_VectorT128_AsVectorByte:
+                            case NI_VectorT128_AsVectorDouble:
+                            case NI_VectorT128_AsVectorInt16:
+                            case NI_VectorT128_AsVectorInt32:
+                            case NI_VectorT128_AsVectorInt64:
+                            case NI_VectorT128_AsVectorNInt:
+                            case NI_VectorT128_AsVectorNUInt:
+                            case NI_VectorT128_AsVectorSByte:
+                            case NI_VectorT128_AsVectorSingle:
+                            case NI_VectorT128_AsVectorUInt16:
+                            case NI_VectorT128_AsVectorUInt32:
+                            case NI_VectorT128_AsVectorUInt64:
+                            case NI_VectorT128_op_UnaryPlus:
+#if defined(TARGET_XARCH)
+                            case NI_Vector256_As:
+                            case NI_Vector256_AsByte:
+                            case NI_Vector256_AsDouble:
+                            case NI_Vector256_AsInt16:
+                            case NI_Vector256_AsInt32:
+                            case NI_Vector256_AsInt64:
+                            case NI_Vector256_AsNInt:
+                            case NI_Vector256_AsNUInt:
+                            case NI_Vector256_AsSByte:
+                            case NI_Vector256_AsSingle:
+                            case NI_Vector256_AsUInt16:
+                            case NI_Vector256_AsUInt32:
+                            case NI_Vector256_AsUInt64:
+                            case NI_Vector256_op_UnaryPlus:
+                            case NI_VectorT256_As:
+                            case NI_VectorT256_AsVectorByte:
+                            case NI_VectorT256_AsVectorDouble:
+                            case NI_VectorT256_AsVectorInt16:
+                            case NI_VectorT256_AsVectorInt32:
+                            case NI_VectorT256_AsVectorInt64:
+                            case NI_VectorT256_AsVectorNInt:
+                            case NI_VectorT256_AsVectorNUInt:
+                            case NI_VectorT256_AsVectorSByte:
+                            case NI_VectorT256_AsVectorSingle:
+                            case NI_VectorT256_AsVectorUInt16:
+                            case NI_VectorT256_AsVectorUInt32:
+                            case NI_VectorT256_AsVectorUInt64:
+                            case NI_VectorT256_op_UnaryPlus:
+#endif // TARGET_XARCH
+#endif // FEATURE_HW_INTRINSICS
+                            case NI_SRCS_UNSAFE_As:
+                            case NI_SRCS_UNSAFE_AsRef:
+                            case NI_SRCS_UNSAFE_SkipInit:
+                            {
+                                // TODO-CQ: These are no-ops in that they never produce any IR
+                                // and simply return op1 untouched. We should really track them
+                                // as such and adjust the multiplier even more, but we'll settle
+                                // for marking it as foldable until additional work can happen.
+
+                                foldableIntrinsic = true;
+                                break;
+                            }
+
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_ARM64)
+                            case NI_Vector64_get_AllBitsSet:
+                            case NI_Vector64_get_One:
+                            case NI_Vector64_get_Zero:
+#endif // TARGET_ARM64
+                            case NI_Vector2_get_One:
+                            case NI_Vector2_get_Zero:
+                            case NI_Vector3_get_One:
+                            case NI_Vector3_get_Zero:
+                            case NI_Vector4_get_One:
+                            case NI_Vector4_get_Zero:
+                            case NI_Vector128_get_AllBitsSet:
+                            case NI_Vector128_get_One:
+                            case NI_Vector128_get_Zero:
+                            case NI_VectorT128_get_AllBitsSet:
+                            case NI_VectorT128_get_One:
+                            case NI_VectorT128_get_Zero:
+#if defined(TARGET_XARCH)
+                            case NI_Vector256_get_AllBitsSet:
+                            case NI_Vector256_get_One:
+                            case NI_Vector256_get_Zero:
+                            case NI_VectorT256_get_AllBitsSet:
+                            case NI_VectorT256_get_One:
+                            case NI_VectorT256_get_Zero:
+#endif // TARGET_XARCH
+#endif // FEATURE_HW_INTRINSICS
+                            {
+                                // These always produce a vector constant
+
+                                foldableIntrinsic = true;
+
+                                // TODO-CQ: We should really push a constant onto the stack
+                                // However, this isn't trivially possible without the inliner
+                                // understanding a new type of "vector constant" so it doesn't
+                                // negatively impact other possible checks/handling
+
+                                break;
+                            }
+
+                            case NI_SRCS_UNSAFE_NullRef:
+                            case NI_SRCS_UNSAFE_SizeOf:
+                            {
+                                // These always produce a constant
+
                                 foldableIntrinsic = true;
                                 pushedStack.PushConstant();
+
                                 break;
-#endif
+                            }
 
                             default:
                             {
@@ -2387,22 +2694,42 @@ void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlo
     targetBlock->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
 }
 
-/*****************************************************************************
- *
- *  Finally link up the bbJumpDest of the blocks together
- */
-
+//------------------------------------------------------------------------
+// fgLinkBasicBlocks: set block jump targets and add pred edges
+//
+// Notes:
+//    Pred edges for BBJ_EHFILTERRET are set later by fgFindBasicBlocks.
+//    Pred edges for BBJ_EHFINALLYRET are set later by impFixPredLists,
+//     after setting up the callfinally blocks.
+//
 void Compiler::fgLinkBasicBlocks()
 {
-    /* Create the basic block lookup tables */
-
+    // Create the basic block lookup tables
+    //
     fgInitBBLookup();
 
-    /* First block is always reachable */
+#ifdef DEBUG
+    // Verify blocks are in increasing bbNum order and
+    // all pred list info is in initial state.
+    //
+    fgDebugCheckBBNumIncreasing();
 
+    for (BasicBlock* const block : Blocks())
+    {
+        assert(block->bbPreds == nullptr);
+        assert(block->bbLastPred == nullptr);
+        assert(block->bbRefs == 0);
+    }
+#endif
+
+    // First block is always reachable
+    //
     fgFirstBB->bbRefs = 1;
 
-    /* Walk all the basic blocks, filling in the target addresses */
+    // Special args to fgAddRefPred so it will use the initialization fast path.
+    //
+    FlowEdge* const oldEdge           = nullptr;
+    bool const      initializingPreds = true;
 
     for (BasicBlock* const curBBdesc : Blocks())
     {
@@ -2411,15 +2738,18 @@ void Compiler::fgLinkBasicBlocks()
             case BBJ_COND:
             case BBJ_ALWAYS:
             case BBJ_LEAVE:
-                curBBdesc->bbJumpDest = fgLookupBB(curBBdesc->bbJumpOffs);
-                curBBdesc->bbJumpDest->bbRefs++;
+            {
+                BasicBlock* const jumpDest = fgLookupBB(curBBdesc->bbJumpOffs);
+                curBBdesc->bbJumpDest      = jumpDest;
+                fgAddRefPred(jumpDest, curBBdesc, oldEdge, initializingPreds);
+
                 if (curBBdesc->bbJumpDest->bbNum <= curBBdesc->bbNum)
                 {
                     fgMarkBackwardJump(curBBdesc->bbJumpDest, curBBdesc);
                 }
 
-                /* Is the next block reachable? */
-
+                // Is the next block reachable?
+                //
                 if (curBBdesc->KindIs(BBJ_ALWAYS, BBJ_LEAVE))
                 {
                     break;
@@ -2429,31 +2759,39 @@ void Compiler::fgLinkBasicBlocks()
                 {
                     BADCODE("Fall thru the end of a method");
                 }
+            }
 
                 // Fall through, the next block is also reachable
                 FALLTHROUGH;
 
             case BBJ_NONE:
-                curBBdesc->bbNext->bbRefs++;
+                fgAddRefPred(curBBdesc->bbNext, curBBdesc, oldEdge, initializingPreds);
+                break;
+
+            case BBJ_EHFILTERRET:
+                // We can't set up the pred list for these just yet.
+                // We do it in fgFindBasicBlocks.
                 break;
 
             case BBJ_EHFINALLYRET:
-            case BBJ_EHFILTERRET:
+                // We can't set up the pred list for these just yet.
+                // We do it in impFixPredLists.
+                break;
+
             case BBJ_THROW:
             case BBJ_RETURN:
                 break;
 
             case BBJ_SWITCH:
-
-                unsigned jumpCnt;
-                jumpCnt = curBBdesc->bbJumpSwt->bbsCount;
-                BasicBlock** jumpPtr;
-                jumpPtr = curBBdesc->bbJumpSwt->bbsDstTab;
+            {
+                unsigned     jumpCnt = curBBdesc->bbJumpSwt->bbsCount;
+                BasicBlock** jumpPtr = curBBdesc->bbJumpSwt->bbsDstTab;
 
                 do
                 {
-                    *jumpPtr = fgLookupBB((unsigned)*(size_t*)jumpPtr);
-                    (*jumpPtr)->bbRefs++;
+                    BasicBlock* jumpDest = fgLookupBB((unsigned)*(size_t*)jumpPtr);
+                    *jumpPtr             = jumpDest;
+                    fgAddRefPred(jumpDest, curBBdesc, oldEdge, initializingPreds);
                     if ((*jumpPtr)->bbNum <= curBBdesc->bbNum)
                     {
                         fgMarkBackwardJump(*jumpPtr, curBBdesc);
@@ -2464,6 +2802,7 @@ void Compiler::fgLinkBasicBlocks()
 
                 noway_assert(*(jumpPtr - 1) == curBBdesc->bbNext);
                 break;
+            }
 
             case BBJ_CALLFINALLY: // BBJ_CALLFINALLY and BBJ_EHCATCHRET don't appear until later
             case BBJ_EHCATCHRET:
@@ -2472,6 +2811,10 @@ void Compiler::fgLinkBasicBlocks()
                 break;
         }
     }
+
+    // Pred lists now established.
+    //
+    fgPredsComputed = true;
 }
 
 //------------------------------------------------------------------------
@@ -3279,6 +3622,7 @@ void Compiler::fgFindBasicBlocks()
                 {
                     // Mark catch handler as successor.
                     block->bbJumpDest = hndBegBB;
+                    fgAddRefPred(hndBegBB, block);
                     assert(block->bbJumpDest->bbCatchTyp == BBCT_FILTER_HANDLER);
                     break;
                 }
@@ -3593,6 +3937,10 @@ void Compiler::fgCheckForLoopsInHandlers()
 //    the middle of the try. But we defer that until after importation.
 //    See fgPostImportationCleanup.
 //
+//    Also protect the original method entry, if it was imported, since
+//    we may decide to branch there during morph as part of the tail recursion
+//    to loop optimization.
+//
 void Compiler::fgFixEntryFlowForOSR()
 {
     // Ensure lookup IL->BB lookup table is valid
@@ -3615,9 +3963,16 @@ void Compiler::fgFixEntryFlowForOSR()
     // Now branch from method start to the right spot.
     //
     fgEnsureFirstBBisScratch();
+    assert(fgFirstBB->bbJumpKind == BBJ_NONE);
+    fgRemoveRefPred(fgFirstBB->bbNext, fgFirstBB);
     fgFirstBB->bbJumpKind = BBJ_ALWAYS;
     fgFirstBB->bbJumpDest = osrEntry;
     fgAddRefPred(osrEntry, fgFirstBB);
+
+    // Give the method entry (which will be a scratch BB)
+    // the same weight as the OSR Entry.
+    //
+    fgFirstBB->inheritWeight(fgOSREntryBB);
 
     JITDUMP("OSR: redirecting flow at entry from entry " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
             fgFirstBB->bbNum, osrEntry->bbNum);
@@ -4365,11 +4720,8 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 {
     assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS));
-
-    if (fgComputePredsDone)
-    {
-        assert(fgGetPredForBlock(succ, curr) != nullptr);
-    }
+    assert(fgPredsComputed);
+    assert(fgGetPredForBlock(succ, curr) != nullptr);
 
     BasicBlock* newBlock;
     if (succ == curr->bbNext)
@@ -4732,9 +5084,9 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         fgRemoveRefPred(succBlock, block);
 
-        for (flowList* const pred : block->PredEdges())
+        for (FlowEdge* const pred : block->PredEdges())
         {
-            BasicBlock* predBlock = pred->getBlock();
+            BasicBlock* predBlock = pred->getSourceBlock();
 
             /* Are we changing a loop backedge into a forward jump? */
 
@@ -4750,7 +5102,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             {
                 // Even if the pred is not a switch, we could have a conditional branch
                 // to the fallthrough, so duplicate there could be preds
-                for (unsigned i = 0; i < pred->flDupCount; i++)
+                for (unsigned i = 0; i < pred->getDupCount(); i++)
                 {
                     fgAddRefPred(succBlock, predBlock);
                 }
@@ -4865,13 +5217,20 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
     }
 }
 
-/*****************************************************************************
- *
- *  Function called to connect to block that previously had a fall through
- */
-
+//------------------------------------------------------------------------
+// fgConnectFallThrough: fix flow from a block that previously had a fall through
+//
+// Arguments:
+//   bSrc - source of fall through (may be null?)
+//   bDst - target of fall through
+//
+// Returns:
+//   Newly inserted block after bSrc that jumps to bDst,
+//   or nullptr if bSrc already falls through to bDst
+//
 BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 {
+    assert(fgPredsComputed);
     BasicBlock* jmpBlk = nullptr;
 
     /* If bSrc is non-NULL */
@@ -4888,14 +5247,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                 case BBJ_NONE:
                     bSrc->bbJumpKind = BBJ_ALWAYS;
                     bSrc->bbJumpDest = bDst;
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("Block " FMT_BB " ended with a BBJ_NONE, Changed to an unconditional jump to " FMT_BB
-                               "\n",
-                               bSrc->bbNum, bSrc->bbJumpDest->bbNum);
-                    }
-#endif
+                    JITDUMP("Block " FMT_BB " ended with a BBJ_NONE, Changed to an unconditional jump to " FMT_BB "\n",
+                            bSrc->bbNum, bSrc->bbJumpDest->bbNum);
                     break;
 
                 case BBJ_CALLFINALLY:
@@ -4903,11 +5256,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
                     // Add a new block after bSrc which jumps to 'bDst'
                     jmpBlk = fgNewBBafter(BBJ_ALWAYS, bSrc, true);
+                    fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
 
-                    if (fgComputePredsDone)
-                    {
-                        fgAddRefPred(jmpBlk, bSrc, fgGetPredForBlock(bDst, bSrc));
-                    }
                     // Record the loop number in the new block
                     jmpBlk->bbNatLoopNum = bSrc->bbNatLoopNum;
 
@@ -4915,9 +5265,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                     //
                     if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
                     {
-                        noway_assert(fgComputePredsDone);
-
-                        flowList* newEdge = fgGetPredForBlock(jmpBlk, bSrc);
+                        FlowEdge* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
 
                         jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
                         if (bSrc->bbWeight == BB_ZERO_WEIGHT)
@@ -4958,22 +5306,10 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
                     jmpBlk->bbJumpDest = bDst;
 
-                    if (fgComputePredsDone)
-                    {
-                        fgReplacePred(bDst, bSrc, jmpBlk);
-                    }
-                    else
-                    {
-                        jmpBlk->bbFlags |= BBF_IMPORTED;
-                    }
+                    fgReplacePred(bDst, bSrc, jmpBlk);
 
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n",
-                               jmpBlk->bbJumpDest->bbNum, bSrc->bbNum);
-                    }
-#endif // DEBUG
+                    JITDUMP("Added an unconditional jump to " FMT_BB " after block " FMT_BB "\n",
+                            jmpBlk->bbJumpDest->bbNum, bSrc->bbNum);
                     break;
 
                 default:
@@ -4990,14 +5326,9 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                 (bSrc->bbJumpDest == bSrc->bbNext))
             {
                 bSrc->bbJumpKind = BBJ_NONE;
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Changed an unconditional jump from " FMT_BB " to the next block " FMT_BB
-                           " into a BBJ_NONE block\n",
-                           bSrc->bbNum, bSrc->bbNext->bbNum);
-                }
-#endif // DEBUG
+                JITDUMP("Changed an unconditional jump from " FMT_BB " to the next block " FMT_BB
+                        " into a BBJ_NONE block\n",
+                        bSrc->bbNum, bSrc->bbNext->bbNum);
             }
         }
     }
@@ -5023,92 +5354,63 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 //
 bool Compiler::fgRenumberBlocks()
 {
+    assert(fgPredsComputed);
+
     // If we renumber the blocks the dominator information will be out-of-date
     if (fgDomsComputed)
     {
         noway_assert(!"Can't call Compiler::fgRenumberBlocks() when fgDomsComputed==true");
     }
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** Before renumbering the basic blocks\n");
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
-    }
-#endif // DEBUG
+    JITDUMP("\n*************** Before renumbering the basic blocks\n");
+    JITDUMPEXEC(fgDispBasicBlocks());
+    JITDUMPEXEC(fgDispHandlerTab());
 
-    bool        renumbered  = false;
-    bool        newMaxBBNum = false;
-    BasicBlock* block;
+    bool     renumbered  = false;
+    bool     newMaxBBNum = false;
+    unsigned num         = fgBBNumMin;
 
-    unsigned numStart = 1 + (compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : 0);
-    unsigned num;
-
-    for (block = fgFirstBB, num = numStart; block != nullptr; block = block->bbNext, num++)
+    for (BasicBlock* block : Blocks())
     {
         noway_assert((block->bbFlags & BBF_REMOVED) == 0);
 
         if (block->bbNum != num)
         {
-            renumbered = true;
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("Renumber " FMT_BB " to " FMT_BB "\n", block->bbNum, num);
-            }
-#endif // DEBUG
+            JITDUMP("Renumber " FMT_BB " to " FMT_BB "\n", block->bbNum, num);
+            renumbered   = true;
             block->bbNum = num;
         }
 
         if (block->bbNext == nullptr)
         {
             fgLastBB  = block;
-            fgBBcount = num - numStart + 1;
-            if (compIsForInlining())
+            fgBBcount = num - fgBBNumMin + 1;
+            if (fgBBNumMax != num)
             {
-                if (impInlineInfo->InlinerCompiler->fgBBNumMax != num)
-                {
-                    impInlineInfo->InlinerCompiler->fgBBNumMax = num;
-                    newMaxBBNum                                = true;
-                }
-            }
-            else
-            {
-                if (fgBBNumMax != num)
-                {
-                    fgBBNumMax  = num;
-                    newMaxBBNum = true;
-                }
+                fgBBNumMax  = num;
+                newMaxBBNum = true;
             }
         }
+
+        num++;
     }
 
     // If we renumbered, then we may need to reorder some pred lists.
     //
-    if (renumbered && fgComputePredsDone)
+    if (renumbered)
     {
         for (BasicBlock* const block : Blocks())
         {
             block->ensurePredListOrder(this);
         }
+        JITDUMP("\n*************** After renumbering the basic blocks\n");
+        JITDUMPEXEC(fgDispBasicBlocks());
+        JITDUMPEXEC(fgDispHandlerTab());
     }
-
-#ifdef DEBUG
-    if (verbose)
+    else
     {
-        printf("\n*************** After renumbering the basic blocks\n");
-        if (renumbered)
-        {
-            fgDispBasicBlocks();
-            fgDispHandlerTab();
-        }
-        else
-        {
-            printf("=============== No blocks renumbered!\n");
-        }
+        JITDUMP("=============== No blocks renumbered!\n");
     }
-#endif // DEBUG
 
     // Now update the BlockSet epoch, which depends on the block numbers.
     // If any blocks have been renumbered then create a new BlockSet epoch.
@@ -5785,8 +6087,8 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     if (fgHaveValidEdgeWeights)
     {
         // We will compare the edge weight for our two choices
-        flowList* edgeFromAlt = fgGetPredForBlock(bCur, bAlt);
-        flowList* edgeFromCur = fgGetPredForBlock(bNext, bCur);
+        FlowEdge* edgeFromAlt = fgGetPredForBlock(bCur, bAlt);
+        FlowEdge* edgeFromCur = fgGetPredForBlock(bNext, bCur);
         noway_assert(edgeFromCur != nullptr);
         noway_assert(edgeFromAlt != nullptr);
 

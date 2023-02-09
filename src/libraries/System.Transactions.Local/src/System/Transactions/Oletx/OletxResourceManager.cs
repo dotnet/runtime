@@ -609,7 +609,7 @@ internal sealed class OletxResourceManager
                             // Make sure we have a prepare info.
                             if (localEnlistment.ProxyPrepareInfoByteArray == null)
                             {
-                                Debug.Assert(false, string.Format(null, "this.prepareInfoByteArray == null in RecoveryInformation()"));
+                                Debug.Fail("this.prepareInfoByteArray == null in RecoveryInformation()");
                                 if (etwLog.IsEnabled())
                                 {
                                     etwLog.InternalError();

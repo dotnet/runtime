@@ -90,6 +90,7 @@ private:
     bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
     void ContainCheckCompareChainForAnd(GenTree* tree);
     void ContainCheckConditionalCompare(GenTreeOp* cmp);
+    void ContainCheckNeg(GenTreeOp* neg);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
@@ -136,6 +137,7 @@ private:
     GenTree* OptimizeConstCompare(GenTree* cmp);
     GenTree* LowerCompare(GenTree* cmp);
     GenTree* LowerJTrue(GenTreeOp* jtrue);
+    GenTree* LowerSelect(GenTreeConditional* cond);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);

@@ -18,7 +18,7 @@ FrozenObjectHeapManager::FrozenObjectHeapManager():
 // Allocates an object of the give size (including header) on a frozen segment.
 // May return nullptr if object is too large (larger than FOH_COMMIT_SIZE)
 // in such cases caller is responsible to find a more appropriate heap to allocate it
-Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t objectSize)
+Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t objectSize, bool publish)
 {
     CONTRACTL
     {
@@ -32,82 +32,65 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
     return nullptr;
 #else // FEATURE_BASICFREEZE
 
-    CrstHolder ch(&m_Crst);
-
-    _ASSERT(type != nullptr);
-    _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-    _ASSERT(!type->RequiresAlign8());
-#endif
-
-    // NOTE: objectSize is expected be the full size including header
-    _ASSERT(objectSize >= MIN_OBJECT_SIZE);
-
-    if (objectSize > FOH_COMMIT_SIZE)
+    Object* obj = nullptr;
     {
-        // The current design doesn't allow objects larger than FOH_COMMIT_SIZE and
-        // since FrozenObjectHeap is just an optimization, let's not fill it with huge objects.
-        return nullptr;
-    }
+        CrstHolder ch(&m_Crst);
 
-    if (m_CurrentSegment == nullptr)
-    {
-        // Create the first segment on first allocation
-        m_CurrentSegment = new FrozenObjectSegment(FOH_SEGMENT_DEFAULT_SIZE);
-        m_FrozenSegments.Append(m_CurrentSegment);
-        _ASSERT(m_CurrentSegment != nullptr);
-    }
+        _ASSERT(type != nullptr);
+        _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
 
-    Object* obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
+    #ifdef FEATURE_64BIT_ALIGNMENT
+        if (type->RequiresAlign8())
+        {
+            // Align8 objects are not supported yet
+            return nullptr;
+        }
+    #endif
 
-    // The only case where it can be null is when the current segment is full and we need
-    // to create a new one
-    if (obj == nullptr)
-    {
-        // Double the reserved size to reduce the number of frozen segments in apps with lots of frozen objects
-        // Use the same size in case if prevSegmentSize*2 operation overflows.
-        size_t prevSegmentSize = m_CurrentSegment->GetSize();
-        m_CurrentSegment = new FrozenObjectSegment(max(prevSegmentSize, prevSegmentSize * 2));
-        m_FrozenSegments.Append(m_CurrentSegment);
+        // NOTE: objectSize is expected be the full size including header
+        _ASSERT(objectSize >= MIN_OBJECT_SIZE);
 
-        // Try again
+        if (objectSize > FOH_COMMIT_SIZE)
+        {
+            // The current design doesn't allow objects larger than FOH_COMMIT_SIZE and
+            // since FrozenObjectHeap is just an optimization, let's not fill it with huge objects.
+            return nullptr;
+        }
+
+        if (m_CurrentSegment == nullptr)
+        {
+            // Create the first segment on first allocation
+            m_CurrentSegment = new FrozenObjectSegment(FOH_SEGMENT_DEFAULT_SIZE);
+            m_FrozenSegments.Append(m_CurrentSegment);
+            _ASSERT(m_CurrentSegment != nullptr);
+        }
+
         obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
 
-        // This time it's not expected to be null
-        _ASSERT(obj != nullptr);
+        // The only case where it can be null is when the current segment is full and we need
+        // to create a new one
+        if (obj == nullptr)
+        {
+            // Double the reserved size to reduce the number of frozen segments in apps with lots of frozen objects
+            // Use the same size in case if prevSegmentSize*2 operation overflows.
+            size_t prevSegmentSize = m_CurrentSegment->GetSize();
+            m_CurrentSegment = new FrozenObjectSegment(max(prevSegmentSize, prevSegmentSize * 2));
+            m_FrozenSegments.Append(m_CurrentSegment);
+
+            // Try again
+            obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
+
+            // This time it's not expected to be null
+            _ASSERT(obj != nullptr);
+        }
     }
+    if (publish)
+    {
+        PublishFrozenObject(obj);
+    }
+
     return obj;
 #endif // !FEATURE_BASICFREEZE
-}
-
-static void* ReserveMemory(size_t size)
-{
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // We have plenty of space in-range on X86/AMD64 so we can afford keeping
-    // FOH segments there so e.g. JIT can use relocs for frozen objects.
-    return ExecutableAllocator::Instance()->Reserve(size);
-#else
-    return ClrVirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_READWRITE);
-#endif
-}
-
-static void* CommitMemory(void* ptr, size_t size)
-{
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    return ExecutableAllocator::Instance()->Commit(ptr, size, /*isExecutable*/ false);
-#else
-    return ClrVirtualAlloc(ptr, size, MEM_COMMIT, PAGE_READWRITE);
-#endif
-}
-
-static void ReleaseMemory(void* ptr)
-{
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    ExecutableAllocator::Instance()->Release(ptr);
-#else
-    ClrVirtualFree(ptr, 0, MEM_RELEASE);
-#endif
 }
 
 // Reserve sizeHint bytes of memory for the given frozen segment.
@@ -123,7 +106,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     _ASSERT(m_Size > FOH_COMMIT_SIZE);
     _ASSERT(m_Size % FOH_COMMIT_SIZE == 0);
 
-    void* alloc = ReserveMemory(m_Size);
+    void* alloc = ClrVirtualAlloc(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE);
     if (alloc == nullptr)
     {
         // Try again with the default FOH size
@@ -132,7 +115,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
             m_Size = FOH_SEGMENT_DEFAULT_SIZE;
             _ASSERT(m_Size > FOH_COMMIT_SIZE);
             _ASSERT(m_Size % FOH_COMMIT_SIZE == 0);
-            alloc = ReserveMemory(m_Size);
+            alloc = ClrVirtualAlloc(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE);
         }
 
         if (alloc == nullptr)
@@ -142,13 +125,15 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     }
 
     // Commit a chunk in advance
-    void* committedAlloc = CommitMemory(alloc, FOH_COMMIT_SIZE);
+    void* committedAlloc = ClrVirtualAlloc(alloc, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE);
     if (committedAlloc == nullptr)
     {
-        ReleaseMemory(alloc);
+        ClrVirtualFree(alloc, 0, MEM_RELEASE);
         ThrowOutOfMemory();
     }
 
+    // ClrVirtualAlloc is expected to be PageSize-aligned so we can expect
+    // DATA_ALIGNMENT alignment as well
     _ASSERT(IS_ALIGNED(committedAlloc, DATA_ALIGNMENT));
 
     segment_info si;
@@ -161,7 +146,7 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
     if (m_SegmentHandle == nullptr)
     {
-        ReleaseMemory(alloc);
+        ClrVirtualFree(alloc, 0, MEM_RELEASE);
         ThrowOutOfMemory();
     }
 
@@ -197,9 +182,9 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
         // Make sure we don't go out of bounds during this commit
         _ASSERT(m_SizeCommitted + FOH_COMMIT_SIZE <= m_Size);
 
-        if (CommitMemory(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE) == nullptr)
+        if (ClrVirtualAlloc(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE) == nullptr)
         {
-            ReleaseMemory(m_pStart);
+            ClrVirtualFree(m_pStart, 0, MEM_RELEASE);
             ThrowOutOfMemory();
         }
         m_SizeCommitted += FOH_COMMIT_SIZE;

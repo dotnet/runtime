@@ -30,6 +30,13 @@ typedef struct {
 	gpointer args [16];
 	gpointer *many_args;
 } InterpEntryData;
+
+typedef struct {
+	InterpMethod *rmethod; // 0
+	ThreadContext *context; // 4
+	gpointer orig_domain; // 8
+	gpointer attach_cookie; // 12
+} JiterpEntryDataHeader;
 */
 
 const // offsetOfStack = 12,
@@ -203,9 +210,35 @@ function flush_wasm_entry_trampoline_jit_queue () {
     //  some constant slots, so make some extra space
     const constantSlots = (4 * jitQueue.length) + 1;
     let builder = trampBuilder;
-    if (!builder)
+    if (!builder) {
         trampBuilder = builder = new WasmBuilder(constantSlots);
-    else
+
+        builder.defineType(
+            "unbox", {
+                "pMonoObject": WasmValtype.i32,
+            }, WasmValtype.i32, true
+        );
+        builder.defineType(
+            "interp_entry_prologue", {
+                "pData": WasmValtype.i32,
+                "this_arg": WasmValtype.i32,
+            }, WasmValtype.i32, true
+        );
+        builder.defineType(
+            "interp_entry", {
+                "pData": WasmValtype.i32,
+                "sp_args": WasmValtype.i32,
+                "res": WasmValtype.i32,
+            }, WasmValtype.void, true
+        );
+        builder.defineType(
+            "stackval_from_data", {
+                "type": WasmValtype.i32,
+                "result": WasmValtype.i32,
+                "value": WasmValtype.i32
+            }, WasmValtype.i32, true
+        );
+    } else
         builder.clear(constantSlots);
 
     if (builder.options.wasmBytesLimit <= counters.bytesGenerated) {
@@ -222,32 +255,6 @@ function flush_wasm_entry_trampoline_jit_queue () {
         builder.appendU32(0x6d736100);
         builder.appendU32(1);
 
-        builder.defineType(
-            "unbox", {
-                "pMonoObject": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "interp_entry_prologue", {
-                "pData": WasmValtype.i32,
-                "this_arg": WasmValtype.i32,
-            }, WasmValtype.i32
-        );
-        builder.defineType(
-            "interp_entry", {
-                "pData": WasmValtype.i32,
-                "sp_args": WasmValtype.i32,
-                "res": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-        builder.defineType(
-            "stackval_from_data", {
-                "type": WasmValtype.i32,
-                "result": WasmValtype.i32,
-                "value": WasmValtype.i32
-            }, WasmValtype.i32
-        );
-
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
 
@@ -262,7 +269,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
 
             // Function type for compiled traces
             builder.defineType(
-                info.traceName, sig, WasmValtype.void
+                info.traceName, sig, WasmValtype.void, false
             );
         }
 

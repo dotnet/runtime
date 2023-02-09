@@ -152,7 +152,7 @@ namespace Mono.Linker
 						numBackslash /= 2;
 					}
 					if (numBackslash > 0)
-						argBuilder.Append (new String ('\\', numBackslash));
+						argBuilder.Append (new string ('\\', numBackslash));
 					if (cur < 0 || (!inquote && char.IsWhiteSpace ((char) cur)))
 						break;
 					if (copyChar)
@@ -843,7 +843,7 @@ namespace Mono.Linker
 
 		private static IEnumerable<int> ProcessWarningCodes (string value)
 		{
-			string Unquote (string arg)
+			static string Unquote (string arg)
 			{
 				if (arg.Length > 1 && arg[0] == '"' && arg[arg.Length - 1] == '"')
 					return arg.Substring (1, arg.Length - 2);
@@ -1393,7 +1393,7 @@ namespace Mono.Linker
 		static void About ()
 		{
 			Console.WriteLine ("For more information, visit the project Web site");
-			Console.WriteLine ("   https://github.com/dotnet/linker");
+			Console.WriteLine ("   https://github.com/dotnet/runtime/tree/main/src/tools/illink");
 		}
 
 		static Pipeline GetStandardPipeline ()
