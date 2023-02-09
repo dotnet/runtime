@@ -299,8 +299,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 #endif
             break;
         case GT_SELECT:
-            ContainCheckSelect(node->AsConditional());
-            break;
+            return LowerSelect(node->AsConditional());
 
 #ifdef TARGET_X86
         case GT_SELECT_HI:
@@ -3278,6 +3277,53 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     assert(jtrue->gtNext == nullptr);
     return nullptr;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerSelect: Lower a GT_SELECT node.
+//
+// Arguments:
+//     select - The node
+//
+// Return Value:
+//     The next node to lower.
+//
+GenTree* Lowering::LowerSelect(GenTreeConditional* select)
+{
+    GenTree* cond     = select->gtCond;
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
+    // Replace SELECT cond 1/0 0/1 with (perhaps reversed) cond
+    if (cond->OperIsCompare() && ((trueVal->IsIntegralConst(0) && falseVal->IsIntegralConst(1)) ||
+                                  (trueVal->IsIntegralConst(1) && falseVal->IsIntegralConst(0))))
+    {
+        assert(select->TypeIs(TYP_INT, TYP_LONG));
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(select, &use))
+        {
+            if (trueVal->IsIntegralConst(0))
+            {
+                GenTree* reversed = comp->gtReverseCond(cond);
+                assert(reversed == cond);
+            }
+
+            // Codegen supports also TYP_LONG typed compares so we can just
+            // retype the compare instead of inserting a cast.
+            cond->gtType = select->TypeGet();
+
+            BlockRange().Remove(trueVal);
+            BlockRange().Remove(falseVal);
+            BlockRange().Remove(select);
+            use.ReplaceWith(cond);
+
+            return cond->gtNext;
+        }
+    }
+
+    ContainCheckSelect(select);
+    return select->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
