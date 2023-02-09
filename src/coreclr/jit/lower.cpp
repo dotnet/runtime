@@ -3309,18 +3309,14 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
                 assert(reversed == cond);
             }
 
-            GenTree* newNode = cond;
-            if (select->TypeIs(TYP_LONG))
-            {
-                GenTree* cast = comp->gtNewCastNode(TYP_LONG, newNode, false, TYP_LONG);
-                BlockRange().InsertAfter(newNode, cast);
-                newNode = cast;
-            }
+            // Codegen supports also TYP_LONG typed compares so we can just
+            // retype the compare instead of inserting a cast.
+            cond->gtType = select->TypeGet();
 
             BlockRange().Remove(trueVal);
             BlockRange().Remove(falseVal);
             BlockRange().Remove(select);
-            use.ReplaceWith(newNode);
+            use.ReplaceWith(cond);
 
             return cond->gtNext;
         }
