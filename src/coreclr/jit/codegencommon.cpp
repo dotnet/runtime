@@ -68,6 +68,14 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
 {
 }
 
+#if defined(TARGET_AMD64)
+void CodeGenInterface::CopyRegisterInfo()
+{
+    rbmAllFloat       = compiler->rbmAllFloat;
+    rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+}
+#endif // TARGET_AMD64
+
 /*****************************************************************************/
 
 CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
@@ -139,11 +147,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     genSaveFpLrWithAllCalleeSavedRegisters = false;
     genForceFuncletFrameType5              = false;
 #endif // TARGET_ARM64
-
-#ifdef TARGET_AMD64
-    rbmAllFloat       = compiler->rbmAllFloat;
-    rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-#endif // TARGET_AMD64
 }
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)

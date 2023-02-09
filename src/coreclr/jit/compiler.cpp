@@ -3341,6 +3341,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
     }
+
+    codeGen->CopyRegisterInfo();
 #endif // TARGET_AMD64
 }
 
