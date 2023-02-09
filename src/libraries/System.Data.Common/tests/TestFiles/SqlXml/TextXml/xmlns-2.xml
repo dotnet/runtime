@@ -1,0 +1,4 @@
+﻿<root>
+ <e a="a" b="b" a:b="a:b" xml:lang="en-us" xmlns:a="xmlns:a" />
+ <e a="a" b="b" a:b="a:b" xml:lang="en-us" xmlns="xmlns" xmlns:a="xmlns:a" />
+</root>

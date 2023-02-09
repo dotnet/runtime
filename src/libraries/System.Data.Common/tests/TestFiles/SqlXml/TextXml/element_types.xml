@@ -1,0 +1,1 @@
+﻿<root>root<e a="attr-text" x="123" /><e>[text1]</e><e></e><e x="321"><e x="123">[text2]</e></e><!--comment-text-->[text3]<?pi-name pi-text?></root>

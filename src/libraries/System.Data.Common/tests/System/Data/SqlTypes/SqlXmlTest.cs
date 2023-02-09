@@ -1,26 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// Permission is hereby granted, free of charge, to any person obtaining
-// a copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to
-// permit persons to whom the Software is furnished to do so, subject to
-// the following conditions:
-//
-// The above copyright notice and this permission notice shall be
-// included in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 using System.Data.SqlTypes;
 using System.IO;
 using System.Text;
@@ -32,9 +12,7 @@ namespace System.Data.Tests.SqlTypes
 {
     public class SqlXmlTest
     {
-        // Test constructor
-        [Fact] // .ctor (Stream)
-               //[Category ("NotDotNet")] // Name cannot begin with the '.' character, hexadecimal value 0x00. Line 1, position 2
+        [Fact]
         public void Constructor2_Stream_Unicode()
         {
             string xmlStr = "<Employee><FirstName>Varadhan</FirstName><LastName>Veerapuram</LastName></Employee>";
@@ -44,7 +22,7 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(xmlStr, xmlSql.Value);
         }
 
-        [Fact] // .ctor (Stream)
+        [Fact]
         public void Constructor2_Stream_Empty()
         {
             MemoryStream ms = new MemoryStream();
@@ -62,7 +40,7 @@ namespace System.Data.Tests.SqlTypes
             Assert.Throws<SqlNullValueException>(() => xmlSql.Value);
         }
 
-        [Fact] // .ctor (XmlReader)
+        [Fact]
         public void Constructor3()
         {
             string xmlStr = "<Employee><FirstName>Varadhan</FirstName><LastName>Veerapuram</LastName></Employee>";
@@ -72,7 +50,7 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(xmlStr, xmlSql.Value);
         }
 
-        [Fact] // .ctor (XmlReader)
+        [Fact]
         public void Constructor3_XmlReader_Empty()
         {
             XmlReaderSettings xs = new XmlReaderSettings();
@@ -93,7 +71,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        //[Category ("NotDotNet")] // Name cannot begin with the '.' character, hexadecimal value 0x00. Line 1, position 2
         public void CreateReader_Stream_Unicode()
         {
             string xmlStr = "<Employee><FirstName>Varadhan</FirstName><LastName>Veerapuram</LastName></Employee>";
@@ -117,6 +94,82 @@ namespace System.Data.Tests.SqlTypes
             xrdr.MoveToContent();
 
             Assert.Equal(xmlStr, xrdr.ReadOuterXml());
+        }
+
+        [Theory]
+        [InlineData("element_whitespace-text.xml")]
+        [InlineData("root_qname.xml")]
+        [InlineData("sample_ecommerce.xml")]
+        [InlineData("sql_batch_request.xml")]
+        [InlineData("sql_batch_response.xml")]
+        [InlineData("sql_datatypes-1.xml")]
+        [InlineData("sql_datatypes-2.xml")]
+        [InlineData("sql_datatypes-3.xml")]
+        [InlineData("xmlns-1.xml")]
+        [InlineData("xmlns-2.xml")]
+        [InlineData("xmlns-3.xml")]
+        [InlineData("xmlns-4.xml")]
+        [InlineData("comments_pis.xml")]
+        [InlineData("element_content_growth.xml")]
+        [InlineData("element_nested-1.xml")]
+        [InlineData("element_nested-2.xml")]
+        [InlineData("element_nested-3.xml")]
+        [InlineData("element_single.xml")]
+        [InlineData("element_stack_growth.xml")]
+        [InlineData("element_tagname_growth.xml")]
+        [InlineData("element_types.xml")]
+        [InlineData("element_whitespace-modes.xml")]
+        public void SqlXml_fromXmlReader_TextXml(string filename)
+        {
+            string filepath = Path.Combine("TestFiles/SqlXml/TextXml", filename);
+
+            using FileStream xmlStream = new FileStream(filepath, FileMode.Open);
+            SqlXml sqlXml = new SqlXml(xmlStream);
+
+            // Reading XML stored as SQL Binary XML will result in using
+            // the XmlTextReader implementation
+            using XmlReader sqlXmlReader = sqlXml.CreateReader();
+
+            // Read to the end to verify no exceptions are thrown
+            while(sqlXmlReader.Read());
+        }
+
+        [Theory]
+        [InlineData("element_whitespace-text.bmx")]
+        [InlineData("root_qname.bmx")]
+        [InlineData("sample_ecommerce.bmx")]
+        [InlineData("sql_batch_request.bmx")]
+        [InlineData("sql_batch_response.bmx")]
+        [InlineData("sql_datatypes-1.bmx")]
+        [InlineData("sql_datatypes-2.bmx")]
+        [InlineData("sql_datatypes-3.bmx")]
+        [InlineData("xmlns-1.bmx")]
+        [InlineData("xmlns-2.bmx")]
+        [InlineData("xmlns-3.bmx")]
+        [InlineData("xmlns-4.bmx")]
+        [InlineData("comments_pis.bmx")]
+        [InlineData("element_content_growth.bmx")]
+        [InlineData("element_nested-1.bmx")]
+        [InlineData("element_nested-2.bmx")]
+        [InlineData("element_nested-3.bmx")]
+        [InlineData("element_single.bmx")]
+        [InlineData("element_stack_growth.bmx")]
+        [InlineData("element_tagname_growth.bmx")]
+        [InlineData("element_types.bmx")]
+        [InlineData("element_whitespace-modes.bmx")]
+        public void SqlXml_fromXmlReader_SqlBinaryXml(string filename)
+        {
+            string filepath = Path.Combine("TestFiles/SqlXml/SqlBinaryXml", filename);
+
+            using FileStream xmlStream = new FileStream(filepath, FileMode.Open);
+            SqlXml sqlXml = new SqlXml(xmlStream);
+
+            // Reading XML stored as SQL Binary XML will result in using
+            // the XmlSqlBinaryReader implementation
+            using XmlReader sqlXmlReader = sqlXml.CreateReader();
+
+            // Read to the end to verify no exceptions are thrown
+            while(sqlXmlReader.Read());
         }
 
         [Fact]

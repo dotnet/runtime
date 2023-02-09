@@ -1,0 +1,5 @@
+﻿<!-- test comments & pis --><root>
+	<?pi with text?>
+  <e></e>
+	<!-- comment -->
+</root>
