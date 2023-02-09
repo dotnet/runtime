@@ -351,7 +351,7 @@ namespace DebuggerTests
             });
         }
 
-        public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan span)
+        public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, string urlToInspect, TimeSpan span)
         {
             var start = DateTime.Now;
             try
@@ -392,6 +392,9 @@ namespace DebuggerTests
                     Result res = completedTask.Result;
                     if (!res.IsOk)
                         throw new ArgumentException($"Command {cmd_name} failed with: {res.Error}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}");
+
+                    if (DebuggerTestBase.RunningOnChrome && cmd_name == "Debugger.enable")
+                        await Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token);
 
                     init_cmds.RemoveAt(cmdIdx);
                 }

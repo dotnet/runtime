@@ -66,7 +66,7 @@ namespace DebuggerTests
 
         public int Id { get; init; }
 
-        public string urlToInspect;
+        public string driver;
         public static string DebuggerTestAppPath
         {
             get
@@ -131,7 +131,7 @@ namespace DebuggerTests
                 Directory.Delete(TempPath, recursive: true);
         }
 
-        public DebuggerTestBase(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
+        public DebuggerTestBase(ITestOutputHelper testOutput, string _driver = "debugger-driver.html")
         {
             _env = new TestEnvironment(testOutput);
             _testOutput = testOutput;
@@ -143,7 +143,7 @@ namespace DebuggerTests
             insp = new Inspector(Id, _testOutput);
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
-            urlToInspect = $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}";
+            driver = _driver";
             startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput);
         }
 
@@ -159,15 +159,14 @@ namespace DebuggerTests
                     getInitCmdFn("Debugger.enable", null),
                     getInitCmdFn("Runtime.runIfWaitingForDebugger", null),
                     getInitCmdFn("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 })),
-                    getInitCmdFn("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true })),
-                    getInitCmdFn("Page.navigate", JObject.FromObject(new { url = urlToInspect}))
+                    getInitCmdFn("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }))
                     //getInitCmdFn("ServiceWorker.enable", null)
                  };
                  return init_cmds;
              };
 
             await Ready();
-            await insp.OpenSessionAsync(fn, TestTimeout);
+            await insp.OpenSessionAsync(fn, $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
         }
 
         public virtual async Task DisposeAsync()
