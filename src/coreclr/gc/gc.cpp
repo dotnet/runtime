@@ -13691,10 +13691,20 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps,
                                  use_large_pages_p, separated_poh_p, heap_no_to_numa_node))
         return E_OUTOFMEMORY;
-    if (separated_poh_p)
+    if (use_large_pages_p)
     {
-        heap_hard_limit_oh[poh] = min_segment_size_hard_limit * number_of_heaps;
-        heap_hard_limit += heap_hard_limit_oh[poh];
+        if (heap_hard_limit_oh[soh])
+        {
+            heap_hard_limit_oh[soh] = soh_segment_size * number_of_heaps;
+            heap_hard_limit_oh[loh] = loh_segment_size * number_of_heaps;
+            heap_hard_limit_oh[poh] = poh_segment_size * number_of_heaps;
+            heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+        }
+        else
+        {
+            assert (heap_hard_limit);
+            heap_hard_limit = (soh_segment_size + loh_segment_size + poh_segment_size) * number_of_heaps;
+        }
     }
 #endif //USE_REGIONS
 
@@ -45153,10 +45163,6 @@ HRESULT GCHeap::Initialize()
 
 #endif //HOST_64BIT
     GCConfig::SetGCLargePages(gc_heap::use_large_pages_p);
-    GCConfig::SetGCHeapHardLimit(static_cast<int64_t>(gc_heap::heap_hard_limit));
-    GCConfig::SetGCHeapHardLimitSOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[soh]));
-    GCConfig::SetGCHeapHardLimitLOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[loh]));
-    GCConfig::SetGCHeapHardLimitPOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[poh]));
 
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
@@ -45340,6 +45346,11 @@ HRESULT GCHeap::Initialize()
 #else
     hr = gc_heap::initialize_gc (seg_size, large_seg_size, pin_seg_size);
 #endif //MULTIPLE_HEAPS
+
+    GCConfig::SetGCHeapHardLimit(static_cast<int64_t>(gc_heap::heap_hard_limit));
+    GCConfig::SetGCHeapHardLimitSOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[soh]));
+    GCConfig::SetGCHeapHardLimitLOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[loh]));
+    GCConfig::SetGCHeapHardLimitPOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[poh]));
 
     if (hr != S_OK)
         return hr;
