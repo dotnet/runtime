@@ -1288,7 +1288,6 @@ private:
         bool      skipAllocation       = false;
         bool      coversFullApplied = false;
         bool      constAvailableApplied = false;
-        regNumber foundReg             = REG_NA;
 
         // If the selected register is already assigned to the current internal
         FORCEINLINE bool isAlreadyAssigned()
