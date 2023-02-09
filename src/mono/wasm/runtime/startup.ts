@@ -473,7 +473,6 @@ async function instantiate_wasm_module(
         assetToLoad.pendingDownloadInternal = null as any; // GC
         assetToLoad.pendingDownload = null as any; // GC
         assetToLoad.buffer = null as any; // GC
-        assetToLoad.buffer = null as any; // GC
 
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module done");
         afterInstantiateWasm.promise_control.resolve();
