@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(ulong lower, ulong upper, ulong divisor)</Target>
+    <Left>ref/net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>lib/net8.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(ulong lower, long upper, long divisor)</Target>
+    <Left>ref/net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>lib/net8.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(uint lower, uint upper, uint divisor)</Target>
+    <Left>ref/net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>lib/net8.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(int lower, int upper, int divisor)</Target>
+    <Left>ref/net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>lib/net8.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(nuint lower, nuint upper, nuint divisor)</Target>
+    <Left>ref/net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>lib/net8.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(nuint lower, nint upper, nint divisor)</Target>
+    <Left>ref/net8.0/System.Runtime.Intrinsics.dll</Left>
+    <Right>lib/net8.0/System.Runtime.Intrinsics.dll</Right>
+  </Suppression>
+</Suppressions>
