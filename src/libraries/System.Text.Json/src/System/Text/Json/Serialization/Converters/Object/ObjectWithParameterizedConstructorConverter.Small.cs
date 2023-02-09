@@ -57,7 +57,7 @@ namespace System.Text.Json.Serialization.Converters
             scoped ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonParameterInfo jsonParameterInfo,
-            out TArg arg)
+            out TArg? arg)
         {
             Debug.Assert(jsonParameterInfo.ShouldDeserialize);
 
@@ -65,9 +65,9 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success = info.EffectiveConverter.TryRead(ref reader, info.ParameterType, info.Options, ref state, out TArg? value);
 
-            arg = value == null && jsonParameterInfo.IgnoreNullTokensOnRead
-                ? (TArg?)info.DefaultValue! // Use default value specified on parameter, if any.
-                : value!;
+            arg = value is null && jsonParameterInfo.IgnoreNullTokensOnRead
+                ? info.DefaultValue // Use default value specified on parameter, if any.
+                : value;
 
             if (success)
             {

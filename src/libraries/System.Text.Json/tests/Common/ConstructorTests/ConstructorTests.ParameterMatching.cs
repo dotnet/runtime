@@ -361,6 +361,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task IgnoreNullValues_SetDefaultConstructorParameter_ToConstructorArguments_ThatCanBeNull()
+        {
+            var options = new JsonSerializerOptions { IgnoreNullValues = true };
+            NullArgTester result = await Serializer.DeserializeWrapper<NullArgTester>(@"{""String"":null}", options);
+            Assert.Equal("defaultStr", result.String);
+        }
+
+            [Fact]
         public async Task NumerousSimpleAndComplexParameters()
         {
             var obj = await Serializer.DeserializeWrapper<ObjWCtorMixedParams>(ObjWCtorMixedParams.s_json);
