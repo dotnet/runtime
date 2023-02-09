@@ -33,7 +33,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
         };
 
         await Ready();
-        await insp.OpenSessionAsync(init_cmds, TestTimeout);
+        await insp.OpenSessionAsync(init_cmds, "", TestTimeout);
     }
 
     internal override Dictionary<string, string> SubscribeToScripts(Inspector insp)

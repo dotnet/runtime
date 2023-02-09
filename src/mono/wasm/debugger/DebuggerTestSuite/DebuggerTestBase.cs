@@ -157,7 +157,7 @@ namespace DebuggerTests
                 ("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }))
             };
             await Ready();
-            await insp.OpenSessionAsync(init_cmds, TestTimeout);
+            await insp.OpenSessionAsync(init_cmds, $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
         }
 
         public virtual async Task DisposeAsync()

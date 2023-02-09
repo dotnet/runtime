@@ -352,7 +352,7 @@ namespace DebuggerTests
             });
         }
 
-        public async Task OpenSessionAsync(List<(string cmd, JObject? args)> initCmdList, TimeSpan span)
+        public async Task OpenSessionAsync(List<(string cmd, JObject? args)> initCmdList, string urlToInspect, TimeSpan span)
         {
             var start = DateTime.Now;
             try
@@ -364,6 +364,9 @@ namespace DebuggerTests
                 {
                     init_cmds.Add((cmdToInit.cmd, Client.SendCommand(cmdToInit.cmd, cmdToInit.args, _cancellationTokenSource.Token)));
                 }
+
+                if (DebuggerTestBase.RunningOnChrome)
+                    init_cmds.Add(("Page.navigate", Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token)));
 
                 Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
                 init_cmds.Add((APP_READY, readyTask));
