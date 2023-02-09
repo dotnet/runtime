@@ -36,13 +36,16 @@ public:
 
 private:
 #if defined(TARGET_AMD64)
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+
     regMaskTP get_RBM_ALLFLOAT() const
     {
-        return compiler->rbmAllFloat;
+        return this->rbmAllFloat;
     }
     regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
-        return compiler->rbmFltCalleeTrash;
+        return this->rbmFltCalleeTrash;
     }
 #endif // TARGET_AMD64
 

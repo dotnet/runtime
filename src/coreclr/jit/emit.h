@@ -1991,8 +1991,12 @@ public:
 
 private:
 #if defined(TARGET_AMD64)
-    regMaskTP get_RBM_FLT_CALLEE_TRASH() const;
-    unsigned  get_AVAILABLE_REG_COUNT() const;
+    regMaskTP rbmFltCalleeTrash;
+
+    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    {
+        return this->rbmFltCalleeTrash;
+    }
 #endif // TARGET_AMD64
 
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
