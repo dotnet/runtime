@@ -11095,7 +11095,6 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     relatedLastLocation = rangeEndLocation;
     preferCalleeSave    = currentInterval->preferCalleeSave;
     lastRefPosition     = currentInterval->lastRefPosition;
-    prevRegRec          = currentInterval->assignedReg;
 
     // These are used in the post-selection updates, and must be set for any selection.
     freeCandidates    = RBM_NONE;
@@ -11206,7 +11205,7 @@ void LinearScan::RegisterSelection::try_THIS_ASSIGNED()
         return;
     }
 
-    if (prevRegRec != nullptr)
+    if (currentInterval->assignedReg != nullptr)
     {
         found = applySelection(THIS_ASSIGNED, freeCandidates & preferences & prevRegBit);
     }
@@ -11391,7 +11390,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
 void LinearScan::RegisterSelection::try_IS_PREV_REG()
 {
     // TODO: We do not check found here.
-    if ((prevRegRec != nullptr) && coversFullApplied)
+    if ((currentInterval->assignedReg != nullptr) && coversFullApplied)
     {
         found = applySingleRegSelection(IS_PREV_REG, prevRegBit);
     }
@@ -11973,8 +11972,9 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     // been restored as inactive after a kill?
     // NOTE: this is not currently considered one of the selection criteria - it always wins
     // if it is the assignedInterval of 'prevRegRec'.
-    if (!found && (prevRegRec != nullptr))
+    if (!found && (currentInterval->assignedReg != nullptr))
     {
+        RegRecord* prevRegRec = currentInterval->assignedReg;
         prevRegBit = genRegMask(prevRegRec->regNum);
         if ((prevRegRec->assignedInterval == currentInterval) && ((candidates & prevRegBit) != RBM_NONE))
         {

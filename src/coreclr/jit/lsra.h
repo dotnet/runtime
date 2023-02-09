@@ -1268,7 +1268,6 @@ private:
         RefPosition* lastRefPosition;
         regMaskTP    callerCalleePrefs = RBM_NONE;
         LsraLocation lastLocation;
-        RegRecord*   prevRegRec = nullptr;
 
         regMaskTP prevRegBit = RBM_NONE;
 
