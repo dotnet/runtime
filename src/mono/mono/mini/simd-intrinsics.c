@@ -545,6 +545,49 @@ emit_xones (MonoCompile *cfg, MonoClass *klass)
 	return emit_simd_ins (cfg, klass, OP_XONES, -1, -1);
 }
 
+static MonoInst*
+emit_xconst_v128 (MonoCompile *cfg, MonoClass *klass, guint8 value[16])
+{
+	const int size = 16;
+
+	gboolean all_zeros = TRUE;
+
+	for (int i = 0; i < size; ++i) {
+		if (value[i] != 0x00) {
+			all_zeros = FALSE;
+			break;
+		}
+	}
+
+	if (all_zeros) {
+		return emit_xzero (cfg, klass);
+	}
+
+	gboolean all_ones = TRUE;
+
+	for (int i = 0; i < size; ++i) {
+		if (value[i] != 0xFF) {
+			all_ones = FALSE;
+			break;
+		}
+	}
+
+	if (all_ones) {
+		return emit_xones (cfg, klass);
+	}
+
+	MonoInst *ins;
+
+	MONO_INST_NEW (cfg, ins, OP_XCONST);
+	ins->type = STACK_VTYPE;
+	ins->dreg = alloc_xreg (cfg);
+	ins->inst_p0 = mono_mem_manager_alloc (cfg->mem_manager, size);
+	MONO_ADD_INS (cfg->cbb, ins);
+
+	memcpy (ins->inst_p0, &value[0], size);
+	return ins;
+}
+
 #ifdef TARGET_ARM64
 static int type_to_extract_op (MonoTypeEnum type);
 static MonoType* get_vector_t_elem_type (MonoType *vector_type);
@@ -2000,25 +2043,46 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	}
 	case SN_get_Zero:
 		return emit_xzero (cfg, klass);
+	case SN_get_UnitX: {
+		float value[4];
+		value [0] = 1.0f;
+		value [1] = 0.0f;
+		value [2] = 0.0f;
+		value [3] = 0.0f;
+		return emit_xconst_v128 (cfg, klass, (guint8*)value);
+	}
+	case SN_get_UnitY: {
+		float value[4];
+		value [0] = 0.0f;
+		value [1] = 1.0f;
+		value [2] = 0.0f;
+		value [3] = 0.0f;
+		return emit_xconst_v128 (cfg, klass, (guint8*)value);
+	}
+	case SN_get_UnitZ: {
+		float value[4];
+		value [0] = 0.0f;
+		value [1] = 0.0f;
+		value [2] = 1.0f;
+		value [3] = 0.0f;
+		return emit_xconst_v128 (cfg, klass, (guint8*)value);
+	}
 	case SN_get_Identity:
-	case SN_get_UnitX:
-	case SN_get_UnitY:
-	case SN_get_UnitZ:
 	case SN_get_UnitW: {
-		// FIXME:
-		return NULL;
+		float value[4];
+		value [0] = 0.0f;
+		value [1] = 0.0f;
+		value [2] = 0.0f;
+		value [3] = 1.0f;
+		return emit_xconst_v128 (cfg, klass, (guint8*)value);
 	}
 	case SN_get_One: {
-		static const float r4_one = 1.0f;
-
-		MonoInst *one = NULL;
-		MONO_INST_NEW (cfg, one, OP_R4CONST);
-		one->type = STACK_R4;
-		one->inst_p0 = (void *)&r4_one;
-		one->dreg = alloc_dreg (cfg, (MonoStackType)one->type);
-		MONO_ADD_INS (cfg->cbb, one);
-
-		return emit_simd_ins (cfg, klass, OP_EXPAND_R4, one->dreg, -1);
+		float value[4];
+		value [0] = 1.0f;
+		value [1] = 1.0f;
+		value [2] = 1.0f;
+		value [3] = 1.0f;
+		return emit_xconst_v128 (cfg, klass, (guint8*)value);
 	}
 	case SN_set_Item: {
 		// WithElement is marked as Intrinsic, but handling this in set_Item leads to better code
@@ -2251,9 +2315,6 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	int size, len, id;
 	gboolean is_unsigned;
 
-	static const float r4_one = 1.0f;
-	static const double r8_one = 1.0;
-
 	id = lookup_intrins (vector_t_methods, sizeof (vector_t_methods), cmethod);
 	if (id == -1) {
 		//check_no_intrinsic_cattr (cmethod);
@@ -2293,29 +2354,70 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		return emit_xzero (cfg, klass);
 	case SN_get_One: {
 		g_assert (fsig->param_count == 0 && mono_metadata_type_equal (fsig->ret, type));
-		MonoInst *one = NULL;
-		int expand_opcode = type_to_expand_op (etype);
-		MONO_INST_NEW (cfg, one, -1);
-		switch (expand_opcode) {
-		case OP_EXPAND_R4:
-			one->opcode = OP_R4CONST;
-			one->type = STACK_R4;
-			one->inst_p0 = (void *) &r4_one;
-			break;
-		case OP_EXPAND_R8:
-			one->opcode = OP_R8CONST;
-			one->type = STACK_R8;
-			one->inst_p0 = (void *) &r8_one;
-			break;
-		default:
-			one->opcode = OP_ICONST;
-			one->type = STACK_I4;
-			one->inst_c0 = 1;
-			break;
+		g_assert (register_size == 16);
+
+		switch (etype->type) {
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1: {
+			guint8 value[16];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1;
+			}
+
+			return emit_xconst_v128 (cfg, klass, value);
 		}
-		one->dreg = alloc_dreg (cfg, (MonoStackType)one->type);
-		MONO_ADD_INS (cfg->cbb, one);
-		return emit_simd_ins (cfg, klass, expand_opcode, one->dreg, -1);
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2: {
+			guint16 value[8];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1;
+			}
+
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4: {
+			guint32 value[4];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1;
+			}
+
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8: {
+			guint64 value[2];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1;
+			}
+
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+		case MONO_TYPE_R4: {
+			float value[4];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1.0f;
+			}
+
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+		case MONO_TYPE_R8: {
+			double value[2];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1.0;
+			}
+
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+		default:
+			g_assert_not_reached ();
+		}
 	}
 	case SN_get_AllBitsSet: {
 		return emit_xones (cfg, klass);

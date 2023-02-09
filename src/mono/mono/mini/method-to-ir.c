@@ -12640,6 +12640,7 @@ mono_op_no_side_effects (int opcode)
 	case OP_VZERO:
 	case OP_XZERO:
 	case OP_XONES:
+	case OP_XCONST:
 	case OP_ICONST:
 	case OP_I8CONST:
 	case OP_ADD_IMM:

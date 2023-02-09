@@ -7844,6 +7844,86 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMConstAllOnes (type_to_llvm_type (ctx, m_class_get_byval_arg (ins->klass)));
 			break;
 		}
+		case OP_XCONST: {
+			MonoTypeEnum etype;
+			int ecount;
+
+			const char *class_name = m_class_get_name (ins->klass);
+
+			if (!strcmp(class_name, "Vector64`1") || !strcmp (class_name, "Vector128`1") || !strcmp (class_name, "Vector256`1") || !strcmp (class_name, "Vector512`1")) {
+				MonoType *element_type = mono_class_get_context (ins->klass)->class_inst->type_argv [0];
+				etype = element_type->type;
+				ecount = mono_class_value_size (ins->klass, NULL) / mono_class_value_size (mono_class_from_mono_type_internal(element_type), NULL);
+			} else if (!strcmp(class_name, "Vector4") || !strcmp(class_name, "Plane") || !strcmp(class_name, "Quaternion")) {
+				etype = MONO_TYPE_R4;
+				ecount = 4;
+			} else {
+				g_assert_not_reached ();
+			}
+
+			LLVMTypeRef llvm_type = primitive_type_to_llvm_type(etype);
+			LLVMValueRef vals [64];
+
+			switch (etype) {
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1: {
+				guint8* v = (guint8*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstInt (llvm_type, v[i], FALSE);
+				}
+				break;
+			}
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2: {
+				guint16* v = (guint16*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstInt (llvm_type, v[i], FALSE);
+				}
+				break;
+			}
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4: {
+				guint32* v = (guint32*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstInt (llvm_type, v[i], FALSE);
+				}
+				break;
+			}
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8: {
+				guint64* v = (guint64*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstInt (llvm_type, v[i], FALSE);
+				}
+				break;
+			}
+			case MONO_TYPE_R4: {
+				float* v = (float*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstReal (llvm_type, v[i]);
+				}
+				break;
+			}
+			case MONO_TYPE_R8: {
+				double* v = (double*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstReal (llvm_type, v[i]);
+				}
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+			}
+
+			values [ins->dreg] = LLVMConstVector (vals, ecount);
+			break;
+		}
 		case OP_LOADX_MEMBASE: {
 			LLVMTypeRef t = type_to_llvm_type (ctx, m_class_get_byval_arg (ins->klass));
 			LLVMValueRef src;
