@@ -7,6 +7,10 @@
          For offline builds we still set OfficialBuildId but we need to build all the packages for a single
          leg only, so we also take DotNetBuildFromSource  into account. -->
     <BuildingAnOfficialBuildLeg Condition="'$(BuildingAnOfficialBuildLeg)' == '' and '$(OfficialBuildId)' != '' and '$(DotNetBuildFromSource)' != 'true'">true</BuildingAnOfficialBuildLeg>
+    <!-- When doing a source build, we want to build the various text-only manifests in
+         all cases, rather than ordinarily where we build them during mobile or wasm
+         build legs. This makes the manifests available on source-only builds. -->
+    <ForceBuildMobileManifests Condition="'$(DotNetBuildFromSource)' == 'true'">true</ForceBuildMobileManifests>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOS">
