@@ -5484,6 +5484,17 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         }
     }
 
+#ifdef TARGET_64BIT
+    if (comp->opts.OptimizationEnabled() && (index != nullptr))
+    {
+        if (index->OperIs(GT_CAST) && !index->gtOverflow() && index->TypeIs(TYP_LONG) &&
+            (index->AsCast()->CastToType() == TYP_LONG) && varTypeIsInt(index->CastFromType()))
+        {
+            index->gtFlags |= GTF_UNSIGNED;
+        }
+    }
+#endif // TARGET_AMD64
+
 #ifdef TARGET_ARM64
 
     if (index != nullptr)
