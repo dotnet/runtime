@@ -1606,6 +1606,8 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     C_ASSERT(sizeof(emitLclVarAddr) <= sizeof(void*));
     C_ASSERT(sizeof(emitter::instrDesc) == (SMALL_IDSC_SIZE + sizeof(void*)));
 
+    emitInsCount++;
+
     if (m_debugInfoSize > 0)
     {
         instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
