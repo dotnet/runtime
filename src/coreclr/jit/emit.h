@@ -2288,7 +2288,7 @@ private:
 
 #if EMIT_BACKWARDS_NAVIGATION
 #define EMIT_MAX_PEEPHOLE_INS_COUNT 32 // The max number of previous instructions to navigate through for peepholes.
-#endif // EMIT_BACKWARDS_NAVIGATION
+#endif                                 // EMIT_BACKWARDS_NAVIGATION
 
     instrDesc* emitLastIns;
     insGroup*  emitLastInsIG;
