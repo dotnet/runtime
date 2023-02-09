@@ -276,7 +276,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
       runtimeVariant: llvmfullaot
-      buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true 
+      buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true
       timeoutInMinutes: 300
 
       condition: >-
@@ -288,6 +288,13 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
       testRunNamePrefixSuffix: Mono_Release
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          forwardedParameters:
+            - osGroup
+            - osSubgroup
+            - runtimeFlavor
+            - runtimeVariant
 
 #
 # Mono CoreCLR runtime Test executions using live libraries in interpreter mode

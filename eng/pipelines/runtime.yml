@@ -215,6 +215,13 @@ extends:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -247,6 +254,13 @@ extends:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot /p:BuildNativeAotFrameworkObjects=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -281,6 +295,13 @@ extends:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -750,7 +771,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-                
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/mono/templates/build-job.yml
@@ -1140,6 +1161,13 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
 
       #
       # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
@@ -1173,6 +1201,13 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
       #
       # Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
       # Only when Mono is changed
@@ -1196,7 +1231,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAot_RuntimeTests
             runtimeVariant: llvmaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true 
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true
             timeoutInMinutes: 180
 
             condition: >-
@@ -1208,6 +1243,13 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
 
       #
       # Libraries Release Test Execution against a release mono runtime.

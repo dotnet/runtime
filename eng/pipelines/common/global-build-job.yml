@@ -29,6 +29,7 @@ parameters:
   testResultsFormat: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
+  extraVariablesTemplates: []
   enableRichCodeNavigation: false
   richCodeNavigationLanguage: 'csharp'
   richCodeNavigationEnvironment: 'production'
@@ -37,7 +38,7 @@ parameters:
 jobs:
 - template: /eng/common/templates/job/job.yml
   parameters:
-    ${{ if eq(parameters.hostedOs, '') }}:  
+    ${{ if eq(parameters.hostedOs, '') }}:
       name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
       displayName: ${{ format('{0}{1}-{2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix, parameters.runtimeVariant) }}
     ${{ if ne(parameters.hostedOs, '') }}:
@@ -133,7 +134,15 @@ jobs:
       - ${{ if eq(parameters.archType, 'arm64') }}:
         - name: _monoAotCrossCompileArg
           value: 'cross'
-        
+
+      - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
+        - template: ${{ variableTemplate.template }}
+          parameters:
+            ${{ each parameter in variableTemplate.forwardedParameters }}:
+              ${{ parameter }}: ${{ parameters[parameter] }}
+            ${{ if ne(variableTemplate.parameters, '') }}:
+              ${{ insert }}: ${{ variableTemplate.parameters }}
+
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 

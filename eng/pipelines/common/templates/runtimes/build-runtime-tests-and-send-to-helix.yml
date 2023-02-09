@@ -1,5 +1,6 @@
 parameters:
   buildConfig: ''
+  osGroup: ''
   osSubgroup: ''
   container: ''
   testBuildArgs: ''
@@ -13,6 +14,8 @@ parameters:
   nativeAotTest: false
   runtimeFlavor: 'mono'
   runtimeVariant: 'monointerpreter'
+  scenarios:
+    - normal
   variables: {}
   pool: ''
   dependsOn: []
@@ -26,13 +29,13 @@ parameters:
   shouldContinueOnError: false
 
 steps:
-  - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=${{ parameters.runtimeVariant }} ${{ parameters.testBuildArgs }} -mono os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ci ${{ parameters.archType }} $(buildConfigUpper) $(runtimeFlavorArgs) $(runtimeVariantArg) ${{ parameters.testBuildArgs }} /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }} $(priorityArg)
+      displayName: Build Tests
+  - ${{ if ne(parameters.osGroup, 'windows') }}:
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) $(runtimeFlavorArgs) $(runtimeVariantArg) ${{ parameters.testBuildArgs }} /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }} $(priorityArg)
       displayName: Build Tests
 
-  - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ${{ parameters.archType }} $(buildConfigUpper) ${{ parameters.testBuildArgs }} -ci
-      displayName: Build Tests
 
 
   # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
@@ -114,4 +117,4 @@ steps:
 
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
-        scenarios: normal
+        scenarios: ${{ parameters.scenarios }}
