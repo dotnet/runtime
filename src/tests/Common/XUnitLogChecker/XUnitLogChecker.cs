@@ -9,8 +9,7 @@ public class XUnitLogChecker
 {
     private static class Patterns
     {
-        // public const string OpenTag = @"(\B<\w+)|(\B<!\[CDATA\[)";
-        public const string OpenTag = @"(\B<\w+)";
+        public const string OpenTag = @"(\B<\w+)|(\B<!\[CDATA\[)";
         public const string CloseTag = @"(\B</\w+>)|(\]\]>)";
     }
 
@@ -126,10 +125,12 @@ public class XUnitLogChecker
     static void FixTheXml(string xFile)
     {
         var tags = new Stack<string>();
+        string tagText = string.Empty;
 
         // Flag to ensure we don't process tag-like-looking things while reading through
         // a test's output.
         bool inOutput = false;
+        bool inCData = false;
 
         foreach (string line in File.ReadLines(xFile))
         {
@@ -141,13 +142,20 @@ public class XUnitLogChecker
 
             foreach (TagResult tr in allTags)
             {
-                // Get the name of the next tag. We need solely the text, so we
-                // ask LINQ to lend us a hand in removing the symbols from the string.
-                string tagText = new String(tr.Value.Where(c => char.IsLetter(c)).ToArray());
-
                 // Found an opening tag. Push into the stack and move on to the next one.
-                if (tr.Category == TagCategory.OPENING && !inOutput)
+                if (tr.Category == TagCategory.OPENING)
                 {
+                    // Get the name of the next tag. We need solely the text, so we
+                    // ask LINQ to lend us a hand in removing the symbols from the string.
+                    tagText = new String(tr.Value.Where(c => char.IsLetter(c)).ToArray());
+
+                    // We are beginning to process a test's output. Set the flag to
+                    // treat everything as such, until we get the closing output tag.
+                    if (tagText.Equals("output") && !inOutput && !inCData)
+                        inOutput = true;
+                    else if (tagText.Equals("CDATA") && !inCData)
+                        inCData = true;
+
                     tags.Push(tagText);
                     continue;
                 }
@@ -158,8 +166,57 @@ public class XUnitLogChecker
                 // rather than an actual XML log tag.
                 if (tr.Category == TagCategory.CLOSING)
                 {
+                    // As opposed to the usual XML tags we can find in the logs,
+                    // the CDATA closing one doesn't have letters, so we treat it
+                    // as a special case.
+                    tagText = tr.Value.Equals("]]>")
+                              ? "CDATA"
+                              : new String(tr.Value
+                                           .Where(c => char.IsLetter(c))
+                                           .ToArray());
+
+                    if (inCData)
+                    {
+                        if (tagText.Equals("CDATA"))
+                        {
+                            tags.Pop();
+                            inCData = false;
+                        }
+                        else continue;
+                    }
+
+                    if (inOutput)
+                    {
+                         if (tagText.Equals("output"))
+                         {
+                             tags.Pop();
+                             inOutput = false;
+                         }
+                         else continue;
+                    }
+
+                    if (tagText.Equals(tags.Peek()))
+                    {
+                        tags.Pop();
+                    }
                 }
             }
+        }
+
+        if (tags.Count == 0)
+        {
+            Console.WriteLine($"[XUnitLogChecker]: XUnit log file '{xFile}' was A-OK!");
+        }
+
+        // Write the missing closings for all the opened tags we found.
+        using (StreamWriter xsw = File.AppendText(xFile))
+        while (tags.Count > 0)
+        {
+            string tag = tags.Pop();
+            if (tag.Equals("CDATA"))
+                xsw.WriteLine("]]>");
+            else
+                xsw.WriteLine($"</{tag}>");
         }
 
         Console.WriteLine("[XUnitLogChecker]: XUnit log file has been fixed!");
@@ -168,7 +225,9 @@ public class XUnitLogChecker
     static TagResult[] GetOrderedTagMatches(Match[] openingTags, Match[] closingTags)
     {
         var result = new TagResult[openingTags.Length + closingTags.Length];
-        int resIndex = opIndex = clIndex = 0;
+        int resIndex = 0;
+        int opIndex = 0;
+        int clIndex = 0;
 
         // Fill up the result array with the tags found, in order of appearance
         // in the original log file line.
