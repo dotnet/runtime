@@ -12,6 +12,7 @@ add_library(
     monodroid
     SHARED
     monodroid.c
+    %AotModulesSource%
 )
 
 %AotSources%

@@ -34,7 +34,7 @@ public class MonoRunner extends Instrumentation
 {
     static {
         // loadLibrary triggers JNI_OnLoad in these libs
-        System.loadLibrary("Android.Device_Emulator.Aot_Llvm.Test");
+        System.loadLibrary("%JNI_LIBRARY_NAME%");
         System.loadLibrary("monodroid");
     }
 

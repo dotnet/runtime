@@ -6,10 +6,10 @@ using System.Runtime.InteropServices;
 
 public static class Program
 {
-    [UnmanagedCallersOnly(EntryPoint="HelloSteve")]
-    public static void HelloSteve()
+    [UnmanagedCallersOnly(EntryPoint="SayHello")]
+    public static void SayHello()
     {
-        Console.WriteLine("Called from the outside!  Hello!");
+        Console.WriteLine("Called from native!  Hello!");
     }
 
     public static int Main()

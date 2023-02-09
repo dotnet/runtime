@@ -396,6 +396,8 @@ public partial class ApkBuilder
         File.WriteAllText(javaActivityPath,
             Utils.GetEmbeddedResource("MainActivity.java")
                 .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName)));
+
+
         if (!string.IsNullOrEmpty(NativeMainSource))
             File.Copy(NativeMainSource, javaActivityPath, true);
 
@@ -407,8 +409,10 @@ public partial class ApkBuilder
             envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
         }
 
+        string jniLibraryName = (IsLibraryMode) ? ProjectName! : "System.Security.Cryptography.Native.Android";
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
             .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
+            .Replace("%JNI_LIBRARY_NAME%", jniLibraryName)
             .Replace("%EnvVariables%", envVariables);
 
         File.WriteAllText(monoRunnerPath, monoRunner);

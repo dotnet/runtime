@@ -54,7 +54,7 @@
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'MonoAOTCompiler'))</MonoAOTCompilerDir>
     <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'MonoTargetsTasks'))</MonoTargetsTasksDir>
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'AppleAppBuilder'))</AppleAppBuilderDir>
-    <LibraryBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'LibraryBuilder'))</AppleAppBuilderDir>
+    <LibraryBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'LibraryBuilder'))</LibraryBuilderDir>
 
     <MonoAotCrossDir>$([MSBuild]::NormalizePath($(BuildBaseDir), 'cross'))</MonoAotCrossDir>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>

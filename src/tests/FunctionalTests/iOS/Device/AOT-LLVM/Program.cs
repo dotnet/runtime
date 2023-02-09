@@ -11,10 +11,10 @@ public static class Program
     [DllImport("__Internal")]
     public static extern void mono_ios_set_summary (string value);
 
-    [UnmanagedCallersOnly(EntryPoint="HelloSteve")]
-    public static void HelloSteve()
+    [UnmanagedCallersOnly(EntryPoint="SayHello")]
+    public static void SayHello()
     {
-        Console.WriteLine("Called from the outside!  Hello!");
+        Console.WriteLine("Called from native!  Hello!");
     }
 
     public static async Task<int> Main(string[] args)
