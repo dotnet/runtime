@@ -2362,21 +2362,21 @@ private:
         {
             assert(id != nullptr);
 
-#ifdef TARGET_XARCH
-            switch (id->idInsFmt())
+#if !defined(TARGET_LOONGARCH64)
+            switch ((ID_OPS)emitFmtToOps[id->idInsFmt()])
             {
                 // We cannot safely look at previous instructions at these boundaries.
-                case IF_LABEL:
-                case IF_RWR_LABEL:
-                case IF_SWR_LABEL:
-                case IF_METHOD:
-                case IF_METHPTR:
+                case ID_OP_JMP:
+                case ID_OP_CALL:
+#if !defined(TARGET_ARM64)
+                case ID_OP_LBL:
+#endif // !TARGET_AMD64
                     return;
 
                 default:
                     break;
             }
-#endif // TARGET_XARCH
+#endif // !TARGET_LOONGARCH64
 
             switch (action(id))
             {
@@ -2384,6 +2384,7 @@ private:
                     return;
                 case PEEPHOLE_CONTINUE:
                 {
+#if !defined(TARGET_LOONGARCH64)
                     insGroup* prevIG = ig;
                     if (emitPrevID(ig, id))
                     {
@@ -2396,6 +2397,7 @@ private:
                             return;
                         }
                     }
+#endif // !TARGET_LOONGARCH64
                     return;
                 }
 
