@@ -8731,8 +8731,9 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
         FieldSeq* fldSeq = tree->AsIntCon()->gtFieldSeq;
         if ((fldSeq != nullptr) && (fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
         {
+            // here it is possible that IconValue != Offset
+            *byteOffset = tree->AsIntCon()->IconValue() - fldSeq->GetOffset() + val;
             *pFseq      = fldSeq;
-            *byteOffset = tree->AsIntCon()->IconValue() - fldSeq->GetOffset();
             return true;
         }
     }
