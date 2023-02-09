@@ -1254,7 +1254,7 @@ private:
         Interval*    currentInterval = nullptr;
         RefPosition* refPosition     = nullptr;
 
-        RegisterType regType         = RegisterType::TYP_UNKNOWN;
+        RegisterType regType = RegisterType::TYP_UNKNOWN;
 
         regMaskTP candidates;
         regMaskTP preferences     = RBM_NONE;
@@ -1283,10 +1283,10 @@ private:
         regMaskTP preferenceSet;
         regMaskTP coversRelatedSet;
         regMaskTP coversFullSet;
-        bool      coversSetsCalculated = false;
-        bool      found                = false;
-        bool      skipAllocation       = false;
-        bool      coversFullApplied = false;
+        bool      coversSetsCalculated  = false;
+        bool      found                 = false;
+        bool      skipAllocation        = false;
+        bool      coversFullApplied     = false;
         bool      constAvailableApplied = false;
 
         // If the selected register is already assigned to the current internal

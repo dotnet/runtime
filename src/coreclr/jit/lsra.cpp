@@ -11079,9 +11079,9 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     currentInterval = interval;
     refPosition     = refPos;
 
-    regType         = linearScan->getRegisterType(currentInterval, refPosition);
-    candidates      = refPosition->registerAssignment;
-    preferences     = currentInterval->registerPreferences;
+    regType     = linearScan->getRegisterType(currentInterval, refPosition);
+    candidates  = refPosition->registerAssignment;
+    preferences = currentInterval->registerPreferences;
 
     // This is not actually a preference, it's merely to track the lclVar that this
     // "specialPutArg" is using.
@@ -11184,9 +11184,9 @@ void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
         regMaskTP newCandidates = candidates & matchingConstants;
         if (newCandidates != RBM_NONE)
         {
-            candidates = newCandidates;
+            candidates            = newCandidates;
             constAvailableApplied = true;
-            found = isSingleRegister(newCandidates);
+            found                 = isSingleRegister(newCandidates);
         }
     }
 }
@@ -11298,8 +11298,8 @@ void LinearScan::RegisterSelection::try_COVERS_FULL()
     regMaskTP newCandidates = candidates & coversFullSet & freeCandidates;
     if (newCandidates != RBM_NONE)
     {
-        candidates = newCandidates;
-        found = isSingleRegister(candidates);
+        candidates        = newCandidates;
+        found             = isSingleRegister(candidates);
         coversFullApplied = true;
     }
 }
@@ -11319,7 +11319,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
     regMaskTP bestFitSet = RBM_NONE;
     // If the best score includes COVERS_FULL, pick the one that's killed soonest.
     // If none cover the full range, the BEST_FIT is the one that's killed later.
-    bool         earliestIsBest = coversFullApplied;
+    bool         earliestIsBest  = coversFullApplied;
     LsraLocation bestFitLocation = earliestIsBest ? MaxLocation : MinLocation;
     for (regMaskTP bestFitCandidates = candidates; bestFitCandidates != RBM_NONE;)
     {
@@ -11972,7 +11972,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     if (!found && (currentInterval->assignedReg != nullptr))
     {
         RegRecord* prevRegRec = currentInterval->assignedReg;
-        prevRegBit = genRegMask(prevRegRec->regNum);
+        prevRegBit            = genRegMask(prevRegRec->regNum);
         if ((prevRegRec->assignedInterval == currentInterval) && ((candidates & prevRegBit) != RBM_NONE))
         {
             candidates = prevRegBit;
