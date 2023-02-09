@@ -328,13 +328,10 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
     {
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
 
-        // Since on MacOS all the RW regions will be added for heap dumps by createdump, the
-        // only thing differentiating a MiniDumpNormal and a MiniDumpWithPrivateReadWriteMemory
-        // is that the later uses the EnumMemoryRegions APIs. This is kind of expensive on larger
-        // applications (4 minutes, or even more), and this should already be in RW pages. Change
-        // the dump type to the faster normal one. This one already ensures necessary DAC globals,
-        // etc. without the costly assembly, module, class, type runtime data structures enumeration.
-        CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_DEFAULT;
+        // CLRDATA_ENUM_MEM_HEAP2 skips the expensive (in both time and memory usage) enumeration of the
+        // low level data structures and adds all the loader allocator heaps instead. The below original
+        // env var didn't generate a complete enough heap dump on Linux and this new path does.
+        CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_HEAP2;
         if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
         {
             // This is the old fast heap env var for backwards compatibility for VS4Mac.
@@ -342,16 +339,20 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
             DWORD val = 0;
             if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
             {
+                // Since on MacOS all the RW regions will be added for heap dumps by createdump, the
+                // only thing differentiating a MiniDumpNormal and a MiniDumpWithPrivateReadWriteMemory
+                // is that the later uses the EnumMemoryRegions APIs. This is kind of expensive on larger
+                // applications (4 minutes, or even more), and this should already be in RW pages. Change
+                // the dump type to the faster normal one. This one already ensures necessary DAC globals,
+                // etc. without the costly assembly, module, class, type runtime data structures enumeration.
                 minidumpType = MiniDumpNormal;
+                flags = CLRDATA_ENUM_MEM_DEFAULT;
             }
-            // This the new variable that also skips the expensive (in both time and memory usage)
-            // enumeration of the low level data structures and adds all the loader allocator heaps
-            // instead. The above original env var didn't generate a complete enough heap dump on
-            // Linux and this new one does.
+            // This env var allows the CLRDATA_ENUM_MEM_HEAP2 fast path to be opt-ed out
             fastHeapDumps = CLRConfigNoCache::Get("EnableFastHeapDumps", /*noprefix*/ false, &getenv);
-            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
+            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 0)
             {
-                flags = CLRDATA_ENUM_MEM_HEAP2;
+                flags = CLRDATA_ENUM_MEM_DEFAULT;
             }
         }
         // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
