@@ -11094,7 +11094,6 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     rangeEndLocation    = refPosition->getRangeEndLocation();
     relatedLastLocation = rangeEndLocation;
     preferCalleeSave    = currentInterval->preferCalleeSave;
-    rangeEndRefPosition = nullptr;
     lastRefPosition     = currentInterval->lastRefPosition;
     lastLocation        = MinLocation;
     prevRegRec          = currentInterval->assignedReg;
