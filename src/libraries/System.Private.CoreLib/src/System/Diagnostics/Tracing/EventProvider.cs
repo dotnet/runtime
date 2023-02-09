@@ -1274,8 +1274,6 @@ namespace System.Diagnostics.Tracing
                         long matchAllKeywords,
                         Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData)
         {
-            Debug.Assert(controlCode != Interop.Advapi32.EVENT_CONTROL_CODE_ENABLE_PROVIDER);
-
             if (controlCode == Interop.Advapi32.EVENT_CONTROL_CODE_ENABLE_PROVIDER)
             {
                 Enable(level, matchAnyKeywords, matchAllKeywords);
