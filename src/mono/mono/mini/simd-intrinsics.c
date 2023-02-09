@@ -339,7 +339,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 					} else if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
 						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
 						ins->inst_c1 = arg_type;
-						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [1]->dreg);
+						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [1]->dreg, ins->dreg);
 						ins->inst_c0 = OP_FMUL;
 						return ins;
 					} else if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type == MONO_TYPE_GENERICINST)) {
@@ -385,7 +385,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				} else if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
 					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
 					ins->inst_c1 = arg_type;
-					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [1]->dreg);
+					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [1]->dreg, ins->dreg);
 					ins->inst_c0 = OP_IMUL;
 					return ins;
 				}
