@@ -2287,7 +2287,7 @@ private:
 #define EMIT_MAX_IG_INS_COUNT 256
 
 #if EMIT_BACKWARDS_NAVIGATION
-#define EMIT_MAX_PEEPHOLE_INS_COUNT 64
+#define EMIT_MAX_PEEPHOLE_INS_COUNT 32
 #endif // EMIT_BACKWARDS_NAVIGATION
 
     instrDesc* emitLastIns;
@@ -2297,33 +2297,51 @@ private:
     unsigned emitLastInsFullSize;
 #endif // EMIT_BACKWARDS_NAVIGATION
 
-    bool emitHasLastIns() const
+    // Check to see if the last instruction is available.
+    inline bool emitHasLastIns() const
     {
         return (emitLastIns != nullptr);
     }
 
-    instrDesc* emitGetLastIns() const
+    // Get the last instruction.
+    inline instrDesc* emitGetLastIns() const
     {
         assert(emitLastIns == emitLastInsIG->igLastIns);
         return emitLastIns;
+    }
+
+    // Checks to see if we can cross between the two given IG boundaries.
+    //
+    // When we cross IG boundaries, we need to make sure the previous IG was an extended one,
+    // and the GC interrupt status were the same on both the previous and current.
+    inline bool canPeepholeCrossIGBoundaries(insGroup* prevIg, insGroup* ig) const
+    {
+        if (emitCurIG == ig)
+        {
+            return (((emitCurIGinsCnt > 0) || (ig->igFlags & IGF_EXTEND)) && // We're not at the start of a new
+                                                                             // IG or we are at the start of a
+                                                                             // new IG, and it's an extension IG.
+                    ((prevIg->igFlags & IGF_NOGCINTERRUPT) == (ig->igFlags & IGF_NOGCINTERRUPT)));
+        }
+        else if (prevIg != ig)
+        {
+            return ((prevIg->igFlags & IGF_EXTEND) &&
+                    ((prevIg->igFlags & IGF_NOGCINTERRUPT) == (ig->igFlags & IGF_NOGCINTERRUPT)));
+        }
+        return true;
     }
 
     // Check if a peephole optimization involving emitLastIns is safe.
     //
     // We must have a non-null emitLastIns to consult.
     // The emitForceNewIG check here prevents peepholes from crossing nogc boundaries.
-    // The final check prevents looking across an IG boundary unless we're in an extension IG.
     bool emitCanPeepholeLastIns() const
     {
         assert((emitLastIns != nullptr) == (emitLastInsIG != nullptr));
 
-        return emitHasLastIns() &&                           // there is an emitLastInstr
-               !emitForceNewIG &&                            // and we're not about to start a new IG
-               ((emitCurIGinsCnt > 0) ||                     // and we're not at the start of a new IG
-                ((emitCurIG->igFlags & IGF_EXTEND) != 0)) && //    or we are at the start of a new IG,
-                                                             //    and it's an extension IG
-               ((emitLastInsIG->igFlags & IGF_NOGCINTERRUPT) == (emitCurIG->igFlags & IGF_NOGCINTERRUPT));
-        // and the last instr IG has the same GC interrupt status as the current IG
+        return emitHasLastIns() && // there is an emitLastInstr
+               !emitForceNewIG &&  // and we're not about to start a new IG.
+               canPeepholeCrossIGBoundaries(emitLastInsIG, emitCurIG);
     }
 
     enum emitPeepholeResult
@@ -2360,9 +2378,10 @@ private:
                 case IF_SWR_LABEL:
                 case IF_METHOD:
                 case IF_METHPTR:
-                {
                     return;
-                }
+
+                default:
+                    break;
             }
 #endif // TARGET_XARCH
 
@@ -2375,14 +2394,14 @@ private:
                     insGroup* prevIg = ig;
                     if (emitPrevID(ig, id))
                     {
-                        // When we cross IG boundaries, we need to make sure the previous IG was an extended one,
-                        // and the GC interrupt status were the same on both the previous and current.
-                        if ((prevIg != ig) &&
-                            (((prevIg->igFlags & IGF_EXTEND) == 0) ||
-                             ((prevIg->igFlags & IGF_NOGCINTERRUPT) != (ig->igFlags & IGF_NOGCINTERRUPT))))
+                        if (canPeepholeCrossIGBoundaries(prevIg, ig))
+                        {
+                            continue;
+                        }
+                        else
+                        {
                             return;
-
-                        continue;
+                        }
                     }
                     return;
                 }
