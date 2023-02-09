@@ -16019,8 +16019,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         else if (isGeneralRegisterOrSP(dst) && (size == EA_4BYTE))
         {
             // See if the previous instruction already cleared upper 4 bytes for us unintentionally
-            if (canOptimize && (emitGetLastIns()->idReg1() == dst) && (emitGetLastIns()->idOpSize() == size) &&
-                emitGetLastIns()->idInsIs(INS_ldr, INS_ldrh, INS_ldrb))
+            if (canOptimize && (emitLastIns->idReg1() == dst) && (emitLastIns->idOpSize() == size) &&
+                emitLastIns->idInsIs(INS_ldr, INS_ldrh, INS_ldrb))
             {
                 JITDUMP("\n -- suppressing mov because ldr already cleared upper 4 bytes\n");
                 return true;
@@ -16028,15 +16028,15 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         }
     }
 
-    if (canOptimize &&                            // Don't optimize if unsafe.
-        (emitGetLastIns()->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
-        (emitGetLastIns()->idOpSize() == size))   // Don't optimize if operand size is different than previous
-                                                  // instruction.
+    if (canOptimize &&                       // Don't optimize if unsafe.
+        (emitLastIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
+        (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous
+                                             // instruction.
     {
         // Check if we did same move in prev instruction except dst/src were switched.
-        regNumber prevDst    = emitGetLastIns()->idReg1();
-        regNumber prevSrc    = emitGetLastIns()->idReg2();
-        insFormat lastInsfmt = emitGetLastIns()->idInsFmt();
+        regNumber prevDst    = emitLastIns->idReg1();
+        regNumber prevSrc    = emitLastIns->idReg2();
+        insFormat lastInsfmt = emitLastIns->idInsFmt();
 
         // Sometimes emitLastIns can be a mov with single register e.g. "mov reg, #imm". So ensure to
         // optimize formats that does vector-to-vector or scalar-to-scalar register movs.
@@ -16045,7 +16045,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 
         if (isValidLastInsFormats && (prevDst == dst) && (prevSrc == src))
         {
-            assert(emitGetLastIns()->idOpSize() == size);
+            assert(emitLastIns->idOpSize() == size);
             JITDUMP("\n -- suppressing mov because previous instruction already moved from src to dst register.\n");
             return true;
         }
@@ -16133,7 +16133,7 @@ bool emitter::IsRedundantLdStr(
         return false;
     }
 
-    if ((ins == INS_ldr) && (emitGetLastIns()->idIns() == INS_str))
+    if ((ins == INS_ldr) && (emitLastIns->idIns() == INS_str))
     {
         // If reg1 is of size less than 8-bytes, then eliminating the 'ldr'
         // will not zero the upper bits of reg1.
@@ -16154,7 +16154,7 @@ bool emitter::IsRedundantLdStr(
             return true;
         }
     }
-    else if ((ins == INS_str) && (emitGetLastIns()->idIns() == INS_ldr))
+    else if ((ins == INS_str) && (emitLastIns->idIns() == INS_ldr))
     {
         // Make sure src and dst registers are not same.
         //  ldr x0, [x0, #4]

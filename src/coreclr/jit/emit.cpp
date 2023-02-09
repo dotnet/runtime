@@ -1083,11 +1083,11 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     {
         // If we get here, emitGetLastIns must be in the current IG we are saving.
         assert(emitLastInsIG == emitCurIG);
-        assert(emitCurIGfreeBase <= (BYTE*)emitGetLastIns());
-        assert((BYTE*)emitGetLastIns() < emitCurIGfreeBase + sz);
+        assert(emitCurIGfreeBase <= (BYTE*)emitLastIns);
+        assert((BYTE*)emitLastIns < emitCurIGfreeBase + sz);
 
 #if defined(TARGET_XARCH)
-        if (emitGetLastIns()->idIns() == INS_jmp)
+        if (emitLastIns->idIns() == INS_jmp)
         {
             ig->igFlags |= IGF_HAS_REMOVABLE_JMP;
         }
@@ -5634,7 +5634,7 @@ void emitter::emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp))
     emitLongLoopAlign(paddingBytes DEBUG_ARG(isPlacedBehindJmp));
 #endif
 
-    assert(emitGetLastIns()->idIns() == INS_align);
+    assert(emitLastIns->idIns() == INS_align);
 
     JITDUMP("Adding 'align' instruction of %d bytes in %s.\n", paddingBytes, emitLabelString(emitCurIG));
 }

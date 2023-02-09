@@ -698,7 +698,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         return false;
     }
 
-    instrDesc*  id      = emitGetLastIns();
+    instrDesc*  id      = emitLastIns;
     instruction lastIns = id->idIns();
     insFormat   fmt     = id->idInsFmt();
 
@@ -782,7 +782,7 @@ bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree*
         return false;
     }
 
-    instrDesc*  id      = emitGetLastIns();
+    instrDesc*  id      = emitLastIns;
     instruction lastIns = id->idIns();
     insFormat   fmt     = id->idInsFmt();
 
@@ -1973,7 +1973,7 @@ unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, 
  */
 bool emitter::emitIsLastInsCall()
 {
-    if (emitHasLastIns() && (emitGetLastIns()->idIns() == INS_call))
+    if (emitHasLastIns() && (emitLastIns->idIns() == INS_call))
     {
         return true;
     }
@@ -5929,16 +5929,16 @@ bool emitter::IsRedundantMov(
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (!emitCanPeepholeLastIns() ||              // Don't optimize if unsafe
-        (emitGetLastIns()->idIns() != ins) ||     // or if the instruction is different from the last instruction
-        (emitGetLastIns()->idOpSize() != size) || // or if the operand size is different from the last instruction
-        (emitGetLastIns()->idInsFmt() != fmt))    // or if the format is different from the last instruction
+    if (!emitCanPeepholeLastIns() ||         // Don't optimize if unsafe
+        (emitLastIns->idIns() != ins) ||     // or if the instruction is different from the last instruction
+        (emitLastIns->idOpSize() != size) || // or if the operand size is different from the last instruction
+        (emitLastIns->idInsFmt() != fmt))    // or if the format is different from the last instruction
     {
         return false;
     }
 
-    regNumber lastDst = emitGetLastIns()->idReg1();
-    regNumber lastSrc = emitGetLastIns()->idReg2();
+    regNumber lastDst = emitLastIns->idReg1();
+    regNumber lastSrc = emitLastIns->idReg2();
 
     // Check if we did same move in last instruction, side effects don't matter since they already happened
     if ((lastDst == dst) && (lastSrc == src))
@@ -8619,22 +8619,22 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 
-    if (!emitCanPeepholeLastIns() ||            // Don't optimize if unsafe
-        (emitGetLastIns()->idIns() != ins) ||   // or if the instruction is different from the last instruction
-        (emitGetLastIns()->idOpSize() != size)) // or if the operand size is different from the last instruction
+    if (!emitCanPeepholeLastIns() ||       // Don't optimize if unsafe
+        (emitLastIns->idIns() != ins) ||   // or if the instruction is different from the last instruction
+        (emitLastIns->idOpSize() != size)) // or if the operand size is different from the last instruction
     {
         return false;
     }
 
     // Don't optimize if the last instruction is also not a Load/Store.
-    if (!((emitGetLastIns()->idInsFmt() == IF_SWR_RRD) || (emitGetLastIns()->idInsFmt() == IF_RWR_SRD)))
+    if (!((emitLastIns->idInsFmt() == IF_SWR_RRD) || (emitLastIns->idInsFmt() == IF_RWR_SRD)))
     {
         return false;
     }
 
-    regNumber lastReg1 = emitGetLastIns()->idReg1();
-    int       varNum   = emitGetLastIns()->idAddr()->iiaLclVar.lvaVarNum();
-    int       lastOffs = emitGetLastIns()->idAddr()->iiaLclVar.lvaOffset();
+    regNumber lastReg1 = emitLastIns->idReg1();
+    int       varNum   = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
+    int       lastOffs = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
 
     const bool hasSideEffect = HasSideEffect(ins, size);
 
@@ -8642,8 +8642,8 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     if (varNum == varx && lastReg1 == ireg && lastOffs == offs)
     {
         // Check if we did a switched mov in the last instruction  and don't have a side effect
-        if ((((emitGetLastIns()->idInsFmt() == IF_RWR_SRD) && (fmt == IF_SWR_RRD)) ||
-             ((emitGetLastIns()->idInsFmt() == IF_SWR_RRD) && (fmt == IF_RWR_SRD))) &&
+        if ((((emitLastIns->idInsFmt() == IF_RWR_SRD) && (fmt == IF_SWR_RRD)) ||
+             ((emitLastIns->idInsFmt() == IF_SWR_RRD) && (fmt == IF_RWR_SRD))) &&
             !hasSideEffect) // or if the format is different from the last instruction
         {
             JITDUMP("\n -- suppressing mov because last instruction already moved from dst to src and the mov has "
@@ -8651,7 +8651,7 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
             return true;
         }
         // Check if we did same move in last instruction, side effects don't matter since they already happened
-        if (emitGetLastIns()->idInsFmt() == fmt)
+        if (emitLastIns->idInsFmt() == fmt)
         {
             JITDUMP("\n -- suppressing mov because last instruction already moved from src to dst.\n");
             return true;

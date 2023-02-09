@@ -2303,13 +2303,6 @@ private:
         return (emitLastIns != nullptr);
     }
 
-    // Get the last instruction.
-    inline instrDesc* emitGetLastIns() const
-    {
-        assert(emitLastIns == emitLastInsIG->igLastIns);
-        return emitLastIns;
-    }
-
     // Checks to see if we can cross between the two given IG boundaries.
     //
     // When we cross IG boundaries, we need to make sure the previous IG was an extended one,
