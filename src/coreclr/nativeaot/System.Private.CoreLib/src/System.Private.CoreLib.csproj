@@ -173,6 +173,7 @@
     <Compile Include="System\Diagnostics\StackFrame.NativeAot.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.NativeAot.cs" />
+    <Compile Include="System\Diagnostics\Eventing\EventPipe.NativeAot.cs" />
     <Compile Include="System\Enum.NativeAot.cs" />
     <Compile Include="System\Environment.NativeAot.cs" />
     <Compile Include="System\GC.NativeAot.cs" />

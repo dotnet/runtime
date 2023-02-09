@@ -111,6 +111,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal override object? DefaultValue => default(T);
         internal override bool PropertyTypeCanBeNull => default(T) is null;
+        internal override JsonParameterInfo CreateJsonParameterInfo(JsonParameterInfoValues parameterInfoValues)
+            => new JsonParameterInfo<T>(parameterInfoValues, this);
 
         internal new JsonConverter<T> EffectiveConverter
         {

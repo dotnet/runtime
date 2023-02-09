@@ -35,6 +35,17 @@ public:
         GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr);
 
 private:
+#if defined(TARGET_AMD64)
+    regMaskTP get_RBM_ALLFLOAT() const
+    {
+        return compiler->rbmAllFloat;
+    }
+    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    {
+        return compiler->rbmFltCalleeTrash;
+    }
+#endif // TARGET_AMD64
+
 #if defined(TARGET_XARCH)
     // Bit masks used in negating a float or double number.
     // This is to avoid creating more than one data constant for these bitmasks when a
@@ -1532,9 +1543,11 @@ public:
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
 #endif // TARGET_XARCH
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
     static insCflags InsCflagsForCcmp(GenCondition cond);
     static insCond JumpKindToInsCond(emitJumpKind condition);
+#elif defined(TARGET_XARCH)
+    static instruction JumpKindToCmov(emitJumpKind condition);
 #endif
 
 #ifndef TARGET_LOONGARCH64
