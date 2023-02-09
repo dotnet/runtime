@@ -11078,7 +11078,9 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 {
     currentInterval = interval;
     refPosition     = refPos;
-    score           = 0;
+
+    coversFullApplied     = false;
+    constAvailableApplied = false;
 
     regType         = linearScan->getRegisterType(currentInterval, refPosition);
     currentLocation = refPosition->nodeLocation;
@@ -11130,7 +11132,6 @@ bool LinearScan::RegisterSelection::applySelection(int selectionScore, regMaskTP
     regMaskTP newCandidates = candidates & selectionCandidates;
     if (newCandidates != RBM_NONE)
     {
-        score += selectionScore;
         candidates = newCandidates;
         return LinearScan::isSingleRegister(candidates);
     }
@@ -11188,7 +11189,13 @@ void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 
     if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
     {
-        found = applySelection(CONST_AVAILABLE, matchingConstants);
+        regMaskTP newCandidates = candidates & matchingConstants;
+        if (newCandidates != RBM_NONE)
+        {
+            candidates = newCandidates;
+            constAvailableApplied = true;
+            found = isSingleRegister(newCandidates);
+        }
     }
 }
 
@@ -11296,7 +11303,13 @@ void LinearScan::RegisterSelection::try_COVERS_FULL()
     calculateCoversSets();
 #endif
 
-    found = applySelection(COVERS_FULL, (coversFullSet & freeCandidates));
+    regMaskTP newCandidates = candidates & coversFullSet & freeCandidates;
+    if (newCandidates != RBM_NONE)
+    {
+        candidates = newCandidates;
+        found = isSingleRegister(candidates);
+        coversFullApplied = true;
+    }
 }
 
 // ----------------------------------------------------------
@@ -11314,7 +11327,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
     regMaskTP bestFitSet = RBM_NONE;
     // If the best score includes COVERS_FULL, pick the one that's killed soonest.
     // If none cover the full range, the BEST_FIT is the one that's killed later.
-    bool         earliestIsBest  = ((score & COVERS_FULL) != 0);
+    bool         earliestIsBest = coversFullApplied;
     LsraLocation bestFitLocation = earliestIsBest ? MaxLocation : MinLocation;
     for (regMaskTP bestFitCandidates = candidates; bestFitCandidates != RBM_NONE;)
     {
@@ -11382,7 +11395,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
 void LinearScan::RegisterSelection::try_IS_PREV_REG()
 {
     // TODO: We do not check found here.
-    if ((prevRegRec != nullptr) && ((score & COVERS_FULL) != 0))
+    if ((prevRegRec != nullptr) && coversFullApplied)
     {
         found = applySingleRegSelection(IS_PREV_REG, prevRegBit);
     }

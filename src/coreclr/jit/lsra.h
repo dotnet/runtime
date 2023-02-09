@@ -1242,7 +1242,7 @@ private:
         // Did we apply CONST_AVAILABLE heuristics
         FORCEINLINE bool isConstAvailable()
         {
-            return (score & CONST_AVAILABLE) != 0;
+            return constAvailableApplied;
         }
 
     private:
@@ -1251,7 +1251,6 @@ private:
         ScoreMappingTable* mappingTable                                 = nullptr;
 #endif
         LinearScan*  linearScan      = nullptr;
-        int          score           = 0;
         Interval*    currentInterval = nullptr;
         RefPosition* refPosition     = nullptr;
 
@@ -1290,6 +1289,8 @@ private:
         bool      coversSetsCalculated = false;
         bool      found                = false;
         bool      skipAllocation       = false;
+        bool      coversFullApplied = false;
+        bool      constAvailableApplied = false;
         regNumber foundReg             = REG_NA;
 
         // If the selected register is already assigned to the current internal
