@@ -72,7 +72,6 @@ static guint16 sri_vector128_t_methods [] = {
 	SN_op_Addition,
 	SN_op_BitwiseAnd,
 	SN_op_BitwiseOr,
-	SN_op_Division,
 	SN_op_Equality,
 	SN_op_ExclusiveOr,
 	SN_op_Inequality,
@@ -348,16 +347,6 @@ emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 		case SN_op_BitwiseOr:
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITWISE_OR;
-			break;
-		case SN_op_Division:
-			g_assert (scalar_arg == -1);
-			simd_opcode = MINT_SIMD_INTRINS_P_PP;
-			if (atype == MONO_TYPE_I1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_DIVISION;
-			else if (atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_U1_DIVISION;
-			else if (atype == MONO_TYPE_I2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_DIVISION;
-			else if (atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_U2_DIVISION;
-			else if (atype == MONO_TYPE_I4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_DIVISION;
-			else if (atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_U4_DIVISION;
 			break;
 		case SN_op_Equality:
 			if (atype != MONO_TYPE_R4 && atype != MONO_TYPE_R8) {

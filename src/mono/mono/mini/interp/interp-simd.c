@@ -72,43 +72,6 @@ interp_v128_op_bitwise_or (gpointer res, gpointer v1, gpointer v2)
 	*(v128_i4*)res = *(v128_i4*)v1 | *(v128_i4*)v2;
 }
 
-// op_Division
-static void
-interp_v128_i1_op_division (gpointer res, gpointer v1, gpointer v2)
-{
-	*(v128_i1*)res = *(v128_i1*)v1 / *(v128_i1*)v2;
-}
-
-static void
-interp_v128_u1_op_division (gpointer res, gpointer v1, gpointer v2)
-{
-	*(v128_u1*)res = *(v128_u1*)v1 / *(v128_u1*)v2;
-}
-
-static void
-interp_v128_i2_op_division (gpointer res, gpointer v1, gpointer v2)
-{
-	*(v128_i2*)res = *(v128_i2*)v1 / *(v128_i2*)v2;
-}
-
-static void
-interp_v128_u2_op_division (gpointer res, gpointer v1, gpointer v2)
-{
-	*(v128_u2*)res = *(v128_u2*)v1 / *(v128_u2*)v2;
-}
-
-static void
-interp_v128_i4_op_division (gpointer res, gpointer v1, gpointer v2)
-{
-	*(v128_i4*)res = *(v128_i4*)v1 / *(v128_i4*)v2;
-}
-
-static void
-interp_v128_u4_op_division (gpointer res, gpointer v1, gpointer v2)
-{
-	*(v128_u4*)res = *(v128_u4*)v1 / *(v128_u4*)v2;
-}
-
 // op_Equality
 static void
 interp_v128_op_bitwise_equality (gpointer res, gpointer v1, gpointer v2)
