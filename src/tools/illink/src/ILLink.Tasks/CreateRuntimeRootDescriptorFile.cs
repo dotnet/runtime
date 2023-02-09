@@ -301,9 +301,11 @@ namespace ILLink.Tasks
 		void OutputXml (string iLLinkTrimXmlFilePath, string outputFileName)
 		{
 			XmlDocument doc = new XmlDocument ();
-#pragma warning disable CA3075 // Unsafe overload of 'Load' method
-			doc.Load (iLLinkTrimXmlFilePath);
-#pragma warning restore CA3075 // Unsafe overload of 'Load' method
+			using (var sr = new StreamReader (iLLinkTrimXmlFilePath)) {
+				XmlReader reader = XmlReader.Create (sr, new XmlReaderSettings () { XmlResolver = null });
+				doc.Load (reader);
+			}
+
 			XmlElement linkerNode = doc["linker"];
 
 			if (featureSwitchMembers.Count > 0) {
