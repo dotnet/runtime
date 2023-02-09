@@ -24,7 +24,7 @@
   <PropertyGroup>
     <BUILD_SOURCESDIRECTORY>c:\gh\runtime</BUILD_SOURCESDIRECTORY>
     <CorrelationPayloadDirectory>c:\bugs\spmicollect3\payload\correlation</CorrelationPayloadDirectory>
-    <WorkItemDirectory>c:\bugs\spmicollect3\payload\workitem</WorkItemDirectory>
+    <WorkItemDirectory>c:\bugs\es\payload\workitem</WorkItemDirectory>
     <_Scenarios>normal</_Scenarios>
     <_Creator></_Creator>
     <_HelixAccessToken></_HelixAccessToken>
@@ -765,6 +765,7 @@
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
       <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
+      <SigningFilePath>%(FileName)%(Extension)/%(FileName)%(Extension).app</SigningFilePath>
     </MergedPayloads>
   </ItemGroup>
 
@@ -817,6 +818,14 @@
     </ItemGroup>
   </Target>
 
+  <PropertyGroup>
+    <MoveSigningFileCommand>
+    <![CDATA[
+      for APP_FILE in $(find . -name *.app); do cp embedded.mobileprovision $APP_FILE; done
+    ]]>
+    </MoveSigningFileCommand>
+  </PropertyGroup>
+
   <ItemGroup>
     <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
@@ -837,15 +846,15 @@
       <AndroidPackageName>net.dot.%(PayloadGroup)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
+      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</TestTarget>
     </XHarnessApkToTest>
     
     <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
-      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</TestTarget>
       <TestTarget Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</TestTarget>
       <TestTarget Condition="'$(TargetOS)' == 'iOS'">ios-device</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-      <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
-      <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
+      <CustomCommands> $(MoveSigningFileCommand); $dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
+      <CustomCommands Condition=" '%(TestGroup)' != '' ">$(MoveSigningFileCommand); dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
     </XHarnessAppBundleToTest>
 
     <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAppleMobile)' == 'true'">
