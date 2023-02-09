@@ -813,6 +813,7 @@ assigningNull:
             }
         }
 
+        // This weird structure is for parity with CoreCLR - allows potentially to be tailcalled
         private static unsafe ref object ThrowArrayMismatchException(Array array)
         {
             // Throw the array type mismatch exception defined by the classlib, using the input array's MethodTable*
@@ -823,7 +824,7 @@ assigningNull:
         [RuntimeExport("RhpLdelemaRef")]
         public static unsafe ref object LdelemaRef(Array array, nint index, IntPtr elementType)
         {
-            Debug.Assert(array.GetMethodTable()->IsArray, "first argument must be an array");
+            Debug.Assert(array is null || array.GetMethodTable()->IsArray, "first argument must be an array");
 
 #if INPLACE_RUNTIME
             // this will throw appropriate exceptions if array is null or access is out of range.
@@ -835,7 +836,7 @@ assigningNull:
             }
             if ((uint)index >= (uint)array.Length)
             {
-                throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.IndexOutOfRange);
+                throw ((MethodTable*)elementType)->GetClasslibException(ExceptionIDs.IndexOutOfRange);
             }
             ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
             ref object element = ref Unsafe.Add(ref rawData, index);
