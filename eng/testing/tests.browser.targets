@@ -303,7 +303,7 @@
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
 
-    <WriteLinesToFile File="$(WasmMainHtmlPath)" Lines="&lt;html&gt;&lt;body&gt;&lt;script type='module' src='test-main.js'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" WriteOnlyWhenDifferent="true" Overwrite="true" />
+    <WriteLinesToFile File="$(WasmMainHtmlPath)" Lines="&lt;html&gt;&lt;body&gt;&lt;script type='module' src='test-main.js'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" Overwrite="True" Condition="!Exists('$(WasmMainHtmlPath)')"/>
   </Target>
 
   <!-- linker automatically picks up the .pdb files, but they are not added to the publish list.
