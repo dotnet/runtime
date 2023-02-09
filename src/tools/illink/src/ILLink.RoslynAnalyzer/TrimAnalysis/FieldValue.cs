@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial record FieldValue
+	internal partial record FieldValue
 	{
 		public FieldValue (IFieldSymbol fieldSymbol) => FieldSymbol = fieldSymbol;
 
