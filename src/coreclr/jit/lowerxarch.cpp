@@ -5890,7 +5890,7 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
             // requiring two cmovs, in which case we do not want to incur the
             // memory access/address calculation twice.
             //
-            // See the comment in Codegen::GebConditionDesc::map for why these
+            // See the comment in Codegen::GenConditionDesc::map for why these
             // comparisons are special and end up requiring the two cmovs.
             //
             GenCondition cc = GenCondition::FromRelop(cond);
