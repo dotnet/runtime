@@ -98,12 +98,12 @@ set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERT
 
 if (GEN_SHARED_LIB)
     if (FEATURE_DISTRO_AGNOSTIC_SSL)
-        # on macOS the link step fails with undefined symbols, and the script doesn't run.
+        # on macOS and Alpine the link step fails with undefined symbols, and the script doesn't run.
         # if the build succeeds, the script would succeed, except it uses a Linux-only command.
         #
         # on Linux, the build will succeed with undefined symbols, then the script reports them
         # and fails the build for us.
-        if (NOT APPLE)
+        if (NOT APPLE AND NOT CLR_CMAKE_TARGET_ALPINE_LINUX)
             add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
                 COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl.so dependencies"
                 COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh

@@ -177,6 +177,7 @@ while :; do
             ;;
         x64)
             __BuildArch=x64
+            __AlpineArch=x86_64
             __UbuntuArch=amd64
             __FreeBSDArch=amd64
             __FreeBSDMachineArch=amd64
