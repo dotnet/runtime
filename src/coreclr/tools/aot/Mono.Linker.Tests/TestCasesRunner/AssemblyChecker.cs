@@ -160,11 +160,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private void PopulateLinkedMembers ()
 		{
-			foreach (TypeDesc type in testResult.TrimmingResults.Graph.MarkedNodeList.OfType<IEETypeNode> ().Select (node => node.Type)) {
+			foreach (TypeDesc type in testResult.TrimmingResults.AllEETypes) {
 				AddType (type);
 			}
 
-			foreach (MethodDesc method in testResult.TrimmingResults.Graph.MarkedNodeList.OfType<IMethodBodyNode> ().Select (node => node.Method)) {
+			foreach (MethodDesc method in testResult.TrimmingResults.CompiledMethodBodies) {
 				AddMethod (method);
 			}
 
