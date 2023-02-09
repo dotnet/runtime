@@ -11083,7 +11083,6 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     constAvailableApplied = false;
 
     regType         = linearScan->getRegisterType(currentInterval, refPosition);
-    nextRefPos      = refPosition->nextRefPosition;
     candidates      = refPosition->registerAssignment;
     preferences     = currentInterval->registerPreferences;
 
@@ -11752,6 +11751,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     // process data-structures
     if (RefTypeIsDef(refPosition->refType))
     {
+        RefPosition* nextRefPos = refPosition->nextRefPosition;
         if (currentInterval->hasConflictingDefUse)
         {
             linearScan->resolveConflictingDefAndUse(currentInterval, refPosition);

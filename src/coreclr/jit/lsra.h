@@ -1255,7 +1255,6 @@ private:
         RefPosition* refPosition     = nullptr;
 
         RegisterType regType         = RegisterType::TYP_UNKNOWN;
-        RefPosition* nextRefPos      = nullptr;
 
         regMaskTP candidates;
         regMaskTP preferences     = RBM_NONE;
