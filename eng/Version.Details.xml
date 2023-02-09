@@ -91,6 +91,7 @@
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-preview.1" Version="8.0.0-preview.1.23101.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>c47bbefece200e429f8ed33494121fa9945f0ef9</Sha>
+      <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
