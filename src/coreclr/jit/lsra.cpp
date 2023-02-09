@@ -11079,9 +11079,6 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     currentInterval = interval;
     refPosition     = refPos;
 
-    coversFullApplied     = false;
-    constAvailableApplied = false;
-
     regType         = linearScan->getRegisterType(currentInterval, refPosition);
     candidates      = refPosition->registerAssignment;
     preferences     = currentInterval->registerPreferences;
@@ -11097,19 +11094,19 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     lastRefPosition     = currentInterval->lastRefPosition;
 
     // These are used in the post-selection updates, and must be set for any selection.
-    freeCandidates    = RBM_NONE;
-    matchingConstants = RBM_NONE;
-    unassignedSet     = RBM_NONE;
-
-    coversSet        = RBM_NONE;
-    preferenceSet    = RBM_NONE;
-    coversRelatedSet = RBM_NONE;
-    coversFullSet    = RBM_NONE;
-
-    foundRegBit          = REG_NA;
-    found                = false;
-    skipAllocation       = false;
-    coversSetsCalculated = false;
+    freeCandidates        = RBM_NONE;
+    matchingConstants     = RBM_NONE;
+    unassignedSet         = RBM_NONE;
+    foundRegBit           = RBM_NONE;
+    coversSet             = RBM_NONE;
+    preferenceSet         = RBM_NONE;
+    coversRelatedSet      = RBM_NONE;
+    coversFullSet         = RBM_NONE;
+    coversSetsCalculated  = false;
+    found                 = false;
+    skipAllocation        = false;
+    coversFullApplied     = false;
+    constAvailableApplied = false;
 }
 
 // ----------------------------------------------------------
