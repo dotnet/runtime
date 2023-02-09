@@ -52,7 +52,7 @@ internal class ChromeProvider : WasmHostProvider
         string? line;
         try
         {
-            ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort), targetUrl);
+            ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort), "about:blank");
             line = await LaunchHostAsync(
                                     psi,
                                     context,

@@ -66,6 +66,7 @@ namespace DebuggerTests
 
         public int Id { get; init; }
 
+        public string urlToInspect;
         public static string DebuggerTestAppPath
         {
             get
@@ -142,6 +143,7 @@ namespace DebuggerTests
             insp = new Inspector(Id, _testOutput);
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
+            urlToInspect = $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}";
             startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput);
         }
 
@@ -157,7 +159,8 @@ namespace DebuggerTests
                     getInitCmdFn("Debugger.enable", null),
                     getInitCmdFn("Runtime.runIfWaitingForDebugger", null),
                     getInitCmdFn("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 })),
-                    getInitCmdFn("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }))
+                    getInitCmdFn("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true })),
+                    getInitCmdFn("Page.navigate", JObject.FromObject(new { url = urlToInspect}))
                     //getInitCmdFn("ServiceWorker.enable", null)
                  };
                  return init_cmds;
