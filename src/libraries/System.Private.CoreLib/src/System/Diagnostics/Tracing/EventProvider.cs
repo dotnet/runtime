@@ -1138,7 +1138,7 @@ namespace System.Diagnostics.Tracing
     }
 #endif
 
-
+#pragma warning disable CA1852 // EventProviderImpl is not derived from in all targets
     internal class EventProviderImpl
     {
         protected byte m_level;                            // Tracing Level
@@ -1381,4 +1381,5 @@ namespace System.Diagnostics.Tracing
 
         }
     }
+#pragma warning restore CA1852
 }
