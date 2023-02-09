@@ -365,9 +365,6 @@ namespace DebuggerTests
                     init_cmds.Add((cmdToInit.cmd, Client.SendCommand(cmdToInit.cmd, cmdToInit.args, _cancellationTokenSource.Token)));
                 }
 
-                if (DebuggerTestBase.RunningOnChrome)
-                    init_cmds.Add(("Page.navigate", Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token)));
-
                 Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
                 init_cmds.Add((APP_READY, readyTask));
 
@@ -400,7 +397,8 @@ namespace DebuggerTests
                     Result res = completedTask.Result;
                     if (!res.IsOk)
                         throw new ArgumentException($"Command {cmd_name} failed with: {res.Error}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}");
-
+                    if (DebuggerTestBase.RunningOnChrome && cmd_name == "Debugger.enable")
+                        await Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token);
                     init_cmds.RemoveAt(cmdIdx);
                 }
 
