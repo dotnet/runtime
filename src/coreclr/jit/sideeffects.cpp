@@ -280,15 +280,17 @@ void AliasSet::AddNode(Compiler* compiler, GenTree* node)
     // First, add all lclVar uses associated with the node to the set. This is necessary because the lclVar reads occur
     // at the position of the user, not at the position of the GenTreeLclVar node.
     node->VisitOperands([compiler, this](GenTree* operand) -> GenTree::VisitResult {
-        if (operand->OperIsLocalRead())
+        if (operand->OperIs(GT_LCL_VAR))
         {
-            const unsigned lclNum = operand->AsLclVarCommon()->GetLclNum();
-            if (compiler->lvaTable[lclNum].IsAddressExposed())
-            {
-                m_readsAddressableLocation = true;
-            }
+            unsigned   lclNum = operand->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* dsc    = compiler->lvaGetDesc(operand->AsLclVarCommon());
 
-            m_lclVarReads.Add(compiler, lclNum);
+            // GT_LCL_VAR is special in that if they can be enregistered, then
+            // their uses might move to the user's location.
+            if (!dsc->lvDoNotEnregister)
+            {
+                m_lclVarReads.Add(compiler, lclNum);
+            }
         }
         if (operand->isContained())
         {
