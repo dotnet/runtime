@@ -61,6 +61,8 @@ private:
     void IfConvertDump();
 #endif
 
+    bool IsHWIntrinsicCC(GenTree* node);
+
 public:
     bool optIfConvert();
 };
@@ -250,6 +252,15 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                         return false;
                     }
 
+#ifndef TARGET_64BIT
+                    // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
+                    // handle contained relops efficiently after decomposition.
+                    if (varTypeIsLong(tree))
+                    {
+                        return false;
+                    }
+#endif
+
                     // Ensure it won't cause any additional side effects.
                     if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
                         (op2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
@@ -300,6 +311,15 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     {
                         return false;
                     }
+
+#ifndef TARGET_64BIT
+                    // Disallow 64-bit operands on 32-bit targets as the backend currently cannot
+                    // handle contained relops efficiently after decomposition.
+                    if (varTypeIsLong(tree))
+                    {
+                        return false;
+                    }
+#endif
 
                     // Ensure it won't cause any additional side effects.
                     if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
@@ -383,6 +403,69 @@ void OptIfConversionDsc::IfConvertDump()
             m_comp->fgDumpBlock(dumpBlock);
         }
     }
+}
+#endif
+
+#ifdef TARGET_XARCH
+//-----------------------------------------------------------------------------
+// IsHWIntrinsicCC:
+//   Check if this is a HW intrinsic node that can be compared efficiently
+//   against 0.
+//
+// Returns:
+//   True if so.
+//
+// Notes:
+//   For xarch, we currently skip if-conversion for these cases as the backend can handle them more efficiently
+//   when they are normal compares.
+//
+bool OptIfConversionDsc::IsHWIntrinsicCC(GenTree* node)
+{
+#ifdef FEATURE_HW_INTRINSICS
+    if (!node->OperIs(GT_HWINTRINSIC))
+    {
+        return false;
+    }
+
+    switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
+    {
+        case NI_SSE_CompareScalarOrderedEqual:
+        case NI_SSE_CompareScalarOrderedNotEqual:
+        case NI_SSE_CompareScalarOrderedLessThan:
+        case NI_SSE_CompareScalarOrderedLessThanOrEqual:
+        case NI_SSE_CompareScalarOrderedGreaterThan:
+        case NI_SSE_CompareScalarOrderedGreaterThanOrEqual:
+        case NI_SSE_CompareScalarUnorderedEqual:
+        case NI_SSE_CompareScalarUnorderedNotEqual:
+        case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
+        case NI_SSE_CompareScalarUnorderedLessThan:
+        case NI_SSE_CompareScalarUnorderedGreaterThanOrEqual:
+        case NI_SSE_CompareScalarUnorderedGreaterThan:
+        case NI_SSE2_CompareScalarOrderedEqual:
+        case NI_SSE2_CompareScalarOrderedNotEqual:
+        case NI_SSE2_CompareScalarOrderedLessThan:
+        case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
+        case NI_SSE2_CompareScalarOrderedGreaterThan:
+        case NI_SSE2_CompareScalarOrderedGreaterThanOrEqual:
+        case NI_SSE2_CompareScalarUnorderedEqual:
+        case NI_SSE2_CompareScalarUnorderedNotEqual:
+        case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
+        case NI_SSE2_CompareScalarUnorderedLessThan:
+        case NI_SSE2_CompareScalarUnorderedGreaterThanOrEqual:
+        case NI_SSE2_CompareScalarUnorderedGreaterThan:
+        case NI_SSE41_TestC:
+        case NI_SSE41_TestZ:
+        case NI_SSE41_TestNotZAndNotC:
+        case NI_AVX_TestC:
+        case NI_AVX_TestZ:
+        case NI_AVX_TestNotZAndNotC:
+            return true;
+        default:
+            return false;
+    }
+#else
+    return false;
+#endif
 }
 #endif
 
@@ -621,12 +704,6 @@ bool OptIfConversionDsc::optIfConvert()
     // Put a limit on the original source and destinations.
     if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_COST, 25))
     {
-#ifdef TARGET_XARCH
-        // xarch does not support containing relops in GT_SELECT nodes
-        // currently so only introduce GT_SELECT in stress.
-        JITDUMP("Skipping if-conversion on xarch\n");
-        return false;
-#else
         int thenCost = 0;
         int elseCost = 0;
 
@@ -650,6 +727,39 @@ bool OptIfConversionDsc::optIfConvert()
             }
         }
 
+#ifdef TARGET_XARCH
+        // Currently the xarch backend does not handle SELECT (EQ/NE (arithmetic op that sets ZF) 0) ...
+        // as efficiently as JTRUE (EQ/NE (arithmetic op that sets ZF) 0). The support is complicated
+        // to add due to the destructive nature of xarch instructions.
+        // The exception is for cases that can be transformed into TEST_EQ/TEST_NE.
+        // TODO-CQ: Fix this.
+        if (m_cond->OperIs(GT_EQ, GT_NE) && m_cond->gtGetOp2()->IsIntegralConst(0) &&
+            !m_cond->gtGetOp1()->OperIs(GT_AND) &&
+            (m_cond->gtGetOp1()->SupportsSettingZeroFlag() || IsHWIntrinsicCC(m_cond->gtGetOp1())))
+        {
+            JITDUMP("Skipping if-conversion where condition is EQ/NE 0 with operation that sets ZF");
+            return false;
+        }
+
+        // However, in some cases bit tests can emit 'bt' when not going
+        // through the GT_SELECT path.
+        if (m_cond->OperIs(GT_EQ, GT_NE) && m_cond->gtGetOp1()->OperIs(GT_AND) &&
+            m_cond->gtGetOp2()->IsIntegralConst(0))
+        {
+            // A bit test that can be transformed into 'bt' will look like
+            // EQ/NE(AND(x, LSH(1, y)), 0)
+
+            GenTree* andOp1 = m_cond->gtGetOp1()->gtGetOp1();
+            GenTree* andOp2 = m_cond->gtGetOp1()->gtGetOp2();
+
+            if (andOp2->OperIs(GT_LSH) && andOp2->gtGetOp1()->IsIntegralConst(1))
+            {
+                JITDUMP("Skipping if-conversion where condition is amenable to be transformed to BT");
+                return false;
+            }
+        }
+#endif
+
         // Cost to allow for "x = cond ? a + b : c + d".
         if (thenCost > 7 || elseCost > 7)
         {
@@ -657,7 +767,6 @@ bool OptIfConversionDsc::optIfConvert()
                     elseCost);
             return false;
         }
-#endif
     }
 
     // Get the select node inputs.
@@ -673,16 +782,12 @@ bool OptIfConversionDsc::optIfConvert()
         }
         else
         {
-            // Invert the condition (to help matching condition codes back to CIL).
-            GenTree* revCond = m_comp->gtReverseCond(m_cond);
-            assert(m_cond == revCond); // Ensure `gtReverseCond` did not create a new node.
-
             // Duplicate the destination of the Then assignment.
             assert(m_thenOperation.node->gtGetOp1()->IsLocal());
-            selectFalseInput = m_comp->gtCloneExpr(m_thenOperation.node->gtGetOp1());
-            selectFalseInput->gtFlags &= GTF_EMPTY;
+            selectTrueInput = m_comp->gtCloneExpr(m_thenOperation.node->gtGetOp1());
+            selectTrueInput->gtFlags &= GTF_EMPTY;
 
-            selectTrueInput = m_thenOperation.node->gtGetOp2();
+            selectFalseInput = m_thenOperation.node->gtGetOp2();
         }
 
         // Pick the type as the type of the local, which should always be compatible even for implicit coercions.
@@ -777,7 +882,7 @@ PhaseStatus Compiler::optIfConversion()
     // Currently only enabled on arm64 and under debug on xarch, since we only
     // do it under stress.
     CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_ARM64) || (defined(TARGET_XARCH) && defined(DEBUG))
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
     while (block != nullptr)

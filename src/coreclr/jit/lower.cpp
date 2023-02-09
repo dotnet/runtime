@@ -3108,19 +3108,11 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         // after op1 do not modify the flags so that it is safe to avoid generating a
         // test instruction.
 
-        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
-#ifdef TARGET_XARCH
-            (op1->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG)
-#ifdef FEATURE_HW_INTRINSICS
-             || (op1->OperIs(GT_HWINTRINSIC) &&
-                 emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(op1->AsHWIntrinsic())))
-#endif // FEATURE_HW_INTRINSICS
-                 )
-#else // TARGET_ARM64
-            op1->OperIs(GT_AND, GT_ADD, GT_SUB) &&
+        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) && op1->SupportsSettingZeroFlag()
+#ifdef TARGET_ARM64
             // This happens in order to emit ARM64 'madd' and 'msub' instructions.
             // We cannot combine 'adds'/'subs' and 'mul'.
-            !(op1->gtGetOp2()->OperIs(GT_MUL) && op1->gtGetOp2()->isContained())
+            && !(op1->gtGetOp2()->OperIs(GT_MUL) && op1->gtGetOp2()->isContained())
 #endif
                 )
         {

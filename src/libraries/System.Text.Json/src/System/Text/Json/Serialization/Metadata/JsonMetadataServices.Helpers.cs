@@ -124,7 +124,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.Object);
             Debug.Assert(!typeInfo.IsReadOnly);
 
-            JsonSerializerContext? context = typeInfo.Options.TypeInfoResolver as JsonSerializerContext;
+            JsonSerializerContext? context = (typeInfo.OriginatingResolver ?? typeInfo.Options.TypeInfoResolver) as JsonSerializerContext;
             if (propInitFunc?.Invoke(context!) is not JsonPropertyInfo[] properties)
             {
                 if (typeInfo.Type == JsonTypeInfo.ObjectType)

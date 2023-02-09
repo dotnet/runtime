@@ -46,8 +46,8 @@ namespace ILLink.Shared.TrimAnalysis
             try
             {
                 method = method.GetTypicalMethodDefinition();
-                TypeAnnotations typeAnnotations = GetAnnotations(method.OwningType);
-                return typeAnnotations.HasGenericParameterAnnotation() || typeAnnotations.TryGetAnnotation(method, out _);
+                return GetAnnotations(method.OwningType).TryGetAnnotation(method, out var methodAnnotations)
+                    && (methodAnnotations.ReturnParameterAnnotation != DynamicallyAccessedMemberTypes.None || methodAnnotations.ParameterAnnotations != null);
             }
             catch (TypeSystemException)
             {
@@ -73,8 +73,7 @@ namespace ILLink.Shared.TrimAnalysis
             try
             {
                 field = field.GetTypicalFieldDefinition();
-                TypeAnnotations typeAnnotations = GetAnnotations(field.OwningType);
-                return typeAnnotations.HasGenericParameterAnnotation() || typeAnnotations.TryGetAnnotation(field, out _);
+                return GetAnnotations(field.OwningType).TryGetAnnotation(field, out _);
             }
             catch (TypeSystemException)
             {
@@ -99,31 +98,6 @@ namespace ILLink.Shared.TrimAnalysis
             try
             {
                 return !GetAnnotations(type.GetTypeDefinition()).IsDefault;
-            }
-            catch (TypeSystemException)
-            {
-                return false;
-            }
-        }
-
-        public bool HasGenericParameterAnnotation(TypeDesc type)
-        {
-            try
-            {
-                return GetAnnotations(type.GetTypeDefinition()).HasGenericParameterAnnotation();
-            }
-            catch (TypeSystemException)
-            {
-                return false;
-            }
-        }
-
-        public bool HasGenericParameterAnnotation(MethodDesc method)
-        {
-            try
-            {
-                method = method.GetTypicalMethodDefinition();
-                return GetAnnotations(method.OwningType).TryGetAnnotation(method, out var annotation) && annotation.GenericParameterAnnotations != null;
             }
             catch (TypeSystemException)
             {
@@ -910,8 +884,6 @@ namespace ILLink.Shared.TrimAnalysis
 
                 return false;
             }
-
-            public bool HasGenericParameterAnnotation() => _genericParameterAnnotations != null;
         }
 
         private readonly struct MethodAnnotations
