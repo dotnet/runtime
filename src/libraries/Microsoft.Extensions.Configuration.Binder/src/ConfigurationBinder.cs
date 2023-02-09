@@ -670,12 +670,19 @@ namespace Microsoft.Extensions.Configuration
                 MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue", DeclaredOnlyLookup)!;
                 PropertyInfo indexerProperty = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
 
+                object?[] tryGetValueArgs = new object?[2];
                 getValue = k =>
                 {
-                    object?[] tryGetValueArgs = { k, null };
+                    tryGetValueArgs[0] = k;
+                    tryGetValueArgs[1] = null;
                     return (bool)tryGetValue.Invoke(dictionary, tryGetValueArgs)! ? tryGetValueArgs[1] : null;
                 };
-                setValue = (k, v) => indexerProperty.SetValue(dictionary, v, new object[] { k });
+                object?[] setValueArgs = new object?[1];
+                setValue = (k, v) =>
+                {
+                    setValueArgs[0] = k;
+                    indexerProperty.SetValue(dictionary, v, setValueArgs);
+                };
             }
 
             foreach (IConfigurationSection child in config.GetChildren())
@@ -730,7 +737,12 @@ namespace Microsoft.Extensions.Configuration
             else
             {
                 MethodInfo? addMethod = collectionType.GetMethod("Add", DeclaredOnlyLookup);
-                addElement = e => addMethod?.Invoke(collection, new[] { e });
+                object?[] arguments = new object?[1];
+                addElement = e =>
+                {
+                    arguments[0] = e;
+                    addMethod?.Invoke(collection, arguments);
+                };
             }
 
             foreach (IConfigurationSection section in config.GetChildren())
