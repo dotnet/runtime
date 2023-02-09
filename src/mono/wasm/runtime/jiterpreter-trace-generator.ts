@@ -23,6 +23,7 @@ import {
     callTargetCounts, trapTraceErrors,
     trace, traceOnError, traceOnRuntimeError,
     emitPadding, traceBranchDisplacements,
+    traceEip,
 
     mostRecentOptions,
 
@@ -146,7 +147,7 @@ export function generate_wasm_body (
             break;
         }
 
-        if (instrumentedTraceId) {
+        if (instrumentedTraceId && traceEip) {
             builder.i32_const(instrumentedTraceId);
             builder.ip_const(ip);
             builder.callImport("trace_eip");
@@ -469,6 +470,12 @@ export function generate_wasm_body (
                 builder.local("pLocals");
                 append_ldloca(builder, getArgU16(ip, 2));
                 builder.callImport("hashcode");
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                break;
+            case MintOpcode.MINT_INTRINS_TRY_GET_HASHCODE:
+                builder.local("pLocals");
+                append_ldloca(builder, getArgU16(ip, 2));
+                builder.callImport("try_hash");
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
             case MintOpcode.MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
@@ -1061,7 +1068,10 @@ function emit_fieldop (
         fieldOffset = getArgU16(ip, 3),
         localOffset = getArgU16(ip, isLoad ? 1 : 2);
 
-    if (opcode !== MintOpcode.MINT_LDFLDA_UNSAFE)
+    if (
+        (opcode !== MintOpcode.MINT_LDFLDA_UNSAFE) &&
+        (opcode !== MintOpcode.MINT_STFLD_O)
+    )
         append_ldloc_cknull(builder, objectOffset, ip, false);
 
     let setter = WasmOpcode.i32_store,
@@ -1108,16 +1118,29 @@ function emit_fieldop (
             getter = WasmOpcode.i64_load;
             setter = WasmOpcode.i64_store;
             break;
-        case MintOpcode.MINT_STFLD_O:
-            // dest
-            builder.local("cknull_ptr");
+        case MintOpcode.MINT_STFLD_O: {
+            /*
+             * Writing a ref-type field has to call an import to perform the write barrier anyway,
+             *  and technically it should use a different kind of barrier from copy_pointer. So
+             *  we define a special import that is responsible for performing the whole stfld_o
+             *  operation with as little trace-side overhead as possible
+             * Previously the pseudocode looked like:
+             *  cknull_ptr = *(MonoObject *)&locals[objectOffset];
+             *  if (!cknull_ptr) bailout;
+             *  copy_pointer(cknull_ptr + fieldOffset, *(MonoObject *)&locals[localOffset])
+             */
+            builder.block();
+            builder.local("pLocals");
             builder.i32_const(fieldOffset);
-            builder.appendU8(WasmOpcode.i32_add);
-            // src
-            append_ldloca(builder, localOffset);
-            // FIXME: Use mono_gc_wbarrier_set_field_internal
-            builder.callImport("copy_pointer");
+            builder.i32_const(objectOffset);
+            builder.i32_const(localOffset);
+            builder.callImport("stfld_o");
+            builder.appendU8(WasmOpcode.br_if);
+            builder.appendLeb(0);
+            append_bailout(builder, ip, BailoutReason.NullCheck);
+            builder.endBlock();
             return true;
+        }
         case MintOpcode.MINT_LDFLD_VT: {
             const sizeBytes = getArgU16(ip, 4);
             // dest
