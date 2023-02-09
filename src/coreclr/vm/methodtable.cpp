@@ -3531,7 +3531,8 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
         if (VolatileLoad(boxedStaticHandle) == nullptr)
         {
             LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, false);
+            const bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
+            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, canBeFrozen);
             SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
         }
     }
