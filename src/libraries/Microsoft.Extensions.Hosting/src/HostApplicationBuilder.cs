@@ -91,13 +91,7 @@ namespace Microsoft.Extensions.Hosting
                     HostingHostBuilderExtensions.SetDefaultContentRoot(Configuration);
                 }
 
-                HostingHostBuilderExtensions.AddDefaultHostConfigurationSources(Configuration, settings.Args);
-            }
-            else
-            {
-                // Command line args are added even when DisableDefaults=true. If the caller didn't want settings.Args applied,
-                // they wouldn't have set them on the settings.
-                HostingHostBuilderExtensions.AddCommandLineConfig(Configuration, settings.Args);
+                Configuration.AddEnvironmentVariables(prefix: "DOTNET_");
             }
 
             Initialize(settings, out _hostBuilderContext, out _environment, out _logging);
@@ -126,8 +120,6 @@ namespace Microsoft.Extensions.Hosting
             settings ??= new HostApplicationBuilderSettings();
             Configuration = settings.Configuration ?? new ConfigurationManager();
 
-            HostingHostBuilderExtensions.AddCommandLineConfig(Configuration, settings.Args);
-
             Initialize(settings, out _hostBuilderContext, out _environment, out _logging);
 
             _createServiceProvider = () =>
@@ -141,6 +133,10 @@ namespace Microsoft.Extensions.Hosting
 
         private void Initialize(HostApplicationBuilderSettings settings, out HostBuilderContext hostBuilderContext, out IHostEnvironment environment, out LoggingBuilder logging)
         {
+            // Command line args are added even when settings.DisableDefaults == true. If the caller didn't want settings.Args applied,
+            // they wouldn't have set them on the settings.
+            HostingHostBuilderExtensions.AddCommandLineConfig(Configuration, settings.Args);
+
             // HostApplicationBuilderSettings override all other config sources.
             List<KeyValuePair<string, string?>>? optionList = null;
             if (settings.ApplicationName is not null)
