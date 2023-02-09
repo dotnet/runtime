@@ -21,6 +21,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public bool Equals (LocalKey other) => SymbolEqualityComparer.Default.Equals (Local, other.Local) &&
 			(CaptureId?.Equals (other.CaptureId) ?? other.CaptureId == null);
 
+		public override bool Equals (object obj)
+			=> obj is LocalKey inst && Equals (inst);
+
+		public override int GetHashCode ()
+			=> CaptureId is null ? SymbolEqualityComparer.Default.GetHashCode (Local) : CaptureId.GetHashCode ();
+
 		public override string ToString ()
 		{
 			if (Local != null)
@@ -41,7 +47,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public LocalState (TValue defaultValue)
 			: this (new DefaultValueDictionary<LocalKey, TValue> (defaultValue),
-				new DefaultValueDictionary<CaptureId, CapturedReferenceValue> (new CapturedReferenceValue ()))
+				new DefaultValueDictionary<CaptureId, CapturedReferenceValue> (default (CapturedReferenceValue)))
 		{
 		}
 
@@ -52,13 +58,19 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		}
 
 		public LocalState (DefaultValueDictionary<LocalKey, TValue> dictionary)
-			: this (dictionary, new DefaultValueDictionary<CaptureId, CapturedReferenceValue> (new CapturedReferenceValue ()))
+			: this (dictionary, new DefaultValueDictionary<CaptureId, CapturedReferenceValue> (default (CapturedReferenceValue)))
 		{
 		}
 
 		public bool Equals (LocalState<TValue> other) => Dictionary.Equals (other.Dictionary);
 
+		public override bool Equals (object obj)
+			=> obj is LocalState<TValue> inst && Equals (inst);
+
 		public TValue Get (LocalKey key) => Dictionary.Get (key);
+
+		public override int GetHashCode ()
+			=> throw new NotImplementedException ();
 
 		public void Set (LocalKey key, TValue value) => Dictionary.Set (key, value);
 
@@ -76,7 +88,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public LocalStateLattice (TValueLattice valueLattice)
 		{
 			Lattice = new DictionaryLattice<LocalKey, TValue, TValueLattice> (valueLattice);
-			CapturedReferenceLattice = new DictionaryLattice<CaptureId, CapturedReferenceValue, CapturedReferenceLattice> (new CapturedReferenceLattice ());
+			CapturedReferenceLattice = new DictionaryLattice<CaptureId, CapturedReferenceValue, CapturedReferenceLattice> (default (CapturedReferenceLattice));
 			Top = new (Lattice.Top);
 		}
 

@@ -470,6 +470,9 @@ async function instantiate_wasm_module(
         await beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
+        assetToLoad.pendingDownloadInternal = null as any; // GC
+        assetToLoad.pendingDownload = null as any; // GC
+        assetToLoad.buffer = null as any; // GC
 
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module done");
         afterInstantiateWasm.promise_control.resolve();

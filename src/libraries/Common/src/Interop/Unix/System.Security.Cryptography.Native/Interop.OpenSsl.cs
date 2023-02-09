@@ -683,6 +683,11 @@ internal static partial class Interop
             *outlen = 0;
             IntPtr sslData = Ssl.SslGetData(ssl);
 
+            if (sslData == IntPtr.Zero)
+            {
+                return Ssl.SSL_TLSEXT_ERR_ALERT_FATAL;
+            }
+
             // reset application data to avoid dangling pointer.
             Ssl.SslSetData(ssl, IntPtr.Zero);
 

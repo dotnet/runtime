@@ -1008,6 +1008,21 @@ enum {
 	MONO_GSHAREDVT_BOX_TYPE_NULLABLE = 3
 };
 
+/*
+ * Types of constrained calls from gsharedvt code
+ */
+enum {
+	/* Cannot be 0 since this is stored in rgctx slots, and 0 means an uninitialized rgctx slot */
+	/* Calling a vtype method with a vtype receiver */
+	MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_VTYPE = 1,
+	/* Calling a ref method with a ref receiver */
+	MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_REF = 2,
+	/* Calling a non-vtype method with a vtype receiver, has to box */
+	MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_BOX = 3,
+	/* Everything else */
+	MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_OTHER = 4
+};
+
 typedef enum {
 	MONO_RGCTX_INFO_STATIC_DATA                  = 0,
 	MONO_RGCTX_INFO_KLASS                        = 1,
@@ -1070,7 +1085,9 @@ typedef enum {
 	/* The llvmonly interp entry for a method */
 	MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY         = 36,
 	/* Same as VIRT_METHOD_CODE, but resolve MonoMethod* instead of code */
-	MONO_RGCTX_INFO_VIRT_METHOD                   = 37
+	MONO_RGCTX_INFO_VIRT_METHOD                   = 37,
+	/* Resolves to a MonoGsharedvtConstrainedCallInfo */
+	MONO_RGCTX_INFO_GSHAREDVT_CONSTRAINED_CALL_INFO = 38,
 } MonoRgctxInfoType;
 
 /* How an rgctx is passed to a method */
@@ -1134,6 +1151,14 @@ typedef struct {
 	 */
 	gpointer entries [MONO_ZERO_LEN_ARRAY];
 } MonoGSharedVtMethodRuntimeInfo;
+
+/* Precomputed information about constrained calls from gsharedvt methods */
+typedef struct {
+	int call_type;
+	MonoClass *klass;
+	MonoMethod *method;
+	gpointer code;
+} MonoGsharedvtConstrainedCallInfo;
 
 typedef struct
 {

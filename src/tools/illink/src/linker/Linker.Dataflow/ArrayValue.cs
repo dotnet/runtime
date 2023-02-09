@@ -12,7 +12,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial record ArrayValue
+	internal partial record ArrayValue
 	{
 		public static MultiValue Create (MultiValue size, TypeReference elementType)
 		{
@@ -95,17 +95,17 @@ namespace ILLink.Shared.TrimAnalysis
 			bool first = true;
 			foreach (var element in IndexValues) {
 				if (!first) {
-					result.Append (",");
+					result.Append (',');
 					first = false;
 				}
 
-				result.Append ("(");
+				result.Append ('(');
 				result.Append (element.Key);
 				result.Append (",(");
 				bool firstValue = true;
 				foreach (var v in element.Value.Value) {
 					if (firstValue) {
-						result.Append (",");
+						result.Append (',');
 						firstValue = false;
 					}
 
