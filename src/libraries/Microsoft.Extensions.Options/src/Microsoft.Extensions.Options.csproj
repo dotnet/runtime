@@ -7,7 +7,7 @@
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>Provides a strongly typed way of specifying and accessing settings using dependency injection.</PackageDescription>
     <ServicingVersion>1</ServicingVersion>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>

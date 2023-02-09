@@ -5,6 +5,10 @@ internal static partial class Interop
 {
     internal static class StatusOptions
     {
+        // See the NT_SUCCESS macro in the Windows SDK, and
+        // https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/using-ntstatus-values
+        internal static bool NT_SUCCESS(uint ntStatus) => (int)ntStatus >= 0;
+
         // Error codes from ntstatus.h
         internal const uint STATUS_SUCCESS                = 0x00000000;
         internal const uint STATUS_SOME_NOT_MAPPED        = 0x00000107;

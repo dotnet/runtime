@@ -12,6 +12,8 @@ namespace System.Formats.Tar.Tests
 {
     public abstract partial class TarTestsBase : FileCleanupTestBase
     {
+        protected static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
+
         protected const string InitialEntryName = "InitialEntryName.ext";
         protected readonly string ModifiedEntryName = "ModifiedEntryName.ext";
 
@@ -208,7 +210,6 @@ namespace System.Formats.Tar.Tests
             // GNU formatted files. Format used by GNU tar versions up to 1.13.25.
             gnu
         }
-        protected static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
 
         protected static bool IsUnixButNotSuperUser => !PlatformDetection.IsWindows && !PlatformDetection.IsSuperUser;
 
@@ -707,7 +708,7 @@ namespace System.Formats.Tar.Tests
             // this is 256 but is supported because prefix is not required to end in separator.
             yield return Repeat(OneByteCharacter, 155) + Separator + Repeat(OneByteCharacter, 100);
 
-            // non-ascii prefix + name 
+            // non-ascii prefix + name
             yield return Repeat(TwoBytesCharacter, 155 / 2) + Separator + Repeat(OneByteCharacter, 100);
             yield return Repeat(FourBytesCharacter, 155 / 4) + Separator + Repeat(OneByteCharacter, 100);
 

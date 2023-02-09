@@ -185,7 +185,6 @@
       <_EmccLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_EmccLinkRsp>
 
       <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">$(EmccTotalMemory)</EmccInitialHeapSize>
-      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == ''">536870912</EmccInitialHeapSize>
     </PropertyGroup>
 
     <ItemGroup>
@@ -227,7 +226,6 @@
       <_EmccLDFlags Include="-s ASSERTIONS=$(_EmccAssertionLevelDefault)" Condition="'$(_WasmDevel)' == 'true'" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
       <_EmccLDFlags Include="-Wl,--allow-undefined" />
-      <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
 
       <!-- ILLinker should have removed unused imports, so error for Publish -->
       <_EmccLDSFlags Include="-s ERROR_ON_UNDEFINED_SYMBOLS=0" Condition="'$(WasmBuildingForNestedPublish)' != 'true'" />
@@ -374,9 +372,12 @@
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>
       <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>
       <_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == '' and '$(_WasmShouldAOT)' != 'true'">16777216</EmccInitialHeapSize>
+      <EmccInitialHeapSize Condition="'$(EmccInitialHeapSize)' == '' and '$(_WasmShouldAOT)' == 'true'">134217728</EmccInitialHeapSize>
 	</PropertyGroup>
     <ItemGroup>
       <!-- order matters -->
+      <_EmccLDSFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
 

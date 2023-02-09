@@ -1,11 +1,11 @@
 <Project>
   <PropertyGroup>
     <!-- The .NET product branding version -->
-    <ProductVersion>7.0.3</ProductVersion>
+    <ProductVersion>7.0.4</ProductVersion>
     <!-- File version numbers -->
     <MajorVersion>7</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>3</PatchVersion>
+    <PatchVersion>4</PatchVersion>
     <SdkBandVersion>7.0.100</SdkBandVersion>
     <PackageVersionNet6>6.0.$([MSBuild]::Add($(PatchVersion), 11))</PackageVersionNet6>
     <PreReleaseVersionLabel>servicing</PreReleaseVersionLabel>
@@ -23,8 +23,8 @@
     <UsingToolXliff>false</UsingToolXliff>
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
-    <MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>7.0.3</MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>
-    <MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>7.0.3</MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>
+    <MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>7.0.4</MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>
+    <MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>7.0.4</MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>
   </PropertyGroup>
   <ItemGroup>
     <!-- The bands we want to produce workload manifests for -->

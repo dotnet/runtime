@@ -4618,6 +4618,8 @@ is_monomorphic_array (MonoClass *klass)
 		return FALSE;
 
 	element_class = m_class_get_element_class (klass);
+	if (m_class_get_byval_arg (element_class)->type == MONO_TYPE_FNPTR)
+		return FALSE;
 	return mono_class_is_sealed (element_class) || m_class_is_valuetype (element_class);
 }
 
