@@ -3334,7 +3334,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmAllFloat         = RBM_ALLFLOAT_INIT;
     rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
     cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
-    availableRegCount   = ACTUAL_REG_COUNT;
 
     if (DoJitStressEvexEncoding())
     {
@@ -3342,10 +3341,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
     }
-    else
-    {
-        availableRegCount -= CNT_HIGHFLOAT;
-    }
+
+    codeGen->CopyRegisterInfo();
 #endif // TARGET_AMD64
 }
 

@@ -636,6 +636,17 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
+#if defined(TARGET_AMD64)
+    rbmAllFloat       = compiler->rbmAllFloat;
+    rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+    availableRegCount = ACTUAL_REG_COUNT;
+
+    if (!compiler->DoJitStressEvexEncoding())
+    {
+        availableRegCount -= CNT_HIGHFLOAT;
+    }
+#endif // TARGET_AMD64
+
     regSelector  = new (theCompiler, CMK_LSRA) RegisterSelection(this);
     firstColdLoc = MaxLocation;
 
