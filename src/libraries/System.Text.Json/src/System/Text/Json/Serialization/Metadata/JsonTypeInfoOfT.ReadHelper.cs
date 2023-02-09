@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization.Converters;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -85,14 +86,13 @@ namespace System.Text.Json.Serialization.Metadata
             JsonTypeInfo<Queue<T>>? queueTypeInfo = _asuncEnumerableQueueTypeInfo;
             if (queueTypeInfo is null)
             {
-                queueTypeInfo = JsonMetadataServices.CreateQueueInfo<Queue<T>, T>(
-                    options: Options,
-                    collectionInfo: new()
-                    {
-                        ObjectCreator = static () => new Queue<T>(),
-                        ElementInfo = this,
-                        NumberHandling = Options.NumberHandling
-                    });
+                var queueConverter = new QueueOfTConverter<Queue<T>, T>();
+                queueTypeInfo = new JsonTypeInfo<Queue<T>>(queueConverter, Options)
+                {
+                    CreateObject = static () => new Queue<T>(),
+                    ElementTypeInfo = this,
+                    NumberHandling = Options.NumberHandling,
+                };
 
                 queueTypeInfo.EnsureConfigured();
                 _asuncEnumerableQueueTypeInfo = queueTypeInfo;

@@ -1401,7 +1401,7 @@ namespace System.Diagnostics
         {
             public EventLogInternal handleOwner;
             public RegisteredWaitHandle registeredWaitHandle;
-            public WaitHandle waitHandle;
+            public AutoResetEvent waitHandle;
             public List<EventLogInternal> listeningComponents = new();
         }
     }

@@ -139,12 +139,8 @@ jobs:
 
     # Only build GCSimulator tests when the gc-simulator group is specified.
     - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - name: testTreeFilterArg
-          value: 'tree GC/Scenarios/GCSimulator'
-      - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - name: testTreeFilterArg
-          value: '-tree:GC/Scenarios/GCSimulator'
+      - name: testTreeFilterArg
+        value: 'tree GC/Scenarios/GCSimulator'
 
     # Variables used for SuperPMI collection
     - ${{ if eq(parameters.SuperPmiCollect, true) }}:
@@ -614,6 +610,7 @@ jobs:
             - fullpgo_random_gdv
             - fullpgo_random_gdv_methodprofiling_only
             - fullpgo_random_gdv_edge
+            - fullpgo_methodprofiling_always_optimized
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:

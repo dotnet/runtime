@@ -5,6 +5,7 @@
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
     <IsTrimmable>false</IsTrimmable>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides some extension methods for the Managed Extensibility Framework.

@@ -229,7 +229,7 @@
       <Type Name="InterfacesTests+UseFrobber`2[InterfacesTests+FrobtasticFrobberStruct,[System.String, netstandard]]" Dynamic="Required All" />
 
       <Type Name="ConstraintsTests+TypeWithClassConstraint`1[[System.Object, netstandard]]" Dynamic="Required All"/>
-      <Type Name="ConstraintsTests+TypeRequiringIFoo`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeRequiringIFoo`1[[ConstraintsTests+IFoo]]" Dynamic="Required All"/>
       <Type Name="ConstraintsTests+TypeWithPrivateCtor" Dynamic="Required All"/>
       <Type Name="ConstraintsTests+TypeWithNewConstraint`1[[System.Object, netstandard]]" Dynamic="Required All"/>
       <Type Name="ConstraintsTests+TypeWithSelfReferenceConstraint`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>
