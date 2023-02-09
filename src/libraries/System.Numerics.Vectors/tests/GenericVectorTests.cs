@@ -27,6 +27,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/81785", TestPlatforms.Browser)]
         public unsafe void IsHardwareAcceleratedTest()
         {
             MethodInfo methodInfo = typeof(Vector).GetMethod("get_IsHardwareAccelerated");
