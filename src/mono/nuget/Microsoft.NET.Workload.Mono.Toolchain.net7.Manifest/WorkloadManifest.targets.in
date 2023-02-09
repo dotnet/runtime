@@ -18,6 +18,7 @@
     -->
     <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm'">
        <WasmNativeWorkload Condition="'$(WasmNativeWorkload7)' == 'true' and '$(WasmNativeWorkload)' != 'false'">true</WasmNativeWorkload>
+       <WasmNativeWorkload Condition="'$(WasmNativeWorkload7)' != 'true'">false</WasmNativeWorkload>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
