@@ -16,18 +16,41 @@ export declare interface MintOpcodePtr extends NativePointer {
     __brand: "MintOpcodePtr"
 }
 
+type FunctionType = [
+    index: FunctionTypeIndex,
+    parameters: { [name: string]: WasmValtype },
+    returnType: WasmValtype,
+    signature: string
+];
+
+type FunctionTypeIndex = number;
+
+type FunctionTypeByIndex = [
+    parameters: { [name: string]: WasmValtype },
+    returnType: WasmValtype,
+];
+
 export class WasmBuilder {
     stack: Array<BlobBuilder>;
     stackSize!: number;
     inSection!: boolean;
     inFunction!: boolean;
     locals = new Map<string, [WasmValtype, number]>();
+
+    permanentFunctionTypeCount = 0;
+    permanentFunctionTypes: { [name: string] : FunctionType } = {};
+    permanentFunctionTypesByShape: { [shape: string] : FunctionTypeIndex } = {};
+    permanentFunctionTypesByIndex: { [index: number] : FunctionTypeByIndex } = {};
+
     functionTypeCount!: number;
-    functionTypes!: { [name: string] : [number, { [name: string]: WasmValtype }, WasmValtype, string] };
-    functionTypesByShape!: { [shape: string] : number };
-    functionTypesByIndex: Array<any> = [];
+    functionTypes!: { [name: string] : FunctionType };
+    functionTypesByShape!: { [shape: string] : FunctionTypeIndex };
+    functionTypesByIndex: { [index: number] : FunctionTypeByIndex } = {};
+
     importedFunctionCount!: number;
-    importedFunctions!: { [name: string] : [number, number, string] };
+    importedFunctions!: { [name: string] : [
+        index: number, typeIndex: number, unknown: string
+    ] };
     importsToEmit!: Array<[string, string, number, number]>;
     argumentCount!: number;
     activeBlocks!: number;
@@ -49,10 +72,12 @@ export class WasmBuilder {
         this.inSection = false;
         this.inFunction = false;
         this.locals.clear();
-        this.functionTypeCount = 0;
-        this.functionTypes = {};
-        this.functionTypesByShape = {};
-        this.functionTypesByIndex.length = 0;
+
+        this.functionTypeCount = this.permanentFunctionTypeCount;
+        this.functionTypes = Object.create(this.permanentFunctionTypes);
+        this.functionTypesByShape = Object.create(this.permanentFunctionTypesByShape);
+        this.functionTypesByIndex = Object.create(this.permanentFunctionTypesByIndex);
+
         this.importedFunctionCount = 0;
         this.importedFunctions = {};
         this.importsToEmit = [];
@@ -181,26 +206,43 @@ export class WasmBuilder {
         this.appendLeb(value);
     }
 
-    defineType (name: string, parameters: { [name: string]: WasmValtype }, returnType: WasmValtype) {
+    defineType (
+        name: string, parameters: { [name: string]: WasmValtype }, returnType: WasmValtype,
+        permanent: boolean
+    ) {
         if (this.functionTypes[name])
             throw new Error(`Function type ${name} already defined`);
+        if (permanent && (this.functionTypeCount > this.permanentFunctionTypeCount))
+            throw new Error("New permanent function types cannot be defined after non-permanent ones");
 
-        let index: number;
         let shape = "";
         for (const k in parameters)
             shape += parameters[k] + ",";
         shape += returnType;
-        index = this.functionTypesByShape[shape];
 
-        if (!index) {
+        let index = this.functionTypesByShape[shape];
+
+        if (typeof (index) !== "number") {
             index = this.functionTypeCount++;
-            this.functionTypesByShape[shape] = index;
-            this.functionTypesByIndex[index] = [parameters, returnType];
+
+            if (permanent) {
+                this.permanentFunctionTypeCount++;
+                this.permanentFunctionTypesByShape[shape] = index;
+                this.permanentFunctionTypesByIndex[index] = [parameters, returnType];
+            } else {
+                this.functionTypesByShape[shape] = index;
+                this.functionTypesByIndex[index] = [parameters, returnType];
+            }
         }
 
-        this.functionTypes[name] = [
+        const tup : FunctionType = [
             index, parameters, returnType, `(${JSON.stringify(parameters)}) -> ${returnType}`
         ];
+        if (permanent)
+            this.permanentFunctionTypes[name] = tup;
+        else
+            this.functionTypes[name] = tup;
+
         return index;
     }
 
@@ -211,7 +253,7 @@ export class WasmBuilder {
         if (trace > 1)
             console.log(`Generated ${this.functionTypeCount} wasm type(s) from ${Object.keys(this.functionTypes).length} named function types`);
         */
-        for (let i = 0; i < this.functionTypesByIndex.length; i++) {
+        for (let i = 0; i < this.functionTypeCount; i++) {
             const parameters = this.functionTypesByIndex[i][0];
             const returnType = this.functionTypesByIndex[i][1];
             this.appendU8(0x60);
@@ -650,6 +692,7 @@ export const counters = {
     tracesCompiled: 0,
     entryWrappersCompiled: 0,
     jitCallsCompiled: 0,
+    directJitCallsCompiled: 0,
     failures: 0,
     bytesGenerated: 0
 };
@@ -901,6 +944,8 @@ export type JiterpreterOptions = {
     dumpTraces: boolean;
     // Use runtime imports for pointer constants
     useConstants: boolean;
+    // Unwrap gsharedvt wrappers when compiling jitcalls if possible
+    directJitCalls: boolean;
     minimumTraceLength: number;
     minimumTraceHitCount: number;
     jitCallHitCount: number;
@@ -924,6 +969,7 @@ const optionNames : { [jsName: string] : string } = {
     "countBailouts": "jiterpreter-count-bailouts",
     "dumpTraces": "jiterpreter-dump-traces",
     "useConstants": "jiterpreter-use-constants",
+    "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
     "jitCallHitCount": "jiterpreter-jit-call-hit-count",

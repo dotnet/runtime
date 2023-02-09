@@ -423,6 +423,9 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
             loaded_files.splice(index, 1);
         }
     }
+    else if (asset.behavior === "pdb") {
+        cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
+    }
     else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
             Module.printErr(`MONO_WASM: Error loading ICU asset ${asset.name}`);
@@ -441,7 +444,7 @@ export async function instantiate_wasm_asset(
 ): Promise<void> {
     mono_assert(pendingAsset && pendingAsset.pendingDownloadInternal && pendingAsset.pendingDownloadInternal.response, "Can't load dotnet.wasm");
     const response = await pendingAsset.pendingDownloadInternal.response;
-    const contentType = response.headers ? response.headers.get("Content-Type") : undefined;
+    const contentType = response.headers && response.headers.get ? response.headers.get("Content-Type") : undefined;
     let compiledInstance: WebAssembly.Instance;
     let compiledModule: WebAssembly.Module;
     if (typeof WebAssembly.instantiateStreaming === "function" && contentType === "application/wasm") {

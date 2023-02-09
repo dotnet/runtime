@@ -69,7 +69,6 @@ namespace System.Text.Json.Serialization.Converters
                 !state.CurrentContainsMetadata) // Do not use the fast path if state needs to write metadata.
             {
                 Debug.Assert(jsonTypeInfo is JsonTypeInfo<T> typeInfo && typeInfo.SerializeHandler != null);
-                Debug.Assert(jsonTypeInfo.CanUseSerializeHandler);
                 ((JsonTypeInfo<T>)jsonTypeInfo).SerializeHandler!(writer, value);
                 return true;
             }

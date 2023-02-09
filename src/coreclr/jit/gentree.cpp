@@ -562,7 +562,7 @@ void GenTree::DumpNodeSizes(FILE* fp)
 //
 LocalsGenTreeList::iterator LocalsGenTreeList::begin() const
 {
-    GenTree* first = m_stmt->GetRootNode()->gtNext;
+    GenTree* first = m_stmt->GetTreeList();
     assert((first == nullptr) || first->OperIsLocal() || first->OperIsLocalAddr());
     return iterator(static_cast<GenTreeLclVarCommon*>(first));
 }
@@ -580,8 +580,8 @@ GenTree** LocalsGenTreeList::GetForwardEdge(GenTreeLclVarCommon* node)
 {
     if (node->gtPrev == nullptr)
     {
-        assert(m_stmt->GetRootNode()->gtNext == node);
-        return &m_stmt->GetRootNode()->gtNext;
+        assert(m_stmt->GetTreeList() == node);
+        return m_stmt->GetTreeListPointer();
     }
     else
     {
@@ -603,8 +603,8 @@ GenTree** LocalsGenTreeList::GetBackwardEdge(GenTreeLclVarCommon* node)
 {
     if (node->gtNext == nullptr)
     {
-        assert(m_stmt->GetRootNode()->gtPrev == node);
-        return &m_stmt->GetRootNode()->gtPrev;
+        assert(m_stmt->GetTreeListEnd() == node);
+        return m_stmt->GetTreeListEndPointer();
     }
     else
     {
@@ -1064,7 +1064,7 @@ regMaskTP GenTree::gtGetContainedRegMask()
 {
     if (!isContained())
     {
-        return gtGetRegMask();
+        return isUsedFromReg() ? gtGetRegMask() : RBM_NONE;
     }
 
     regMaskTP mask = 0;
@@ -8166,11 +8166,12 @@ GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVo
     // should be labeled as simd intrinsic related struct. This is done so that
     // we do not promote the local, thus avoiding conflicting access methods
     // (fields vs. whole-register).
-    if (varTypeIsSIMD(srcOrFillVal) && srcOrFillVal->OperIsHWIntrinsic())
+    if (varTypeIsSIMD(srcOrFillVal) && srcOrFillVal->OperIs(GT_HWINTRINSIC, GT_CNS_VEC))
     {
         // TODO-Cleanup: similar logic already exists in "gtNewAssignNode",
         // however, it is not enabled for x86. Fix that and delete this code.
         GenTreeLclVar* dstLclNode = nullptr;
+
         if (dst->OperIs(GT_LCL_VAR))
         {
             dstLclNode = dst->AsLclVar();
@@ -8433,6 +8434,11 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 #ifdef FEATURE_READYTORUN
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
 #endif
+
+                if (tree->AsField()->IsSpanLength())
+                {
+                    copy->AsField()->SetIsSpanLength(true);
+                }
             }
             else if (tree->OperIs(GT_ADD, GT_SUB))
             {
@@ -8628,13 +8634,17 @@ GenTree* Compiler::gtCloneExpr(
                 goto DONE;
 
             case GT_LCL_VAR_ADDR:
+            {
                 copy = new (this, oper) GenTreeLclVar(oper, tree->TypeGet(), tree->AsLclVar()->GetLclNum());
                 goto DONE;
+            }
 
             case GT_LCL_FLD_ADDR:
+            {
                 copy = new (this, oper)
                     GenTreeLclFld(oper, tree->TypeGet(), tree->AsLclFld()->GetLclNum(), tree->AsLclFld()->GetLclOffs());
                 goto DONE;
+            }
 
             default:
                 NO_WAY("Cloning of node not supported");
@@ -8772,6 +8782,11 @@ GenTree* Compiler::gtCloneExpr(
 #ifdef FEATURE_READYTORUN
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
 #endif
+
+                if ((oper == GT_FIELD) && tree->AsField()->IsSpanLength())
+                {
+                    copy->AsField()->SetIsSpanLength(true);
+                }
                 break;
 
             case GT_BOX:
@@ -11434,6 +11449,9 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_STATIC_BOX_PTR:
                             printf(" static box ptr");
                             break;
+                        case GTF_ICON_STATIC_ADDR_PTR:
+                            printf(" static base addr cell");
+                            break;
                         default:
                             printf(" UNKNOWN");
                             break;
@@ -11666,8 +11684,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                             fieldVarDsc->PrintVarReg();
                         }
 
-                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->IsMultiRegLclVar() &&
-                            tree->AsLclVar()->IsLastUse(index))
+                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->AsLclVar()->IsLastUse(index))
                         {
                             printf(" (last use)");
                         }
@@ -12091,9 +12108,18 @@ void Compiler::gtDispTree(GenTree*     tree,
                 case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
                     printf(" isKnownConst");
                     break;
-
+#if defined(FEATURE_SIMD)
+                case NI_SIMD_UpperRestore:
+                    printf(" simdUpperRestore");
+                    break;
+                case NI_SIMD_UpperSave:
+                    printf(" simdUpperSave");
+                    break;
+#endif // FEATURE_SIMD
                 default:
-                    unreached();
+                    printf("Unknown intrinsic: ");
+                    printTreeID(tree);
+                    break;
             }
         }
 
@@ -16166,11 +16192,24 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
             {
                 if (m_compiler->gtNodeHasSideEffects(node, m_flags))
                 {
-                    Append(node);
                     if (node->OperIsBlk() && !node->OperIsStoreBlk())
                     {
-                        JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
-                        m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
+                        // Check for a guaranteed non-faulting IND, and create a NOP node instead of a NULLCHECK in that
+                        // case.
+                        if (m_compiler->fgAddrCouldBeNull(node->AsBlk()->Addr()))
+                        {
+                            Append(node);
+                            JITDUMP("Replace an unused OBJ/BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                            m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
+                        }
+                        else
+                        {
+                            JITDUMP("Dropping non-faulting OBJ/BLK node [%06d]\n", dspTreeID(node));
+                        }
+                    }
+                    else
+                    {
+                        Append(node);
                     }
                     return Compiler::WALK_SKIP_SUBTREES;
                 }
@@ -16961,38 +17000,71 @@ const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
 }
 
 //------------------------------------------------------------------------
-// IsImplicitByrefParameterValue: determine if this tree is the entire
-//     value of a local implicit byref parameter
+// IsImplicitByrefParameterValuePreMorph:
+//    Determine if this tree represents the value of an implicit byref
+//    parameter, and if so return the tree for the parameter. To be used
+//    before implicit byrefs have been morphed.
 //
 // Arguments:
-//    compiler -- compiler instance
+//    compiler - compiler instance
 //
 // Return Value:
-//    GenTreeLclVar node for the local, or nullptr.
+//    Node for the local, or nullptr.
 //
-GenTreeLclVar* GenTree::IsImplicitByrefParameterValue(Compiler* compiler)
+GenTreeLclVarCommon* GenTree::IsImplicitByrefParameterValuePreMorph(Compiler* compiler)
 {
 #if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) // TODO-LOONGARCH64-CQ: enable this.
 
-    GenTreeLclVar* lcl = nullptr;
-
-    if (OperIs(GT_LCL_VAR))
-    {
-        lcl = AsLclVar();
-    }
-    else if (OperIsIndir())
-    {
-        GenTree* addr = AsIndir()->Addr();
-
-        if (addr->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR))
-        {
-            lcl = addr->AsLclVar();
-        }
-    }
+    GenTreeLclVarCommon* lcl = OperIsLocal() ? AsLclVarCommon() : nullptr;
 
     if ((lcl != nullptr) && compiler->lvaIsImplicitByRefLocal(lcl->GetLclNum()))
     {
         return lcl;
+    }
+
+#endif // FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64)
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// IsImplicitByrefParameterValuePostMorph:
+//    Determine if this tree represents the value of an implicit byref
+//    parameter, and if so return the tree for the parameter. To be used after
+//    implicit byrefs have been morphed.
+//
+// Arguments:
+//    compiler - compiler instance
+//    addr     - [out] tree representing the address computation on top of the implicit byref.
+//               Will be the same as the return value if the whole implicit byref is used, for example.
+//
+// Return Value:
+//    Node for the local, or nullptr.
+//
+GenTreeLclVar* GenTree::IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr)
+{
+#if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) // TODO-LOONGARCH64-CQ: enable this.
+
+    if (!OperIsIndir())
+    {
+        return nullptr;
+    }
+
+    *addr              = AsIndir()->Addr();
+    GenTree* innerAddr = *addr;
+
+    while (innerAddr->OperIs(GT_ADD) && innerAddr->gtGetOp2()->IsCnsIntOrI())
+    {
+        innerAddr = innerAddr->gtGetOp1();
+    }
+
+    if (innerAddr->OperIs(GT_LCL_VAR))
+    {
+        GenTreeLclVar* lcl = innerAddr->AsLclVar();
+        if (compiler->lvaIsImplicitByRefLocal(lcl->GetLclNum()))
+        {
+            return lcl;
+        }
     }
 
 #endif // FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64)
@@ -18686,6 +18758,46 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 }
 
 //------------------------------------------------------------------------
+// SupportsSettingZeroFlag: Returns true if this is an arithmetic operation
+// whose codegen supports setting the "zero flag" as part of its operation.
+//
+// Return Value:
+//    True if so. A false return does not imply that codegen for the node will
+//    not trash the zero flag.
+//
+// Remarks:
+//    For example, for EQ (AND x y) 0, both xarch and arm64 can emit
+//    instructions that directly set the flags after the 'AND' and thus no
+//    comparison is needed.
+//
+//    The backend expects any node for which the flags will be consumed to be
+//    marked with GTF_SET_FLAGS.
+//
+bool GenTree::SupportsSettingZeroFlag()
+{
+#if defined(TARGET_XARCH)
+    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
+    {
+        return true;
+    }
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIs(GT_HWINTRINSIC) && emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(AsHWIntrinsic())))
+    {
+        return true;
+    }
+#endif
+#elif defined(TARGET_ARM64)
+    if (OperIs(GT_AND, GT_ADD, GT_SUB))
+    {
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // Create: Create or retrieve a field sequence for the given field handle.
 //
 // The field sequence instance contains some cached information relevant to
@@ -18782,7 +18894,7 @@ void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTree* op)
     {
         setLclRelatedToSIMDIntrinsic(op);
     }
-    else if (op->OperIs(GT_OBJ) && op->AsIndir()->Addr()->OperIs(GT_LCL_VAR_ADDR))
+    else if (op->OperIsBlk() && op->AsIndir()->Addr()->OperIs(GT_LCL_VAR_ADDR))
     {
         setLclRelatedToSIMDIntrinsic(op->AsIndir()->Addr());
     }
@@ -19029,6 +19141,27 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
     }
 #elif defined(TARGET_ARM64)
     return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
+#else
+    return false;
+#endif
+}
+
+//------------------------------------------------------------------------
+// isEvexCompatibleHWIntrinsic: Checks if the intrinsic has a compatible
+// EVEX form for its intended lowering instruction.
+//
+// Return Value:
+// true if the intrisic node lowering instruction has an EVEX form
+//
+bool GenTree::isEvexCompatibleHWIntrinsic()
+{
+    assert(gtOper == GT_HWINTRINSIC);
+
+// TODO-XARCH-AVX512 remove the ReturnsPerElementMask check once K registers have been properly
+// implemented in the register allocator
+#if defined(TARGET_AMD64)
+    return HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId()) &&
+           !HWIntrinsicInfo::ReturnsPerElementMask(AsHWIntrinsic()->GetHWIntrinsicId());
 #else
     return false;
 #endif
@@ -21336,7 +21469,6 @@ GenTree* Compiler::gtNewSimdDotProdNode(var_types   type,
                                         bool        isSimdAsHWIntrinsic)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(varTypeIsArithmetic(type));
 
     var_types simdType = getSIMDTypeForSize(simdSize);
     assert(varTypeIsSIMD(simdType));
@@ -21348,7 +21480,9 @@ GenTree* Compiler::gtNewSimdDotProdNode(var_types   type,
     assert(op2->TypeIs(simdType));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-    assert(JITtype2varType(simdBaseJitType) == type);
+
+    // We support the return type being a SIMD for floating-point as a special optimization
+    assert(varTypeIsArithmetic(type) || (varTypeIsSIMD(type) && varTypeIsFloating(simdBaseType)));
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
@@ -24618,6 +24752,21 @@ ClassLayout* GenTreeLclVarCommon::GetLayout(Compiler* compiler) const
     return AsLclFld()->GetLayout();
 }
 
+//------------------------------------------------------------------------
+// GenTreeLclVar::IsNeverNegative: Gets true if the lcl var is never negative; otherwise false.
+//
+// Arguments:
+//    comp - the compiler instance
+//
+// Return Value:
+//    true if the lcl var is never negative; otherwise false.
+//
+bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
+{
+    assert(OperIs(GT_LCL_VAR));
+    return comp->lvaGetDesc(GetLclNum())->IsNeverNegative();
+}
+
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // GetResultOpNumForFMA: check if the result is written into one of the operands.
@@ -24711,6 +24860,24 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
     {
         return AsIntConCommon()->IntegralValue() >= 0;
     }
+
+    if (OperIs(GT_LCL_VAR))
+    {
+        if (AsLclVar()->IsNeverNegative(comp))
+        {
+            // This is an early exit, it doesn't cover all cases
+            return true;
+        }
+    }
+    else if (OperIs(GT_FIELD))
+    {
+        if (AsField()->IsSpanLength())
+        {
+            // This is an early exit, it doesn't cover all cases
+            return true;
+        }
+    }
+
     // TODO-Casts: extend IntegralRange to handle constants
     return IntegralRange::ForNode((GenTree*)this, comp).IsPositive();
 }

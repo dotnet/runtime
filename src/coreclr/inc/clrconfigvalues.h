@@ -610,6 +610,9 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredPGO, W("TieredPGO"), 0, "Instrument Tier
 // 0) Instrument all IL-only code, R2R'd code is never instrumented
 // 1) Instrument only hot IL-only and hot R2R code (use optimizations in the instrumented tier for hot R2R and no optimizations for hot IL-only)
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode, W("TieredPGO_InstrumentOnlyHotCode"), 1, "Strategy for TieredPGO, see comments in clrconfigvalues.h")
+
+// By default, we only use optimizations in instrumented tiers for hot R2R code only.
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_InstrumentedTierAlwaysOptimized, W("TieredPGO_InstrumentedTierAlwaysOptimized"), 0, "Always use optimizations inside instrumented tiers")
 #endif
 
 ///

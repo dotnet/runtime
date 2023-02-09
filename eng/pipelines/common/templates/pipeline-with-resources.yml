@@ -15,7 +15,7 @@ resources:
         ROOTFS_DIR: /crossrootfs/armv6
 
     - container: linux_arm64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm64
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-arm64
       env:
         ROOTFS_DIR: /crossrootfs/arm64
 

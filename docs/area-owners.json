@@ -483,10 +483,10 @@
       "label": "area-Infrastructure-mono"
     },
     {
-      "lead": "jeffschwMSFT",
+      "lead": "agocke",
       "owners": [
         "AaronRobinsonMSFT",
-        "jeffschwMSFT"
+        "jkoritzinsky"
       ],
       "label": "area-Interop-coreclr"
     },
@@ -1292,7 +1292,7 @@
       "label": "area-System.Runtime.CompilerServices"
     },
     {
-      "lead": "jeffschwMSFT",
+      "lead": "agocke",
       "owners": [
         "AaronRobinsonMSFT",
         "jkoritzinsky"
@@ -1473,9 +1473,9 @@
       "label": "area-System.Threading.Tasks"
     },
     {
-      "lead": "HongGit",
+      "lead": "ajcvickers",
       "owners": [
-        "HongGit"
+        "roji"
       ],
       "label": "area-System.Transactions"
     },

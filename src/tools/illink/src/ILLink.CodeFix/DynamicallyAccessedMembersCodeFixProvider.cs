@@ -63,21 +63,21 @@ namespace ILLink.CodeFix
 
 		public sealed override ImmutableArray<string> FixableDiagnosticIds => SupportedDiagnostics.Select (dd => dd.Id).ToImmutableArray ();
 
-		private static LocalizableString CodeFixTitle => new LocalizableResourceString (nameof (Resources.DynamicallyAccessedMembersCodeFixTitle), Resources.ResourceManager, typeof (Resources));
+		private static LocalizableResourceString CodeFixTitle => new LocalizableResourceString (nameof (Resources.DynamicallyAccessedMembersCodeFixTitle), Resources.ResourceManager, typeof (Resources));
 
 		private static string FullyQualifiedAttributeName => DynamicallyAccessedMembersAnalyzer.FullyQualifiedDynamicallyAccessedMembersAttribute;
 
 		private static readonly string[] AttributeOnReturn = {
 			DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter.AsString (),
-			DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType.AsString() ,
+			DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType.AsString(),
 			DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField.AsString (),
-			DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter.AsString () ,
+			DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter.AsString (),
 			DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides.AsString ()
 		};
 
 		private static readonly string[] AttributeOnGeneric = {
 			DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter.AsString(),
-			DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType.AsString () ,
+			DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType.AsString (),
 			DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField.AsString(),
 			DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter.AsString(),
 			DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter.AsString(),

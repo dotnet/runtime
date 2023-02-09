@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else if (resolver is CombiningJsonTypeInfoResolver nested)
                 {
-                    flattenedResolvers.AddRange(nested._resolvers);
+                    flattenedResolvers.AddRange(nested.Resolvers);
                 }
                 else
                 {
@@ -55,16 +55,16 @@ namespace System.Text.Json.Serialization.Metadata
                 : new CombiningJsonTypeInfoResolver(flattenedResolvers.ToArray());
         }
 
-        private sealed class CombiningJsonTypeInfoResolver : IJsonTypeInfoResolver
+        internal sealed class CombiningJsonTypeInfoResolver : IJsonTypeInfoResolver
         {
-            internal readonly IJsonTypeInfoResolver[] _resolvers;
+            internal IJsonTypeInfoResolver[] Resolvers { get; }
 
             public CombiningJsonTypeInfoResolver(IJsonTypeInfoResolver[] resolvers)
-                => _resolvers = resolvers;
+                => Resolvers = resolvers;
 
             public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
             {
-                foreach (IJsonTypeInfoResolver resolver in _resolvers)
+                foreach (IJsonTypeInfoResolver resolver in Resolvers)
                 {
                     JsonTypeInfo? typeInfo = resolver.GetTypeInfo(type, options);
                     if (typeInfo != null)

@@ -227,10 +227,7 @@ namespace Microsoft.Extensions.Hosting
         internal static void AddDefaultHostConfigurationSources(IConfigurationBuilder hostConfigBuilder, string[]? args)
         {
             hostConfigBuilder.AddEnvironmentVariables(prefix: "DOTNET_");
-            if (args is { Length: > 0 })
-            {
-                hostConfigBuilder.AddCommandLine(args);
-            }
+            AddCommandLineConfig(hostConfigBuilder, args);
         }
 
         internal static void ApplyDefaultAppConfiguration(HostBuilderContext hostingContext, IConfigurationBuilder appConfigBuilder, string[]? args)
@@ -256,13 +253,18 @@ namespace Microsoft.Extensions.Hosting
 
             appConfigBuilder.AddEnvironmentVariables();
 
-            if (args is { Length: > 0 })
-            {
-                appConfigBuilder.AddCommandLine(args);
-            }
+            AddCommandLineConfig(appConfigBuilder, args);
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Calling IConfiguration.GetValue is safe when the T is bool.")]
             static bool GetReloadConfigOnChangeValue(HostBuilderContext hostingContext) => hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+        }
+
+        internal static void AddCommandLineConfig(IConfigurationBuilder configBuilder, string[]? args)
+        {
+            if (args is { Length: > 0 })
+            {
+                configBuilder.AddCommandLine(args);
+            }
         }
 
         internal static void AddDefaultServices(HostBuilderContext hostingContext, IServiceCollection services)

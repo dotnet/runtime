@@ -27,7 +27,6 @@ set(COMMON_RUNTIME_SOURCES
     RestrictedCallouts.cpp
     RhConfig.cpp
     RuntimeInstance.cpp
-    RWLock.cpp
     StackFrameIterator.cpp
     startup.cpp
     stressLog.cpp
@@ -208,6 +207,14 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  set(FEATURE_PERFTRACING 1)
+endif()
+
+if(FEATURE_PERFTRACING)
+  add_definitions(-DFEATURE_PERFTRACING)
+endif()
+
 add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CONSERVATIVE_GC)
 add_definitions(-DFEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP)
@@ -262,6 +269,10 @@ if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_subdirectory(Full)
 else()
   add_subdirectory(Portable)
+endif()
+
+if(FEATURE_PERFTRACING)
+  add_subdirectory(eventpipe)
 endif()
 
 if (CLR_CMAKE_TARGET_UNIX)

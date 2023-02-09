@@ -12,7 +12,7 @@ RUN ./build.sh clr+libs -runtimeconfiguration Release -configuration $CONFIGURAT
 
 FROM $SDK_BASE_IMAGE as target
 
-ARG VERSION=7.0
+ARG VERSION=8.0
 ARG CONFIGURATION=Release
 ENV _DOTNET_INSTALL_CHANNEL="$VERSION.1xx"
 

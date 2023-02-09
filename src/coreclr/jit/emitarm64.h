@@ -70,6 +70,17 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
                                emitAttr         secondRetSize);
 
 /************************************************************************/
+/*   enum to allow instruction optimisation to specify register order   */
+/************************************************************************/
+
+enum RegisterOrder
+{
+    eRO_none = 0,
+    eRO_ascending,
+    eRO_descending
+};
+
+/************************************************************************/
 /*               Private helpers for instruction output                 */
 /************************************************************************/
 
@@ -82,6 +93,7 @@ bool emitInsIsVectorRightShift(instruction ins);
 bool emitInsIsVectorLong(instruction ins);
 bool emitInsIsVectorNarrow(instruction ins);
 bool emitInsIsVectorWide(instruction ins);
+bool emitInsDestIsOp2(instruction ins);
 emitAttr emitInsTargetRegSize(instrDesc* id);
 emitAttr emitInsLoadStoreSize(instrDesc* id);
 
@@ -111,7 +123,49 @@ static UINT64 Replicate_helper(UINT64 value, unsigned width, emitAttr size);
 // If yes, the caller of this method can choose to omit current mov instruction.
 static bool IsMovInstruction(instruction ins);
 bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
+
+// Methods to optimize a Ldr or Str with an alternative instruction.
 bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+RegisterOrder IsOptimizableLdrStrWithPair(
+    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+bool ReplaceLdrStrWithPairInstr(
+    instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+
+// Try to optimize a Ldr or Str with an alternative instruction.
+inline bool OptimizeLdrStr(instruction ins,
+                           emitAttr    reg1Attr,
+                           regNumber   reg1,
+                           regNumber   reg2,
+                           ssize_t     imm,
+                           emitAttr    size,
+                           insFormat   fmt,
+                           bool        localVar = false,
+                           int         varx     = 0,
+                           int         offs     = 0)
+{
+    assert(ins == INS_ldr || ins == INS_str);
+
+    if (!emitCanPeepholeLastIns())
+    {
+        return false;
+    }
+
+    // Is the ldr/str even necessary?
+    if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    {
+        return true;
+    }
+
+    // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
+    // Don't do this if either instruction had a local variable.
+    if ((emitLastIns->idIns() == ins) && !localVar && !emitLastIns->idIsLclVar() &&
+        ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
+    {
+        return true;
+    }
+
+    return false;
+}
 
 /************************************************************************
 *

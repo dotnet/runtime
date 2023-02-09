@@ -23,9 +23,12 @@
 
 #define INTERP_LOCAL_FLAG_UNKNOWN_USE 32
 #define INTERP_LOCAL_FLAG_LOCAL_ONLY 64
+// We use this flag to avoid addition of align field in InterpLocal, for now
+#define INTERP_LOCAL_FLAG_SIMD 128
 
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;
+typedef struct _InterpCallInfo InterpCallInfo;
 
 typedef struct
 {
@@ -82,10 +85,7 @@ struct _InterpInst {
 	union {
 		InterpBasicBlock *target_bb;
 		InterpBasicBlock **target_bb_table;
-		// For call instructions, this represents an array of all call arg vars
-		// in the order they are pushed to the stack. This makes it easy to find
-		// all source vars for these types of opcodes. This is terminated with -1.
-		int *call_args;
+		InterpCallInfo *call_info;
 	} info;
 	// Variable data immediately following the dreg/sreg information. This is represented exactly
 	// in the final code stream as in this array.
@@ -142,6 +142,20 @@ struct _InterpBasicBlock {
 	// used by jiterpreter
 	int backwards_branch_target: 1;
 	int contains_call_instruction: 1;
+};
+
+struct _InterpCallInfo {
+	// For call instructions, this represents an array of all call arg vars
+	// in the order they are pushed to the stack. This makes it easy to find
+	// all source vars for these types of opcodes. This is terminated with -1.
+	int *call_args;
+	int call_offset;
+	union {
+		// Array of call dependencies that need to be resolved before
+		GSList *call_deps;
+		// Stack end offset of call arguments
+		int call_end_offset;
+	};
 };
 
 typedef enum {

@@ -469,8 +469,11 @@ ovr_tag_from_mono_vector_class (MonoClass *klass) {
 	case 16: ret |= INTRIN_vector128; break;
 	}
 
-	if (!strcmp ("Vector4", m_class_get_name (klass)) || !strcmp ("Vector2", m_class_get_name (klass)))
+	const char *class_name = m_class_get_name (klass);
+	if (!strcmp ("Vector2", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Quaternion", class_name) || !strcmp ("Plane", class_name)) {
+		// FIXME: Support Vector3
 		return ret | INTRIN_float32;
+	}
 
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	switch (etype->type) {
@@ -608,6 +611,12 @@ create_address (MonoLLVMModule *module, LLVMValueRef value, LLVMTypeRef type)
 	return res;
 }
 
+static void
+address_free (gpointer addr)
+{
+	g_free (addr);
+}
+
 typedef struct {
 	int32_t size;
 	uint32_t align;
@@ -644,7 +653,7 @@ simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 		return LLVMVectorType (LLVMFloatType (), 4);
 	} else if (!strcmp (klass_name, "Vector3")) {
 		return LLVMVectorType (LLVMFloatType (), 4);
-	} else if (!strcmp (klass_name, "Vector4")) {
+	} else if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
 		return LLVMVectorType (LLVMFloatType (), 4);
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
@@ -9824,6 +9833,37 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (LLVMTypeOf (lhs)), shuffle_val, "");
 			break;
 		}
+		case OP_WASM_EXTRACT_NARROW: {
+			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			int bytes = 16 / (nelems * 2);
+			LLVMTypeRef itype;
+
+			switch(nelems) {
+				case 2:
+					itype = i4_t;
+					break;
+				case 4:
+					itype = i2_t;
+					break;
+				case 8:
+					itype = i1_t;
+					break;
+				default:
+					g_assert_not_reached();
+			}
+
+			LLVMValueRef mask = LLVMConstNull (LLVMVectorType (i1_t, 16));
+			for (int i = 0; i < nelems; ++i) {
+				for (int j = 0; j < bytes; ++j) {
+					mask = LLVMBuildInsertElement (builder, mask, const_int8 (i * bytes * 2 + j), const_int32 (i * bytes + j), "");
+					mask = LLVMBuildInsertElement (builder, mask, const_int8 (16 + i * bytes * 2 + j), const_int32 (8 + i * bytes + j), "");
+				}
+			}
+
+			LLVMValueRef shuffle = LLVMBuildShuffleVector (builder, LLVMBuildBitCast (builder, lhs, LLVMVectorType (i1_t, 16), ""), LLVMBuildBitCast (builder, rhs, LLVMVectorType (i1_t, 16), ""), mask, "");
+			values [ins->dreg] = LLVMBuildBitCast (builder, shuffle, LLVMVectorType (itype, nelems * 2), "");
+			break;
+		}
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_XEQUAL: {
@@ -11555,7 +11595,7 @@ MONO_RESTORE_WARNING
 				emit_volatile_store (ctx, ins->dreg);
 #ifdef TARGET_WASM
 			//if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
-			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE)
+			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE && ins->opcode != OP_AOTCONST)
 				emit_gc_pin (ctx, builder, ins->dreg);
 #endif
 		}
@@ -12996,11 +13036,6 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	gboolean llvm_only = (flags & LLVM_MODULE_FLAG_LLVM_ONLY) ? 1 : 0;
 	gboolean interp = (flags & LLVM_MODULE_FLAG_INTERP) ? 1 : 0;
 
-	/* Delete previous module */
-	g_hash_table_destroy (module->plt_entries);
-	if (module->lmodule)
-		LLVMDisposeModule (module->lmodule);
-
 	memset (module, 0, sizeof (aot_module));
 
 	module->lmodule = LLVMModuleCreateWithName ("aot");
@@ -13019,7 +13054,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->max_got_offset = initial_got_size;
 	module->context = LLVMGetGlobalContext ();
 	module->cfgs = g_ptr_array_new ();
-	module->aotconst_vars = g_hash_table_new (NULL, NULL);
+	module->aotconst_vars = g_hash_table_new_full (NULL, NULL, NULL, address_free);
 	module->llvm_types = g_hash_table_new (NULL, NULL);
 	module->plt_entries = g_hash_table_new (g_str_hash, g_str_equal);
 	module->plt_entries_ji = g_hash_table_new (NULL, NULL);
@@ -13139,6 +13174,29 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		LLVMSetLinkage (module->sentinel_exception, LLVMExternalLinkage);
 		mono_llvm_set_is_constant (module->sentinel_exception);
 	}
+}
+
+void
+mono_llvm_free_aot_module (void)
+{
+	MonoLLVMModule *module = &aot_module;
+
+	if (module->lmodule)
+		LLVMDisposeModule (module->lmodule);
+
+	g_hash_table_destroy (module->aotconst_vars);
+	g_hash_table_destroy (module->llvm_types);
+	g_hash_table_destroy (module->plt_entries);
+	g_hash_table_destroy (module->plt_entries_ji);
+	g_hash_table_destroy (module->direct_callables);
+	g_hash_table_destroy (module->idx_to_lmethod);
+	g_hash_table_destroy (module->method_to_lmethod);
+	g_hash_table_destroy (module->method_to_call_info);
+	g_hash_table_destroy (module->idx_to_unbox_tramp);
+	g_hash_table_destroy (module->no_method_table_lmethods);
+
+	g_ptr_array_free (module->cfgs, TRUE);
+	g_ptr_array_free (module->callsite_list, TRUE);
 }
 
 void
