@@ -919,11 +919,12 @@ namespace System.Collections
                 intCount--;
             }
 
-            const int allSetInt = -1; // 0xFF_FF_FF_FF
-            if (m_array.AsSpan(0, intCount).IndexOfAnyExcept(allSetInt) != -1)
+            const int AllSetBits = -1; // 0xFF_FF_FF_FF
+            if (m_array.AsSpan(0, intCount).IndexOfAnyExcept(AllSetBits) >= 0)
             {
                 return false;
             }
+
             if (extraBits == 0)
             {
                 return true;
@@ -945,10 +946,11 @@ namespace System.Collections
                 intCount--;
             }
 
-            if (m_array.AsSpan(0, intCount).IndexOfAnyExcept(0) != -1)
+            if (m_array.AsSpan(0, intCount).IndexOfAnyExcept(0) >= 0)
             {
                 return true;
             }
+
             if (extraBits == 0)
             {
                 return false;
