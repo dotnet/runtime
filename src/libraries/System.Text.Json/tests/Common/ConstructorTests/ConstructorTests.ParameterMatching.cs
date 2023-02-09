@@ -368,7 +368,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("defaultStr", result.String);
         }
 
-            [Fact]
+        [Fact]
         public async Task NumerousSimpleAndComplexParameters()
         {
             var obj = await Serializer.DeserializeWrapper<ObjWCtorMixedParams>(ObjWCtorMixedParams.s_json);
