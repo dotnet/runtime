@@ -847,27 +847,6 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         //   public void WriteAllText(string file, string text, bool append) { }
         //   public void WriteAllText(string file, string text, bool append, System.Text.Encoding encoding) { }
 
-        /// <summary>
-        /// The implementation of SpecialDirectories properties ProgramFiles, MyDocuments, etc. relies
-        /// on FileSystem.NormalizePath(). Ensure NormalizePath() handles the root path correctly.
-        /// </summary>
-        [Fact]
-        public void NormalizePath_RootPath()
-        {
-            var path = System.IO.Path.GetPathRoot(TestDirectory);
-            Assert.True(System.IO.Path.IsPathRooted(path));
-
-            // Use reflection to get the internal FileSystem.NormalizePath(string) method.
-            var methodInfo = typeof(FileIO.FileSystem).GetMethod(
-                "NormalizePath",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
-                binder: null,
-                types: new[] { typeof(string) },
-                modifiers: null);
-            var normalizedPath = (string)methodInfo.Invoke(null, new[] { path });
-            Assert.Equal(path, normalizedPath);
-        }
-
         private string CreateTestFile(string TestData, string TestFileName, string PathFromBase = null)
         {
             Assert.False(String.IsNullOrEmpty(TestFileName));
@@ -881,5 +860,201 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             WriteFile(TempFileNameWithPath, TestData);
             return TempFileNameWithPath;
         }
+
+        public static IEnumerable<object[]> IsRoot_TestData()
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                yield return new object[] { @"", false };
+                yield return new object[] { @"Documents", false };
+                yield return new object[] { @"C:", true };
+                yield return new object[] { @"C:Documents", false };
+                yield return new object[] { @"C:Documents\", false };
+                yield return new object[] { @"C:\", true };
+                yield return new object[] { @"C:\\", true };
+                yield return new object[] { @"C:\Documents", false };
+                yield return new object[] { @"C:\Documents\", false };
+                yield return new object[] { @"\\server", true };
+                yield return new object[] { @"\\server\", true };
+                yield return new object[] { @"\\server\share", true };
+                yield return new object[] { @"\\server\share\", true };
+                yield return new object[] { @"\\server\share\Documents", false };
+                yield return new object[] { @"\\server\share\Documents\", false };
+                yield return new object[] { @"Documents\", false };
+                yield return new object[] { @"\Documents", false };
+                yield return new object[] { @"\Documents\", false };
+            }
+
+            if (PlatformDetection.IsWindows && PlatformDetection.IsNetCore)
+            {
+                yield return new object[] { @"\", false };
+                yield return new object[] { @"\\", false };
+                yield return new object[] { @"C:Documents/", false };
+                yield return new object[] { @"C:/", true };
+                yield return new object[] { @"C://", true };
+                yield return new object[] { @"C:/Documents", false };
+                yield return new object[] { @"C:/Documents/", false };
+                yield return new object[] { @"/", false };
+                yield return new object[] { @"//", false };
+                yield return new object[] { @"//server", false }; // IsRoot() compares "//server" to "\\server" and returns false. Is that expected?
+                yield return new object[] { @"//server/", false }; // IsRoot() compares "//server" to "\\server" and returns false. Is that expected?
+                yield return new object[] { @"//server/share", false }; // IsRoot() compares "//server/share" to "\\server\share" and returns false. Is that expected?
+                yield return new object[] { @"//server/share/", false }; // IsRoot() compares "//server/share" to "\\server\share" and returns false. Is that expected?
+                yield return new object[] { @"//server/share/Documents", false };
+                yield return new object[] { @"//server/share/Documents/", false };
+                yield return new object[] { @"Documents/", false };
+                yield return new object[] { @"/Documents", false };
+                yield return new object[] { @"/Documents/", false };
+            }
+
+            if (!PlatformDetection.IsWindows)
+            {
+                yield return new object[] { @"", false };
+                yield return new object[] { @"/", false };
+                yield return new object[] { @"//", false };
+                yield return new object[] { @"Documents", false };
+                yield return new object[] { @"Documents/", false };
+                yield return new object[] { @"/Documents", false };
+                yield return new object[] { @"/Documents/", false };
+                yield return new object[] { @"A/B", false };
+                yield return new object[] { @"A/B/", false };
+                yield return new object[] { @"/A/B", false };
+                yield return new object[] { @"/A/B/", false };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(IsRoot_TestData))]
+        public void IsRoot(string path, bool expectedResult)
+        {
+            // Use reflection to invoke the internal FileSystem method.
+            var methodInfo = typeof(FileIO.FileSystem).GetMethod(
+                "IsRoot",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+                binder: null,
+                types: new[] { typeof(string) },
+                modifiers: null);
+            bool actualResult = (bool)methodInfo.Invoke(null, new[] { path });
+            Assert.Equal(expectedResult, actualResult);
+        }
+
+        // FileSystem.IsOnSameDrive() expects fully-qualified paths.
+        public static IEnumerable<object[]> IsOnSameDrive_TestData()
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                yield return new object[] { @"a:\", @"b:\", false };
+                yield return new object[] { @"c:\", @"C:\", true };
+                yield return new object[] { @"c:\", @"C:\Documents\B", false }; // IsOnSameDrive() determines the root paths are "c:" and "C:\" and treats the drives as distinct. Not ideal, but IsOnSameDrive() is only used as an optimization.
+                yield return new object[] { @"c:\documents\a", @"C:\", false }; // IsOnSameDrive() determines the root paths are "c:\" and "C:" and treats the drives as distinct. Not ideal, but IsOnSameDrive() is only used as an optimization.
+                yield return new object[] { @"c:\documents\a", @"C:\Documents\B", true };
+                yield return new object[] { @"\\A1\A2", @"\\A1\B2", false };
+                yield return new object[] { @"\\A1\A2", @"\\a1\a2", true };
+                yield return new object[] { @"\\A1\A2", @"\\a1\a2\b3", true };
+                yield return new object[] { @"\\A1\A2\A3", @"\\a1\a2", true };
+                yield return new object[] { @"\\A1\A2\A3", @"\\a1\a2\b3", true };
+                yield return new object[] { @"\\A1\A2\A3", @"\\a1\b2\a3", false };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(IsOnSameDrive_TestData))]
+        public void IsOnSameDrive(string path1, string path2, bool expectedResult)
+        {
+            // Use reflection to invoke the internal FileSystem method.
+            var methodInfo = typeof(FileIO.FileSystem).GetMethod(
+                "IsOnSameDrive",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+                binder: null,
+                types: new[] { typeof(string), typeof(string) },
+                modifiers: null);
+            bool actualResult = (bool)methodInfo.Invoke(null, new[] { path1, path2 });
+            Assert.Equal(expectedResult, actualResult);
+        }
+
+        // FileSystem.RemoveEndingSeparator() expects a fully-qualified path.
+        public static IEnumerable<object[]> RemoveEndingSeparator_TestData()
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                yield return new object[] { @"C:\", @"C:\" };
+                yield return new object[] { @"C:\Documents", @"C:\Documents" };
+                yield return new object[] { @"C:\Documents\", @"C:\Documents" };
+                yield return new object[] { @"\\server\share", @"\\server\share" };
+                yield return new object[] { @"\\server\share\", @"\\server\share" };
+                yield return new object[] { @"\\server\share\Documents", @"\\server\share\Documents" };
+                yield return new object[] { @"\\server\share\Documents\", @"\\server\share\Documents" };
+            }
+
+            if (PlatformDetection.IsWindows && PlatformDetection.IsNetCore)
+            {
+                yield return new object[] { @"C:/", @"C:" }; // RemoveEndingSeparator() compares "C:/" to "C:\" and determines this is not a root path. Is that expected?
+                yield return new object[] { @"C:/Documents", @"C:/Documents" };
+                yield return new object[] { @"C:/Documents/", @"C:/Documents" };
+                yield return new object[] { @"//server/share", @"//server/share" };
+                yield return new object[] { @"//server/share/", @"//server/share" };
+                yield return new object[] { @"//server/share/Documents", @"//server/share/Documents" };
+                yield return new object[] { @"//server/share/Documents/", @"//server/share/Documents" };
+            }
+
+            if (!PlatformDetection.IsWindows)
+            {
+                yield return new object[] { @"/", @"/" };
+                yield return new object[] { @"//", @"//" };
+                yield return new object[] { @"/Documents", @"/Documents" };
+                yield return new object[] { @"/Documents/", @"/Documents" };
+                yield return new object[] { @"/Documents/A//", @"/Documents/A" };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(RemoveEndingSeparator_TestData))]
+        public void RemoveEndingSeparator(string path, string expectedResult)
+        {
+            // Use reflection to invoke the internal FileSystem method.
+            var methodInfo = typeof(FileIO.FileSystem).GetMethod(
+                "RemoveEndingSeparator",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+                binder: null,
+                types: new[] { typeof(string) },
+                modifiers: null);
+            string actualResult = (string)methodInfo.Invoke(null, new[] { path });
+            Assert.Equal(expectedResult, actualResult);
+        }
+
+        /// <summary>
+        /// The implementation of SpecialDirectories properties ProgramFiles, MyDocuments, etc. relies
+        /// on FileSystem.NormalizePath(). Ensure NormalizePath() handles the root path correctly.
+        /// </summary>
+        [Fact]
+        public void NormalizePath_RootPath()
+        {
+            var rootPath = System.IO.Path.GetPathRoot(System.IO.Directory.GetCurrentDirectory());
+
+            Assert.Equal(rootPath, InvokeNormalizePath(rootPath));
+            Assert.Equal(rootPath, InvokeNormalizePath("" + System.IO.Path.DirectorySeparatorChar));
+
+            if (PlatformDetection.IsWindows && PlatformDetection.IsNetCore)
+            {
+                Assert.Equal(rootPath, InvokeNormalizePath("" + System.IO.Path.AltDirectorySeparatorChar));
+            }
+
+            // Use reflection to invoke the internal FileSystem method.
+            static string InvokeNormalizePath(string path)
+            {
+                var methodInfo = typeof(FileIO.FileSystem).GetMethod(
+                    "NormalizePath",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+                    binder: null,
+                    types: new[] { typeof(string) },
+                    modifiers: null);
+                return (string)methodInfo.Invoke(null, new[] { path });
+            }
+        }
+
+        // TODO:
+        // GetParentPath() is a public method. Expand to test edge cases.
+        // IsOnSameDrive(): why does this need to call TrimEnd() at all?
+        // IsRoot(): "accepts a relative path since GetParentPath will call this"(!) Change GetParentPath() to check IO.Path.IsPathRooted() instead?
     }
 }

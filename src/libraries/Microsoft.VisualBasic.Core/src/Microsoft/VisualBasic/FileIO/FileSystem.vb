@@ -964,6 +964,8 @@ Namespace Microsoft.VisualBasic.FileIO
             Debug.Assert(System.Enum.IsDefined(GetType(CopyOrMove), operation), "Invalid Operation")
             Debug.Assert(sourceDirectoryPath <> "" And IO.Path.IsPathRooted(sourceDirectoryPath), "Invalid Source")
             Debug.Assert(targetDirectoryPath <> "" And IO.Path.IsPathRooted(targetDirectoryPath), "Invalid Target")
+            Debug.Assert(IO.Path.IsPathFullyQualified(sourceDirectoryPath), "Invalid Source")
+            Debug.Assert(IO.Path.IsPathFullyQualified(targetDirectoryPath), "Invalid Target")
 
             ' Special case for moving: If target directory does not exist, AND both directories are on same drive,
             '   use IO.Directory.Move for performance gain (not copying).
@@ -1568,6 +1570,8 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <returns>If Path is a root path, the same value. Otherwise, removes any directory separators at the end.</returns>
         ''' <remarks>We decided not to return path with separators at the end.</remarks>
         Private Shared Function RemoveEndingSeparator(ByVal Path As String) As String
+            Debug.Assert(IO.Path.IsPathFullyQualified(Path))
+
             If IO.Path.IsPathRooted(Path) Then
                 ' If the path is rooted, attempt to check if it is a root path.
                 ' Note: IO.Path.GetPathRoot: C: -> C:, C:\ -> C:\, \\myshare\mydir -> \\myshare\mydir
