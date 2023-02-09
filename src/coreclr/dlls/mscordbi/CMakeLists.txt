@@ -90,7 +90,7 @@ if(CLR_CMAKE_HOST_WIN32)
         ${STATIC_MT_VCRT_LIB}
     )
 
-    target_link_libraries(mscordbi ${COREDBI_LIBRARIES})
+    target_link_libraries(mscordbi PRIVATE ${COREDBI_LIBRARIES})
 
 elseif(CLR_CMAKE_HOST_UNIX)
 
@@ -100,7 +100,7 @@ elseif(CLR_CMAKE_HOST_UNIX)
         mscordaccore
     )
 
-    target_link_libraries(mscordbi ${COREDBI_LIBRARIES})
+    target_link_libraries(mscordbi PRIVATE ${COREDBI_LIBRARIES})
 
     add_dependencies(mscordbi mscordaccore)
 

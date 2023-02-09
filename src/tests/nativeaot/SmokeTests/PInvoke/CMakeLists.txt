@@ -8,7 +8,7 @@ if(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 add_library (PInvokeNative SHARED PInvokeNative.cpp)
-target_link_libraries(PInvokeNative ${LINK_LIBRARIES_ADDITIONAL})
+target_link_libraries(PInvokeNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets
 install (TARGETS PInvokeNative DESTINATION bin)

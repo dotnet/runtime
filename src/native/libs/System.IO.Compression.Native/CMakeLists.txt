@@ -60,6 +60,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         )
 
         target_link_libraries(System.IO.Compression.Native
+            PRIVATE
             ${NATIVE_LIBS_EXTRA}
         )
 
@@ -142,17 +143,6 @@ else ()
             ${NATIVECOMPRESSION_SOURCES}
         )
         target_compile_options(System.IO.Compression.Native.Aot.GuardCF PRIVATE /GL-)
-    endif()
-
-    # Allow specification of libraries that should be linked against
-    if (GEN_SHARED_LIB)
-        target_link_libraries(System.IO.Compression.Native ${__LinkLibraries})
-    endif ()
-    target_link_libraries(System.IO.Compression.Native-Static ${__LinkLibraries})
-
-    if(STATIC_LIBS_ONLY)
-        target_link_libraries(System.IO.Compression.Native.Aot ${__LinkLibraries})
-        target_link_libraries(System.IO.Compression.Native.Aot.GuardCF ${__LinkLibraries})
     endif()
 
     if (GEN_SHARED_LIB)

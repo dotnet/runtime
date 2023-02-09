@@ -10,7 +10,7 @@ endif()
 
 # add the shared library
 add_library (COMNativeServer SHARED ${SOURCES})
-target_link_libraries(COMNativeServer ${LINK_LIBRARIES_ADDITIONAL})
+target_link_libraries(COMNativeServer PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # Copy manifest file to project output
 file(GENERATE OUTPUT $<TARGET_FILE_DIR:${PROJECT_NAME}>/COMNativeServer.X.manifest INPUT ${CMAKE_CURRENT_SOURCE_DIR}/COMNativeServer.X.manifest)

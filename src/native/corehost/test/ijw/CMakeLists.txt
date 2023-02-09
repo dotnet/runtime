@@ -9,7 +9,7 @@ set(SOURCES
 include(${CLR_ENG_NATIVE_DIR}/ijw/IJW.cmake)
 
 add_library(ijw SHARED ${SOURCES})
-target_link_libraries(ijw ${LINK_LIBRARIES_ADDITIONAL})
+target_link_libraries(ijw PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 remove_ijw_incompatible_target_options(ijw)
 

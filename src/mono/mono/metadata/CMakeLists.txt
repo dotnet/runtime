@@ -3,7 +3,7 @@
 #
 if(DISABLE_ICALL_TABLES)
 add_library(mono-icall-table STATIC "../metadata/icall-table.c")
-target_link_libraries(mono-icall-table monoapi)
+target_link_libraries(mono-icall-table PUBLIC monoapi)
 install(TARGETS mono-icall-table LIBRARY)
 else()
 set(icall_table_sources "icall-table.c")

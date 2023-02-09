@@ -13,6 +13,7 @@ add_library_clr(CoreShim
 )
 
 target_link_libraries(CoreShim
+    PRIVATE
     utilcodestaticnohost
     advapi32.lib
     oleaut32.lib

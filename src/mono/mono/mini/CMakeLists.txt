@@ -297,7 +297,7 @@ endif()
 
 if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
-target_link_libraries(mono-ee-interp monoapi)
+target_link_libraries(mono-ee-interp PRIVATE monoapi)
 install(TARGETS mono-ee-interp LIBRARY)
 if(HOST_WASM AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 # Always optimize the interpreter, even in Debug builds.  Unoptimized interp_exec_method and
@@ -413,7 +413,7 @@ if(NOT DISABLE_SHARED_LIBS)
   install(TARGETS monosgen-shared LIBRARY)
   if(HOST_WIN32 AND TARGET_AMD64)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
-    target_link_libraries(monosgen-shared-dac monoapi)
+    target_link_libraries(monosgen-shared-dac PRIVATE monoapi)
     set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME}-dac)
   endif()
 

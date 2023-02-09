@@ -10,7 +10,7 @@ set(SOURCES NativeObjCMarshalTests.cpp)
 
 # add the shared library
 add_library (NativeObjCMarshalTests SHARED ${SOURCES})
-target_link_libraries(NativeObjCMarshalTests ${LINK_LIBRARIES_ADDITIONAL})
+target_link_libraries(NativeObjCMarshalTests PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets
 install (TARGETS NativeObjCMarshalTests DESTINATION bin)

@@ -233,6 +233,7 @@ set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
 target_link_libraries(
     singlefilehost
+    PRIVATE
     ${NATIVE_LIBS}
 
     ${START_WHOLE_ARCHIVE}
