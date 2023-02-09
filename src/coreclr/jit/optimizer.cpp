@@ -5236,8 +5236,12 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 #ifdef DEBUG
         // Verify profile for the two target blocks is consistent.
         //
-        fgDebugCheckIncomingProfileData(bNewCond->bbNext);
-        fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest);
+        const bool profileOk =
+            fgDebugCheckIncomingProfileData(bNewCond->bbNext) && fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest);
+        if ((JitConfig.JitProfileChecks() & 0x4) == 0x4)
+        {
+            assert(profileOk);
+        }
 #endif // DEBUG
     }
 
