@@ -2370,7 +2370,7 @@ private:
                 case ID_OP_CALL:
 #if !defined(TARGET_ARM64)
                 case ID_OP_LBL:
-#endif // !TARGET_AMD64
+#endif // !TARGET_ARM64
                     return;
 
                 default:
