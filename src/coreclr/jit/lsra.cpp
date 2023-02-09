@@ -11095,7 +11095,6 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     relatedLastLocation = rangeEndLocation;
     preferCalleeSave    = currentInterval->preferCalleeSave;
     lastRefPosition     = currentInterval->lastRefPosition;
-    lastLocation        = MinLocation;
     prevRegRec          = currentInterval->assignedReg;
 
     // These are used in the post-selection updates, and must be set for any selection.
