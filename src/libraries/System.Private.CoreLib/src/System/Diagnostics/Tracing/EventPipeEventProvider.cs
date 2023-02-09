@@ -31,6 +31,9 @@ namespace System.Diagnostics.Tracing
                     id = BitConverter.ToUInt64(new ReadOnlySpan<byte>(additionalData, sizeof(ulong)));
                 }
 
+                // EventPipe issues Interop.Advapi32.EVENT_CONTROL_CODE_ENABLE_PROVIDER if a session
+                // is stopping as long as some other session is still enabled. If the session is stopping
+                // the session ID will be null, if it is a session starting it will be a non-zero value
                 bool bEnabling = id != 0;
 
                 IDictionary<string, string?>? args = null;
@@ -41,6 +44,8 @@ namespace System.Diagnostics.Tracing
                     args = ParseFilterData(0 /*etwSessionId*/, filterData, out command);
                 }
 
+                // If the sessionId argument is positive it will be sent to the EventSource as an Enable,
+                // and if it is negative it will be sent as a disable. See EventSource.DoCommand()
                 target.OnControllerCommand(command, args, bEnabling ? 1 : -1, 0);
         }
 

@@ -807,6 +807,8 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // execute OnControllerCommand once for every session that has changed.
+                // If the sessionId argument is positive it will be sent to the EventSource as an Enable,
+                // and if it is negative it will be sent as a disable. See EventSource.DoCommand()
                 target.OnControllerCommand(command, args, bEnabling ? sessionChanged : -sessionChanged, etwSessionId);
             }
         }
