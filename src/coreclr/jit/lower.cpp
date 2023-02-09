@@ -145,7 +145,7 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 //
 // Returns:
 //    True if 'node' can be evaluated at any point between its current
-//    location and 'parentNode' without giving a different result; otherwise
+//    location and 'endExclusive' without giving a different result; otherwise
 //    false.
 //
 bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
@@ -182,7 +182,7 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 // Arguments:
 //    node         - The node.
 //    endExclusive - The exclusive end of the range to check invariance for.
-//    ignoreNode   - The node to ignore interference checks with, for example
+//    ignoreNode   - A node to ignore interference checks with, for example
 //                   because it will retain its relative order with 'node'.
 //
 // Returns:
@@ -273,7 +273,8 @@ bool Lowering::IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode,
 //       is interference between it and its parent; the indirection will still
 //       be evaluated at its original position, but if the value is spilled to
 //       stack, then reg-optionality can allow using the value from the spill
-//       location directly.
+//       location directly. Similarly, GT_LCL_FLD nodes are never register
+//       candidates and can be handled the same way.
 //
 //    2. For GT_LCL_VAR reg-optionality indicates that the node can use the
 //       local directly from its home location. IR invariants guarantee that the
@@ -286,7 +287,7 @@ bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) 
 {
     if (!childNode->OperIs(GT_LCL_VAR))
     {
-        // LIR edges never interfere.
+        // LIR edges never interfere. This includes GT_LCL_FLD, see the remarks above.
         return true;
     }
 
