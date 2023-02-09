@@ -41131,7 +41131,7 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     {
 #ifdef MULTIPLE_HEAPS
         // In return_free_region, we set heap_segment_heap (region) to nullptr so we cannot use it here.
-        // but since all heaps share the same mark array we simply pick the 0th heap to use.
+        // but since all heaps share the same mark array we simply pick the 0th heap to use. 
         gc_heap* hp = g_heaps [0];
 #else
         gc_heap* hp = pGenGCHeap;
@@ -45462,8 +45462,8 @@ HRESULT GCHeap::Initialize()
     gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
 
-    // Constraining the size of region size to be < 2 GB.
-    if (gc_region_size >= MAX_REGION_SIZE)
+    // Constraining the size of region size to be < 2 GB.       
+    if (gc_region_size >= MAX_REGION_SIZE) 
     {
         return CLR_E_GC_BAD_REGION_SIZE;
     }
