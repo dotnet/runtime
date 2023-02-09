@@ -609,15 +609,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                 return PEEPHOLE_ABORT;
             }
 
-            case IF_LABEL:
-            case IF_RWR_LABEL:
-            case IF_SWR_LABEL:
-            case IF_METHOD:
-            case IF_METHPTR:
-            {
-                return PEEPHOLE_ABORT;
-            }
-
             default:
             {
                 return PEEPHOLE_CONTINUE;

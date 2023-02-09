@@ -2286,6 +2286,10 @@ private:
 
 #define EMIT_MAX_IG_INS_COUNT 256
 
+#if EMIT_BACKWARDS_NAVIGATION
+#define EMIT_MAX_PEEPHOLE_INS_COUNT 32
+#endif // EMIT_BACKWARDS_NAVIGATION
+
     instrDesc* emitLastIns;
     insGroup*  emitLastInsIG;
 
@@ -2300,6 +2304,7 @@ private:
 
     instrDesc* emitGetLastIns() const
     {
+        assert(emitLastIns == emitLastInsIG->igLastIns);
         return emitLastIns;
     }
 
@@ -2310,6 +2315,8 @@ private:
     // The final check prevents looking across an IG boundary unless we're in an extension IG.
     bool emitCanPeepholeLastIns() const
     {
+        assert((emitLastIns != nullptr) == (emitLastInsIG != nullptr));
+
         return emitHasLastIns() &&                           // there is an emitLastInstr
                !emitForceNewIG &&                            // and we're not about to start a new IG
                ((emitCurIGinsCnt > 0) ||                     // and we're not at the start of a new IG
@@ -2333,23 +2340,57 @@ private:
     {
         assert(emitCanPeepholeLastIns());
 
-        //for (unsigned i = 0; i < min(emitCurLastInsCnt, EMIT_MAX_LAST_INS_COUNT); i++)
-        //{
-        //    instrDesc* id = emitLastInstrs[(emitCurLastInsCnt - 1 - i) % ArrLen(emitLastInstrs)];
+#if EMIT_BACKWARDS_NAVIGATION
+        insGroup*  ig;
+        instrDesc* id;
 
-        //    assert(id != nullptr);
+        if (!emitGetLastIns(&ig, &id))
+            return;
 
-        //    switch (action(id))
-        //    {
-        //        case PEEPHOLE_ABORT:
-        //            return;
-        //        case PEEPHOLE_CONTINUE:
-        //            continue;
+        for (unsigned i = 0; i < EMIT_MAX_PEEPHOLE_INS_COUNT; i++)
+        {
+            assert(id != nullptr);
 
-        //        default:
-        //            unreached();
-        //    }
-        //}
+            switch (id->idInsFmt())
+            {
+                // We cannot safely look at previous instructions at these boundaries.
+                case IF_LABEL:
+                case IF_RWR_LABEL:
+                case IF_SWR_LABEL:
+                case IF_METHOD:
+                case IF_METHPTR:
+                {
+                    return;
+                }
+            }
+
+            switch (action(id))
+            {
+                case PEEPHOLE_ABORT:
+                    return;
+                case PEEPHOLE_CONTINUE:
+                {
+                    insGroup* prevIg = ig;
+                    if (emitPrevID(ig, id))
+                    {
+                        // When we cross IG boundaries, we need to make sure the previous IG was an extended one,
+                        // and the GC interrupt status were the same on both the previous and current.
+                        if ((prevIg != ig) && ((prevIg->igFlags & IGF_EXTEND) == 0) &&
+                            ((prevIg->igFlags & IGF_NOGCINTERRUPT) == (ig->igFlags & IGF_NOGCINTERRUPT)))
+                            return;
+
+                        continue;
+                    }
+                    return;
+                }
+
+                default:
+                    unreached();
+            }
+        }
+#else  // EMIT_BACKWARDS_NAVIGATION
+        action(emitLastIns);
+#endif // !EMIT_BACKWARDS_NAVIGATION
     }
 
 #ifdef TARGET_ARMARCH
