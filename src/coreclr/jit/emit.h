@@ -2287,7 +2287,7 @@ private:
 #define EMIT_MAX_IG_INS_COUNT 256
 
 #if EMIT_BACKWARDS_NAVIGATION
-#define EMIT_MAX_PEEPHOLE_INS_COUNT 32
+#define EMIT_MAX_PEEPHOLE_INS_COUNT 32 // The max number of previous instructions to navigate through for peepholes.
 #endif // EMIT_BACKWARDS_NAVIGATION
 
     instrDesc* emitLastIns;
@@ -2306,20 +2306,20 @@ private:
     // Checks to see if we can cross between the two given IG boundaries.
     //
     // When we cross IG boundaries, we need to make sure the previous IG was an extended one,
-    // and the GC interrupt status were the same on both the previous and current.
-    inline bool canPeepholeCrossIGBoundaries(insGroup* prevIg, insGroup* ig) const
+    // and the GC interrupt status were the same on both.
+    inline bool canPeepholeCrossIGBoundaries(insGroup* prevIG, insGroup* ig) const
     {
         if (emitCurIG == ig)
         {
             return (((emitCurIGinsCnt > 0) || (ig->igFlags & IGF_EXTEND)) && // We're not at the start of a new
                                                                              // IG or we are at the start of a
                                                                              // new IG, and it's an extension IG.
-                    ((prevIg->igFlags & IGF_NOGCINTERRUPT) == (ig->igFlags & IGF_NOGCINTERRUPT)));
+                    ((prevIG->igFlags & IGF_NOGCINTERRUPT) == (ig->igFlags & IGF_NOGCINTERRUPT)));
         }
-        else if (prevIg != ig)
+        else if (prevIG != ig)
         {
-            return ((prevIg->igFlags & IGF_EXTEND) &&
-                    ((prevIg->igFlags & IGF_NOGCINTERRUPT) == (ig->igFlags & IGF_NOGCINTERRUPT)));
+            return ((prevIG->igFlags & IGF_EXTEND) &&
+                    ((prevIG->igFlags & IGF_NOGCINTERRUPT) == (ig->igFlags & IGF_NOGCINTERRUPT)));
         }
         return true;
     }
@@ -2384,10 +2384,10 @@ private:
                     return;
                 case PEEPHOLE_CONTINUE:
                 {
-                    insGroup* prevIg = ig;
+                    insGroup* prevIG = ig;
                     if (emitPrevID(ig, id))
                     {
-                        if (canPeepholeCrossIGBoundaries(prevIg, ig))
+                        if (canPeepholeCrossIGBoundaries(prevIG, ig))
                         {
                             continue;
                         }
