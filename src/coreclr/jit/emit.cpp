@@ -1247,7 +1247,8 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    emitLastInsIG     = nullptr;
+    emitLastIns   = nullptr;
+    emitLastInsIG = nullptr;
 
 #ifdef TARGET_ARMARCH
     emitLastMemBarrier = nullptr;
