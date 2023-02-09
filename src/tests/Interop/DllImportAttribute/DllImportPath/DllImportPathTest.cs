@@ -174,11 +174,14 @@ class Test
         {
             TestNativeLibraryProbingOnLocalPath();
             TestNativeLibraryProbingOnRelativePath();
-            if (!OperatingSystem.IsMacOS()) // This test fails due to a bug in OSX 10.12 combined with the weird way that HFS+ handles unicode file names
+            if (!OperatingSystem.IsMacOS())
             {
+                // This test fails due to a bug in OSX 10.12 combined with the weird way that HFS+ handles unicode file names
                 TestNativeLibraryProbingUnicode();
+
+                // Propagating LD_LIBRARY_PATH/DYLD_LIBRARY_PATH may blocked on Mac due to System Integrity Protection
+                TestNativeLibraryProbingOnPathEnv();
             }
-            TestNativeLibraryProbingOnPathEnv();
             if (OperatingSystem.IsWindows())
             {
                 TestNativeExeProbing();
