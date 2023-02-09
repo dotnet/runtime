@@ -143,7 +143,7 @@ namespace DebuggerTests
             insp = new Inspector(Id, _testOutput);
             cli = insp.Client;
             scripts = SubscribeToScripts(insp);
-            driver = _driver";
+            driver = _driver;
             startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput);
         }
 
