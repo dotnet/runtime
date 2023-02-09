@@ -151,7 +151,6 @@ namespace DebuggerTests
         {
             var init_cmds = new List<(string, JObject)>
             {
-                ("Profiler.enable", null),
                 ("Runtime.enable", null),
                 ("Debugger.enable", null),
                 ("Runtime.runIfWaitingForDebugger", null),
