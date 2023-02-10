@@ -235,7 +235,7 @@ namespace System.IO
         {
             if (handle.IsAsync)
             {
-                (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = QueueAsyncReadFile(handle, buffer, fileOffset, cancellationToken, strategy);
+                (OverlappedValueTaskSource? vts, int errorCode) = QueueAsyncReadFile(handle, buffer, fileOffset, cancellationToken, strategy);
 
                 if (vts is not null)
                 {
@@ -253,12 +253,12 @@ namespace System.IO
             return ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
         }
 
-        private static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
+        private static unsafe (OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
             CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
-            SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
+            OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
             int errorCode = Interop.Errors.ERROR_SUCCESS;
             try
             {
@@ -317,7 +317,7 @@ namespace System.IO
         {
             if (handle.IsAsync)
             {
-                (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = QueueAsyncWriteFile(handle, buffer, fileOffset, cancellationToken, strategy);
+                (OverlappedValueTaskSource? vts, int errorCode) = QueueAsyncWriteFile(handle, buffer, fileOffset, cancellationToken, strategy);
 
                 if (vts is not null)
                 {
@@ -335,12 +335,12 @@ namespace System.IO
             return ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
         }
 
-        private static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
+        private static unsafe (OverlappedValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
             CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
-            SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
+            OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
             int errorCode = Interop.Errors.ERROR_SUCCESS;
             try
             {
@@ -555,7 +555,7 @@ namespace System.IO
         {
             handle.EnsureThreadPoolBindingInitialized();
 
-            SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
+            OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(Memory<byte>.Empty, fileOffset);
@@ -652,7 +652,7 @@ namespace System.IO
         {
             handle.EnsureThreadPoolBindingInitialized();
 
-            SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
+            OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(ReadOnlyMemory<byte>.Empty, fileOffset);
@@ -673,7 +673,7 @@ namespace System.IO
                     {
                         // Error. Callback will not be invoked.
                         vts.Dispose();
-                        return ValueTask.FromException(SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, path: null));
+                        return ValueTask.FromException(OverlappedValueTaskSource.GetIOError(errorCode, path: null));
                     }
                 }
             }

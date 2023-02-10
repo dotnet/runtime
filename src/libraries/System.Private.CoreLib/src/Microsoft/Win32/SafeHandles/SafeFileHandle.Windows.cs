@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Buffers;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -29,6 +28,32 @@ namespace Microsoft.Win32.SafeHandles
         internal bool CanSeek => !IsClosed && GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
+
+        private OverlappedValueTaskSource? _reusableOverlappedValueTaskSource; // reusable OverlappedValueTaskSource that is currently NOT being used
+
+        // Rent the reusable OverlappedValueTaskSource, or create a new one to use if we couldn't get one (which
+        // should only happen on first use or if the SafeFileHandle is being used concurrently).
+        internal OverlappedValueTaskSource GetOverlappedValueTaskSource() =>
+            Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new OverlappedValueTaskSource(this);
+
+        protected override bool ReleaseHandle()
+        {
+            bool result = Interop.Kernel32.CloseHandle(handle);
+
+            Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null)?.Dispose();
+
+            return result;
+        }
+
+        internal void TryToReuse(OverlappedValueTaskSource source)
+        {
+            source._source.Reset();
+
+            if (Interlocked.CompareExchange(ref _reusableOverlappedValueTaskSource, source, null) is not null)
+            {
+                source._preallocatedOverlapped.Dispose();
+            }
+        }
 
         internal bool TryGetCachedLength(out long cachedLength)
         {
