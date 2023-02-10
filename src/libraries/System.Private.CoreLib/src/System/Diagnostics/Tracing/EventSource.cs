@@ -745,7 +745,7 @@ namespace System.Diagnostics.Tracing
 
                 fixed (byte *pMetadata = metadata)
                 {
-                    IntPtr eventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(
+                    IntPtr eventHandle = m_eventPipeProvider._eventProvider.DefineEventHandle(
                         eventID,
                         eventName,
                         keywords,
@@ -2168,7 +2168,7 @@ namespace System.Diagnostics.Tracing
 
                                     fixed (byte* pMetadata = metadata)
                                     {
-                                        m_writeEventStringEventHandle = m_eventPipeProvider.m_eventProvider.DefineEventHandle(0, eventName, keywords, 0, (uint)level,
+                                        m_writeEventStringEventHandle = m_eventPipeProvider._eventProvider.DefineEventHandle(0, eventName, keywords, 0, (uint)level,
                                                                             pMetadata, metadataLength);
                                     }
                                 }
