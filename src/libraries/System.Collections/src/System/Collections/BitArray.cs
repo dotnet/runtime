@@ -910,6 +910,10 @@ namespace System.Collections
             }
         }
 
+        /// <summary>
+        /// Determines whether all bits in the <see cref="BitArray"/> are set to <c>true</c>.
+        /// </summary>
+        /// <returns><c>true</c> if every bit in the <see cref="BitArray"/> is set to <c>true</c>, or if <see cref="BitArray"/> is empty; otherwise, <c>false</c>.</returns>
         public bool HasAllSet()
         {
             Div32Rem(m_length, out int extraBits);
@@ -937,6 +941,10 @@ namespace System.Collections
             return (m_array[intCount] & mask) == mask;
         }
 
+        /// <summary>
+        /// Determines whether any bit in the <see cref="BitArray"/> is set to <c>true</c>.
+        /// </summary>
+        /// <returns><c>true</c> if <see cref="BitArray"/> is not empty and at least one of its bit is set to <c>true</c>; otherwise, <c>false</c>.</returns>
         public bool HasAnySet()
         {
             Div32Rem(m_length, out int extraBits);
