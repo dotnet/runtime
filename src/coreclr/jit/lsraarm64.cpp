@@ -67,56 +67,112 @@ bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     // Verify that all the consecutive registers needed are free, if not, return false.
     // Need to do this before we set registerAssignment of any of the refPositions that
     // are part of the range.
-    RefPosition* consecutiveRefPosition = firstRefPosition;
-    regNumber    regToAssign            = firstRegAssigned;
-    while (consecutiveRefPosition != nullptr)
+
+    if (!areNextConsecutiveRegistersFree(firstRegAssigned, firstRefPosition->regCount,
+                                        firstRefPosition->getInterval()->registerType))
     {
-        if (isRegInUse(regToAssign, consecutiveRefPosition->getInterval()->registerType))
-        {
-            return false;
-        }
-
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
-        {
-            consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
-            assert(!isRegInUse(regToAssign, consecutiveRefPosition->getInterval()->registerType));
-        }
-#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-
-        consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
-        regToAssign            = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+        return false;
     }
+    
+//    RefPosition* consecutiveRefPosition = firstRefPosition;
+//    regNumber    regToAssign            = firstRegAssigned;
+//    while (consecutiveRefPosition != nullptr)
+//    {
+//        if (isRegInUse(regToAssign, consecutiveRefPosition->getInterval()->registerType))
+//        {
+//            return false;
+//        }
+//
+//#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+//        if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
+//        {
+//            consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+//            
+//            assert(consecutiveRefPosition->refType == RefTypeUse);
+//            assert(!isRegInUse(regToAssign, consecutiveRefPosition->getInterval()->registerType));
+//        }
+//#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+//
+//        consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+//        regToAssign            = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+//    }
 
-    ////
-    consecutiveRefPosition = firstRefPosition;
-    regToAssign            = firstRegAssigned;
+    RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
+    regNumber    regToAssign            = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
     INDEBUG(int refPosCount = 0);
+    regMaskTP busyConsecutiveRegMask = ~(((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
 
     while (consecutiveRefPosition != nullptr)
     {
-        consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
+        if ((consecutiveRefPosition->refType == RefTypeUpperVectorRestore))
         {
-            // For restore refPosition, make sure to have same assignment for it and the next one
-            // which is the use of the variable.
+            if (consecutiveRefPosition->getInterval()->isPartiallySpilled)
+            {
+                // Make sure that restore doesn't get one of the registers that are part of series we are trying to set
+                // currently.
+                consecutiveRefPosition->registerAssignment &= ~busyConsecutiveRegMask;
+            }
             consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
-            assert(consecutiveRefPosition->refType == RefTypeUse);
-            consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
         }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
-        regToAssign            = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+        consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
+        consecutiveRefPosition                     = getNextConsecutiveRefPosition(consecutiveRefPosition);
+        regToAssign                                = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
 
         INDEBUG(refPosCount++);
     }
+
+//    while (consecutiveRefPosition != nullptr)
+//    {
+//        consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
+//#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+//        if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
+//        {
+//            // For restore refPosition, make sure to have same assignment for it and the next one
+//            // which is the use of the variable.
+//            consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+//            consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
+//        }
+//#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+//        consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+//        regToAssign            = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+//
+//        INDEBUG(refPosCount++);
+//    }
 
     assert(refPosCount == firstRefPosition->regCount);
     
     return true;
 }
 
+//------------------------------------------------------------------------
+// areNextConsecutiveRegistersBusy: Starting with `regToAssign`, check if next
+//   `registersToCheck` are free or not.
+//
+// Arguments:
+//      - First refPosition of the series of consecutive registers.
+//    regToAssign     - Register assigned to the first refposition.
+//    registersCount  - Number of registers to check.
+//    registerType    - Type of register.
+//
+//  Returns:
+//      True if all the consecutive registers starting from `regToAssign` were free. Even if one
+//      of them is busy, returns false.
+//
+bool LinearScan::areNextConsecutiveRegistersFree(regNumber regToAssign, int registersCount, var_types registerType)
+{
+    for (int i = 0; i < registersCount; i++)
+    {
+        if (isRegInUse(regToAssign, registerType))
+        {
+            return false;
+        }
+        regToAssign = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+    }
+
+    return true;
+}
 
 regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPosition)
 {

@@ -5289,29 +5289,99 @@ void LinearScan::allocateRegisters()
                 setIntervalAsSplit(currentInterval);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_MOVE_REG, currentInterval, assignedRegister));
             }
-            else if (((genRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0)
-#ifdef TARGET_ARM64
-                     &&  !(hasConsecutiveRegister && currentRefPosition.needsConsecutive)
-#endif
-            )
+            else if (((genRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0))
             {
-                currentRefPosition.registerAssignment = assignedRegBit;
-                if (!currentInterval->isActive)
+#ifdef TARGET_ARM64
+                if (hasConsecutiveRegister && currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
                 {
-                    // If we've got an exposed use at the top of a block, the
-                    // interval might not have been active.  Otherwise if it's a use,
-                    // the interval must be active.
-                    if (refType == RefTypeDummyDef)
+                    if (areNextConsecutiveRegistersFree(assignedRegister, currentRefPosition.regCount,
+                                                        currentRefPosition.getInterval()->registerType))
                     {
-                        currentInterval->isActive = true;
-                        assert(getRegisterRecord(assignedRegister)->assignedInterval == currentInterval);
+                        // Current assignedRegister satisfies the consecutive registers requirements
+                        currentRefPosition.registerAssignment = assignedRegBit;
+                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, currentInterval, assignedRegister));
                     }
                     else
                     {
-                        currentRefPosition.reload = true;
+                        // It doesn't satisfy, so do a copyReg followed by assigning consecutive registers
+                        // to remaining refPosition.
+                        assert((currentRefPosition.refType == RefTypeUse) ||
+                               (currentRefPosition.refType == RefTypeUpperVectorRestore));
+                        regNumber copyReg         = assignCopyReg(&currentRefPosition);
+                        lastAllocatedRefPosition  = &currentRefPosition;
+                        regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
+                        regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
+                        bool consecutiveAssigned  = setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
+                        assert(consecutiveAssigned);
+
+                        // For consecutive register, it doesn't matter what the assigned register was.
+                        // We have just assigned it `copyRegMask` and that's the one in-use, and not the
+                        // one that was assigned previously.
+                        assignedRegMask = REG_NA;
+
+                        regsInUseThisLocation |= copyRegMask | assignedRegMask;
+                        if (currentRefPosition.lastUse)
+                        {
+                            if (currentRefPosition.delayRegFree)
+                            {
+                                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED, currentInterval,
+                                                                assignedRegister));
+                                delayRegsToFree |= copyRegMask | assignedRegMask;
+                                regsInUseNextLocation |= copyRegMask | assignedRegMask;
+                            }
+                            else
+                            {
+                                INDEBUG(
+                                    dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE, currentInterval, assignedRegister));
+                                regsToFree |= copyRegMask | assignedRegMask;
+                            }
+                        }
+                        else
+                        {
+                            copyRegsToFree |= copyRegMask;
+                            if (currentRefPosition.delayRegFree)
+                            {
+                                regsInUseNextLocation |= copyRegMask | assignedRegMask;
+                            }
+                        }
+
+                        // If this is a tree temp (non-localVar) interval, we will need an explicit move.
+                        // Note: In theory a moveReg should cause the Interval to now have the new reg as its
+                        // assigned register. However, that's not currently how this works.
+                        // If we ever actually move lclVar intervals instead of copying, this will need to change.
+                        if (!currentInterval->isLocalVar)
+                        {
+                            currentRefPosition.moveReg = true;
+                            currentRefPosition.copyReg = false;
+                        }
+                        clearNextIntervalRef(copyReg, currentInterval->registerType);
+                        clearSpillCost(copyReg, currentInterval->registerType);
+                        updateNextIntervalRef(assignedRegister, currentInterval);
+                        updateSpillCost(assignedRegister, currentInterval);
+                        continue;
                     }
                 }
-                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, currentInterval, assignedRegister));
+                else
+#endif
+                {
+                    currentRefPosition.registerAssignment = assignedRegBit;
+                    if (!currentInterval->isActive)
+                    {
+                        // If we've got an exposed use at the top of a block, the
+                        // interval might not have been active.  Otherwise if it's a use,
+                        // the interval must be active.
+                        if (refType == RefTypeDummyDef)
+                        {
+                            currentInterval->isActive = true;
+                            assert(getRegisterRecord(assignedRegister)->assignedInterval == currentInterval);
+                        }
+                        else
+                        {
+                            currentRefPosition.reload = true;
+                        }
+                    }
+                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, currentInterval, assignedRegister));
+                }
             }
             else
             {
@@ -5336,6 +5406,7 @@ void LinearScan::allocateRegisters()
                         // For consecutive register, it doesn't matter what the assigned register was.
                         // We have just assigned it `copyRegMask` and that's the one in-use, and not the
                         // one that was assigned previously.
+
                         assignedRegMask = REG_NA;
                     }
 #endif
@@ -5427,6 +5498,15 @@ void LinearScan::allocateRegisters()
                     // no need to find register to assign.
                     allocate = false;
                 }
+                //else if (lastAllocatedRefPosition->needsConsecutive &&
+                //         lastAllocatedRefPosition->refType == RefTypeUpperVectorRestore)
+                //{
+                //    // If previous refposition was part of the series and it was UpperVectorRestore,
+                //    // we have already assigned the same register to this refposition as well.
+                //    // No need to allocate.
+                //    assert(lastAllocatedRefPosition->registerAssignment == currentRefPosition.registerAssignment);
+                //    allocate = false;
+                //}
                 else
                 {
                     // If the subsequent refPosition is not assigned to the consecutive register, then reassign the
@@ -12018,6 +12098,10 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     // Eliminate candidates that are in-use or busy.
     if (!found)
     {
+        /*
+        * we assign same registerAssignment to UPPER_RESTORE and the next USE. When we allocate for
+        * USE, we see that the same register is now busy and so don't have candidates left.
+        */
         regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
         candidates &= ~busyRegs;
 

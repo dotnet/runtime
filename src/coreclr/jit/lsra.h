@@ -1191,7 +1191,8 @@ private:
 ****************************************************************************/
 
 #if defined(TARGET_ARM64)
-    bool setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    bool      areNextConsecutiveRegistersFree(regNumber regToAssign, int registersToCheck, var_types registerType);
+    bool      setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     regMaskTP getFreeCandidates(regMaskTP candidates, RefPosition* refPosition);
 #else
     regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
