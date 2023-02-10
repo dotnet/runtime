@@ -28,6 +28,8 @@
     <Compile Include="SerializationTestTypes\SampleTypes.cs" />
     <Compile Include="SerializationTestTypes\SelfRefAndCycles.cs" />
     <Compile Include="XmlSerializerTests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Private.DataContractSerialization\src\System\Xml\XmlBinaryNodeType.cs" 
+        Link="System.Xml\XmlBinaryNodeType.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />

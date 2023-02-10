@@ -29,8 +29,8 @@ namespace System.Net.NetworkInformation
             bool ipv4 = address.AddressFamily == AddressFamily.InterNetwork;
             bool sendIpHeader = ipv4 && options != null && SendIpHeader;
 
-             if (sendIpHeader)
-             {
+            if (sendIpHeader)
+            {
                 iph.VersionAndLength = 0x45;
                 // On OSX this strangely must be host byte order.
                 iph.TotalLength = (ushort)(sizeof(IpHeader) + checked(sizeof(IcmpHeader) +  buffer.Length));
@@ -42,7 +42,7 @@ namespace System.Net.NetworkInformation
 #pragma warning restore 618
                 // No need to fill in SourceAddress or checksum.
                 // If left blank, kernel will fill it in - at least on OSX.
-             }
+            }
 
             return new SocketConfig(
                 new IPEndPoint(address, 0), timeout, options,
@@ -260,11 +260,11 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static PingReply CreatePingReply(IPStatus status)
+        private static PingReply CreatePingReply(IPStatus status, IPAddress? address = null, long rtt = 0)
         {
             // Documentation indicates that you should only pay attention to the IPStatus value when
             // its value is not "Success", but the rest of these values match that of the Windows implementation.
-            return new PingReply(new IPAddress(0), null, status, 0, Array.Empty<byte>());
+            return new PingReply(address ?? new IPAddress(0), null, status, rtt, Array.Empty<byte>());
         }
 
 #if DEBUG
