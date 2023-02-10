@@ -255,7 +255,7 @@ if [[ "$monoaot" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
 fi
 
-cleaned_branch_name="main"
+cleaned_branch_name="release/6.0"
 if [[ $branch == *"refs/heads/release"* ]]; then
     cleaned_branch_name=${branch/refs\/heads\//}
 fi
@@ -268,7 +268,7 @@ if [[ "$run_from_perf_repo" = true ]]; then
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    git clone --branch release/6.0 --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 

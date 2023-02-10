@@ -2008,6 +2008,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/FinalNStruct/finalnstruct/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_79354/Runtime_79354/**">
+            <Issue>https://github.com/dotnet/runtime/issues/57350</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/eh/interactions/strswitchfinal_do/**">
             <Issue>needs triage</Issue>
         </ExcludeList>

@@ -97,7 +97,7 @@ if ($iOSMono) {
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline
-$CleanedBranchName = "main"
+$CleanedBranchName = "release/6.0"
 if($Branch.Contains("refs/heads/release"))
 {
     $CleanedBranchName = $Branch.replace('refs/heads/', '')
@@ -124,7 +124,7 @@ if ($RunFromPerformanceRepo) {
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 }
 else {
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
+    git clone --branch release/6.0 --depth 1 --quiet https://github.com/dotnet/performance $PerformanceDirectory
 }
 
 if($MonoDotnet -ne "")

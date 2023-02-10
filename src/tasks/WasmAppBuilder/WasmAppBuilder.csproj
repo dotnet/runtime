@@ -20,6 +20,7 @@
 
     <!-- Don't include the msbuild assemblies with the task -->
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" IncludeAssets="compile" />
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" IncludeAssets="compile" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(TargetFrameworkForNETCoreTasks)'">

@@ -129,7 +129,6 @@ public:
 private:
 #ifdef __APPLE__
     bool EnumerateMemoryRegions();
-    bool TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool* found);
     void VisitModule(MachOModule& module);
     void VisitSegment(MachOModule& module, const segment_command_64& segment);
     void VisitSection(MachOModule& module, const section_64& section);
