@@ -23,7 +23,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead, cancellationToken);
             return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
@@ -35,7 +35,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead, cancellationToken);
             return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
         }
 
@@ -47,7 +47,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead, cancellationToken);
             return GetFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
         }
 
@@ -59,7 +59,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead, cancellationToken);
             return GetFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
         }
 
@@ -70,7 +70,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead, cancellationToken);
             return GetFromJsonAsyncCore(taskResponse, type, context, cancellationToken);
         }
 
@@ -81,7 +81,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead, cancellationToken);
             return GetFromJsonAsyncCore(taskResponse, type, context, cancellationToken);
         }
 
@@ -92,7 +92,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead, cancellationToken);
             return GetFromJsonAsyncCore(taskResponse, jsonTypeInfo, cancellationToken);
         }
 
@@ -103,7 +103,7 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseContentRead, cancellationToken);
             return GetFromJsonAsyncCore<TValue>(taskResponse, jsonTypeInfo, cancellationToken);
         }
 
