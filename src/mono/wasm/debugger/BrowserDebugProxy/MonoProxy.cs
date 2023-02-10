@@ -1022,7 +1022,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (isSkippable && shouldBeSkipped)
                 {
-                    if (frameNumber + 1 == totalFrames) //is the last managed frame
+                    if (frameNumber + 1 == totalFrames && stepKind == StepKind.Out) //is the last managed frame
                         await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
                     else
                         await TryStepOnManagedCodeAndStepOutIfNotPossible(sessionId, context, stepKind, token);
