@@ -2091,6 +2091,11 @@ namespace System.Tests
             yield return new object[] { s_strPacific + "\\Display" };
             yield return new object[] { s_strPacific + "\n" }; // no trailing newline
             yield return new object[] { new string('a', 100) }; // long string
+            yield return new object[] { "/dev/random" };
+            yield return new object[] { "Invalid Id" };
+            yield return new object[] { "Invalid/Invalid" };
+            yield return new object[] { $"./{s_strPacific}" };
+            yield return new object[] { $"{s_strPacific}/../{s_strPacific}" };
         }
 
         [Theory]
@@ -2098,7 +2103,8 @@ namespace System.Tests
         public static void ConvertTime_DateTimeOffset_InvalidDestination_TimeZoneNotFoundException(string destinationId)
         {
             DateTimeOffset time1 = new DateTimeOffset(2006, 5, 12, 0, 0, 0, TimeSpan.Zero);
-            VerifyConvertException<TimeZoneNotFoundException>(time1, destinationId);
+            Exception ex = Record.Exception(() => TimeZoneInfo.ConvertTime(time1, TimeZoneInfo.FindSystemTimeZoneById(destinationId)));
+            Assert.True(ex is InvalidTimeZoneException || ex is TimeZoneNotFoundException);
         }
 
         [Fact]
