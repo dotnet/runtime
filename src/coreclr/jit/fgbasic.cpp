@@ -488,7 +488,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
             //
             FlowEdge* const newEdge = fgAddRefPred(newTarget, blockSwitch);
 
-            // Now set the correct value of newEdge's lDupCount
+            // Now set the correct value of newEdge's DupCount
             // and replace any other jumps in jumpTab[] that go to oldTarget.
             //
             i++;
