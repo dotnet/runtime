@@ -5282,6 +5282,14 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
     }
     CONTRACT_END;
 
+    LoaderAllocator* pLoaderAllocator = pMT->GetLoaderAllocator();
+
+    EEMarshalingData* pMarshallingData = pLoaderAllocator->GetMarshalingData();
+
+    MethodDesc* pCachedStubMD = pMarshallingData->LookupStructILStub(pMT);
+    if (pCachedStubMD != NULL)
+        return pCachedStubMD;
+
     DWORD dwStubFlags = NDIRECTSTUB_FL_STRUCT_MARSHAL;
 
     BOOL bestFit, throwOnUnmappableChar;
@@ -5340,7 +5348,7 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
     sigBuilder.NewArg(&cleanupWorkList);
 
     DWORD cbMetaSigSize = sigBuilder.GetSigSize();
-    AllocMemHolder<BYTE> szMetaSig(pMT->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMetaSigSize)));
+    AllocMemHolder<BYTE> szMetaSig(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMetaSigSize)));
     sigBuilder.GetSig(szMetaSig, cbMetaSigSize);
 
     StubSigDesc sigDesc(pMT, Signature(szMetaSig, cbMetaSigSize), pMT->GetModule());
@@ -5372,6 +5380,8 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
     {
         szMetaSig.SuppressRelease();
     }
+
+    pMarshallingData->CacheStructILStub(pMT, pStubMD);
 
     RETURN pStubMD;
 }
@@ -5784,17 +5794,7 @@ void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNati
     }
     CONTRACTL_END;
 
-    ARG_SLOT args[] =
-    {
-        PtrToArgSlot(pManagedData),
-        PtrToArgSlot(pNativeData),
-        (ARG_SLOT)operation,
-        PtrToArgSlot(ppCleanupWorkList)
-    };
-
-    MethodDescCallSite callSite(pStubMD);
-
-    callSite.Call(args);
+    MarshalStructViaILStubCode(pStubMD->GetSingleCallableAddrOfCode(), pManagedData, pNativeData, operation, ppCleanupWorkList);
 }
 
 void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)
