@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 
-export COREHOST_TRACE=1
-export COREHOST_TRACEFILE=~/fusion.txt
-
-echo ---------------------GOGO---------------------
+echo ---------------------GOGO0---------------------
 
 source="${BASH_SOURCE[0]}"
 
@@ -34,8 +31,15 @@ if is_cygwin_or_mingw; then
   scriptroot=$(cygpath -d "$scriptroot")
   powershell -c "$scriptroot\\build.cmd" $@
 else
-  echo ---------------------GOGO2---------------------
   "$scriptroot/eng/build.sh" $@ || true
+
+  echo ---------------------GOGO1---------------------
+
+  export COREHOST_TRACE=1
+  export COREHOST_TRACEFILE=~/fusion.txt
+
+  echo ---------------------GOGO2---------------------
+  "$scriptroot/eng/build.sh" -b $@ || true
   echo ---------------------GOGO3---------------------
   cat ~/fusion.txt
   echo ---------------------GOGO4---------------------
