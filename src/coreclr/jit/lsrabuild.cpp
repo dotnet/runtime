@@ -2129,6 +2129,8 @@ void LinearScan::buildIntervals()
     }
 #endif // DEBUG
 
+    resetRegState();
+
 #if DOUBLE_ALIGN
     // We will determine whether we should double align the frame during
     // identifyCandidates(), but we initially assume that we will not.
