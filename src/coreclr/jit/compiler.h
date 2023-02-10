@@ -9208,12 +9208,6 @@ public:
         COUNT_OPT_CODE
     };
 
-    enum OptimizationsKind
-    {
-        OPT_Lightweight,
-        OPT_All
-    };
-
     struct Options
     {
         JitFlags* jitFlags; // all flags passed from the EE
@@ -9282,6 +9276,10 @@ public:
         bool OptimizationDisabled() const
         {
             return MinOpts() || compDbgCode;
+        }
+        bool OptimizationEnabled() const
+        {
+            return !OptimizationDisabled();
         }
 
         void SetMinOpts(bool val)
