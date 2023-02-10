@@ -14728,7 +14728,7 @@ gc_heap::self_destroy()
     release_card_table (card_table);
 
     // destroy the mark stack
-    delete mark_stack_array;
+    delete[] mark_stack_array;
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
     if (finalize_queue)
