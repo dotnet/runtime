@@ -31,11 +31,12 @@ if is_cygwin_or_mingw; then
   scriptroot=$(cygpath -d "$scriptroot")
   powershell -c "$scriptroot\\build.cmd" $@
 else
+  export COREHOST_TRACE=1
+  export COREHOST_TRACE_VERBOSITY=3
   "$scriptroot/eng/build.sh" $@ || true
 
   echo ---------------------GOGO1---------------------
 
-  export COREHOST_TRACE=1
   export COREHOST_TRACEFILE=~/fusion.txt
 
   echo ---------------------GOGO2---------------------
