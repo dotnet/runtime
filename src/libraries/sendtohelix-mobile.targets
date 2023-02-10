@@ -50,6 +50,7 @@
 
     <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <iOSLikeBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'apple', 'build'))</iOSLikeBuildTargetsDir>
+      <iOSLikeLibraryBuilderTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'common'))</iOSLikeLibraryBuilderTargetsDir>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildiOSApps' and '$(TestUsingWorkloads)' != 'true'">$(TargetOS)-</WorkItemPrefix>
 
       <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.16.4-Darwin-x86_64.tar.gz</CMakeUrl>
@@ -65,6 +66,7 @@
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())" />
       <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"               Destination="build/apple" />
+      <HelixCorrelationPayload Include="$(iOSLikeLibraryBuilderTargetsDir)"      Destination="build/common" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>

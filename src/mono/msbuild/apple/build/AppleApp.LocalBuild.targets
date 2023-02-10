@@ -20,7 +20,6 @@
         $(AppleBuildSupportDir)
 -->
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)LibraryBuilder.targets" />
   <Import Project="$(MSBuildThisFileDirectory)AppleApp.targets" />
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
   <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
@@ -34,18 +33,6 @@
     <GenerateXcodeProject>true</GenerateXcodeProject>
     <GenerateCMakeProject>false</GenerateCMakeProject>
   </PropertyGroup>
-
-  <!-- Runtime feature defaults to trim unnecessary code -->
-  <!--
-  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
-    
-    <EventSourceSupport>false</EventSourceSupport>
-    <UseSystemResourceKeys>true</UseSystemResourceKeys>
-    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
-    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
-    <DebuggerSupport>false</DebuggerSupport>
-  </PropertyGroup>
-  -->
 
   <!-- Use local runtime pack -->
   <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences" DependsOnTargets="_PrepareAndValidateAppleInputs">
