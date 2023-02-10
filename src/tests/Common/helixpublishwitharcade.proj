@@ -821,7 +821,7 @@
   <PropertyGroup>
     <SigningCommand>
     <![CDATA[
-      for APP_FILE in $(find . -name *.app); do cp embedded.mobileprovision $APP_FILE; sign $APP_FILE; done
+      for APP_FILE in `find . -name *.app`; do cp embedded.mobileprovision $APP_FILE; sign $APP_FILE; done
     ]]>
     </SigningCommand>
   </PropertyGroup>
