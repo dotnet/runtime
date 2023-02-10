@@ -1899,6 +1899,18 @@ void LinearScan::buildPhysRegRecords()
         RegRecord* curr = &physRegs[reg];
         curr->regOrder  = (unsigned char)i;
     }
+#if defined(TARGET_AMD64)
+    if (compiler->DoJitStressEvexEncoding())
+    {
+        for (unsigned int i = 0; i < lsraRegOrderFltSize; i++)
+        {
+            const regNumber lsraRegOrderFltUpper[] = {REG_VAR_ORDER_FLT_UPPER};
+            regNumber       reg                    = lsraRegOrderFltUpper[i];
+            RegRecord*      curr                   = &physRegs[reg];
+            curr->regOrder                         = (unsigned char)(i + lsraRegOrderFltSize);
+        }
+    }
+#endif //  TARGET_AMD64
 }
 
 //------------------------------------------------------------------------
