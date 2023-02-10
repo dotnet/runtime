@@ -3545,7 +3545,10 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // However, when we're allowed to perform quick opts we want to still have exact classes for boxed enums
         // in case if we hit Enum.HasFlag.
         const bool tooManyLocals = lvaCount > 128;
-        if (useSharedBoxTemp && opts.OptimizationEnabled(OPT_Lightweight) && !tooManyLocals &&
+        // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
+        // To be fixed in https://github.com/dotnet/runtime/pull/77465
+        if (useSharedBoxTemp && !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) &&
+            !tooManyLocals &&
             (info.compCompHnd->getTypeForPrimitiveNumericClass(pResolvedToken->hClass) == CORINFO_TYPE_UNDEF))
         {
             useSharedBoxTemp = false;

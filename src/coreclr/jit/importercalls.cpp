@@ -2601,9 +2601,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
     // in this case unlike mustExpand.
     bool betterToExpand = mustExpand;
-    // NOTE: MinOpts() currently is always true for Tier0 so we check explicit flags instead
-    // to be fixed in https://github.com/dotnet/runtime/pull/77465
-    if (!mustExpand && !opts.compDbgCode && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
+    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
+    // To be fixed in https://github.com/dotnet/runtime/pull/77465
+    if (!mustExpand && !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
     {
         switch (ni)
         {
