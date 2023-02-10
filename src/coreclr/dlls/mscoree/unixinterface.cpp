@@ -23,20 +23,20 @@
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS(__FILE__, (expr))
 
 #ifdef TARGET_UNIX
-#define NO_HOSTING_API_FRAME_ADDRESS ((void*)ULONG_PTR_MAX)
-void* g_hostingApiFrameAddress = NO_HOSTING_API_FRAME_ADDRESS;
+#define NO_HOSTING_API_RETURN_ADDRESS ((void*)ULONG_PTR_MAX)
+void* g_hostingApiReturnAddress = NO_HOSTING_API_RETURN_ADDRESS;
 
 class HostingApiFrameHolder
 {
 public:
-    HostingApiFrameHolder(void* frameAddress)
+    HostingApiFrameHolder(void* returnAddress)
     {
-        g_hostingApiFrameAddress = frameAddress;
+        g_hostingApiReturnAddress = returnAddress;
     }
 
     ~HostingApiFrameHolder()
     {
-        g_hostingApiFrameAddress = NO_HOSTING_API_FRAME_ADDRESS;
+        g_hostingApiReturnAddress = NO_HOSTING_API_RETURN_ADDRESS;
     }
 };
 #endif // TARGET_UNIX
@@ -198,6 +198,7 @@ extern "C" int coreclr_create_delegate(void*, unsigned int, const char*, const c
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 extern "C"
+NOINLINE
 DLLEXPORT
 int coreclr_initialize(
             const char* exePath,
@@ -217,7 +218,7 @@ int coreclr_initialize(
     PInvokeOverrideFn* pinvokeOverride = nullptr;
 
 #ifdef TARGET_UNIX
-    HostingApiFrameHolder apiFrameHolder(__builtin_frame_address(0));
+    HostingApiFrameHolder apiFrameHolder(_ReturnAddress());
 #endif
 
     ConvertConfigPropertiesToUnicode(
@@ -444,6 +445,7 @@ int coreclr_create_delegate(
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
 extern "C"
+NOINLINE
 DLLEXPORT
 int coreclr_execute_assembly(
             void* hostHandle,
@@ -460,7 +462,7 @@ int coreclr_execute_assembly(
     *exitCode = -1;
 
 #ifdef TARGET_UNIX
-    HostingApiFrameHolder apiFrameHolder(__builtin_frame_address(0));
+    HostingApiFrameHolder apiFrameHolder(_ReturnAddress());
 #endif
 
     ICLRRuntimeHost4* host = reinterpret_cast<ICLRRuntimeHost4*>(hostHandle);
