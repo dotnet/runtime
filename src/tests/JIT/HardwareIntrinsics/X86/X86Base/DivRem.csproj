@@ -14,6 +14,7 @@
     <NoWarn>436</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(RepoRoot)/src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/IntrinsicAttribute.cs" />
     <Compile Include="$(RepoRoot)/src/libraries/System.Private.CoreLib/src/System/Runtime/Intrinsics/X86/X86Base.cs" />
   </ItemGroup>
   

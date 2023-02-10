@@ -10,7 +10,9 @@ namespace System.Runtime.Intrinsics.X86
     /// This class provides access to the x86 base hardware instructions via intrinsics
     /// </summary>
     [Intrinsic]
+#if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
+#endif
     public abstract partial class X86Base
     {
         internal X86Base() { }
@@ -87,9 +89,13 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static unsafe (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId)
         {
+#if SYSTEM_PRIVATE_CORELIB
             int* cpuInfo = stackalloc int[4];
             __cpuidex(cpuInfo, functionId, subFunctionId);
             return (cpuInfo[0], cpuInfo[1], cpuInfo[2], cpuInfo[3]);
+#else
+            return (0, 0, 0, 0);
+#endif
         }
 
         /// <summary>
