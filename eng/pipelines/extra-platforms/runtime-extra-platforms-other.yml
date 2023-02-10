@@ -288,7 +288,13 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
       testRunNamePrefixSuffix: Mono_Release
-      extraStepsTemplateHasVariables: true
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          forwardedParameters:
+            - osGroup
+            - osSubgroup
+            - runtimeFlavor
+            - runtimeVariant
 
 #
 # Mono CoreCLR runtime Test executions using live libraries in interpreter mode

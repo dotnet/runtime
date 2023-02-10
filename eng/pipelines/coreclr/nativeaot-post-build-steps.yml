@@ -5,45 +5,25 @@ parameters:
   osSubgroup: ''
   testBuildArgs: ''
   helixQueues: ''
-  templateKind: ''
 
-${{ if eq(parameters.templateKind, 'variables') }}:
-  variables:
-    - ${{ if and(ne(parameters.archType, 'arm'), ne(parameters.archType, 'arm64')) }}:
-      # Include variables required for the build-runtime-tests-and-send-to-helix steps.
-      - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-        parameters:
-          buildConfig: ${{ parameters.buildConfig }}
-          archType: ${{ parameters.archType }}
-          osGroup: ${{ parameters.osGroup }}
-          osSubgroup: ${{ parameters.osSubgroup }}
-          runtimeFlavor: coreclr
-          runtimeVariant: ''
-          testBuildArgs: ${{ parameters.testBuildArgs }}
-          nativeAotTest: true
-          helixQueues: ${{ parameters.helixQueues }}
-          templateKind: ${{ parameters.templateKind }}
+steps:
+# Can't run arm/arm64 tests on x64 build machines
+- ${{ if and(ne(parameters.archType, 'arm'), ne(parameters.archType, 'arm64')) }}:
 
-${{ if eq(parameters.templateKind, 'steps') }}:
-  steps:
-    # Can't run arm/arm64 tests on x64 build machines
-    - ${{ if and(ne(parameters.archType, 'arm'), ne(parameters.archType, 'arm64')) }}:
+  # Build coreclr native test output and send to helix
+  - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+    parameters:
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: ${{ parameters.archType }}
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      runtimeFlavor: coreclr
+      runtimeVariant: ''
+      testBuildArgs: ${{ parameters.testBuildArgs }}
+      nativeAotTest: true
+      helixQueues: ${{ parameters.helixQueues }}
 
-      # Build coreclr native test output and send to helix
-      - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-        parameters:
-          buildConfig: ${{ parameters.buildConfig }}
-          archType: ${{ parameters.archType }}
-          osGroup: ${{ parameters.osGroup }}
-          osSubgroup: ${{ parameters.osSubgroup }}
-          runtimeFlavor: coreclr
-          runtimeVariant: ''
-          testBuildArgs: ${{ parameters.testBuildArgs }}
-          nativeAotTest: true
-          helixQueues: ${{ parameters.helixQueues }}
-          templateKind: ${{ parameters.templateKind }}
-
-      # Publishing tooling doesn't support different configs between runtime and libs, so only run tests in Release config
-      - ${{ if eq(parameters.buildConfig, 'release') }}:
-        - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) /p:TestAssemblies=false /p:RunNativeAotTestApps=true $(_officialBuildParameter) $(_crossBuildPropertyArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/NativeAotTests.binlog ${{ parameters.extraTestArgs }}
-          displayName: Run NativeAot Library Tests
+  # Publishing tooling doesn't support different configs between runtime and libs, so only run tests in Release config
+  - ${{ if eq(parameters.buildConfig, 'release') }}:
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) /p:TestAssemblies=false /p:RunNativeAotTestApps=true $(_officialBuildParameter) $(_crossBuildPropertyArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/NativeAotTests.binlog ${{ parameters.extraTestArgs }}
+      displayName: Run NativeAot Library Tests

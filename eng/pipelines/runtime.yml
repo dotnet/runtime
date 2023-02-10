@@ -214,8 +214,14 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
-            extraStepsTemplateHasVariables: true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -247,8 +253,14 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot /p:BuildNativeAotFrameworkObjects=true
-            extraStepsTemplateHasVariables: true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -282,8 +294,14 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
-            extraStepsTemplateHasVariables: true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1142,8 +1160,14 @@ extends:
             extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
             extraStepsParameters:
               creator: dotnet-bot
-            extraStepsTemplateHasVariables: true
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
 
       #
       # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
@@ -1176,8 +1200,14 @@ extends:
             extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
             extraStepsParameters:
               creator: dotnet-bot
-            extraStepsTemplateHasVariables: true
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
       #
       # Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
       # Only when Mono is changed
@@ -1212,8 +1242,14 @@ extends:
             extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
             extraStepsParameters:
               creator: dotnet-bot
-            extraStepsTemplateHasVariables: true
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                  - osGroup
+                  - osSubgroup
+                  - runtimeFlavor
+                  - runtimeVariant
 
       #
       # Libraries Release Test Execution against a release mono runtime.
