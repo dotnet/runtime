@@ -10593,6 +10593,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 lclTyp = JITtype2varType(info.compCompHnd->asCorInfoType(resolvedToken.hClass));
+                
+                if (lclTyp == TYP_STRUCT)
+                {
+                    lclTyp = impNormStructType(resolvedToken.hClass);
+                }
+
                 if (lclTyp != TYP_STRUCT)
                 {
                     op2 = gtNewZeroConNode(genActualType(lclTyp));
