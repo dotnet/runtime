@@ -5,8 +5,8 @@ T:System.Runtime.Serialization.DeserializationToken
 M:System.Runtime.Serialization.SerializationInfo.StartDeserialization
 T:System.Diagnostics.DebugProvider
 M:System.Diagnostics.Debug.SetProvider(System.Diagnostics.DebugProvider)
-M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(ulong lower, ulong upper, ulong divisor)
-M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(ulong lower, long upper, long divisor)
+M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(System.UInt64 lower, System.UInt64 upper, System.UInt64 divisor)
+M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(System.UInt64 lower, System.Int64 upper, System.Int64 divisor)
 M:System.Runtime.Intrinsics.X86.X86Base.DivRem(uint lower, uint upper, uint divisor)
 M:System.Runtime.Intrinsics.X86.X86Base.DivRem(int lower, int upper, int divisor)
 M:System.Runtime.Intrinsics.X86.X86Base.DivRem(nuint lower, nuint upper, nuint divisor)

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    DivRem.CoreLib provides a "shim" definition of DivRem in System.Private.CoreLib
+    The DivRem test suite references this project at compile time but does not get deployed with the test.
+    As a result, the DivRem test suite has a direct reference to System.Private.CoreLib for the DivRem methods,
+    which enables us to avoid using Reflection.Emit to provide the implementations.
+  -->
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
+    <AssemblyName>System.Private.CoreLib</AssemblyName>
+    <NoWarn>436</NoWarn>
+    <NoWarn>436</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(RepoRoot)/src/libraries/System.Private.CoreLib/src/System/Runtime/Intrinsics/X86/X86Base.cs" />
+  </ItemGroup>
+  
+</Project>

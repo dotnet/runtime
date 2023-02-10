@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
+extern alias CoreLib;
+using X86Base.X64 = CoreLib::System.Runtime.Intrinsics.X86.X86Base.X64;
 using System;
 using System.Collections.Generic;
 

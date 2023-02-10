@@ -3,25 +3,25 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(ulong lower, ulong upper, ulong divisor)</Target>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(System.UInt64 lower, System.UInt64 upper, System.UInt64 divisor)</Target>
     <Left>ref/net8.0/System.Runtime.Intrinsics.dll</Left>
     <Right>lib/net8.0/System.Runtime.Intrinsics.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(ulong lower, long upper, long divisor)</Target>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.X64.DivRem(System.UInt64 lower, System.Int64 upper, System.Int64 divisor)</Target>
     <Left>ref/net8.0/System.Runtime.Intrinsics.dll</Left>
     <Right>lib/net8.0/System.Runtime.Intrinsics.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(uint lower, uint upper, uint divisor)</Target>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(System.UInt32 lower, System.UInt32 upper, System.UInt32 divisor)</Target>
     <Left>ref/net8.0/System.Runtime.Intrinsics.dll</Left>
     <Right>lib/net8.0/System.Runtime.Intrinsics.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(int lower, int upper, int divisor)</Target>
+    <Target>M:System.Runtime.Intrinsics.X86.X86Base.DivRem(System.UInt32 lower, System.Int32 upper, System.Int32 divisor)</Target>
     <Left>ref/net8.0/System.Runtime.Intrinsics.dll</Left>
     <Right>lib/net8.0/System.Runtime.Intrinsics.dll</Right>
   </Suppression>
