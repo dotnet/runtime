@@ -1918,7 +1918,8 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 
 	id = lookup_intrins (vector2_methods, sizeof (vector2_methods), cmethod);
 	if (id == -1) {
-		check_no_intrinsic_cattr (cmethod);
+		// https://github.com/dotnet/runtime/issues/81961
+		// check_no_intrinsic_cattr (cmethod);
 		return NULL;
 	}
 
