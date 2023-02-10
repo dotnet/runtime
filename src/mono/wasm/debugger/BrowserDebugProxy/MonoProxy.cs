@@ -961,7 +961,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        protected virtual async Task<bool> ShouldSkipMethod(SessionId sessionId, ExecutionContext context, EventKind event_kind, int frameNumber, MethodInfoWithDebugInformation method, CancellationToken token)
+        protected virtual async Task<bool> ShouldSkipMethod(SessionId sessionId, ExecutionContext context, EventKind event_kind, int frameNumber, int totalFrames, MethodInfoWithDebugInformation method, CancellationToken token)
         {
             var shouldReturn = await SkipMethod(
                     isSkippable: context.IsSkippingHiddenMethod,
@@ -1022,8 +1022,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (isSkippable && shouldBeSkipped)
                 {
-                    await context.SdbAgent.Step(context.ThreadId, stepKind, token);
-                    await SendResume(sessionId, token);
+                    if (frameNumber + 1 == totalFrames) //is the last managed frame
+                        await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                    else
+                        await TryStepOnManagedCodeAndStepOutIfNotPossible(sessionId, context, stepKind, token);
                     return true;
                 }
                 return false;
@@ -1051,7 +1053,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DebugStore store = await LoadStore(sessionId, true, token);
                 var method = await context.SdbAgent.GetMethodInfo(methodId, token);
 
-                if (await ShouldSkipMethod(sessionId, context, event_kind, j, method, token))
+                if (await ShouldSkipMethod(sessionId, context, event_kind, j, frame_count, method, token))
                     return true;
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);
@@ -1274,7 +1276,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             //discard managed frames
             GetContext(msg_id).ClearState();
         }
+        protected async Task<bool> TryStepOnManagedCodeAndStepOutIfNotPossible(SessionId sessionId, ExecutionContext context, StepKind kind, CancellationToken token)
+        {
+            var step = await context.SdbAgent.Step(context.ThreadId, kind, token);
+            if (step == false)
+            {
+                context.ClearState();
+                await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                return false;
+            }
 
+            context.ClearState();
+
+            await SendResume(sessionId, token);
+            return true;
+        }
 
         protected async Task<bool> Step(MessageId msgId, StepKind kind, CancellationToken token)
         {
@@ -1284,20 +1300,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (context.CallStack.Count <= 1 && kind == StepKind.Out)
                 return false;
-
-            var step = await context.SdbAgent.Step(context.ThreadId, kind, token);
-            if (step == false) {
-                context.ClearState();
-                await SendCommand(msgId, "Debugger.stepOut", new JObject(), token);
-                return false;
-            }
-
-            SendResponse(msgId, Result.Ok(new JObject()), token);
-
-            context.ClearState();
-
-            await SendResume(msgId, token);
-            return true;
+            var ret = await TryStepOnManagedCodeAndStepOutIfNotPossible(msgId, context, kind, token);
+            if (ret)
+                SendResponse(msgId, Result.Ok(new JObject()), token);
+            return ret;
         }
 
         private async Task<bool> OnJSEventRaised(SessionId sessionId, JObject eventArgs, CancellationToken token)
