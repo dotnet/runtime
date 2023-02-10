@@ -107,7 +107,7 @@ namespace ILCompiler.IBC
                             if (mibcDataEntry == null)
                             {
                                 // Input may have been renamed at some point; look for a single .dll inside the ZIP.
-                                mibcDataEntry = zipFile.Entries.SingleOrDefault();
+                                mibcDataEntry = zipFile.Entries.Count == 1 ? zipFile.Entries[0] : null;
 
                                 if (mibcDataEntry == null || !mibcDataEntry.Name.EndsWith(".dll"))
                                 {
