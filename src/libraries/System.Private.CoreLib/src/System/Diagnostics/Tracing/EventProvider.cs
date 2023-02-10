@@ -35,6 +35,16 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// Only here because System.Diagnostics.EventProvider needs one more extensibility hook (when it gets a
     /// controller callback)
+    ///
+    /// As of Feb 2023 the current factoring of this type remains a work in progress. Ideally all the ETW specific functionality
+    /// would be moved to EtwEventProvider and all the common functionality would be moved to EventProviderImpl. At that point this
+    /// type would no longer need to exist, EventSource would have a direct reference to EventProviderImpl, and EventProviderImpl's
+    /// WeakReference would point back to EventSource. However for now we still have this intermediate layer:
+    ///     EventSource -- EventProvider -- EventProviderImpl.
+    ///
+    /// Be careful interpreting code that uses 'ETW' naming.Some of it really is only used for ETW scenarios whereas in other places
+    /// ETW behavior was adopted as the standard that EventPipe also implements. Ideally the former would be moved to EtwEventProvider
+    /// and the latter would remove ETW from the naming.
     /// </summary>
     internal class EventProvider : IDisposable
     {
@@ -773,7 +783,7 @@ namespace System.Diagnostics.Tracing
             m_liveSessions = null;
         }
 
-        protected override unsafe void HandleSessionEnable(
+        protected override unsafe void HandleEnableNotification(
                                     EventProvider target,
                                     byte *additionalData,
                                     byte level,
@@ -783,6 +793,11 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(additionalData == null);
 
+            // The GetSessions() logic was here to support the idea that different ETW sessions
+            // could have different user-defined filters. (I believe it is currently broken.)
+            //
+            // All this session based logic should be reviewed and likely removed, but that is a larger
+            // change that needs more careful staging.
             List<KeyValuePair<SessionInfo, bool>> sessionsChanged = GetSessions();
 
             foreach (KeyValuePair<SessionInfo, bool> session in sessionsChanged)
@@ -795,15 +810,21 @@ namespace System.Diagnostics.Tracing
                 IDictionary<string, string?>? args = null;
                 ControllerCommand command = ControllerCommand.Update;
 
-                // if we get more than one session changed we have no way
-                // of knowing which one "filterData" belongs to
-                if (sessionsChanged.Count > 1)
-                    filterData = null;
-
                 // read filter data only when a session is being *added*
                 if (bEnabling)
                 {
-                    args = ParseFilterData(etwSessionId, filterData, out command);
+                    byte[]? filterDataBytes;
+                    // if we get more than one session changed we have no way
+                    // of knowing which one "filterData" belongs to
+                    if (sessionsChanged.Count > 1 || filterData == null)
+                    {
+                        TryReadRegistryFilterData(etwSessionId, out command, out filterDataBytes);
+                    }
+                    else
+                    {
+                        MarshalFilterData(filterData, out command, out filterDataBytes);
+                    }
+                    args = ParseFilterData(filterDataBytes);
                 }
 
                 // execute OnControllerCommand once for every session that has changed.
@@ -938,12 +959,10 @@ namespace System.Diagnostics.Tracing
             return status;
         }
 
-        protected override unsafe bool GetFilterDataPlatformSpecific(int etwSessionId,
-            Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
+        private unsafe bool TryReadRegistryFilterData(int etwSessionId, out ControllerCommand command, out byte[]? data)
         {
             command = ControllerCommand.Update;
             data = null;
-            dataStart = 0;
 
             string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
             if (IntPtr.Size == 8)
@@ -964,7 +983,6 @@ namespace System.Diagnostics.Tracing
                 if (data != null)
                 {
                     // We only used the persisted data from the registry for updates.
-                    command = ControllerCommand.Update;
                     return true;
                 }
             }
@@ -1164,7 +1182,7 @@ namespace System.Diagnostics.Tracing
             set => m_allKeywordMask = unchecked((long)value);
         }
 
-        protected virtual unsafe void HandleSessionEnable(
+        protected virtual unsafe void HandleEnableNotification(
                                     EventProvider target,
                                     byte *additionalData,
                                     byte level,
@@ -1279,7 +1297,7 @@ namespace System.Diagnostics.Tracing
             if (controlCode == Interop.Advapi32.EVENT_CONTROL_CODE_ENABLE_PROVIDER)
             {
                 Enable(level, matchAnyKeywords, matchAllKeywords);
-                HandleSessionEnable(target, additionalData, level, matchAnyKeywords, matchAllKeywords, filterData);
+                HandleEnableNotification(target, additionalData, level, matchAnyKeywords, matchAllKeywords, filterData);
                 return;
             }
 
@@ -1310,42 +1328,31 @@ namespace System.Diagnostics.Tracing
             return idx;
         }
 
-        protected unsafe IDictionary<string, string?>? ParseFilterData(int etwSessionId,
-            Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command)
+        protected static unsafe IDictionary<string, string?>? ParseFilterData(byte[]? data)
         {
             IDictionary<string, string?>? args = null;
-            if (GetFilterData(etwSessionId, filterData, out command, out byte[]? data, out int dataStart))
+
+            // data can be null if the filterArgs had a very large size which failed our sanity check
+            if (data != null)
             {
                 args = new Dictionary<string, string?>(4);
-                // data can be null if the filterArgs had a very large size which failed our sanity check
-                if (data != null)
+                int dataStart = 0;
+                while (dataStart < data.Length)
                 {
-                    while (dataStart < data.Length)
+                    int keyEnd = FindNull(data, dataStart);
+                    int valueIdx = keyEnd + 1;
+                    int valueEnd = FindNull(data, valueIdx);
+                    if (valueEnd < data.Length)
                     {
-                        int keyEnd = FindNull(data, dataStart);
-                        int valueIdx = keyEnd + 1;
-                        int valueEnd = FindNull(data, valueIdx);
-                        if (valueEnd < data.Length)
-                        {
-                            string key = System.Text.Encoding.UTF8.GetString(data, dataStart, keyEnd - dataStart);
-                            string value = System.Text.Encoding.UTF8.GetString(data, valueIdx, valueEnd - valueIdx);
-                            args[key] = value;
-                        }
-                        dataStart = valueEnd + 1;
+                        string key = System.Text.Encoding.UTF8.GetString(data, dataStart, keyEnd - dataStart);
+                        string value = System.Text.Encoding.UTF8.GetString(data, valueIdx, valueEnd - valueIdx);
+                        args[key] = value;
                     }
+                    dataStart = valueEnd + 1;
                 }
             }
 
             return args;
-        }
-
-        protected virtual unsafe bool GetFilterDataPlatformSpecific(int etwSessionId,
-            Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
-        {
-            command = ControllerCommand.Update;
-            data = null;
-            dataStart = 0;
-            return false;
         }
 
         /// <summary>
@@ -1356,29 +1363,21 @@ namespace System.Diagnostics.Tracing
         /// returns an array of bytes representing the data, the index into that byte array where the data
         /// starts, and the command being issued associated with that data.
         /// </summary>
-        protected unsafe bool GetFilterData(int etwSessionId,
-            Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
+        protected unsafe bool MarshalFilterData(Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data)
         {
-            data = null;
-            dataStart = 0;
-            if (filterData == null)
-            {
-                return GetFilterDataPlatformSpecific(etwSessionId, filterData, out command, out data, out dataStart);
-            }
-            else
-            {
-                // ETW limited filter data to 1024 bytes but EventPipe doesn't. DiagnosticSourceEventSource
-                // can legitimately use large filter data buffers to encode a large set of events and properties
-                // that should be gathered so I am bumping the limit from 1K -> 100K.
-                if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100*1024)
-                {
-                    data = new byte[filterData->Size];
-                    Marshal.Copy((IntPtr)(void*)filterData->Ptr, data, 0, data.Length);
-                }
-                command = (ControllerCommand)filterData->Type;
-                return true;
-            }
+            Debug.Assert(filterData != null);
 
+            data = null;
+            // ETW limited filter data to 1024 bytes but EventPipe doesn't. DiagnosticSourceEventSource
+            // can legitimately use large filter data buffers to encode a large set of events and properties
+            // that should be gathered so I am bumping the limit from 1K -> 100K.
+            if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100*1024)
+            {
+                data = new byte[filterData->Size];
+                Marshal.Copy((IntPtr)(void*)filterData->Ptr, data, 0, data.Length);
+            }
+            command = (ControllerCommand)filterData->Type;
+            return true;
         }
     }
 #pragma warning restore CA1852
