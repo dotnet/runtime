@@ -33,6 +33,10 @@ namespace System.Globalization.Tests
         [MemberData(nameof(EnglishName_TestData))]
         public void EnglishName(string name, string expected)
         {
+            // Add here test 
+            System.Console.WriteLine("Globalization mode is IsInvariantGlobalization: " + PlatformDetection.IsInvariantGlobalization);
+            System.Console.WriteLine("Globalization mode is IsHybridGlobalization: " + PlatformDetection.IsHybridGlobalization);
+            System.Console.WriteLine("Globalization log EnglishName: " + name);
             CultureInfo myTestCulture = new CultureInfo(name);
             Assert.Equal(expected, myTestCulture.EnglishName);
         }

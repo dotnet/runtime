@@ -30,6 +30,8 @@ namespace System.Globalization.Tests
         [MemberData(nameof(NativeName_TestData))]
         public void NativeName(string name, string expected)
         {
+            // Add here test
+            System.Console.WriteLine("Globalization log NativeName: " + name);
             CultureInfo myTestCulture = new CultureInfo(name);
             Assert.Equal(expected, myTestCulture.NativeName);
         }

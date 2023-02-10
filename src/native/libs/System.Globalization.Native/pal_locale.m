@@ -5,6 +5,8 @@
 #include "pal_locale_internal.h"
 
 #import <Foundation/Foundation.h>
+#import <Foundation/NSFormatter.h>
+
 #include "pal_localeStringData.h"
 
 char* DetectDefaultAppleLocaleName()
@@ -40,180 +42,206 @@ int32_t NativeGetLocaleName(const UChar* localeName,
 }
 
 
-int32_t NativeGetLocaleInfoString(const UChar* localeName,
+UChar* NativeGetLocaleInfoString(const UChar* localeName,
                                                 LocaleStringData localeStringData,
                                                 UChar* value,
                                                 int32_t valueLength,
                                                 const UChar* uiLocaleName)
 {
+    NSLog(@"NSLog NativeGetLocaleInfoString is running");
     NSLocale *currentLocale = [NSLocale currentLocale];
-    
-     UErrorCode status = U_ZERO_ERROR;
-   // char locale[ULOC_FULLNAME_CAPACITY] = "";
-   // char uiLocale[ULOC_FULLNAME_CAPACITY] = "";
-// for icu
-   // GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
+    NSLocale *locale = [NSLocale autoupdatingCurrentLocale];
 
-    if (U_FAILURE(status))
+    NSLog(@"NSLog NativeGetLocaleInfoString is running after NSLocale");
+   // UErrorCode status = U_ZERO_ERROR;
+    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+    NSLog(@"NSLog NativeGetLocaleInfoString is running after NSNumberFormatter");
+   /* if (U_FAILURE(status))
     {
-        return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
-    }
+       // return UErrorCodeToBool(U_ILLEGAL_ARGUMENT_ERROR);
+       return value;
+    }*/
 
     switch (localeStringData)
     {
         case LocaleString_LocalizedDisplayName:
+        NSLog(@"NSLog LocaleString_LocalizedDisplayName case is running");
             value = (UChar *)[[currentLocale localizedStringForLocaleIdentifier:currentLocale.localeIdentifier] UTF8String];
+            //return value;
             break;
         case LocaleString_EnglishDisplayName:
-            value = (UChar *)[currentLocale.localeIdentifier UTF8String];
-            break;
+        NSLog(@"NSLog LocaleString_EnglishDisplayName case is running");
+        //check why is this wrong?
+            value = (UChar *)[locale.localeIdentifier UTF8String];
+           //value = (UChar *)[[currentLocale localizedStringForLocaleIdentifier:currentLocale.localeIdentifier] UTF8String];
+           //return value;
+           break;
         case LocaleString_NativeDisplayName:
+        NSLog(@"NSLog LocaleString_NativeDisplayName case is running");
             value = (UChar *)[currentLocale.localeIdentifier UTF8String];
+            //return value;
             break;
         case LocaleString_LocalizedLanguageName:
+        NSLog(@"NSLog LocaleString_LocalizedLanguageName case is running");
             value = (UChar *)[[currentLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
+            //return value;
             break;
         case LocaleString_EnglishLanguageName:
+        NSLog(@"NSLog LocaleString_EnglishLanguageName case is running");
             value = (UChar *)[[currentLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
+            //return value;
             break;
         case LocaleString_NativeLanguageName:
+        NSLog(@"NSLog LocaleString_NativeLanguageName case is running");
             value = (UChar *)[[currentLocale localizedStringForLanguageCode:currentLocale.languageCode] UTF8String];
-            break;
+           //return value;
+           break;
         case LocaleString_EnglishCountryName:
+        NSLog(@"NSLog LocaleString_EnglishCountryName case is running");
             value = (UChar *)[[currentLocale localizedStringForCountryCode:currentLocale.countryCode] UTF8String];
+            //return value;
             break;
         case LocaleString_NativeCountryName:
+        NSLog(@"NSLog LocaleString_NativeCountryName case is running");
             value = (UChar *)[[currentLocale localizedStringForCountryCode:currentLocale.countryCode] UTF8String];
+            //return value;
             break;
         case LocaleString_ThousandSeparator:
+        NSLog(@"NSLog LocaleString_ThousandSeparator case is running");
             value = (UChar *)[currentLocale.groupingSeparator UTF8String];
+            //return value;
             break;
         case LocaleString_DecimalSeparator:
+        NSLog(@"NSLog LocaleString_DecimalSeparator case is running");
             value = (UChar *)[currentLocale.decimalSeparator UTF8String];
+            //return value;
             break;
         case LocaleString_Digits:
+        NSLog(@"NSLog LocaleString_Digits case is running");
             // TODO
-            /*{
-                // Native digit can be more than one 16-bit character (e.g. ccp-Cakm-BD locale which using surrogate pairs to represent the native digit).
-                // We'll separate the native digits in the returned buffer by the character '\uFFFF'.
-                int32_t symbolLength = 0;
-                status = GetDigitSymbol(locale, status, UNUM_ZERO_DIGIT_SYMBOL, 0, value, valueLength, &symbolLength);
-
-                int32_t charIndex = symbolLength;
-
-                if (U_SUCCESS(status) && (uint32_t)charIndex < (uint32_t)valueLength)
-                {
-                    value[charIndex++] = 0xFFFF;
-
-                    // symbols UNUM_ONE_DIGIT to UNUM_NINE_DIGIT are contiguous
-                    for (int32_t symbol = UNUM_ONE_DIGIT_SYMBOL; symbol <= UNUM_NINE_DIGIT_SYMBOL && charIndex < valueLength - 3; symbol++)
-                    {
-                        status = GetDigitSymbol(locale, status, (UNumberFormatSymbol)symbol, charIndex, value, valueLength, &symbolLength);
-                        charIndex += symbolLength;
-                        if (!U_SUCCESS(status) || (uint32_t)charIndex >= (uint32_t)valueLength)
-                        {
-                            break;
-                        }
-
-                        value[charIndex++] = 0xFFFF;
-                    }
-
-                    if ((uint32_t)charIndex < (uint32_t)valueLength)
-                    {
-                        value[charIndex] = 0;
-                    }
-                }
-            }*/
-            break;
+           //return value;
+           break;
         case LocaleString_MonetarySymbol:
+        NSLog(@"NSLog LocaleString_MonetarySymbol case is running");
             value = (UChar *)[currentLocale.currencySymbol UTF8String];
+            //return value;
             break;
         case LocaleString_Iso4217MonetarySymbol:
+        NSLog(@"NSLog LocaleString_Iso4217MonetarySymbol case is running");
             // check if this is correct
             value = (UChar *)[currentLocale.currencySymbol UTF8String];
+            //return value;
             break;
         case LocaleString_CurrencyEnglishName:
+        NSLog(@"NSLog LocaleString_CurrencyEnglishName case is running");
             value = (UChar *)[[currentLocale localizedStringForCurrencyCode:currentLocale.currencyCode] UTF8String];
+            //return value;
             break;
         case LocaleString_CurrencyNativeName:
+        NSLog(@"NSLog LocaleString_CurrencyNativeName case is running");
             value = (UChar *)[[currentLocale localizedStringForCurrencyCode:currentLocale.currencyCode] UTF8String];
+            //return value;
             break;
         case LocaleString_MonetaryDecimalSeparator:
+        NSLog(@"NSLog LocaleString_MonetaryDecimalSeparator case is running");
             // TODO
             //status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_SEPARATOR_SYMBOL, value, valueLength, NULL);
+            //return value;
             break;
         case LocaleString_MonetaryThousandSeparator:
+        NSLog(@"NSLog LocaleString_MonetaryThousandSeparator case is running");
             // TODO
             /*status =
                 GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_GROUPING_SEPARATOR_SYMBOL, value, valueLength, NULL);*/
+            //return value;
             break;
         case LocaleString_AMDesignator:
+        NSLog(@"NSLog LocaleString_AMDesignator case is running");
             // TODO
             //status = GetLocaleInfoAmPm(locale, true, value, valueLength);
+            //return value;
             break;
         case LocaleString_PMDesignator:
+        NSLog(@"NSLog LocaleString_PMDesignator case is running");
             // TODO
             //status = GetLocaleInfoAmPm(locale, false, value, valueLength);
+            //return value;
             break;
         case LocaleString_PositiveSign:
-            // TODO
-            //status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PLUS_SIGN_SYMBOL, value, valueLength, NULL);
+        NSLog(@"NSLog LocaleString_PositiveSign case is running");
+            value = (UChar *)[numberFormatter.plusSign UTF8String];
+            //return value;
             break;
         case LocaleString_NegativeSign:
-            // TODO
-            //status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MINUS_SIGN_SYMBOL, value, valueLength, NULL);
+        NSLog(@"NSLog LocaleString_NegativeSign case is running");
+            value = (UChar *)[numberFormatter.minusSign UTF8String];
+            //return value;
             break;
         case LocaleString_Iso639LanguageTwoLetterName:
+        NSLog(@"NSLog LocaleString_LocalizedDisplayName case is running");
             // TODO
             //status = GetLocaleIso639LanguageTwoLetterName(locale, value, valueLength);
+            //return value;
             break;
         case LocaleString_Iso639LanguageThreeLetterName:
+        NSLog(@"NSLog LocaleString_Iso639LanguageThreeLetterName case is running");
             // TODO
             //status = GetLocaleIso639LanguageThreeLetterName(locale, value, valueLength);
+            //return value;
             break;
         case LocaleString_Iso3166CountryName:
+        NSLog(@"NSLog LocaleString_Iso3166CountryName case is running");
             // TODO
+            value = (UChar *)[currentLocale.countryCode UTF8String];
             //status = GetLocaleIso3166CountryName(locale, value, valueLength);
+            //return value;
             break;
         case LocaleString_Iso3166CountryName2:
+        NSLog(@"NSLog LocaleString_Iso3166CountryName2 case is running");
             // TODO
             //status = GetLocaleIso3166CountryCode(locale, value, valueLength);
+            //return value;
             break;
         case LocaleString_NaNSymbol:
-            // TODO
-            //status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_NAN_SYMBOL, value, valueLength, NULL);
+        NSLog(@"NSLog LocaleString_NaNSymbol case is running");
+            value = (UChar *)[numberFormatter.notANumberSymbol UTF8String];
+            //return value;
             break;
         case LocaleString_PositiveInfinitySymbol:
-            // TODO
-            //status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INFINITY_SYMBOL, value, valueLength, NULL);
+        NSLog(@"NSLog LocaleString_PositiveInfinitySymbol case is running");
+            value = (UChar *)[numberFormatter.positiveInfinitySymbol UTF8String];
+            //return value;
+            break;
+        case LocaleString_NegativeInfinitySymbol:
+        NSLog(@"NSLog LocaleString_NegativeInfinitySymbol case is running");
+            value = (UChar *)[numberFormatter.negativeInfinitySymbol UTF8String];
+            //return value;
             break;
         case LocaleString_ParentName:
+        NSLog(@"NSLog LocaleString_ParentName case is running");
             // TODO
-           /* // ICU supports lang[-script][-region][-variant] so up to 4 parents
-            // including invariant locale
-            char localeNameTemp[ULOC_FULLNAME_CAPACITY];
-
-            uloc_getParent(locale, localeNameTemp, ULOC_FULLNAME_CAPACITY, &status);
-            u_charsToUChars_safe(localeNameTemp, value, valueLength, &status);
-            if (U_SUCCESS(status))
-            {
-                FixupLocaleName(value, valueLength);
-            }*/
+          
+            //return value;
             break;
         case LocaleString_PercentSymbol:
-            // TODO
-            //status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERCENT_SYMBOL, value, valueLength, NULL);
+        NSLog(@"NSLog LocaleString_PercentSymbol case is running");
+            value = (UChar *)[numberFormatter.percentSymbol UTF8String];
+            //return value;
             break;
         case LocaleString_PerMilleSymbol:
-            // TODO
-            //status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PERMILL_SYMBOL, value, valueLength, NULL);
+        NSLog(@"NSLog LocaleString_PerMilleSymbol case is running");
+            value = (UChar *)[numberFormatter.perMillSymbol UTF8String];
+            //return value;
             break;
         default:
-            status = U_UNSUPPORTED_ERROR;
+        NSLog(@"NSLog default case is running");
+           // status = U_UNSUPPORTED_ERROR;
+           //return value;
             break;
     }
-
-    return UErrorCodeToBool(status);
+     NSLog(@"Globalization nativeGetLocaleInfo value: %s", (char*)value);
+    //return UErrorCodeToBool(U_ZERO_ERROR);
+    return value;
 }
 
 

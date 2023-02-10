@@ -6,9 +6,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "pal_locale_internal.h"
 #include "pal_localeStringData.h"
+#include <glib.h>
 
 /*
 Function:
@@ -416,11 +418,16 @@ int32_t Native_GetLocaleInfoString(const UChar* localeName,
 {
 #ifdef __APPLE__
     
-       return NativeGetLocaleInfoString(localeName,
+       UChar* val = NativeGetLocaleInfoString(localeName,
                                         localeStringData,
                                         value,
                                         valueLength,
                                         uiLocaleName);
+
+        g_print("Globalization Native_GetLocaleInfoString val: %s", (char*)val);
+        g_print("Globalization Native_GetLocaleInfoString value: %s", (char*)value);
+        value = val;
+        return 1;
 #endif
    
 }

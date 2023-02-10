@@ -826,6 +826,7 @@ namespace System.Globalization.Tests
         [Theory]
         [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)] // for these platforms cultures are taken from icu filters 
         [InlineData("nb-NO")]
+        // check this test
         public void ContainsCulture(string culture)
         {
 			var cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);

@@ -78,7 +78,7 @@ NativeGetLocaleInfoString
 
 NativeGetLocaleInfoString for Apple platforms
 */
-int32_t NativeGetLocaleInfoString(const UChar* localeName,
+UChar* NativeGetLocaleInfoString(const UChar* localeName,
                                                 LocaleStringData localeStringData,
                                                 UChar* value,
                                                 int32_t valueLength,

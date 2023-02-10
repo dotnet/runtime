@@ -969,15 +969,18 @@ namespace System.Globalization
             get
             {
                 string? englishDisplayName = _sEnglishDisplayName;
+                System.Diagnostics.Debug.Write("Globalization EnglishName get englishDisplayName: " + englishDisplayName);
                 if (englishDisplayName == null && !GlobalizationMode.Invariant)
                 {
                     // If its neutral use the language name
                     if (IsNeutralCulture)
                     {
                         englishDisplayName = GetLocaleInfoCore(LocaleStringData.EnglishDisplayName);
+                        System.Diagnostics.Debug.Write("Globalization EnglishName get IsNeutralCulture englishDisplayName: " + englishDisplayName);
                         if (string.IsNullOrEmpty(englishDisplayName))
                         {
                             englishDisplayName = EnglishLanguageName;
+                            System.Diagnostics.Debug.Write("Globalization EnglishName get IsNeutralCulture nested if englishDisplayName: " + englishDisplayName);
                         }
 
                         // differentiate the legacy display names
@@ -992,10 +995,11 @@ namespace System.Globalization
                     else
                     {
                         englishDisplayName = GetLocaleInfoCore(LocaleStringData.EnglishDisplayName);
-
+                        System.Diagnostics.Debug.Write("Globalization EnglishName get else case englishDisplayName: " + englishDisplayName);
                         // if it isn't found build one:
                         if (string.IsNullOrEmpty(englishDisplayName))
                         {
+                            System.Diagnostics.Debug.Write("Globalization EnglishName get still null englishDisplayName: " + englishDisplayName);
                             // Our existing names mostly look like:
                             // "English" + "United States" -> "English (United States)"
                             // "Azeri (Latin)" + "Azerbaijan" -> "Azeri (Latin, Azerbaijan)"
@@ -1007,16 +1011,19 @@ namespace System.Globalization
                                     ", ",
                                     EnglishCountryName,
                                     ")");
+                                System.Diagnostics.Debug.Write("Globalization EnglishName get concat englishDisplayName: " + englishDisplayName);
                             }
                             else
                             {
                                 // "English" + "United States" -> "English (United States)"
                                 englishDisplayName = EnglishLanguageName + " (" + EnglishCountryName + ")";
+                                System.Diagnostics.Debug.Write("Globalization EnglishName get concat else englishDisplayName: " + englishDisplayName);
                             }
                         }
                     }
 
                     _sEnglishDisplayName = englishDisplayName;
+                    System.Diagnostics.Debug.Write("Globalization EnglishName get final initialization englishDisplayName: " + englishDisplayName);
                 }
 
                 return englishDisplayName!;
@@ -2320,7 +2327,7 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
-
+// call this function
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type)
                                             : GlobalizationMode.Hybrid ? NativeGetLocaleInfo(type, uiCultureName)
                                             : IcuGetLocaleInfo(type, uiCultureName);

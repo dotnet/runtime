@@ -82,6 +82,8 @@ namespace System.Globalization
             // Is this needed for native?
             // Get the locale name from ICU
             char* buffer = stackalloc char[Native_ULOC_FULLNAME_CAPACITY];
+            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleName is called");
+            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleName is called localeName: " + localeName);
             if (!Interop.Globalization.NativeGetLocaleName(localeName, buffer, Native_ULOC_FULLNAME_CAPACITY))
             {
                 windowsName = null;
@@ -118,7 +120,12 @@ namespace System.Globalization
 
             char* buffer = stackalloc char[Native_ULOC_KEYWORD_AND_VALUES_CAPACITY];
             // this buffer is initialized
+            Debug.Write("Globalization NativeGetLocaleInfo is called");
+            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleInfo is called localeName: " + localeName);
+            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleInfo is called type: " + type.ToString());
             bool result = Interop.Globalization.NativeGetLocaleInfoString(localeName, (uint)type, buffer, Native_ULOC_KEYWORD_AND_VALUES_CAPACITY, uiCultureName);
+            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleInfo is called result: " + result.ToString());
+            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleInfo is called buffer: " + new string(buffer));
             if (!result)
             {
                 // Failed, just use empty string
