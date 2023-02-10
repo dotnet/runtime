@@ -85,16 +85,73 @@ namespace ILCompiler.Dataflow
         {
             for (int i = 0; i < instantiation.Length; i++)
             {
+                // Apply annotations to the generic argument
+                var genericArgument = instantiation[i];
                 var genericParameter = (GenericParameterDesc)typicalInstantiation[i];
                 if (reflectionMarker.Annotations.GetGenericParameterAnnotation(genericParameter) != default)
                 {
                     var genericParameterValue = reflectionMarker.Annotations.GetGenericParameterValue(genericParameter);
                     Debug.Assert(genericParameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None);
-                    MultiValue genericArgumentValue = reflectionMarker.Annotations.GetTypeValueFromGenericArgument(instantiation[i]);
+                    MultiValue genericArgumentValue = reflectionMarker.Annotations.GetTypeValueFromGenericArgument(genericArgument);
                     var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, genericParameter.GetDisplayName());
                     requireDynamicallyAccessedMembersAction.Invoke(genericArgumentValue, genericParameterValue);
                 }
+
+                // Recursively process generic argument data flow on the generic argument if it itself is generic
+                if (genericArgument.HasInstantiation)
+                {
+                    ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, genericArgument);
+                }
             }
+        }
+
+        public static bool RequiresGenericArgumentDataFlow(FlowAnnotations flowAnnotations, MethodDesc method)
+        {
+            // Method callsites can contain generic instantiations which may contain annotations inside nested generics
+            // so we have to check all of the instantiations for that case.
+            // For example:
+            //   OuterGeneric<InnerGeneric<Annotated>>.Method<InnerGeneric<AnotherAnnotated>>();
+
+            if (method.HasInstantiation)
+            {
+                if (flowAnnotations.HasGenericParameterAnnotation(method))
+                    return true;
+
+                foreach (TypeDesc typeParameter in method.Instantiation)
+                {
+                    if (RequiresGenericArgumentDataFlow(flowAnnotations, typeParameter))
+                        return true;
+                }
+            }
+
+            return RequiresGenericArgumentDataFlow(flowAnnotations, method.OwningType);
+        }
+
+        public static bool RequiresGenericArgumentDataFlow(FlowAnnotations flowAnnotations, FieldDesc field)
+            // Field access can contain generic instantiations which may contain annotations inside nested generics
+            // For example:
+            //  OuterGeneric<InnerGeneric<Annotated>>.Field
+            => RequiresGenericArgumentDataFlow(flowAnnotations, field.OwningType);
+
+        /// <summary>
+        /// For a given type determines if its usage means we need to run the callsite through data flow.
+        /// This is purely for type references alone, so for example for generic parameters.
+        /// </summary>
+        public static bool RequiresGenericArgumentDataFlow(FlowAnnotations flowAnnotations, TypeDesc type)
+        {
+            if (flowAnnotations.HasGenericParameterAnnotation(type))
+                return true;
+
+            if (type.HasInstantiation)
+            {
+                foreach (TypeDesc typeParameter in type.Instantiation)
+                {
+                    if (RequiresGenericArgumentDataFlow(flowAnnotations, typeParameter))
+                        return true;
+                }
+            }
+
+            return false;
         }
     }
 }

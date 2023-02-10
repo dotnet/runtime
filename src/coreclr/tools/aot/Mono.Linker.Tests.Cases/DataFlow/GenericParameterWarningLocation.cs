@@ -43,6 +43,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			PropertyDefinition.Test ();
 			MethodBody.Test ();
 			GenericAttributes.Test ();
+			NestedGenerics.Test ();
 		}
 
 		class TypeInheritance
@@ -1394,6 +1395,170 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				OneSpecificType ();
 				TwoSpecificTypes ();
+			}
+		}
+
+		class NestedGenerics
+		{
+			class RequiresMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T>
+			{
+			}
+
+			class RequiresNothing<T>
+			{
+			}
+
+			class RequiresFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
+			{
+			}
+
+			static void GenericMethodNoRequirements<T> () { }
+
+			static void GenericMethodNoRequirementsAccessToT<T> ()
+			{
+				_ = typeof (T).Name;
+			}
+
+			class GenericTypeWithMethodAndField<T>
+			{
+				public void GenericInstanceMethod<T> () { }
+				public static void GenericMethod<T> () { }
+
+				public static int Field;
+			}
+
+			class TypeWithRUCMethod
+			{
+				[RequiresUnreferencedCode("--RUCMethod--")]
+				public static void RUCMethod () { }
+			}
+
+			[ExpectedWarning ("IL2091", "TUnknown", "RequiresFields", nameof (DynamicallyAccessedMemberTypes.PublicFields))]
+			[ExpectedWarning ("IL2026", "--RUCMethod--")]
+			static void GenericMethodNesting<TUnknown> ()
+			{
+				GenericMethodNoRequirements<RequiresMethods<RequiresNothing<TUnknown>>> (); // No warning
+				GenericMethodNoRequirements<RequiresMethods<RequiresNothing<RequiresFields<TUnknown>>>> (); // IL2091
+				GenericMethodNoRequirements<RequiresMethods<RequiresNothing<RequiresMethods<TypeWithRUCMethod>>>> (); // IL2026
+			}
+
+			[ExpectedWarning ("IL2091", "TUnknown", "RequiresFields", nameof (DynamicallyAccessedMemberTypes.PublicFields))]
+			[ExpectedWarning ("IL2026", "--RUCMethod--")]
+			static void GenericMethodNestingAccessToT<TUnknown> ()
+			{
+				GenericMethodNoRequirementsAccessToT<RequiresMethods<RequiresNothing<TUnknown>>> (); // No warning
+				GenericMethodNoRequirementsAccessToT<RequiresMethods<RequiresNothing<RequiresFields<TUnknown>>>> (); // IL2091
+				GenericMethodNoRequirementsAccessToT<RequiresMethods<RequiresNothing<RequiresMethods<TypeWithRUCMethod>>>> (); // IL2026
+			}
+
+			[ExpectedWarning ("IL2091", "TUnknown", "RequiresFields", nameof (DynamicallyAccessedMemberTypes.PublicFields))]
+			[ExpectedWarning ("IL2026", "--RUCMethod--")]
+			static void GenericInstanceMethodNesting<TUnknown> ()
+			{
+				GenericTypeWithMethodAndField<TestType> instance = new ();
+				instance.GenericInstanceMethod<RequiresMethods<RequiresNothing<TUnknown>>> (); // No warning
+				instance.GenericInstanceMethod<RequiresMethods<RequiresNothing<RequiresFields<TUnknown>>>> (); // IL2091
+				instance.GenericInstanceMethod<RequiresMethods<RequiresNothing<RequiresMethods<TypeWithRUCMethod>>>> (); // IL2026
+			}
+
+			[ExpectedWarning ("IL2091", "TUnknown", "RequiresFields")]
+			[ExpectedWarning ("IL2091", "TUnknown", "RequiresMethods")]
+			[ExpectedWarning ("IL2026", "--RUCMethod--")]
+			[ExpectedWarning ("IL2026", "--RUCMethod--")]
+			static void MethodOnGenericTypeNesting<TUnknown> ()
+			{
+				GenericTypeWithMethodAndField<RequiresMethods<RequiresNothing<TUnknown>>>.GenericMethod<string> (); // No warning
+				GenericTypeWithMethodAndField<RequiresMethods<RequiresNothing<RequiresFields<TUnknown>>>>          // IL2091
+					.GenericMethod<RequiresNothing<RequiresFields<RequiresFields<RequiresMethods<TUnknown>>>>> (); // IL2091
+				GenericTypeWithMethodAndField<RequiresMethods<RequiresNothing<RequiresMethods<TypeWithRUCMethod>>>> // IL2026
+					.GenericMethod<RequiresNothing<RequiresFields<RequiresMethods<TypeWithRUCMethod>>>> (); // IL2026
+			}
+
+			[ExpectedWarning ("IL2091", "TUnknown", "RequiresFields", nameof (DynamicallyAccessedMemberTypes.PublicFields))]
+			[ExpectedWarning ("IL2026", "--RUCMethod--")]
+			static void FieldOnGenericTypeNesting<TUnknown> ()
+			{
+				GenericTypeWithMethodAndField<RequiresMethods<RequiresNothing<TUnknown>>>.Field = 0; // No warning
+				_ = GenericTypeWithMethodAndField<RequiresMethods<RequiresNothing<RequiresFields<TUnknown>>>>.Field; // IL2091
+				_ = GenericTypeWithMethodAndField<RequiresMethods<RequiresNothing<RequiresMethods<TypeWithRUCMethod>>>>.Field; // IL2026
+			}
+
+			class BaseTypeGenericNesting
+			{
+				class Base<T>
+				{
+					static Base () { _ = typeof (T).Name; }
+				}
+
+				class DerivedWithNothing<TUnknown>
+					: Base<RequiresMethods<RequiresNothing<TUnknown>>>
+				{ }
+
+				[ExpectedWarning ("IL2091", "TUnknown", "RequiresFields", nameof (DynamicallyAccessedMemberTypes.PublicFields))]
+				class DerivedWithFields<TUnknown>
+					: Base<RequiresMethods<RequiresNothing<RequiresFields<TUnknown>>>>
+				{
+					static DerivedWithFields()
+					{
+					}
+				}
+
+				[ExpectedWarning ("IL2026", "--RUCMethod--")]
+				class DerivedWithRUC
+					: Base<RequiresMethods<RequiresNothing<RequiresMethods<TypeWithRUCMethod>>>>
+				{ }
+
+				public static void Test()
+				{
+					Type a;
+					a = typeof(DerivedWithNothing<TestType>);
+					a = typeof(DerivedWithFields<TestType>);
+					a = typeof(DerivedWithRUC);
+				}
+			}
+
+			class InterfaceGenericNesting
+			{
+				interface IBase<T>
+				{
+				}
+
+				class DerivedWithNothing<TUnknown>
+					: IBase<RequiresMethods<RequiresNothing<TUnknown>>>
+				{ }
+
+				[ExpectedWarning ("IL2091", "TUnknown", "RequiresFields", nameof (DynamicallyAccessedMemberTypes.PublicFields))]
+				class DerivedWithFields<TUnknown>
+					: IBase<RequiresMethods<RequiresNothing<RequiresFields<TUnknown>>>>
+				{
+					static DerivedWithFields ()
+					{
+					}
+				}
+
+				[ExpectedWarning ("IL2026", "--RUCMethod--")]
+				class DerivedWithRUC
+					: IBase<RequiresMethods<RequiresNothing<RequiresMethods<TypeWithRUCMethod>>>>
+				{ }
+
+				public static void Test ()
+				{
+					Type a;
+					a = typeof (DerivedWithNothing<TestType>);
+					a = typeof (DerivedWithFields<TestType>);
+					a = typeof (DerivedWithRUC);
+				}
+			}
+
+			public static void Test ()
+			{
+				GenericMethodNesting<TestType> ();
+				GenericMethodNestingAccessToT<TestType> ();
+				GenericInstanceMethodNesting<TestType> ();
+				MethodOnGenericTypeNesting<TestType> ();
+				FieldOnGenericTypeNesting<TestType> ();
+				BaseTypeGenericNesting.Test ();
+				InterfaceGenericNesting.Test ();
 			}
 		}
 

@@ -30,13 +30,14 @@ namespace ILCompiler.Dataflow
 
         private MessageOrigin _origin;
 
-        public static bool RequiresReflectionMethodBodyScannerForCallSite(FlowAnnotations flowAnnotations, MethodDesc methodDefinition)
+        public static bool RequiresReflectionMethodBodyScannerForCallSite(FlowAnnotations flowAnnotations, MethodDesc method)
         {
-            return Intrinsics.GetIntrinsicIdForMethod(methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
-                flowAnnotations.RequiresDataflowAnalysis(methodDefinition) ||
-                methodDefinition.DoesMethodRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
-                methodDefinition.DoesMethodRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
-                IsPInvokeDangerous(methodDefinition, out _, out _);
+            return Intrinsics.GetIntrinsicIdForMethod(method) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
+                flowAnnotations.RequiresDataflowAnalysis(method) ||
+                GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, method) ||
+                method.DoesMethodRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                method.DoesMethodRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
+                IsPInvokeDangerous(method, out _, out _);
         }
 
         public static bool RequiresReflectionMethodBodyScannerForMethodBody(FlowAnnotations flowAnnotations, MethodDesc methodDefinition)
@@ -45,11 +46,12 @@ namespace ILCompiler.Dataflow
                 flowAnnotations.RequiresDataflowAnalysis(methodDefinition);
         }
 
-        public static bool RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations flowAnnotations, FieldDesc fieldDefinition)
+        public static bool RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations flowAnnotations, FieldDesc field)
         {
-            return flowAnnotations.RequiresDataflowAnalysis(fieldDefinition) ||
-                fieldDefinition.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
-                fieldDefinition.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
+            return flowAnnotations.RequiresDataflowAnalysis(field) ||
+                GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, field) ||
+                field.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
         }
 
         internal static void CheckAndReportRequires(in DiagnosticContext diagnosticContext, TypeSystemEntity calledMember, string requiresAttributeName)
@@ -673,8 +675,7 @@ namespace ILCompiler.Dataflow
             if (!method.Signature.IsStatic && !method.HasInstantiation && !method.IsConstructor)
                 return;
 
-            if ((method.HasInstantiation && _annotations.HasGenericParameterAnnotation(method)) ||
-                (method.OwningType.HasInstantiation && _annotations.HasGenericParameterAnnotation(method.OwningType)))
+            if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(_annotations, method))
             {
                 TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationAccessPattern(method, _origin));
             }
@@ -687,7 +688,7 @@ namespace ILCompiler.Dataflow
             if (!field.IsStatic)
                 return;
 
-            if (field.OwningType.HasInstantiation && _annotations.HasGenericParameterAnnotation(field.OwningType))
+            if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(_annotations, field))
             {
                 TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationAccessPattern(field, _origin));
             }

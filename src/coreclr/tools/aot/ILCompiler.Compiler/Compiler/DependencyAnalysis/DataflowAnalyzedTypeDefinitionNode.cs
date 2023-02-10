@@ -34,14 +34,14 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (type.HasBaseType)
                 {
-                    foundGenericParameterAnnotation |= IsTypeWithGenericParameterAnnotations(flowAnnotations, type.BaseType);
+                    foundGenericParameterAnnotation |= GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, type.BaseType);
                 }
 
                 if (type is MetadataType metadataType)
                 {
                     foreach (var interfaceType in metadataType.ExplicitlyImplementedInterfaces)
                     {
-                        foundGenericParameterAnnotation |= IsTypeWithGenericParameterAnnotations(flowAnnotations, interfaceType);
+                        foundGenericParameterAnnotation |= GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, interfaceType);
                     }
                 }
             }
@@ -56,9 +56,6 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.DataflowAnalyzedTypeDefinition(type), "Generic parameter dataflow");
             }
-
-            static bool IsTypeWithGenericParameterAnnotations(FlowAnnotations flowAnnotations, TypeDesc type)
-                => type.HasInstantiation && flowAnnotations.HasGenericParameterAnnotation(type);
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
