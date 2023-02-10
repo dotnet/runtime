@@ -45,15 +45,8 @@ namespace Microsoft.Win32.SafeHandles
             return result;
         }
 
-        internal void TryToReuse(FileOverlappedValueTaskSource source)
-        {
-            source._source.Reset();
-
-            if (Interlocked.CompareExchange(ref _reusableOverlappedValueTaskSource, source, null) is not null)
-            {
-                source._preallocatedOverlapped.Dispose();
-            }
-        }
+        internal bool TryToReuse(FileOverlappedValueTaskSource source)
+            => Interlocked.CompareExchange(ref _reusableOverlappedValueTaskSource, source, null) is null;
 
         internal bool TryGetCachedLength(out long cachedLength)
         {

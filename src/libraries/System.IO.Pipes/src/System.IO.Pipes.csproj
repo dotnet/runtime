@@ -109,6 +109,12 @@
          Link="Common\Interop\Windows\Interop.GetCurrentThreadId.cs" />
     <Compile Include="$(CommonPath)System\Threading\AsyncOverSyncWithIoCancellation.cs"
          Link="Common\System\Threading\AsyncOverSyncWithIoCancellation.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\OverlappedValueTaskSource.Windows.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\OverlappedValueTaskSource.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\IO\FileHandleHelper.Windows.cs">
+      <Link>Common\System\IO\FileHandleHelper.Windows.cs</Link>
+    </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Windows.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStreamAcl.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Windows.cs" />

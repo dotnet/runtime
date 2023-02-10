@@ -54,18 +54,8 @@ namespace System.IO.Pipes
             }
         }
 
-        internal override void TryToReuse(PipeValueTaskSource source)
-        {
-            base.TryToReuse(source);
-
-            if (source is ConnectionValueTaskSource connectionSource)
-            {
-                if (Interlocked.CompareExchange(ref _reusableConnectionValueTaskSource, connectionSource, null) is not null)
-                {
-                    source._preallocatedOverlapped.Dispose();
-                }
-            }
-        }
+        internal bool TryToReuse(ConnectionValueTaskSource connectionSource)
+            => Interlocked.CompareExchange(ref _reusableConnectionValueTaskSource, connectionSource, null) is null;
 
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
@@ -315,11 +305,12 @@ namespace System.IO.Pipes
             CheckConnectOperationsServerWithHandle();
             Debug.Assert(IsAsync);
 
-            ConnectionValueTaskSource? vts = Interlocked.Exchange(ref _reusableConnectionValueTaskSource, null) ?? new ConnectionValueTaskSource(this);
+            ConnectionValueTaskSource? vts = Interlocked.Exchange(ref _reusableConnectionValueTaskSource, null)
+                ?? new ConnectionValueTaskSource(this, _handle!, _threadPoolBinding!);
             try
             {
-                vts.PrepareForOperation();
-                if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, vts._overlapped))
+                NativeOverlapped* overlapped = vts.PrepareForOperation(memory: default, fileOffset: 0, isRead: false, owner: this);
+                if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, overlapped))
                 {
                     int errorCode = Marshal.GetLastPInvokeError();
                     switch (errorCode)

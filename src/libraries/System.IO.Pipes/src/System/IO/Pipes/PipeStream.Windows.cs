@@ -248,18 +248,10 @@ namespace System.IO.Pipes
             _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
         }
 
-        internal virtual void TryToReuse(PipeValueTaskSource source)
+        internal bool TryToReuse(bool isRead, ReadWriteValueTaskSource readWriteSource)
         {
-            source._source.Reset();
-
-            if (source is ReadWriteValueTaskSource readWriteSource)
-            {
-                ref ReadWriteValueTaskSource? field = ref readWriteSource._isWrite ? ref _reusableWriteValueTaskSource : ref _reusableReadValueTaskSource;
-                if (Interlocked.CompareExchange(ref field, readWriteSource, null) is not null)
-                {
-                    source._preallocatedOverlapped.Dispose();
-                }
-            }
+            ref ReadWriteValueTaskSource? field = ref isRead ? ref _reusableReadValueTaskSource : ref _reusableWriteValueTaskSource;
+            return Interlocked.CompareExchange(ref field, readWriteSource, null) is null;
         }
 
         private void DisposeCore(bool disposing)
@@ -315,54 +307,21 @@ namespace System.IO.Pipes
         {
             Debug.Assert(_isAsync);
 
-            ReadWriteValueTaskSource vts = Interlocked.Exchange(ref _reusableReadValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, isWrite: false);
-            try
+            (OverlappedValueTaskSource? vts, int errorCode) = FileHandleHelper.QueueAsyncReadFile(
+                Interlocked.Exchange(ref _reusableReadValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, _handle!, _threadPoolBinding!),
+                _handle!, buffer, fileOffset: 0, cancellationToken, owner: this);
+
+            if (vts is not null)
             {
-                vts.PrepareForOperation(buffer);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
-
-                // Queue an async ReadFile operation.
-                if (Interop.Kernel32.ReadFile(_handle!, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, vts._overlapped) == 0)
-                {
-                    // The operation failed, or it's pending.
-                    int errorCode = Marshal.GetLastPInvokeError();
-                    switch (errorCode)
-                    {
-                        case Interop.Errors.ERROR_IO_PENDING:
-                            // Common case: IO was initiated, completion will be handled by callback.
-                            // Register for cancellation now that the operation has been initiated.
-                            vts.RegisterForCancellation(cancellationToken);
-                            break;
-
-                        case Interop.Errors.ERROR_MORE_DATA:
-                            // The operation is completing asynchronously but there's nothing to cancel.
-                            break;
-
-                        // One side has closed its handle or server disconnected.
-                        // Set the state to Broken and do some cleanup work
-                        case Interop.Errors.ERROR_BROKEN_PIPE:
-                        case Interop.Errors.ERROR_PIPE_NOT_CONNECTED:
-                            State = PipeState.Broken;
-                            vts._overlapped->InternalLow = IntPtr.Zero;
-                            vts.Dispose();
-                            UpdateMessageCompletion(true);
-                            return new ValueTask<int>(0);
-
-                        default:
-                            // Error. Callback will not be called.
-                            vts.Dispose();
-                            return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode));
-                    }
-                }
-            }
-            catch
-            {
-                vts.Dispose();
-                throw;
+                return new ValueTask<int>(vts, vts.Version);
             }
 
-            vts.FinishedScheduling();
-            return new ValueTask<int>(vts, vts.Version);
+            if (errorCode == 0)
+            {
+                return ValueTask.FromResult(0);
+            }
+
+            return ValueTask.FromException<int>(WinIOError(errorCode));
         }
 
         private unsafe void WriteCore(ReadOnlySpan<byte> buffer)
@@ -389,41 +348,21 @@ namespace System.IO.Pipes
         {
             Debug.Assert(_isAsync);
 
-            ReadWriteValueTaskSource vts = Interlocked.Exchange(ref _reusableWriteValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, isWrite: true);
-            try
-            {
-                vts.PrepareForOperation(buffer);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
+            (OverlappedValueTaskSource? vts, int errorCode) = FileHandleHelper.QueueAsyncWriteFile(
+                Interlocked.Exchange(ref _reusableWriteValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, _handle!, _threadPoolBinding!),
+                _handle!, buffer, fileOffset: 0, cancellationToken, owner: this);
 
-                // Queue an async WriteFile operation.
-                if (Interop.Kernel32.WriteFile(_handle!, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, vts._overlapped) == 0)
-                {
-                    // The operation failed, or it's pending.
-                    int errorCode = Marshal.GetLastPInvokeError();
-                    switch (errorCode)
-                    {
-                        case Interop.Errors.ERROR_IO_PENDING:
-                            // Common case: IO was initiated, completion will be handled by callback.
-                            // Register for cancellation now that the operation has been initiated.
-                            vts.RegisterForCancellation(cancellationToken);
-                            break;
-
-                        default:
-                            // Error. Callback will not be invoked.
-                            vts.Dispose();
-                            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(WinIOError(errorCode)));
-                    }
-                }
-            }
-            catch
+            if (vts is not null)
             {
-                vts.Dispose();
-                throw;
+                return new ValueTask(vts, vts.Version);
             }
 
-            // Completion handled by callback.
-            vts.FinishedScheduling();
-            return new ValueTask(vts, vts.Version);
+            if (errorCode == 0)
+            {
+                return ValueTask.CompletedTask;
+            }
+
+            return ValueTask.FromException(WinIOError(errorCode));
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.

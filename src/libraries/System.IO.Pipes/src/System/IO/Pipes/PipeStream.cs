@@ -3,8 +3,6 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +12,7 @@ namespace System.IO.Pipes
     {
         internal const string AnonymousPipeName = "anonymous";
 
-        private SafePipeHandle? _handle;
+        private protected SafePipeHandle? _handle;
         private bool _canRead;
         private bool _canWrite;
         private bool _isAsync;

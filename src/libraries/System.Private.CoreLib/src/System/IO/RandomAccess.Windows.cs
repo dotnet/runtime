@@ -458,7 +458,7 @@ namespace System.IO
             OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
             try
             {
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(Memory<byte>.Empty, fileOffset);
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(Memory<byte>.Empty, fileOffset, isRead: true);
                 Debug.Assert(segmentsPtr != IntPtr.Zero);
 
                 if (Interop.Kernel32.ReadFileScatter(handle, (long*)segmentsPtr, bytesToRead, IntPtr.Zero, nativeOverlapped) == 0)
@@ -555,7 +555,7 @@ namespace System.IO
             OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
             try
             {
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(ReadOnlyMemory<byte>.Empty, fileOffset);
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(ReadOnlyMemory<byte>.Empty, fileOffset, isRead: false);
                 Debug.Assert(segmentsPtr != IntPtr.Zero);
 
                 // Queue an async WriteFile operation.
@@ -573,7 +573,7 @@ namespace System.IO
                     {
                         // Error. Callback will not be invoked.
                         vts.Dispose();
-                        return ValueTask.FromException(OverlappedValueTaskSource.GetIOError(errorCode, path: null));
+                        return ValueTask.FromException(GetIOError(errorCode, path: null));
                     }
                 }
             }
@@ -586,6 +586,11 @@ namespace System.IO
             // Completion handled by callback.
             vts.FinishedScheduling();
             return new ValueTask(vts, vts.Version);
+
+            static Exception GetIOError(int errorCode, string? path)
+                => errorCode == Interop.Errors.ERROR_HANDLE_EOF
+                    ? ThrowHelper.CreateEndOfFileException()
+                    : Win32Marshal.GetExceptionForWin32Error(errorCode, path);
         }
 
         private static async ValueTask WriteGatherAtOffsetMultipleSyscallsAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)

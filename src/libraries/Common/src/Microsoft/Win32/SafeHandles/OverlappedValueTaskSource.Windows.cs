@@ -16,13 +16,14 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
 
-        internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
+        private readonly PreAllocatedOverlapped _preallocatedOverlapped;
         internal readonly SafeHandle _fileHandle;
         private readonly ThreadPoolBoundHandle _threadPoolBinding;
         private readonly bool _canSeek;
         protected Stream? _owner;
         internal MemoryHandle _memoryHandle;
         protected int _bufferSize;
+        protected bool _isRead;
         internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
         private NativeOverlapped* _overlapped;
         private CancellationTokenRegistration _cancellationRegistration;
@@ -48,20 +49,16 @@ namespace Microsoft.Win32.SafeHandles
             _preallocatedOverlapped.Dispose();
         }
 
-        internal static Exception GetIOError(int errorCode, string? path)
-            => errorCode == Interop.Errors.ERROR_HANDLE_EOF
-                ? ThrowHelper.CreateEndOfFileException()
-                : Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+        protected abstract bool TryToReuse();
 
-        protected abstract void TryToReuse();
+        internal abstract void Handle(Stream owner, uint errorCode, uint byteCount);
 
-        internal abstract void HandleIncomplete(Stream owner, uint errorCode, uint byteCount);
-
-        internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, Stream? owner = null)
+        internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, bool isRead, Stream? owner = null)
         {
             _result = 0;
             _owner = owner;
             _bufferSize = memory.Length;
+            _isRead = isRead;
             _memoryHandle = memory.Pin();
             _overlapped = _threadPoolBinding.AllocateNativeOverlapped(_preallocatedOverlapped);
             if (_canSeek)
@@ -84,7 +81,12 @@ namespace Microsoft.Win32.SafeHandles
             finally
             {
                 // The instance is ready to be reused
-                TryToReuse();
+                _source.Reset();
+
+                if (!TryToReuse())
+                {
+                    _preallocatedOverlapped.Dispose();
+                }
             }
         }
 
@@ -182,12 +184,13 @@ namespace Microsoft.Win32.SafeHandles
 
             if (owner is not null)
             {
-                HandleIncomplete(owner, errorCode, numBytes);
+                Handle(owner, errorCode, numBytes);
             }
 
             switch (errorCode)
             {
                 case Interop.Errors.ERROR_SUCCESS:
+                case Interop.Errors.ERROR_PIPE_CONNECTED: // special case for when the client has already connected to us
                 case Interop.Errors.ERROR_BROKEN_PIPE:
                 case Interop.Errors.ERROR_NO_DATA:
                 case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)

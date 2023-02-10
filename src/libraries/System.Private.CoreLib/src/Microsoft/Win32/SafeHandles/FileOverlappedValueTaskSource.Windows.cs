@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 using System.IO.Strategies;
 
@@ -8,17 +9,19 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed unsafe class FileOverlappedValueTaskSource : OverlappedValueTaskSource
     {
+        private readonly SafeFileHandle _safeFileHandle;
+
         internal FileOverlappedValueTaskSource(SafeFileHandle fileHandle) : base(fileHandle, fileHandle.ThreadPoolBinding!, fileHandle.CanSeek)
         {
+            _safeFileHandle = fileHandle;
         }
 
-        protected override void TryToReuse()
-        {
-            ((SafeFileHandle)_fileHandle).TryToReuse(this);
-        }
+        protected override bool TryToReuse() => _safeFileHandle.TryToReuse(this);
 
-        internal override void HandleIncomplete(Stream owner, uint errorCode, uint byteCount)
+        internal override void Handle(Stream owner, uint errorCode, uint byteCount)
         {
+            Debug.Assert(errorCode is not Interop.Errors.ERROR_PIPE_CONNECTED);
+
             switch (errorCode)
             {
                 case Interop.Errors.ERROR_SUCCESS:
