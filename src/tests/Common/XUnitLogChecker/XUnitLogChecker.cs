@@ -47,9 +47,21 @@ public class XUnitLogChecker
         string resultsDir = args[0];
         string wrapperName = args[1];
 
-        string tempLogName = $"{wrapperName}.tempLog.xml";
-        string finalLogName = $"{wrapperName}.testResults.xml";
-        string statsCsvName = $"{wrapperName}.testStats.csv";
+        // Browser-Wasm tests follow a different test files layout in Helix.
+        // Everything is located in a root folder, rather than the usual path
+        // with the wrapper name other platforms follow.
+
+        string tempLogName = string.IsNullOrEmpty(wrapperName)
+                             ? "tempLog.xml"
+                             : $"{wrapperName}.tempLog.xml";
+
+        string finalLogName = string.IsNullOrEmpty(wrapperName)
+                              ? "testResults.xml"
+                              : $"{wrapperName}.testResults.xml";
+
+        string statsCsvName = string.IsNullOrEmpty(wrapperName)
+                              ? "testStats.csv"
+                              : $"{wrapperName}.testStats.csv";
 
         string tempLogPath = Path.Combine(resultsDir, tempLogName);
         string finalLogPath = Path.Combine(resultsDir, finalLogName);
@@ -63,6 +75,7 @@ public class XUnitLogChecker
         {
             Console.WriteLine("[XUnitLogChecker]: No logs were found. Something"
                               + " went very wrong with this item...");
+            Console.WriteLine($"[XUnitLogChecker]: Expected log name: '{tempLogName}'");
 
             return SOMETHING_VERY_WRONG;
         }
