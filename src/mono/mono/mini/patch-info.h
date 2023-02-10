@@ -19,6 +19,7 @@ PATCH_INFO(LDTOKEN, "ldtoken")
 PATCH_INFO(TYPE_FROM_HANDLE, "type_from_handle")
 PATCH_INFO(R4, "r4")
 PATCH_INFO(R8, "r8")
+PATCH_INFO(X128, "x128")
 PATCH_INFO(IP, "ip")
 PATCH_INFO(IID, "iid")
 PATCH_INFO(ADJUSTED_IID, "adjusted_iid")
@@ -76,12 +77,13 @@ PATCH_INFO(SPECIFIC_TRAMPOLINES, "specific_trampolines")
 PATCH_INFO(SPECIFIC_TRAMPOLINES_GOT_SLOTS_BASE, "specific_trampolines_got_slots_base")
 
 /*
- * PATCH_INFO_R4/R8 is handled by mono_arch_emit_exceptions () by emitting the data
- * into the text segment after the method body. These patches emit the data
+ * PATCH_INFO_* is handled by mono_arch_emit_exceptions () by emitting the data
+ * into the text segment after the method body. PATCH_INFO_*_GOT emit the data
  * elsewhere.
  */
 PATCH_INFO(R8_GOT, "r8_got")
 PATCH_INFO(R4_GOT, "r4_got")
+PATCH_INFO(X128_GOT, "x128_got")
 
 /* MonoMethod* -> the address of a memory slot which is used to cache the pinvoke address */
 PATCH_INFO(METHOD_PINVOKE_ADDR_CACHE, "pinvoke_addr_cache")

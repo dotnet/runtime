@@ -7296,6 +7296,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XONES:
 			amd64_sse_pcmpeqb_reg_reg (code, ins->dreg, ins->dreg);
 			break;
+		case OP_XCONST: {
+			if (cfg->compile_aot && cfg->code_exec_only) {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128_GOT, ins->inst_p0);
+				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof(gpointer));
+				amd64_sse_movups_reg_membase (code, ins->dreg, AMD64_R11, 0);
+			} else {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128, ins->inst_p0);
+				amd64_sse_movups_reg_membase (code, ins->dreg, AMD64_RIP, 0);
+			}
+			break;
+		}
 		case OP_ICONV_TO_R4_RAW:
 			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			if (!cfg->r4fp)
@@ -8140,11 +8151,13 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_EXC)
 			code_size += 40;
-		if (patch_info->type == MONO_PATCH_INFO_R8)
+		else if (patch_info->type == MONO_PATCH_INFO_X128)
+			code_size += 16 + 15; /* sizeof (Vector128<T>) + alignment */
+		else if (patch_info->type == MONO_PATCH_INFO_R8)
 			code_size += 8 + 15; /* sizeof (double) + alignment */
-		if (patch_info->type == MONO_PATCH_INFO_R4)
+		else if (patch_info->type == MONO_PATCH_INFO_R4)
 			code_size += 4 + 15; /* sizeof (float) + alignment */
-		if (patch_info->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR)
+		else if (patch_info->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR)
 			code_size += 8 + 7; /*sizeof (void*) + alignment */
 	}
 
@@ -8213,10 +8226,15 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		guint8 *orig_code = code;
 
 		switch (patch_info->type) {
+		case MONO_PATCH_INFO_X128:
 		case MONO_PATCH_INFO_R8:
 		case MONO_PATCH_INFO_R4: {
 			guint8 *pos, *patch_pos;
 			guint32 target_pos;
+
+			// FIXME: R8 and R4 only need 8 and 4 byte alignment, respectively
+			// They should be handled separately with anything needing 16 byte
+			// alignment using X128
 
 			/* The SSE opcodes require a 16 byte alignment */
 			code = (guint8*)ALIGN_TO (code, 16);
@@ -8231,7 +8249,10 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				target_pos = GPTRDIFF_TO_UINT32 (code - pos - 8);
 			}
 
-			if (patch_info->type == MONO_PATCH_INFO_R8) {
+			if (patch_info->type == MONO_PATCH_INFO_X128) {
+				memcpy (code, patch_info->data.target, 16);
+				code += 16;
+			} else if (patch_info->type == MONO_PATCH_INFO_R8) {
 				*(double*)code = *(double*)patch_info->data.target;
 				code += sizeof (double);
 			} else {

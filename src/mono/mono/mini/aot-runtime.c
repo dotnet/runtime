@@ -3842,6 +3842,26 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		*(double*)ji->data.target = *(double*)&v;
 		break;
 	}
+	case MONO_PATCH_INFO_X128:
+	case MONO_PATCH_INFO_X128_GOT: {
+		guint32 val [4];
+		guint64 v[2];
+
+		// FIXME: Align to 16 bytes ?
+		ji->data.target = mono_mem_manager_alloc0 (mem_manager, 16);
+
+		val [0] = decode_value (p, &p);
+		val [1] = decode_value (p, &p);
+		val [2] = decode_value (p, &p);
+		val [3] = decode_value (p, &p);
+
+		v[0] = ((guint64)val [1] << 32) | ((guint64)val [0]);
+		*(guint64*)ji->data.target = v[0];
+
+		v[1] = ((guint64)val [3] << 32) | ((guint64)val [2]);
+		*(guint64*)ji->data.target = v[1];
+		break;
+	}
 	case MONO_PATCH_INFO_LDSTR:
 		image = load_image (aot_module, decode_value (p, &p), error);
 		mono_error_cleanup (error); /* FIXME don't swallow the error */
