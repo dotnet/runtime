@@ -29,12 +29,12 @@ namespace Microsoft.Win32.SafeHandles
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
-        private OverlappedValueTaskSource? _reusableOverlappedValueTaskSource; // reusable OverlappedValueTaskSource that is currently NOT being used
+        private FileOverlappedValueTaskSource? _reusableOverlappedValueTaskSource; // reusable OverlappedValueTaskSource that is currently NOT being used
 
         // Rent the reusable OverlappedValueTaskSource, or create a new one to use if we couldn't get one (which
         // should only happen on first use or if the SafeFileHandle is being used concurrently).
-        internal OverlappedValueTaskSource GetOverlappedValueTaskSource() =>
-            Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new OverlappedValueTaskSource(this);
+        internal FileOverlappedValueTaskSource GetOverlappedValueTaskSource() =>
+            Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new FileOverlappedValueTaskSource(this);
 
         protected override bool ReleaseHandle()
         {
@@ -45,7 +45,7 @@ namespace Microsoft.Win32.SafeHandles
             return result;
         }
 
-        internal void TryToReuse(OverlappedValueTaskSource source)
+        internal void TryToReuse(FileOverlappedValueTaskSource source)
         {
             source._source.Reset();
 
