@@ -19,7 +19,6 @@
         $(AppleBuildSupportDir) - directory which has all the tasks, targets, and runtimepack
 -->
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)LibraryBuilder.props" />
   <Import Project="$(MSBuildThisFileDirectory)AppleApp.props" />
 
   <PropertyGroup>

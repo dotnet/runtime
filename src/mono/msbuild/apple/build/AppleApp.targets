@@ -7,6 +7,7 @@
 
   <PropertyGroup>
     <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
+    <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
     <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AppleGenerateAppBundle>
   </PropertyGroup>
 
