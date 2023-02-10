@@ -152,7 +152,6 @@ namespace DebuggerTests
             var init_cmds = new List<(string, JObject)>
             {
                 ("Runtime.enable", null),
-                ("Debugger.enable", null),
                 ("Runtime.runIfWaitingForDebugger", null),
                 ("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 })),
                 ("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }))

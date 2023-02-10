@@ -352,20 +352,25 @@ namespace DebuggerTests
             });
         }
 
-        public async Task OpenSessionAsync(List<(string cmd, JObject? args)> initCmdList, string urlToInspect, TimeSpan span)
+        public async Task OpenSessionAsync(List<(string cmd, JObject? args)> _initCmdList, string urlToInspect, TimeSpan span)
         {
             var start = DateTime.Now;
             try
             {
                 await LaunchBrowser(start, span);
                 var init_cmds = new List<(string, Task<Result>)>();
-                this.initCmdList = initCmdList;
+                initCmdList = _initCmdList;
+                if (DebuggerTestBase.RunningOnChrome)
+                {
+                    await Client.SendCommand("Debugger.enable", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token);
+                    await Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token);
+                    initCmdList.Add(("Debugger.enable", null));
+                }
                 foreach (var cmdToInit in initCmdList)
                 {
-                    await Client.SendCommand(cmdToInit.cmd, cmdToInit.args, _cancellationTokenSource.Token);
+                    init_cmds.Add((cmdToInit.cmd, Client.SendCommand(cmdToInit.cmd, cmdToInit.args, _cancellationTokenSource.Token)));
                 }
-                if (DebuggerTestBase.RunningOnChrome)
-                    await Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token);
+
                 Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
                 init_cmds.Add((APP_READY, readyTask));
 
