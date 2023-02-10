@@ -5337,9 +5337,6 @@ void LinearScan::allocateRegisters()
                         // We have just assigned it `copyRegMask` and that's the one in-use, and not the
                         // one that was assigned previously.
                         assignedRegMask = REG_NA;
-
-                        // This should never be the first refposition of the series.
-                        assert(currentRefPosition.regCount == 0);
                     }
 #endif
                     regsInUseThisLocation |= copyRegMask | assignedRegMask;
@@ -5433,9 +5430,13 @@ void LinearScan::allocateRegisters()
                 else
                 {
                     // If the subsequent refPosition is not assigned to the consecutive register, then reassign the
-                    // right
-                    // consecutive register.
+                    // right consecutive register.
                     assignedRegister = REG_NA;
+                    if (assignedRegBit != RBM_NONE)
+                    {
+                        RegRecord* physRegRecord = getRegisterRecord(currentInterval->physReg);
+                        unassignPhysRegNoSpill(physRegRecord);
+                    }
                 }
             }
         }
