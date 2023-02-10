@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -13,6 +14,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_ret_i
+{
 .class public		_ret {
 
 //---- GLOBAL DATA ----------
@@ -32,18 +35,21 @@
 }
 
 //---- MAIN -----------------
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
-.locals		(class _ret,int32)
+.locals		(class ldc_ret_i._ret,int32)
 .maxstack		5
 //====== begin testing ======
-	newobj		instance void _ret::_ret()
+	newobj		instance void ldc_ret_i._ret::_ret()
 	stloc		0
 	ldc.i4		0xFF
 	stloc		1
 	ldloc		0
 	ldloca		1
-	call		instance int32& _ret::ret_test_0(int32&)
+	call		instance int32& ldc_ret_i._ret::ret_test_0(int32&)
 	ldloca		1
 	ceq
 	brfalse	FAIL
@@ -70,3 +76,4 @@ END:
 
 .assembly ldc_ret_i{}
 
+}

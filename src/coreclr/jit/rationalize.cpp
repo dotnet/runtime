@@ -53,30 +53,14 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
     GenTreeIndir* indir = use.Def()->AsIndir();
     assert(indir->OperIs(GT_IND, GT_BLK, GT_OBJ));
 
-    // Clear the `GTF_IND_ASG_LHS` flag, which overlaps with `GTF_IND_REQ_ADDR_IN_REG`.
-    indir->gtFlags &= ~GTF_IND_ASG_LHS;
-
-    if (indir->OperIs(GT_IND))
+    if (varTypeIsSIMD(indir))
     {
-        if (varTypeIsSIMD(indir))
-        {
-            RewriteSIMDIndir(use);
-        }
-    }
-    else if (indir->OperIs(GT_OBJ))
-    {
-        assert((indir->TypeGet() == TYP_STRUCT) || !use.User()->OperIsInitBlkOp());
-        if (varTypeIsSIMD(indir->TypeGet()))
+        if (indir->OperIs(GT_BLK, GT_OBJ))
         {
             indir->SetOper(GT_IND);
-            RewriteSIMDIndir(use);
         }
-    }
-    else
-    {
-        assert(indir->OperIs(GT_BLK));
-        // We should only see GT_BLK for TYP_STRUCT or for InitBlocks.
-        assert((indir->TypeGet() == TYP_STRUCT) || use.User()->OperIsInitBlkOp());
+
+        RewriteSIMDIndir(use);
     }
 }
 
@@ -85,8 +69,8 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
 // Arguments:
 //    use - A use of a GT_IND node of SIMD type
 //
-// TODO-1stClassStructs: These should be eliminated earlier, once we can handle
-// lclVars in all the places that used to have GT_OBJ.
+// TODO-ADDR: delete this once block morphing stops taking addresses of locals
+// under COMMAs.
 //
 void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 {
@@ -413,45 +397,18 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
     genTreeOps locationOp = location->OperGet();
 
-    if (assignment->OperIsBlkOp())
+    if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
     {
-#ifdef FEATURE_SIMD
-        if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
-        {
-            if (location->OperIs(GT_LCL_VAR))
-            {
-                var_types simdType = location->TypeGet();
-                GenTree*  initVal  = assignment->AsOp()->gtOp2;
+        var_types simdType = location->TypeGet();
+        GenTree*  initVal  = assignment->AsOp()->gtOp2;
+        GenTree*  zeroCon  = comp->gtNewZeroConNode(simdType);
+        noway_assert(initVal->IsIntegralConst(0)); // All SIMD InitBlks are zero inits.
 
-                CorInfoType simdBaseJitType = comp->getBaseJitTypeOfSIMDLocal(location);
-                if (simdBaseJitType == CORINFO_TYPE_UNDEF)
-                {
-                    // Lie about the type if we don't know/have it.
-                    simdBaseJitType = CORINFO_TYPE_FLOAT;
-                }
+        assignment->gtOp2 = zeroCon;
+        value             = zeroCon;
 
-                if (initVal->IsIntegralConst(0))
-                {
-                    GenTree* zeroCon = comp->gtNewZeroConNode(simdType);
-
-                    assignment->gtOp2 = zeroCon;
-                    value             = zeroCon;
-
-                    BlockRange().InsertAfter(initVal, zeroCon);
-                    BlockRange().Remove(initVal);
-                }
-                else
-                {
-                    GenTreeSIMD* simdTree = comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType,
-                                                                genTypeSize(simdType));
-                    assignment->gtOp2 = simdTree;
-                    value             = simdTree;
-
-                    BlockRange().InsertAfter(initVal, simdTree);
-                }
-            }
-        }
-#endif // FEATURE_SIMD
+        BlockRange().InsertAfter(initVal, zeroCon);
+        BlockRange().Remove(initVal);
     }
 
     switch (locationOp)
@@ -522,56 +479,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
     }
 }
 
-void Rationalizer::RewriteAddress(LIR::Use& use)
-{
-    assert(use.IsInitialized());
-
-    GenTreeUnOp* address = use.Def()->AsUnOp();
-    assert(address->OperGet() == GT_ADDR);
-
-    GenTree*   location   = address->gtGetOp1();
-    genTreeOps locationOp = location->OperGet();
-
-    if (location->IsLocal())
-    {
-// We are changing the child from GT_LCL_VAR TO GT_LCL_VAR_ADDR.
-// Therefore gtType of the child needs to be changed to a TYP_BYREF
-#ifdef DEBUG
-        if (locationOp == GT_LCL_VAR)
-        {
-            JITDUMP("Rewriting GT_ADDR(GT_LCL_VAR) to GT_LCL_VAR_ADDR:\n");
-        }
-        else
-        {
-            assert(locationOp == GT_LCL_FLD);
-            JITDUMP("Rewriting GT_ADDR(GT_LCL_FLD) to GT_LCL_FLD_ADDR:\n");
-        }
-#endif // DEBUG
-
-        location->SetOper(addrForm(locationOp));
-        location->gtType = TYP_BYREF;
-        copyFlags(location, address, GTF_ALL_EFFECT);
-
-        use.ReplaceWith(location);
-        BlockRange().Remove(address);
-    }
-    else if (location->OperIsIndir())
-    {
-        use.ReplaceWith(location->gtGetOp1());
-        BlockRange().Remove(location);
-        BlockRange().Remove(address);
-
-        JITDUMP("Rewriting GT_ADDR(GT_IND(X)) to X:\n");
-    }
-    else
-    {
-        unreached();
-    }
-
-    DISPTREERANGE(BlockRange(), use.Def());
-    JITDUMP("\n");
-}
-
 Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::GenTreeStack& parentStack)
 {
     assert(useEdge != nullptr);
@@ -599,10 +506,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             RewriteAssignment(use);
             break;
 
-        case GT_ADDR:
-            RewriteAddress(use);
-            break;
-
         case GT_IND:
         case GT_BLK:
         case GT_OBJ:
@@ -614,8 +517,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // args as these have now been sequenced.
             for (CallArg& arg : node->AsCall()->gtArgs.EarlyArgs())
             {
-                if (!arg.GetEarlyNode()->IsValue())
+                if (arg.GetLateNode() != nullptr)
                 {
+                    if (arg.GetEarlyNode()->IsValue())
+                    {
+                        arg.GetEarlyNode()->SetUnusedValue();
+                    }
                     arg.SetEarlyNode(nullptr);
                 }
             }
@@ -700,37 +607,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // Non-target intrinsics should have already been rewritten back into user calls.
             assert(comp->IsTargetIntrinsic(node->AsIntrinsic()->gtIntrinsicName));
             break;
-
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-        {
-            GenTreeSIMD* simdNode = node->AsSIMD();
-            unsigned     simdSize = simdNode->GetSimdSize();
-            var_types    simdType = comp->getSIMDTypeForSize(simdSize);
-
-            // Certain SIMD trees require rationalizing.
-            if (simdNode->AsSIMD()->GetSIMDIntrinsicId() == SIMDIntrinsicInitArray)
-            {
-                // Rewrite this as an explicit load.
-                JITDUMP("Rewriting GT_SIMD array init as an explicit load:\n");
-                unsigned int baseTypeSize = genTypeSize(simdNode->GetSimdBaseType());
-
-                GenTree* base    = simdNode->Op(1);
-                GenTree* index   = (simdNode->GetOperandCount() == 2) ? simdNode->Op(2) : nullptr;
-                GenTree* address = new (comp, GT_LEA)
-                    GenTreeAddrMode(TYP_BYREF, base, index, baseTypeSize, OFFSETOF__CORINFO_Array__data);
-                GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
-
-                BlockRange().InsertBefore(simdNode, address, ind);
-                use.ReplaceWith(ind);
-                BlockRange().Remove(simdNode);
-
-                DISPTREERANGE(BlockRange(), use.Def());
-                JITDUMP("\n");
-            }
-        }
-        break;
-#endif // FEATURE_SIMD
 
         default:
             // Check that we don't have nodes not allowed in HIR here.

@@ -16,8 +16,7 @@ void emitBegFN(bool hasFramePtr
                ,
                bool checkAlign
 #endif
-               ,
-               unsigned maxTmpSize);
+               );
 
 void emitEndFN();
 
@@ -65,6 +64,7 @@ void emitFinishPrologEpilogGeneration();
 
 void*    emitCurBlock();
 unsigned emitCurOffset();
+unsigned emitSpecifiedOffset(unsigned insCount, unsigned igSize);
 
 UNATIVE_OFFSET emitCodeOffset(void* blockPtr, unsigned codeOffs);
 

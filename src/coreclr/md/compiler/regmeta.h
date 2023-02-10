@@ -92,23 +92,15 @@ struct CCustAttrHashKey
     int         ca;                     // flag indicating what the ca is.
 };
 
-class CCustAttrHash : public CClosedHashEx<CCustAttrHashKey, CCustAttrHash>
+class CustAttrHashTraits : public NoRemoveSHashTraits<DefaultSHashTraits<CCustAttrHashKey>>
 {
-    typedef CCustAttrHashKey T;
-
-    using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::Hash;
-    using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::Compare;
-    using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::Status;
-    using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::SetStatus;
-    using CClosedHashEx<CCustAttrHashKey, CCustAttrHash>::GetKey;
-
 public:
-    CCustAttrHash(int iBuckets=37) : CClosedHashEx<CCustAttrHashKey,CCustAttrHash>(iBuckets) {}
-    unsigned int Hash(const T *pData);
-    unsigned int Compare(const T *p1, T *p2);
-    ELEMENTSTATUS Status(T *pEntry);
-    void SetStatus(T *pEntry, ELEMENTSTATUS s);
-    void* GetKey(T *pEntry);
+    using key_t = mdToken;
+    static const key_t GetKey(_In_ const element_t& e) { return e.tkType; }
+    static count_t Hash(_In_ key_t key) { return static_cast<count_t>(key); }
+    static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return lhs == rhs; }
+    static bool IsNull(_In_ const element_t& e) { return e.tkType == mdTokenNil; }
+    static const element_t Null() { return CCustAttrHashKey{ mdTokenNil, 0 }; }
 };
 
 class MDInternalRW;
@@ -1821,6 +1813,7 @@ protected:
         PCCOR_SIGNATURE pvNativeType,       // [IN] native type specification
         ULONG       cbNativeType);          // [IN] count of bytes of pvNativeType
 
+#if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER)
     HRESULT _IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
         mdToken     tkType,                 // [IN] Token of custom attribute's type.
         int         *pca);                  // [OUT] Put value from KnownCustAttr enum here.
@@ -1841,6 +1834,7 @@ protected:
         CaArg       *pArgs,                 // Pointer to args.
         CaNamedArg  *pNamedArgs,            // Pointer to named args.
         CQuickArray<BYTE> &qNativeType);    // Native type is built here.
+#endif // !FEATURE_METADATA_EMIT_IN_DEBUGGER
 
     // Find a given param of a Method.
     HRESULT _FindParamOfMethod(             // S_OK or error.
@@ -2048,7 +2042,10 @@ private:
     SetAPICallerType m_SetAPICaller;
 
     CorValidatorModuleType      m_ModuleType;
-    CCustAttrHash               m_caHash;   // Hashed list of custom attribute types seen.
+
+#if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER)
+    SHash<CustAttrHashTraits>   m_caHash;   // Hashed list of custom attribute types seen.
+#endif
 
     bool        m_bKeepKnownCa;             // Should all known CA's be kept?
 

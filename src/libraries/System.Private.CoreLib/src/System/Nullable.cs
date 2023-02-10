@@ -9,9 +9,11 @@ using System.Runtime.Versioning;
 namespace System
 {
     // Because we have special type system support that says a boxed Nullable<T>
-    // can be used where a boxed<T> is use, Nullable<T> can not implement any interfaces
-    // at all (since T may not).   Do NOT add any interfaces to Nullable!
+    // can be used where a boxed T is used, Nullable<T> can not implement any interfaces
+    // at all (since T may not).
     //
+    // Do NOT add any interfaces to Nullable!
+
     [Serializable]
     [NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -96,7 +98,7 @@ namespace System
         }
 
         // If the type provided is not a Nullable Type, return null.
-        // Otherwise, returns the underlying type of the Nullable type
+        // Otherwise, return the underlying type of the Nullable type
         public static Type? GetUnderlyingType(Type nullableType)
         {
             ArgumentNullException.ThrowIfNull(nullableType);
@@ -118,7 +120,7 @@ namespace System
 
             if (nullableType.IsGenericType && !nullableType.IsGenericTypeDefinition)
             {
-                // instantiated generic type only
+                // Instantiated generic type only
                 Type genericType = nullableType.GetGenericTypeDefinition();
                 if (object.ReferenceEquals(genericType, typeof(Nullable<>)))
                 {

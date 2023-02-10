@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -13,6 +14,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_neg_i8
+{
 .class public		_neg {
 
 //---- GLOBAL DATA ----------
@@ -109,7 +112,10 @@
 }
 
 //---- MAIN -----------------
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 //====== begin testing ======
@@ -117,47 +123,47 @@
 // -- Min
 	ldc.i8		0x8000000000000000
 	ldc.i8		0x8000000000000000
-	call	int32 _neg::i8_0(int64,int64)
+	call	int32 ldc_neg_i8._neg::i8_0(int64,int64)
 	brfalse		FAIL
 // -- (Min + 1)
 	ldc.i8		0x8000000000000001
 	ldc.i8		0x7FFFFFFFFFFFFFFF
-	call	int32 _neg::i8_1(int64,int64)
+	call	int32 ldc_neg_i8._neg::i8_1(int64,int64)
 	brfalse		FAIL
 // -- -1
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x0000000000000001
-	call	int32 _neg::i8_2(int64,int64)
+	call	int32 ldc_neg_i8._neg::i8_2(int64,int64)
 	brfalse		FAIL
 // -- 0
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x0000000000000000
-	call	int32 _neg::i8_3(int64,int64)
+	call	int32 ldc_neg_i8._neg::i8_3(int64,int64)
 	brfalse		FAIL
 // -- 1
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int32 _neg::i8_4(int64,int64)
+	call	int32 ldc_neg_i8._neg::i8_4(int64,int64)
 	brfalse		FAIL
 // -- (Max - 1)
 	ldc.i8		0x7FFFFFFFFFFFFFFE
 	ldc.i8		0x8000000000000002
-	call	int32 _neg::i8_5(int64,int64)
+	call	int32 ldc_neg_i8._neg::i8_5(int64,int64)
 	brfalse		FAIL
 // -- Max
 	ldc.i8		0x7FFFFFFFFFFFFFFF
 	ldc.i8		0x8000000000000001
-	call	int32 _neg::i8_6(int64,int64)
+	call	int32 ldc_neg_i8._neg::i8_6(int64,int64)
 	brfalse		FAIL
 // -- Odd
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xAAAAAAAAAAAAAAAB
-	call	int32 _neg::i8_7(int64,int64)
+	call	int32 ldc_neg_i8._neg::i8_7(int64,int64)
 	brfalse		FAIL
 // -- Even
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x5555555555555556
-	call	int32 _neg::i8_8(int64,int64)
+	call	int32 ldc_neg_i8._neg::i8_8(int64,int64)
 	brfalse		FAIL
 
 
@@ -183,3 +189,4 @@ END:
 
 .assembly ldc_neg_i8{}
 
+}

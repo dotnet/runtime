@@ -11,7 +11,7 @@ public class Program
 {
     private static int resultCode = 100;
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         float[] testValues =
             {

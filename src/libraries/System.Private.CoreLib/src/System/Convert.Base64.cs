@@ -13,12 +13,11 @@ namespace System
         /// Decode the span of UTF-16 encoded text represented as base 64 into binary data.
         /// If the input is not a multiple of 4, or contains illegal characters, it will decode as much as it can, to the largest possible multiple of 4.
         /// This invariant allows continuation of the parse with a slower, whitespace-tolerant algorithm.
-        ///
+        /// </summary>
         /// <param name="utf16">The input span which contains UTF-16 encoded text in base 64 that needs to be decoded.</param>
         /// <param name="bytes">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="consumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
         /// <param name="written">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
-        /// </summary>
         /// <returns>Returns:
         /// - true  - The entire input span was successfully parsed.
         /// - false - Only a part of the input span was successfully parsed. Failure causes may include embedded or trailing whitespace,

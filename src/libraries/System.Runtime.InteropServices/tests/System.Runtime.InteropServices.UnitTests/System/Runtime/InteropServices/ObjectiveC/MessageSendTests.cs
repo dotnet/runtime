@@ -16,7 +16,6 @@ namespace System.Runtime.InteropServices.Tests
 {
     [PlatformSpecific(TestPlatforms.OSX)]
     [SkipOnMono("Not currently implemented on Mono")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))] // https://github.com/dotnet/runtimelab/issues/155
     public unsafe class MessageSendTests
     {
         private static int s_count = 1;

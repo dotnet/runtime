@@ -20,7 +20,6 @@
     <NativeFormatCommonPath>$(CommonSourcePath)Internal\NativeFormat</NativeFormatCommonPath>
     <MetadataCommonPath>$(CommonSourcePath)\Internal\Metadata\NativeFormat</MetadataCommonPath>
     <MetadataWriterPath>$(MSBuildThisFileDirectory)Internal\Metadata\NativeFormat\Writer</MetadataWriterPath>
-    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

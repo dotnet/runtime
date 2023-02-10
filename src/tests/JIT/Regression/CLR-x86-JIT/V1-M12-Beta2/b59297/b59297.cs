@@ -41,7 +41,7 @@ public class PerfNotIf
         return i;
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         new PerfNotIf();
         return 100;

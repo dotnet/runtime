@@ -9,13 +9,13 @@ using System.Linq;
 using ILCompiler.Logging;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
+using ILLink.Shared.TypeSystemProxy;
 using Internal.IL;
 using Internal.TypeSystem;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using InteropTypes = Internal.TypeSystem.Interop.InteropTypes;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 using NodeFactory = ILCompiler.DependencyAnalysis.NodeFactory;
-using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
 #nullable enable
 
@@ -36,7 +36,7 @@ namespace ILCompiler.Dataflow
                 flowAnnotations.RequiresDataflowAnalysis(methodDefinition) ||
                 methodDefinition.DoesMethodRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
                 methodDefinition.DoesMethodRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
-                methodDefinition.IsPInvoke;
+                IsPInvokeDangerous(methodDefinition, out _, out _);
         }
 
         public static bool RequiresReflectionMethodBodyScannerForMethodBody(FlowAnnotations flowAnnotations, MethodDesc methodDefinition)
@@ -77,7 +77,7 @@ namespace ILCompiler.Dataflow
             _logger = logger;
             _factory = factory;
             _origin = origin;
-            _reflectionMarker = new ReflectionMarker(logger, factory, annotations, typeHierarchyDataFlow: false, enabled: false);
+            _reflectionMarker = new ReflectionMarker(logger, factory, annotations, typeHierarchyDataFlowOrigin: null, enabled: false);
             TrimAnalysisPatterns = new TrimAnalysisPatternStore(MultiValueLattice, logger);
         }
 
@@ -86,7 +86,7 @@ namespace ILCompiler.Dataflow
             base.InterproceduralScan(methodBody);
 
             // Replace the reflection marker with one which actually marks
-            _reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlow: false, enabled: true);
+            _reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlowOrigin: null, enabled: true);
             TrimAnalysisPatterns.MarkAndProduceDiagnostics(_reflectionMarker);
         }
 
@@ -100,7 +100,7 @@ namespace ILCompiler.Dataflow
                 var method = methodBody.OwningMethod;
                 var methodReturnValue = _annotations.GetMethodReturnValue(method);
                 if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
-                    HandleAssignmentPattern(_origin, ReturnValue, methodReturnValue, new MethodOrigin(method));
+                    HandleAssignmentPattern(_origin, ReturnValue, methodReturnValue, method.GetDisplayName());
             }
         }
 
@@ -117,8 +117,8 @@ namespace ILCompiler.Dataflow
         {
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
             Debug.Assert(annotation != DynamicallyAccessedMemberTypes.None);
-            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlow: true, enabled: true);
-            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, new TypeOrigin(type));
+            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: type, enabled: true);
+            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type.GetDisplayName());
             return reflectionMarker.Dependencies;
         }
 
@@ -133,45 +133,44 @@ namespace ILCompiler.Dataflow
             Debug.Fail("Invalid IL or a bug in the scanner");
         }
 
-        protected override ValueWithDynamicallyAccessedMembers GetMethodParameterValue(MethodDesc method, int parameterIndex)
-            => GetMethodParameterValue(method, parameterIndex, _annotations.GetParameterAnnotation(method, parameterIndex));
+        protected override ValueWithDynamicallyAccessedMembers GetMethodParameterValue(ParameterProxy parameter)
+            => GetMethodParameterValue(parameter, _annotations.GetParameterAnnotation(parameter));
 
-        private ValueWithDynamicallyAccessedMembers GetMethodParameterValue(MethodDesc method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-        {
-            if (!method.Signature.IsStatic)
-            {
-                if (parameterIndex == 0)
-                    return _annotations.GetMethodThisParameterValue(method, dynamicallyAccessedMemberTypes);
-
-                parameterIndex--;
-            }
-
-            return _annotations.GetMethodParameterValue(method, parameterIndex, dynamicallyAccessedMemberTypes);
-        }
+        private MethodParameterValue GetMethodParameterValue(ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+            => _annotations.GetMethodParameterValue(parameter, dynamicallyAccessedMemberTypes);
 
         protected override MultiValue GetFieldValue(FieldDesc field) => _annotations.GetFieldValue(field);
 
-        private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, Origin memberWithRequirements)
+        private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, string reason)
         {
             // We must record all field accesses since we need to check RUC/RDC/RAF attributes on them regardless of annotations
             if (targetValue.DynamicallyAccessedMemberTypes != 0 || targetValue is FieldValue)
             {
                 _origin = _origin.WithInstructionOffset(methodBody, offset);
-                HandleAssignmentPattern(_origin, sourceValue, targetValue, memberWithRequirements);
+                HandleAssignmentPattern(_origin, sourceValue, targetValue, reason);
             }
         }
 
         protected override void HandleStoreField(MethodIL methodBody, int offset, FieldValue field, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, field, valueToStore, new FieldOrigin(field.Field));
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, field, valueToStore, field.Field.GetDisplayName());
 
         protected override void HandleStoreParameter(MethodIL methodBody, int offset, MethodParameterValue parameter, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, parameter, valueToStore, parameter.ParameterOrigin);
-
-        protected override void HandleStoreMethodThisParameter(MethodIL methodBody, int offset, MethodThisParameterValue thisParameter, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, thisParameter, valueToStore, new ParameterOrigin(thisParameter.Method, 0));
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, parameter, valueToStore, parameter.Parameter.Method.GetDisplayName());
 
         protected override void HandleStoreMethodReturnValue(MethodIL methodBody, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, new MethodOrigin(returnValue.Method));
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, returnValue.Method.GetDisplayName());
+
+        protected override void HandleMethodReflectionAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
+        {
+            _origin = _origin.WithInstructionOffset(methodBody, offset);
+            TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedMethod, _origin));
+        }
+
+        protected override void HandleFieldReflectionAccess(MethodIL methodBody, int offset, FieldDesc accessedField)
+        {
+            _origin = _origin.WithInstructionOffset(methodBody, offset);
+            TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedField, _origin));
+        }
 
         public override bool HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams, out MultiValue methodReturnValue)
         {
@@ -207,7 +206,6 @@ namespace ILCompiler.Dataflow
                 callingMethodBody,
                 calledMethod,
                 operation,
-                offset,
                 instanceValue,
                 arguments,
                 diagnosticContext,
@@ -219,7 +217,6 @@ namespace ILCompiler.Dataflow
             MethodIL callingMethodBody,
             MethodDesc calledMethod,
             ILOpcode operation,
-            int offset,
             MultiValue instanceValue,
             ImmutableArray<MultiValue> argumentValues,
             DiagnosticContext diagnosticContext,
@@ -235,7 +232,7 @@ namespace ILCompiler.Dataflow
 
             MultiValue? maybeMethodReturnValue = null;
 
-            var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, reflectionMarker, diagnosticContext, callingMethodDefinition, new MethodOrigin(calledMethod));
+            var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod.GetDisplayName());
 
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(calledMethod);
             switch (intrinsicId)
@@ -248,25 +245,26 @@ namespace ILCompiler.Dataflow
                 case IntrinsicId.Type_GetInterface:
                 case IntrinsicId.Type_get_AssemblyQualifiedName:
                 case IntrinsicId.RuntimeHelpers_RunClassConstructor:
-                case var callType when (callType == IntrinsicId.Type_GetConstructors || callType == IntrinsicId.Type_GetMethods || callType == IntrinsicId.Type_GetFields ||
-                    callType == IntrinsicId.Type_GetProperties || callType == IntrinsicId.Type_GetEvents || callType == IntrinsicId.Type_GetNestedTypes || callType == IntrinsicId.Type_GetMembers)
-                    && calledMethod.OwningType.IsTypeOf(WellKnownType.System_Type)
-                    && calledMethod.Signature[0].IsTypeOf("System.Reflection.BindingFlags")
-                    && !calledMethod.Signature.IsStatic:
-                case var fieldPropertyOrEvent when (fieldPropertyOrEvent == IntrinsicId.Type_GetField || fieldPropertyOrEvent == IntrinsicId.Type_GetProperty || fieldPropertyOrEvent == IntrinsicId.Type_GetEvent)
-                    && calledMethod.OwningType.IsTypeOf(WellKnownType.System_Type)
-                    && calledMethod.Signature[0].IsTypeOf(WellKnownType.System_String)
-                    && !calledMethod.Signature.IsStatic:
-                case var getRuntimeMember when getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent
-                    || getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField
-                    || getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod
-                    || getRuntimeMember == IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty:
+                case IntrinsicId.Type_GetConstructors__BindingFlags:
+                case IntrinsicId.Type_GetMethods__BindingFlags:
+                case IntrinsicId.Type_GetFields__BindingFlags:
+                case IntrinsicId.Type_GetProperties__BindingFlags:
+                case IntrinsicId.Type_GetEvents__BindingFlags:
+                case IntrinsicId.Type_GetNestedTypes__BindingFlags:
+                case IntrinsicId.Type_GetMembers__BindingFlags:
+                case IntrinsicId.Type_GetField:
+                case IntrinsicId.Type_GetProperty:
+                case IntrinsicId.Type_GetEvent:
+                case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent:
+                case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField:
+                case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod:
+                case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty:
                 case IntrinsicId.Type_GetMember:
                 case IntrinsicId.Type_GetMethod:
                 case IntrinsicId.Type_GetNestedType:
                 case IntrinsicId.Nullable_GetUnderlyingType:
-                case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType(1, "System.Reflection.MethodInfo"):
-                case var fieldOrPropertyIntrinsic when fieldOrPropertyIntrinsic == IntrinsicId.Expression_Field || fieldOrPropertyIntrinsic == IntrinsicId.Expression_Property:
+                case IntrinsicId.Expression_Property:
+                case IntrinsicId.Expression_Field:
                 case IntrinsicId.Type_get_BaseType:
                 case IntrinsicId.Type_GetConstructor:
                 case IntrinsicId.MethodBase_GetMethodFromHandle:
@@ -276,16 +274,16 @@ namespace ILCompiler.Dataflow
                 case IntrinsicId.Expression_Call:
                 case IntrinsicId.Expression_New:
                 case IntrinsicId.Type_GetType:
-                case IntrinsicId.Activator_CreateInstance_Type:
-                case IntrinsicId.Activator_CreateInstance_AssemblyName_TypeName:
+                case IntrinsicId.Activator_CreateInstance__Type:
+                case IntrinsicId.Activator_CreateInstance__AssemblyName_TypeName:
                 case IntrinsicId.Activator_CreateInstanceFrom:
-                case var appDomainCreateInstance when appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstance
-                || appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceAndUnwrap
-                || appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFrom
-                || appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
+                case IntrinsicId.AppDomain_CreateInstance:
+                case IntrinsicId.AppDomain_CreateInstanceAndUnwrap:
+                case IntrinsicId.AppDomain_CreateInstanceFrom:
+                case IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
                 case IntrinsicId.Assembly_CreateInstance:
                     {
-                        bool result = handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, out methodReturnValue, out _);
+                        bool result = handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
 
                         // Special case some intrinsics for AOT handling (on top of the trimming handling done in the HandleCallAction)
                         switch (intrinsicId)
@@ -301,28 +299,8 @@ namespace ILCompiler.Dataflow
 
                 case IntrinsicId.None:
                     {
-                        if (calledMethod.IsPInvoke)
+                        if (IsPInvokeDangerous(calledMethod, out bool comDangerousMethod, out bool aotUnsafeDelegate))
                         {
-                            // Is the PInvoke dangerous?
-                            ParameterMetadata[] paramMetadata = calledMethod.GetParameterMetadata();
-
-                            ParameterMetadata returnParamMetadata = Array.Find(paramMetadata, m => m.Index == 0);
-
-                            bool aotUnsafeDelegate = IsAotUnsafeDelegate(calledMethod.Signature.ReturnType);
-                            bool comDangerousMethod = IsComInterop(returnParamMetadata.MarshalAsDescriptor, calledMethod.Signature.ReturnType);
-                            for (int paramIndex = 0; paramIndex < calledMethod.Signature.Length; paramIndex++)
-                            {
-                                MarshalAsDescriptor? marshalAsDescriptor = null;
-                                for (int metadataIndex = 0; metadataIndex < paramMetadata.Length; metadataIndex++)
-                                {
-                                    if (paramMetadata[metadataIndex].Index == paramIndex + 1)
-                                        marshalAsDescriptor = paramMetadata[metadataIndex].MarshalAsDescriptor;
-                                }
-
-                                aotUnsafeDelegate |= IsAotUnsafeDelegate(calledMethod.Signature[paramIndex]);
-                                comDangerousMethod |= IsComInterop(marshalAsDescriptor, calledMethod.Signature[paramIndex]);
-                            }
-
                             if (aotUnsafeDelegate)
                             {
                                 diagnosticContext.AddDiagnostic(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed, calledMethod.GetDisplayName());
@@ -338,7 +316,7 @@ namespace ILCompiler.Dataflow
                         CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresDynamicCodeAttribute);
                         CheckAndReportRequires(diagnosticContext, calledMethod, DiagnosticUtilities.RequiresAssemblyFilesAttribute);
 
-                        return handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, out methodReturnValue, out _);
+                        return handleCallAction.Invoke(calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
                     }
 
                 case IntrinsicId.TypeDelegator_Ctor:
@@ -375,7 +353,7 @@ namespace ILCompiler.Dataflow
                             {
                                 if (systemTypeValue.RepresentedType.Type.IsEnum)
                                 {
-                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ConstructedTypeSymbol(systemTypeValue.RepresentedType.Type.MakeArrayType()), "Enum.GetValues");
+                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedType(systemTypeValue.RepresentedType.Type.MakeArrayType()), "Enum.GetValues");
                                 }
                             }
                             else
@@ -415,7 +393,7 @@ namespace ILCompiler.Dataflow
                                         && systemTypeValue.RepresentedType.Type.GetParameterlessConstructor() is MethodDesc ctorMethod
                                         && !reflectionMarker.Factory.MetadataManager.IsReflectionBlocked(ctorMethod))
                                     {
-                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectableMethod(ctorMethod), "Marshal API");
+                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedMethod(ctorMethod), "Marshal API");
                                     }
                                 }
                             }
@@ -651,9 +629,40 @@ namespace ILCompiler.Dataflow
             in MessageOrigin origin,
             in MultiValue value,
             ValueWithDynamicallyAccessedMembers targetValue,
-            Origin memberWithRequirements)
+            string reason)
         {
-            TrimAnalysisPatterns.Add(new TrimAnalysisAssignmentPattern(value, targetValue, origin, memberWithRequirements));
+            TrimAnalysisPatterns.Add(new TrimAnalysisAssignmentPattern(value, targetValue, origin, reason));
+        }
+
+        private static bool IsPInvokeDangerous(MethodDesc calledMethod, out bool comDangerousMethod, out bool aotUnsafeDelegate)
+        {
+            if (!calledMethod.IsPInvoke)
+            {
+                comDangerousMethod = false;
+                aotUnsafeDelegate = false;
+                return false;
+            }
+
+            ParameterMetadata[] paramMetadata = calledMethod.GetParameterMetadata();
+
+            ParameterMetadata returnParamMetadata = Array.Find(paramMetadata, m => m.Index == 0);
+
+            aotUnsafeDelegate = IsAotUnsafeDelegate(calledMethod.Signature.ReturnType);
+            comDangerousMethod = IsComInterop(returnParamMetadata.MarshalAsDescriptor, calledMethod.Signature.ReturnType);
+            for (int paramIndex = 0; paramIndex < calledMethod.Signature.Length; paramIndex++)
+            {
+                MarshalAsDescriptor? marshalAsDescriptor = null;
+                for (int metadataIndex = 0; metadataIndex < paramMetadata.Length; metadataIndex++)
+                {
+                    if (paramMetadata[metadataIndex].Index == paramIndex + 1)
+                        marshalAsDescriptor = paramMetadata[metadataIndex].MarshalAsDescriptor;
+                }
+
+                aotUnsafeDelegate |= IsAotUnsafeDelegate(calledMethod.Signature[paramIndex]);
+                comDangerousMethod |= IsComInterop(marshalAsDescriptor, calledMethod.Signature[paramIndex]);
+            }
+
+            return aotUnsafeDelegate || comDangerousMethod;
         }
     }
 }

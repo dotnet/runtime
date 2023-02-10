@@ -7,7 +7,7 @@ namespace ConsoleApplication1
 {
     internal class Program
     {
-        private static int Main(string[] args)
+        private static int Main()
         {
             int result = 100;
             int byteCount = 0;

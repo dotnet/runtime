@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
@@ -43,7 +44,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestParameterOverwrite (typeof (TestType));
 
+#if !NATIVEAOT
+			TestVarargsMethod (typeof (TestType), __arglist (0, 1, 2));
+#endif
+
 			WriteCapturedParameter.Test ();
+
+			MethodLdTokenOnGenericType<string>.Test ();
 		}
 
 		// Validate the error message when annotated parameter is passed to another annotated parameter
@@ -237,6 +244,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.GetFields ();
 		}
 
+		static void TestVarargsMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type, __arglist)
+		{
+		}
+
 		class WriteCapturedParameter
 		{
 			[ExpectedWarning ("IL2072", nameof (GetUnknownType), "parameter")]
@@ -284,5 +295,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			return null;
 		}
+
+		/// <summary>
+		/// This doesn't actually test any data flow as such. This is a regression test for a problem found in NativeAOT
+		/// where the combination of a generic type with an ldtoken leads to interesting code paths in the compiler.
+		/// </summary>
+		class MethodLdTokenOnGenericType<T>
+		{
+			static T MethodOne() => default (T);
+
+			static void TestField (T value)
+			{
+				Expression<Func<T>> e = () => MethodOne();
+				e.Compile () ();
+			}
+
+			public static void Test ()
+			{
+				TestField (default (T));
+			}
+		}
+
 	}
 }

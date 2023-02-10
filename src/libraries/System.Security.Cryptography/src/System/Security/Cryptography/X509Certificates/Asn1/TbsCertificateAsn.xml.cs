@@ -54,7 +54,8 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             // DEFAULT value handler for Version.
             {
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                const int AsnManagedIntegerDerMaxEncodeSize = 6;
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
                 tmp.WriteInteger(Version);
 
                 if (!tmp.EncodedValueEquals(DefaultVersion))
@@ -215,7 +216,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             tmpSpan = sequenceReader.ReadEncodedValue();
             decoded.Issuer = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
-            System.Security.Cryptography.X509Certificates.Asn1.ValidityAsn.Decode(ref sequenceReader, rebind, out decoded.Validity);
+            System.Security.Cryptography.X509Certificates.Asn1.ValidityAsn.Decode(ref sequenceReader, out decoded.Validity);
             if (!sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
             {
                 throw new CryptographicException();

@@ -9,11 +9,14 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System.Threading.Tasks
@@ -1523,6 +1526,7 @@ namespace System.Threading.Tasks
         /// <see cref="System.Threading.Tasks.TaskStatus.Faulted">TaskStatus.Faulted</see>, and its
         /// <see cref="Exception"/> property will be non-null.
         /// </remarks>
+        [MemberNotNullWhen(true, nameof(Exception))]
         public bool IsFaulted =>
             // Faulted is "king" -- if that bit is present (regardless of other bits), we are faulted.
             (m_stateFlags & (int)TaskStateFlags.Faulted) != 0;
@@ -4391,7 +4395,7 @@ namespace System.Threading.Tasks
             Debug.Assert(!continuationTask.IsCompleted, "Did not expect continuationTask to be completed");
 
             // Create a TaskContinuation
-            TaskContinuation continuation = new ContinueWithTaskContinuation(continuationTask, options, scheduler);
+            var continuation = new ContinueWithTaskContinuation(continuationTask, options, scheduler);
 
             // If cancellationToken is cancellable, then assign it.
             if (cancellationToken.CanBeCanceled)
@@ -5216,8 +5220,9 @@ namespace System.Threading.Tasks
         /// <param name="result">The result to store into the completed task.</param>
         /// <returns>The successfully completed task.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
-        public static Task<TResult> FromResult<TResult>(TResult result)
+        public static unsafe Task<TResult> FromResult<TResult>(TResult result)
         {
+#pragma warning disable 8500 // address of / sizeof of managed types
             // The goal of this function is to be give back a cached task if possible, or to otherwise give back a new task.
             // To give back a cached task, we need to be able to evaluate the incoming result value, and we need to avoid as
             // much overhead as possible when doing so, as this function is invoked as part of the return path from every async
@@ -5229,43 +5234,42 @@ namespace System.Threading.Tasks
                 // null reference types and default(Nullable<T>)
                 return Task<TResult>.s_defaultResultTask;
             }
-            else if (typeof(TResult).IsValueType) // help the JIT avoid the value type branches for ref types
+
+            // For Boolean, we cache all possible values.
+            if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
             {
-                // For Boolean, we cache all possible values.
-                if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
+                Task<bool> task = *(bool*)&result ? TaskCache.s_trueTask : TaskCache.s_falseTask;
+                return *(Task<TResult>*)&task;
+            }
+
+            // For Int32, we cache a range of common values, [-1,9).
+            if (typeof(TResult) == typeof(int))
+            {
+                // Compare to constants to avoid static field access if outside of cached range.
+                int value = *(int*)&result;
+                if ((uint)(value - TaskCache.InclusiveInt32Min) < (TaskCache.ExclusiveInt32Max - TaskCache.InclusiveInt32Min))
                 {
-                    bool value = (bool)(object)result!;
-                    Task<bool> task = value ? TaskCache.s_trueTask : TaskCache.s_falseTask;
-                    return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
+                    Task<int> task = TaskCache.s_int32Tasks[value - TaskCache.InclusiveInt32Min];
+                    return *(Task<TResult>*)&task;
                 }
-                // For Int32, we cache a range of common values, [-1,9).
-                else if (typeof(TResult) == typeof(int))
-                {
-                    // Compare to constants to avoid static field access if outside of cached range.
-                    int value = (int)(object)result!;
-                    if ((uint)(value - TaskCache.InclusiveInt32Min) < (TaskCache.ExclusiveInt32Max - TaskCache.InclusiveInt32Min))
-                    {
-                        Task<int> task = TaskCache.s_int32Tasks[value - TaskCache.InclusiveInt32Min];
-                        return Unsafe.As<Task<TResult>>(task); // Unsafe.As avoids a type check we know will succeed
-                    }
-                }
+            }
+            else if (!RuntimeHelpers.IsReferenceOrContainsReferences<TResult>())
+            {
                 // For other value types, we special-case default(TResult) if we can easily compare bit patterns to default/0.
-                else if (!RuntimeHelpers.IsReferenceOrContainsReferences<TResult>())
+                // We don't need to go through the equality operator of the TResult because we cached a task for default(TResult),
+                // so we only need to confirm that this TResult has the same bits as default(TResult).
+                if ((sizeof(TResult) == sizeof(byte) && *(byte*)&result == default(byte)) ||
+                    (sizeof(TResult) == sizeof(ushort) && *(ushort*)&result == default(ushort)) ||
+                    (sizeof(TResult) == sizeof(uint) && *(uint*)&result == default) ||
+                    (sizeof(TResult) == sizeof(ulong) && *(ulong*)&result == default))
                 {
-                    // We don't need to go through the equality operator of the TResult because we cached a task for default(TResult),
-                    // so we only need to confirm that this TResult has the same bits as default(TResult).
-                    if ((Unsafe.SizeOf<TResult>() == sizeof(byte) && Unsafe.As<TResult, byte>(ref result) == default(byte)) ||
-                        (Unsafe.SizeOf<TResult>() == sizeof(ushort) && Unsafe.As<TResult, ushort>(ref result) == default(ushort)) ||
-                        (Unsafe.SizeOf<TResult>() == sizeof(uint) && Unsafe.As<TResult, uint>(ref result) == default) ||
-                        (Unsafe.SizeOf<TResult>() == sizeof(ulong) && Unsafe.As<TResult, ulong>(ref result) == default))
-                    {
-                        return Task<TResult>.s_defaultResultTask;
-                    }
+                    return Task<TResult>.s_defaultResultTask;
                 }
             }
 
             // No cached task is available.  Manufacture a new one for this result.
             return new Task<TResult>(result);
+#pragma warning restore 8500
         }
 
         /// <summary>Creates a <see cref="Task{TResult}"/> that's completed exceptionally with the specified exception.</summary>
@@ -5727,36 +5731,36 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task WhenAll(IEnumerable<Task> tasks)
         {
-            // Skip a List allocation/copy if tasks is a collection
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
             if (tasks is ICollection<Task> taskCollection)
             {
-                // Take a more efficient path if tasks is actually an array
                 if (tasks is Task[] taskArray)
                 {
-                    return WhenAll(taskArray);
+                    return WhenAll((ReadOnlySpan<Task>)taskArray);
                 }
 
-                int index = 0;
+                if (tasks is List<Task> taskList)
+                {
+                    return WhenAll(CollectionsMarshal.AsSpan(taskList));
+                }
+
                 taskArray = new Task[taskCollection.Count];
+                taskCollection.CopyTo(taskArray, 0);
+                return WhenAll((ReadOnlySpan<Task>)taskArray);
+            }
+            else
+            {
+                var taskList = new List<Task>();
                 foreach (Task task in tasks)
                 {
-                    if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                    taskArray[index++] = task;
+                    taskList.Add(task);
                 }
-                return InternalWhenAll(taskArray);
+                return WhenAll(CollectionsMarshal.AsSpan(taskList));
             }
-
-            // Do some argument checking and convert tasks to a List (and later an array).
-            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            List<Task> taskList = new List<Task>();
-            foreach (Task task in tasks)
-            {
-                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                taskList.Add(task);
-            }
-
-            // Delegate the rest to InternalWhenAll()
-            return InternalWhenAll(taskList.ToArray());
         }
 
         /// <summary>
@@ -5788,149 +5792,212 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task WhenAll(params Task[] tasks)
         {
-            // Do some argument checking and make a defensive copy of the tasks array
-            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-
-            int taskCount = tasks.Length;
-            if (taskCount == 0) return InternalWhenAll(tasks); // Small optimization in the case of an empty array.
-
-            Task[] tasksCopy = new Task[taskCount];
-            for (int i = 0; i < taskCount; i++)
+            if (tasks is null)
             {
-                Task task = tasks[i];
-                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                tasksCopy[i] = task;
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
-            // The rest can be delegated to InternalWhenAll()
-            return InternalWhenAll(tasksCopy);
+            return WhenAll((ReadOnlySpan<Task>)tasks);
         }
 
-        // Some common logic to support WhenAll() methods
-        // tasks should be a defensive copy.
-        private static Task InternalWhenAll(Task[] tasks)
-        {
-            Debug.Assert(tasks != null, "Expected a non-null tasks array");
-            return (tasks.Length == 0) ? // take shortcut if there are no tasks upon which to wait
-                Task.CompletedTask :
-                new WhenAllPromise(tasks);
-        }
+        /// <summary>
+        /// Creates a task that will complete when all of the supplied tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to wait on for completion.</param>
+        /// <returns>A task that represents the completion of all of the supplied tasks.</returns>
+        /// <remarks>
+        /// <para>
+        /// If any of the supplied tasks completes in a faulted state, the returned task will also complete in a Faulted state,
+        /// where its exceptions will contain the aggregation of the set of unwrapped exceptions from each of the supplied tasks.
+        /// </para>
+        /// <para>
+        /// If none of the supplied tasks faulted but at least one of them was canceled, the returned task will end in the Canceled state.
+        /// </para>
+        /// <para>
+        /// If none of the tasks faulted and none of the tasks were canceled, the resulting task will end in the RanToCompletion state.
+        /// </para>
+        /// <para>
+        /// If the supplied span contains no tasks, the returned task will immediately transition to a RanToCompletion
+        /// state before it's returned to the caller.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="System.ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
+        internal static Task WhenAll(ReadOnlySpan<Task> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Make this public.
+            tasks.Length != 0 ? new WhenAllPromise(tasks) : CompletedTask;
 
-        // A Task that gets completed when all of its constituent tasks complete.
-        // Completion logic will analyze the antecedents in order to choose completion status.
-        // This type allows us to replace this logic:
-        //      Task promise = new Task(...);
-        //      Action<Task> completionAction = delegate { <completion logic>};
-        //      TaskFactory.CommonCWAllLogic(tasksCopy).AddCompletionAction(completionAction);
-        //      return promise;
-        // which involves several allocations, with this logic:
-        //      return new WhenAllPromise(tasksCopy);
-        // which saves a couple of allocations and enables debugger notification specialization.
-        //
-        // Used in InternalWhenAll(Task[])
+        /// <summary>A Task that gets completed when all of its constituent tasks complete.</summary>
         private sealed class WhenAllPromise : Task, ITaskCompletionAction
         {
-            /// <summary>
-            /// Stores all of the constituent tasks.  Tasks clear themselves out of this
-            /// array as they complete, but only if they don't have their wait notification bit set.
-            /// </summary>
-            private readonly Task?[] m_tasks;
+            /// <summary>Either a single faulted/canceled task, or a list of faulted/canceled tasks.</summary>
+            private object? _failedOrCanceled;
             /// <summary>The number of tasks remaining to complete.</summary>
-            private int m_count;
+            private int _remainingToComplete;
 
-            internal WhenAllPromise(Task[] tasks)
+            internal WhenAllPromise(ReadOnlySpan<Task> tasks)
             {
-                Debug.Assert(tasks != null, "Expected a non-null task array");
-                Debug.Assert(tasks.Length > 0, "Expected a non-zero length task array");
+                Debug.Assert(tasks.Length != 0, "Expected a non-zero length task array");
+
+                // Throw if any of the provided tasks is null. This is best effort to inform the caller
+                // they've made a mistake.  If between the time we check for nulls and the time we hook
+                // up callbacks one of the entries is changed from non-null to null, we'll just ignore
+                // the null at that point; any such use (e.g. calling WhenAll with an array that's mutated
+                // concurrently with the synchronous call to WhenAll) is erroneous.
+                foreach (Task task in tasks)
+                {
+                    if (task is null)
+                    {
+                        ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                    }
+                }
 
                 if (TplEventSource.Log.IsEnabled())
-                    TplEventSource.Log.TraceOperationBegin(this.Id, "Task.WhenAll", 0);
+                {
+                    TplEventSource.Log.TraceOperationBegin(Id, "Task.WhenAll", 0);
+                }
 
                 if (s_asyncDebuggingEnabled)
+                {
                     AddToActiveTasks(this);
+                }
 
-                m_tasks = tasks;
-                m_count = tasks.Length;
+                _remainingToComplete = tasks.Length;
 
                 foreach (Task task in tasks)
                 {
-                    if (task.IsCompleted) this.Invoke(task); // short-circuit the completion action, if possible
-                    else task.AddCompletionAction(this); // simple completion action
-                }
-            }
-
-            public void Invoke(Task completedTask)
-            {
-                if (TplEventSource.Log.IsEnabled())
-                    TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Join);
-
-                // Decrement the count, and only continue to complete the promise if we're the last one.
-                if (Interlocked.Decrement(ref m_count) == 0)
-                {
-                    // Set up some accounting variables
-                    List<ExceptionDispatchInfo>? observedExceptions = null;
-                    Task? canceledTask = null;
-
-                    // Loop through antecedents:
-                    //   If any one of them faults, the result will be faulted
-                    //   If none fault, but at least one is canceled, the result will be canceled
-                    //   If none fault or are canceled, then result will be RanToCompletion
-                    for (int i = 0; i < m_tasks.Length; i++)
+                    if (task is null || task.IsCompleted)
                     {
-                        Task? task = m_tasks[i];
-                        Debug.Assert(task != null, "Constituent task in WhenAll should never be null");
-
-                        if (task.IsFaulted)
-                        {
-                            observedExceptions ??= new List<ExceptionDispatchInfo>();
-                            observedExceptions.AddRange(task.GetExceptionDispatchInfos());
-                        }
-                        else if (task.IsCanceled)
-                        {
-                            canceledTask ??= task; // use the first task that's canceled
-                        }
-
-                        // Regardless of completion state, if the task has its debug bit set, transfer it to the
-                        // WhenAll task.  We must do this before we complete the task.
-                        if (task.IsWaitNotificationEnabled) this.SetNotificationForWaitCompletion(enabled: true);
-                        else m_tasks[i] = null; // avoid holding onto tasks unnecessarily
-                    }
-
-                    if (observedExceptions != null)
-                    {
-                        Debug.Assert(observedExceptions.Count > 0, "Expected at least one exception");
-
-                        // We don't need to TraceOperationCompleted here because TrySetException will call Finish and we'll log it there
-
-                        TrySetException(observedExceptions);
-                    }
-                    else if (canceledTask != null)
-                    {
-                        TrySetCanceled(canceledTask.CancellationToken, canceledTask.GetCancellationExceptionDispatchInfo());
+                        Invoke(task); // short-circuit the completion action, if possible
                     }
                     else
                     {
-                        if (TplEventSource.Log.IsEnabled())
-                            TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
-
-                        if (s_asyncDebuggingEnabled)
-                            RemoveFromActiveTasks(this);
-
-                        TrySetResult();
+                        task.AddCompletionAction(this); // simple completion action
                     }
                 }
-                Debug.Assert(m_count >= 0, "Count should never go below 0");
+            }
+
+            public void Invoke(Task? completedTask)
+            {
+                if (TplEventSource.Log.IsEnabled())
+                {
+                    TplEventSource.Log.TraceOperationRelation(Id, CausalityRelation.Join);
+                }
+
+                if (completedTask is not null)
+                {
+                    if (completedTask.IsWaitNotificationEnabled)
+                    {
+                        SetNotificationForWaitCompletion(enabled: true);
+                    }
+
+                    if (!completedTask.IsCompletedSuccessfully)
+                    {
+                        // Try to store the completed task as the first that's failed or faulted.
+                        if (Interlocked.CompareExchange(ref _failedOrCanceled, completedTask, null) != null)
+                        {
+                            // There was already something there.
+                            while (true)
+                            {
+                                object? failedOrCanceled = _failedOrCanceled;
+                                Debug.Assert(failedOrCanceled is not null);
+
+                                // If it was a list, add it to the list.
+                                if (_failedOrCanceled is List<Task> list)
+                                {
+                                    lock (list)
+                                    {
+                                        list.Add(completedTask);
+                                    }
+                                    break;
+                                }
+
+                                // Otherwise, it was a Task. Create a new list containing that task and this one, and store it in.
+                                Debug.Assert(failedOrCanceled is Task, $"Expected Task, got {failedOrCanceled}");
+                                if (Interlocked.CompareExchange(ref _failedOrCanceled, new List<Task> { (Task)failedOrCanceled, completedTask }, failedOrCanceled) == failedOrCanceled)
+                                {
+                                    break;
+                                }
+
+                                // We lost the race, which means we should loop around one more time and it'll be a list.
+                                Debug.Assert(_failedOrCanceled is List<Task>);
+                            }
+                        }
+                    }
+                }
+
+                // Decrement the count, and only continue to complete the promise if we're the last one.
+                if (Interlocked.Decrement(ref _remainingToComplete) == 0)
+                {
+                    object? failedOrCanceled = _failedOrCanceled;
+                    if (failedOrCanceled is null)
+                    {
+                        if (TplEventSource.Log.IsEnabled())
+                        {
+                            TplEventSource.Log.TraceOperationEnd(Id, AsyncCausalityStatus.Completed);
+                        }
+
+                        if (s_asyncDebuggingEnabled)
+                        {
+                            RemoveFromActiveTasks(this);
+                        }
+
+                        bool completed = TrySetResult();
+                        Debug.Assert(completed);
+                    }
+                    else
+                    {
+                        // Set up some accounting variables
+                        List<ExceptionDispatchInfo>? observedExceptions = null;
+                        Task? canceledTask = null;
+
+                        void HandleTask(Task task)
+                        {
+                            if (task.IsFaulted)
+                            {
+                                (observedExceptions ??= new()).AddRange(task.GetExceptionDispatchInfos());
+                            }
+                            else if (task.IsCanceled)
+                            {
+                                canceledTask ??= task; // use the first task that's canceled
+                            }
+                        }
+
+                        // Loop through the completed or faulted tasks:
+                        //   If any one of them faults, the result will be faulted
+                        //   If none fault, but at least one is canceled, the result will be canceled
+                        if (failedOrCanceled is List<Task> list)
+                        {
+                            foreach (Task task in list)
+                            {
+                                HandleTask(task);
+                            }
+                        }
+                        else
+                        {
+                            Debug.Assert(failedOrCanceled is Task);
+                            HandleTask((Task)failedOrCanceled);
+                        }
+
+                        if (observedExceptions != null)
+                        {
+                            Debug.Assert(observedExceptions.Count > 0, "Expected at least one exception");
+
+                            // We don't need to TraceOperationCompleted here because TrySetException will call Finish and we'll log it there
+
+                            TrySetException(observedExceptions);
+                        }
+                        else if (canceledTask != null)
+                        {
+                            TrySetCanceled(canceledTask.CancellationToken, canceledTask.GetCancellationExceptionDispatchInfo());
+                        }
+                    }
+
+                    Debug.Assert(IsCompleted);
+                }
+
+                Debug.Assert(_remainingToComplete >= 0, "Count should never go below 0");
             }
 
             public bool InvokeMayRunArbitraryCode => true;
-
-            /// <summary>
-            /// Returns whether we should notify the debugger of a wait completion.  This returns
-            /// true iff at least one constituent task has its bit set.
-            /// </summary>
-            private protected override bool ShouldNotifyDebuggerOfWaitCompletion =>
-                base.ShouldNotifyDebuggerOfWaitCompletion &&
-                AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
         }
 
         /// <summary>

@@ -189,7 +189,7 @@ namespace System.Data.OleDb
             return sqlSupport;
         }
 
-        internal bool GetSupportIRow(OleDbConnection connection, OleDbCommand command)
+        internal bool GetSupportIRow(OleDbCommand command)
         {
             bool supportIRow = _supportIRow;
             if (!_hasSupportIRow)

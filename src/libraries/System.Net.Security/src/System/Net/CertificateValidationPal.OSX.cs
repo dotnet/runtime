@@ -102,6 +102,10 @@ namespace System.Net
             return result;
         }
 
+        // This is only called when we selected local client certificate.
+        // Currently this is only when Apple crypto asked for it.
+        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _1, SafeDeleteContext? _2) => true;
+
         //
         // Used only by client SSL code, never returns null.
         //

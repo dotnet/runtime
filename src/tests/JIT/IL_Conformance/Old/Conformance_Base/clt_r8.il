@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
+.namespace clt_r8
+{
 .class public _clt {
 
 .field public static	float64 _inf
@@ -17,428 +20,431 @@
 .method public static void initialize() {
 .maxstack		10
 	ldc.r8		float64(0xFFF0000000000000)
-	stsfld	float64 _clt::_inf
+	stsfld	float64 clt_r8._clt::_inf
 	ldc.r8		float64(0xFF7FFFFFFFFFFFFF)
-	stsfld	float64 _clt::_min
+	stsfld	float64 clt_r8._clt::_min
 	ldc.r8		float64(0xBFF0000000000000)
-	stsfld	float64 _clt::_one
+	stsfld	float64 clt_r8._clt::_one
 	ldc.r8		float64(0x8000000000000000)
-	stsfld	float64 _clt::_zero
+	stsfld	float64 clt_r8._clt::_zero
 	ldc.r8		float64(0x0000000000000000)
-	stsfld	float64 _clt::zero
+	stsfld	float64 clt_r8._clt::zero
 	ldc.r8		float64(0x3FF0000000000000)
-	stsfld	float64 _clt::one
+	stsfld	float64 clt_r8._clt::one
 	ldc.r8		float64(0x7FEFFFFFFFFFFFFF)
-	stsfld	float64 _clt::max
+	stsfld	float64 clt_r8._clt::max
 	ldc.r8		float64(0x7FF0000000000000)
-	stsfld	float64 _clt::inf
+	stsfld	float64 clt_r8._clt::inf
 	ldc.r8		float64(0x7FF8000000000000)
-	stsfld	float64 _clt::NaN
+	stsfld	float64 clt_r8._clt::NaN
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-	call	void _clt::initialize()
-	ldsfld	float64 _clt::_inf
-	ldsfld	float64 _clt::_inf
+	call	void clt_r8._clt::initialize()
+	ldsfld	float64 clt_r8._clt::_inf
+	ldsfld	float64 clt_r8._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::_inf
-	ldsfld	float64 _clt::_min
+	ldsfld	float64 clt_r8._clt::_inf
+	ldsfld	float64 clt_r8._clt::_min
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_inf
-	ldsfld	float64 _clt::_one
+	ldsfld	float64 clt_r8._clt::_inf
+	ldsfld	float64 clt_r8._clt::_one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_inf
-	ldsfld	float64 _clt::_zero
+	ldsfld	float64 clt_r8._clt::_inf
+	ldsfld	float64 clt_r8._clt::_zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_inf
-	ldsfld	float64 _clt::zero
+	ldsfld	float64 clt_r8._clt::_inf
+	ldsfld	float64 clt_r8._clt::zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_inf
-	ldsfld	float64 _clt::one
+	ldsfld	float64 clt_r8._clt::_inf
+	ldsfld	float64 clt_r8._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_inf
-	ldsfld	float64 _clt::max
+	ldsfld	float64 clt_r8._clt::_inf
+	ldsfld	float64 clt_r8._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_inf
-	ldsfld	float64 _clt::inf
+	ldsfld	float64 clt_r8._clt::_inf
+	ldsfld	float64 clt_r8._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_inf
-	ldsfld	float64 _clt::NaN
+	ldsfld	float64 clt_r8._clt::_inf
+	ldsfld	float64 clt_r8._clt::NaN
 	clt
 	brtrue		FAIL
-	ldsfld	float64 _clt::_min
-	ldsfld	float64 _clt::_inf
-	clt
-	brtrue		FAIL
-
-	ldsfld	float64 _clt::_min
-	ldsfld	float64 _clt::_min
+	ldsfld	float64 clt_r8._clt::_min
+	ldsfld	float64 clt_r8._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::_min
-	ldsfld	float64 _clt::_one
+	ldsfld	float64 clt_r8._clt::_min
+	ldsfld	float64 clt_r8._clt::_min
+	clt
+	brtrue		FAIL
+
+	ldsfld	float64 clt_r8._clt::_min
+	ldsfld	float64 clt_r8._clt::_one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_min
-	ldsfld	float64 _clt::_zero
+	ldsfld	float64 clt_r8._clt::_min
+	ldsfld	float64 clt_r8._clt::_zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_min
-	ldsfld	float64 _clt::zero
+	ldsfld	float64 clt_r8._clt::_min
+	ldsfld	float64 clt_r8._clt::zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_min
-	ldsfld	float64 _clt::one
+	ldsfld	float64 clt_r8._clt::_min
+	ldsfld	float64 clt_r8._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_min
-	ldsfld	float64 _clt::max
+	ldsfld	float64 clt_r8._clt::_min
+	ldsfld	float64 clt_r8._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_min
-	ldsfld	float64 _clt::inf
+	ldsfld	float64 clt_r8._clt::_min
+	ldsfld	float64 clt_r8._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_min
-	ldsfld	float64 _clt::NaN
+	ldsfld	float64 clt_r8._clt::_min
+	ldsfld	float64 clt_r8._clt::NaN
 	clt
 	brtrue		FAIL
-	ldsfld	float64 _clt::_one
-	ldsfld	float64 _clt::_inf
-	clt
-	brtrue		FAIL
-
-	ldsfld	float64 _clt::_one
-	ldsfld	float64 _clt::_min
+	ldsfld	float64 clt_r8._clt::_one
+	ldsfld	float64 clt_r8._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::_one
-	ldsfld	float64 _clt::_one
+	ldsfld	float64 clt_r8._clt::_one
+	ldsfld	float64 clt_r8._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::_one
-	ldsfld	float64 _clt::_zero
+	ldsfld	float64 clt_r8._clt::_one
+	ldsfld	float64 clt_r8._clt::_one
+	clt
+	brtrue		FAIL
+
+	ldsfld	float64 clt_r8._clt::_one
+	ldsfld	float64 clt_r8._clt::_zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_one
-	ldsfld	float64 _clt::zero
+	ldsfld	float64 clt_r8._clt::_one
+	ldsfld	float64 clt_r8._clt::zero
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_one
-	ldsfld	float64 _clt::one
+	ldsfld	float64 clt_r8._clt::_one
+	ldsfld	float64 clt_r8._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_one
-	ldsfld	float64 _clt::max
+	ldsfld	float64 clt_r8._clt::_one
+	ldsfld	float64 clt_r8._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_one
-	ldsfld	float64 _clt::inf
+	ldsfld	float64 clt_r8._clt::_one
+	ldsfld	float64 clt_r8._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_one
-	ldsfld	float64 _clt::NaN
+	ldsfld	float64 clt_r8._clt::_one
+	ldsfld	float64 clt_r8._clt::NaN
 	clt
 	brtrue		FAIL
-	ldsfld	float64 _clt::_zero
-	ldsfld	float64 _clt::_inf
-	clt
-	brtrue		FAIL
-
-	ldsfld	float64 _clt::_zero
-	ldsfld	float64 _clt::_min
+	ldsfld	float64 clt_r8._clt::_zero
+	ldsfld	float64 clt_r8._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::_zero
-	ldsfld	float64 _clt::_one
+	ldsfld	float64 clt_r8._clt::_zero
+	ldsfld	float64 clt_r8._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::_zero
-	ldsfld	float64 _clt::_zero
+	ldsfld	float64 clt_r8._clt::_zero
+	ldsfld	float64 clt_r8._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::_zero
-	ldsfld	float64 _clt::zero
+	ldsfld	float64 clt_r8._clt::_zero
+	ldsfld	float64 clt_r8._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::_zero
-	ldsfld	float64 _clt::one
+	ldsfld	float64 clt_r8._clt::_zero
+	ldsfld	float64 clt_r8._clt::zero
+	clt
+	brtrue		FAIL
+
+	ldsfld	float64 clt_r8._clt::_zero
+	ldsfld	float64 clt_r8._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_zero
-	ldsfld	float64 _clt::max
+	ldsfld	float64 clt_r8._clt::_zero
+	ldsfld	float64 clt_r8._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_zero
-	ldsfld	float64 _clt::inf
+	ldsfld	float64 clt_r8._clt::_zero
+	ldsfld	float64 clt_r8._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::_zero
-	ldsfld	float64 _clt::NaN
+	ldsfld	float64 clt_r8._clt::_zero
+	ldsfld	float64 clt_r8._clt::NaN
 	clt
 	brtrue		FAIL
-	ldsfld	float64 _clt::zero
-	ldsfld	float64 _clt::_inf
-	clt
-	brtrue		FAIL
-
-	ldsfld	float64 _clt::zero
-	ldsfld	float64 _clt::_min
+	ldsfld	float64 clt_r8._clt::zero
+	ldsfld	float64 clt_r8._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::zero
-	ldsfld	float64 _clt::_one
+	ldsfld	float64 clt_r8._clt::zero
+	ldsfld	float64 clt_r8._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::zero
-	ldsfld	float64 _clt::_zero
+	ldsfld	float64 clt_r8._clt::zero
+	ldsfld	float64 clt_r8._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::zero
-	ldsfld	float64 _clt::zero
+	ldsfld	float64 clt_r8._clt::zero
+	ldsfld	float64 clt_r8._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::zero
-	ldsfld	float64 _clt::one
+	ldsfld	float64 clt_r8._clt::zero
+	ldsfld	float64 clt_r8._clt::zero
+	clt
+	brtrue		FAIL
+
+	ldsfld	float64 clt_r8._clt::zero
+	ldsfld	float64 clt_r8._clt::one
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::zero
-	ldsfld	float64 _clt::max
+	ldsfld	float64 clt_r8._clt::zero
+	ldsfld	float64 clt_r8._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::zero
-	ldsfld	float64 _clt::inf
+	ldsfld	float64 clt_r8._clt::zero
+	ldsfld	float64 clt_r8._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::zero
-	ldsfld	float64 _clt::NaN
+	ldsfld	float64 clt_r8._clt::zero
+	ldsfld	float64 clt_r8._clt::NaN
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::one
-	ldsfld	float64 _clt::_inf
+	ldsfld	float64 clt_r8._clt::one
+	ldsfld	float64 clt_r8._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::one
-	ldsfld	float64 _clt::_min
+	ldsfld	float64 clt_r8._clt::one
+	ldsfld	float64 clt_r8._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::one
-	ldsfld	float64 _clt::_one
+	ldsfld	float64 clt_r8._clt::one
+	ldsfld	float64 clt_r8._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::one
-	ldsfld	float64 _clt::_zero
+	ldsfld	float64 clt_r8._clt::one
+	ldsfld	float64 clt_r8._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::one
-	ldsfld	float64 _clt::zero
+	ldsfld	float64 clt_r8._clt::one
+	ldsfld	float64 clt_r8._clt::zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::one
-	ldsfld	float64 _clt::one
+	ldsfld	float64 clt_r8._clt::one
+	ldsfld	float64 clt_r8._clt::one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::one
-	ldsfld	float64 _clt::max
+	ldsfld	float64 clt_r8._clt::one
+	ldsfld	float64 clt_r8._clt::max
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::one
-	ldsfld	float64 _clt::inf
+	ldsfld	float64 clt_r8._clt::one
+	ldsfld	float64 clt_r8._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::one
-	ldsfld	float64 _clt::NaN
+	ldsfld	float64 clt_r8._clt::one
+	ldsfld	float64 clt_r8._clt::NaN
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::max
-	ldsfld	float64 _clt::_inf
+	ldsfld	float64 clt_r8._clt::max
+	ldsfld	float64 clt_r8._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::max
-	ldsfld	float64 _clt::_min
+	ldsfld	float64 clt_r8._clt::max
+	ldsfld	float64 clt_r8._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::max
-	ldsfld	float64 _clt::_one
+	ldsfld	float64 clt_r8._clt::max
+	ldsfld	float64 clt_r8._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::max
-	ldsfld	float64 _clt::_zero
+	ldsfld	float64 clt_r8._clt::max
+	ldsfld	float64 clt_r8._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::max
-	ldsfld	float64 _clt::zero
+	ldsfld	float64 clt_r8._clt::max
+	ldsfld	float64 clt_r8._clt::zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::max
-	ldsfld	float64 _clt::one
+	ldsfld	float64 clt_r8._clt::max
+	ldsfld	float64 clt_r8._clt::one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::max
-	ldsfld	float64 _clt::max
+	ldsfld	float64 clt_r8._clt::max
+	ldsfld	float64 clt_r8._clt::max
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::max
-	ldsfld	float64 _clt::inf
+	ldsfld	float64 clt_r8._clt::max
+	ldsfld	float64 clt_r8._clt::inf
 	clt
 	brfalse		FAIL
 
-	ldsfld	float64 _clt::max
-	ldsfld	float64 _clt::NaN
+	ldsfld	float64 clt_r8._clt::max
+	ldsfld	float64 clt_r8._clt::NaN
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::inf
-	ldsfld	float64 _clt::_inf
+	ldsfld	float64 clt_r8._clt::inf
+	ldsfld	float64 clt_r8._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::inf
-	ldsfld	float64 _clt::_min
+	ldsfld	float64 clt_r8._clt::inf
+	ldsfld	float64 clt_r8._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::inf
-	ldsfld	float64 _clt::_one
+	ldsfld	float64 clt_r8._clt::inf
+	ldsfld	float64 clt_r8._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::inf
-	ldsfld	float64 _clt::_zero
+	ldsfld	float64 clt_r8._clt::inf
+	ldsfld	float64 clt_r8._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::inf
-	ldsfld	float64 _clt::zero
+	ldsfld	float64 clt_r8._clt::inf
+	ldsfld	float64 clt_r8._clt::zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::inf
-	ldsfld	float64 _clt::one
+	ldsfld	float64 clt_r8._clt::inf
+	ldsfld	float64 clt_r8._clt::one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::inf
-	ldsfld	float64 _clt::max
+	ldsfld	float64 clt_r8._clt::inf
+	ldsfld	float64 clt_r8._clt::max
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::inf
-	ldsfld	float64 _clt::inf
+	ldsfld	float64 clt_r8._clt::inf
+	ldsfld	float64 clt_r8._clt::inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::inf
-	ldsfld	float64 _clt::NaN
+	ldsfld	float64 clt_r8._clt::inf
+	ldsfld	float64 clt_r8._clt::NaN
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::NaN
-	ldsfld	float64 _clt::_inf
+	ldsfld	float64 clt_r8._clt::NaN
+	ldsfld	float64 clt_r8._clt::_inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::NaN
-	ldsfld	float64 _clt::_min
+	ldsfld	float64 clt_r8._clt::NaN
+	ldsfld	float64 clt_r8._clt::_min
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::NaN
-	ldsfld	float64 _clt::_one
+	ldsfld	float64 clt_r8._clt::NaN
+	ldsfld	float64 clt_r8._clt::_one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::NaN
-	ldsfld	float64 _clt::_zero
+	ldsfld	float64 clt_r8._clt::NaN
+	ldsfld	float64 clt_r8._clt::_zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::NaN
-	ldsfld	float64 _clt::zero
+	ldsfld	float64 clt_r8._clt::NaN
+	ldsfld	float64 clt_r8._clt::zero
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::NaN
-	ldsfld	float64 _clt::one
+	ldsfld	float64 clt_r8._clt::NaN
+	ldsfld	float64 clt_r8._clt::one
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::NaN
-	ldsfld	float64 _clt::max
+	ldsfld	float64 clt_r8._clt::NaN
+	ldsfld	float64 clt_r8._clt::max
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::NaN
-	ldsfld	float64 _clt::inf
+	ldsfld	float64 clt_r8._clt::NaN
+	ldsfld	float64 clt_r8._clt::inf
 	clt
 	brtrue		FAIL
 
-	ldsfld	float64 _clt::NaN
-	ldsfld	float64 _clt::NaN
+	ldsfld	float64 clt_r8._clt::NaN
+	ldsfld	float64 clt_r8._clt::NaN
 	clt
 	brtrue		FAIL
 
@@ -450,3 +456,4 @@ FAIL:
 }
 }
 .assembly clt_r8{}
+}

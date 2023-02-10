@@ -47,10 +47,7 @@ namespace System.Resources
                     // If we've hit top of the Culture tree, return.
                     if (culture.HasInvariantCultureName)
                     {
-                        // We really don't think this should happen - we always
-                        // expect the neutral locale's resources to be present.
-                        string? locationInfo = _mediator.LocationInfo == null ? "<null>" : _mediator.LocationInfo.FullName;
-                        throw new MissingManifestResourceException($"{SR.MissingManifestResource_NoNeutralDisk}{Environment.NewLineConst}baseName: {_mediator.BaseNameField}  locationInfo: {locationInfo}  fileName: {_mediator.GetResourceFileName(culture)}");
+                        throw new MissingManifestResourceException($"{SR.MissingManifestResource_NoNeutralDisk}{Environment.NewLineConst}baseName: {_mediator.BaseNameField}  fileName: {_mediator.GetResourceFileName(culture)}");
                     }
                 }
             }

@@ -336,7 +336,6 @@ namespace Internal.TypeSystem.Interop
         /// <param name="parameterType">type of the parameter to marshal</param>
         /// <returns>The created Marshaller</returns>
         public static Marshaller CreateDisabledMarshaller(TypeDesc parameterType,
-            int? parameterIndex,
             MarshallerType marshallerType,
             MarshalDirection direction,
             Marshaller[] marshallers,

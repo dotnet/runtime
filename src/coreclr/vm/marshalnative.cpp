@@ -123,8 +123,10 @@ FCIMPL3(VOID, MarshalNative::StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR
     }
     else if (pMT->HasLayout())
     {
-        MethodDesc* structMarshalStub;
+        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
+        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
 
+        if (structMarshalStub == NULL)
         {
             GCX_PREEMP();
             structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
@@ -178,8 +180,10 @@ FCIMPL3(VOID, MarshalNative::PtrToStructureHelper, LPVOID ptr, Object* pObjIn, C
     }
     else if (pMT->HasLayout())
     {
-        MethodDesc* structMarshalStub;
+        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
+        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
 
+        if (structMarshalStub == NULL)
         {
             GCX_PREEMP();
             structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
@@ -227,11 +231,14 @@ FCIMPL2(VOID, MarshalNative::DestroyStructure, LPVOID ptr, ReflectClassBaseObjec
     }
     else if (th.HasLayout())
     {
-        MethodDesc* structMarshalStub;
+        MethodTable* pMT = th.GetMethodTable();
+        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
+        MethodDesc* structMarshalStub = (pEEMarshalingData != NULL) ? pEEMarshalingData->LookupStructILStubSpeculative(pMT) : NULL;
 
+        if (structMarshalStub == NULL)
         {
             GCX_PREEMP();
-            structMarshalStub = NDirect::CreateStructMarshalILStub(th.GetMethodTable());
+            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
         }
 
         MarshalStructViaILStub(structMarshalStub, nullptr, ptr, StructMarshalStubs::MarshalOperation::Cleanup);
@@ -465,7 +472,7 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
 
     OBJECTREF objRef(obj);
 
-    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_WEAK_NATIVE_COM);
+    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_SIZEDREF);
 
     if (CORProfilerTrackGC())
     {

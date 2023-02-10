@@ -51,6 +51,7 @@
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/icall-internals.h>
 #include <mono/metadata/loader-internals.h>
+#include <mono/metadata/marshal-lightweight.h>
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
@@ -492,7 +493,7 @@ register_trampoline_jit_info (MonoMemoryManager *mem_manager, MonoTrampInfo *inf
 {
 	MonoJitInfo *ji;
 
-	ji = (MonoJitInfo *)mono_mem_manager_alloc0 (mem_manager, mono_jit_info_size ((MonoJitInfoFlags)0, 0, 0));
+	ji = mini_alloc_jinfo (jit_mm_for_mm (mem_manager), mono_jit_info_size ((MonoJitInfoFlags)0, 0, 0));
 	mono_jit_info_init (ji, NULL, (guint8*)MINI_FTNPTR_TO_ADDR (info->code), info->code_size, (MonoJitInfoFlags)0, 0, 0);
 	ji->d.tramp_info = info;
 	ji->is_trampoline = TRUE;
@@ -733,8 +734,13 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
  * nor does the C++ overload fmod (mono_fmod instead). These functions therefore
  * must be extern "C".
  */
+#ifdef DISABLE_JIT
+#define register_icall(func, sig, avoid_wrapper) \
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (avoid_wrapper), NULL))
+#else
 #define register_icall(func, sig, avoid_wrapper) \
 	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (avoid_wrapper), #func))
+#endif
 
 #define register_icall_no_wrapper(func, sig) register_icall (func, sig, TRUE)
 #define register_icall_with_wrapper(func, sig) register_icall (func, sig, FALSE)
@@ -2400,7 +2406,8 @@ create_jit_info_for_trampoline (MonoMethod *wrapper, MonoTrampInfo *info)
 		uw_info = mono_unwind_ops_encode (info->unwind_ops, &info_len);
 	}
 
-	jinfo = (MonoJitInfo *)mono_mem_manager_alloc0 (get_default_mem_manager (), MONO_SIZEOF_JIT_INFO);
+	// FIXME:
+	jinfo = mini_alloc_jinfo (get_default_jit_mm (), MONO_SIZEOF_JIT_INFO);
 	jinfo->d.method = wrapper;
 	jinfo->code_start = MINI_FTNPTR_TO_ADDR (info->code);
 	jinfo->code_size = info->code_size;
@@ -3096,17 +3103,9 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
 	if (!mono_llvm_only && (mono_aot_only || mini_debug_options.dyn_runtime_invoke)) {
 		gboolean supported = TRUE;
-		int i;
 
 		if (method->string_ctor)
 			sig = mono_marshal_get_string_ctor_signature (method);
-
-		for (i = 0; i < sig->param_count; ++i) {
-			MonoType *t = sig->params [i];
-
-			if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
-				supported = FALSE;
-		}
 
 		if (!info->compiled_method)
 			supported = FALSE;
@@ -3216,8 +3215,6 @@ exit:
 	return ret;
 }
 
-static GENERATE_GET_CLASS_WITH_CACHE (nullbyrefreturn_ex, "Mono", "NullByRefReturnException");
-
 static MonoObject*
 mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
@@ -3270,20 +3267,6 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	for (i = 0; i < sig->param_count; ++i) {
 		MonoType *t = sig->params [i];
 
-		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
-			MonoClass *klass = mono_class_from_mono_type_internal (t);
-			guint8 *nullable_buf;
-			int size;
-
-			size = mono_class_value_size (klass, NULL);
-			nullable_buf = g_alloca (size);
-			g_assert (nullable_buf);
-
-			/* The argument pointed to by params [i] is either a boxed vtype or null */
-			mono_nullable_init (nullable_buf, (MonoObject*)params [i], klass);
-			params [i] = nullable_buf;
-		}
-
 		if (!m_type_is_byref (t) && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
 			param_refs [i] = params [i];
 			params [i] = &(param_refs [i]);
@@ -3301,10 +3284,9 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 
 	if (m_type_is_byref (sig->ret)) {
 		if (*(gpointer*)retval == NULL) {
-			MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
-			MonoObject *ex = mono_object_new_checked (klass, error);
+			MonoException *ex = mono_get_exception_null_reference ();
 			mono_error_assert_ok (error);
-			mono_error_set_exception_instance (error, (MonoException*)ex);
+			mono_error_set_exception_instance (error, ex);
 			return NULL;
 		}
 	}
@@ -3531,10 +3513,9 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		if (m_type_is_byref (sig->ret)) {
 			if (*(gpointer*)retval == NULL) {
-				MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
-				MonoObject *ex = mono_object_new_checked (klass, error);
+				MonoException *ex = mono_get_exception_null_reference ();
 				mono_error_assert_ok (error);
-				mono_error_set_exception_instance (error, (MonoException*)ex);
+				mono_error_set_exception_instance (error, ex);
 				return NULL;
 			}
 		}
@@ -4339,6 +4320,15 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	mono_llvm_free_mem_manager (info);
 #endif
 
+	/* Unregister/free jit info */
+	if (info->jit_infos) {
+		for (guint i = 0; i < info->jit_infos->len; ++i) {
+			MonoJitInfo *ji = g_ptr_array_index (info->jit_infos, i);
+			mono_jit_info_table_remove (ji);
+		}
+		g_ptr_array_free (info->jit_infos, TRUE);
+	}
+
 	g_free (info);
 	mem_manager->runtime_info = NULL;
 }
@@ -4351,20 +4341,20 @@ init_class (MonoClass *klass)
 
 	const char *name = m_class_get_name (klass);
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 	/*
 	 * Some of the intrinsics used by the VectorX classes are only implemented on amd64.
 	 * The JIT can't handle SIMD types with != 16 size yet.
 	 */
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
-		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
-		if (!strcmp (name, "Vector4"))
+		// FIXME: Support Vector2/Vector3
+		if (!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
 	}
 #endif
 
 	if (m_class_is_ginst (klass)) {
-		if (!strcmp (name, "Vector`1") || !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1")) {
+		if (!strcmp (name, "Vector`1") || !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1") || !strcmp (name, "Vector512`1")) {
 			MonoGenericClass *gclass = mono_class_try_get_generic_class (klass);
 			g_assert (gclass);
 			MonoType *etype = gclass->context.class_inst->type_argv [0];
@@ -4407,6 +4397,30 @@ mini_llvm_init (void)
 	return FALSE;
 #endif
 }
+
+#ifdef ENSURE_PRIMARY_STACK_SIZE
+/*++ 
+ Function: 
+   EnsureStackSize 
+  
+ Abstract: 
+   This fixes a problem on MUSL where the initial stack size reported by the 
+   pthread_attr_getstack is about 128kB, but this limit is not fixed and 
+   the stack can grow dynamically. The problem is that it makes the 
+   functions ReflectionInvocation::[Try]EnsureSufficientExecutionStack 
+   to fail for real life scenarios like e.g. compilation of corefx. 
+   Since there is no real fixed limit for the stack, the code below 
+   ensures moving the stack limit to a value that makes reasonable 
+   real life scenarios work. 
+  
+ --*/
+static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE void
+ensure_stack_size (size_t size)
+{
+	volatile uint8_t *s = (uint8_t *)g_alloca(size);
+	*s = 0;
+}
+#endif // ENSURE_PRIMARY_STACK_SIZE
 
 void
 mini_add_profiler_argument (const char *desc)
@@ -4489,6 +4503,10 @@ mini_init (const char *filename)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
 
+	mono_marshal_lightweight_init ();
+  	mono_component_marshal_ilgen()->ilgen_init_internal ();
+	mono_component_marshal_ilgen()->install_callbacks_mono(mono_marshal_get_mono_callbacks_for_ilgen());
+
 	mono_os_mutex_init_recursive (&jit_mutex);
 
 	mono_cross_helpers_run ();
@@ -4558,12 +4576,19 @@ mini_init (const char *filename)
 	callbacks.get_jit_stats = get_jit_stats;
 	callbacks.get_exception_stats = get_exception_stats;
 	callbacks.init_class = init_class;
+	callbacks.get_trace = mono_get_trace;
+	callbacks.get_frame_info = mono_get_frame_info;
 
 	mono_install_callbacks (&callbacks);
 
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
 #endif
+
+#ifdef ENSURE_PRIMARY_STACK_SIZE 
+	// TODO: https://github.com/dotnet/runtime/issues/72920
+	ensure_stack_size (5 * 1024 * 1024);
+#endif // ENSURE_PRIMARY_STACK_SIZE
 
 	mono_thread_info_runtime_init (&ticallbacks);
 
@@ -4740,6 +4765,8 @@ mini_init (const char *filename)
 
 	MONO_PROFILER_RAISE (runtime_initialized, ());
 
+	mono_runtime_run_startup_hooks ();
+
 	MONO_VES_INIT_END ();
 
 	return domain;
@@ -4748,13 +4775,6 @@ mini_init (const char *filename)
 static void
 register_icalls (void)
 {
-	mono_add_internal_call_internal ("System.Diagnostics.StackFrame::get_frame_info",
-				ves_icall_get_frame_info);
-	mono_add_internal_call_internal ("System.Diagnostics.StackTrace::get_trace",
-				ves_icall_get_trace);
-	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_install_handlers",
-				mono_runtime_install_handlers);
-
 	/*
 	 * It's important that we pass `TRUE` as the last argument here, as
 	 * it causes the JIT to omit a wrapper for these icalls. If the JIT
@@ -4952,7 +4972,8 @@ register_icalls (void)
 	register_icall (mono_array_new_n_icall, mono_icall_sig_object_ptr_int_ptr, FALSE);
 	register_icall (mono_get_native_calli_wrapper, mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_resume_unwind, mono_icall_sig_void_ptr, TRUE);
-	register_icall (mono_gsharedvt_constrained_call, mono_icall_sig_object_ptr_ptr_ptr_ptr_ptr, FALSE);
+	register_icall (mono_gsharedvt_constrained_call, mono_icall_sig_object_ptr_ptr_ptr_ptr_ptr_ptr, FALSE);
+	register_icall (mono_gsharedvt_constrained_call_fast, mono_icall_sig_ptr_ptr_ptr_ptr, FALSE);
 	register_icall (mono_gsharedvt_value_copy, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 
 	//WARNING We do runtime selection here but the string *MUST* be to a fallback function that has same signature and behavior
@@ -5352,4 +5373,21 @@ const MonoEECallbacks*
 mini_get_interp_callbacks_api (void)
 {
 	return mono_interp_callbacks_pointer;
+}
+
+MonoJitInfo*
+mini_alloc_jinfo (MonoJitMemoryManager *jit_mm, int size)
+{
+	if (jit_mm->mem_manager->collectible) {
+		/* These are freed by mono_jit_info_table_remove () in an async way, so they have to be malloc-ed */
+		MonoJitInfo *ji = (MonoJitInfo*)g_malloc0 (size);
+		jit_mm_lock (jit_mm);
+		if (!jit_mm->jit_infos)
+			jit_mm->jit_infos = g_ptr_array_new ();
+		g_ptr_array_add (jit_mm->jit_infos, ji);
+		jit_mm_unlock (jit_mm);
+		return ji;
+	} else {
+		return (MonoJitInfo*)mono_mem_manager_alloc0 (jit_mm->mem_manager, size);
+	}
 }

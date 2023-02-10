@@ -16,8 +16,6 @@ set(ilgen_base_sources
     method-builder-ilgen.c
     method-builder-ilgen.h
     method-builder-ilgen-internals.h
-    marshal-ilgen.c
-    marshal-ilgen.h
     marshal-lightweight.c
     marshal-lightweight.h
     marshal-shared.c
@@ -25,15 +23,7 @@ set(ilgen_base_sources
     sgen-mono-ilgen.c
     sgen-mono-ilgen.h)
 
-if(NOT ENABLE_ILGEN)
-    addprefix(mono_ilgen_sources ../metadata "${ilgen_base_sources}")
-    set_source_files_properties(${mono_ilgen_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
-    add_library(mono-ilgen STATIC "${mono_ilgen_sources}")
-    target_link_libraries(mono-ilgen monoapi)
-    install(TARGETS mono-ilgen LIBRARY)
-else()
-    set(ilgen_sources ${ilgen_base_sources})
-endif()
+set(ilgen_sources ${ilgen_base_sources})
 
 set(metadata_win32_sources
     w32event-win32.c)
@@ -88,6 +78,8 @@ set(metadata_common_sources
     icall-eventpipe.c
     image.c
     image-internals.h
+    webcil-loader.h
+    webcil-loader.c
     jit-info.h
     jit-info.c
     loader.c
@@ -96,7 +88,6 @@ set(metadata_common_sources
     marshal.c
     marshal.h
     marshal-internals.h
-    marshal-noilgen.c
     mempool.c
     mempool.h
     mempool-internals.h
@@ -118,6 +109,8 @@ set(metadata_common_sources
     mono-hash.h
     mono-conc-hash.c
     mono-conc-hash.h
+    weak-hash.c
+    weak-hash.h
     mono-ptr-array.h
     monitor.h
     object.c

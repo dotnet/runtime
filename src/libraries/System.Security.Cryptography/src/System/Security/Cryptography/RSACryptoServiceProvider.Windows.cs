@@ -54,10 +54,7 @@ namespace System.Security.Cryptography
 
         private RSACryptoServiceProvider(int keySize, CspParameters? parameters, bool useDefaultKeySize)
         {
-            if (keySize < 0)
-            {
-                throw new ArgumentOutOfRangeException("dwKeySize", "ArgumentOutOfRange_NeedNonNegNum");
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(keySize);
 
             _parameters = CapiHelper.SaveCspParameters(
                 CapiHelper.CspAlgorithmType.Rsa,
@@ -506,9 +503,12 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(rgbHash != null);
 
+            // Read the SafeKeyHandle property to force the key to load
+            SafeCapiKeyHandle localHandle = SafeKeyHandle;
+            Debug.Assert(localHandle != null);
+
             return CapiHelper.SignValue(
                 SafeProvHandle,
-                SafeKeyHandle,
                 _parameters.KeyNumber,
                 CapiHelper.CALG_RSA_SIGN,
                 calgHash,
@@ -674,7 +674,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static Exception PaddingModeNotSupported()
+        private static CryptographicException PaddingModeNotSupported()
         {
             return new CryptographicException(SR.Cryptography_InvalidPaddingMode);
         }

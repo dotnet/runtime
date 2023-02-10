@@ -806,7 +806,7 @@ namespace System.Xml.Serialization
             {
                 kind = TypeKind.Serializable;
                 flags |= TypeFlags.Special | TypeFlags.CanBeElementValue;
-                flags |= GetConstructorFlags(type, ref exception);
+                flags |= GetConstructorFlags(type);
             }
             else if (type.IsArray)
             {
@@ -823,7 +823,7 @@ namespace System.Xml.Serialization
             {
                 kind = TypeKind.Collection;
                 arrayElementType = GetCollectionElementType(type, memberInfo == null ? null : $"{memberInfo.DeclaringType!.FullName}.{memberInfo.Name}");
-                flags |= GetConstructorFlags(type, ref exception);
+                flags |= GetConstructorFlags(type);
             }
             else if (type == typeof(XmlQualifiedName))
             {
@@ -906,7 +906,7 @@ namespace System.Xml.Serialization
             // check to see if the type has public default constructor for classes
             if (kind == TypeKind.Class && !type.IsAbstract)
             {
-                flags |= GetConstructorFlags(type, ref exception);
+                flags |= GetConstructorFlags(type);
             }
             // check if a struct-like type is enumerable
             if (kind == TypeKind.Struct || kind == TypeKind.Class)
@@ -918,7 +918,7 @@ namespace System.Xml.Serialization
 
                     // GetEnumeratorElementType checks for the security attributes on the GetEnumerator(), Add() methods and Current property,
                     // we need to check the MoveNext() and ctor methods for the security attribues
-                    flags |= GetConstructorFlags(type, ref exception);
+                    flags |= GetConstructorFlags(type);
                 }
             }
             typeDesc = new TypeDesc(type, CodeIdentifier.MakeValid(TypeName(type)), type.ToString(), kind, null, flags, null);
@@ -1226,8 +1226,7 @@ namespace System.Xml.Serialization
 
         private static TypeFlags GetConstructorFlags(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors
-                | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type,
-            ref Exception? exception)
+                | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
         {
             ConstructorInfo? ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic, Type.EmptyTypes);
             if (ctor != null)

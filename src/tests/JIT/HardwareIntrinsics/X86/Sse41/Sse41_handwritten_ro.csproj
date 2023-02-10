@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>X86_Sse41_handwritten_ro</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="HandwrittenProgram.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+
+    <Compile Include="Blend.cs" />
+    <Compile Include="ConvertToVector128Int16.Byte.cs" />
+    <Compile Include="ConvertToVector128Int16.SByte.cs" />
+    <Compile Include="ConvertToVector128Int32.Byte.cs" />
+    <Compile Include="ConvertToVector128Int32.Int16.cs" />
+    <Compile Include="ConvertToVector128Int32.SByte.cs" />
+    <Compile Include="ConvertToVector128Int32.UInt16.cs" />
+    <Compile Include="ConvertToVector128Int64.Byte.cs" />
+    <Compile Include="ConvertToVector128Int64.Int16.cs" />
+    <Compile Include="ConvertToVector128Int64.Int32.cs" />
+    <Compile Include="ConvertToVector128Int64.SByte.cs" />
+    <Compile Include="ConvertToVector128Int64.UInt16.cs" />
+    <Compile Include="ConvertToVector128Int64.UInt32.cs" />
+    <Compile Include="DotProduct.cs" />
+    <Compile Include="LoadAlignedVector128NonTemporal.cs" />
+    <Compile Include="MinHorizontal.cs" />
+    <Compile Include="MultipleSumAbsoluteDifferences.cs" />
+    <Compile Include="Multiply.cs" />
+  </ItemGroup>
+</Project>

@@ -22,12 +22,12 @@ PerfInfo::PerfInfo(int pid)
     }
 
     SString path;
-    path.Printf("%Sperfinfo-%d.map", tempPath.GetUnicode(), pid);
+    path.Printf("%sperfinfo-%d.map", tempPath.GetUTF8(), pid);
     OpenFile(path);
 }
 
 // Logs image loads into the process' perfinfo-%d.map file
-void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
+void PerfInfo::LogImage(PEAssembly* pPEAssembly, CHAR* guid)
 {
     CONTRACTL
     {
@@ -55,7 +55,7 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
         }
     }
 
-    value.Printf("%S%c%S%c%p", path.GetUnicode(), sDelimiter, guid, sDelimiter, baseAddr);
+    value.Printf("%s%c%s%c%p", path.GetUTF8(), sDelimiter, guid, sDelimiter, baseAddr);
 
     SString command;
     command.Printf("%s", "ImageLoad");
@@ -80,8 +80,8 @@ void PerfInfo::WriteLine(SString& type, SString& value)
     }
 
     SString line;
-    line.Printf("%S%c%S%c\n",
-            type.GetUnicode(), sDelimiter, value.GetUnicode(), sDelimiter);
+    line.Printf("%s%c%s%c\n",
+            type.GetUTF8(), sDelimiter, value.GetUTF8(), sDelimiter);
 
     EX_TRY
     {

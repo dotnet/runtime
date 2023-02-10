@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -22,6 +23,8 @@
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
 }
 
+.namespace add_
+{
 .class public explicit _add {
 
 .field [0] int32 global0
@@ -32,16 +35,19 @@
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	6
-.locals init (class _add target)
+.locals init (class add_._add target)
 //----------------
 // begin testing -
 //----------------
 
 	// creating new instance of _add and storing it
-	newobj instance void _add::.ctor()
+	newobj instance void add_._add::.ctor()
 	stloc.0
 
 
@@ -65,17 +71,17 @@
 
         // -- I4 + *  -- Unmanaged ptr
         ldloc target
-	ldflda	int32 _add::global0
+	ldflda	int32 add_._add::global0
         ldc.i4  0xAAAAAAAA
         stind.i4        
 
 	ldloc target
-	ldflda	int32 _add::global1
+	ldflda	int32 add_._add::global1
         ldc.i4  0x44444444
         stind.i4
 
 	ldloc target
-	ldflda	int32 _add::global0
+	ldflda	int32 add_._add::global0
         ldc.i4  0x4
         add
         ldind.i4
@@ -118,5 +124,6 @@ FAIL:
 	call void [System.Console]System.Console::WriteLine(string)
 	ldc.i4	0x0
 	ret
+}
 }
 }

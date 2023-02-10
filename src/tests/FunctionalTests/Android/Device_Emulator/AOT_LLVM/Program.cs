@@ -5,7 +5,7 @@ using System;
 
 public static class Program
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         Console.WriteLine("Hello, Android!"); // logcat
         return 42;

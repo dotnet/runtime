@@ -60,7 +60,7 @@ namespace System.Buffers.Text
             destination[7] = Utf8Constants.Minus;
 
             FormattingHelpers.WriteTwoDecimalDigits((uint)day, destination, 8);
-            destination[10] = TimeMarker;
+            destination[10] = (byte)'T';
 
             FormattingHelpers.WriteTwoDecimalDigits((uint)hour, destination, 11);
             destination[13] = Utf8Constants.Colon;
@@ -100,7 +100,7 @@ namespace System.Buffers.Text
             }
             else if (kind == DateTimeKind.Utc)
             {
-                destination[27] = UtcMarker;
+                destination[27] = (byte)'Z';
             }
 
             return true;

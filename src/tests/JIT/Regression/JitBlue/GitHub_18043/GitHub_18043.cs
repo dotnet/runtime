@@ -7,7 +7,7 @@ using System.Numerics;
 
 // GitHub18043: ensure dead box optimizations treat Vector<float> as a struct type.
 
-class X
+public class X
 {
     public static int VT()
     {

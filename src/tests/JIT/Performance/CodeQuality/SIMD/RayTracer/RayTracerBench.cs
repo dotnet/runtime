@@ -113,7 +113,7 @@ public class RayTracerBench
         return true;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         var r = new RayTracerBench();
         bool result = r.Run();

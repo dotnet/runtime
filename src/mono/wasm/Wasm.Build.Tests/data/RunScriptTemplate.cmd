@@ -58,6 +58,10 @@ if [%XHARNESS_ARGS%] == [] (
     set "XHARNESS_ARGS=%JS_ENGINE% %JS_ENGINE_ARGS% %BROWSER_PATH% %MAIN_JS%"
 )
 
+if [%PREPEND_PATH%] NEQ [] (
+    set "PATH=%PREPEND_PATH%;%PATH%"
+)
+
 echo EXECUTION_DIR=%EXECUTION_DIR%
 echo SCENARIO=%SCENARIO%
 echo XHARNESS_OUT=%XHARNESS_OUT%
@@ -100,6 +104,11 @@ if [%TEST_USING_WORKLOADS%] == [true] (
     set _DIR_NAME=dotnet-none
     set SDK_HAS_WORKLOAD_INSTALLED=false
 )
+if [%TEST_USING_WEBCIL%] == [true] (
+   set USE_WEBCIL_FOR_TESTS=true
+) else (
+   set USE_WEBCIL_FOR_TESTS=false
+)
 
 if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
     robocopy /mt /np /nfl /NDL /nc /e %BASE_DIR%\%_DIR_NAME% %EXECUTION_DIR%\%_DIR_NAME%
@@ -110,5 +119,4 @@ if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
 
 set "PATH=%_SDK_DIR%;%PATH%"
 set "SDK_FOR_WORKLOAD_TESTING_PATH=%_SDK_DIR%"
-set "AppRefDir=%BASE_DIR%\microsoft.netcore.app.ref"
 EXIT /b 0

@@ -31,8 +31,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly InfoType _inlineInfoType;
         private ReadyToRunSymbolNodeFactory _symbolNodeFactory;
 
-        public InliningInfoNode(TargetDetails target, EcmaModule module, InfoType inlineInfoType)
-            : base(target)
+        public InliningInfoNode(EcmaModule module, InfoType inlineInfoType)
         {
             _inlineInfoType = inlineInfoType;
             if (AllowCrossModuleInlines)

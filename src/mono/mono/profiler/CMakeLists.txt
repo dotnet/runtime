@@ -10,9 +10,10 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/../sgen)
 
 if(NOT DISABLE_LIBS)
-  if(HOST_ANDROID OR HOST_IOS OR HOST_TVOS)
-    # Build the logging profiler only for mobile platforms
+  if(HOST_ANDROID OR HOST_IOS OR HOST_TVOS OR HOST_S390X)
+    # Build the logging profiler only for certain platforms
     add_library(mono-profiler-log SHARED helper.c log.c log-args.c ${ZLIB_SOURCES})
+    target_compile_definitions(mono-profiler-log PRIVATE -DMONO_DLL_EXPORT)
     target_link_libraries(mono-profiler-log monosgen-shared eglib_objects monoapi)
     if(HOST_ANDROID)
       target_link_libraries(mono-profiler-log log)
@@ -34,5 +35,12 @@ if(NOT DISABLE_LIBS)
     target_link_libraries(mono-profiler-aot-static monoapi)
     set_target_properties(mono-profiler-aot-static PROPERTIES OUTPUT_NAME mono-profiler-aot)
     install(TARGETS mono-profiler-aot-static LIBRARY)
+  endif()
+
+  if(HOST_BROWSER)
+    add_library(mono-profiler-browser-static STATIC browser.c)
+    target_link_libraries(mono-profiler-browser-static monoapi)
+    set_target_properties(mono-profiler-browser-static PROPERTIES OUTPUT_NAME mono-profiler-browser)
+    install(TARGETS mono-profiler-browser-static LIBRARY)
   endif()
 endif()

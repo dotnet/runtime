@@ -41,7 +41,6 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Initializes a new instance of <see cref="HostBuilder"/>.
         /// </summary>
-        [RequiresDynamicCode(Host.RequiresDynamicCodeMessage)]
         public HostBuilder()
         {
             _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
@@ -191,10 +190,15 @@ namespace Microsoft.Extensions.Hosting
             return diagnosticListener;
         }
 
+// Remove when https://github.com/dotnet/runtime/pull/78532 is merged and consumed by the used SDK.
+#if NET7_0
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+            Justification = "DiagnosticSource is used here to pass objects in-memory to code using HostFactoryResolver. This won't require creating new generic types.")]
+#endif
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "The values being passed into Write are being consumed by the application already.")]
-        private static void Write<T>(
-            DiagnosticSource diagnosticSource,
+        private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+            DiagnosticListener diagnosticSource,
             string name,
             T value)
         {

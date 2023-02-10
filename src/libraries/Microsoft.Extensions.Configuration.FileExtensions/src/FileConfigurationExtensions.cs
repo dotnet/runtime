@@ -75,10 +75,10 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Gets the default <see cref="IFileProvider"/> to be used for file-based providers.
+        /// Gets a default action to be invoked for file-based providers when an error occurs.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
-        /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
+        /// <returns>The The Action to be invoked on a file load exception, if set.</returns>
         public static Action<FileLoadExceptionContext>? GetFileLoadExceptionHandler(this IConfigurationBuilder builder)
         {
             ThrowHelper.ThrowIfNull(builder);

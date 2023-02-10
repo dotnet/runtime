@@ -9,7 +9,7 @@
 
 using System;
 
-class test
+public class test
 {
     public static int Main()
     {

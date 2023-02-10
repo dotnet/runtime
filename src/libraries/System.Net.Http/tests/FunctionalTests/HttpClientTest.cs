@@ -1388,7 +1388,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static string CreateFakeUri() => $"http://{Guid.NewGuid().ToString("N")}";
+        private static string CreateFakeUri() => $"http://{Guid.NewGuid():N}";
 
         private static async Task<T> WhenCanceled<T>(CancellationToken cancellationToken)
         {

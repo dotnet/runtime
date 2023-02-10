@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
 
+.namespace add_r8
+{
 .class public _add {
 .method public static	int32 _add(float64,float64,float64) {
 .maxstack		20
@@ -12,13 +15,13 @@
 	ldarg	1
 	add
 	dup
-	call	int32 _add::checkfinite(float64)
+	call	int32 add_r8._add::checkfinite(float64)
 	ldc.i4		0x0
 	ceq
 	brtrue		COMPARE
-	call	int32 _add::checkfinite(float64)
+	call	int32 add_r8._add::checkfinite(float64)
 	ldarg	2
-	call	int32 _add::checkfinite(float64)
+	call	int32 add_r8._add::checkfinite(float64)
 	ceq
 	br			FINISH
 COMPARE:
@@ -74,7 +77,10 @@ FINISH:
 }
 
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		20
 
@@ -82,414 +88,414 @@ FINISH:
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x0000000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0xC000000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0xBFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0xBFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x0000000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0xBFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x8000000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x0000000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x3FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0xBFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x8000000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x0000000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x3FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0x0000000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x3FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x3FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x4000000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x0000000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0xFFF0000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0xFFEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0xBFF0000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x8000000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x0000000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x3FF0000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FEFFFFFFFFFFFFF)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FF0000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
 	ldc.r8	float64(0x7FF8000000000000)
-	call	int32 _add::_add(float64,float64,float64)
+	call	int32 add_r8._add::_add(float64,float64,float64)
 	brfalse	FAIL
 
 
@@ -501,3 +507,4 @@ FAIL:
 }
 }
 .assembly add_r8{}
+}

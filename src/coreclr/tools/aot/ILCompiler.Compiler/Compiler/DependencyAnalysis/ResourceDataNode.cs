@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
                             string resourceName = module.MetadataReader.GetString(resource.Name);
 
                             // Check if emitting the manifest resource is blocked by policy.
-                            if (factory.MetadataManager.IsManifestResourceBlocked(module, resourceName))
+                            if (factory.MetadataManager.IsManifestResourceBlocked(factory, module, resourceName))
                                 continue;
 
                             string assemblyName = module.GetName().FullName;

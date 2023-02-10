@@ -73,7 +73,7 @@ namespace System.Text.Json.Serialization
             _list.CopyTo(array, arrayIndex);
         }
 
-        public IEnumerator<TItem> GetEnumerator()
+        public List<TItem>.Enumerator GetEnumerator()
         {
             return _list.GetEnumerator();
         }
@@ -105,6 +105,11 @@ namespace System.Text.Json.Serialization
         {
             VerifyMutable();
             _list.RemoveAt(index);
+        }
+
+        IEnumerator<TItem> IEnumerable<TItem>.GetEnumerator()
+        {
+            return _list.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

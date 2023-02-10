@@ -223,7 +223,7 @@ namespace System.ComponentModel.Composition.Hosting
             _rootProvider.ExportsChanged += OnExportsChangedInternal;
             _rootProvider.ExportsChanging += OnExportsChangingInternal;
 
-            _providers = (providers != null) ? new ReadOnlyCollection<ExportProvider>((ExportProvider[])providers.Clone()) : EmptyProviders;
+            _providers = (providers != null) ? Array.AsReadOnly((ExportProvider[])providers.Clone()) : EmptyProviders;
         }
 
         internal CompositionOptions CompositionOptions

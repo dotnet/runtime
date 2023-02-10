@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Buffers.Text
 {
@@ -112,23 +113,17 @@ namespace System.Buffers.Text
         /// This method performs best when the starting index is a constant literal.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteFourDecimalDigits(uint value, Span<byte> buffer, int startingIndex = 0)
+        public static unsafe void WriteFourDecimalDigits(uint value, Span<byte> buffer, int startingIndex = 0)
         {
             Debug.Assert(value <= 9999);
+            Debug.Assert(startingIndex <= buffer.Length - 4);
 
-            uint temp = '0' + value;
-            value /= 10;
-            buffer[startingIndex + 3] = (byte)(temp - (value * 10));
-
-            temp = '0' + value;
-            value /= 10;
-            buffer[startingIndex + 2] = (byte)(temp - (value * 10));
-
-            temp = '0' + value;
-            value /= 10;
-            buffer[startingIndex + 1] = (byte)(temp - (value * 10));
-
-            buffer[startingIndex] = (byte)('0' + value);
+            (value, uint remainder) = Math.DivRem(value, 100);
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
+            {
+                Number.WriteTwoDigits(bufferPtr + startingIndex, value);
+                Number.WriteTwoDigits(bufferPtr + startingIndex + 2, remainder);
+            }
         }
 
         /// <summary>
@@ -136,16 +131,21 @@ namespace System.Buffers.Text
         /// This method performs best when the starting index is a constant literal.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteTwoDecimalDigits(uint value, Span<byte> buffer, int startingIndex = 0)
+        public static unsafe void WriteTwoDecimalDigits(uint value, Span<byte> buffer, int startingIndex = 0)
         {
             Debug.Assert(value <= 99);
+            Debug.Assert(startingIndex <= buffer.Length - 2);
 
-            uint temp = '0' + value;
-            value /= 10;
-            buffer[startingIndex + 1] = (byte)(temp - (value * 10));
-
-            buffer[startingIndex] = (byte)('0' + value);
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
+            {
+                Number.WriteTwoDigits(bufferPtr + startingIndex, value);
+            }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CopyFourBytes(ReadOnlySpan<byte> source, Span<byte> destination) =>
+            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination),
+                Unsafe.ReadUnaligned<uint>(ref MemoryMarshal.GetReference(source)));
 
         #endregion UTF-8 Helper methods
 

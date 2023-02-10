@@ -20,8 +20,6 @@ private:
         m_pCompiler->EndPhase(phase);
     }
 
-    bool IncludeInSsa(unsigned lclNum);
-
 public:
     // Constructor
     SsaBuilder(Compiler* pCompiler);
@@ -82,7 +80,7 @@ private:
     void RenameDef(GenTree* defNode, BasicBlock* block);
     unsigned RenamePushDef(GenTree* defNode, BasicBlock* block, unsigned lclNum, bool isFullDef);
     // Rename a use of a local variable.
-    void RenameLclUse(GenTreeLclVarCommon* lclNode);
+    void RenameLclUse(GenTreeLclVarCommon* lclNode, BasicBlock* block);
 
     // Assumes that "block" contains a definition for local var "lclNum", with SSA number "ssaNum".
     // IF "block" is within one or more try blocks,
@@ -96,10 +94,6 @@ private:
 
     // Add GT_PHI_ARG nodes to the GT_PHI nodes within block's successors.
     void AddPhiArgsToSuccessors(BasicBlock* block);
-
-#ifdef DEBUG
-    void Print(BasicBlock** postOrder, int count);
-#endif
 
 private:
     Compiler*     m_pCompiler;

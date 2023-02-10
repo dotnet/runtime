@@ -1139,7 +1139,7 @@ namespace System
         private const BindingFlags GetMemberWithSameMetadataDefinitionAsBindingFlags =
             BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        private static MemberInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo methodInfo)
+        private static MethodInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo methodInfo)
         {
             ListBuilder<MethodInfo> methods = runtimeType.GetMethodCandidates(methodInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, -1, allowPrefixLookup: false);
 
@@ -1155,7 +1155,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructorInfo)
+        private static ConstructorInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructorInfo)
         {
             ListBuilder<ConstructorInfo> ctors = runtimeType.GetConstructorCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, allowPrefixLookup: false);
 
@@ -1171,7 +1171,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo propertyInfo)
+        private static PropertyInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo propertyInfo)
         {
             ListBuilder<PropertyInfo> properties = runtimeType.GetPropertyCandidates(propertyInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, null, allowPrefixLookup: false);
 
@@ -1187,7 +1187,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo fieldInfo)
+        private static FieldInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo fieldInfo)
         {
             ListBuilder<FieldInfo> fields = runtimeType.GetFieldCandidates(fieldInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 
@@ -1203,7 +1203,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
+        private static EventInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
         {
             ListBuilder<EventInfo> events = runtimeType.GetEventCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 
@@ -1219,7 +1219,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
+        private static Type? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
         {
             ListBuilder<Type> nestedTypes = runtimeType.GetNestedTypeCandidates(nestedType.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 
@@ -1257,27 +1257,111 @@ namespace System
 
         #region Attributes
 
+        internal CorElementType GetCorElementType()
+        {
+            TypeCache cache = Cache;
+            if ((cache.Cached & (int)TypeCacheEntries.CorElementType) != 0)
+                return cache.CorElementType;
+
+            var type = this;
+            cache.CorElementType = RuntimeTypeHandle.GetCorElementType (new QCallTypeHandle(ref type));
+            Interlocked.MemoryBarrier ();
+            UpdateCached(TypeCacheEntries.CorElementType);
+            return cache.CorElementType;
+        }
+
+        internal TypeAttributes GetAttributes()
+        {
+            TypeCache cache = Cache;
+            if ((cache.Cached & (int)TypeCacheEntries.TypeAttributes) != 0)
+                return cache.TypeAttributes;
+
+            var type = this;
+            cache.TypeAttributes = RuntimeTypeHandle.GetAttributes(new QCallTypeHandle(ref type));
+            Interlocked.MemoryBarrier ();
+            UpdateCached(TypeCacheEntries.TypeAttributes);
+            return cache.TypeAttributes;
+        }
+
         internal bool IsDelegate()
         {
-            return GetBaseType() == typeof(System.MulticastDelegate);
+            TypeCache cache = Cache;
+            if ((cache.Cached & (int)TypeCacheEntries.IsDelegate) != 0)
+                return (cache.Flags & (int)TypeCacheEntries.IsDelegate) != 0;
+
+            bool res = GetBaseType() == typeof(System.MulticastDelegate);
+            CacheFlag(TypeCacheEntries.IsDelegate, res);
+            return res;
         }
 
         protected override bool IsValueTypeImpl()
         {
+            TypeCache cache = Cache;
+            if ((cache.Cached & (int)TypeCacheEntries.IsValueType) != 0)
+                return (cache.Flags & (int)TypeCacheEntries.IsValueType) != 0;
+
             // We need to return true for generic parameters with the ValueType constraint.
             // So we cannot use the faster RuntimeTypeHandle.IsValueType because it returns
             // false for all generic parameters.
-            if (this == typeof(ValueType) || this == typeof(Enum))
-                return false;
-
-            return IsSubclassOf(typeof(ValueType));
+            bool res = false;
+            if (!(this == typeof(ValueType) || this == typeof(Enum)))
+                res = IsSubclassOf(typeof(ValueType));
+            CacheFlag(TypeCacheEntries.IsValueType, res);
+            return res;
         }
 
         // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
 
         // Returns true for actual enum types only.
-        internal bool IsActualEnum => RuntimeTypeHandle.GetBaseType(this) == EnumType;
+        internal bool IsActualEnum
+        {
+            get
+            {
+                TypeCache cache = Cache;
+                if ((cache.Cached & (int)TypeCacheEntries.IsActualEnum) != 0)
+                    return (cache.Flags & (int)TypeCacheEntries.IsActualEnum) != 0;
+                bool res = !IsGenericParameter && RuntimeTypeHandle.GetBaseType(this) == EnumType;
+                CacheFlag(TypeCacheEntries.IsActualEnum, res);
+                return res;
+            }
+        }
+
+        public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
+
+        public override bool IsGenericType
+        {
+            get
+            {
+                TypeCache cache = Cache;
+                if ((cache.Cached & (int)TypeCacheEntries.IsGenericType) != 0)
+                    return (cache.Flags & (int)TypeCacheEntries.IsGenericType) != 0;
+                bool res = RuntimeTypeHandle.HasInstantiation(this);
+                CacheFlag(TypeCacheEntries.IsGenericType, res);
+                return res;
+            }
+        }
+
+        public override bool IsGenericTypeDefinition
+        {
+            get
+            {
+                TypeCache cache = Cache;
+                if ((cache.Cached & (int)TypeCacheEntries.IsGenericTypeDef) != 0)
+                    return (cache.Flags & (int)TypeCacheEntries.IsGenericTypeDef) != 0;
+                bool res = RuntimeTypeHandle.IsGenericTypeDefinition(this);
+                CacheFlag(TypeCacheEntries.IsGenericTypeDef, res);
+                return res;
+            }
+        }
+
+        public override Type GetGenericTypeDefinition()
+        {
+            if (!IsGenericType)
+                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
+
+            return RuntimeTypeHandle.GetGenericTypeDefinition(this);
+        }
 
         public override GenericParameterAttributes GenericParameterAttributes
         {
@@ -1537,18 +1621,55 @@ namespace System
             Interlocked.CompareExchange(ref cache, new TypeCache(), null) ??
             cache;
 
+        [Flags]
+        // Types of entries cached in TypeCache
+        private enum TypeCacheEntries {
+            IsGenericTypeDef = 1,
+            IsDelegate = 2,
+            IsValueType = 4,
+            IsActualEnum = 8,
+            IsGenericType = 16,
+            CorElementType = 32,
+            TypeAttributes = 64,
+            DefaultCtor = 128
+        }
+
         internal sealed class TypeCache
         {
-            public Enum.EnumInfo? EnumInfo;
+            public object? EnumInfo;
             public TypeCode TypeCode;
             // this is the displayed form: special characters
             // ,+*&*[]\ in the identifier portions of the names
             // have been escaped with a leading backslash (\)
             public string? full_name;
-            public bool default_ctor_cached;
             public RuntimeConstructorInfo? default_ctor;
+            public CorElementType CorElementType;
+            public TypeAttributes TypeAttributes;
+            // TypeCacheEntries, accessed using CAS
+            public int Flags;
+            // TypeCacheEntries, accessed using CAS
+            public int Cached;
         }
 
+        private void UpdateCached(TypeCacheEntries entry)
+        {
+            TypeCache cache = Cache;
+            int oldCached = cache.Cached;
+            int newCached = oldCached | (int)entry;
+            // This CAS will ensure ordering with the the store into the cache
+            // If this fails, we will just take the slowpath again
+            Interlocked.CompareExchange(ref cache.Cached, newCached, oldCached);
+        }
+
+        private void CacheFlag(TypeCacheEntries flag, bool value)
+        {
+            TypeCache cache = Cache;
+            int oldFlags = cache.Flags;
+            int newFlags = value ? (oldFlags | (int)flag) : oldFlags;
+            // If this fails, we will just take the slowpath again
+            if (Interlocked.CompareExchange(ref cache.Flags, newFlags, oldFlags) == oldFlags)
+                UpdateCached(flag);
+        }
 
         internal RuntimeType(object obj)
         {
@@ -1557,10 +1678,10 @@ namespace System
 
         internal RuntimeConstructorInfo? GetDefaultConstructor()
         {
-            TypeCache? cache = Cache;
+            TypeCache cache = Cache;
             RuntimeConstructorInfo? ctor = null;
 
-            if (Volatile.Read(ref cache.default_ctor_cached))
+            if ((cache.Cached & (int)TypeCacheEntries.DefaultCtor) != 0)
                 return cache.default_ctor;
 
             ListBuilder<ConstructorInfo> ctors = GetConstructorCandidates(
@@ -1570,9 +1691,10 @@ namespace System
 
             if (ctors.Count == 1)
                 cache.default_ctor = ctor = (RuntimeConstructorInfo)ctors[0];
+            Interlocked.MemoryBarrier ();
 
             // Note down even if we found no constructors
-            Volatile.Write(ref cache.default_ctor_cached, true);
+            UpdateCached(TypeCacheEntries.DefaultCtor);
 
             return ctor;
         }
@@ -1648,83 +1770,12 @@ namespace System
             }
         }
 
-        /// <summary>
-        /// Verify <paramref name="value"/> and optionally convert the value for special cases.
-        /// </summary>
-        /// <returns>Not yet implemented in Mono: True if the value should be considered a value type, False otherwise</returns>
-        internal bool CheckValue(
-            ref object? value,
-            ref ParameterCopyBackAction copyBack,
-            Binder? binder,
-            CultureInfo? culture,
-            BindingFlags invokeAttr)
+        // FIXME Reuse with coreclr
+        private CheckValueStatus TryChangeTypeSpecial(
+            ref object value,
+            out bool isValueType)
         {
-            // Already fast-pathed by the caller.
-            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
-
-            copyBack = ParameterCopyBackAction.Copy;
-
-            CheckValueStatus status = TryConvertToType(ref value);
-            if (status == CheckValueStatus.Success)
-            {
-                return true;
-            }
-
-            if (status == CheckValueStatus.NotSupported_ByRefLike)
-            {
-                throw new NotSupportedException(SR.Format(SR.NotSupported_ByRefLike, value?.GetType(), this));
-            }
-
-            if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
-            {
-                throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
-            }
-
-            if (binder != null && binder != DefaultBinder)
-            {
-                value = binder.ChangeType(value!, this, culture);
-                return true;
-            }
-
-            throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
-        }
-
-        private enum CheckValueStatus
-        {
-            Success = 0,
-            ArgumentException,
-            NotSupported_ByRefLike
-        }
-
-        private CheckValueStatus TryConvertToType(ref object? value)
-        {
-            if (IsInstanceOfType(value))
-                return CheckValueStatus.Success;
-
-            if (IsByRef)
-            {
-                Type elementType = GetElementType();
-                if (elementType.IsByRefLike)
-                {
-                    return CheckValueStatus.NotSupported_ByRefLike;
-                }
-
-                if (value == null || elementType.IsInstanceOfType(value))
-                {
-                    return CheckValueStatus.Success;
-                }
-            }
-
-            if (value == null)
-            {
-                if (IsByRefLike)
-                {
-                    return CheckValueStatus.NotSupported_ByRefLike;
-                }
-
-                return CheckValueStatus.Success;
-            }
-
+            isValueType = true;
             if (IsEnum)
             {
                 Type? type = Enum.GetUnderlyingType(this);
@@ -1763,13 +1814,9 @@ namespace System
                 }
             }
 
+            isValueType = false;
             return CheckValueStatus.ArgumentException;
         }
-
-        // Stub method to allow for shared code with CoreClr.
-#pragma warning disable CA1822
-        internal bool TryByRefFastPath(ref object arg, ref bool isValueType) => false;
-#pragma warning restore CA1822
 
         // Binder uses some incompatible conversion rules. For example
         // int value cannot be used with decimal parameter but in other
@@ -2104,29 +2151,29 @@ namespace System
             }
         }
 
-        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type ifaceType)
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
 
-            ArgumentNullException.ThrowIfNull(ifaceType);
+            ArgumentNullException.ThrowIfNull(interfaceType);
 
-            RuntimeType? ifaceRtType = ifaceType as RuntimeType;
+            RuntimeType? ifaceRtType = interfaceType as RuntimeType;
 
             if (ifaceRtType == null)
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
 
             InterfaceMapping res;
-            if (!ifaceType.IsInterface)
-                throw new ArgumentException("Argument must be an interface.", nameof(ifaceType));
+            if (!interfaceType.IsInterface)
+                throw new ArgumentException(SR.Arg_MustBeInterface, nameof(interfaceType));
             if (IsInterface)
-                throw new ArgumentException("'this' type cannot be an interface itself");
+                throw new ArgumentException(SR.Argument_InterfaceMap);
             var this_type = this;
             res.TargetType = this;
-            res.InterfaceType = ifaceType;
+            res.InterfaceType = interfaceType;
             GetInterfaceMapData(new QCallTypeHandle(ref this_type), new QCallTypeHandle(ref ifaceRtType), out res.TargetMethods, out res.InterfaceMethods);
             if (res.TargetMethods == null)
-                throw new ArgumentException("Interface not found", nameof(ifaceType));
+                throw new ArgumentException(SR.Arg_NotFoundIFace, nameof(interfaceType));
 
             return res;
         }
@@ -2161,6 +2208,16 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern object CreateInstanceInternal(QCallTypeHandle type);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void AllocateValueType(QCallTypeHandle type, object? value, ObjectHandleOnStack res);
+
+        internal static object AllocateValueType(RuntimeType type, object? value)
+        {
+            object? res = null;
+            AllocateValueType(new QCallTypeHandle(ref type), value, ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetDeclaringMethod(QCallTypeHandle type, ObjectHandleOnStack res);

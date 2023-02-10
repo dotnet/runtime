@@ -10,8 +10,8 @@
 .assembly b13509
 {
 }
-.class I {
- .method static int32 main() {
+.class public I {
+ .method public static int32 main() {
  .entrypoint
  .maxstack	3
  ldc.i8 1

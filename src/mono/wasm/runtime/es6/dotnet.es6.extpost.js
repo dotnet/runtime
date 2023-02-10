@@ -1,13 +1,10 @@
-
+const ENVIRONMENT_IS_WEB = typeof window == "object";
+const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 const MONO = {}, BINDING = {}, INTERNAL = {}, IMPORTS = {};
-
-// TODO duplicated from emscripten, so we can use them in the __setEmscriptenEntrypoint
-var ENVIRONMENT_IS_WEB = typeof window == 'object';
-var ENVIRONMENT_IS_WORKER = typeof importScripts == 'function';
-var ENVIRONMENT_IS_NODE = typeof process == 'object' && typeof process.versions == 'object' && typeof process.versions.node == 'string';
-var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
-
-__dotnet_runtime.__setEmscriptenEntrypoint(createDotnetRuntime, { isNode: ENVIRONMENT_IS_NODE, isShell: ENVIRONMENT_IS_SHELL, isWeb: ENVIRONMENT_IS_WEB, isWorker: ENVIRONMENT_IS_WORKER });
+var fetch = fetch || undefined; var require = require || undefined; var __dirname = __dirname || '';
+__dotnet_runtime.__setEmscriptenEntrypoint(createDotnetRuntime);
+const __initializeImportsAndExports = __dotnet_runtime.__initializeImportsAndExports;
+const __requirePromise = ENVIRONMENT_IS_NODE ? import(/* webpackIgnore: true */'module').then(mod => mod.createRequire(import.meta.url)) : undefined;
 const dotnet = __dotnet_runtime.moduleExports.dotnet;
 const exit = __dotnet_runtime.moduleExports.exit;
 export { dotnet, exit, INTERNAL };

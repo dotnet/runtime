@@ -320,9 +320,22 @@ namespace System.Threading
         /// appropriate for the processor.
         /// TODO: See issue https://github.com/dotnet/corert/issues/4430
         /// </summary>
-        internal const int OptimalMaxSpinWaitsPerSpinIteration = 64;
+        internal const int OptimalMaxSpinWaitsPerSpinIteration = 8;
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        // Max iterations to be done in RhSpinWait.
+        // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
+        private const int SpinWaitCoopThreshold = 1024;
+
+        internal static void SpinWaitInternal(int iterations)
+        {
+            Debug.Assert(iterations <= SpinWaitCoopThreshold);
+            if (iterations > 0)
+            {
+                RuntimeImports.RhSpinWait(iterations);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
         private static void LongSpinWait(int iterations)
         {
             RuntimeImports.RhLongSpinWait(iterations);
@@ -330,20 +343,13 @@ namespace System.Threading
 
         public static void SpinWait(int iterations)
         {
-            if (iterations <= 0)
-                return;
-
-            // Max iterations to be done in RhSpinWait.
-            // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
-            const int spinWaitCoopThreshold = 10000;
-
-            if (iterations > spinWaitCoopThreshold)
+            if (iterations > SpinWaitCoopThreshold)
             {
                 LongSpinWait(iterations);
             }
             else
             {
-                RuntimeImports.RhSpinWait(iterations);
+                SpinWaitInternal(iterations);
             }
         }
 
@@ -458,43 +464,6 @@ namespace System.Threading
             {
                 DecrementRunningForeground();
             }
-        }
-
-        // The upper bits of t_currentProcessorIdCache are the currentProcessorId. The lower bits of
-        // the t_currentProcessorIdCache are counting down to get it periodically refreshed.
-        // TODO: Consider flushing the currentProcessorIdCache on Wait operations or similar
-        // actions that are likely to result in changing the executing core
-        [ThreadStatic]
-        private static int t_currentProcessorIdCache;
-
-        private const int ProcessorIdCacheShift = 16;
-        private const int ProcessorIdCacheCountDownMask = (1 << ProcessorIdCacheShift) - 1;
-        private const int ProcessorIdRefreshRate = 5000;
-
-        private static int RefreshCurrentProcessorId()
-        {
-            int currentProcessorId = ComputeCurrentProcessorId();
-
-            // Add offset to make it clear that it is not guaranteed to be 0-based processor number
-            currentProcessorId += 100;
-
-            Debug.Assert(ProcessorIdRefreshRate <= ProcessorIdCacheCountDownMask);
-
-            // Mask with int.MaxValue to ensure the execution Id is not negative
-            t_currentProcessorIdCache = ((currentProcessorId << ProcessorIdCacheShift) & int.MaxValue) + ProcessorIdRefreshRate;
-
-            return currentProcessorId;
-        }
-
-        // Cached processor id used as a hint for which per-core stack to access. It is periodically
-        // refreshed to trail the actual thread core affinity.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetCurrentProcessorId()
-        {
-            int currentProcessorIdCache = t_currentProcessorIdCache--;
-            if ((currentProcessorIdCache & ProcessorIdCacheCountDownMask) == 0)
-                return RefreshCurrentProcessorId();
-            return (currentProcessorIdCache >> ProcessorIdCacheShift);
         }
 
         internal static void IncrementRunningForeground()

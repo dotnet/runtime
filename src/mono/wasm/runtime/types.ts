@@ -88,6 +88,10 @@ export type MonoConfig = {
      */
     maxParallelDownloads?: number,
     /**
+     * We are making up to 2 more delayed attempts to download same asset. Default true.
+     */
+    enableDownloadRetry?: boolean,
+    /**
      * Name of the assembly with main entrypoint
      */
     mainAssemblyName?: string,
@@ -120,7 +124,7 @@ export type MonoConfig = {
 export type MonoConfigInternal = MonoConfig & {
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
-    coverageProfilerOptions?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
+    browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
     logExitCode?: boolean
@@ -214,8 +218,10 @@ export type RuntimeHelpers = {
 
     loaded_files: string[];
     maxParallelDownloads: number;
+    enableDownloadRetry: boolean;
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
+    enablePerfMeasure: boolean;
     waitForDebugger?: number;
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     scriptDirectory: string
@@ -237,9 +243,7 @@ export type AOTProfilerOptions = {
     sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into INTERNAL.aotProfileData.)
 }
 
-export type CoverageProfilerOptions = {
-    writeAt?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
-    sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
+export type BrowserProfilerOptions = {
 }
 
 // how we extended emscripten Module
@@ -260,7 +264,7 @@ export type DotnetModuleConfig = {
 
 export type DotnetModuleConfigImports = {
     require?: (name: string) => any;
-    fetch?: (url: string) => Promise<Response>;
+    fetch?: (url: string, options: any | undefined) => Promise<Response>;
     fs?: {
         promises?: {
             readFile?: (path: string) => Promise<string | Buffer>,

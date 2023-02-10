@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace div_u8
+{
 .class public div_un {
 .method public static	int64 _div(int64,int64) {
 .locals		(class [mscorlib]System.Exception,int64)
@@ -34,227 +37,230 @@ END:
 	ret
 .try try_start to try_end catch [mscorlib]System.DivideByZeroException handler divbyzero to HEnd
 }
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		20
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x0000000000000000
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x0000000000000001
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000000
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000000
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000000
 	ldc.i8		0x5555555555555555
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000000
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x0000000000000000
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x0000000000000001
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000001
 	ldc.i8		0x5555555555555555
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x0000000000000001
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0x0000000000000000
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0x0000000000000001
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0x5555555555555555
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000002
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFE
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x0000000000000000
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x0000000000000001
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0x5555555555555555
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000003
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x0000000000000000
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x0000000000000001
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x5555555555555555
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x5555555555555555
 	ldc.i8		0x5555555555555555
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
 	ldc.i8		0x5555555555555555
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x0000000000000000
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x0000000000000001
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0xFFFFFFFFFFFFFFFE
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000000
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0x5555555555555555
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000002
 	ceq
 	brfalse		FAIL
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 div_un::_div(int64,int64)
+	call	int64 div_u8.div_un::_div(int64,int64)
 	ldc.i8		0x0000000000000001
 	ceq
 	brfalse		FAIL
@@ -267,3 +273,4 @@ FAIL:
 }
 }
 .assembly div_u8{}
+}

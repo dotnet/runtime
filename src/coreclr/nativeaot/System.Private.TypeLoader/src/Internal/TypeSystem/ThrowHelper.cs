@@ -53,10 +53,7 @@ namespace Internal.TypeSystem
         {
             public static string OwningModule(TypeDesc type)
             {
-                if (type is NoMetadata.NoMetadataType)
-                    return ((NoMetadata.NoMetadataType)type).DiagnosticModuleName;
-
-                return Module((type as MetadataType)?.Module);
+                return (type as NoMetadata.NoMetadataType)?.DiagnosticModuleName ?? "Unknown";
             }
         }
     }

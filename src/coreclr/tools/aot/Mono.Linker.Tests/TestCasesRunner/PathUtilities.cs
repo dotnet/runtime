@@ -9,14 +9,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public static class PathUtilities
 	{
-#if NET7_0
+#if NET8_0
+		public const string TFMDirectoryName = "net8.0";
+#elif NET7_0
 		public const string TFMDirectoryName = "net7.0";
 #elif NET6_0
 		public const string TFMDirectoryName = "net6.0";
-#elif NET5_0
-		public const string TFMDirectoryName = "net5.0";
-#elif NETCOREAPP3_0
-		public const string TFMDirectoryName = "netcoreapp3.0";
 #else
 #error "Unknown TFM"
 #endif

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../src/ILLink.Shared/ILLink.LinkAttributes.xsd">
+  <assembly fullname="Test">
+    <type fullname="Mono.Linker.Tests.Cases.DataFlow.SuppressWarningWithLinkAttributes">
+      <field name="_typeWithPublicParameterlessConstructor">
+        <attribute fullname="System.DoesNotExistAttribute" assembly="Mono.Linker.Tests.Cases.Expectations">
+          <argument>0</argument>
+        </attribute>
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
+          <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">PublicParameterlessConstructor</argument>
+        </attribute>
+      </field>
+    </type>
+  </assembly>
+</linker>

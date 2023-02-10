@@ -26,9 +26,9 @@ internal sealed class JSEngineHost
     }
 
     public static async Task<int> InvokeAsync(CommonConfiguration commonArgs,
-                                              ILoggerFactory loggerFactory,
+                                              ILoggerFactory _,
                                               ILogger logger,
-                                              CancellationToken token)
+                                              CancellationToken _1)
     {
         var args = new JSEngineArguments(commonArgs);
         args.Validate();
@@ -37,8 +37,6 @@ internal sealed class JSEngineHost
 
     private async Task<int> RunAsync()
     {
-        string[] engineArgs = Array.Empty<string>();
-
         string engineBinary = _args.Host switch
         {
             WasmHost.V8 => "v8",
@@ -79,9 +77,10 @@ internal sealed class JSEngineHost
             args.Add("--expose_wasm");
         }
 
+        args.AddRange(_args.CommonConfig.HostArguments);
+
         args.Add(_args.JSPath!);
 
-        args.AddRange(engineArgs);
         if (_args.Host is WasmHost.V8 or WasmHost.JavaScriptCore)
         {
             // v8/jsc want arguments to the script separated by "--", others don't

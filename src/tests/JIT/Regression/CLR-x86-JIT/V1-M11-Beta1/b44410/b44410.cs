@@ -9,7 +9,7 @@ d:\com99\src\jit\il\dll\..\scopeinfo.cpp, Line 582 : Assertion failed 'lclVar->l
 namespace Test
 {
     using System;
-    class AA
+    public class AA
     {
         ulong m_ul;
 
@@ -18,7 +18,7 @@ namespace Test
             if (m_ul == 1u)
                 param1 = param2;
         }
-        static int Main()
+        public static int Main()
         {
             new AA().Method1(0u, 0);
             return 100;

@@ -13,7 +13,6 @@
 #include <corehost_context_contract.h>
 #include <hostpolicy.h>
 #include "corehost_init.h"
-#include "deps_format.h"
 #include "framework_info.h"
 #include "fx_definition.h"
 #include "fx_muxer.h"

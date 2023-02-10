@@ -133,10 +133,10 @@ namespace System.Net.Mail
             int offset = 0;
             try
             {
-                string value = MailBnfHelper.ReadToken(mediaType, ref offset, null);
+                string value = MailBnfHelper.ReadToken(mediaType, ref offset);
                 if (value.Length == 0 || offset >= mediaType.Length || mediaType[offset++] != '/')
                     throw new ArgumentException(SR.MediaTypeInvalid, nameof(mediaType));
-                value = MailBnfHelper.ReadToken(mediaType, ref offset, null);
+                value = MailBnfHelper.ReadToken(mediaType, ref offset);
                 if (value.Length == 0 || offset < mediaType.Length)
                 {
                     throw new ArgumentException(SR.MediaTypeInvalid, nameof(mediaType));

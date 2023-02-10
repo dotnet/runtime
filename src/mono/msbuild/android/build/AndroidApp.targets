@@ -1,6 +1,10 @@
 <Project>
-  <UsingTask TaskName="AndroidAppBuilderTask" 
+  <UsingTask TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
+
+  <PropertyGroup>
+    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
+  </PropertyGroup>
 
   <Target Name="AndroidBuildApp" AfterTargets="$(AndroidBuildAppAfterThisTarget)" />
 
@@ -45,7 +49,7 @@
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mtriple=aarch64-linux-android" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i686-linux-android" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64'" Include="mtriple=x86_64-linux-android" />
-  
+
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
 
@@ -63,7 +67,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_AotInputAssemblies Include="@(_AndroidAssembliesInternal)" 
+      <_AotInputAssemblies Include="@(_AndroidAssembliesInternal)"
                            Condition="'%(_AndroidAssembliesInternal._InternalForceInterpret)' != 'true'">
         <AotArguments>$(AotArguments)</AotArguments>
         <ProcessArguments>$(ProcessArguments)</ProcessArguments>
@@ -72,7 +76,7 @@
       <_AOT_InternalForceInterpretAssemblies Include="@(_AndroidAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
       <_AndroidAssembliesInternal Remove="@(_AndroidAssembliesInternal)" />
     </ItemGroup>
-    
+
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
   </Target>
 
@@ -101,7 +105,7 @@
     </ItemGroup>
 
     <MonoAOTCompiler
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="$(_AOTMode)"
         OutputType="AsmOnly"
@@ -119,7 +123,15 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_AndroidGenerateAppBundle" DependsOnTargets="_AndroidGenerateRuntimeConfig">
+
+  <Target
+    Name="_AndroidGenerateAppBundle"
+    Condition="$(AndroidGenerateAppBundle) == 'true'"
+    DependsOnTargets="_AndroidGenerateRuntimeConfig">
+
+    <PropertyGroup>
+      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
+    </PropertyGroup>
 
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"
@@ -127,7 +139,6 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\mono-2.0"
         Assemblies="@(_AndroidAssembliesInternal)"
         MainLibraryFileName="$(MainLibraryFileName)"
-        IncludeNetworkSecurityConfig="$(IncludeNetworkSecurityConfig)"
         EnvironmentVariables="@(AndroidEnv)"
         ForceAOT="$(RunAOTCompilation)"
         ForceFullAOT="$(ForceFullAOT)"
@@ -147,7 +158,7 @@
   </Target>
 
   <Target Name="_AfterAndroidBuildApp">
-    
+
   </Target>
 
   <Target Name="_AndroidGenerateRuntimeConfig"

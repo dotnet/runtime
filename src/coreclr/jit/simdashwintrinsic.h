@@ -7,6 +7,8 @@
 enum class SimdAsHWIntrinsicClassId
 {
     Unknown,
+    Plane,
+    Quaternion,
     Vector2,
     Vector3,
     Vector4,
@@ -24,8 +26,7 @@ enum class SimdAsHWIntrinsicFlag : unsigned int
     // Indicates the intrinsic is for an instance method.
     InstanceMethod = 0x02,
 
-    // Indicates the operands should be swapped in importation.
-    NeedsOperandsSwapped = 0x04,
+    /* UnusedFlag = 0x04, */
 
     // Base type should come from the this argument
     BaseTypeFromThisArg = 0x08,
@@ -35,6 +36,9 @@ enum class SimdAsHWIntrinsicFlag : unsigned int
 
     // Indicates that side effects need to be spilled for op1
     SpillSideEffectsOp1 = 0x20,
+
+    // Indicates that side effects need to be spilled for op2
+    SpillSideEffectsOp2 = 0x40,
 };
 
 inline SimdAsHWIntrinsicFlag operator~(SimdAsHWIntrinsicFlag value)
@@ -129,12 +133,6 @@ struct SimdAsHWIntrinsicInfo
         return (flags & SimdAsHWIntrinsicFlag::InstanceMethod) == SimdAsHWIntrinsicFlag::InstanceMethod;
     }
 
-    static bool NeedsOperandsSwapped(NamedIntrinsic id)
-    {
-        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & SimdAsHWIntrinsicFlag::NeedsOperandsSwapped) == SimdAsHWIntrinsicFlag::NeedsOperandsSwapped;
-    }
-
     static bool BaseTypeFromThisArg(NamedIntrinsic id)
     {
         SimdAsHWIntrinsicFlag flags = lookupFlags(id);
@@ -151,6 +149,12 @@ struct SimdAsHWIntrinsicInfo
     {
         SimdAsHWIntrinsicFlag flags = lookupFlags(id);
         return (flags & SimdAsHWIntrinsicFlag::SpillSideEffectsOp1) == SimdAsHWIntrinsicFlag::SpillSideEffectsOp1;
+    }
+
+    static bool SpillSideEffectsOp2(NamedIntrinsic id)
+    {
+        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & SimdAsHWIntrinsicFlag::SpillSideEffectsOp2) == SimdAsHWIntrinsicFlag::SpillSideEffectsOp2;
     }
 };
 

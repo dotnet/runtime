@@ -196,7 +196,8 @@ def main(main_args):
         ], _exit_on_fail=True)
 
     print("Running superpmi.py asmdiffs")
-    log_file = os.path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
+
+    log_file = os.path.join(log_directory, "superpmi_asmdiffs_{}_{}.log".format(platform_name, arch_name))
 
     overall_md_asmdiffs_summary_file = os.path.join(spmi_location, "diff_summary.md")
     if os.path.isfile(overall_md_asmdiffs_summary_file):
@@ -218,7 +219,14 @@ def main(main_args):
         "-log_level", "debug",
         "-log_file", log_file])
 
+    failed = False
+    if return_code != 0:
+        print("Failed during asmdiffs")
+        failed = True
+
     print("Running superpmi.py tpdiff")
+
+    log_file = os.path.join(log_directory, "superpmi_tpdiff_{}_{}.log".format(platform_name, arch_name))
 
     overall_md_tpdiff_summary_file = os.path.join(spmi_location, "tpdiff_summary.md")
     if os.path.isfile(overall_md_tpdiff_summary_file):
@@ -239,6 +247,10 @@ def main(main_args):
         "-error_limit", "100",
         "-log_level", "debug",
         "-log_file", log_file])
+
+    if return_code != 0:
+        print("Failed during tpdiff")
+        failed = True
 
     # If there are asm diffs, and jit-analyze ran, we'll get a diff_summary.md file in the spmi_location directory.
     # We make sure the file doesn't exist before we run diffs, so we don't need to worry about superpmi.py creating
@@ -269,7 +281,7 @@ def main(main_args):
     # Finally prepare files to upload from helix.
     copy_dasm_files(spmi_location, log_directory, "{}_{}".format(platform_name, arch_name))
 
-    if return_code != 0:
+    if failed:
         print("Failure in {}".format(log_file))
         return 1
 

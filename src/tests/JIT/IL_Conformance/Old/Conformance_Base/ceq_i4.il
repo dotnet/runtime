@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace ceq_i4
+{
 .class public _ceq {
 
 .field public static	int32 min
@@ -17,271 +20,274 @@
 .method public static	void initialize() {
 .maxstack	10
 	ldc.i4		0x80000000
-	stsfld	int32 _ceq::min
+	stsfld	int32 ceq_i4._ceq::min
 	ldc.i4		0xFFFFFFFF
-	stsfld	int32 _ceq::_one
+	stsfld	int32 ceq_i4._ceq::_one
 	ldc.i4		0x00000000
-	stsfld	int32 _ceq::zero
+	stsfld	int32 ceq_i4._ceq::zero
 	ldc.i4		0x00000001
-	stsfld	int32 _ceq::one
+	stsfld	int32 ceq_i4._ceq::one
 	ldc.i4		0x7FFFFFFF
-	stsfld	int32 _ceq::max
+	stsfld	int32 ceq_i4._ceq::max
 	ldc.i4		0x55555555
-	stsfld	int32 _ceq::odd
+	stsfld	int32 ceq_i4._ceq::odd
 	ldc.i4		0xAAAAAAAA
-	stsfld	int32 _ceq::even
+	stsfld	int32 ceq_i4._ceq::even
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-	call	void _ceq::initialize()
-	ldsfld	int32 _ceq::min
-	ldsfld	int32 _ceq::min
+	call	void ceq_i4._ceq::initialize()
+	ldsfld	int32 ceq_i4._ceq::min
+	ldsfld	int32 ceq_i4._ceq::min
 	ceq
 	brfalse		FAIL
 
-	ldsfld	int32 _ceq::min
-	ldsfld	int32 _ceq::_one
+	ldsfld	int32 ceq_i4._ceq::min
+	ldsfld	int32 ceq_i4._ceq::_one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::min
-	ldsfld	int32 _ceq::zero
+	ldsfld	int32 ceq_i4._ceq::min
+	ldsfld	int32 ceq_i4._ceq::zero
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::min
-	ldsfld	int32 _ceq::one
+	ldsfld	int32 ceq_i4._ceq::min
+	ldsfld	int32 ceq_i4._ceq::one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::min
-	ldsfld	int32 _ceq::max
+	ldsfld	int32 ceq_i4._ceq::min
+	ldsfld	int32 ceq_i4._ceq::max
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::min
-	ldsfld	int32 _ceq::odd
+	ldsfld	int32 ceq_i4._ceq::min
+	ldsfld	int32 ceq_i4._ceq::odd
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::min
-	ldsfld	int32 _ceq::even
+	ldsfld	int32 ceq_i4._ceq::min
+	ldsfld	int32 ceq_i4._ceq::even
 	ceq
 	brtrue		FAIL
-	ldsfld	int32 _ceq::_one
-	ldsfld	int32 _ceq::min
+	ldsfld	int32 ceq_i4._ceq::_one
+	ldsfld	int32 ceq_i4._ceq::min
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::_one
-	ldsfld	int32 _ceq::_one
+	ldsfld	int32 ceq_i4._ceq::_one
+	ldsfld	int32 ceq_i4._ceq::_one
 	ceq
 	brfalse		FAIL
 
-	ldsfld	int32 _ceq::_one
-	ldsfld	int32 _ceq::zero
+	ldsfld	int32 ceq_i4._ceq::_one
+	ldsfld	int32 ceq_i4._ceq::zero
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::_one
-	ldsfld	int32 _ceq::one
+	ldsfld	int32 ceq_i4._ceq::_one
+	ldsfld	int32 ceq_i4._ceq::one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::_one
-	ldsfld	int32 _ceq::max
+	ldsfld	int32 ceq_i4._ceq::_one
+	ldsfld	int32 ceq_i4._ceq::max
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::_one
-	ldsfld	int32 _ceq::odd
+	ldsfld	int32 ceq_i4._ceq::_one
+	ldsfld	int32 ceq_i4._ceq::odd
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::_one
-	ldsfld	int32 _ceq::even
+	ldsfld	int32 ceq_i4._ceq::_one
+	ldsfld	int32 ceq_i4._ceq::even
 	ceq
 	brtrue		FAIL
 
 
-	ldsfld	int32 _ceq::zero
-	ldsfld	int32 _ceq::min
+	ldsfld	int32 ceq_i4._ceq::zero
+	ldsfld	int32 ceq_i4._ceq::min
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::zero
-	ldsfld	int32 _ceq::_one
+	ldsfld	int32 ceq_i4._ceq::zero
+	ldsfld	int32 ceq_i4._ceq::_one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::zero
-	ldsfld	int32 _ceq::zero
+	ldsfld	int32 ceq_i4._ceq::zero
+	ldsfld	int32 ceq_i4._ceq::zero
 	ceq
 	brfalse		FAIL
 
-	ldsfld	int32 _ceq::zero
-	ldsfld	int32 _ceq::one
+	ldsfld	int32 ceq_i4._ceq::zero
+	ldsfld	int32 ceq_i4._ceq::one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::zero
-	ldsfld	int32 _ceq::max
+	ldsfld	int32 ceq_i4._ceq::zero
+	ldsfld	int32 ceq_i4._ceq::max
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::zero
-	ldsfld	int32 _ceq::odd
+	ldsfld	int32 ceq_i4._ceq::zero
+	ldsfld	int32 ceq_i4._ceq::odd
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::zero
-	ldsfld	int32 _ceq::even
+	ldsfld	int32 ceq_i4._ceq::zero
+	ldsfld	int32 ceq_i4._ceq::even
 	ceq
 	brtrue		FAIL
 
 
-	ldsfld	int32 _ceq::one
-	ldsfld	int32 _ceq::min
+	ldsfld	int32 ceq_i4._ceq::one
+	ldsfld	int32 ceq_i4._ceq::min
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::one
-	ldsfld	int32 _ceq::_one
+	ldsfld	int32 ceq_i4._ceq::one
+	ldsfld	int32 ceq_i4._ceq::_one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::one
-	ldsfld	int32 _ceq::zero
+	ldsfld	int32 ceq_i4._ceq::one
+	ldsfld	int32 ceq_i4._ceq::zero
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::one
-	ldsfld	int32 _ceq::one
+	ldsfld	int32 ceq_i4._ceq::one
+	ldsfld	int32 ceq_i4._ceq::one
 	ceq
 	brfalse		FAIL
 
-	ldsfld	int32 _ceq::one
-	ldsfld	int32 _ceq::max
+	ldsfld	int32 ceq_i4._ceq::one
+	ldsfld	int32 ceq_i4._ceq::max
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::one
-	ldsfld	int32 _ceq::odd
+	ldsfld	int32 ceq_i4._ceq::one
+	ldsfld	int32 ceq_i4._ceq::odd
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::one
-	ldsfld	int32 _ceq::even
+	ldsfld	int32 ceq_i4._ceq::one
+	ldsfld	int32 ceq_i4._ceq::even
 	ceq
 	brtrue		FAIL
 
 
-	ldsfld	int32 _ceq::max
-	ldsfld	int32 _ceq::min
+	ldsfld	int32 ceq_i4._ceq::max
+	ldsfld	int32 ceq_i4._ceq::min
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::max
-	ldsfld	int32 _ceq::_one
+	ldsfld	int32 ceq_i4._ceq::max
+	ldsfld	int32 ceq_i4._ceq::_one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::max
-	ldsfld	int32 _ceq::zero
+	ldsfld	int32 ceq_i4._ceq::max
+	ldsfld	int32 ceq_i4._ceq::zero
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::max
-	ldsfld	int32 _ceq::one
+	ldsfld	int32 ceq_i4._ceq::max
+	ldsfld	int32 ceq_i4._ceq::one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::max
-	ldsfld	int32 _ceq::max
+	ldsfld	int32 ceq_i4._ceq::max
+	ldsfld	int32 ceq_i4._ceq::max
 	ceq
 	brfalse		FAIL
 
-	ldsfld	int32 _ceq::max
-	ldsfld	int32 _ceq::odd
+	ldsfld	int32 ceq_i4._ceq::max
+	ldsfld	int32 ceq_i4._ceq::odd
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::max
-	ldsfld	int32 _ceq::even
+	ldsfld	int32 ceq_i4._ceq::max
+	ldsfld	int32 ceq_i4._ceq::even
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::odd
-	ldsfld	int32 _ceq::min
+	ldsfld	int32 ceq_i4._ceq::odd
+	ldsfld	int32 ceq_i4._ceq::min
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::odd
-	ldsfld	int32 _ceq::_one
+	ldsfld	int32 ceq_i4._ceq::odd
+	ldsfld	int32 ceq_i4._ceq::_one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::odd
-	ldsfld	int32 _ceq::zero
+	ldsfld	int32 ceq_i4._ceq::odd
+	ldsfld	int32 ceq_i4._ceq::zero
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::odd
-	ldsfld	int32 _ceq::one
+	ldsfld	int32 ceq_i4._ceq::odd
+	ldsfld	int32 ceq_i4._ceq::one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::odd
-	ldsfld	int32 _ceq::max
+	ldsfld	int32 ceq_i4._ceq::odd
+	ldsfld	int32 ceq_i4._ceq::max
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::odd
-	ldsfld	int32 _ceq::odd
+	ldsfld	int32 ceq_i4._ceq::odd
+	ldsfld	int32 ceq_i4._ceq::odd
 	ceq
 	brfalse		FAIL
 
-	ldsfld	int32 _ceq::odd
-	ldsfld	int32 _ceq::even
+	ldsfld	int32 ceq_i4._ceq::odd
+	ldsfld	int32 ceq_i4._ceq::even
 	ceq
 	brtrue		FAIL
 
 
-	ldsfld	int32 _ceq::even
-	ldsfld	int32 _ceq::min
+	ldsfld	int32 ceq_i4._ceq::even
+	ldsfld	int32 ceq_i4._ceq::min
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::even
-	ldsfld	int32 _ceq::_one
+	ldsfld	int32 ceq_i4._ceq::even
+	ldsfld	int32 ceq_i4._ceq::_one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::even
-	ldsfld	int32 _ceq::zero
+	ldsfld	int32 ceq_i4._ceq::even
+	ldsfld	int32 ceq_i4._ceq::zero
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::even
-	ldsfld	int32 _ceq::one
+	ldsfld	int32 ceq_i4._ceq::even
+	ldsfld	int32 ceq_i4._ceq::one
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::even
-	ldsfld	int32 _ceq::max
+	ldsfld	int32 ceq_i4._ceq::even
+	ldsfld	int32 ceq_i4._ceq::max
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::even
-	ldsfld	int32 _ceq::odd
+	ldsfld	int32 ceq_i4._ceq::even
+	ldsfld	int32 ceq_i4._ceq::odd
 	ceq
 	brtrue		FAIL
 
-	ldsfld	int32 _ceq::even
-	ldsfld	int32 _ceq::even
+	ldsfld	int32 ceq_i4._ceq::even
+	ldsfld	int32 ceq_i4._ceq::even
 	ceq
 	brfalse		FAIL
 
@@ -296,3 +302,4 @@ FAIL:
 }
 }
 .assembly ceq_i4{}
+}

@@ -15,6 +15,7 @@
     <DOTNETVariables>
       DOTNET_TieredCompilation;
       DOTNET_DbgEnableMiniDump;
+      DOTNET_EnableCrashReport;
       DOTNET_DbgEnableElfDumpOnMacOS;
       DOTNET_DbgMiniDumpName;
       DOTNET_EnableAES;
@@ -35,6 +36,7 @@
       DOTNET_EnableSSE41;
       DOTNET_EnableSSE42;
       DOTNET_EnableSSSE3;
+      DOTNET_JitForceEVEXEncoding;
       DOTNET_ForceRelocs;
       DOTNET_GCStress;
       DOTNET_GCName;
@@ -67,6 +69,7 @@
       DOTNET_JitRandomEdgeCounts;
       DOTNET_JitRandomOnStackReplacement;
       DOTNET_JitRandomlyCollect64BitCounts;
+      DOTNET_TieredPGO_InstrumentedTierAlwaysOptimized;
       DOTNET_JitForceControlFlowGuard;
       DOTNET_JitCFGUseDispatcher;
       RunningIlasmRoundTrip
@@ -81,8 +84,8 @@
     <TestEnvironment>
       <TieredCompilation>0</TieredCompilation>
       <DbgEnableMiniDump Condition="'$(TargetsWindows)' != 'true'">1</DbgEnableMiniDump> <!-- Enable minidumps for all scenarios -->
-      <DbgEnableElfDumpOnMacOS Condition="'$(TargetsOSX)' == 'true'">1</DbgEnableElfDumpOnMacOS> <!-- Enable minidumps for OSX -->
       <DbgMiniDumpName Condition="'$(TargetsWindows)' != 'true'">$HELIX_DUMP_FOLDER/coredump.%d.dmp</DbgMiniDumpName>
+      <EnableCrashReport Condition="'$(TargetsWindows)' != 'true'">1</EnableCrashReport>
     </TestEnvironment>
   </ItemDefinitionGroup>
 
@@ -151,6 +154,8 @@
     <TestEnvironment Include="jitstress_isas_2_x86_nosse41" JitStress="2" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nosse42" JitStress="2" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nossse3" JitStress="2" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
+    <TestEnvironment Include="jitstress_isas_avx512_forceevex" JitForceEVEXEncoding="1" /> <!-- Depends on AVX512 -->
+    <TestEnvironment Include="jitstress_isas_avx512_forceevex_stresshighregs" JitForceEVEXEncoding="1" JitStressRegs="0x2000" /> <!-- Depends on AVX512 -->
     <TestEnvironment Include="jitstressregs1_x86_noavx" JitStressRegs="1" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs2_x86_noavx" JitStressRegs="2" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs3_x86_noavx" JitStressRegs="3" EnableAVX="0" />
@@ -198,11 +203,8 @@
     <TestEnvironment Include="jitosr_stress" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="1" TieredCompilation="1" />
     <TestEnvironment Include="jitosr_stress_random" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TC_OnStackReplacement_InitialCounter="1" OSR_HitLimit="2" TieredCompilation="1" JitRandomOnStackReplacement="15"/>
     <TestEnvironment Include="jit_stress_splitting" JitFakeProcedureSplitting="1" JitStressProcedureSplitting="1" />
-    <TestEnvironment Include="jitosr_pgo" TC_OnStackReplacement="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
     <TestEnvironment Include="jitpartialcompilation" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitpartialcompilation_pgo" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
-    <TestEnvironment Include="jitpartialcompilation_osr"  TC_OnStackReplacement="1" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
-    <TestEnvironment Include="jitpartialcompilation_osr_pgo"  TC_OnStackReplacement="1" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
     <TestEnvironment Include="jitcfg" JitForceControlFlowGuard="1" />
     <TestEnvironment Include="jitcfg_dispatcher_always" JitForceControlFlowGuard="1" JitCFGUseDispatcher="1" />
@@ -210,14 +212,12 @@
     <TestEnvironment Include="jitcfg_gcstress0xc" JitForceControlFlowGuard="1" GCStress="0xC" />
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
     <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />
-    <TestEnvironment Include="nopgo" JitDisablePGO="1" TieredCompilation="1" />
-    <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" />
-    <TestEnvironment Include="dynamicpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
+    <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
     <TestEnvironment Include="fullpgo_methodprofiling" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" />
+    <TestEnvironment Include="fullpgo_methodprofiling_always_optimized" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" TieredPGO_InstrumentedTierAlwaysOptimized="1" />
     <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="fullpgo_random_gdv_methodprofiling_only" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitClassProfiling="0" JitDelegateProfiling="1" JitVTableProfiling="1" JitRandomlyCollect64BitCounts="1" />
-    <TestEnvironment Include="fullpgo_random_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomEdgeCounts="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
@@ -278,6 +278,8 @@
       <!-- Mono interpreter -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="set MONO_ENV_OPTIONS=--interpreter" />
 
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' != ''" Include="set DOTNET_RUNTIME_VARIANT=$(RuntimeVariant)" />
+
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_InterpreterHWIntrinsicsIsSupportedFalse=1" />
@@ -299,6 +301,8 @@
 
       <!-- Use Mono in Full AOT mode when running the full-AOT-compiled runtime tests -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />
+
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' != ''" Include="export DOTNET_RUNTIME_VARIANT=$(RuntimeVariant)" />
 
       <!-- CLR interpreter -->
       <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export DOTNET_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->

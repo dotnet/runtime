@@ -154,7 +154,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
         builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
 
-        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args.Length != 0 ? args[0] : null, testExclusionList);");
+        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
@@ -162,14 +162,43 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
-        foreach (ITestInfo test in testInfos)
+        StringBuilder testExecutorBuilder = new();
+        int testsLeftInCurrentTestExecutor = 0;
+        int currentTestExecutor = 0;
+        int totalTestsEmitted = 0;
+
+        if (testInfos.Length > 0)
         {
-            builder.AppendLine(test.GenerateTestExecution(reporter));
+            // Break tests into groups of 50 so that we don't create an unreasonably large main method
+            // Excessively large methods are known to take a long time to compile, and use excessive stack
+            // leading to test failures.
+            foreach (ITestInfo test in testInfos)
+            {
+                if (testsLeftInCurrentTestExecutor == 0)
+                {
+                    if (currentTestExecutor != 0)
+                        testExecutorBuilder.AppendLine("}");
+                    currentTestExecutor++;
+                    testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(){{");
+                    builder.AppendLine($"TestExecutor{currentTestExecutor}();");
+                    testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empircally seems to work well
+                }
+                testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
+                totalTestsEmitted++;
+                testsLeftInCurrentTestExecutor--;
+            }
+            testExecutorBuilder.AppendLine("}");
         }
 
-        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", summary.GetTestResultOutput(""{assemblyName}""));");
+        builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
+        builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
+        builder.AppendLine($@"if (workitemUploadRoot != null) System.IO.File.WriteAllText(System.IO.Path.Combine(workitemUploadRoot, ""{assemblyName}.testResults.xml.txt""), testResults);");
+        builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", testResults);");
         builder.AppendLine("return 100;");
 
+        builder.Append(testExecutorBuilder);
+
+        builder.AppendLine("public static class TestCount { public const int Count = " + totalTestsEmitted.ToString() + "; }");
         return builder.ToString();
     }
 
@@ -193,13 +222,36 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
-        foreach (ITestInfo test in testInfos)
+        StringBuilder testExecutorBuilder = new();
+        int testsLeftInCurrentTestExecutor = 0;
+        int currentTestExecutor = 0;
+
+        if (testInfos.Length > 0)
         {
-            builder.AppendLine(test.GenerateTestExecution(reporter));
+            // Break tests into groups of 50 so that we don't create an unreasonably large main method
+            // Excessively large methods are known to take a long time to compile, and use excessive stack
+            // leading to test failures.
+            foreach (ITestInfo test in testInfos)
+            {
+                if (testsLeftInCurrentTestExecutor == 0)
+                {
+                    if (currentTestExecutor != 0)
+                        testExecutorBuilder.AppendLine("}");
+                    currentTestExecutor++;
+                    testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}(XUnitWrapperLibrary.TestSummary summary, XUnitWrapperLibrary.TestFilter filter, XUnitWrapperLibrary.TestOutputRecorder outputRecorder, System.Diagnostics.Stopwatch stopwatch){{");
+                    builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch);");
+                    testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
+                }
+                testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
+                testsLeftInCurrentTestExecutor--;
+            }
+            testExecutorBuilder.AppendLine("}");
         }
 
         builder.AppendLine("return summary;");
         builder.AppendLine("}");
+
+        builder.Append(testExecutorBuilder);
 
         return builder.ToString();
     }
@@ -354,7 +406,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             testInfos,
                             conditionType,
                             conditionMembers,
-                            aliasMap[conditionType.ContainingAssembly.MetadataName]);
+                            aliasMap[conditionType.ContainingAssembly.MetadataName],
+                            false /* do not negate the condition, as this attribute indicates that a test will be run */);
                         break;
                     }
                 case "Xunit.OuterloopAttribute":
@@ -373,7 +426,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             testInfos,
                             conditionType,
                             filterAttribute.ConstructorArguments[2].Values,
-                            aliasMap[conditionType.ContainingAssembly.MetadataName]);
+                            aliasMap[conditionType.ContainingAssembly.MetadataName],
+                            true /* negate the condition, as this attribute indicates that a test will NOT be run */);
                         break;
                     }
                     else if (filterAttribute.AttributeConstructor.Parameters.Length == 4)
@@ -655,6 +709,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 "tvos" => Xunit.TestPlatforms.tvOS,
                 "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
                 "browser" => Xunit.TestPlatforms.Browser,
+                "wasi" => Xunit.TestPlatforms.Wasi,
                 "freebsd" => Xunit.TestPlatforms.FreeBSD,
                 "netbsd" => Xunit.TestPlatforms.NetBSD,
                 null or "" or "anyos" => Xunit.TestPlatforms.Any,
@@ -667,9 +722,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         ImmutableArray<ITestInfo> testInfos,
         ITypeSymbol conditionType,
         ImmutableArray<TypedConstant> values,
-        string externAlias)
+        string externAlias,
+        bool negate)
     {
         string condition = string.Join("&&", values.Select(v => $"{externAlias}::{conditionType.ToDisplayString(FullyQualifiedWithoutGlobalNamespace)}.{v.Value}"));
+        if (negate)
+            condition = $"!({condition})";
         return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(m => new ConditionalTest(m, condition)));
     }
 

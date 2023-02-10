@@ -65,6 +65,8 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(modopts))]  // Automatically keeps all previous fields too due to StructLayout
         internal SignatureHelper(ModuleBuilder? module, SignatureHelperType type)
         {
+            AssemblyBuilder.EnsureDynamicCodeSupported();
+
             this.type = type;
             this.module = module;
         }
@@ -72,7 +74,7 @@ namespace System.Reflection.Emit
         public static SignatureHelper GetFieldSigHelper(Module? mod)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException("ModuleBuilder is expected");
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_FIELD);
         }
@@ -80,7 +82,7 @@ namespace System.Reflection.Emit
         public static SignatureHelper GetLocalVarSigHelper(Module? mod)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException("ModuleBuilder is expected");
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_LOCAL);
         }
@@ -370,7 +372,7 @@ namespace System.Reflection.Emit
 
         public byte[] GetSignature()
         {
-            TypeBuilder.ResolveUserTypes(arguments);
+            RuntimeTypeBuilder.ResolveUserTypes(arguments);
 
             return type switch
             {

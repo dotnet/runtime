@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace div_i4
+{
 .class public _div {
 .method public static	int32 _div(int32,int32) {
 .locals		(class [mscorlib]System.Exception,int32)
@@ -45,306 +48,309 @@ END:
 .try try_start to try_end catch [mscorlib]System.DivideByZeroException handler divbyzero to DBZEnd
 .try try_start to try_end catch [mscorlib]System.ArithmeticException handler arithmetic to AEEnd
 }
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		20
 	ldc.i4		0x80000000
 	ldc.i4		0x80000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000001
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x80000000
 	ldc.i4		0xFFFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xAE
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x80000000
 	ldc.i4		0x00000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x80000000
 	ldc.i4		0x00000001
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x80000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x80000000
 	ldc.i4		0x7FFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xFFFFFFFF
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x80000000
 	ldc.i4		0x55555555
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xFFFFFFFF
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x80000000
 	ldc.i4		0xAAAAAAAA
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000001
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0xFFFFFFFF
 	ldc.i4		0x80000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000		
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xFFFFFFFF
 	ldc.i4		0xFFFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000001
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xFFFFFFFF
 	ldc.i4		0x00000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xFFFFFFFF
 	ldc.i4		0x00000001
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xFFFFFFFF
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xFFFFFFFF
 	ldc.i4		0x7FFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xFFFFFFFF
 	ldc.i4		0x55555555
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xFFFFFFFF
 	ldc.i4		0xAAAAAAAA
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x00000000
 	ldc.i4		0x80000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000000
 	ldc.i4		0xFFFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000000
 	ldc.i4		0x00000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000000
 	ldc.i4		0x00000001
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000000
 	ldc.i4		0x7FFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000000
 	ldc.i4		0x55555555
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000000
 	ldc.i4		0xAAAAAAAA
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x00000001
 	ldc.i4		0x80000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000001
 	ldc.i4		0xFFFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xFFFFFFFF
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000001
 	ldc.i4		0x00000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000001
 	ldc.i4		0x00000001
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000001
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000001
 	ldc.i4		0x7FFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000001
 	ldc.i4		0x55555555
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x00000001
 	ldc.i4		0xAAAAAAAA
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x7FFFFFFF
 	ldc.i4		0x80000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x7FFFFFFF
 	ldc.i4		0xFFFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x80000001
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x7FFFFFFF
 	ldc.i4		0x00000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x7FFFFFFF
 	ldc.i4		0x00000001
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x7FFFFFFF
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x7FFFFFFF
 	ldc.i4		0x7FFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000001
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x7FFFFFFF
 	ldc.i4		0x55555555
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000001
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x7FFFFFFF
 	ldc.i4		0xAAAAAAAA
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xFFFFFFFF
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x55555555
 	ldc.i4		0x80000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x55555555
 	ldc.i4		0xFFFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xAAAAAAAB
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x55555555
 	ldc.i4		0x00000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x55555555
 	ldc.i4		0x00000001
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x55555555
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x55555555
 	ldc.i4		0x7FFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x55555555
 	ldc.i4		0x55555555
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000001
 	ceq
 	brfalse		FAIL
 	ldc.i4		0x55555555
 	ldc.i4		0xAAAAAAAA
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0xAAAAAAAA
 	ldc.i4		0x80000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xAAAAAAAA
 	ldc.i4		0xFFFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x55555556
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xAAAAAAAA
 	ldc.i4		0x00000000
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xDB0E
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xAAAAAAAA
 	ldc.i4		0x00000001
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xAAAAAAAA
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xAAAAAAAA
 	ldc.i4		0x7FFFFFFF
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000000
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xAAAAAAAA
 	ldc.i4		0x55555555
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0xFFFFFFFF
 	ceq
 	brfalse		FAIL
 	ldc.i4		0xAAAAAAAA
 	ldc.i4		0xAAAAAAAA
-	call	int32 _div::_div(int32,int32)
+	call	int32 div_i4._div::_div(int32,int32)
 	ldc.i4		0x00000001
 	ceq
 	brfalse		FAIL
@@ -357,3 +363,4 @@ FAIL:
 }
 }
 .assembly div_i4{}
+}

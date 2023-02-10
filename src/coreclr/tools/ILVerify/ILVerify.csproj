@@ -7,6 +7,7 @@
     <UseAppHost>false</UseAppHost>
     <RollForward>Major</RollForward>
     <DefineConstants>ILVERIFY;$(DefineConstants)</DefineConstants>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="..\ILVerification\ILVerification.projitems" />

@@ -17,8 +17,6 @@ namespace System.Collections.ObjectModel.Tests
     /// </summary>
     public class ReadOnlyCollectionTests : CollectionTestBase
     {
-        private static readonly ReadOnlyCollection<int> s_empty = new ReadOnlyCollection<int>(new int[0]);
-
         [Fact]
         public static void Ctor_NullList_ThrowsArgumentNullException()
         {
@@ -37,7 +35,14 @@ namespace System.Collections.ObjectModel.Tests
         {
             var collection = new ReadOnlyCollection<int>(s_intArray);
             Assert.Equal(s_intArray.Length, collection.Count);
-            Assert.Equal(0, s_empty.Count);
+        }
+
+        [Fact]
+        public static void Empty_Idempotent()
+        {
+            Assert.NotNull(ReadOnlyCollection<int>.Empty);
+            Assert.Equal(0, ReadOnlyCollection<int>.Empty.Count);
+            Assert.Same(ReadOnlyCollection<int>.Empty, ReadOnlyCollection<int>.Empty);
         }
 
         [Fact]
@@ -56,7 +61,7 @@ namespace System.Collections.ObjectModel.Tests
             var collection = new Collection<int>(s_intArray);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection[-1]);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => collection[s_intArray.Length]);
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => s_empty[0]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => ReadOnlyCollection<int>.Empty[0]);
         }
 
         [Fact]
@@ -65,8 +70,8 @@ namespace System.Collections.ObjectModel.Tests
             var collection = new ReadOnlyCollection<int>(s_intArray);
             Assert.True(((IList)collection).IsReadOnly);
             Assert.True(((IList<int>)collection).IsReadOnly);
-            Assert.True(((IList)s_empty).IsReadOnly);
-            Assert.True(((IList<int>)s_empty).IsReadOnly);
+            Assert.True(((IList)ReadOnlyCollection<int>.Empty).IsReadOnly);
+            Assert.True(((IList<int>)ReadOnlyCollection<int>.Empty).IsReadOnly);
         }
 
         [Fact]

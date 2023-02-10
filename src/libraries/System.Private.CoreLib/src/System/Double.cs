@@ -71,11 +71,11 @@ namespace System
         /// <remarks>Euler's number is approximately 2.7182818284590452354.</remarks>
         public const double E = Math.E;
 
-        /// <summary>Represents the ratio of the circumference of a circle to its diameter, specified by the constant, π.</summary>
+        /// <summary>Represents the ratio of the circumference of a circle to its diameter, specified by the constant, PI.</summary>
         /// <remarks>Pi is approximately 3.1415926535897932385.</remarks>
         public const double Pi = Math.PI;
 
-        /// <summary>Represents the number of radians in one turn, specified by the constant, τ.</summary>
+        /// <summary>Represents the number of radians in one turn, specified by the constant, Tau.</summary>
         /// <remarks>Tau is approximately 6.2831853071795864769.</remarks>
         public const double Tau = Math.Tau;
 
@@ -831,6 +831,9 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(double x) => Math.ILogB(x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static double Lerp(double value1, double value2, double amount) => (value1 * (1.0 - amount)) + (value2 * amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static double ReciprocalEstimate(double x) => Math.ReciprocalEstimate(x);

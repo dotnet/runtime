@@ -364,9 +364,9 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         if (codeVersion.IsDefaultVersion())
         {
             pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
-            _ASSERTE(codeVersion.GetOptimizationTier() != NativeCodeVersion::OptimizationTier0);
+            _ASSERTE(codeVersion.IsFinalTier());
         }
-        else if (codeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
+        else if (!codeVersion.IsFinalTier())
         {
             codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
         }
@@ -457,7 +457,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
 #ifdef FEATURE_TIERED_COMPILATION
             if (shouldCountCalls)
             {
-                _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+                _ASSERTE(!pConfig->GetCodeVersion().IsFinalTier());
                 pConfig->SetShouldCountCalls();
             }
 #endif
@@ -1225,6 +1225,12 @@ PrepareCodeConfig::JitOptimizationTier PrepareCodeConfig::GetJitOptimizationTier
                 case NativeCodeVersion::OptimizationTierOptimized:
                     return JitOptimizationTier::Optimized;
 
+                case NativeCodeVersion::OptimizationTier0Instrumented:
+                    return JitOptimizationTier::InstrumentedTier;
+
+                case NativeCodeVersion::OptimizationTier1Instrumented:
+                    return JitOptimizationTier::InstrumentedTierOptimized;
+
                 default:
                     UNREACHABLE();
             }
@@ -1247,6 +1253,8 @@ const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *conf
         case JitOptimizationTier::QuickJitted: return "QuickJitted";
         case JitOptimizationTier::OptimizedTier1: return "OptimizedTier1";
         case JitOptimizationTier::OptimizedTier1OSR: return "OptimizedTier1OSR";
+        case JitOptimizationTier::InstrumentedTier: return "InstrumentedTier";
+        case JitOptimizationTier::InstrumentedTierOptimized: return "InstrumentedTierOptimized";
 
         default:
             UNREACHABLE();
@@ -1296,6 +1304,7 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
         NativeCodeVersion::OptimizationTier previousOptimizationTier = GetCodeVersion().GetOptimizationTier();
         _ASSERTE(
             previousOptimizationTier == NativeCodeVersion::OptimizationTier0 ||
+            previousOptimizationTier == NativeCodeVersion::OptimizationTier0Instrumented ||
             previousOptimizationTier == NativeCodeVersion::OptimizationTierOptimized);
     #endif // _DEBUG
 

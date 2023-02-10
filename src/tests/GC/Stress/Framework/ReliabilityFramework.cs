@@ -992,7 +992,12 @@ public class ReliabilityFramework
 
                         try
                         {
-                            daTest.EntryPointMethod.Invoke(null, new object[] { (daTest.Arguments == null) ? new string[0] : daTest.GetSplitArguments() });
+                            object[] parameters = null;
+                            if (daTest.EntryPointMethod.GetParameters().Length == 1)
+                            {
+                                parameters = new object[] { (daTest.Arguments == null) ? new string[0] : daTest.GetSplitArguments() };
+                            }
+                            daTest.EntryPointMethod.Invoke(null, parameters);
                         }
                         catch (Exception e)
                         {

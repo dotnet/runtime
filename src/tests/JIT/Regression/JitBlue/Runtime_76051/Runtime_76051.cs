@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 public class Runtime_76051
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         GetIndex(1);
         return 100;

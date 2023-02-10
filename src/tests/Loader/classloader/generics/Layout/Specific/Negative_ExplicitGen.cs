@@ -130,7 +130,7 @@ class Test
 	 Console.WriteLine("Gen7: FAIL");
  }
 
-	static int Main(string[] args)
+	static int Main()
 	{
 		bool pass = true;
 

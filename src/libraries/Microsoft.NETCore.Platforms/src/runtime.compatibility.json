@@ -3835,6 +3835,17 @@
     "any",
     "base"
   ],
+  "wasi": [
+    "wasi",
+    "any",
+    "base"
+  ],
+  "wasi-wasm": [
+    "wasi-wasm",
+    "wasi",
+    "any",
+    "base"
+  ],
   "centos": [
     "centos",
     "rhel",
@@ -4876,6 +4887,14 @@
     "any",
     "base"
   ],
+  "freebsd-arm64": [
+    "freebsd-arm64",
+    "freebsd",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "freebsd.12": [
     "freebsd.12",
     "freebsd",
@@ -4889,6 +4908,16 @@
     "freebsd-x64",
     "freebsd",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "freebsd.12-arm64": [
+    "freebsd.12-arm64",
+    "freebsd.12",
+    "freebsd-arm64",
+    "freebsd",
+    "unix-arm64",
     "unix",
     "any",
     "base"
@@ -4909,6 +4938,18 @@
     "freebsd-x64",
     "freebsd",
     "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "freebsd.13-arm64": [
+    "freebsd.13-arm64",
+    "freebsd.13",
+    "freebsd.12-arm64",
+    "freebsd.12",
+    "freebsd-arm64",
+    "freebsd",
+    "unix-arm64",
     "unix",
     "any",
     "base"
@@ -8667,6 +8708,85 @@
     "base"
   ],
   "tizen.6.5.0-x86": [
+    "tizen.6.5.0-x86",
+    "tizen.6.5.0",
+    "tizen.6.0.0-x86",
+    "tizen.6.0.0",
+    "tizen.5.5.0-x86",
+    "tizen.5.5.0",
+    "tizen.5.0.0-x86",
+    "tizen.5.0.0",
+    "tizen.4.0.0-x86",
+    "tizen.4.0.0",
+    "tizen-x86",
+    "tizen",
+    "linux-x86",
+    "linux",
+    "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
+  "tizen.7.0.0": [
+    "tizen.7.0.0",
+    "tizen.6.5.0",
+    "tizen.6.0.0",
+    "tizen.5.5.0",
+    "tizen.5.0.0",
+    "tizen.4.0.0",
+    "tizen",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "tizen.7.0.0-arm64": [
+    "tizen.7.0.0-arm64",
+    "tizen.7.0.0",
+    "tizen.6.5.0-arm64",
+    "tizen.6.5.0",
+    "tizen.6.0.0-arm64",
+    "tizen.6.0.0",
+    "tizen.5.5.0-arm64",
+    "tizen.5.5.0",
+    "tizen.5.0.0-arm64",
+    "tizen.5.0.0",
+    "tizen.4.0.0-arm64",
+    "tizen.4.0.0",
+    "tizen-arm64",
+    "tizen",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "tizen.7.0.0-armel": [
+    "tizen.7.0.0-armel",
+    "tizen.7.0.0",
+    "tizen.6.5.0-armel",
+    "tizen.6.5.0",
+    "tizen.6.0.0-armel",
+    "tizen.6.0.0",
+    "tizen.5.5.0-armel",
+    "tizen.5.5.0",
+    "tizen.5.0.0-armel",
+    "tizen.5.0.0",
+    "tizen.4.0.0-armel",
+    "tizen.4.0.0",
+    "tizen-armel",
+    "tizen",
+    "linux-armel",
+    "linux",
+    "unix-armel",
+    "unix",
+    "any",
+    "base"
+  ],
+  "tizen.7.0.0-x86": [
+    "tizen.7.0.0-x86",
+    "tizen.7.0.0",
     "tizen.6.5.0-x86",
     "tizen.6.5.0",
     "tizen.6.0.0-x86",

@@ -132,6 +132,9 @@
   <data name="Error_FailedToActivate" xml:space="preserve">
     <value>Failed to create instance of type '{0}'.</value>
   </data>
+  <data name="Error_GeneralErrorWhenBinding" xml:space="preserve">
+    <value>'{0}' was set and binding has failed. The likely cause is an invalid configuration value.</value>
+  </data>
   <data name="Error_MissingConfig" xml:space="preserve">
     <value>'{0}' was set on the provided {1}, but the following properties were not found on the instance of {2}: {3}</value>
   </data>

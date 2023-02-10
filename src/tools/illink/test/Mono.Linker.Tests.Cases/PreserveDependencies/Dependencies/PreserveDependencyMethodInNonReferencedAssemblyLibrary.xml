@@ -1,0 +1,5 @@
+<linker>
+    <assembly fullname="PreserveDependencyMethodInNonReferencedAssemblyLibrary, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyLibrary" preserve="all" />
+    </assembly>
+</linker>

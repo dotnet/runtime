@@ -88,6 +88,8 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrins
 
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, CorInfoType simdBaseJitType)
 {
+    assert(varTypeIsSIMD(simdType));
+
     if (m_simdHandleCache == nullptr)
     {
         return NO_CLASS_HANDLE;
@@ -312,7 +314,15 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
 #endif
 
-    if ((strcmp(methodName, "get_IsSupported") == 0) || isHardwareAcceleratedProp)
+    bool isSupportedProp = (strcmp(methodName, "get_IsSupported") == 0);
+
+    if (isSupportedProp && (strncmp(className, "Vector", 6) == 0))
+    {
+        // The Vector*<T>.IsSupported props report if T is supported & is specially handled in lookupNamedIntrinsic
+        return NI_Illegal;
+    }
+
+    if (isSupportedProp || isHardwareAcceleratedProp)
     {
         // The `compSupportsHWIntrinsic` above validates `compSupportsIsa` indicating
         // that the compiler can emit instructions for the ISA but not whether the
@@ -546,12 +556,13 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
         }
         else
         {
-            assert((newobjThis->gtOper == GT_ADDR) && (newobjThis->AsOp()->gtOp1->gtOper == GT_LCL_VAR));
+            assert(newobjThis->OperIs(GT_LCL_VAR_ADDR));
             arg = newobjThis;
 
             // push newobj result on type stack
-            unsigned tmp = arg->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
-            impPushOnStack(gtNewLclvNode(tmp, lvaGetRealType(tmp)), verMakeTypeInfo(argClass).NormaliseForStack());
+            unsigned lclNum = arg->AsLclVarCommon()->GetLclNum();
+            impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)),
+                           verMakeTypeInfo(argClass).NormaliseForStack());
         }
     }
     else
@@ -561,7 +572,10 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
         arg = impPopStack().val;
         assert(varTypeIsArithmetic(arg->TypeGet()) || ((argType == TYP_BYREF) && arg->TypeIs(TYP_BYREF)));
 
-        assert(genActualType(arg->gtType) == genActualType(argType));
+        if (!impCheckImplicitArgumentCoercion(argType, arg->gtType))
+        {
+            BADCODE("the hwintrinsic argument has a type that can't be implicitly converted to the signature type");
+        }
     }
 
     return arg;

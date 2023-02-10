@@ -169,6 +169,8 @@ find_field_index (MonoClass *klass, MonoClassField *field) {
 static guint32
 find_property_index (MonoClass *klass, MonoProperty *property)
 {
+	if (G_UNLIKELY (m_property_is_from_update (property)))
+		return mono_metadata_update_get_property_idx (property);
 	MonoClassPropertyInfo *info = mono_class_get_property_info (klass);
 
 	for (guint32 i = 0; i < info->count; ++i) {
@@ -184,6 +186,8 @@ find_property_index (MonoClass *klass, MonoProperty *property)
 static guint32
 find_event_index (MonoClass *klass, MonoEvent *event)
 {
+	if (G_UNLIKELY (m_event_is_from_update (event)))
+		return mono_metadata_update_get_event_idx (event);
 	MonoClassEventInfo *info = mono_class_get_event_info (klass);
 
 	for (guint32 i = 0; i < info->count; ++i) {
@@ -360,7 +364,7 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (t->data.klass)->type;
 			goto handle_enum;
 		} else {
-			MonoClass *k =  t->data.klass;
+			MonoClass *k =	t->data.klass;
 
 			if (mono_is_corlib_image (m_class_get_image (k)) && strcmp (m_class_get_name_space (k), "System") == 0 && strcmp (m_class_get_name (k), "DateTime") == 0){
 				guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
@@ -700,7 +704,7 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (t->data.klass)->type;
 			goto handle_enum;
 		} else {
-			MonoClass *k =  t->data.klass;
+			MonoClass *k =	t->data.klass;
 
 			if (mono_is_corlib_image (m_class_get_image (k)) && strcmp (m_class_get_name_space (k), "System") == 0 && strcmp (m_class_get_name (k), "DateTime") == 0){
 				guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
@@ -1770,6 +1774,13 @@ exit:
 	HANDLE_FUNCTION_RETURN ();
 }
 
+static gboolean
+cattr_class_match (MonoClass *attr_klass, MonoClass *klass)
+{
+	return mono_class_is_assignable_from_internal (attr_klass, klass) ||
+		(m_class_is_gtd (attr_klass) && m_class_is_ginst (klass) && mono_class_is_assignable_from_internal (attr_klass, mono_class_get_generic_type_definition (klass)));
+}
+
 static MonoArrayHandle
 mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_klass, MonoError *error)
 {
@@ -1795,7 +1806,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 		for (i = 0; i < cinfo->num_attrs; ++i) {
 			MonoMethod *ctor = cinfo->attrs[i].ctor;
 			g_assert (ctor);
-			if (mono_class_is_assignable_from_internal (attr_klass, ctor->klass))
+			if (cattr_class_match (attr_klass, ctor->klass))
 				n++;
 		}
 	} else {
@@ -1807,7 +1818,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 	n = 0;
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		MonoCustomAttrEntry *centry = &cinfo->attrs [i];
-		if (!attr_klass || mono_class_is_assignable_from_internal (attr_klass, centry->ctor->klass)) {
+		if (!attr_klass || cattr_class_match (attr_klass, centry->ctor->klass)) {
 			create_custom_attr_into_array (cinfo->image, centry->ctor, centry->data,
 				centry->data_size, result, n, error);
 			goto_if_nok (error, exit);
@@ -2248,15 +2259,12 @@ mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoErr
 	method_index = mono_method_get_index (method);
 	if (!method_index)
 		return NULL;
-	ca = &image->tables [MONO_TABLE_METHOD];
 
-	/* FIXME: metadata-update */
-	param_list = mono_metadata_decode_row_col (ca, method_index - 1, MONO_METHOD_PARAMLIST);
-	if (method_index == table_info_get_rows (ca)) {
-		param_last = table_info_get_rows (&image->tables [MONO_TABLE_PARAM]) + 1;
-	} else {
-		param_last = mono_metadata_decode_row_col (ca, method_index, MONO_METHOD_PARAMLIST);
-	}
+	param_list = mono_metadata_get_method_params (image, method_index, &param_last);
+
+	if (!param_list)
+		return NULL;
+
 	ca = &image->tables [MONO_TABLE_PARAM];
 
 	found = FALSE;
@@ -2445,33 +2453,33 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 			g_free (type_name);
 			goto leave;
 		}
-	} else if (strcmp ("AssemblyBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_assembly_builder (klass)) {
 		MonoReflectionAssemblyBuilderHandle assemblyb = MONO_HANDLE_CAST (MonoReflectionAssemblyBuilder, obj);
 		MonoReflectionAssemblyHandle assembly = MONO_HANDLE_CAST (MonoReflectionAssembly, assemblyb);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, assemblyb, cattrs);
 		MonoImage * image = MONO_HANDLE_GETVAL (assembly, assembly)->image;
 		g_assert (image);
 		cinfo = mono_custom_attrs_from_builders_handle (NULL, image, cattrs);
-	} else if (strcmp ("TypeBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_type_builder (klass)) {
 		MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, obj);
 		MonoReflectionModuleBuilderHandle module = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, tb, module);
 		MonoDynamicImage *dynamic_image = MONO_HANDLE_GETVAL (module, dynamic_image);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, tb, cattrs);
 		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs);
-	} else if (strcmp ("ModuleBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_module_builder (klass)) {
 		MonoReflectionModuleBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionModuleBuilder, obj);
 		MonoDynamicImage *dynamic_image = MONO_HANDLE_GETVAL (mb, dynamic_image);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, mb, cattrs);
 		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs);
-	} else if (strcmp ("ConstructorBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_ctor_builder (klass)) {
 		mono_error_set_not_supported (error, "");
 		goto leave;
-	} else if (strcmp ("MethodBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_method_builder (klass)) {
 		MonoReflectionMethodBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionMethodBuilder, obj);
 		MonoMethod *mhandle = MONO_HANDLE_GETVAL (mb, mhandle);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, mb, cattrs);
 		cinfo = mono_custom_attrs_from_builders_handle (NULL, m_class_get_image (mhandle->klass), cattrs);
-	} else if (strcmp ("FieldBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_field_builder (klass)) {
 		MonoReflectionFieldBuilderHandle fb = MONO_HANDLE_CAST (MonoReflectionFieldBuilder, obj);
 		MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, MONO_HANDLE_NEW_GET (MonoReflectionType, fb, typeb));
 		MonoReflectionModuleBuilderHandle mb = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, tb, module);
@@ -2588,7 +2596,7 @@ mono_reflection_get_custom_attrs_data_checked (MonoObjectHandle obj, MonoError *
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 		goto_if_nok (error, leave);
-	} else  {
+	} else	{
 		MonoClass *cattr_data = try_get_cattr_data_class (error);
 		goto_if_nok (error, return_null);
 
@@ -2692,10 +2700,31 @@ custom_attr_class_name_from_method_token (MonoImage *image, guint32 method_token
 			if (assembly_token)
 				*assembly_token = 0;
 			return custom_attr_class_name_from_methoddef (image, methoddef_token, nspace, class_name);
+		} else if (class_index == MONO_MEMBERREF_PARENT_TYPESPEC) {
+			ERROR_DECL (error);
+
+			if (!image->assembly)
+				/* Avoid recursive calls from mono_assembly_has_reference_assembly_attribute () etc. */
+				return FALSE;
+
+			guint32 token = MONO_TOKEN_TYPE_SPEC | nindex;
+			MonoType *type = mono_type_get_checked (image, token, NULL, error);
+			if (!is_ok (error)) {
+				mono_error_cleanup (error);
+				return FALSE;
+			}
+
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+			g_assert (klass);
+			if (class_name)
+				*class_name = m_class_get_name (klass);
+			if (nspace)
+				*nspace = m_class_get_name_space (klass);
+			if (assembly_token)
+				*assembly_token = 0;
+			return TRUE;
 		} else {
-			/* Attributes can't be generic, so it won't be
-			 * a typespec, and they're always
-			 * constructors, so it won't be a moduleref */
+			/* Attributes are always constructors, so it won't be a moduleref */
 			g_assert_not_reached ();
 		}
 	} else {
@@ -2893,6 +2922,8 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 		}
 	} else {
 		/* FIXME: metadata-update */
+		if (G_UNLIKELY (image->has_updates))
+			g_warning ("[WeakAttribute] ignored on fields added by hot reload in '%s'", image->name);
 
 		/* Memberref pointing to a typeref */
 		tdef = &image->tables [MONO_TABLE_MEMBERREF];

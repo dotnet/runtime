@@ -3,9 +3,11 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 using Internal.Reflection.Augments;
 
@@ -16,18 +18,48 @@ namespace System
 {
     public abstract partial class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
+#pragma warning disable IDE0060
         internal static EnumInfo GetEnumInfo(Type enumType, bool getNames = true)
         {
             Debug.Assert(enumType != null);
             Debug.Assert(enumType is RuntimeType);
             Debug.Assert(enumType.IsEnum);
 
-            return ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType);
+            RuntimeType rt = (RuntimeType)enumType;
+            return Type.GetTypeCode(RuntimeAugments.GetEnumUnderlyingType(rt.TypeHandle)) switch
+            {
+                TypeCode.SByte => GetEnumInfo<sbyte>(rt),
+                TypeCode.Byte => GetEnumInfo<byte>(rt),
+                TypeCode.Int16 => GetEnumInfo<short>(rt),
+                TypeCode.UInt16 => GetEnumInfo<ushort>(rt),
+                TypeCode.Int32 => GetEnumInfo<int>(rt),
+                TypeCode.UInt32 => GetEnumInfo<uint>(rt),
+                TypeCode.Int64 => GetEnumInfo<long>(rt),
+                TypeCode.UInt64 => GetEnumInfo<ulong>(rt),
+                _ => throw new NotSupportedException(),
+            };
         }
+
+        internal static EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(Type enumType, bool getNames = true)
+            where TUnderlyingValue : struct, INumber<TUnderlyingValue>
+        {
+            Debug.Assert(enumType != null);
+            Debug.Assert(enumType is RuntimeType);
+            Debug.Assert(enumType.IsEnum);
+
+            return ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo<TUnderlyingValue>(enumType);
+        }
+#pragma warning restore
 
         private static object InternalBoxEnum(Type enumType, long value)
         {
             return ToObject(enumType.TypeHandle.ToEETypePtr(), value);
+        }
+
+        private static CorElementType InternalGetCorElementType(RuntimeType rt)
+        {
+            Debug.Assert(rt.IsActualEnum);
+            return rt.TypeHandle.ToEETypePtr().CorElementType;
         }
 
         private CorElementType InternalGetCorElementType()
@@ -59,10 +91,6 @@ namespace System
 
             switch (elementType)
             {
-                case EETypeElementType.Boolean:
-                    result = Unsafe.As<byte, bool>(ref pValue) ? 1UL : 0UL;
-                    return true;
-
                 case EETypeElementType.Char:
                     result = (ulong)(long)Unsafe.As<byte, char>(ref pValue);
                     return true;
@@ -111,14 +139,6 @@ namespace System
             Debug.Assert(enumType.IsEnum);
 
             return GetEnumInfo(enumType).UnderlyingType;
-        }
-
-        public static TEnum[] GetValues<TEnum>() where TEnum : struct, Enum
-        {
-            Array values = GetEnumInfo(typeof(TEnum)).ValuesAsUnderlyingType;
-            TEnum[] result = new TEnum[values.Length];
-            Array.Copy(values, result, values.Length);
-            return result;
         }
 
         //

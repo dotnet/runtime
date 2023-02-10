@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -13,6 +14,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_ret_r4
+{
 .class public		_ret {
 
 //---- GLOBAL DATA ----------
@@ -81,13 +84,16 @@
 }
 
 //---- MAIN -----------------
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		12
 //====== begin testing ======
 // -- NaN
 	ldc.r4	float32(0x7FC00000)
-	call	float32 _ret::ret_test_0(float32)
+	call	float32 ldc_ret_r4._ret::ret_test_0(float32)
 	// -- NaN
 	ldc.r4	float32(0x7F800000)
 	cgt.un
@@ -95,7 +101,7 @@
 
 // -- inf
 	ldc.r4	float32(0x7F800000)
-	call	float32 _ret::ret_test_1(float32)
+	call	float32 ldc_ret_r4._ret::ret_test_1(float32)
 	// -- inf
 	ldc.r4	float32(0x7F800000)
 	ceq
@@ -103,7 +109,7 @@
 
 // -- max
 	ldc.r4	float32(0x7F7FFFFF)
-	call	float32 _ret::ret_test_2(float32)
+	call	float32 ldc_ret_r4._ret::ret_test_2(float32)
 	// -- max
 	ldc.r4	float32(0x7F7FFFFF)
 	ceq
@@ -111,7 +117,7 @@
 
 // -- 1
 	ldc.r4	float32(0x3F800000)
-	call	float32 _ret::ret_test_3(float32)
+	call	float32 ldc_ret_r4._ret::ret_test_3(float32)
 	// -- 1
 	ldc.r4	float32(0x3F800000)
 	ceq
@@ -119,7 +125,7 @@
 
 // -- 0
 	ldc.r4	float32(0x00000000)
-	call	float32 _ret::ret_test_4(float32)
+	call	float32 ldc_ret_r4._ret::ret_test_4(float32)
 	// -- 0
 	ldc.r4	float32(0x00000000)
 	ceq
@@ -127,7 +133,7 @@
 
 // -- -0
 	ldc.r4	float32(0x80000000)
-	call	float32 _ret::ret_test_5(float32)
+	call	float32 ldc_ret_r4._ret::ret_test_5(float32)
 	// -- -0
 	ldc.r4	float32(0x80000000)
 	ceq
@@ -135,7 +141,7 @@
 
 // -- -1
 	ldc.r4	float32(0xBF800000)
-	call	float32 _ret::ret_test_6(float32)
+	call	float32 ldc_ret_r4._ret::ret_test_6(float32)
 	// -- -1
 	ldc.r4	float32(0xBF800000)
 	ceq
@@ -143,7 +149,7 @@
 
 // -- min
 	ldc.r4	float32(0xFF7FFFFF)
-	call	float32 _ret::ret_test_7(float32)
+	call	float32 ldc_ret_r4._ret::ret_test_7(float32)
 	// -- min
 	ldc.r4	float32(0xFF7FFFFF)
 	ceq
@@ -151,7 +157,7 @@
 
 // -- -inf
 	ldc.r4	float32(0xFF800000)
-	call	float32 _ret::ret_test_8(float32)
+	call	float32 ldc_ret_r4._ret::ret_test_8(float32)
 	// -- -inf
 	ldc.r4	float32(0xFF800000)
 	ceq
@@ -178,3 +184,4 @@ END:
 
 .assembly ldc_ret_r4{}
 
+}

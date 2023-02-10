@@ -8,7 +8,7 @@ using ILCompiler.Logging;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    public readonly partial struct DiagnosticContext
+    internal readonly partial struct DiagnosticContext
     {
         public readonly MessageOrigin Origin;
         private readonly bool _diagnosticsEnabled;
@@ -52,5 +52,12 @@ namespace ILLink.Shared.TrimAnalysis
 
             _logger.LogWarning(Origin, id, args);
         }
+
+#pragma warning disable IDE0060, CA1822 // The details provided here are not used by illink, but they are used for example by the analyzer
+        public partial void AddDiagnostic(DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)
+        {
+            AddDiagnostic(id, args);
+        }
+#pragma warning restore IDE0060, CA1822
     }
 }

@@ -27,7 +27,7 @@ namespace System.Data.SqlTypes
 
         // constructor
         // construct a Null
-        private SqlByte(bool fNull)
+        private SqlByte(bool _)
         {
             m_fNotNull = false;
             m_value = 0;
