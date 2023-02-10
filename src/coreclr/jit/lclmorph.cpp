@@ -1221,9 +1221,9 @@ private:
                     // new value. This gives us a new TYP_SIMD16 with all elements in the right spots
 
                     GenTree* indexNode = m_compiler->gtNewIconNode(3, TYP_INT);
-                    hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
-                                                                    CORINFO_TYPE_FLOAT, 16,
-                                                                    /* isSimdAsHWIntrinsic */ true);
+                    hwiNode =
+                        m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
+                                                             CORINFO_TYPE_FLOAT, 16, /* isSimdAsHWIntrinsic */ true);
                 }
 
                 user->AsOp()->gtOp2 = hwiNode;
