@@ -149,13 +149,7 @@ namespace DebuggerTests
 
         public virtual async Task InitializeAsync()
         {
-            var init_cmds = new List<(string, JObject)>
-            {
-                ("Runtime.enable", null),
-                ("Runtime.runIfWaitingForDebugger", null),
-                ("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 })),
-                ("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }))
-            };
+            var init_cmds = new List<(string, JObject)>();
             await Ready();
             await insp.OpenSessionAsync(init_cmds, $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
         }
