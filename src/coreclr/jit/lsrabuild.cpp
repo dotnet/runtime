@@ -3225,12 +3225,18 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         return BuildOperandUses(hwintrinsic->Op(1), candidates);
     }
 #endif // FEATURE_HW_INTRINSICS
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (node->OperIsCompare())
+    {
+        // Compares can be contained by a SELECT/compare chains.
+        return BuildBinaryUses(node->AsOp(), candidates);
+    }
+#endif
 #ifdef TARGET_ARM64
-    if (node->OperIs(GT_MUL) || node->OperIsCompare() || node->OperIs(GT_AND))
+    if (node->OperIs(GT_MUL) || node->OperIs(GT_AND))
     {
         // MUL can be contained for madd or msub on arm64.
-        // Compares can be contained by a SELECT.
-        // ANDs and Cmp Compares may be contained in a chain.
+        // ANDs may be contained in a chain.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
     if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ))
@@ -4072,24 +4078,47 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 //    tree      - The node of interest
 //
 // Return Value:
-//    None.
+//    Number of sources.
 //
 int LinearScan::BuildCmp(GenTree* tree)
 {
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP) || tree->OperIs(GT_JCMP));
-    regMaskTP dstCandidates = RBM_NONE;
+
+    int srcCount = BuildCmpOperands(tree);
+
+    if (!tree->TypeIs(TYP_VOID))
+    {
+        regMaskTP dstCandidates = RBM_NONE;
+
+#ifdef TARGET_X86
+        // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
+        // to store the result into the low byte of a register, which requires the dst be a byteable register.
+        dstCandidates = allByteRegs();
+#endif
+
+        BuildDef(tree, dstCandidates);
+    }
+    return srcCount;
+}
+
+//------------------------------------------------------------------------
+// BuildCmpOperands: Set the register requirements for a compare's operands.
+//
+// Arguments:
+//    tree      - The node of interest
+//
+// Return Value:
+//    Number of sources.
+//
+int LinearScan::BuildCmpOperands(GenTree* tree)
+{
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP) || tree->OperIs(GT_JCMP));
     regMaskTP op1Candidates = RBM_NONE;
     regMaskTP op2Candidates = RBM_NONE;
     GenTree*  op1           = tree->gtGetOp1();
     GenTree*  op2           = tree->gtGetOp2();
 
 #ifdef TARGET_X86
-    // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
-    // to store the result into the low byte of a register, which requires the dst be a byteable register.
-    if (tree->TypeGet() != TYP_VOID)
-    {
-        dstCandidates = allByteRegs();
-    }
     bool needByteRegs = false;
     if (varTypeIsByte(tree))
     {
@@ -4136,9 +4165,5 @@ int LinearScan::BuildCmp(GenTree* tree)
 
     int srcCount = BuildOperandUses(op1, op1Candidates);
     srcCount += BuildOperandUses(op2, op2Candidates);
-    if (tree->TypeGet() != TYP_VOID)
-    {
-        BuildDef(tree, dstCandidates);
-    }
     return srcCount;
 }

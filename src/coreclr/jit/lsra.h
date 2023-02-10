@@ -1886,6 +1886,7 @@ private:
     int BuildPutArgReg(GenTreeUnOp* node);
     int BuildCall(GenTreeCall* call);
     int BuildCmp(GenTree* tree);
+    int BuildCmpOperands(GenTree* tree);
     int BuildBlockStore(GenTreeBlk* blkNode);
     int BuildModDiv(GenTree* tree);
     int BuildIntrinsic(GenTree* tree);
@@ -1936,17 +1937,21 @@ private:
     int BuildLclHeap(GenTree* tree);
 
 #if defined(TARGET_AMD64)
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+    unsigned  availableRegCount;
+
     regMaskTP get_RBM_ALLFLOAT() const
     {
-        return compiler->rbmAllFloat;
+        return this->rbmAllFloat;
     }
     regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
-        return compiler->rbmFltCalleeTrash;
+        return this->rbmFltCalleeTrash;
     }
     unsigned get_AVAILABLE_REG_COUNT() const
     {
-        return compiler->availableRegCount;
+        return this->availableRegCount;
     }
 #endif // TARGET_AMD64
 

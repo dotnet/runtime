@@ -45,6 +45,9 @@ export const
     // Wraps traces in a JS function that will trap errors and log the trace responsible.
     // Very expensive!!!!
     trapTraceErrors = false,
+    // When eliminating a null check, replace it with a runtime 'not null' assertion
+    //  that will print a diagnostic message if the value is actually null
+    nullCheckValidation = false,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code
@@ -263,6 +266,9 @@ function getTraceImports () {
         traceImports.push(["trace_eip", "trace_eip", trace_current_ip]);
         traceImports.push(["trace_args", "trace_eip", trace_operands]);
     }
+
+    if (nullCheckValidation)
+        traceImports.push(["notnull", "notnull", assert_not_null]);
 
     for (let i = 0; i < mathOps1.length; i++) {
         const mop = mathOps1[i];
@@ -511,6 +517,21 @@ function initialize_builder (builder: WasmBuilder) {
             "sourceLocalOffsetBytes": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
+    builder.defineType(
+        "notnull", {
+            "ptr": WasmValtype.i32,
+            "traceIp": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+}
+
+function assert_not_null (
+    value: number, traceIp: MintOpcodePtr
+) {
+    if (value)
+        return;
+    const info = traceInfo[<any>traceIp];
+    throw new Error(`expected non-null value in trace ${info.name} but found null`);
 }
 
 // returns function id
@@ -844,8 +865,8 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
     if (!mostRecentOptions.enableStats && (b !== undefined))
         return;
 
-    console.log(`// generated: ${counters.bytesGenerated} wasm bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
-    console.log(`// time spent: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm`);
+    console.log(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
+    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated`);
     if (concise)
         return;
 

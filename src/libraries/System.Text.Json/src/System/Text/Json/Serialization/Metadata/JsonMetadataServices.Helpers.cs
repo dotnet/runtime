@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json.Serialization.Converters;
@@ -59,11 +58,14 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonTypeInfo<T> CreateCore<T>(
             JsonSerializerOptions options,
             JsonCollectionInfoValues<T> collectionInfo,
-            Func<JsonConverter<T>> converterCreator,
+            JsonConverter<T> converter,
             object? createObjectWithArgs = null,
             object? addFunc = null)
         {
-            JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator());
+            converter = collectionInfo.SerializeHandler != null
+                ? new JsonMetadataServicesConverter<T>(converter)
+                : converter;
+
             JsonTypeInfo<T> typeInfo = new JsonTypeInfo<T>(converter, options);
             if (collectionInfo is null)
             {
@@ -86,22 +88,17 @@ namespace System.Text.Json.Serialization.Metadata
             return typeInfo;
         }
 
-        private static JsonMetadataServicesConverter<T> GetConverter<T>(JsonObjectInfoValues<T> objectInfo)
+        private static JsonConverter<T> GetConverter<T>(JsonObjectInfoValues<T> objectInfo)
         {
-#pragma warning disable CS8714
-            // The type cannot be used as type parameter in the generic type or method.
-            // Nullability of type argument doesn't match 'notnull' constraint.
-            if (objectInfo.ObjectWithParameterizedConstructorCreator != null)
-            {
-                return new JsonMetadataServicesConverter<T>(
-                    () => new LargeObjectWithParameterizedConstructorConverter<T>(),
-                    ConverterStrategy.Object);
-            }
-            else
-            {
-                return new JsonMetadataServicesConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object);
-            }
+#pragma warning disable CS8714 // Nullability of type argument 'T' doesn't match 'notnull' constraint.
+            JsonConverter<T> converter = objectInfo.ObjectWithParameterizedConstructorCreator != null
+                ? new LargeObjectWithParameterizedConstructorConverter<T>()
+                : new ObjectDefaultConverter<T>();
 #pragma warning restore CS8714
+
+            return objectInfo.SerializeHandler != null
+                ? new JsonMetadataServicesConverter<T>(converter)
+                : converter;
         }
 
         private static void PopulateParameterInfoValues(JsonTypeInfo typeInfo, Func<JsonParameterInfoValues[]?>? paramFactory)
@@ -115,7 +112,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                typeInfo.MetadataSerializationNotSupported = true;
+                typeInfo.PropertyMetadataSerializationNotSupported = true;
             }
         }
 
@@ -138,7 +135,7 @@ namespace System.Text.Json.Serialization.Metadata
                     return;
                 }
 
-                typeInfo.MetadataSerializationNotSupported = true;
+                typeInfo.PropertyMetadataSerializationNotSupported = true;
                 return;
             }
 
