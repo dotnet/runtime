@@ -33,6 +33,39 @@ namespace System.Linq
 
             return SkipIterator(source, count);
         }
+        public static IEnumerable<TSource> Skip<TSource>(this IEnumerable<TSource> source, Range range)
+        {
+            if (source == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            Index start = range.Start;
+            Index end = range.End;
+            bool isStartIndexFromEnd = start.IsFromEnd;
+            bool isEndIndexFromEnd = end.IsFromEnd;
+            int startIndex = start.Value;
+            int endIndex = end.Value;
+            Debug.Assert(startIndex >= 0);
+            Debug.Assert(endIndex >= 0);
+
+            if (isStartIndexFromEnd)
+            {
+                if (startIndex == 0 || (isEndIndexFromEnd && endIndex >= startIndex))
+                {
+                    return source;
+                }
+            }
+            else if (!isEndIndexFromEnd)
+            {
+                return startIndex >= endIndex
+                    ? source
+                    : SkipRangeIterator(source, startIndex, endIndex);
+            }
+
+            return SkipRangeFromEndIterator(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
+        }
+
 
         public static IEnumerable<TSource> SkipWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
