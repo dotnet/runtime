@@ -196,31 +196,29 @@ public class IcuShardingTests : BuildTestBase
     [Theory]
     [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })]
     [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
-    public void FullIcuFromRuntimePackWithCustomIcu(BuildArgs buildArgs, bool hasCustomIcu, RunHost host, string id)
+    public void FullIcuFromRuntimePackWithCustomIcu(BuildArgs buildArgs, bool fullIcu, RunHost host, string id)
     {
-        string projectName = $"fullIcuCustom_{hasCustomIcu}_{buildArgs.Config}_{buildArgs.AOT}";
+        string projectName = $"fullIcuCustom_{fullIcu}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName };
-        if (hasCustomIcu)
-            buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{customIcuPath}</WasmIcuDataFileName>");
+        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{customIcuPath}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
         // custom icu has locales that are not present in full icu data and the other way around
-        string[] expectedLocales = hasCustomIcu ? customIcuExpectedLocales : customIcuMissingLocales;
-        string[] missingLocales = hasCustomIcu ? customIcuMissingLocales : customIcuExpectedLocales;
+        string[] expectedLocales = fullIcu ? customIcuMissingLocales : customIcuExpectedLocales;
+        string[] missingLocales = fullIcu ? customIcuExpectedLocales : customIcuMissingLocales;
         string programText = GetProgramText(expectedLocales, missingLocales);
         (_, string output) = BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                            GlobalizationMode: hasCustomIcu ? GlobalizationMode.PredefinedIcu : GlobalizationMode.FullIcu,
-                            PredefinedIcudt: hasCustomIcu ? customIcuPath : ""));
+                            GlobalizationMode: fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.PredefinedIcu,
+                            PredefinedIcudt: fullIcu ? "" : customIcuPath));
+        if (fullIcu)
+            Assert.Contains("$(WasmIcuDataFileName) has no effect when $(WasmIncludeFullIcuData) is set to true.", output);
 
         string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-
-        if (hasCustomIcu)
-            Assert.Contains("$(WasmIcuDataFileName) has no effect when $(WasmIncludeFullIcuData) is set to true.", runOutput);
         CheckExpectedLocales(expectedLocales, runOutput);
         CheckMissingLocales(missingLocales, runOutput);
     }
