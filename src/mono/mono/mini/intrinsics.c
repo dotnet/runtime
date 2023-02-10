@@ -1017,21 +1017,18 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoType* t = mini_get_underlying_type (arg_type);
 			g_assert (!MONO_TYPE_IS_REFERENCE (t) && t->type != MONO_TYPE_VALUETYPE);
 
-			// The following relies on the previous instruction being an OP_MOVE. Specifically. one that
-			// is emitted from CEE_TDTOKEN as the last EMIT_NEW_TEMPLOAD, which has its inst_p1 set.
-			// Bail out and use the non-intrinsic variant if this is not satisfied.
+			// This OP_LDTOKEN_FIELD later changes into a OP_VMOVE.
 			MonoClassField* field = (MonoClassField*) args [0]->inst_p1;
-			if (args [0]->opcode != OP_VMOVE || !field || !field->type)
+			if (args [0]->opcode != OP_LDTOKEN_FIELD || !field || !field->type)
 					return NULL;
 
 			int alignment = 0;
 			int element_size = mono_type_size (t, &alignment);
-
-		#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
 			int swizzle = 1;
-		#else
+#else
 			int swizzle = element_size;
-		#endif
+#endif
 
 			gpointer data_ptr = (gpointer)mono_field_get_rva (field, swizzle);
 			const int num_elements = mono_type_size (field->type, &alignment) / element_size;
