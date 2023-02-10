@@ -55,7 +55,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected abstract void TryToReuse();
 
-        protected abstract void HandleIncomplete(Stream owner, uint errorCode, uint byteCount);
+        internal abstract void HandleIncomplete(Stream owner, uint errorCode, uint byteCount);
 
         internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, Stream? owner = null)
         {

@@ -54,14 +54,14 @@ namespace System.IO
                     return numBytesRead;
                 }
 
-                int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                int errorCode = FileHandleHelper.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                 return errorCode switch
                 {
                     // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfile#synchronization-and-file-position:
                     // "If lpOverlapped is not NULL, then when a synchronous read operation reaches the end of a file,
                     // ReadFile returns FALSE and GetLastError returns ERROR_HANDLE_EOF"
                     Interop.Errors.ERROR_HANDLE_EOF => numBytesRead,
-                    _ when IsEndOfFile(errorCode, handle, fileOffset) => 0,
+                    _ when FileHandleHelper.IsEndOfFile(errorCode, handle, fileOffset) => 0,
                     _ => throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path)
                 };
             }
@@ -82,7 +82,7 @@ namespace System.IO
                 {
                     Interop.Kernel32.ReadFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
 
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    int errorCode = FileHandleHelper.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     if (errorCode == Interop.Errors.ERROR_IO_PENDING)
                     {
                         resetEvent.WaitOne();
@@ -98,7 +98,7 @@ namespace System.IO
                             return result;
                         }
 
-                        errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                        errorCode = FileHandleHelper.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     }
                     else
                     {
@@ -109,7 +109,7 @@ namespace System.IO
                         resetEvent.ReleaseRefCount(overlapped);
                     }
 
-                    if (IsEndOfFile(errorCode, handle, fileOffset))
+                    if (FileHandleHelper.IsEndOfFile(errorCode, handle, fileOffset))
                     {
                         // EOF on a pipe. Callback will not be called.
                         // We clear the overlapped status bit for this special case (failure
@@ -154,7 +154,7 @@ namespace System.IO
                     return;
                 }
 
-                int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                int errorCode = FileHandleHelper.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
             }
         }
@@ -179,7 +179,7 @@ namespace System.IO
                 {
                     Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, IntPtr.Zero, overlapped);
 
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    int errorCode = FileHandleHelper.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     if (errorCode == Interop.Errors.ERROR_IO_PENDING)
                     {
                         resetEvent.WaitOne();
@@ -195,7 +195,7 @@ namespace System.IO
                             return;
                         }
 
-                        errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                        errorCode = FileHandleHelper.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     }
                     else
                     {
@@ -235,7 +235,11 @@ namespace System.IO
         {
             if (handle.IsAsync)
             {
-                (OverlappedValueTaskSource? vts, int errorCode) = QueueAsyncReadFile(handle, buffer, fileOffset, cancellationToken, strategy);
+                handle.EnsureThreadPoolBindingInitialized();
+
+                (OverlappedValueTaskSource? vts, int errorCode) = FileHandleHelper.QueueAsyncReadFile(
+                    handle.GetOverlappedValueTaskSource(),
+                    handle, buffer, fileOffset, cancellationToken, strategy);
 
                 if (vts is not null)
                 {
@@ -253,71 +257,16 @@ namespace System.IO
             return ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
         }
 
-        private static unsafe (OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
-            CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
-        {
-            handle.EnsureThreadPoolBindingInitialized();
-
-            OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
-            int errorCode = Interop.Errors.ERROR_SUCCESS;
-            try
-            {
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
-
-                // Queue an async ReadFile operation.
-                if (Interop.Kernel32.ReadFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
-                {
-                    // The operation failed, or it's pending.
-                    errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-
-                    if (errorCode == Interop.Errors.ERROR_IO_PENDING)
-                    {
-                        // Common case: IO was initiated, completion will be handled by callback.
-                        // Register for cancellation now that the operation has been initiated.
-                        vts.RegisterForCancellation(cancellationToken);
-                    }
-                    else if (IsEndOfFile(errorCode, handle, fileOffset))
-                    {
-                        // EOF on a pipe. Callback will not be called.
-                        // We clear the overlapped status bit for this special case (failure
-                        // to do so looks like we are freeing a pending overlapped later).
-                        nativeOverlapped->InternalLow = IntPtr.Zero;
-                        vts.Dispose();
-                        return (null, 0);
-                    }
-                    else
-                    {
-                        // Error. Callback will not be called.
-                        vts.Dispose();
-                        return (null, errorCode);
-                    }
-                }
-            }
-            catch
-            {
-                vts.Dispose();
-                throw;
-            }
-            finally
-            {
-                if (errorCode != Interop.Errors.ERROR_IO_PENDING && errorCode != Interop.Errors.ERROR_SUCCESS)
-                {
-                    strategy?.OnIncompleteOperation(buffer.Length, 0);
-                }
-            }
-
-            // Completion handled by callback.
-            vts.FinishedScheduling();
-            return (vts, -1);
-        }
-
         internal static ValueTask WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
             CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
         {
             if (handle.IsAsync)
             {
-                (OverlappedValueTaskSource? vts, int errorCode) = QueueAsyncWriteFile(handle, buffer, fileOffset, cancellationToken, strategy);
+                handle.EnsureThreadPoolBindingInitialized();
+
+                (OverlappedValueTaskSource? vts, int errorCode) = FileHandleHelper.QueueAsyncWriteFile(
+                    handle.GetOverlappedValueTaskSource(),
+                    handle, buffer, fileOffset, cancellationToken, strategy);
 
                 if (vts is not null)
                 {
@@ -333,55 +282,6 @@ namespace System.IO
             }
 
             return ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
-        }
-
-        private static unsafe (OverlappedValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
-            CancellationToken cancellationToken, OSFileStreamStrategy? strategy)
-        {
-            handle.EnsureThreadPoolBindingInitialized();
-
-            OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
-            int errorCode = Interop.Errors.ERROR_SUCCESS;
-            try
-            {
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
-
-                // Queue an async WriteFile operation.
-                if (Interop.Kernel32.WriteFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
-                {
-                    // The operation failed, or it's pending.
-                    errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                    switch (errorCode)
-                    {
-                        case Interop.Errors.ERROR_IO_PENDING:
-                            // Common case: IO was initiated, completion will be handled by callback.
-                            // Register for cancellation now that the operation has been initiated.
-                            vts.RegisterForCancellation(cancellationToken);
-                            break;
-                        default:
-                            // Error. Callback will not be invoked.
-                            vts.Dispose();
-                            return (null, errorCode);
-                    }
-                }
-            }
-            catch
-            {
-                vts.Dispose();
-                throw;
-            }
-            finally
-            {
-                if (errorCode != Interop.Errors.ERROR_IO_PENDING && errorCode != Interop.Errors.ERROR_SUCCESS)
-                {
-                    strategy?.OnIncompleteOperation(buffer.Length, 0);
-                }
-            }
-
-            // Completion handled by callback.
-            vts.FinishedScheduling();
-            return (vts, -1);
         }
 
         internal static long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
@@ -564,7 +464,7 @@ namespace System.IO
                 if (Interop.Kernel32.ReadFileScatter(handle, (long*)segmentsPtr, bytesToRead, IntPtr.Zero, nativeOverlapped) == 0)
                 {
                     // The operation failed, or it's pending.
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    int errorCode = FileHandleHelper.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
 
                     if (errorCode == Interop.Errors.ERROR_IO_PENDING)
                     {
@@ -572,7 +472,7 @@ namespace System.IO
                         // Register for cancellation now that the operation has been initiated.
                         vts.RegisterForCancellation(cancellationToken);
                     }
-                    else if (IsEndOfFile(errorCode, handle, fileOffset))
+                    else if (FileHandleHelper.IsEndOfFile(errorCode, handle, fileOffset))
                     {
                         // EOF on a pipe. Callback will not be called.
                         // We clear the overlapped status bit for this special case (failure
@@ -662,7 +562,7 @@ namespace System.IO
                 if (Interop.Kernel32.WriteFileGather(handle, (long*)segmentsPtr, bytesToWrite, IntPtr.Zero, nativeOverlapped) == 0)
                 {
                     // The operation failed, or it's pending.
-                    int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                    int errorCode = FileHandleHelper.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                     if (errorCode == Interop.Errors.ERROR_IO_PENDING)
                     {
                         // Common case: IO was initiated, completion will be handled by callback.
@@ -746,32 +646,6 @@ namespace System.IO
                 state.ReleaseRefCount(pOverlapped);
             }
         }
-
-        internal static bool IsEndOfFile(int errorCode, SafeFileHandle handle, long fileOffset)
-        {
-            switch (errorCode)
-            {
-                case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
-                case Interop.Errors.ERROR_BROKEN_PIPE: // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
-                case Interop.Errors.ERROR_PIPE_NOT_CONNECTED: // Named pipe server has disconnected, return 0 to match NamedPipeClientStream behaviour
-                case Interop.Errors.ERROR_INVALID_PARAMETER when IsEndOfFileForNoBuffering(handle, fileOffset):
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        // From https://docs.microsoft.com/en-us/windows/win32/fileio/file-buffering:
-        // "File access sizes, including the optional file offset in the OVERLAPPED structure,
-        // if specified, must be for a number of bytes that is an integer multiple of the volume sector size."
-        // So if buffer and physical sector size is 4096 and the file size is 4097:
-        // the read from offset=0 reads 4096 bytes
-        // the read from offset=4096 reads 1 byte
-        // the read from offset=4097 fails with ERROR_INVALID_PARAMETER (the offset is not a multiple of sector size)
-        // Based on feedback received from customers (https://github.com/dotnet/runtime/issues/62851),
-        // it was decided to not throw, but just return 0.
-        private static bool IsEndOfFileForNoBuffering(SafeFileHandle fileHandle, long fileOffset)
-            => fileHandle.IsNoBuffering && fileHandle.CanSeek && fileOffset >= fileHandle.GetFileLength();
 
         // We need to store the reference count (see the comment in ReleaseRefCount) and an EventHandle to signal the completion.
         // We could keep these two things separate, but since ManualResetEvent is sealed and we want to avoid any extra allocations, this type has been created.

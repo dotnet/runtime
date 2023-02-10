@@ -52,7 +52,7 @@ namespace System.IO.Strategies
             {
                 if (closeInvalidHandle)
                 {
-                    throw Win32Marshal.GetExceptionForWin32Error(GetLastWin32ErrorAndDisposeHandleIfInvalid(handle), handle.Path);
+                    throw Win32Marshal.GetExceptionForWin32Error(FileHandleHelper.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle), handle.Path);
                 }
                 else
                 {
@@ -65,35 +65,6 @@ namespace System.IO.Strategies
 
         internal static void ThrowInvalidArgument(SafeFileHandle handle) =>
             throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_PARAMETER, handle.Path);
-
-        internal static int GetLastWin32ErrorAndDisposeHandleIfInvalid(SafeFileHandle handle)
-        {
-            int errorCode = Marshal.GetLastPInvokeError();
-
-            // If ERROR_INVALID_HANDLE is returned, it doesn't suffice to set
-            // the handle as invalid; the handle must also be closed.
-            //
-            // Marking the handle as invalid but not closing the handle
-            // resulted in exceptions during finalization and locked column
-            // values (due to invalid but unclosed handle) in SQL Win32FileStream
-            // scenarios.
-            //
-            // A more mainstream scenario involves accessing a file on a
-            // network share. ERROR_INVALID_HANDLE may occur because the network
-            // connection was dropped and the server closed the handle. However,
-            // the client side handle is still open and even valid for certain
-            // operations.
-            //
-            // Note that _parent.Dispose doesn't throw so we don't need to special case.
-            // SetHandleAsInvalid only sets _closed field to true (without
-            // actually closing handle) so we don't need to call that as well.
-            if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
-            {
-                handle.Dispose();
-            }
-
-            return errorCode;
-        }
 
         internal static void Lock(SafeFileHandle handle, bool _ /*canWrite*/, long position, long length)
         {
@@ -136,7 +107,7 @@ namespace System.IO.Strategies
 
             if (r == 0)
             {
-                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                errorCode = FileHandleHelper.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                 return -1;
             }
             else
@@ -227,7 +198,7 @@ namespace System.IO.Strategies
                         // If the operation did not synchronously succeed, it either failed or initiated the asynchronous operation.
                         if (!synchronousSuccess && errorCode != Interop.Errors.ERROR_IO_PENDING)
                         {
-                            if (!RandomAccess.IsEndOfFile(errorCode, handle, readAwaitable._position))
+                            if (!FileHandleHelper.IsEndOfFile(errorCode, handle, readAwaitable._position))
                             {
                                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
                             }
@@ -247,7 +218,7 @@ namespace System.IO.Strategies
                             {
                                 throw new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
                             }
-                            else if (!RandomAccess.IsEndOfFile((int)readAwaitable._errorCode, handle, readAwaitable._position))
+                            else if (!FileHandleHelper.IsEndOfFile((int)readAwaitable._errorCode, handle, readAwaitable._position))
                             {
                                 throw Win32Marshal.GetExceptionForWin32Error((int)readAwaitable._errorCode, handle.Path);
                             }
