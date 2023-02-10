@@ -5288,7 +5288,7 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
 
     MethodDesc* pCachedStubMD = pMarshallingData->LookupStructILStub(pMT);
     if (pCachedStubMD != NULL)
-        return pCachedStubMD;
+        RETURN pCachedStubMD;
 
     DWORD dwStubFlags = NDIRECTSTUB_FL_STRUCT_MARSHAL;
 
