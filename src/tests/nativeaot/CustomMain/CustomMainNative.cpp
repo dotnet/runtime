@@ -10,7 +10,7 @@ extern "C" int __managed__Main(int argc, wchar_t* argv[]);
 extern "C" int __managed__Main(int argc, char* argv[]);
 #endif
 
-extern "C" void SetExitCodeInManagedSide(int32_t exitCode);
+extern "C" void IncrementExitCode(int32_t amount);
 
 #if defined(_WIN32)
 int __cdecl wmain(int argc, wchar_t* argv[])
@@ -19,6 +19,6 @@ int main(int argc, char* argv[])
 #endif
 {
     puts("hello from native code");
-    SetExitCodeInManagedSide(100);
+    IncrementExitCode(50);
     return __managed__Main(argc, argv);
 }

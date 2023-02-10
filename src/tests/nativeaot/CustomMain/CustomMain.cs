@@ -7,12 +7,18 @@ using System.Runtime.InteropServices;
 
 class Program
 {
-    static readonly Program Instance = new();
+    static int s_exitCode;
 
-    [UnmanagedCallersOnly(EntryPoint = "SetExitCodeInManagedSide", CallConvs = new Type[] { typeof(CallConvCdecl) })]
-    static void SetExitCode(int exitCode)
+    [ModuleInitializer]
+    internal static void InitializeModule()
     {
-        Instance.ExitCode = exitCode;
+        s_exitCode += 50;
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = "IncrementExitCode", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+    static void IncrementExitCode(int amount)
+    {
+        s_exitCode += amount;
     }
 
     int ExitCode;
@@ -20,6 +26,6 @@ class Program
     static int Main(string[] args)
     {
         Console.WriteLine("hello from managed code");
-        return Instance.ExitCode;
+        return s_exitCode;
     }
 }
