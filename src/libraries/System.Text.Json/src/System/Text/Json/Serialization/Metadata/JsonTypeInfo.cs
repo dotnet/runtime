@@ -304,12 +304,12 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Configure would normally have thrown why initializing properties for source gen but type had SerializeHandler
         // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
-        internal bool MetadataSerializationNotSupported { get; set; }
+        internal bool PropertyMetadataSerializationNotSupported { get; set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ValidateCanBeUsedForMetadataSerialization()
+        internal void ValidateCanBeUsedForPropertyMetadataSerialization()
         {
-            if (MetadataSerializationNotSupported)
+            if (PropertyMetadataSerializationNotSupported)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(Options.TypeInfoResolver, Type);
             }
