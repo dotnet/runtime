@@ -1023,14 +1023,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					return NULL;
 
 			int alignment = 0;
-			int element_size = mono_type_size (t, &alignment);
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
-			int swizzle = 1;
-#else
-			int swizzle = element_size;
-#endif
-
-			gpointer data_ptr = (gpointer)mono_field_get_rva (field, swizzle);
+			const int element_size = mono_type_size (t, &alignment);
 			const int num_elements = mono_type_size (field->type, &alignment) / element_size;
 			const int obj_size = MONO_ABI_SIZEOF (MonoObject);
 			
@@ -1038,20 +1031,26 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoInst* span_addr;
 			EMIT_NEW_TEMPLOADA (cfg, span_addr, span->inst_c0);
 
-			MonoClassField* field_ref = mono_class_get_field_from_name_full (span->klass, "_reference", NULL);
 			MonoInst* ptr_inst;
 			if (cfg->compile_aot) {
-				EMIT_NEW_SFLDACONST (cfg, ptr_inst, field);
+				NEW_RVACONST (cfg, ptr_inst, mono_class_get_image (mono_field_get_parent (field)), args [0]->inst_c0);
+				MONO_ADD_INS (cfg->cbb, ptr_inst);
 			} else {
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+				const int swizzle = 1;
+#else
+				const int swizzle = element_size;
+#endif
+				gpointer data_ptr = (gpointer)mono_field_get_rva (field, swizzle);
 				EMIT_NEW_PCONST (cfg, ptr_inst, data_ptr); 
 			}
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, span_addr->dreg, field_ref->offset - obj_size, ptr_inst->dreg);
 
+			MonoClassField* field_ref = mono_class_get_field_from_name_full (span->klass, "_reference", NULL);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, span_addr->dreg, field_ref->offset - obj_size, ptr_inst->dreg);
 			MonoClassField* field_len = mono_class_get_field_from_name_full (span->klass, "_length", NULL);
 			MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_len->offset - obj_size, num_elements);
 
 			EMIT_NEW_TEMPLOAD (cfg, ins, span->inst_c0);
-		
 			return ins;
 		} else
 			return NULL;
