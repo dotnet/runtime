@@ -299,8 +299,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 #endif
             break;
         case GT_SELECT:
-            ContainCheckSelect(node->AsConditional());
-            break;
+            return LowerSelect(node->AsConditional());
 
 #ifdef TARGET_X86
         case GT_SELECT_HI:
@@ -706,7 +705,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // Fix the pred for the default case: the default block target still has originalSwitchBB
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
     // to afterDefaultCondBlock.
-    flowList* oldEdge = comp->fgRemoveRefPred(jumpTab[jumpCnt - 1], afterDefaultCondBlock);
+    FlowEdge* oldEdge = comp->fgRemoveRefPred(jumpTab[jumpCnt - 1], afterDefaultCondBlock);
     comp->fgAddRefPred(jumpTab[jumpCnt - 1], originalSwitchBB, oldEdge);
 
     bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
@@ -798,7 +797,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // Remove the switch from the predecessor list of this case target's block.
             // We'll add the proper new predecessor edge later.
-            flowList* oldEdge = comp->fgRemoveRefPred(jumpTab[i], afterDefaultCondBlock);
+            FlowEdge* oldEdge = comp->fgRemoveRefPred(jumpTab[i], afterDefaultCondBlock);
 
             if (jumpTab[i] == followingBB)
             {
@@ -3108,19 +3107,11 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         // after op1 do not modify the flags so that it is safe to avoid generating a
         // test instruction.
 
-        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
-#ifdef TARGET_XARCH
-            (op1->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG)
-#ifdef FEATURE_HW_INTRINSICS
-             || (op1->OperIs(GT_HWINTRINSIC) &&
-                 emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(op1->AsHWIntrinsic())))
-#endif // FEATURE_HW_INTRINSICS
-                 )
-#else // TARGET_ARM64
-            op1->OperIs(GT_AND, GT_ADD, GT_SUB) &&
+        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) && op1->SupportsSettingZeroFlag()
+#ifdef TARGET_ARM64
             // This happens in order to emit ARM64 'madd' and 'msub' instructions.
             // We cannot combine 'adds'/'subs' and 'mul'.
-            !(op1->gtGetOp2()->OperIs(GT_MUL) && op1->gtGetOp2()->isContained())
+            && !(op1->gtGetOp2()->OperIs(GT_MUL) && op1->gtGetOp2()->isContained())
 #endif
                 )
         {
@@ -3286,6 +3277,53 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     assert(jtrue->gtNext == nullptr);
     return nullptr;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerSelect: Lower a GT_SELECT node.
+//
+// Arguments:
+//     select - The node
+//
+// Return Value:
+//     The next node to lower.
+//
+GenTree* Lowering::LowerSelect(GenTreeConditional* select)
+{
+    GenTree* cond     = select->gtCond;
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
+    // Replace SELECT cond 1/0 0/1 with (perhaps reversed) cond
+    if (cond->OperIsCompare() && ((trueVal->IsIntegralConst(0) && falseVal->IsIntegralConst(1)) ||
+                                  (trueVal->IsIntegralConst(1) && falseVal->IsIntegralConst(0))))
+    {
+        assert(select->TypeIs(TYP_INT, TYP_LONG));
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(select, &use))
+        {
+            if (trueVal->IsIntegralConst(0))
+            {
+                GenTree* reversed = comp->gtReverseCond(cond);
+                assert(reversed == cond);
+            }
+
+            // Codegen supports also TYP_LONG typed compares so we can just
+            // retype the compare instead of inserting a cast.
+            cond->gtType = select->TypeGet();
+
+            BlockRange().Remove(trueVal);
+            BlockRange().Remove(falseVal);
+            BlockRange().Remove(select);
+            use.ReplaceWith(cond);
+
+            return cond->gtNext;
+        }
+    }
+
+    ContainCheckSelect(select);
+    return select->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -7283,13 +7321,16 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
 #if defined(TARGET_ARM64)
         // Verify containment safety before creating an LEA that must be contained.
         //
-        const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+        const bool isContainable = (ind->Addr() != nullptr) && IsSafeToContainMem(ind, ind->Addr());
 #else
         const bool isContainable         = true;
 #endif
 
-        TryCreateAddrMode(ind->Addr(), isContainable, ind);
-        ContainCheckIndir(ind);
+        if (!ind->OperIs(GT_NOP))
+        {
+            TryCreateAddrMode(ind->Addr(), isContainable, ind);
+            ContainCheckIndir(ind);
+        }
 
 #ifdef TARGET_XARCH
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
@@ -7337,14 +7378,23 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
+    GenTree* const addr = ind->Addr();
+    if (!comp->fgAddrCouldBeNull(addr))
+    {
+        addr->SetUnusedValue();
+        ind->gtBashToNOP();
+        JITDUMP("bash an unused indir [%06u] to NOP.\n", comp->dspTreeID(ind));
+        return;
+    }
+
     ind->ChangeType(comp->gtTypeForNullCheck(ind));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool useNullCheck = true;
-#elif TARGET_ARM
+#elif defined(TARGET_ARM)
     bool           useNullCheck          = false;
 #else  // TARGET_XARCH
-    bool useNullCheck = !ind->Addr()->isContained();
+    bool useNullCheck = !addr->isContained();
     ind->ClearDontExtend();
 #endif // !TARGET_XARCH
 

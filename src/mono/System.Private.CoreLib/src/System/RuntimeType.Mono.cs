@@ -1139,7 +1139,7 @@ namespace System
         private const BindingFlags GetMemberWithSameMetadataDefinitionAsBindingFlags =
             BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        private static MemberInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo methodInfo)
+        private static MethodInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo methodInfo)
         {
             ListBuilder<MethodInfo> methods = runtimeType.GetMethodCandidates(methodInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, -1, allowPrefixLookup: false);
 
@@ -1155,7 +1155,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructorInfo)
+        private static ConstructorInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructorInfo)
         {
             ListBuilder<ConstructorInfo> ctors = runtimeType.GetConstructorCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, allowPrefixLookup: false);
 
@@ -1171,7 +1171,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo propertyInfo)
+        private static PropertyInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo propertyInfo)
         {
             ListBuilder<PropertyInfo> properties = runtimeType.GetPropertyCandidates(propertyInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, null, allowPrefixLookup: false);
 
@@ -1187,7 +1187,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo fieldInfo)
+        private static FieldInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo fieldInfo)
         {
             ListBuilder<FieldInfo> fields = runtimeType.GetFieldCandidates(fieldInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 
@@ -1203,7 +1203,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
+        private static EventInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
         {
             ListBuilder<EventInfo> events = runtimeType.GetEventCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 
@@ -1219,7 +1219,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
+        private static Type? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
         {
             ListBuilder<Type> nestedTypes = runtimeType.GetNestedTypeCandidates(nestedType.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 

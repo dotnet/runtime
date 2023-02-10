@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -6,8 +6,7 @@
     <NoWarn>$(NoWarn);CA2249</NoWarn>
     <!-- Suppress SYSLIB0004: 'RuntimeHelpers.PrepareConstrainedRegions()' is obsolete to avoid ifdefs. -->
     <NoWarn>$(NoWarn);SYSLIB0004</NoWarn>
-    <!-- Suppress CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring' to avoid ifdefs. -->
-    <NoWarn>$(NoWarn);CA1845</NoWarn>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a collection of classes for OLEDB.
 
@@ -148,5 +147,12 @@ System.Data.OleDb.OleDbTransaction</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.PerformanceCounter\src\System.Diagnostics.PerformanceCounter.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <ProjectReference Include="..\..\System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
+                  SetTargetFramework="TargetFramework=netstandard2.0"
+                  OutputItemType="Analyzer"
+                  ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

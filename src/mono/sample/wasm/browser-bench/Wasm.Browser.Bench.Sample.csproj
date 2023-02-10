@@ -19,11 +19,11 @@
     <Compile Remove="Console/Console.cs" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <_SampleProject>Wasm.Browser.Bench.Sample.csproj</_SampleProject>
-    <_SampleAssembly> Wasm.Browser.Bench.Sample.dll</_SampleAssembly>
-  </PropertyGroup>
-
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\libraries\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer" />
+  </ItemGroup>
 </Project>

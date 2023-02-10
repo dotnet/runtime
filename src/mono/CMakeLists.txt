@@ -212,6 +212,36 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "linux")
   # Enable the "full RELRO" options (RELRO & BIND_NOW) at link time
   add_link_options(-Wl,-z,relro)
   add_link_options(-Wl,-z,now)
+
+  # Detect Linux ID
+  # TODO: Eventually merge with eng/native/configureplatform.cmake
+  set(LINUX_ID_FILE "/etc/os-release")
+  if(CMAKE_CROSSCOMPILING)
+      set(LINUX_ID_FILE "${CMAKE_SYSROOT}${LINUX_ID_FILE}")
+  endif()
+
+  if(EXISTS ${LINUX_ID_FILE})
+      execute_process(
+          COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
+          OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
+          OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+      execute_process(
+          COMMAND bash -c "if strings \"${CMAKE_SYSROOT}/usr/bin/ldd\" 2>&1 | grep -q musl; then echo musl; fi"
+          OUTPUT_VARIABLE CLR_CMAKE_LINUX_MUSL
+          OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif()
+
+  if(DEFINED CLR_CMAKE_LINUX_ID)
+      if(CLR_CMAKE_LINUX_ID STREQUAL alpine)
+          set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
+          set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
+      endif()
+
+      if(CLR_CMAKE_LINUX_MUSL STREQUAL musl)
+          set(CLR_CMAKE_HOST_LINUX_MUSL 1)
+      endif()
+  endif(DEFINED CLR_CMAKE_LINUX_ID)
 elseif(CLR_CMAKE_HOST_OS STREQUAL "android")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
@@ -310,7 +340,7 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "ios" OR TARGET_SYSTEM_NAME STREQUAL "tvos")
     set(TARGET_TVOS 1)
   endif()
   set(TARGET_APPLE_MOBILE 1)
-elseif(TARGET_SYSTEM_NAME STREQUAL "linux")
+elseif(TARGET_SYSTEM_NAME STREQUAL "linux" OR TARGET_SYSTEM_NAME STREQUAL "alpine")
   set(TARGET_LINUX 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "android")
   set(TARGET_ANDROID 1)
@@ -324,6 +354,7 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "emscripten")
   endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "wasi")
   set(TARGET_WASI 1)
+  set(DISABLE_THREADS 1)
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-Os)
   endif()
@@ -593,10 +624,10 @@ if(LLVM_PREFIX)
   set(llvm_cxxflags "-I${LLVM_PREFIX}/include -std=c++14 -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
-  if(CLR_CMAKE_HOST_OS STREQUAL "linux")
+  if(HOST_LINUX)
     # llvm-config --system-libs
     set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
-  elseif(CLR_CMAKE_HOST_OS STREQUAL "darwin")
+  elseif(HOST_OSX)
     # llvm-config --system-libs
     set(llvm_system_libs "-lz" "-lm")
   endif()
@@ -876,6 +907,12 @@ if(HOST_IOS OR HOST_ANDROID OR HOST_MACCAT)
   unset(DISABLE_DLLMAP)
 else()
   set(DISABLE_DLLMAP 1)
+endif()
+
+if(CLR_CMAKE_HOST_ALPINE_LINUX)
+  # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
+  # larger than the initial committed stack size.
+  add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
 endif()
 ### End of OS specific checks
 

@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class ApkBuilder
+public partial class ApkBuilder
 {
     private const string DefaultMinApiLevel = "21";
     private const string DefaultTargetApiLevel = "31";
@@ -380,7 +380,7 @@ public class ApkBuilder
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
 
-        Regex checkNumerics = new Regex(@"\.(\d)");
+        Regex checkNumerics = DotNumberRegex();
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
             ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
 
@@ -420,7 +420,7 @@ public class ApkBuilder
         {
             string[] classFiles = Directory.GetFiles(Path.Combine(OutputDir, "obj"), "*.class", SearchOption.AllDirectories);
 
-            if (!classFiles.Any())
+            if (classFiles.Length == 0)
                 throw new InvalidOperationException("Didn't find any .class files");
 
             Utils.RunProcess(logger, d8, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);
@@ -633,4 +633,7 @@ public class ApkBuilder
             .FirstOrDefault()
             .ToString();
     }
+
+    [GeneratedRegex(@"\.(\d)")]
+    private static partial Regex DotNumberRegex();
 }

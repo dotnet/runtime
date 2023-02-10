@@ -41,7 +41,7 @@ namespace ILCompiler
             }
         }
 
-        private IReadOnlyCollection<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
+        private List<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
         {
             List<ModuleDesc> assembliesWithInitializers = new List<ModuleDesc>();
 
@@ -259,11 +259,33 @@ namespace ILCompiler
                     (ModuleDesc module, IRootingServiceProvider rooter) => rooter.AddReflectionRoot(module.GetGlobalModuleType(), "Command line root")));
             }
 
+            // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
+            // We also don't do this for multifile because scanner doesn't simulate inlining (this would be
+            // fixable by using a CompilationGroup for the scanner that has a bigger worldview, but
+            // let's cross that bridge when we get there).
+            bool useScanner = Get(_command.UseScanner) ||
+                (_command.OptimizationMode != OptimizationMode.None && !multiFile);
+
+            useScanner &= !Get(_command.NoScanner);
+
+            bool resilient = Get(_command.Resilient);
+            if (resilient && useScanner)
+            {
+                // If we're in resilient mode (invalid IL doesn't crash the compiler) and using scanner,
+                // assume invalid code is present. Scanner may not detect all invalid code that RyuJIT detect.
+                // If they disagree, we won't know how the vtable of InvalidProgramException should look like
+                // and that would be a compiler crash.
+                MethodDesc throwInvalidProgramMethod = typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException");
+                compilationRoots.Add(
+                    new GenericRootProvider<MethodDesc>(throwInvalidProgramMethod,
+                    (MethodDesc method, IRootingServiceProvider rooter) => rooter.AddCompilationRoot(method, "Invalid IL insurance")));
+            }
+
             //
             // Compile
             //
 
-            CompilationBuilder builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
+            var builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
             string compilationUnitPrefix = multiFile ? Path.GetFileNameWithoutExtension(outputFilePath) : "";
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);
@@ -360,15 +382,6 @@ namespace ILCompiler
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
             InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy, logger);
-
-            // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
-            // We also don't do this for multifile because scanner doesn't simulate inlining (this would be
-            // fixable by using a CompilationGroup for the scanner that has a bigger worldview, but
-            // let's cross that bridge when we get there).
-            bool useScanner = Get(_command.UseScanner) ||
-                (_command.OptimizationMode != OptimizationMode.None && !multiFile);
-
-            useScanner &= !Get(_command.NoScanner);
 
             // Enable static data preinitialization in optimized builds.
             bool preinitStatics = Get(_command.PreinitStatics) ||
@@ -486,9 +499,8 @@ namespace ILCompiler
                 .UseOptimizationMode(_command.OptimizationMode)
                 .UseSecurityMitigationOptions(securityMitigationOptions)
                 .UseDebugInfoProvider(debugInfoProvider)
-                .UseDwarf5(Get(_command.UseDwarf5));
-
-            builder.UseResilience(Get(_command.Resilient));
+                .UseDwarf5(Get(_command.UseDwarf5))
+                .UseResilience(resilient);
 
             ICompilation compilation = builder.ToCompilation();
 

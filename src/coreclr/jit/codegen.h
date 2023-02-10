@@ -664,7 +664,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 #ifdef DEBUG
-    void genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping);
+    void genIPmappingDisp(unsigned mappingNum, const IPmappingDsc* ipMapping);
     void genIPmappingListDisp();
 #endif // DEBUG
 
@@ -1532,9 +1532,11 @@ public:
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
 #endif // TARGET_XARCH
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
     static insCflags InsCflagsForCcmp(GenCondition cond);
     static insCond JumpKindToInsCond(emitJumpKind condition);
+#elif defined(TARGET_XARCH)
+    static instruction JumpKindToCmov(emitJumpKind condition);
 #endif
 
 #ifndef TARGET_LOONGARCH64

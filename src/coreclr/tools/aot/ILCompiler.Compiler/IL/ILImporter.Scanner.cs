@@ -501,6 +501,18 @@ namespace Internal.IL
                 // We have the canonical version of the method - find the runtime determined version.
                 // This is simplified because we know the method is on a valuetype.
                 Debug.Assert(targetMethod.OwningType.IsValueType);
+
+                if (forceUseRuntimeLookup)
+                {
+                    // The below logic would incorrectly resolve the lookup into the first match we found,
+                    // but there was a compile-time ambiguity due to shared code. The correct fix should
+                    // use the ConstrainedMethodUseLookupResult dictionary entry so that the exact
+                    // dispatch can be computed with the help of the generic dictionary.
+                    // We fail the compilation here to avoid bad codegen. This is not actually an invalid program.
+                    // https://github.com/dotnet/runtimelab/issues/1431
+                    ThrowHelper.ThrowInvalidProgramException();
+                }
+
                 MethodDesc targetOfLookup;
                 if (_constrained.IsRuntimeDeterminedType)
                     targetOfLookup = _compilation.TypeSystemContext.GetMethodForRuntimeDeterminedType(targetMethod.GetTypicalMethodDefinition(), (RuntimeDeterminedType)_constrained);
@@ -1086,7 +1098,49 @@ namespace Internal.IL
 
         private void ImportBox(int token)
         {
-            AddBoxingDependencies((TypeDesc)_methodIL.GetObject(token), "Box");
+            var type = (TypeDesc)_methodIL.GetObject(token);
+
+            // There are some sequences of box with ByRefLike types that are allowed
+            // per the extension to the ECMA-335 specification.
+            // Everything else is invalid.
+            if (!type.IsRuntimeDeterminedType && type.IsByRefLike)
+            {
+                ILReader reader = new ILReader(_ilBytes, _currentOffset);
+                ILOpcode nextOpcode = reader.ReadILOpcode();
+
+                // box ; br_true/false
+                if (nextOpcode is ILOpcode.brtrue or ILOpcode.brtrue_s or ILOpcode.brfalse or ILOpcode.brfalse_s)
+                    return;
+
+                if (nextOpcode is ILOpcode.unbox_any or ILOpcode.isinst)
+                {
+                    var type2 = (TypeDesc)_methodIL.GetObject(reader.ReadILToken());
+                    if (type == type2)
+                    {
+                        // box ; unbox_any with same token
+                        if (nextOpcode == ILOpcode.unbox_any)
+                            return;
+
+                        nextOpcode = reader.ReadILOpcode();
+
+                        // box ; isinst ; br_true/false
+                        if (nextOpcode is ILOpcode.brtrue or ILOpcode.brtrue_s or ILOpcode.brfalse or ILOpcode.brfalse_s)
+                            return;
+
+                        // box ; isinst ; unbox_any
+                        if (nextOpcode == ILOpcode.unbox_any)
+                        {
+                            type2 = (TypeDesc)_methodIL.GetObject(reader.ReadILToken());
+                            if (type2 == type)
+                                return;
+                        }
+                    }
+                }
+
+                ThrowHelper.ThrowInvalidProgramException();
+            }
+
+            AddBoxingDependencies(type, "Box");
         }
 
         private void AddBoxingDependencies(TypeDesc type, string reason)
@@ -1343,7 +1397,7 @@ namespace Internal.IL
             return false;
         }
 
-        private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
+        private DefType GetWellKnownType(WellKnownType wellKnownType)
         {
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
         }
