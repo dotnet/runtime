@@ -11,6 +11,9 @@
     <!-- Suppress CA1845: Use span-based 'string.Concat' and 'AsSpan' instead of 'Substring' to avoid ifdefs. -->
     <NoWarn>$(NoWarn);CA1845</NoWarn>
     <IsPackable>true</IsPackable>
+    <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ServicingVersion>0</ServicingVersion>
     <PackageDescription>Provides a collection of classes for OLEDB.
 
 Commonly Used Types:

@@ -8,6 +8,12 @@ namespace System.Net.Http
     /// </summary>
     internal static class GlobalHttpSettings
     {
+        // Switch to disable ignore-case matching for known header values. Enabled by default.
+        public static bool IgnoreCaseForKnownHeaderValues { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
+            "System.Net.Http.IgnoreCaseForKnownHeaderValues",
+            "DOTNET_SYSTEM_NET_HTTP_IGNORECASEFORKNOWNHEADERVALUES",
+            true);
+
         internal static class DiagnosticsHandler
         {
             public static bool EnableActivityPropagation { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(

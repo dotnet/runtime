@@ -8,6 +8,9 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1-Unix;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
+    <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ServicingVersion>0</ServicingVersion>
     <AddXamarinPlaceholderFilesToPackage>true</AddXamarinPlaceholderFilesToPackage>
     <PackageDescription>Provides access to GDI+ graphics functionality.
 
