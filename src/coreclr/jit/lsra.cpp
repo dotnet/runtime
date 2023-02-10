@@ -5289,7 +5289,11 @@ void LinearScan::allocateRegisters()
                 setIntervalAsSplit(currentInterval);
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_MOVE_REG, currentInterval, assignedRegister));
             }
-            else if ((genRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0)
+            else if (((genRegMask(assignedRegister) & currentRefPosition.registerAssignment) != 0)
+#ifdef TARGET_ARM64
+                     &&  !(hasConsecutiveRegister && currentRefPosition.needsConsecutive)
+#endif
+            )
             {
                 currentRefPosition.registerAssignment = assignedRegBit;
                 if (!currentInterval->isActive)
@@ -12046,11 +12050,18 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         prevRegBit = genRegMask(prevRegRec->regNum);
         if ((prevRegRec->assignedInterval == currentInterval) && ((candidates & prevRegBit) != RBM_NONE))
         {
-            candidates = prevRegBit;
-            found      = true;
-#ifdef DEBUG
-            *registerScore = THIS_ASSIGNED;
+#ifdef TARGET_ARM64
+            // If this is allocating for consecutive register, we need to make sure that
+            // we allocate register, whose consecutive registers are also free.
+            if (!refPosition->needsConsecutive)
 #endif
+            {
+                candidates = prevRegBit;
+                found      = true;
+#ifdef DEBUG
+                *registerScore = THIS_ASSIGNED;
+#endif
+            }
         }
     }
     else
