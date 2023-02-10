@@ -1000,7 +1000,7 @@ namespace System.Diagnostics.Tracing
         /// ETW session that was added or remove, and the bool specifies whether the
         /// session was added or whether it was removed from the set.
         /// </summary>
-        private List<KeyValuePair<SessionInfo, bool>> GetSessions()
+        private List<KeyValuePair<SessionInfo, bool>> GetChangedSessions()
         {
             List<SessionInfo>? liveSessionList = null;
 
