@@ -5381,6 +5381,9 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
         szMetaSig.SuppressRelease();
     }
 
+    // The CreateInteropILStub() handles only creating a single stub.
+    // The stub returned will be okay to return even if the call below loses
+    // the race to insert into the cache.
     pMarshallingData->CacheStructILStub(pMT, pStubMD);
 
     RETURN pStubMD;
