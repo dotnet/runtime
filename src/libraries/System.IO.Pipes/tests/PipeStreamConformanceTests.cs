@@ -278,7 +278,7 @@ namespace System.IO.Pipes.Tests
             Task waitForConnectionTask = server.WaitForConnectionAsync(cts.Token);
 
             Assert.True(InteropTest.CancelIoEx(server.SafePipeHandle), "Outer cancellation failed");
-            await Assert.ThrowsAsync<IOException>(() => waitForConnectionTask);
+            await Assert.ThrowsAsync<OperationCanceledException>(() => waitForConnectionTask);
         }
 
         [Fact]
@@ -502,8 +502,6 @@ namespace System.IO.Pipes.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // Unix named pipes are on sockets, where small writes with an empty buffer will succeed immediately
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         [Fact]
         public async Task WriteAsync_DisconnectDuringWrite_Throws()
         {
