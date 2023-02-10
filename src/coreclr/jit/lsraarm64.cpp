@@ -59,6 +59,7 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 //
 bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned)
 {
+    assert(firstRefPosition->assignedReg() == firstRegAssigned);
     assert(isSingleRegister(genRegMask(firstRegAssigned)));
     assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
     assert(emitter::isVectorRegister(firstRegAssigned));
@@ -74,21 +75,28 @@ bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
         {
             return false;
         }
+
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
+        {
+            consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+            assert(!isRegInUse(regToAssign, consecutiveRefPosition->getInterval()->registerType));
+        }
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
         consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
         regToAssign            = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
     }
 
-    consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
+    ////
+    consecutiveRefPosition = firstRefPosition;
+    regToAssign            = firstRegAssigned;
+    INDEBUG(int refPosCount = 0);
 
-    // should have at least one consecutive register requirement
-    assert(consecutiveRefPosition != nullptr);
-
-    regToAssign = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
-
-    INDEBUG(int refPosCount = 1);
     while (consecutiveRefPosition != nullptr)
     {
         consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
         {
             // For restore refPosition, make sure to have same assignment for it and the next one
@@ -97,15 +105,15 @@ bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
             assert(consecutiveRefPosition->refType == RefTypeUse);
             consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
         }
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
         regToAssign            = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
 
-#ifdef DEBUG
-        refPosCount++;
-#endif // DEBUG
+        INDEBUG(refPosCount++);
     }
 
     assert(refPosCount == firstRefPosition->regCount);
+    
     return true;
 }
 
