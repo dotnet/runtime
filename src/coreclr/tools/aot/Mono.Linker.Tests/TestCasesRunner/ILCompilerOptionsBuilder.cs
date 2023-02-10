@@ -163,6 +163,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (flag == "--feature") {
 				Options.FeatureSwitches.Add (values[0], bool.Parse (values[1]));
 			}
+			else if (flag == "--singlewarn") {
+				Options.SingleWarn = true;
+			}
 		}
 
 		public virtual void ProcessTestInputAssembly (NPath inputAssemblyPath)

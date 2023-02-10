@@ -69,34 +69,6 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this PropertyPseudoDesc prop, string attributeNamespace, string attributeName)
-        {
-            var ecmaType = prop.OwningType as EcmaType;
-            var metadataReader = ecmaType.MetadataReader;
-
-            var attributeHandle = metadataReader.GetCustomAttributeHandle(prop.GetCustomAttributes,
-                attributeNamespace, attributeName);
-
-            if (attributeHandle.IsNil)
-                return null;
-
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
-        }
-
-        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EventPseudoDesc @event, string attributeNamespace, string attributeName)
-        {
-            var ecmaType = @event.OwningType as EcmaType;
-            var metadataReader = ecmaType.MetadataReader;
-
-            var attributeHandle = metadataReader.GetCustomAttributeHandle(@event.GetCustomAttributes,
-                attributeNamespace, attributeName);
-
-            if (attributeHandle.IsNil)
-                return null;
-
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
-        }
-
         internal static string GetRequiresAttributeMessage(CustomAttributeValue<TypeDesc> attribute)
         {
             if (attribute.FixedArguments.Length != 0)

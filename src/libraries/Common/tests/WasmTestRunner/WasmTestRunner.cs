@@ -11,6 +11,12 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
 {
     public static async Task<int> Main(string[] args)
     {
+        if (args.Length == 0)
+        {
+            Console.WriteLine ($"No args given");
+            return -1;
+        }
+
         var testAssembly = args[0];
         var excludedTraits = new List<string>();
         var includedTraits = new List<string>();

@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+    <EnableNativeEventPipe Condition="'$(TestNativeAot)' == 'true'">true</EnableNativeEventPipe>
   </PropertyGroup>
 
   <ItemGroup>
