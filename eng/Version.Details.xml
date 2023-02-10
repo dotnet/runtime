@@ -1,12 +1,12 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="8.0.0-preview.2.23106.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="8.0.0-preview.2.23108.2">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>5667bcd34fd5edab2ce2e01fdb9533306b8fcf61</Sha>
+      <Sha>9084ea228b4b0cba4c8db5eaeaffe68b7c2051af</Sha>
     </Dependency>
-    <Dependency Name="System.Net.MsQuic.Transport" Version="8.0.0-alpha.1.23106.6">
+    <Dependency Name="System.Net.MsQuic.Transport" Version="8.0.0-alpha.1.23107.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
-      <Sha>8f25a65830d7ef48a26e4ed06945ef2b9b79c8b1</Sha>
+      <Sha>b3a7ff6bd48b0f9af9a5bd7a2ed0828af408b894</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
@@ -85,9 +85,9 @@
       <Sha>03108ae78eafab635d07071282ca24b06d23c9ff</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-preview.2" Version="8.0.0-preview.2.23107.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100-preview.2" Version="8.0.0-preview.2.23108.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>3ae16c4a4f58bdeb6621b9a9eec832fb3b56d470</Sha>
+      <Sha>a117e262c0c49e71a0017e96a0a1124ec990d05f</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
@@ -272,17 +272,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>58719ec90b3bbae527dd81685bf8670b993fe8f9</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.23106.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.23108.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>28b29a0d506f9d9d15a7f6eeeca365f98940b681</Sha>
+      <Sha>bde66a8c7071bc96175bfb5eb619394fff03902e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.23106.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.23108.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>28b29a0d506f9d9d15a7f6eeeca365f98940b681</Sha>
+      <Sha>bde66a8c7071bc96175bfb5eb619394fff03902e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.23106.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.23108.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>28b29a0d506f9d9d15a7f6eeeca365f98940b681</Sha>
+      <Sha>bde66a8c7071bc96175bfb5eb619394fff03902e</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="8.0.0-beta.23107.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
