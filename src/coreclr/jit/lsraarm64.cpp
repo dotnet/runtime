@@ -118,27 +118,120 @@ regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPo
         return result;
     }
 
-
-    regMaskTP availbleRegs = m_AvailableRegs;
-    /*
-    1. Find first `1` from LSB                  : a =  bsf(input)
-    2. Set everything until that point to `1`   : temp |= ((1 << a) - 1)
-    3. Find first `0` from LSB -> BitScanForward <-- c = bsf(~temp)
-    4. if ((c - a) > regCount), then accumulate = (((1 << c) - 1) & (1 << a))
-    5. input = input & ~((1 << c) - 1)
-    6. Repeat
-    */
-
-    uint32_t index = BitOperations::BitScanForward(static_cast<uint64_t>(availableRegs));
-
-
-    //regMaskTP availbleRegs = m_AvailableRegs >> 1;
-    for (int i = 0; i < refPosition->regCount; i++)
+    unsigned int registersNeeded = refPosition->regCount;
+    regMaskTP    currAvailableRegs = result;
+    if (BitOperations::PopCount(currAvailableRegs) < registersNeeded)
     {
-        result &= availbleRegs;
-        availbleRegs >>= 1;
+        // If number of free registers are less than what we need, no point in scanning
+        // for them.
+        return RBM_NONE;
     }
-    return result;
+
+// At this point, for 'n' registers requirement, if Rm+1, Rm+2, Rm+3, ..., Rm+k are
+// available, create the mask only for Rm+1, Rm+2, ..., Rm+(k-n+1) to convey that it
+// is safe to assign any of those registers, but not beyond that.
+#define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                     \
+    regMaskTP selectionStartMask     = (1ULL << regAvailableStartIndex) - 1;                    \
+    regMaskTP selectionEndMask    = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1; \
+    consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);     \
+    overallResult |= availableRegistersMask;
+
+    regMaskTP overallResult          = RBM_NONE;
+    regMaskTP consecutiveResult      = RBM_NONE;
+    uint32_t regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    do
+    {
+        // From LSB, find the first available register (bit `1`)
+        regAvailableStartIndex  = BitOperations::_BitScanForward(currAvailableRegs);
+        regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
+
+        // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
+        regMaskTP maskProcessed = ~(currAvailableRegs | startMask);
+
+        // From regAvailableStart, find the first unavailable register (bit `0`).
+        if (maskProcessed == 0)
+        {
+            regAvailableEndIndex = 64;
+            if ((regAvailableEndIndex - regAvailableStartIndex) >= registersNeeded)
+            {
+                AppendConsecutiveMask(regAvailableStartIndex, regAvailableEndIndex, currAvailableRegs);
+            }
+            break;
+        }
+        else
+        {
+            regAvailableEndIndex = BitOperations::_BitScanForward(maskProcessed);
+        }
+        regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
+
+        // Anything between regAvailableStart and regAvailableEnd is the range of consecutive registers available
+        // If they are equal to or greater than our register requirements, then add all of them to the result.
+        if ((regAvailableEndIndex - regAvailableStartIndex) >= registersNeeded)
+        {
+            AppendConsecutiveMask(regAvailableStartIndex, regAvailableEndIndex, (endMask & ~startMask));
+        }
+        currAvailableRegs &= ~endMask;
+    } while (currAvailableRegs != RBM_NONE);
+
+    if (compiler->opts.OptimizationEnabled())
+    {
+        // One last time, check if subsequent refpositions already have consecutive registers assigned
+        // and if yes, and if one of the register out of consecutiveResult is available for the first
+        // refposition, then just use that. This will avoid unnecessary copies.
+
+        regNumber firstRegNum  = REG_NA;
+        regNumber prevRegNum   = REG_NA;
+        int       foundCount   = 0;
+        regMaskTP foundRegMask = RBM_NONE;
+
+        RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(refPosition);
+        assert(consecutiveRefPosition != nullptr);
+
+        for (unsigned int i = 1; i < registersNeeded; i++)
+        {
+            Interval* interval     = consecutiveRefPosition->getInterval();
+            consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+
+            if (!interval->isActive)
+            {
+                foundRegMask = RBM_NONE;
+                foundCount   = 0;
+                continue;
+            }
+
+            regNumber currRegNum = interval->assignedReg->regNum;
+            if ((prevRegNum == REG_NA) || (prevRegNum == REG_PREV(currRegNum)) ||
+                ((prevRegNum == REG_FP_LAST) && (currRegNum == REG_FP_FIRST)))
+            {
+                foundRegMask |= genRegMask(currRegNum);
+                if (prevRegNum == REG_NA)
+                {
+                    firstRegNum = currRegNum;
+                }
+                prevRegNum = currRegNum;
+                foundCount++;
+                continue;
+            }
+
+            foundRegMask = RBM_NONE;
+            foundCount   = 0;
+            break;
+        }
+
+        if (foundCount != 0)
+        {
+            assert(firstRegNum != REG_NA);
+            regMaskTP remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1) << (firstRegNum - 1);
+
+            if ((overallResult & remainingRegsMask) != RBM_NONE)
+            {
+                // If remaining registers are available, then just set the firstRegister mask
+                consecutiveResult = 1ULL << (firstRegNum - 1);
+            }
+        }
+    }
+
+    return consecutiveResult;
 }
 //------------------------------------------------------------------------
 // BuildNode: Build the RefPositions for a node
