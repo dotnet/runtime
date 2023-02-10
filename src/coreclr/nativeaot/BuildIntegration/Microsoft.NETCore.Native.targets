@@ -208,7 +208,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(RdXmlFile->'--rdxml:%(FullPath)')" />
       <IlcArg Include="@(TrimmerRootDescriptor->'--descriptor:%(FullPath)')" />
       <IlcArg Condition="'$(NativeLib)' != ''" Include="--nativelib" />
-      <IlcArg Condition="'$(CustomNativeMain)' == 'true'" Include="--split-exe-initalization" />
+      <IlcArg Condition="'$(CustomNativeMain)' == 'true'" Include="--splitinit" />
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(RuntimeHostConfigurationOption->'--appcontextswitch:%(Identity)=%(Value)')" />
