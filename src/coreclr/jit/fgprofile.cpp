@@ -859,8 +859,23 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
             }
             break;
 
-            case BBJ_RETURN:
             case BBJ_THROW:
+
+                // Ignore impact of throw blocks on flow,  if we're doing minimal
+                // method profiling, and it appears the method can return without throwing.
+                //
+                // fgReturnCount is provisionally set in fgFindBasicBlocks based on
+                // the raw IL stream prescan.
+                //
+                if (JitConfig.JitMinimalJitProfiling() && (fgReturnCount > 0))
+                {
+                    break;
+                }
+
+                __fallthrough;
+
+            case BBJ_RETURN:
+
             {
                 // Pseudo-edge back to method entry.
                 //
