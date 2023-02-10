@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Strategies;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -33,8 +34,8 @@ namespace Microsoft.Win32.SafeHandles
 
         // Rent the reusable OverlappedValueTaskSource, or create a new one to use if we couldn't get one (which
         // should only happen on first use or if the SafeFileHandle is being used concurrently).
-        internal FileOverlappedValueTaskSource GetOverlappedValueTaskSource() =>
-            Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new FileOverlappedValueTaskSource(this);
+        internal FileOverlappedValueTaskSource GetOverlappedValueTaskSource(OSFileStreamStrategy? strategy = null) =>
+            Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new FileOverlappedValueTaskSource(this, strategy);
 
         protected override bool ReleaseHandle()
         {

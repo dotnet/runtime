@@ -309,7 +309,7 @@ namespace System.IO.Pipes
 
             (OverlappedValueTaskSource? vts, int errorCode) = FileHandleHelper.QueueAsyncReadFile(
                 Interlocked.Exchange(ref _reusableReadValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, _handle!, _threadPoolBinding!),
-                _handle!, buffer, fileOffset: 0, cancellationToken, owner: this);
+                _handle!, buffer, fileOffset: 0, cancellationToken);
 
             if (vts is not null)
             {
@@ -350,7 +350,7 @@ namespace System.IO.Pipes
 
             (OverlappedValueTaskSource? vts, int errorCode) = FileHandleHelper.QueueAsyncWriteFile(
                 Interlocked.Exchange(ref _reusableWriteValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, _handle!, _threadPoolBinding!),
-                _handle!, buffer, fileOffset: 0, cancellationToken, owner: this);
+                _handle!, buffer, fileOffset: 0, cancellationToken);
 
             if (vts is not null)
             {

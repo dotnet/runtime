@@ -198,7 +198,7 @@ namespace System.IO.Strategies
                         // If the operation did not synchronously succeed, it either failed or initiated the asynchronous operation.
                         if (!synchronousSuccess && errorCode != Interop.Errors.ERROR_IO_PENDING)
                         {
-                            if (!FileHandleHelper.IsEndOfFile(errorCode, handle, readAwaitable._position))
+                            if (!FileHandleHelper.IsReadFromEndOfFile(errorCode, handle, readAwaitable._position))
                             {
                                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
                             }
@@ -218,7 +218,7 @@ namespace System.IO.Strategies
                             {
                                 throw new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
                             }
-                            else if (!FileHandleHelper.IsEndOfFile((int)readAwaitable._errorCode, handle, readAwaitable._position))
+                            else if (!FileHandleHelper.IsReadFromEndOfFile((int)readAwaitable._errorCode, handle, readAwaitable._position))
                             {
                                 throw Win32Marshal.GetExceptionForWin32Error((int)readAwaitable._errorCode, handle.Path);
                             }

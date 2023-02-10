@@ -61,7 +61,7 @@ namespace System.IO
                     // "If lpOverlapped is not NULL, then when a synchronous read operation reaches the end of a file,
                     // ReadFile returns FALSE and GetLastError returns ERROR_HANDLE_EOF"
                     Interop.Errors.ERROR_HANDLE_EOF => numBytesRead,
-                    _ when FileHandleHelper.IsEndOfFile(errorCode, handle, fileOffset) => 0,
+                    _ when FileHandleHelper.IsReadFromEndOfFile(errorCode, handle, fileOffset) => 0,
                     _ => throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path)
                 };
             }
@@ -109,7 +109,7 @@ namespace System.IO
                         resetEvent.ReleaseRefCount(overlapped);
                     }
 
-                    if (FileHandleHelper.IsEndOfFile(errorCode, handle, fileOffset))
+                    if (FileHandleHelper.IsReadFromEndOfFile(errorCode, handle, fileOffset))
                     {
                         // EOF on a pipe. Callback will not be called.
                         // We clear the overlapped status bit for this special case (failure
@@ -238,8 +238,8 @@ namespace System.IO
                 handle.EnsureThreadPoolBindingInitialized();
 
                 (OverlappedValueTaskSource? vts, int errorCode) = FileHandleHelper.QueueAsyncReadFile(
-                    handle.GetOverlappedValueTaskSource(),
-                    handle, buffer, fileOffset, cancellationToken, strategy);
+                    handle.GetOverlappedValueTaskSource(strategy),
+                    handle, buffer, fileOffset, cancellationToken);
 
                 if (vts is not null)
                 {
@@ -265,8 +265,8 @@ namespace System.IO
                 handle.EnsureThreadPoolBindingInitialized();
 
                 (OverlappedValueTaskSource? vts, int errorCode) = FileHandleHelper.QueueAsyncWriteFile(
-                    handle.GetOverlappedValueTaskSource(),
-                    handle, buffer, fileOffset, cancellationToken, strategy);
+                    handle.GetOverlappedValueTaskSource(strategy),
+                    handle, buffer, fileOffset, cancellationToken);
 
                 if (vts is not null)
                 {
@@ -472,7 +472,7 @@ namespace System.IO
                         // Register for cancellation now that the operation has been initiated.
                         vts.RegisterForCancellation(cancellationToken);
                     }
-                    else if (FileHandleHelper.IsEndOfFile(errorCode, handle, fileOffset))
+                    else if (FileHandleHelper.IsReadFromEndOfFile(errorCode, handle, fileOffset))
                     {
                         // EOF on a pipe. Callback will not be called.
                         // We clear the overlapped status bit for this special case (failure

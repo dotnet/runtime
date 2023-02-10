@@ -12,7 +12,7 @@ namespace System.IO.Pipes
     {
         internal const string AnonymousPipeName = "anonymous";
 
-        private protected SafePipeHandle? _handle;
+        private SafePipeHandle? _handle;
         private bool _canRead;
         private bool _canWrite;
         private bool _isAsync;

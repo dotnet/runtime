@@ -11,20 +11,20 @@ using System.Threading.Tasks.Sources;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    /// <summary>Reusable IValueTaskSource for RandomAccess async operations based on Overlapped I/O.</summary>
+    /// <summary>Reusable IValueTaskSource for Overlapped I/O.</summary>
     internal abstract unsafe class OverlappedValueTaskSource : IValueTaskSource<int>, IValueTaskSource
     {
-        internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
+        private static readonly IOCompletionCallback s_ioCallback = IOCallback;
 
-        private readonly PreAllocatedOverlapped _preallocatedOverlapped;
-        internal readonly SafeHandle _fileHandle;
+        private readonly PreAllocatedOverlapped _preAllocatedOverlapped;
+        private readonly SafeHandle _fileHandle;
         private readonly ThreadPoolBoundHandle _threadPoolBinding;
         private readonly bool _canSeek;
-        protected Stream? _owner;
+
         internal MemoryHandle _memoryHandle;
         protected int _bufferSize;
         protected bool _isRead;
-        internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
+        private ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
         private NativeOverlapped* _overlapped;
         private CancellationTokenRegistration _cancellationRegistration;
         /// <summary>
@@ -40,27 +40,26 @@ namespace Microsoft.Win32.SafeHandles
             _threadPoolBinding = threadPoolBinding;
             _canSeek = canSeek;
             _source.RunContinuationsAsynchronously = true;
-            _preallocatedOverlapped = PreAllocatedOverlapped.UnsafeCreate(s_ioCallback, this, null);
+            _preAllocatedOverlapped = PreAllocatedOverlapped.UnsafeCreate(s_ioCallback, this, null);
         }
 
         internal void Dispose()
         {
             ReleaseResources();
-            _preallocatedOverlapped.Dispose();
+            _preAllocatedOverlapped.Dispose();
         }
 
         protected abstract bool TryToReuse();
 
-        internal abstract void Handle(Stream owner, uint errorCode, uint byteCount);
+        internal abstract void UpdateOwnerState(uint errorCode, uint byteCount);
 
-        internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, bool isRead, Stream? owner = null)
+        internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, bool isRead)
         {
             _result = 0;
-            _owner = owner;
             _bufferSize = memory.Length;
             _isRead = isRead;
             _memoryHandle = memory.Pin();
-            _overlapped = _threadPoolBinding.AllocateNativeOverlapped(_preallocatedOverlapped);
+            _overlapped = _threadPoolBinding.AllocateNativeOverlapped(_preAllocatedOverlapped);
             if (_canSeek)
             {
                 _overlapped->OffsetLow = (int)fileOffset;
@@ -85,7 +84,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (!TryToReuse())
                 {
-                    _preallocatedOverlapped.Dispose();
+                    _preAllocatedOverlapped.Dispose();
                 }
             }
         }
@@ -124,8 +123,6 @@ namespace Microsoft.Win32.SafeHandles
 
         private void ReleaseResources()
         {
-            _owner = null;
-
             // Ensure that any cancellation callback has either completed or will never run,
             // so that we don't try to access an overlapped for this operation after it's already
             // been freed.
@@ -179,23 +176,19 @@ namespace Microsoft.Win32.SafeHandles
 
         internal void Complete(uint errorCode, uint numBytes)
         {
-            Stream? owner = _owner;
-            ReleaseResources(); // sets _owner to null
+            ReleaseResources();
 
-            if (owner is not null)
-            {
-                Handle(owner, errorCode, numBytes);
-            }
+            UpdateOwnerState(errorCode, numBytes);
 
             switch (errorCode)
             {
                 case Interop.Errors.ERROR_SUCCESS:
                 case Interop.Errors.ERROR_PIPE_CONNECTED: // special case for when the client has already connected (used only by ConnectionValueTaskSource)
-                case Interop.Errors.ERROR_BROKEN_PIPE when _isRead: // write to broken pipe should throw, read return 0
+                case Interop.Errors.ERROR_BROKEN_PIPE when _isRead: // write to broken pipe should throw, read should return 0
                 case Interop.Errors.ERROR_NO_DATA when _isRead:
-                case Interop.Errors.ERROR_PIPE_NOT_CONNECTED when _isRead: // write to disconnected pipe should throw, read return 0
-                case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
-                case Interop.Errors.ERROR_MORE_DATA: // the buffer was not big enough to consume all available data
+                case Interop.Errors.ERROR_PIPE_NOT_CONNECTED when _isRead: // write to disconnected pipe should throw, read should return 0
+                case Interop.Errors.ERROR_HANDLE_EOF when _isRead: // read at end of file
+                case Interop.Errors.ERROR_MORE_DATA when _isRead: // the buffer was not big enough to consume all available data
                     // Success
                     _source.SetResult((int)numBytes);
                     break;

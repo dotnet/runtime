@@ -11,13 +11,12 @@ namespace System.IO
     internal static class FileHandleHelper
     {
         internal static unsafe (OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(
-            OverlappedValueTaskSource vts, SafeHandle handle, Memory<byte> buffer, long fileOffset,
-            CancellationToken cancellationToken, Stream? owner)
+            OverlappedValueTaskSource vts, SafeHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
         {
             int errorCode = Interop.Errors.ERROR_SUCCESS;
             try
             {
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, isRead: true, owner);
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, isRead: true);
                 Debug.Assert(vts._memoryHandle.Pointer != null);
 
                 // Queue an async ReadFile operation.
@@ -32,7 +31,7 @@ namespace System.IO
                         // Register for cancellation now that the operation has been initiated.
                         vts.RegisterForCancellation(cancellationToken);
                     }
-                    else if (IsEndOfFile(errorCode, handle, fileOffset))
+                    else if (IsReadFromEndOfFile(errorCode, handle, fileOffset))
                     {
                         // EOF on a pipe. Callback will not be called.
                         // We clear the overlapped status bit for this special case (failure
@@ -58,10 +57,7 @@ namespace System.IO
             {
                 if (errorCode != Interop.Errors.ERROR_IO_PENDING && errorCode != Interop.Errors.ERROR_SUCCESS)
                 {
-                    if (owner is not null)
-                    {
-                        vts.Handle(owner, (uint)errorCode, byteCount: 0);
-                    }
+                    vts.UpdateOwnerState((uint)errorCode, byteCount: 0);
                 }
             }
 
@@ -71,13 +67,12 @@ namespace System.IO
         }
 
         internal static unsafe (OverlappedValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(
-            OverlappedValueTaskSource vts, SafeHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
-            CancellationToken cancellationToken, Stream? owner)
+            OverlappedValueTaskSource vts, SafeHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
         {
             int errorCode = Interop.Errors.ERROR_SUCCESS;
             try
             {
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, isRead: false, owner);
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, isRead: false);
                 Debug.Assert(vts._memoryHandle.Pointer != null);
 
                 // Queue an async WriteFile operation.
@@ -108,10 +103,7 @@ namespace System.IO
             {
                 if (errorCode != Interop.Errors.ERROR_IO_PENDING && errorCode != Interop.Errors.ERROR_SUCCESS)
                 {
-                    if (owner is not null)
-                    {
-                        vts.Handle(owner, (uint)errorCode, byteCount: 0);
-                    }
+                    vts.UpdateOwnerState((uint)errorCode, byteCount: 0);
                 }
             }
 
@@ -149,14 +141,17 @@ namespace System.IO
             return errorCode;
         }
 
-        internal static bool IsEndOfFile(int errorCode, SafeHandle handle, long fileOffset)
+        /// <summary>
+        /// It must not be used for write operations, as handling disconnected and broken pipe is different for reads and writes.
+        /// </summary>
+        internal static bool IsReadFromEndOfFile(int errorCode, SafeHandle handle, long fileOffset)
         {
             switch (errorCode)
             {
-                case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
+                case Interop.Errors.ERROR_HANDLE_EOF: // EOF for regular files
                 case Interop.Errors.ERROR_BROKEN_PIPE: // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
-                case Interop.Errors.ERROR_PIPE_NOT_CONNECTED: // Named pipe server has disconnected, return 0 to match NamedPipeClientStream behaviour
-#if SYSTEM_PRIVATE_CORELIB
+                case Interop.Errors.ERROR_PIPE_NOT_CONNECTED: // Named pipe server has disconnected
+#if SYSTEM_PRIVATE_CORELIB // not the case for System.IO.Pipes which uses only non-seekable files
                 case Interop.Errors.ERROR_INVALID_PARAMETER when handle is SafeFileHandle sfh && IsEndOfFileForNoBuffering(sfh, fileOffset):
 #endif
                     return true;

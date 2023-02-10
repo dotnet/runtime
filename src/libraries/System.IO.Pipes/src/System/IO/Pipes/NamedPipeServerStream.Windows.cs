@@ -305,11 +305,11 @@ namespace System.IO.Pipes
             CheckConnectOperationsServerWithHandle();
             Debug.Assert(IsAsync);
 
-            ConnectionValueTaskSource? vts = Interlocked.Exchange(ref _reusableConnectionValueTaskSource, null)
-                ?? new ConnectionValueTaskSource(this, _handle!, _threadPoolBinding!);
+            ConnectionValueTaskSource vts = Interlocked.Exchange(ref _reusableConnectionValueTaskSource, null)
+                ?? new ConnectionValueTaskSource(this, InternalHandle!, _threadPoolBinding!);
             try
             {
-                NativeOverlapped* overlapped = vts.PrepareForOperation(memory: default, fileOffset: 0, isRead: false, owner: this);
+                NativeOverlapped* overlapped = vts.PrepareForOperation(memory: default, fileOffset: 0, isRead: false);
                 if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, overlapped))
                 {
                     int errorCode = Marshal.GetLastPInvokeError();

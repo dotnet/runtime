@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -21,11 +20,8 @@ namespace System.IO.Pipes
 
             protected override bool TryToReuse() => _pipeStream.TryToReuse(_isRead, this);
 
-            internal override void Handle(Stream owner, uint errorCode, uint byteCount)
+            internal override void UpdateOwnerState(uint errorCode, uint byteCount)
             {
-                Debug.Assert(errorCode is not Interop.Errors.ERROR_PIPE_CONNECTED);
-                Debug.Assert(ReferenceEquals(_pipeStream, owner));
-
                 bool messageCompletion = true;
 
                 switch (errorCode)
@@ -63,10 +59,8 @@ namespace System.IO.Pipes
 
             protected override bool TryToReuse() => _serverStream.TryToReuse(this);
 
-            internal override void Handle(Stream owner, uint errorCode, uint byteCount)
+            internal override void UpdateOwnerState(uint errorCode, uint byteCount)
             {
-                Debug.Assert(ReferenceEquals(_serverStream, owner));
-
                 switch (errorCode)
                 {
                     // The handle was closed (when the operation was awaiting for completion)
