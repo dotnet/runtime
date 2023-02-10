@@ -256,7 +256,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         // Open the stream writer for the temp log.
         builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.templog.xml""))");
         builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
-        builder.AppendLine("statsCsvSw.WriteLine($\"{TestCount.Count},0,0,0\");");
+        builder.AppendLine($"statsCsvSw.WriteLine(\"{testInfos.Length},0,0,0\");");
 
         if (testInfos.Length > 0)
         {
@@ -277,7 +277,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                                                    + "XUnitWrapperLibrary.TestOutputRecorder outputRecorder, "
                                                    + "System.Diagnostics.Stopwatch stopwatch, "
                                                    + "System.IO.StreamWriter tempLogSw, "
-                                                   + "System.IO.StreamWriter statsCsvSw){{");
+                                                   + "System.IO.StreamWriter statsCsvSw){");
 
                     builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch, tempLogSw, statsCsvSw);");
                     testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
