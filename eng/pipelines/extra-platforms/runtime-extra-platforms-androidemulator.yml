@@ -44,13 +44,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-      extraVariablesTemplates:
-        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-          forwardedParameters:
-            - osGroup
-            - osSubgroup
-            - runtimeFlavor
-            - runtimeVariant
+      extraStepsTemplateHasVariables: true
 
 #
 # Build the whole product using Mono for Android and run runtime tests with interpreter
@@ -87,13 +81,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-      extraVariablesTemplates:
-        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-          forwardedParameters:
-            - osGroup
-            - osSubgroup
-            - runtimeFlavor
-            - runtimeVariant
+      extraStepsTemplateHasVariables: true
 
 #
 # Android emulators

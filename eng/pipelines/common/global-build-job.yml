@@ -29,7 +29,7 @@ parameters:
   testResultsFormat: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
-  extraVariablesTemplates: []
+  extraStepsTemplateHasVariables: false
   enableRichCodeNavigation: false
   richCodeNavigationLanguage: 'csharp'
   richCodeNavigationEnvironment: 'production'
@@ -135,13 +135,24 @@ jobs:
         - name: _monoAotCrossCompileArg
           value: 'cross'
 
-      - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
-        - template: ${{ variableTemplate.template }}
-          parameters:
-            ${{ each parameter in variableTemplate.forwardedParameters }}:
-              ${{ parameter }}: ${{ parameters[parameter] }}
-            ${{ if ne(variableTemplate.parameters, '') }}:
-              ${{ insert }}: ${{ variableTemplate.parameters }}
+    # If intended to send extra steps after regular build add variables for the steps here.
+    - ${{ if and(ne(parameters.extraStepsTemplate, ''), eq(parameters.extraStepsTemplateHasVariables, true)) }}:
+      - template: ${{ parameters.extraStepsTemplate }}
+        parameters:
+          templateKind: 'variables'
+          osGroup: ${{ parameters.osGroup }}
+          osSubgroup: ${{ parameters.osSubgroup }}
+          archType: ${{ parameters.archType }}
+          buildConfig: ${{ parameters.buildConfig }}
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          runtimeVariant: ${{ parameters.runtimeVariant }}
+          helixQueues: ${{ parameters.helixQueues }}
+          targetRid: ${{ parameters.targetRid }}
+          nameSuffix: ${{ parameters.nameSuffix }}
+          platform: ${{ parameters.platform }}
+          pgoType: ${{ parameters.pgoType }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+          ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
@@ -214,6 +225,7 @@ jobs:
     - ${{ if ne(parameters.extraStepsTemplate, '') }}:
       - template: ${{ parameters.extraStepsTemplate }}
         parameters:
+          templateKind: 'steps'
           osGroup: ${{ parameters.osGroup }}
           osSubgroup: ${{ parameters.osSubgroup }}
           archType: ${{ parameters.archType }}
