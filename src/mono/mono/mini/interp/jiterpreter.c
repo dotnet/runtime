@@ -121,6 +121,26 @@ mono_jiterp_encode_leb52 (unsigned char * destination, double doubleValue, int v
 	}
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_encode_leb_signed_boundary (unsigned char * destination, int bits, int sign) {
+	if (!destination)
+		return 0;
+
+	int64_t value;
+	switch (bits) {
+		case 32:
+			value = sign >= 0 ? INT_MAX : INT_MIN;
+			break;
+		case 64:
+			value = sign >= 0 ? INT64_MAX : INT64_MIN;
+			break;
+		default:
+			return 0;
+	}
+
+	return mono_jiterp_encode_leb64_ref(destination, &value, TRUE);
+}
+
 // Many of the following functions implement various opcodes or provide support for opcodes
 //  so that jiterpreter traces don't have to inline dozens of wasm instructions worth of
 //  complex logic - these are designed to match interp.c

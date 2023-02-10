@@ -630,8 +630,9 @@ function generate_wasm (
             "math_lhs32": WasmValtype.i32,
             "math_rhs32": WasmValtype.i32,
             "math_lhs64": WasmValtype.i64,
-            "math_rhs64": WasmValtype.i64
-            // "tempi64": WasmValtype.i64
+            "math_rhs64": WasmValtype.i64,
+            "temp_f32": WasmValtype.f32,
+            "temp_f64": WasmValtype.f64,
         });
 
         if (emitPadding) {

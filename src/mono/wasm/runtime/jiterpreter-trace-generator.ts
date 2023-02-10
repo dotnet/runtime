@@ -648,8 +648,6 @@ export function generate_wasm_body (
             // Generating code for these is kind of complex due to the intersection of JS and int64,
             //  and it would bloat the implementation so we handle them all in C instead and match
             //  the interp implementation. Most of these are rare in runtime tests or browser bench
-            // The non-OVF ones SHOULD be simple, but wasm doesn't specify them
-            //  for nan/inf, and v8 helpfully chooses to throw. So we need to implement them in C.
             case MintOpcode.MINT_CONV_OVF_I4_I8:
             case MintOpcode.MINT_CONV_OVF_U4_I8:
             case MintOpcode.MINT_CONV_OVF_I4_U8:
@@ -658,10 +656,6 @@ export function generate_wasm_body (
             case MintOpcode.MINT_CONV_OVF_I4_R4:
             case MintOpcode.MINT_CONV_OVF_I8_R4:
             case MintOpcode.MINT_CONV_OVF_U4_I4:
-            case MintOpcode.MINT_CONV_I4_R4:
-            case MintOpcode.MINT_CONV_I4_R8:
-            case MintOpcode.MINT_CONV_I8_R4:
-            case MintOpcode.MINT_CONV_I8_R8:
                 builder.block();
                 // dest, src
                 append_ldloca(builder, getArgU16(ip, 1), 8, true);
@@ -674,6 +668,87 @@ export function generate_wasm_body (
                 append_bailout(builder, ip, BailoutReason.Overflow); // could be underflow but awkward to tell
                 builder.endBlock();
                 break;
+
+            /*
+             *  The native conversion opcodes for these are not specified for nan/inf, and v8
+             *  chooses to throw, so we have to do some tricks to identify non-finite values
+             *  and substitute INTnn_MIN, like clang would.
+             *  This attempts to reproduce what clang does in -O3 with no special flags set:
+             *
+             *  f64 -> i64
+             *
+             *  block
+             *  local.get       0
+             *  f64.abs
+             *  f64.const       0x1p63
+             *  f64.lt
+             *  i32.eqz
+             *  br_if           0                               # 0: down to label0
+             *  local.get       0
+             *  i64.trunc_f64_s
+             *  return
+             *  end_block                               # label0:
+             *  i64.const       -9223372036854775808
+             *
+             *  f32 -> i32
+             *
+             *  block
+             *  local.get       0
+             *  f32.abs
+             *  f32.const       0x1p31
+             *  f32.lt
+             *  i32.eqz
+             *  br_if           0                               # 0: down to label3
+             *  local.get       0
+             *  i32.trunc_f32_s
+             *  return
+             *  end_block                               # label3:
+             *  i32.const       -2147483648
+             */
+            case MintOpcode.MINT_CONV_I4_R4:
+            case MintOpcode.MINT_CONV_I4_R8:
+            case MintOpcode.MINT_CONV_I8_R4:
+            case MintOpcode.MINT_CONV_I8_R8: {
+                const isF32 = (opcode === MintOpcode.MINT_CONV_I4_R4) ||
+                        (opcode === MintOpcode.MINT_CONV_I8_R4),
+                    isI64 = (opcode === MintOpcode.MINT_CONV_I8_R4) ||
+                        (opcode === MintOpcode.MINT_CONV_I8_R8),
+                    limit = isI64
+                        ? 9223372036854775807 // this will round up to 0x1p63
+                        : 2147483648, // this is 0x1p31 exactly
+                    tempLocal = isF32 ? "temp_f32" : "temp_f64";
+
+                // Pre-load locals for the result store at the end
+                builder.local("pLocals");
+
+                // Load src
+                append_ldloc(builder, getArgU16(ip, 2), isF32 ? WasmOpcode.f32_load : WasmOpcode.f64_load);
+                builder.local(tempLocal, WasmOpcode.tee_local);
+
+                // Detect whether the value is within the representable range for the target type
+                builder.appendU8(isF32 ? WasmOpcode.f32_abs : WasmOpcode.f64_abs);
+                builder.appendU8(isF32 ? WasmOpcode.f32_const : WasmOpcode.f64_const);
+                if (isF32)
+                    builder.appendF32(limit);
+                else
+                    builder.appendF64(limit);
+                builder.appendU8(isF32 ? WasmOpcode.f32_lt : WasmOpcode.f64_lt);
+
+                // Select value via an if block that returns the result
+                builder.block(isI64 ? WasmValtype.i64 : WasmValtype.i32, WasmOpcode.if_);
+                // Value in range so truncate it to the appropriate type
+                builder.local(tempLocal);
+                builder.appendU8(floatToIntTable[opcode]);
+                builder.appendU8(WasmOpcode.else_);
+                // Value out of range so load the appropriate boundary value
+                builder.appendU8(isI64 ? WasmOpcode.i64_const : WasmOpcode.i32_const);
+                builder.appendBoundaryValue(isI64 ? 64 : 32, -1);
+                builder.endBlock();
+
+                append_stloc_tail(builder, getArgU16(ip, 1), isI64 ? WasmOpcode.i64_store : WasmOpcode.i32_store);
+
+                break;
+            }
 
             case MintOpcode.MINT_ADD_MUL_I4_IMM:
             case MintOpcode.MINT_ADD_MUL_I8_IMM: {
@@ -1440,6 +1515,13 @@ type OpRec3 = [WasmOpcode, WasmOpcode, WasmOpcode];
 // operator, lhsLoadOperator, rhsLoadOperator, storeOperator
 type OpRec4 = [WasmOpcode, WasmOpcode, WasmOpcode, WasmOpcode];
 
+const floatToIntTable : { [opcode: number]: WasmOpcode } = {
+    [MintOpcode.MINT_CONV_I4_R4]: WasmOpcode.i32_trunc_s_f32,
+    [MintOpcode.MINT_CONV_I8_R4]: WasmOpcode.i64_trunc_s_f32,
+    [MintOpcode.MINT_CONV_I4_R8]: WasmOpcode.i32_trunc_s_f64,
+    [MintOpcode.MINT_CONV_I8_R8]: WasmOpcode.i64_trunc_s_f64,
+};
+
 // thanks for making this as complex as possible, typescript
 const unopTable : { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_CEQ0_I4]:    [WasmOpcode.i32_eqz,   WasmOpcode.i32_load, WasmOpcode.i32_store],
@@ -1467,15 +1549,6 @@ const unopTable : { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_CONV_R8_I8]: [WasmOpcode.f64_convert_s_i64, WasmOpcode.i64_load, WasmOpcode.f64_store],
     [MintOpcode.MINT_CONV_R8_R4]: [WasmOpcode.f64_promote_f32,   WasmOpcode.f32_load, WasmOpcode.f64_store],
     [MintOpcode.MINT_CONV_R4_R8]: [WasmOpcode.f32_demote_f64,    WasmOpcode.f64_load, WasmOpcode.f32_store],
-
-    // The behavior of these opcodes is unspecified for nan/inf.
-    // And v8 interprets 'unspecified' as 'throw a runtime error'
-    /*
-    [MintOpcode.MINT_CONV_I4_R4]: [WasmOpcode.i32_trunc_s_f32,   WasmOpcode.f32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CONV_I8_R4]: [WasmOpcode.i64_trunc_s_f32,   WasmOpcode.f32_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_CONV_I4_R8]: [WasmOpcode.i32_trunc_s_f64,   WasmOpcode.f64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CONV_I8_R8]: [WasmOpcode.i64_trunc_s_f64,   WasmOpcode.f64_load, WasmOpcode.i64_store],
-    */
 
     [MintOpcode.MINT_CONV_I8_I4]: [WasmOpcode.nop,               WasmOpcode.i64_load32_s, WasmOpcode.i64_store],
     [MintOpcode.MINT_CONV_I8_U4]: [WasmOpcode.nop,               WasmOpcode.i64_load32_u, WasmOpcode.i64_store],
