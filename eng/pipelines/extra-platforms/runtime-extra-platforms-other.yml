@@ -290,11 +290,6 @@ jobs:
       testRunNamePrefixSuffix: Mono_Release
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-          forwardedParameters:
-            - osGroup
-            - osSubgroup
-            - runtimeFlavor
-            - runtimeVariant
 
 #
 # Mono CoreCLR runtime Test executions using live libraries in interpreter mode

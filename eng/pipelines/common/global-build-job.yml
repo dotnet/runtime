@@ -138,8 +138,21 @@ jobs:
       - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
         - template: ${{ variableTemplate.template }}
           parameters:
-            ${{ each parameter in variableTemplate.forwardedParameters }}:
-              ${{ parameter }}: ${{ parameters[parameter] }}
+            osGroup: ${{ parameters.osGroup }}
+            osSubgroup: ${{ parameters.osSubgroup }}
+            archType: ${{ parameters.archType }}
+            buildConfig: ${{ parameters.buildConfig }}
+            runtimeFlavor: ${{ parameters.runtimeFlavor }}
+            runtimeVariant: ${{ parameters.runtimeVariant }}
+            helixQueues: ${{ parameters.helixQueues }}
+            targetRid: ${{ parameters.targetRid }}
+            nameSuffix: ${{ parameters.nameSuffix }}
+            platform: ${{ parameters.platform }}
+            pgoType: ${{ parameters.pgoType }}
+            shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+            ${{ if ne(variableTemplate.forwardedParameters, '') }}:
+              ${{ each parameter in variableTemplate.forwardedParameters }}:
+                ${{ parameter }}: ${{ parameters[parameter] }}
             ${{ if ne(variableTemplate.parameters, '') }}:
               ${{ insert }}: ${{ variableTemplate.parameters }}
 

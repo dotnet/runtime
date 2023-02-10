@@ -217,11 +217,6 @@ extends:
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-                forwardedParameters:
-                  - osGroup
-                  - osSubgroup
-                  - runtimeFlavor
-                  - runtimeVariant
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -256,11 +251,6 @@ extends:
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-                forwardedParameters:
-                  - osGroup
-                  - osSubgroup
-                  - runtimeFlavor
-                  - runtimeVariant
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -297,11 +287,6 @@ extends:
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-                forwardedParameters:
-                  - osGroup
-                  - osSubgroup
-                  - runtimeFlavor
-                  - runtimeVariant
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1163,11 +1148,6 @@ extends:
             testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-                forwardedParameters:
-                  - osGroup
-                  - osSubgroup
-                  - runtimeFlavor
-                  - runtimeVariant
 
       #
       # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
@@ -1203,11 +1183,6 @@ extends:
             testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-                forwardedParameters:
-                  - osGroup
-                  - osSubgroup
-                  - runtimeFlavor
-                  - runtimeVariant
       #
       # Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
       # Only when Mono is changed
@@ -1245,11 +1220,6 @@ extends:
             testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-                forwardedParameters:
-                  - osGroup
-                  - osSubgroup
-                  - runtimeFlavor
-                  - runtimeVariant
 
       #
       # Libraries Release Test Execution against a release mono runtime.

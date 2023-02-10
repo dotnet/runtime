@@ -46,11 +46,6 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-          forwardedParameters:
-            - osGroup
-            - osSubgroup
-            - runtimeFlavor
-            - runtimeVariant
 
 #
 # Build the whole product using Mono for Android and run runtime tests with interpreter
@@ -89,11 +84,6 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-          forwardedParameters:
-            - osGroup
-            - osSubgroup
-            - runtimeFlavor
-            - runtimeVariant
 
 #
 # Android emulators
