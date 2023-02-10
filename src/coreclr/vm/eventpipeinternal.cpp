@@ -60,7 +60,7 @@ void QCALLTYPE EventPipeInternal::Disable(UINT64 sessionID)
     END_QCALL;
 }
 
-bool QCALLTYPE EventPipeInternal::GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo)
+BOOL QCALLTYPE EventPipeInternal::GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo)
 {
     QCALL_CONTRACT;
 
@@ -229,7 +229,7 @@ void QCALLTYPE EventPipeInternal::WriteEventData(
     END_QCALL;
 }
 
-bool QCALLTYPE EventPipeInternal::GetNextEvent(UINT64 sessionID, EventPipeEventInstanceData *pInstance)
+BOOL QCALLTYPE EventPipeInternal::GetNextEvent(UINT64 sessionID, EventPipeEventInstanceData *pInstance)
 {
     QCALL_CONTRACT;
 

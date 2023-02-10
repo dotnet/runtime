@@ -3,6 +3,9 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
+    <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ServicingVersion>0</ServicingVersion>
     <PackageDescription>Provides support for managing access and audit control lists for Microsoft.Win32.RegistryKey.
 
 Commonly Used Types:

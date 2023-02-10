@@ -3,6 +3,8 @@
 
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Text;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.Http.Tests
@@ -244,6 +246,29 @@ namespace System.Net.Http.Tests
             Assert.Equal(value, v1);
             Assert.Equal(value, v2);
             Assert.NotSame(v1, v2);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("Access-Control-Allow-Credentials", "true")]
+        [InlineData("Cache-Control", "no-cache")]
+        [InlineData("Content-Type", "text/plain")]
+        public void GetKnownHeaderValue_RespectsAppContextIgnoreCaseSwitch(string name, string value)
+        {
+            RemoteExecutor.Invoke(static (name, value) =>
+            {
+                AppContext.SetSwitch("System.Net.Http.IgnoreCaseForKnownHeaderValues", false);
+
+                KnownHeader knownHeader = KnownHeaders.TryGetKnownHeader(name);
+                Assert.NotNull(knownHeader);
+
+                string sameCase = knownHeader.Descriptor.GetHeaderValue(Encoding.ASCII.GetBytes(value), valueEncoding: null);
+                Assert.NotNull(sameCase);
+                Assert.Equal(value, sameCase);
+
+                string differentCase = knownHeader.Descriptor.GetHeaderValue(Encoding.ASCII.GetBytes(value.ToUpperInvariant()), valueEncoding: null);
+                Assert.NotNull(differentCase);
+                Assert.NotEqual(value, differentCase);
+            }, name, value).Dispose();
         }
     }
 }

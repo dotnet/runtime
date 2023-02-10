@@ -4,9 +4,11 @@
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1-OSX;netcoreapp3.1-Linux;netcoreapp3.1;netstandard2.0</TargetFrameworks>
     <IsPackable>true</IsPackable>
+    <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
-    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides the methods defined in the Lightweight Directory Access Protocol (LDAP) version 3 (V3) and Directory Services Markup Language (DSML) version 2.0 (V2) standards.</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
@@ -117,12 +118,17 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             Registration = handle;
         }
 
-        internal static MsQuicApi Api { get; } = null!;
+        private static readonly delegate* unmanaged[Cdecl]<uint, NativeApi**, uint> MsQuicOpenVersion;
+        private static readonly delegate* unmanaged[Cdecl]<NativeApi*, void> MsQuicClose;
+
+        private static readonly Lazy<MsQuicApi> s_api = new Lazy<MsQuicApi>(AllocateMsQuicApi);
+        internal static MsQuicApi Api => s_api.Value;
 
         internal static bool IsQuicSupported { get; }
 
         private const int MsQuicVersion = 1;
 
+#pragma warning disable CA1810 // Initialize all static fields in 'MsQuicApi' when those fields are declared and remove the explicit static constructor
         static MsQuicApi()
         {
             if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
@@ -135,30 +141,59 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 return;
             }
 
-            if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle))
+            if (!NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle))
             {
-                try
-                {
-                    if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
-                    {
-                        delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint> msQuicOpenVersion =
-                            (delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint>)msQuicOpenVersionAddress;
-                        uint status = msQuicOpenVersion(MsQuicVersion, out NativeApi* vtable);
-                        if (MsQuicStatusHelper.SuccessfulStatusCode(status))
-                        {
-                            IsQuicSupported = true;
-                            Api = new MsQuicApi(vtable);
-                        }
-                    }
-                }
-                finally
-                {
-                    if (!IsQuicSupported)
-                    {
-                        NativeLibrary.Free(msQuicHandle);
-                    }
-                }
+                // MsQuic library not loaded
+                return;
             }
+
+            MsQuicOpenVersion = (delegate* unmanaged[Cdecl]<uint, NativeApi**, uint>)NativeLibrary.GetExport(msQuicHandle, nameof(MsQuicOpenVersion));
+            MsQuicClose = (delegate* unmanaged[Cdecl]<NativeApi*, void>)NativeLibrary.GetExport(msQuicHandle, nameof(MsQuicClose));
+
+            if (!TryOpenMsQuic(out NativeApi* apiTable, out _))
+            {
+                // Different version of the library.
+                return;
+            }
+
+            IsQuicSupported = true;
+
+            // Gracefully close the API table to free resources. The API table will be allocated lazily again if needed
+            MsQuicClose(apiTable);
+        }
+#pragma warning restore CA1810
+
+        private static MsQuicApi AllocateMsQuicApi()
+        {
+            Debug.Assert(IsQuicSupported);
+
+            if (!TryOpenMsQuic(out NativeApi* apiTable, out uint openStatus))
+            {
+                QuicExceptionHelpers.ThrowIfFailed(openStatus);
+            }
+
+            return new MsQuicApi(apiTable);
+        }
+
+        private static bool TryOpenMsQuic(out NativeApi* apiTable, out uint openStatus)
+        {
+            Debug.Assert(MsQuicOpenVersion != null);
+
+            NativeApi* table = null;
+            openStatus = MsQuicOpenVersion((uint)MsQuicVersion, &table);
+            if (!MsQuicStatusHelper.SuccessfulStatusCode(openStatus))
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(null, $"MsQuicOpenVersion(version: {MsQuicVersion}) returned {MsQuicStatusCodes.GetError(openStatus)} status code.");
+                }
+
+                apiTable = null;
+                return false;
+            }
+
+            apiTable = table;
+            return true;
         }
 
         private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,

@@ -3,6 +3,9 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.1</TargetFrameworks>
     <SetIsTrimmable>false</SetIsTrimmable>
     <IsPackable>true</IsPackable>
+    <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ServicingVersion>0</ServicingVersion>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
     <PackageDescription>This namespace provides classes that constitute the core of the Managed Extensibility Framework, or MEF.
