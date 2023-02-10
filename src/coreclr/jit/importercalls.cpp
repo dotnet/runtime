@@ -2601,7 +2601,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
     // in this case unlike mustExpand.
     bool betterToExpand = mustExpand;
-    if (!mustExpand && opts.OptimizationEnabled(OPT_Lightweight))
+    // NOTE: MinOpts() currently is always true for Tier0 so we check explicit flags instead
+    // to be fixed in https://github.com/dotnet/runtime/pull/77465
+    if (!mustExpand && !opts.compDbgCode && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
     {
         switch (ni)
         {
@@ -2611,9 +2613,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             // This one is just `return true/false`
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
 
-            // This is faster to expand than emitting get_Length call
+            // Simple cases
+            case NI_System_String_get_Chars:
             case NI_System_String_get_Length:
-
+            case NI_System_Span_get_Item:
+            case NI_System_Span_get_Length:
+            case NI_System_ReadOnlySpan_get_Item:
+            case NI_System_ReadOnlySpan_get_Length:
                 betterToExpand = true;
                 break;
 
