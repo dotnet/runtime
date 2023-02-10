@@ -326,7 +326,7 @@ namespace
         HMODULE user32 = ::LoadLibraryExW(L"user32.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (user32 != nullptr)
         {
-            typedef DPI_AWARENESS_CONTEXT(WINAPI* set_thread_dpi)(DPI_AWARENESS_CONTEXT context);
+            using set_thread_dpi = DPI_AWARENESS_CONTEXT(WINAPI*)(DPI_AWARENESS_CONTEXT context);
             set_thread_dpi set_thread_dpi_func = (set_thread_dpi)::GetProcAddress(user32, "SetThreadDpiAwarenessContext");
 
             // Since this is only for errors shown when the process is about to exit, we
