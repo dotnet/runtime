@@ -10,7 +10,7 @@ using Mono.Linker.Dataflow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial struct HandleCallAction
+	internal partial struct HandleCallAction
 	{
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 

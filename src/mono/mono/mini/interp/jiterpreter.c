@@ -700,6 +700,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_LDTSFLDA:
 		case MINT_SAFEPOINT:
 		case MINT_INTRINS_GET_HASHCODE:
+		case MINT_INTRINS_TRY_GET_HASHCODE:
 		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
 		case MINT_INTRINS_ENUM_HASFLAG:
 		case MINT_ADD_MUL_I4_IMM:
@@ -1071,6 +1072,14 @@ mono_jiterp_get_hashcode (MonoObject ** ppObj)
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_try_get_hashcode (MonoObject ** ppObj)
+{
+	MonoObject *obj = *ppObj;
+	g_assert (obj);
+	return mono_object_try_get_hash_internal (obj);
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_get_signature_has_this (MonoMethodSignature *sig)
 {
 	return sig->hasthis;
@@ -1125,6 +1134,23 @@ mono_jiterp_get_array_rank (gint32 *dest, MonoObject **src)
 	}
 
 	*dest = m_class_get_rank (mono_object_class (*src));
+	return 1;
+}
+
+// Returns 1 on success so that the trace can do br_if to bypass its bailout
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_set_object_field (
+	uint8_t *locals, guint32 fieldOffsetBytes,
+	guint32 targetLocalOffsetBytes, guint32 sourceLocalOffsetBytes
+) {
+	MonoObject * targetObject = *(MonoObject **)(locals + targetLocalOffsetBytes);
+	if (!targetObject)
+		return 0;
+	MonoObject ** target = (MonoObject **)(((uint8_t *)targetObject) + fieldOffsetBytes);
+	mono_gc_wbarrier_set_field_internal (
+		targetObject, target,
+		*(MonoObject **)(locals + sourceLocalOffsetBytes)
+	);
 	return 1;
 }
 
