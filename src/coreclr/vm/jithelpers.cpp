@@ -5407,12 +5407,12 @@ void JIT_PartialCompilationPatchpoint(int* counter, int ilOffset)
 
 static unsigned HandleHistogramProfileRand()
 {
-    // generate a random number (xorshift32)
+    // Generate a random number (xorshift32)
     //
-    // intentionally simple so we can have multithreaded
-    // access w/o tearing state.
+    // Intentionally simple for faster random. It's stored in TLS to avoid
+    // multithread contention.
     //
-    static volatile unsigned s_rng = 100;
+    static thread_local unsigned s_rng = 100;
 
     unsigned x = s_rng;
     x ^= x << 13;
