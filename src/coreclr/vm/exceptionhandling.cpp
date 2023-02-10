@@ -4523,7 +4523,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 }
 
-extern void* g_hostingApiFrameAddress;
+extern void* g_hostingApiReturnAddress;
 
 //---------------------------------------------------------------------------------------
 //
@@ -4727,7 +4727,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             STRESS_LOG2(LF_EH, LL_INFO100, "Processing exception at native frame: IP = %p, SP = %p \n", controlPc, sp);
 
             // Consider the exception unhandled if the unwinding cannot proceed further or if it went past the coreclr_initialize or coreclr_execute_assembly
-            if ((controlPc == 0) || (sp > (UINT_PTR)g_hostingApiFrameAddress))
+            if ((controlPc == 0) || (controlPc == (UINT_PTR)g_hostingApiReturnAddress))
             {
                 if (!GetThread()->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
                 {
