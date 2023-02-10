@@ -190,10 +190,12 @@ namespace Microsoft.Win32.SafeHandles
             switch (errorCode)
             {
                 case Interop.Errors.ERROR_SUCCESS:
-                case Interop.Errors.ERROR_PIPE_CONNECTED: // special case for when the client has already connected to us
-                case Interop.Errors.ERROR_BROKEN_PIPE:
-                case Interop.Errors.ERROR_NO_DATA:
+                case Interop.Errors.ERROR_PIPE_CONNECTED: // special case for when the client has already connected (used only by ConnectionValueTaskSource)
+                case Interop.Errors.ERROR_BROKEN_PIPE when _isRead: // write to broken pipe should throw, read return 0
+                case Interop.Errors.ERROR_NO_DATA when _isRead:
+                case Interop.Errors.ERROR_PIPE_NOT_CONNECTED when _isRead: // write to disconnected pipe should throw, read return 0
                 case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
+                case Interop.Errors.ERROR_MORE_DATA: // the buffer was not big enough to consume all available data
                     // Success
                     _source.SetResult((int)numBytes);
                     break;
@@ -201,6 +203,14 @@ namespace Microsoft.Win32.SafeHandles
                 case Interop.Errors.ERROR_OPERATION_ABORTED:
                     CancellationToken ct = _cancellationRegistration.Token;
                     _source.SetException(ct.IsCancellationRequested ? new OperationCanceledException(ct) : new OperationCanceledException());
+                    break;
+
+                case Interop.Errors.ERROR_INVALID_HANDLE:
+                    // For invalid handles, detect the error and mark our handle
+                    // as invalid to give slightly better error messages.  Also
+                    // help ensure we avoid handle recycling bugs.
+                    _fileHandle!.SetHandleAsInvalid();
+                    _source.SetException(Win32Marshal.GetExceptionForWin32Error((int)errorCode));
                     break;
 
                 default:
