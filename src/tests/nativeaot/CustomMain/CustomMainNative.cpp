@@ -18,7 +18,7 @@ int __cdecl wmain(int argc, wchar_t* argv[])
 int main(int argc, char* argv[])
 #endif
 {
-    puts("hello from native code");
-    IncrementExitCode(50);
+    puts("hello from native main");
+    IncrementExitCode(61);
     return __managed__Main(argc, argv);
 }
