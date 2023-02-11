@@ -149,7 +149,6 @@
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>8.0.0-beta.23107.1</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>8.0.0-beta.23107.1</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDataCommonTestDataVersion>8.0.0-dev</SystemDataCommonTestDataVersion>
     <SystemDrawingCommonTestDataVersion>8.0.0-beta.23107.1</SystemDrawingCommonTestDataVersion>
     <SystemFormatsTarTestDataVersion>8.0.0-beta.23107.1</SystemFormatsTarTestDataVersion>
     <SystemIOCompressionTestDataVersion>8.0.0-beta.23107.1</SystemIOCompressionTestDataVersion>
