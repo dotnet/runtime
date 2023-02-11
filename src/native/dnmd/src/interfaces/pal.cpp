@@ -45,6 +45,8 @@ HRESULT pal::ConvertUtf16ToUtf8(
             return E_NOT_SUFFICIENT_BUFFER;
         }
     }
+    if (buffer != nullptr)
+        buffer[length] = '\0';
     length += 1; // Add null terminator
 #else
 #error Missing implementation
@@ -94,6 +96,8 @@ HRESULT pal::ConvertUtf8ToUtf16(
             return E_NOT_SUFFICIENT_BUFFER;
         }
     }
+    if (buffer != nullptr)
+        buffer[length] = W('\0');
     length += 1; // Add null terminator
 #else
 #error Missing implementation

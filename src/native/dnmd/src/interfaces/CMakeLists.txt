@@ -61,7 +61,7 @@ set_target_properties(dnmd_interfaces_static PROPERTIES
 
 set_target_properties(dnmd_interfaces PROPERTIES
   PUBLIC_HEADER ../inc/dnmd_interfaces.hpp
-  INTERPROCEDURAL_OPTIMIZATION TRUE)
+  INTERPROCEDURAL_OPTIMIZATION $<$<NOT:$<CONFIG:DEBUG>>:TRUE>)
 
 install(TARGETS dnmd_interfaces_static)
 install(TARGETS dnmd_interfaces
