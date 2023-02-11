@@ -1384,24 +1384,24 @@ bool FunctionMember::GetBlockInNativeCode(int blockILOffset, int blockILLen, TAD
 
 void FunctionMember::DumpTryCatchBlock(char* ptr, int& offset, int ilOffset, int ilLen, int abbrev)
 {
-    TADDR* startOffset;
-    TADDR* endOffset;
+    TADDR startOffset;
+    TADDR endOffset;
 
-    if (!GetBlockInNativeCode(ilOffset, ilLen, startOffset, endOffset))
-        return;
-
-    if (ptr != nullptr)
+    if (GetBlockInNativeCode(ilOffset, ilLen, &startOffset, &endOffset))
     {
-        DebugInfoTryCatchSub subEntry;
+        if (ptr != nullptr)
+        {
+            DebugInfoTryCatchSub subEntry;
 
-        subEntry.m_sub_abbrev = abbrev;
-        subEntry.m_sub_low_pc = md->GetNativeCode() + *startOffset;
-        subEntry.m_sub_high_pc = *endOffset - *startOffset;
+            subEntry.m_sub_abbrev = abbrev;
+            subEntry.m_sub_low_pc = md->GetNativeCode() + startOffset;
+            subEntry.m_sub_high_pc = endOffset - startOffset;
 
-        memcpy(ptr + offset, &subEntry, sizeof(DebugInfoTryCatchSub));
+            memcpy(ptr + offset, &subEntry, sizeof(DebugInfoTryCatchSub));
+        }
+
+        offset += sizeof(DebugInfoTryCatchSub);
     }
-
-    offset += sizeof(DebugInfoTryCatchSub);
 }
 
 void FunctionMember::DumpTryCatchDebugInfo(char* ptr, int& offset)
