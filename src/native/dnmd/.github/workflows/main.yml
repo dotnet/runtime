@@ -42,7 +42,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v3
       with:
-        name: dotnet-results-${{ matrix.dotnet-version }}
+        name: TestResults-${{ matrix.os }}-${{ matrix.flavor }}
         path: ./test/Regression.UnitTests/TestResults-${{ matrix.os }}-${{ matrix.flavor }}
 
   publish-test-results:
