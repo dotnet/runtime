@@ -3856,10 +3856,10 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		val [3] = decode_value (p, &p);
 
 		v[0] = ((guint64)val [1] << 32) | ((guint64)val [0]);
-		*(guint64*)ji->data.target = v[0];
+		((guint64*)ji->data.target)[0] = v[0];
 
 		v[1] = ((guint64)val [3] << 32) | ((guint64)val [2]);
-		*(guint64*)ji->data.target = v[1];
+		((guint64*)ji->data.target)[1] = v[1];
 		break;
 	}
 	case MONO_PATCH_INFO_LDSTR:
