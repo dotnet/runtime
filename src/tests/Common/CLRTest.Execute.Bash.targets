@@ -60,10 +60,9 @@ WARNING:   When setting properties based on their current state (for example:
     <PropertyGroup>
       <IncompatibleTestBashScriptExitCode>0</IncompatibleTestBashScriptExitCode>
       <CoreRunArgs>@(RuntimeHostConfigurationOption -> '-p &quot;%(Identity)=%(Value)&quot;', ' ')</CoreRunArgs>
-      <SimulatorSuffix Condition="'$(TargetOS)' == 'iossimulator'">-simulator</SimulatorSuffix>
-      <iOSArchSuffix Condition="'$(TargetArchitecture)' == 'x64'">64</iOSArchSuffix>
-      <iOSArchSuffix Condition="'$(TargetArchitecture)' == 'arm64'">arm64</iOSArchSuffix>
-
+      <IosTestTargetSuffix Condition="'$(TargetOS)' == 'iossimulator' and '$(TargetArchitecture)' == 'x64'">-simulator-64</IosTestTargetSuffix>
+      <IosTestTargetSuffix Condition="'$(TargetOS)' == 'iossimulator' and '$(TargetArchitecture)' == 'arm64'">-simulator</IosTestTargetSuffix>
+      <IosTestTargetSuffix Condition="'$(TargetOS)' == 'ios'">-device</IosTestTargetSuffix>
 
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
@@ -426,7 +425,7 @@ $__Command $HARNESS_RUNNER apple just-run %5c
   --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=testdir-$(MsBuildProjectName)/$(MsBuildProjectName).dll" %5c
   --set-env="MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX=testdir-$(MsBuildProjectName)" %5c
   --expected-exit-code=100 %5c
-  --targets ios$(SimulatorSuffix)-$(iOSArchSuffix) %5c
+  --targets ios$(IosTestTargetSuffix) %5c
   -v
 CLRTestExitCode=$?
 
