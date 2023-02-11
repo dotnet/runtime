@@ -22,7 +22,6 @@
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
-    <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>7.0.4</MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>
     <MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>7.0.4</MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>
   </PropertyGroup>
@@ -39,25 +38,17 @@
     <MicrosoftCodeAnalysisVersion_3_11>3.11.0</MicrosoftCodeAnalysisVersion_3_11>
     <!-- Compatibility with VS 17.0/.NET SDK 6.0.1xx  -->
     <MicrosoftCodeAnalysisVersion_4_0>4.0.1</MicrosoftCodeAnalysisVersion_4_0>
-    <!-- Compatibility with VS 17.X/.NET SDK 7.0.1xx -->
-    <!--
-      This version is a moving target until we ship.
-      It should never go ahead of the Roslyn version included in the SDK version in dotnet/arcade's global.json to avoid causing breaks in product construction.
-    -->
-    <MicrosoftCodeAnalysisVersion_4_X>4.4.0-2.22423.18</MicrosoftCodeAnalysisVersion_4_X>
+    <!-- Compatibility with VS 17.4/.NET SDK 7.0.100 -->
+    <MicrosoftCodeAnalysisVersion_4_4>4.4.0</MicrosoftCodeAnalysisVersion_4_4>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Code analysis dependencies -->
     <MicrosoftCodeAnalysisAnalyzersVersion>3.3.3</MicrosoftCodeAnalysisAnalyzersVersion>
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.4.0-2.22423.18</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.4.0-2.22423.18</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisCSharpVersion>4.4.0-2.22423.18</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.4.0</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.4.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.4.0</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22559.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
-    <MicrosoftCodeAnalysisVersion>4.4.0-2.22423.18</MicrosoftCodeAnalysisVersion>
-    <!--
-      TODO: Remove pinned version once arcade supplies a compiler that enables the repo to compile.
-    -->
-    <MicrosoftNetCompilersToolsetVersion>4.4.0-3.22479.16</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftCodeAnalysisVersion>4.4.0</MicrosoftCodeAnalysisVersion>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetApiCompatTaskVersion>7.0.100-rc.1.22402.1</MicrosoftDotNetApiCompatTaskVersion>
