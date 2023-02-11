@@ -43,7 +43,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: dotnet-results-${{ matrix.dotnet-version }}
-        path: TestResults-${{ matrix.os }}-${{ matrix.flavor }}
+        path: ./test/Regression.UnitTests/TestResults-${{ matrix.os }}-${{ matrix.flavor }}
 
   publish-test-results:
     name: Publish Test Results
