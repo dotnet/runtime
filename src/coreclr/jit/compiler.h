@@ -4000,6 +4000,7 @@ public:
 
     GenTree* impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel);
 
+    GenTree* impFoldSubOfLocalOffsets(GenTree* op1, GenTree* op2);
     GenTree* impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                               bool*                   pRuntimeLookup    = nullptr,
                               bool                    mustRestoreHandle = false,
@@ -4281,7 +4282,7 @@ private:
 #endif // DEBUG
 
     static bool impIsInvariant(const GenTree* tree);
-    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut = nullptr);
+    static bool impIsAddressInLocal(const GenTree* tree, unsigned* lclNum = nullptr, unsigned* lclOffs = nullptr);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
 

@@ -4239,6 +4239,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     // (x - 0) == x
     // (x - x) == 0
     // This identity does not apply for floating point (when x == -0.0).
+    // (x + a) - x == a
     auto identityForSubtraction = [=]() -> ValueNum {
         if (!varTypeIsFloating(typ))
         {
@@ -4250,6 +4251,15 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             else if (arg0VN == arg1VN)
             {
                 return ZeroVN;
+            }
+
+            VNFuncApp add;
+            if (GetVNFunc(arg0VN, &add) && (add.m_func == VNFunc(GT_ADD)))
+            {
+                if (add.m_args[0] == arg1VN)
+                    return add.m_args[1];
+                if (add.m_args[1] == arg1VN)
+                    return add.m_args[0];
             }
         }
 

@@ -2823,7 +2823,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* indexClone     = nullptr;
                 GenTree* ptrToSpanClone = nullptr;
                 assert(genActualType(index) == TYP_INT);
-                assert(ptrToSpan->TypeGet() == TYP_BYREF);
+                assert(ptrToSpan->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
 #if defined(DEBUG)
                 if (verbose)
