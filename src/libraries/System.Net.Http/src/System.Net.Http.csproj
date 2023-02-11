@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -59,10 +59,12 @@
     <Compile Include="System\Net\Http\HttpParseResult.cs" />
     <Compile Include="System\Net\Http\HttpProtocolException.cs" />
     <Compile Include="System\Net\Http\HttpRequestException.cs" />
+    <Compile Include="System\Net\Http\HttpRequestError.cs" />
     <Compile Include="System\Net\Http\HttpRequestMessage.cs" />
     <Compile Include="System\Net\Http\HttpRequestOptions.cs" />
     <Compile Include="System\Net\Http\HttpRequestOptionsKey.cs" />
     <Compile Include="System\Net\Http\HttpResponseMessage.cs" />
+    <Compile Include="System\Net\Http\HttpResponseReadException.cs" />
     <Compile Include="System\Net\Http\HttpRuleParser.cs" />
     <Compile Include="System\Net\Http\HttpTelemetry.cs" />
     <Compile Include="System\Net\Http\HttpVersionPolicy.cs" />

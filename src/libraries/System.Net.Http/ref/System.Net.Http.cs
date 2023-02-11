@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 
 namespace System.Net.Http
 {
@@ -893,5 +894,25 @@ namespace System.Net.Http.Headers
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.WarningHeaderValue? parsedValue) { throw null; }
+    }
+
+    public enum HttpRequestError
+    {
+        NameResolutionError,
+        SocketError,
+        SecureConnectionError,
+        HttpProtocolError,
+
+        ResponseEnded,
+        InvalidResponse,
+        InvalidResponseHeader,
+        ContentBufferSizeExceeded,
+        ResponseHeaderExceededLengthLimit
+    }
+
+    public class HttpResponseReadException : IOException
+    {
+        public HttpRequestError HttpRequestError { get { throw null; } }
+        public HttpResponseReadException(HttpRequestError httpRequestError, string message, Exception? innerException = null) { }
     }
 }
