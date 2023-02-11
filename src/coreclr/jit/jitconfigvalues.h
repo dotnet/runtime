@@ -569,6 +569,7 @@ CONFIG_STRING(JitEnablePatchpointRange, W("JitEnablePatchpointRange"))
 
 // Profile instrumentation options
 CONFIG_INTEGER(JitInterlockedProfiling, W("JitInterlockedProfiling"), 0)
+CONFIG_INTEGER(JitScalableProfiling, W("JitScalableProfiling"), 1)
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 
