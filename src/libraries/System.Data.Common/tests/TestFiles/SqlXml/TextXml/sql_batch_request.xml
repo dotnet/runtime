@@ -1,1 +1,0 @@
-﻿<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sql="http://schemas.microsoft.com/SQLServer/2001/12/SOAP" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><SOAP-ENV:Body><sql:sqlbatch><sql:BatchCommands>print 'hello'</sql:BatchCommands></sql:sqlbatch></SOAP-ENV:Body></SOAP-ENV:Envelope>
