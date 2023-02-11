@@ -7455,7 +7455,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = impPopStack().val;
                     op1 = impPopStack().val;
 
-                    GenTree* folded = nullptr; // impFoldSubOfLocalOffsets(op1, op2);
+                    GenTree* folded = impFoldSubOfLocalOffsets(op1, op2);
 
                     if (folded != nullptr)
                     {
