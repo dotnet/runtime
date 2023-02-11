@@ -1693,7 +1693,7 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
         {
             DebugInfoInheritance buf;
             buf.m_abbrev = 18;
-            if (RefTypeInfo *m_p = dynamic_cast<RefTypeInfo*>(m_parent))
+            if (RefTypeInfo *m_p = (RefTypeInfo*)(m_parent))
                 buf.m_type = m_p->m_value_type->m_type_offset;
             else
                 buf.m_type = m_parent->m_type_offset;
