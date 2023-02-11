@@ -2228,20 +2228,22 @@ private:
 
     // Check if a peephole optimization involving emitLastIns is safe.
     //
-    // We must have a non-null emitLastIns to consult.
-    // The emitForceNewIG check here prevents peepholes from crossing nogc boundaries.
-    // The final check prevents looking across an IG boundary unless we're in an extension IG.
+    // We have the following checks:
+    // 1. There must be a non-null emitLastIns to consult (thus, we have a known "last" instruction).
+    // 2. `emitForceNewIG` is not set: this prevents peepholes from crossing nogc boundaries where
+    //    the next instruction is forced to create a new IG.
+    // 3. Looking backwards across an IG boundary can only be done if we're in an extension IG.
+    // 4. The IG of the previous instruction must have the same GC interrupt status as the current IG.
+    //    This is related to #2; it disallows peephole when the previous IG is GC and the current is NOGC.
     bool emitCanPeepholeLastIns()
     {
         assert((emitLastIns == nullptr) == (emitLastInsIG == nullptr));
 
-        return (emitLastIns != nullptr) &&                   // there is an emitLastInstr
-               !emitForceNewIG &&                            // and we're not about to start a new IG
-               ((emitCurIGinsCnt > 0) ||                     // and we're not at the start of a new IG
+        return (emitLastIns != nullptr) && !emitForceNewIG &&
+               ((emitCurIGinsCnt > 0) ||                     // we're not at the start of a new IG
                 ((emitCurIG->igFlags & IGF_EXTEND) != 0)) && //    or we are at the start of a new IG,
                                                              //    and it's an extension IG
                ((emitLastInsIG->igFlags & IGF_NOGCINTERRUPT) == (emitCurIG->igFlags & IGF_NOGCINTERRUPT));
-        // and the last instr IG has the same GC interrupt status as the current IG
     }
 
 #ifdef TARGET_ARMARCH

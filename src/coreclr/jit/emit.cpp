@@ -9276,40 +9276,62 @@ void emitter::emitRemoveLastInstruction()
     assert(emitLastIns != nullptr);
     assert(emitLastInsIG != nullptr);
 
-    JITDUMP("Removing saved instruction in %s:\n> ", emitLabelString(emitLastInsIG));
-    JITDUMPEXEC(dispIns(emitLastIns))
-
     // We should assert it's not a jmp, as that would require updating the jump lists, e.g. emitCurIGjmpList.
 
     BYTE*          lastInsActualStartAddr = (BYTE*)emitLastIns - m_debugInfoSize;
     unsigned short lastCodeSize           = (unsigned short)emitLastIns->idCodeSize();
 
-    // Check that a new buffer hasn't been create since the last instruction was emitted.
-    assert((emitCurIGfreeBase <= lastInsActualStartAddr) && (lastInsActualStartAddr < emitCurIGfreeEndp));
+    if ((emitCurIGfreeBase <= lastInsActualStartAddr) && (lastInsActualStartAddr < emitCurIGfreeEndp))
+    {
+        JITDUMP("Removing saved instruction in current IG %s:\n> ", emitLabelString(emitLastInsIG));
+        JITDUMPEXEC(emitDispIns(emitLastIns, /* isNew */ false, /* doffs */ false, /* asmfm */ false));
 
-    // Ensure the current IG is non-empty.
-    assert(emitCurIGnonEmpty());
-    assert(lastInsActualStartAddr < emitCurIGfreeNext);
-    assert(emitCurIGinsCnt >= 1);
-    assert(emitCurIGsize >= emitLastIns->idCodeSize());
+        // The last instruction is in the current buffer. That means the current IG is non-empty.
+        assert(emitCurIGnonEmpty());
+        assert(lastInsActualStartAddr < emitCurIGfreeNext);
+        assert(emitCurIGinsCnt >= 1);
+        assert(emitCurIGsize >= emitLastIns->idCodeSize());
 
-    size_t insSize = emitCurIGfreeNext - lastInsActualStartAddr;
+        size_t insSize = emitCurIGfreeNext - lastInsActualStartAddr;
 
-    emitCurIGfreeNext = lastInsActualStartAddr;
-    emitCurIGinsCnt -= 1;
+        emitCurIGfreeNext = lastInsActualStartAddr;
+        emitCurIGinsCnt -= 1;
+        emitCurIGsize -= lastCodeSize;
+
+        // We're going to overwrite the memory; zero it.
+        memset(emitCurIGfreeNext, 0, insSize);
+
+        // Remember this happened.
+        emitCurIG->igFlags |= IGF_HAS_REMOVED_INSTR;
+    }
+    else
+    {
+        JITDUMP("Removing saved instruction in saved IG %s:\n> ", emitLabelString(emitLastInsIG));
+        JITDUMPEXEC(emitDispIns(emitLastIns, /* isNew */ false, /* doffs */ false, /* asmfm */ false));
+
+        // The last instruction has already been saved. It must be the last instruction in the group.
+        // In the below calculation, we don't include the m_debugInfoSize because it comes before `emitLastIns`.
+        assert(emitLastInsIG->igData + emitLastInsIG->igDataSize == (BYTE*)emitLastIns + emitSizeOfInsDsc(emitLastIns));
+        assert(emitLastInsIG->igInsCnt >= 1);
+        assert(emitLastInsIG->igSize >= lastCodeSize);
+
+        emitLastInsIG->igInsCnt -= 1;
+        emitLastInsIG->igSize -= lastCodeSize;
+
+        // Zero the memory we aren't using anymore. Note that this doesn't get reused, so this is not
+        // strictly necessary.
+        size_t insSize = m_debugInfoSize + emitSizeOfInsDsc(emitLastIns);
+        memset(lastInsActualStartAddr, 0, insSize);
+
+        // Remember this happened.
+        emitLastInsIG->igFlags |= IGF_HAS_REMOVED_INSTR;
+    }
+
     emitInsCount -= 1;
-    emitCurIGsize -= lastCodeSize;
-
-    // We're going to overwrite the memory; zero it.
-    memset(emitCurIGfreeNext, 0, insSize);
-
-    // Remember this happened.
-    emitCurIG->igFlags |= IGF_HAS_REMOVED_INSTR;
-
     emitLastIns   = nullptr;
     emitLastInsIG = nullptr;
 }
-#endif
+#endif // TARGET_ARM64
 
 /*****************************************************************************
  *
