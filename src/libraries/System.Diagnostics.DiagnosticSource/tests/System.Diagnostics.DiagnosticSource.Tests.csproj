@@ -41,6 +41,6 @@
     <Reference Include="System.Net.Http" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.csproj" />
+    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
 </Project>
