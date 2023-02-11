@@ -578,10 +578,13 @@ namespace System.Collections.Tests
             foreach (int size in new[] { 1, BitsPerInt32 - 1, BitsPerInt32, BitsPerInt32 + 1, BitsPerInt32 * 2 - 1 })
             {
                 yield return new object[] { new bool[size], false };
-                
-                bool[] bits = new bool[size];
-                bits[^1] = true;
-                yield return new object[] { bits, true };
+
+                for (int i = 0; i < size; i++)
+                {
+                    bool[] bits = new bool[size];
+                    bits[i] = true;
+                    yield return new object[] { bits, true };
+                }
             }
         }
     }
