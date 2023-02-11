@@ -287,6 +287,11 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     return literalOperation.Syntax;
                 }
+                else if (argument.Value is IFieldReferenceOperation fieldReferenceOperation &&
+                    fieldReferenceOperation.Member is IFieldSymbol fieldSymbol && fieldSymbol.IsConst)
+                {
+                    return generator.Argument(fieldReferenceOperation.Syntax);
+                }
                 else
                 {
                     return generator.LiteralExpression(argument.Value.ConstantValue.Value);

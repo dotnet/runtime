@@ -980,6 +980,41 @@ partial class Program
         }
 
         [Fact]
+        public async Task InterpolatedStringLiteralSyntaxFixedWhenStringLiteralIsConstantField()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    const string pattern = @""a|b\s\n"";
+    const string pattern2 = $""{pattern}2"";
+
+    static void Main(string[] args)
+    {
+        Regex regex = [|new Regex(pattern2)|];
+    }
+}";
+
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    const string pattern = @""a|b\s\n"";
+    const string pattern2 = $""{pattern}2"";
+
+    static void Main(string[] args)
+    {
+        Regex regex = MyRegex();
+    }
+
+    [GeneratedRegex(pattern2)]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
         public async Task TestAsArgument()
         {
             string test = @"using System.Text.RegularExpressions;
