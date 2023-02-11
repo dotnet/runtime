@@ -180,7 +180,7 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0)
         *result = arg0;
 #elif defined(TARGET_ARM64)
         // scalar operations on arm64 zero the upper bits
-        *result = { };
+        *result = {};
 #endif
     }
 
@@ -304,7 +304,7 @@ void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0,
         *result = arg0;
 #elif defined(TARGET_ARM64)
         // scalar operations on arm64 zero the upper bits
-        *result = { };
+        *result = {};
 #endif
     }
 
