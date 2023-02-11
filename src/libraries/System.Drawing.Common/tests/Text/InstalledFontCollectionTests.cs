@@ -7,7 +7,7 @@ namespace System.Drawing.Text.Tests
 {
     public class InstalledFontCollectionTests
     {
-        [ConditionalFact(Helpers.GdiPlusIsAvailableNotRedhat73)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Ctor_Default()
         {
             using (var fontCollection = new InstalledFontCollection())
@@ -16,7 +16,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiPlusIsAvailableNotRedhat73)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Families_GetWhenDisposed_ReturnsNonEmpty()
         {
             var fontCollection = new InstalledFontCollection();

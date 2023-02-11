@@ -272,7 +272,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         /* Checks bitmap features on a known 2bbp bitmap */
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable2)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap2bitFeatures()
         {
             if (IsArm64Process())
@@ -304,7 +304,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable2)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap2bitPixels()
         {
             if (IsArm64Process())
@@ -333,7 +333,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable2)]
+        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
         public void Bitmap2bitData()
         {
             if (IsArm64Process())
