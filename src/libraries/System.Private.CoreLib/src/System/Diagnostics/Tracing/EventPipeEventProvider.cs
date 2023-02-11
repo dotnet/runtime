@@ -50,9 +50,12 @@ namespace System.Diagnostics.Tracing
                 args = ParseFilterData(filterDataBytes);
             }
 
-            // If the sessionId argument is positive it will be sent to the EventSource as an Enable,
-            // and if it is negative it will be sent as a disable. See EventSource.DoCommand()
-            target.OnControllerCommand(command, args, bEnabling ? 1 : -1, 0);
+            // Since we are sharing logic across ETW and EventPipe in OnControllerCommand we have to set up data to
+            // mimic ETW to get the right commands sent to EventSources. perEventSourceSessionId has special meaning,
+            // if it is -1 the this command will be translated to a Disable command in EventSource.OnEventCommand. If
+            // it is 0-3 it indicates an ETW session with activities, and SessionMask.MAX (4) means legacy ETW session.
+            // We send SessionMask.MAX just to conform.
+            target.OnControllerCommand(command, args, bEnabling ? (int)SessionMask.MAX : -1);
         }
 
         [UnmanagedCallersOnly]
@@ -62,7 +65,7 @@ namespace System.Diagnostics.Tracing
             EventPipeEventProvider _this = (EventPipeEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
             if (_this._eventProvider.TryGetTarget(out EventProvider? target))
             {
-                _this.EnableCallback(target, sourceId, isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+                _this.ProviderCallback(target, sourceId, isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
             }
         }
 

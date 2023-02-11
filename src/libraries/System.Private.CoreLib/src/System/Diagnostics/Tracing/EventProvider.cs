@@ -185,7 +185,7 @@ namespace System.Diagnostics.Tracing
             Dispose(false);
         }
 
-        internal virtual void OnControllerCommand(ControllerCommand command, IDictionary<string, string?>? arguments, int sessionId, int etwSessionId) { }
+        internal virtual void OnControllerCommand(ControllerCommand command, IDictionary<string, string?>? arguments, int sessionId) { }
 
         protected EventLevel Level
         {
@@ -803,7 +803,6 @@ namespace System.Diagnostics.Tracing
             foreach (KeyValuePair<SessionInfo, bool> session in sessionsChanged)
             {
                 int sessionChanged = session.Key.sessionIdBit;
-                int etwSessionId = session.Key.etwSessionId;
                 bool bEnabling = session.Value;
 
                 // reinitialize args for every session...
@@ -818,7 +817,7 @@ namespace System.Diagnostics.Tracing
                     // of knowing which one "filterData" belongs to
                     if (sessionsChanged.Count > 1 || filterData == null)
                     {
-                        TryReadRegistryFilterData(etwSessionId, out command, out filterDataBytes);
+                        TryReadRegistryFilterData(session.Key.etwSessionId, out command, out filterDataBytes);
                     }
                     else
                     {
@@ -830,7 +829,7 @@ namespace System.Diagnostics.Tracing
                 // execute OnControllerCommand once for every session that has changed.
                 // If the sessionId argument is positive it will be sent to the EventSource as an Enable,
                 // and if it is negative it will be sent as a disable. See EventSource.DoCommand()
-                target.OnControllerCommand(command, args, bEnabling ? sessionChanged : -sessionChanged, etwSessionId);
+                target.OnControllerCommand(command, args, bEnabling ? sessionChanged : -sessionChanged);
             }
         }
 
@@ -842,7 +841,7 @@ namespace System.Diagnostics.Tracing
 
             if (_this._eventProvider.TryGetTarget(out EventProvider? target))
             {
-                _this.EnableCallback(target, null, isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+                _this.ProviderCallback(target, null, isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
             }
         }
 
@@ -1291,7 +1290,7 @@ namespace System.Diagnostics.Tracing
             return IntPtr.Zero;
         }
 
-        protected unsafe void EnableCallback(
+        protected unsafe void ProviderCallback(
                         EventProvider target,
                         byte *additionalData,
                         int controlCode,
@@ -1326,7 +1325,7 @@ namespace System.Diagnostics.Tracing
                     return;     // per spec you ignore commands you don't recognize.
                 }
 
-                target.OnControllerCommand(command, null, 0, 0);
+                target.OnControllerCommand(command, null, 0);
             }
             catch
             {
