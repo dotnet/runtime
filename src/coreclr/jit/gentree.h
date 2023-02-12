@@ -1328,8 +1328,17 @@ public:
 
     static bool OperIsCompare(genTreeOps gtOper)
     {
+        // Note that only GT_EQ to GT_GT are HIR nodes, GT_TEST and GT_BITTEST
+        // nodes are backend nodes only.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef TARGET_XARCH
+        static_assert_no_msg(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE,
+                                           GT_BITTEST_EQ, GT_BITTEST_NE));
+        return (GT_EQ <= gtOper) && (gtOper <= GT_BITTEST_NE);
+#else
         static_assert_no_msg(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE));
         return (GT_EQ <= gtOper) && (gtOper <= GT_TEST_NE);
+#endif
     }
 
     bool OperIsCompare() const
@@ -8456,17 +8465,23 @@ public:
     static GenCondition FromIntegralRelop(genTreeOps oper, bool isUnsigned)
     {
         assert(GenTree::OperIsCompare(oper));
+        static constexpr unsigned s_codes[] = {EQ, NE, SLT, SLE, SGE, SGT, EQ, NE, NC, C};
 
-        // GT_TEST_EQ/NE are special, they need to be mapped as GT_EQ/NE
-        unsigned code;
-        if (oper >= GT_TEST_EQ)
-        {
-            code = oper - GT_TEST_EQ;
-        }
-        else
-        {
-            code = oper - GT_EQ;
-        }
+        static_assert_no_msg(s_codes[GT_EQ - GT_EQ] == EQ);
+        static_assert_no_msg(s_codes[GT_NE - GT_EQ] == NE);
+        static_assert_no_msg(s_codes[GT_LT - GT_EQ] == SLT);
+        static_assert_no_msg(s_codes[GT_LE - GT_EQ] == SLE);
+        static_assert_no_msg(s_codes[GT_GE - GT_EQ] == SGE);
+        static_assert_no_msg(s_codes[GT_GT - GT_EQ] == SGT);
+        static_assert_no_msg(s_codes[GT_TEST_EQ - GT_EQ] == EQ);
+        static_assert_no_msg(s_codes[GT_TEST_NE - GT_EQ] == NE);
+#ifdef TARGET_XARCH
+        // Generated via bt instruction that sets C flag to the specified bit.
+        static_assert_no_msg(s_codes[GT_BITTEST_EQ - GT_EQ] == NC);
+        static_assert_no_msg(s_codes[GT_BITTEST_NE - GT_EQ] == C);
+#endif
+
+        unsigned code = s_codes[oper - GT_EQ];
 
         if (isUnsigned || (code <= 1)) // EQ/NE are treated as unsigned
         {

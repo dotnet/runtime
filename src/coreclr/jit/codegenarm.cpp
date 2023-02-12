@@ -1257,9 +1257,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     regNumber targetReg = tree->GetRegNum();
     emitter*  emit      = GetEmitter();
 
-    genConsumeIfReg(op1);
-    genConsumeIfReg(op2);
-
     if (varTypeIsFloating(op1Type))
     {
         assert(op1Type == op2Type);

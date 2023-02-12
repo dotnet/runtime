@@ -310,11 +310,6 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
-        case GT_BT:
-            srcCount = BuildBinaryUses(tree->AsOp());
-            assert(dstCount == 0);
-            break;
-
         case GT_RETURNTRAP:
         {
             // This just turns into a compare of its child with an int + a conditional call.
@@ -428,7 +423,11 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_GT:
         case GT_TEST_EQ:
         case GT_TEST_NE:
+        case GT_BITTEST_EQ:
+        case GT_BITTEST_NE:
         case GT_CMP:
+        case GT_TEST:
+        case GT_BT:
             srcCount = BuildCmp(tree);
             break;
 
@@ -749,7 +748,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
     assert(tree->OperIsBinary());
 #endif
 
-    if (tree->OperIsCompare() || tree->OperIs(GT_CMP) || tree->OperIs(GT_BT))
+    if (tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_BT))
     {
         return false;
     }

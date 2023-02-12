@@ -3049,9 +3049,9 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         }
     }
 
+#ifdef TARGET_XARCH
     if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
-#ifdef TARGET_XARCH
         //
         // Transform TEST_EQ|NE(x, LSH(1, y)) into BT(x, y) when possible. Using BT
         // results in smaller and faster code. It also doesn't have special register
@@ -3061,100 +3061,20 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         //
 
         GenTree* lsh = cmp->gtGetOp2();
-        LIR::Use cmpUse;
 
-        if (lsh->OperIs(GT_LSH) && varTypeIsIntOrI(lsh->TypeGet()) && lsh->gtGetOp1()->IsIntegralConst(1) &&
-            BlockRange().TryGetUse(cmp, &cmpUse))
+        if (lsh->OperIs(GT_LSH) && varTypeIsIntOrI(lsh->TypeGet()) && lsh->gtGetOp1()->IsIntegralConst(1))
         {
-            GenCondition condition = cmp->OperIs(GT_TEST_NE) ? GenCondition::C : GenCondition::NC;
-
-            cmp->SetOper(GT_BT);
-            cmp->gtType = TYP_VOID;
-            cmp->gtFlags |= GTF_SET_FLAGS;
+            cmp->SetOper(cmp->OperIs(GT_TEST_EQ) ? GT_BITTEST_EQ : GT_BITTEST_NE);
             cmp->AsOp()->gtOp2 = lsh->gtGetOp2();
             cmp->gtGetOp2()->ClearContained();
 
             BlockRange().Remove(lsh->gtGetOp1());
             BlockRange().Remove(lsh);
 
-            GenTreeCC* cc;
-
-            if (cmpUse.User()->OperIs(GT_JTRUE))
-            {
-                cmpUse.User()->ChangeOper(GT_JCC);
-                cc              = cmpUse.User()->AsCC();
-                cc->gtCondition = condition;
-            }
-            else
-            {
-                cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
-                BlockRange().InsertAfter(cmp, cc);
-                cmpUse.ReplaceWith(cc);
-            }
-
             return cmp->gtNext;
         }
+    }
 #endif // TARGET_XARCH
-    }
-    else if (cmp->OperIs(GT_EQ, GT_NE))
-    {
-        GenTree* op1 = cmp->gtGetOp1();
-        GenTree* op2 = cmp->gtGetOp2();
-
-        // TODO-CQ: right now the below peep is inexpensive and gets the benefit in most
-        // cases because in majority of cases op1, op2 and cmp would be in that order in
-        // execution. In general we should be able to check that all the nodes that come
-        // after op1 do not modify the flags so that it is safe to avoid generating a
-        // test instruction.
-
-        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) && op1->SupportsSettingZeroFlag()
-#ifdef TARGET_ARM64
-            // This happens in order to emit ARM64 'madd' and 'msub' instructions.
-            // We cannot combine 'adds'/'subs' and 'mul'.
-            && !(op1->gtGetOp2()->OperIs(GT_MUL) && op1->gtGetOp2()->isContained())
-#endif
-                )
-        {
-            op1->gtFlags |= GTF_SET_FLAGS;
-            op1->SetUnusedValue();
-
-            BlockRange().Remove(op2);
-
-            GenTree*   next = cmp->gtNext;
-            GenTree*   cc;
-            genTreeOps ccOp;
-            LIR::Use   cmpUse;
-
-            // Fast check for the common case - relop used by a JTRUE that immediately follows it.
-            if ((next != nullptr) && next->OperIs(GT_JTRUE) && (next->gtGetOp1() == cmp))
-            {
-                cc   = next;
-                ccOp = GT_JCC;
-                next = nullptr;
-                BlockRange().Remove(cmp);
-            }
-            else if (BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE))
-            {
-                cc   = cmpUse.User();
-                ccOp = GT_JCC;
-                next = nullptr;
-                BlockRange().Remove(cmp);
-            }
-            else // The relop is not used by a JTRUE or it is not used at all.
-            {
-                // Transform the relop node it into a SETCC. If it's not used we could remove
-                // it completely but that means doing more work to handle a rare case.
-                cc   = cmp;
-                ccOp = GT_SETCC;
-            }
-
-            GenCondition condition = GenCondition::FromIntegralRelop(cmp);
-            cc->ChangeOper(ccOp);
-            cc->AsCC()->gtCondition = condition;
-
-            return next;
-        }
-    }
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
     return cmp;
@@ -3225,9 +3145,14 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
 //
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
+    assert(jtrue->gtGetOp1()->OperIsCompare());
+    assert(jtrue->gtGetOp1()->gtNext == jtrue);
+    GenTreeOp* relop = jtrue->gtGetOp1()->AsOp();
+
+    GenTree* relopOp1 = relop->gtGetOp1();
+    GenTree* relopOp2 = relop->gtGetOp2();
+
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    GenTree* relop    = jtrue->gtGetOp1();
-    GenTree* relopOp2 = relop->AsOp()->gtGetOp2();
 
     if ((relop->gtNext == jtrue) && relopOp2->IsCnsIntOrI())
     {
@@ -3273,9 +3198,54 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     }
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64
 
-    ContainCheckJTrue(jtrue);
-
+    assert(relop->OperIsCompare());
+    assert(relop->gtNext == jtrue);
     assert(jtrue->gtNext == nullptr);
+
+    GenCondition cond = GenCondition::FromRelop(relop);
+    // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS.
+    if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0) && relopOp1->SupportsSettingZeroFlag() &&
+        IsSafeToContainMem(relop, relopOp1))
+    {
+        relopOp1->gtFlags |= GTF_SET_FLAGS;
+        relopOp1->SetUnusedValue();
+
+        BlockRange().Remove(relopOp1);
+        BlockRange().InsertBefore(jtrue, relopOp1);
+        BlockRange().Remove(relop);
+        BlockRange().Remove(relopOp2);
+    }
+    else
+    {
+        relop->gtType = TYP_VOID;
+        relop->gtFlags |= GTF_SET_FLAGS;
+
+        if (relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
+        {
+            relop->SetOper(GT_CMP);
+
+            if (cond.PreferSwap())
+            {
+                std::swap(relop->gtOp1, relop->gtOp2);
+                cond = GenCondition::Swap(cond);
+            }
+        }
+#ifdef TARGET_XARCH
+        else if (relop->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE))
+        {
+            relop->SetOper(GT_BT);
+        }
+#endif
+        else
+        {
+            assert(relop->OperIs(GT_TEST_EQ, GT_TEST_NE));
+            relop->SetOper(GT_TEST);
+        }
+    }
+
+    GenTree* jcc = new (comp, GT_JCC) GenTreeCC(GT_JCC, cond);
+    BlockRange().InsertBefore(jtrue, jcc);
+    BlockRange().Remove(jtrue);
     return nullptr;
 }
 
@@ -7011,12 +6981,9 @@ void Lowering::ContainCheckNode(GenTree* node)
         case GT_TEST_EQ:
         case GT_TEST_NE:
         case GT_CMP:
+        case GT_TEST:
         case GT_JCMP:
             ContainCheckCompare(node->AsOp());
-            break;
-
-        case GT_JTRUE:
-            ContainCheckJTrue(node->AsOp());
             break;
 
         case GT_SELECT:
@@ -7192,20 +7159,6 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
         }
     }
 #endif // FEATURE_MULTIREG_RET
-}
-
-//------------------------------------------------------------------------
-// ContainCheckJTrue: determine whether the source of a JTRUE should be contained.
-//
-// Arguments:
-//    node - pointer to the node
-//
-void Lowering::ContainCheckJTrue(GenTreeOp* node)
-{
-    // The compare does not need to be generated into a register.
-    GenTree* cmp = node->gtGetOp1();
-    cmp->gtType  = TYP_VOID;
-    cmp->gtFlags |= GTF_SET_FLAGS;
 }
 
 //------------------------------------------------------------------------
