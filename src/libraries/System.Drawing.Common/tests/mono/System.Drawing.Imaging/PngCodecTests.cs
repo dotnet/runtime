@@ -37,7 +37,7 @@ using Xunit;
 
 namespace MonoTests.System.Drawing.Imaging
 {
-    [ConditionalClass(typeof(PlatformDetection),nameof(PlatformDetection.IsDrawingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported))]
     public class PngCodecTest
     {
         /* Checks bitmap features on a known 1bbp bitmap */
