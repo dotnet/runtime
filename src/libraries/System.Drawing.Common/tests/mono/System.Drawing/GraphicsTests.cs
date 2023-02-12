@@ -1903,7 +1903,6 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void MeasureString_Whitespace()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
@@ -1989,7 +1988,6 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void MeasureCharacterRanges_TwoLines()
         {
             string text = "this\nis a test";
