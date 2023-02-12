@@ -2643,7 +2643,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // If that call is an intrinsic and is expanded, codegen for NextCallReturnAddress will fail.
     // To avoid that we conservatively expand only required intrinsics in methods that call
     // the NextCallReturnAddress intrinsic.
-    if (!betterToExpand && !mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
+    if (!mustExpand && ((opts.OptimizationDisabled() && !betterToExpand) || info.compHasNextCallRetAddr))
     {
         *pIntrinsicName = NI_Illegal;
         return retNode;
