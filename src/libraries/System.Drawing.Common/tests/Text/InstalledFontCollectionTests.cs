@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Drawing.Text.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported))]
     public class InstalledFontCollectionTests
     {
         [Fact]

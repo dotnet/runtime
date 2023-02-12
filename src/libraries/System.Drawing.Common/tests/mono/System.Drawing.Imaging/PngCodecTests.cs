@@ -37,32 +37,9 @@ using Xunit;
 
 namespace MonoTests.System.Drawing.Imaging
 {
+    [ConditionalClass(typeof(PlatformDetection),nameof(PlatformDetection.IsDrawingSupported))]
     public class PngCodecTest
     {
-        private bool IsArm64Process()
-        {
-            if (Environment.OSVersion.Platform != PlatformID.Unix || !Environment.Is64BitProcess)
-                return false;
-
-            try
-            {
-                var process = new global::System.Diagnostics.Process();
-                process.StartInfo.FileName = "uname";
-                process.StartInfo.Arguments = "-m";
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.UseShellExecute = false;
-                process.Start();
-                process.WaitForExit();
-                var output = process.StandardOutput.ReadToEnd();
-
-                return output.Trim() == "aarch64";
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         /* Checks bitmap features on a known 1bbp bitmap */
         [Fact]
         public void Bitmap1bitFeatures()
@@ -275,9 +252,6 @@ namespace MonoTests.System.Drawing.Imaging
         [Fact]
         public void Bitmap2bitFeatures()
         {
-            if (IsArm64Process())
-                Assert.True(false, "https://bugzilla.xamarin.com/show_bug.cgi?id=41171");
-
             string sInFile = Helpers.GetTestBitmapPath("81674-2bpp.png");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
@@ -307,9 +281,6 @@ namespace MonoTests.System.Drawing.Imaging
         [Fact]
         public void Bitmap2bitPixels()
         {
-            if (IsArm64Process())
-                Assert.True(false, "https://bugzilla.xamarin.com/show_bug.cgi?id=41171");
-
             string sInFile = Helpers.GetTestBitmapPath("81674-2bpp.png");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
@@ -336,9 +307,6 @@ namespace MonoTests.System.Drawing.Imaging
         [Fact]
         public void Bitmap2bitData()
         {
-            if (IsArm64Process())
-                Assert.True(false, "https://bugzilla.xamarin.com/show_bug.cgi?id=41171");
-
             string sInFile = Helpers.GetTestBitmapPath("81674-2bpp.png");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
