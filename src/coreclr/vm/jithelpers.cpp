@@ -5423,7 +5423,7 @@ static unsigned HandleHistogramProfileRand()
 }
 
 template<typename T>
-static int CheckSample(T index)
+FORCEINLINE static bool CheckSample(T index, size_t* sampleIndex)
 {
     const unsigned S = ICorJitInfo::HandleHistogram32::SIZE;
     const unsigned N = ICorJitInfo::HandleHistogram32::SAMPLE_INTERVAL;
@@ -5434,7 +5434,8 @@ static int CheckSample(T index)
     //
     if (index < S)
     {
-        return static_cast<int>(index);
+        *sampleIndex = index;
+        return true;
     }
 
     unsigned x = HandleHistogramProfileRand();
@@ -5452,10 +5453,11 @@ static int CheckSample(T index)
     //
     if ((x % N) >= S)
     {
-        return -1;
+        return false;
     }
 
-    return static_cast<int>(x % S);
+    *sampleIndex = static_cast<size_t>(x % S);
+    return true;
 }
 
 HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
@@ -5466,16 +5468,8 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* c
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
 
-    volatile unsigned* pCount = (volatile unsigned*) &classProfile->Count;
-    const unsigned callIndex = (*pCount)++;
-
-    int sampleIndex = CheckSample(callIndex);
-    if (sampleIndex == -1)
-    {
-        return;
-    }
-
-    if (objRef == NULL)
+    size_t sampleIndex;
+    if (!CheckSample(classProfile->Count++, &sampleIndex) || objRef == NULL)
     {
         return;
     }
@@ -5486,7 +5480,7 @@ HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* c
     // We do this instead of recording NULL so that we won't over-estimate
     // the likelihood of known type handles.
     //
-    if (pMT->GetLoaderAllocator()->IsCollectible())
+    if (pMT->Collectible())
     {
         pMT = (MethodTable*)DEFAULT_UNKNOWN_HANDLE;
     }
@@ -5509,23 +5503,15 @@ HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* c
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
 
-    volatile uint64_t* pCount = (volatile uint64_t*) &classProfile->Count;
-    const uint64_t callIndex = (*pCount)++;
-
-    int sampleIndex = CheckSample(callIndex);
-    if (sampleIndex == -1)
-    {
-        return;
-    }
-
-    if (objRef == NULL)
+    size_t sampleIndex;
+    if (!CheckSample(classProfile->Count++, &sampleIndex) || objRef == NULL)
     {
         return;
     }
 
     MethodTable* pMT = objRef->GetMethodTable();
 
-    if (pMT->GetLoaderAllocator()->IsCollectible())
+    if (pMT->Collectible())
     {
         pMT = (MethodTable*)DEFAULT_UNKNOWN_HANDLE;
     }
@@ -5547,16 +5533,8 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
 
-    volatile unsigned* pMethodCount = (volatile unsigned*) &methodProfile->Count;
-    const unsigned methodCallIndex = (*pMethodCount)++;
-    int methodSampleIndex = CheckSample(methodCallIndex);
-
-    if (methodSampleIndex == -1)
-    {
-        return;
-    }
-
-    if (objRef == NULL)
+    size_t methodSampleIndex;
+    if (!CheckSample(methodProfile->Count++, &methodSampleIndex) || objRef == NULL)
     {
         return;
     }
@@ -5602,16 +5580,8 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
 
-    volatile uint64_t* pMethodCount = (volatile uint64_t*) &methodProfile->Count;
-    const uint64_t methodCallIndex = (*pMethodCount)++;
-    int methodSampleIndex = CheckSample(methodCallIndex);
-
-    if (methodSampleIndex == -1)
-    {
-        return;
-    }
-
-    if (objRef == NULL)
+    size_t methodSampleIndex;
+    if (!CheckSample(methodProfile->Count++, &methodSampleIndex) || objRef == NULL)
     {
         return;
     }
@@ -5656,16 +5626,8 @@ HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
 
-    volatile unsigned* pMethodCount = (volatile unsigned*) &methodProfile->Count;
-    const unsigned methodCallIndex = (*pMethodCount)++;
-    int methodSampleIndex = CheckSample(methodCallIndex);
-
-    if (methodSampleIndex == -1)
-    {
-        return;
-    }
-
-    if (objRef == NULL)
+    size_t methodSampleIndex;
+    if (!CheckSample(methodProfile->Count++, &methodSampleIndex) || objRef == NULL)
     {
         return;
     }
@@ -5713,16 +5675,8 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
 
-    volatile uint64_t* pMethodCount = (volatile uint64_t*) &methodProfile->Count;
-    const uint64_t methodCallIndex = (*pMethodCount)++;
-    int methodSampleIndex = CheckSample(methodCallIndex);
-
-    if (methodSampleIndex == -1)
-    {
-        return;
-    }
-
-    if (objRef == NULL)
+    size_t methodSampleIndex;
+    if (!CheckSample(methodProfile->Count++, &methodSampleIndex) || objRef == NULL)
     {
         return;
     }
