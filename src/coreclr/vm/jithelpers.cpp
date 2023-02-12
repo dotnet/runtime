@@ -5434,7 +5434,7 @@ FORCEINLINE static bool CheckSample(T index, size_t* sampleIndex)
     //
     if (index < S)
     {
-        *sampleIndex = index;
+        *sampleIndex = static_cast<size_t>(index);
         return true;
     }
 
