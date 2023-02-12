@@ -29,7 +29,6 @@ namespace System.Net.Quic.Tests
             Assert.True(QuicConnection.IsSupported);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81901", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine314), nameof(PlatformDetection.IsInContainer))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
         public async Task SupportedLinuxPlatformsWithMsquic_IsSupportedIsTrue()
         {
