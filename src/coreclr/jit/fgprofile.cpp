@@ -2204,6 +2204,15 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     const bool minimalProfiling =
         prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
 
+    // In majority of cases, methods marked with [Intrinsic] are imported directly
+    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes.
+    if (minimalProfiling && (info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
+    {
+        fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
+        fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     if (minimalProfiling && (fgBBcount < 2))
     {
         // Don't instrumenting small single-block methods.
