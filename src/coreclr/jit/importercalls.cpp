@@ -2600,7 +2600,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // Allow some lighweight intrinsics in Tier0 which can improve throughput
     // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
     // in this case unlike mustExpand.
-    bool betterToExpand = mustExpand;
+    bool betterToExpand = false;
 
     // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
     // To be fixed in https://github.com/dotnet/runtime/pull/77465
