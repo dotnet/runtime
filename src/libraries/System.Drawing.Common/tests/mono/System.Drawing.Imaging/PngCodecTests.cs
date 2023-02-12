@@ -64,6 +64,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         /* Checks bitmap features on a known 1bbp bitmap */
+        [Fact]
         public void Bitmap1bitFeatures()
         {
             string sInFile = Helpers.GetTestBitmapPath("1bit.png");
@@ -92,6 +93,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
+        [Fact]
         public void Bitmap1bitPixels()
         {
             string sInFile = Helpers.GetTestBitmapPath("1bit.png");
@@ -167,6 +169,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
+        [Fact]
         public void Bitmap1bitData()
         {
             string sInFile = Helpers.GetTestBitmapPath("1bit.png");
@@ -269,6 +272,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         /* Checks bitmap features on a known 2bbp bitmap */
+        [Fact]
         public void Bitmap2bitFeatures()
         {
             if (IsArm64Process())
@@ -300,6 +304,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
+        [Fact]
         public void Bitmap2bitPixels()
         {
             if (IsArm64Process())
@@ -328,6 +333,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
+        [Fact]
         public void Bitmap2bitData()
         {
             if (IsArm64Process())
@@ -389,6 +395,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         /* Checks bitmap features on a known 4bbp bitmap */
+        [Fact]
         public void Bitmap4bitFeatures()
         {
             string sInFile = Helpers.GetTestBitmapPath("4bit.png");
@@ -431,6 +438,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
+        [Fact]
         public void Bitmap4bitPixels()
         {
             string sInFile = Helpers.GetTestBitmapPath("4bit.png");
@@ -507,6 +515,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
+        [Fact]
         public void Bitmap4bitData()
         {
             string sInFile = Helpers.GetTestBitmapPath("4bit.png");
