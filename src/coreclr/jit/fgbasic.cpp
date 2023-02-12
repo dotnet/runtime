@@ -81,9 +81,6 @@ void Compiler::fgInit()
     fgGlobalMorph = false;
     fgModified    = false;
 
-    impBoxTempInUse = false;
-    impBoxTemp      = BAD_VAR_NUM;
-
 #ifdef DEBUG
     fgSafeBasicBlockCreation = true;
 #endif // DEBUG

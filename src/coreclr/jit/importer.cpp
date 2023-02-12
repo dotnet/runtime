@@ -3538,24 +3538,10 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // and the other you get
         //    *(temp+4) = expr
 
-        // For minopts/debug code, try and minimize the total number
-        // of box temps by reusing an existing temp when possible.
-        bool useSharedBoxTemp = opts.OptimizationDisabled();
-
-        // However, when we're allowed to perform quick opts we want to still have exact classes for boxed enums
-        // in case if we hit Enum.HasFlag.
-        const bool tooManyLocals = lvaCount > 128;
-        // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-        // To be fixed in https://github.com/dotnet/runtime/pull/77465
-        if (useSharedBoxTemp && !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) &&
-            !tooManyLocals &&
-            (info.compCompHnd->getTypeForPrimitiveNumericClass(pResolvedToken->hClass) == CORINFO_TYPE_UNDEF))
+        if (opts.OptimizationDisabled())
         {
-            useSharedBoxTemp = false;
-        }
-
-        if (useSharedBoxTemp)
-        {
+            // For minopts/debug code, try and minimize the total number
+            // of box temps by reusing an existing temp when possible.
             if (impBoxTempInUse || impBoxTemp == BAD_VAR_NUM)
             {
                 impBoxTemp = lvaGrabTemp(true DEBUGARG("Reusable Box Helper"));

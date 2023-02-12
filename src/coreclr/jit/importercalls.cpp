@@ -2601,17 +2601,23 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
     // in this case unlike mustExpand.
     bool betterToExpand = mustExpand;
+
     // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
     // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    if (!mustExpand && !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
+    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+
+    if (!mustExpand && tier0opts)
     {
         switch (ni)
         {
-            // HasFlag allocates in Tier0 and produces a fairly large IR tree
-            case NI_System_Enum_HasFlag:
-
             // This one is just `return true/false`
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+
+            // We need these to be able to fold "typeof(...) == typeof(...)"
+            case NI_System_RuntimeTypeHandle_GetValueInternal:
+            case NI_System_Type_GetTypeFromHandle:
+            case NI_System_Type_op_Equality:
+            case NI_System_Type_op_Inequality:
 
             // Simple cases
             case NI_System_String_get_Chars:
