@@ -1883,7 +1883,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::GetNameFromToken(            // Not 
     if (!md_token_to_cursor(_md_ptr.get(), tk, &cursor))
         return CLDB_E_RECORD_NOTFOUND;
 
-     if (!md_get_column_value_as_utf8(cursor, col_idx, 1, pszUtf8NamePtr))
+     if (1 != md_get_column_value_as_utf8(cursor, col_idx, 1, pszUtf8NamePtr))
         return CLDB_E_FILE_CORRUPT;
 
      return S_OK;
@@ -2614,7 +2614,7 @@ namespace
 HRESULT STDMETHODCALLTYPE MetadataImportRO::GetCustomAttributeByName(
     mdToken     tkObj,
     LPCWSTR     szName,
-    const void** ppData,
+    void const** ppData,
     ULONG* pcbData)
 {
     if (szName == nullptr || ppData == nullptr || pcbData == nullptr)
@@ -3284,4 +3284,538 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumMethodSpecs(
         *phEnum = cleanup.release();
     }
     return enumImpl->ReadTokens(rMethodSpecs, cMax, pcMethodSpecs);
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetAssemblyProps(
+    mdAssembly  mda,
+    void const  **ppbPublicKey,
+    ULONG       *pcbPublicKey,
+    ULONG       *pulHashAlgId,
+    _Out_writes_to_opt_(cchName, *pchName)
+    LPWSTR      szName,
+    ULONG       cchName,
+    ULONG       *pchName,
+    ASSEMBLYMETADATA *pMetaData,
+    DWORD       *pdwAssemblyFlags)
+{
+    mdcursor_t cursor;
+
+    if (!md_token_to_cursor(_md_ptr.get(), mda, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    if (ppbPublicKey != nullptr)
+    {
+        uint8_t const* publicKey;
+        uint32_t publicKeySize;
+        if (1 != md_get_column_value_as_blob(cursor, mdtAssembly_PublicKey, 1, &publicKey, &publicKeySize))
+            return CLDB_E_FILE_CORRUPT;
+
+        *ppbPublicKey = publicKey;
+        *pcbPublicKey = publicKeySize;
+    }
+
+    if (pulHashAlgId != nullptr)
+    {
+        uint32_t hashAlgId;
+        if (1 != md_get_column_value_as_constant(cursor, mdtAssembly_HashAlgId, 1, &hashAlgId))
+            return CLDB_E_FILE_CORRUPT;
+        *pulHashAlgId = hashAlgId;
+    }
+
+    if (pMetaData != nullptr)
+    {
+        uint32_t majorVersion;
+        uint32_t minorVersion;
+        uint32_t buildNumber;
+        uint32_t patchNumber;
+        if (1 != md_get_column_value_as_constant(cursor, mdtAssembly_MajorVersion, 1, &majorVersion))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (1 != md_get_column_value_as_constant(cursor, mdtAssembly_MinorVersion, 1, &minorVersion))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (1 != md_get_column_value_as_constant(cursor, mdtAssembly_BuildNumber, 1, &buildNumber))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (1 != md_get_column_value_as_constant(cursor, mdtAssembly_RevisionNumber, 1, &patchNumber))
+            return CLDB_E_FILE_CORRUPT;
+
+        pMetaData->usMajorVersion = static_cast<uint16_t>(majorVersion);
+        pMetaData->usMinorVersion = static_cast<uint16_t>(minorVersion);
+        pMetaData->usBuildNumber = static_cast<uint16_t>(buildNumber);
+        pMetaData->usRevisionNumber = static_cast<uint16_t>(patchNumber);
+
+        char const* culture;
+        if (1 != md_get_column_value_as_utf8(cursor, mdtAssembly_Culture, 1, &culture))
+            return CLDB_E_FILE_CORRUPT;
+
+        HRESULT hr;
+        RETURN_IF_FAILED(ConvertAndReturnStringOutput(culture, pMetaData->szLocale, pMetaData->cbLocale, &pMetaData->cbLocale));
+
+        // We do not read the AssemblyOS or AssemblyProcessor tables to fill these arrays since neither .NET Framework or CoreCLR do.
+        pMetaData->ulProcessor = 0;
+        pMetaData->ulOS = 0;
+    }
+
+    if (pdwAssemblyFlags != nullptr)
+    {
+        uint32_t assemblyFlags;
+        if (1 != md_get_column_value_as_constant(cursor, mdtAssembly_Flags, 1, &assemblyFlags))
+            return CLDB_E_FILE_CORRUPT;
+
+        uint8_t const* publicKey;
+        uint32_t publicKeySize;
+        if (1 != md_get_column_value_as_blob(cursor, mdtAssembly_PublicKey, 1, &publicKey, &publicKeySize))
+            return CLDB_E_FILE_CORRUPT;
+        if (publicKeySize != 0)
+            assemblyFlags |= afPublicKey;
+
+        *pdwAssemblyFlags = assemblyFlags;
+    }
+
+    if (szName != nullptr || pchName != nullptr)
+    {
+        char const* name;
+        if (1 != md_get_column_value_as_utf8(cursor, mdtAssembly_Name, 1, &name))
+            return CLDB_E_FILE_CORRUPT;
+
+        return ConvertAndReturnStringOutput(name, szName, cchName, pchName);
+    }
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetAssemblyRefProps(
+    mdAssemblyRef mdar,
+    void const  **ppbPublicKeyOrToken,
+    ULONG       *pcbPublicKeyOrToken,
+    _Out_writes_to_opt_(cchName, *pchName)
+    LPWSTR      szName,
+    ULONG       cchName,
+    ULONG       *pchName,
+    ASSEMBLYMETADATA *pMetaData,
+    void const  **ppbHashValue,
+    ULONG       *pcbHashValue,
+    DWORD       *pdwAssemblyRefFlags)
+{
+    mdcursor_t cursor;
+
+    if (!md_token_to_cursor(_md_ptr.get(), mdar, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    if (ppbPublicKeyOrToken != nullptr)
+    {
+        uint8_t const* publicKeyOrToken;
+        uint32_t publicKeyOrTokenSize;
+        if (1 != md_get_column_value_as_blob(cursor, mdtAssemblyRef_PublicKeyOrToken, 1, &publicKeyOrToken, &publicKeyOrTokenSize))
+            return CLDB_E_FILE_CORRUPT;
+
+        *ppbPublicKeyOrToken = publicKeyOrToken;
+        *pcbPublicKeyOrToken = publicKeyOrTokenSize;
+    }
+
+    if (ppbHashValue != nullptr)
+    {
+        uint8_t const* hashValue;
+        uint32_t hashValueSize;
+        if (1 != md_get_column_value_as_blob(cursor, mdtAssemblyRef_HashValue, 1, &hashValue, &hashValueSize))
+            return CLDB_E_FILE_CORRUPT;
+        *ppbHashValue = hashValue;
+        *pcbHashValue = hashValueSize;
+    }
+
+    if (pMetaData != nullptr)
+    {
+        uint32_t majorVersion;
+        uint32_t minorVersion;
+        uint32_t buildNumber;
+        uint32_t patchNumber;
+        if (1 != md_get_column_value_as_constant(cursor, mdtAssemblyRef_MajorVersion, 1, &majorVersion))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (1 != md_get_column_value_as_constant(cursor, mdtAssemblyRef_MinorVersion, 1, &minorVersion))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (1 != md_get_column_value_as_constant(cursor, mdtAssemblyRef_BuildNumber, 1, &buildNumber))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (1 != md_get_column_value_as_constant(cursor, mdtAssemblyRef_RevisionNumber, 1, &patchNumber))
+            return CLDB_E_FILE_CORRUPT;
+
+        pMetaData->usMajorVersion = static_cast<uint16_t>(majorVersion);
+        pMetaData->usMinorVersion = static_cast<uint16_t>(minorVersion);
+        pMetaData->usBuildNumber = static_cast<uint16_t>(buildNumber);
+        pMetaData->usRevisionNumber = static_cast<uint16_t>(patchNumber);
+
+        char const* culture;
+        if (1 != md_get_column_value_as_utf8(cursor, mdtAssemblyRef_Culture, 1, &culture))
+            return CLDB_E_FILE_CORRUPT;
+
+        HRESULT hr;
+        RETURN_IF_FAILED(ConvertAndReturnStringOutput(culture, pMetaData->szLocale, pMetaData->cbLocale, &pMetaData->cbLocale));
+
+        // We do not read the AssemblyRefOS or AssemblyRefProcessor tables to fill these arrays since neither .NET Framework or CoreCLR do.
+        pMetaData->ulProcessor = 0;
+        pMetaData->ulOS = 0;
+    }
+
+    if (pdwAssemblyRefFlags != nullptr)
+    {
+        uint32_t assemblyRefFlags;
+        if (1 != md_get_column_value_as_constant(cursor, mdtAssemblyRef_Flags, 1, &assemblyRefFlags))
+            return CLDB_E_FILE_CORRUPT;
+
+        *pdwAssemblyRefFlags = assemblyRefFlags;
+    }
+
+    if (szName != nullptr || pchName != nullptr)
+    {
+        char const* name;
+        if (1 != md_get_column_value_as_utf8(cursor, mdtAssemblyRef_Name, 1, &name))
+            return CLDB_E_FILE_CORRUPT;
+
+        return ConvertAndReturnStringOutput(name, szName, cchName, pchName);
+    }
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetFileProps(
+    mdFile      mdf,
+    _Out_writes_to_opt_(cchName, *pchName)
+    LPWSTR      szName,
+    ULONG       cchName,
+    ULONG       *pchName,
+    void const  **ppbHashValue,
+    ULONG       *pcbHashValue,
+    DWORD       *pdwFileFlags)
+{
+    mdcursor_t cursor;
+
+    if (!md_token_to_cursor(_md_ptr.get(), mdf, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    if (ppbHashValue != nullptr)
+    {
+        uint8_t const* hashValue;
+        uint32_t hashValueSize;
+        if (1 != md_get_column_value_as_blob(cursor, mdtFile_HashValue, 1, &hashValue, &hashValueSize))
+            return CLDB_E_FILE_CORRUPT;
+        *ppbHashValue = hashValue;
+        *pcbHashValue = hashValueSize;
+    }
+
+    if (pdwFileFlags != nullptr)
+    {
+        uint32_t fileFlags;
+        if (1 != md_get_column_value_as_constant(cursor, mdtFile_Flags, 1, &fileFlags))
+            return CLDB_E_FILE_CORRUPT;
+
+        *pdwFileFlags = fileFlags;
+    }
+
+    if (szName != nullptr || pchName != nullptr)
+    {
+        char const* name;
+        if (1 != md_get_column_value_as_utf8(cursor, mdtFile_Name, 1, &name))
+            return CLDB_E_FILE_CORRUPT;
+
+        return ConvertAndReturnStringOutput(name, szName, cchName, pchName);
+    }
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetExportedTypeProps(
+    mdExportedType   mdct,
+    _Out_writes_to_opt_(cchName, *pchName)
+    LPWSTR      szName,
+    ULONG       cchName,
+    ULONG       *pchName,
+    mdToken     *ptkImplementation,
+    mdTypeDef   *ptkTypeDef,
+    DWORD       *pdwExportedTypeFlags)
+{
+    mdcursor_t cursor;
+
+    if (!md_token_to_cursor(_md_ptr.get(), mdct, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    if (ptkImplementation != nullptr)
+    {
+        if (1 != md_get_column_value_as_token(cursor, mdtExportedType_Implementation, 1, ptkImplementation))
+            return CLDB_E_FILE_CORRUPT;
+    }
+
+    if (ptkTypeDef != nullptr)
+    {
+        // This column points into the TypeDef table of another module,
+        // so it isn't a true column reference here.
+        if (1 != md_get_column_value_as_constant(cursor, mdtExportedType_TypeDefId, 1, ptkTypeDef))
+            return CLDB_E_FILE_CORRUPT;
+    }
+
+    if (pdwExportedTypeFlags != nullptr)
+    {
+        uint32_t exportedTypeFlags;
+        if (1 != md_get_column_value_as_constant(cursor, mdtExportedType_Flags, 1, &exportedTypeFlags))
+            return CLDB_E_FILE_CORRUPT;
+
+        *pdwExportedTypeFlags = exportedTypeFlags;
+    }
+
+    if (szName != nullptr || pchName != nullptr)
+    {
+        char const* name;
+        if (1 != md_get_column_value_as_utf8(cursor, mdtExportedType_TypeName, 1, &name))
+            return CLDB_E_FILE_CORRUPT;
+
+        char const* nspace;
+        if (1 != md_get_column_value_as_utf8(cursor, mdtExportedType_TypeNamespace, 1, &nspace))
+            return CLDB_E_FILE_CORRUPT;
+
+        HRESULT hr;
+        malloc_ptr<char> mem;
+        RETURN_IF_FAILED(ConstructTypeName(nspace, name, mem));
+
+        return ConvertAndReturnStringOutput((char*)mem.get(), szName, cchName, pchName);
+    }
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetManifestResourceProps(
+    mdManifestResource  mdmr,
+    _Out_writes_to_opt_(cchName, *pchName)
+    LPWSTR      szName,
+    ULONG       cchName,
+    ULONG       *pchName,
+    mdToken     *ptkImplementation,
+    DWORD       *pdwOffset,
+    DWORD       *pdwResourceFlags)
+{
+    mdcursor_t cursor;
+
+    if (!md_token_to_cursor(_md_ptr.get(), mdmr, &cursor))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    if (ptkImplementation != nullptr)
+    {
+        if (1 != md_get_column_value_as_token(cursor, mdtManifestResource_Implementation, 1, ptkImplementation))
+            return CLDB_E_FILE_CORRUPT;
+    }
+
+    if (pdwOffset != nullptr)
+    {
+        uint32_t offset;
+        if (1 != md_get_column_value_as_constant(cursor, mdtManifestResource_Offset, 1, &offset))
+            return CLDB_E_FILE_CORRUPT;
+
+        *pdwOffset = offset;
+    }
+
+    if (pdwResourceFlags != nullptr)
+    {
+        uint32_t resourceFlags;
+        if (1 != md_get_column_value_as_constant(cursor, mdtManifestResource_Flags, 1, &resourceFlags))
+            return CLDB_E_FILE_CORRUPT;
+
+        *pdwResourceFlags = resourceFlags;
+    }
+    if (szName != nullptr || pchName != nullptr)
+    {
+        char const* name;
+        if (1 != md_get_column_value_as_utf8(cursor, mdtManifestResource_Name, 1, &name))
+            return CLDB_E_FILE_CORRUPT;
+
+        return ConvertAndReturnStringOutput(name, szName, cchName, pchName);
+    }
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumAssemblyRefs(
+    HCORENUM    *phEnum,
+    mdAssemblyRef rAssemblyRefs[],
+    ULONG       cMax,
+    ULONG       *pcTokens)
+{
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        RETURN_IF_FAILED(CreateEnumTokens(_md_ptr.get(), mdtid_AssemblyRef, &enumImpl));
+        *phEnum = enumImpl;
+    }
+    return enumImpl->ReadTokens(rAssemblyRefs, cMax, pcTokens);
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumFiles(
+    HCORENUM    *phEnum,
+    mdFile      rFiles[],
+    ULONG       cMax,
+    ULONG       *pcTokens)
+{
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        RETURN_IF_FAILED(CreateEnumTokens(_md_ptr.get(), mdtid_File, &enumImpl));
+        *phEnum = enumImpl;
+    }
+    return enumImpl->ReadTokens(rFiles, cMax, pcTokens);
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumExportedTypes(
+    HCORENUM    *phEnum,
+    mdExportedType   rExportedTypes[],
+    ULONG       cMax,
+    ULONG       *pcTokens)
+{
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        RETURN_IF_FAILED(CreateEnumTokens(_md_ptr.get(), mdtid_ExportedType, &enumImpl));
+        *phEnum = enumImpl;
+    }
+    return enumImpl->ReadTokens(rExportedTypes, cMax, pcTokens);
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::EnumManifestResources(
+    HCORENUM    *phEnum,
+    mdManifestResource  rManifestResources[],
+    ULONG       cMax,
+    ULONG       *pcTokens)
+{
+    HRESULT hr;
+    HCORENUMImpl* enumImpl = ToHCORENUMImpl(*phEnum);
+    if (enumImpl == nullptr)
+    {
+        RETURN_IF_FAILED(CreateEnumTokens(_md_ptr.get(), mdtid_ManifestResource, &enumImpl));
+        *phEnum = enumImpl;
+    }
+    return enumImpl->ReadTokens(rManifestResources, cMax, pcTokens);
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::GetAssemblyFromScope(
+    mdAssembly  *ptkAssembly)
+{
+    mdcursor_t cursor;
+    uint32_t count;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_Assembly, &cursor, &count))
+        return CLDB_E_RECORD_NOTFOUND;
+    if (!md_cursor_to_token(cursor, ptkAssembly))
+        return CLDB_E_FILE_CORRUPT;
+    return S_OK;
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::FindExportedTypeByName(
+    LPCWSTR     szName,
+    mdToken     mdtExportedType,
+    mdExportedType   *ptkExportedType)
+{
+    if (szName == nullptr)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    uint32_t count;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_ExportedType, &cursor, &count))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    pal::StringConvert<WCHAR, char> cvt{ szName };
+    if (!cvt.Success())
+        return E_INVALIDARG;
+    char const* nspace;
+    char const* name;
+    SplitTypeName(cvt, &nspace, &name);
+
+    for (uint32_t i = 0; i < count; md_cursor_next(&cursor), i++)
+    {
+        mdToken implementation;
+        if (1 != md_get_column_value_as_token(cursor, mdtExportedType_Implementation, 1, &implementation))
+            return CLDB_E_FILE_CORRUPT;
+
+        // Handle the case of nested vs. non-nested classes
+        if (TypeFromToken(implementation) == CorTokenType::mdtExportedType && !IsNilToken(implementation))
+        {
+            // Current ExportedType being looked at is a nested type, so
+            // comparing the implementation token.
+            if (implementation != mdtExportedType)
+                continue;
+        }
+        else if (TypeFromToken(mdtExportedType) == mdtExportedType
+                && !IsNilToken(mdtExportedType))
+        {
+            // ExportedType passed in is nested but the current ExportedType is not.
+            continue;
+        }
+
+        char const* recordNspace;
+        if (1 != md_get_column_value_as_utf8(cursor, mdtExportedType_TypeNamespace, 1, &recordNspace))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (::strcmp(nspace, recordNspace) != 0)
+            continue;
+
+        char const* recordName;
+        if (1 != md_get_column_value_as_utf8(cursor, mdtExportedType_TypeName, 1, &recordName))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (::strcmp(name, recordName) != 0)
+            continue;
+
+        if (!md_cursor_to_token(cursor, ptkExportedType))
+            return CLDB_E_FILE_CORRUPT;
+        return S_OK;
+    }
+    return CLDB_E_RECORD_NOTFOUND;
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::FindManifestResourceByName(
+    LPCWSTR     szName,
+    mdManifestResource *ptkManifestResource)
+{
+    if (szName == nullptr)
+        return E_INVALIDARG;
+
+    mdcursor_t cursor;
+    uint32_t count;
+    if (!md_create_cursor(_md_ptr.get(), mdtid_ManifestResource, &cursor, &count))
+        return CLDB_E_RECORD_NOTFOUND;
+
+    pal::StringConvert<WCHAR, char> cvt{ szName };
+    if (!cvt.Success())
+        return E_INVALIDARG;
+
+    for (uint32_t i = 0; i < count; md_cursor_next(&cursor), i++)
+    {
+        mdManifestResource token;
+        if (!md_cursor_to_token(cursor, &token))
+            return CLDB_E_FILE_CORRUPT;
+
+        char const* name;
+        if (1 != md_get_column_value_as_utf8(cursor, mdtManifestResource_Name, 1, &name))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (::strncmp(name, cvt, cvt.Length()) == 0)
+        {
+            *ptkManifestResource = token;
+            return S_OK;
+        }
+    }
+    return CLDB_E_RECORD_NOTFOUND;
+}
+
+HRESULT STDMETHODCALLTYPE MetadataImportRO::FindAssembliesByName(
+    LPCWSTR  szAppBase,
+    LPCWSTR  szPrivateBin,
+    LPCWSTR  szAssemblyName,
+    IUnknown *ppIUnk[],
+    ULONG    cMax,
+    ULONG    *pcAssemblies)
+{
+    UNREFERENCED_PARAMETER(szAppBase);
+    UNREFERENCED_PARAMETER(szPrivateBin);
+    UNREFERENCED_PARAMETER(szAssemblyName);
+    UNREFERENCED_PARAMETER(ppIUnk);
+    UNREFERENCED_PARAMETER(cMax);
+    UNREFERENCED_PARAMETER(pcAssemblies);
+    // Requires VM knowledge and is only supported in .NET Framework.
+    return E_NOTIMPL;
 }

@@ -8,7 +8,10 @@
 
 #include <internal/dnmd_platform.hpp>
 
-class MetadataImportRO final : public IMetaDataImport2
+// C++ lifetime wrapper for CoTaskMemAlloc'd memory
+using cotaskmem_ptr = dncp::cotaskmem_ptr<void>;
+
+class MetadataImportRO final : public IMetaDataImport2, public IMetaDataAssemblyImport
 {
     std::atomic_uint32_t _refCount;
     mdhandle_ptr _md_ptr;
@@ -426,7 +429,7 @@ public: // IMetaDataImport
     STDMETHOD(GetCustomAttributeByName)(
         mdToken     tkObj,
         LPCWSTR     szName,
-        const void  **ppData,
+        void const  **ppData,
         ULONG       *pcbData) override;
 
     STDMETHOD_(BOOL, IsValidToken)(
@@ -499,6 +502,101 @@ public: // IMetaDataImport2
         ULONG       cMax,
         ULONG       *pcMethodSpecs) override;
 
+public: // IMetaDataAssemblyImport
+    STDMETHOD(GetAssemblyProps)(
+        mdAssembly  mda,
+        void const  **ppbPublicKey,
+        ULONG       *pcbPublicKey,
+        ULONG       *pulHashAlgId,
+        _Out_writes_to_opt_(cchName, *pchName) LPWSTR  szName,
+        ULONG       cchName,
+        ULONG       *pchName,
+        ASSEMBLYMETADATA *pMetaData,
+        DWORD       *pdwAssemblyFlags) override;
+
+    STDMETHOD(GetAssemblyRefProps)(
+        mdAssemblyRef mdar,
+        void const  **ppbPublicKeyOrToken,
+        ULONG       *pcbPublicKeyOrToken,
+        _Out_writes_to_opt_(cchName, *pchName)LPWSTR szName,
+        ULONG       cchName,
+        ULONG       *pchName,
+        ASSEMBLYMETADATA *pMetaData,
+        void const  **ppbHashValue,
+        ULONG       *pcbHashValue,
+        DWORD       *pdwAssemblyRefFlags) override;
+
+    STDMETHOD(GetFileProps)(
+        mdFile      mdf,
+        _Out_writes_to_opt_(cchName, *pchName) LPWSTR      szName,
+        ULONG       cchName,
+        ULONG       *pchName,
+        void const  **ppbHashValue,
+        ULONG       *pcbHashValue,
+        DWORD       *pdwFileFlags) override;
+
+    STDMETHOD(GetExportedTypeProps)(
+        mdExportedType   mdct,
+        _Out_writes_to_opt_(cchName, *pchName) LPWSTR      szName,
+        ULONG       cchName,
+        ULONG       *pchName,
+        mdToken     *ptkImplementation,
+        mdTypeDef   *ptkTypeDef,
+        DWORD       *pdwExportedTypeFlags) override;
+
+    STDMETHOD(GetManifestResourceProps)(
+        mdManifestResource  mdmr,
+        _Out_writes_to_opt_(cchName, *pchName)LPWSTR      szName,
+        ULONG       cchName,
+        ULONG       *pchName,
+        mdToken     *ptkImplementation,
+        DWORD       *pdwOffset,
+        DWORD       *pdwResourceFlags) override;
+
+    STDMETHOD(EnumAssemblyRefs)(
+        HCORENUM    *phEnum,
+        mdAssemblyRef rAssemblyRefs[],
+        ULONG       cMax,
+        ULONG       *pcTokens) override;
+
+    STDMETHOD(EnumFiles)(
+        HCORENUM    *phEnum,
+        mdFile      rFiles[],
+        ULONG       cMax,
+        ULONG       *pcTokens) override;
+
+    STDMETHOD(EnumExportedTypes)(
+        HCORENUM    *phEnum,
+        mdExportedType   rExportedTypes[],
+        ULONG       cMax,
+        ULONG       *pcTokens) override;
+
+    STDMETHOD(EnumManifestResources)(
+        HCORENUM    *phEnum,
+        mdManifestResource  rManifestResources[],
+        ULONG       cMax,
+        ULONG       *pcTokens) override;
+
+    STDMETHOD(GetAssemblyFromScope)(
+        mdAssembly  *ptkAssembly) override;
+
+    STDMETHOD(FindExportedTypeByName)(
+        LPCWSTR     szName,
+        mdToken     mdtExportedType,
+        mdExportedType   *ptkExportedType) override;
+
+    STDMETHOD(FindManifestResourceByName)(
+        LPCWSTR     szName,
+        mdManifestResource *ptkManifestResource) override;
+
+    STDMETHOD(FindAssembliesByName)(
+        LPCWSTR  szAppBase,
+        LPCWSTR  szPrivateBin,
+        LPCWSTR  szAssemblyName,
+        IUnknown *ppIUnk[],
+        ULONG    cMax,
+        ULONG    *pcAssemblies) override;
+
 public: // IUnknown
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(
         /* [in] */ REFIID riid,
@@ -509,11 +607,15 @@ public: // IUnknown
 
         if (riid == IID_IUnknown)
         {
-            *ppvObject = static_cast<IUnknown*>(this);
+            *ppvObject = static_cast<IUnknown*>(static_cast<IMetaDataImport2*>(this));
         }
         else if (riid == IID_IMetaDataImport ||riid == IID_IMetaDataImport2)
         {
             *ppvObject = static_cast<IMetaDataImport2*>(this);
+        }
+        else if (riid == IID_IMetaDataAssemblyImport)
+        {
+            *ppvObject = static_cast<IMetaDataAssemblyImport*>(this);
         }
         else
         {
