@@ -611,7 +611,7 @@ namespace System.Net.Http
                     if (!cancellationToken.IsCancellationRequested)
                     {
                         Debug.Assert(_timeout.TotalSeconds > 0);
-                        e = toThrow = new TaskCanceledException(SR.Format(SR.net_http_request_timedout, _timeout.TotalSeconds), new TimeoutException(e.Message, e), oce.CancellationToken);
+                        e = toThrow = new TaskCanceledException(SR.Format(SR.net_http_request_timedout, _timeout != s_infiniteTimeout ? _timeout.TotalSeconds.ToString() : "Infinity"), new TimeoutException(e.Message, e), oce.CancellationToken);
                     }
                 }
             }
