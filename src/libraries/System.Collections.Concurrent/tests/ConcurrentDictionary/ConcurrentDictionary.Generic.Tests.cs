@@ -4,6 +4,9 @@
 using System.Collections.Tests;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Collections.Concurrent.Tests
@@ -39,6 +42,94 @@ namespace System.Collections.Concurrent.Tests
         }
 
         protected override string CreateTValue(int seed) => CreateTKey(seed);
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NonRandomizedToRandomizedUpgrade_FunctionsCorrectly(bool ignoreCase)
+        {
+            List<string> strings = GenerateCollidingStrings(110); // higher than the collisions threshold
+
+            var cd = new ConcurrentDictionary<string, string>(ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+            for (int i = 0; i < strings.Count; i++)
+            {
+                string s = strings[i];
+
+                Assert.True(cd.TryAdd(s, s));
+                Assert.False(cd.TryAdd(s, s));
+
+                for (int j = 0; j < strings.Count; j++)
+                {
+                    Assert.Equal(j <= i, cd.ContainsKey(strings[j]));
+                }
+            }
+        }
+
+        private static List<string> GenerateCollidingStrings(int count)
+        {
+            static Func<string, int> GetHashCodeFunc(ConcurrentDictionary<string, string> cd)
+            {
+                // If the layout of ConcurrentDictionary changes, this will need to change as well.
+                object tables = cd.GetType().GetField("_tables", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(cd);
+                Assert.NotNull(tables);
+
+                FieldInfo comparerField = tables.GetType().GetField("_comparer", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                Assert.NotNull(comparerField);
+
+                IEqualityComparer<string> comparer = (IEqualityComparer<string>)comparerField.GetValue(tables);
+                Assert.NotNull(comparer);
+
+                return comparer.GetHashCode;
+            }
+
+            Func<string, int> nonRandomizedOrdinal = GetHashCodeFunc(new ConcurrentDictionary<string, string>(StringComparer.Ordinal));
+            Func<string, int> nonRandomizedOrdinalIgnoreCase = GetHashCodeFunc(new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+
+            const int StartOfRange = 0xE020; // use the Unicode Private Use range to avoid accidentally creating strings that really do compare as equal OrdinalIgnoreCase
+            const int Stride = 0x40; // to ensure we don't accidentally reset the 0x20 bit of the seed, which is used to negate OrdinalIgnoreCase effects
+            int currentSeed = StartOfRange;
+
+            List<string> collidingStrings = new List<string>(count);
+            while (collidingStrings.Count < count)
+            {
+                Assert.True(currentSeed <= ushort.MaxValue,
+                    $"Couldn't create enough colliding strings? Created {collidingStrings.Count}, needed {count}.");
+
+                // Generates a possible string with a well-known non-randomized hash code:
+                // - string.GetNonRandomizedHashCode returns 0.
+                // - string.GetNonRandomizedHashCodeOrdinalIgnoreCase returns 0x24716ca0.
+                // Provide a different seed to produce a different string.
+                // Must check OrdinalIgnoreCase hash code to ensure correctness.
+                string candidate = string.Create(8, currentSeed, static (span, seed) =>
+                {
+                    Span<byte> asBytes = MemoryMarshal.AsBytes(span);
+
+                    uint hash1 = (5381 << 16) + 5381;
+                    uint hash2 = BitOperations.RotateLeft(hash1, 5) + hash1;
+
+                    MemoryMarshal.Write(asBytes, ref seed);
+                    MemoryMarshal.Write(asBytes.Slice(4), ref hash2); // set hash2 := 0 (for Ordinal)
+
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (uint)seed;
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1);
+
+                    MemoryMarshal.Write(asBytes.Slice(8), ref hash1); // set hash1 := 0 (for Ordinal)
+                });
+
+                int ordinalHashCode = nonRandomizedOrdinal(candidate);
+                Assert.Equal(0, ordinalHashCode); // ensure has a zero hash code Ordinal
+
+                int ordinalIgnoreCaseHashCode = nonRandomizedOrdinalIgnoreCase(candidate);
+                if (ordinalIgnoreCaseHashCode == 0x24716ca0) // ensure has a zero hash code OrdinalIgnoreCase (might not have one)
+                {
+                    collidingStrings.Add(candidate); // success!
+                }
+
+                currentSeed += Stride;
+            }
+
+            return collidingStrings;
+        }
     }
 
     public class ConcurrentDictionary_Generic_Tests_ulong_ulong : ConcurrentDictionary_Generic_Tests<ulong, ulong>

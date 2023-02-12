@@ -211,11 +211,8 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
  *
  *  Convert between a register mask and a smaller version for storage.
  */
-
 /*static*/ inline void emitter::emitEncodeCallGCregs(regMaskTP regmask, instrDesc* id)
 {
-    assert((regmask & RBM_CALLEE_TRASH) == 0);
-
     unsigned encodeMask;
 
 #ifdef TARGET_X86

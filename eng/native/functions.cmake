@@ -615,7 +615,6 @@ function(link_natvis_sources_for_target targetName linkKind)
         endif()
         get_filename_component(extension "${source}" EXT)
         if ("${extension}" STREQUAL ".natvis")
-            message("Embedding natvis ${source}")
             # Since natvis embedding is only supported on Windows
             # we can use target_link_options since our minimum version is high enough
             target_link_options(${targetName} "${linkKind}" "-NATVIS:${source}")

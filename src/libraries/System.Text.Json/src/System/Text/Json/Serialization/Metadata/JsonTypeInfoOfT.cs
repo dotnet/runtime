@@ -115,7 +115,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(!IsReadOnly, "We should not mutate read-only JsonTypeInfo");
                 _serialize = value;
-                CanUseSerializeHandler = value != null;
+                HasSerializeHandler = value != null;
             }
         }
 
