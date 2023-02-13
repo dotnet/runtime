@@ -8226,7 +8226,6 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		guint8 *orig_code = code;
 
 		switch (patch_info->type) {
-		case MONO_PATCH_INFO_X128:
 		case MONO_PATCH_INFO_R8:
 		case MONO_PATCH_INFO_R4: {
 			guint8 *pos, *patch_pos;
@@ -8249,16 +8248,38 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				target_pos = GPTRDIFF_TO_UINT32 (code - pos - 8);
 			}
 
-			if (patch_info->type == MONO_PATCH_INFO_X128) {
-				memcpy (code, patch_info->data.target, 16);
-				code += 16;
-			} else if (patch_info->type == MONO_PATCH_INFO_R8) {
+			if (patch_info->type == MONO_PATCH_INFO_R8) {
 				*(double*)code = *(double*)patch_info->data.target;
 				code += sizeof (double);
 			} else {
 				*(float*)code = *(float*)patch_info->data.target;
 				code += sizeof (float);
 			}
+
+			*(guint32*)(patch_pos) = target_pos;
+
+			remove = TRUE;
+			break;
+		}
+		case MONO_PATCH_INFO_X128: {
+			guint8 *pos, *patch_pos;
+			guint32 target_pos;
+
+			/* The SSE opcodes require a 16 byte alignment */
+			code = (guint8*)ALIGN_TO (code, 16);
+
+			pos = cfg->native_code + patch_info->ip.i;
+			if (IS_REX (pos [0])) {
+				patch_pos = pos + 4;
+				target_pos = GPTRDIFF_TO_UINT32 (code - pos - 8);
+			}
+			else {
+				patch_pos = pos + 3;
+				target_pos = GPTRDIFF_TO_UINT32 (code - pos - 7);
+			}
+
+			memcpy (code, patch_info->data.target, 16);
+			code += 16;
 
 			*(guint32*)(patch_pos) = target_pos;
 
