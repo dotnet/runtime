@@ -23,8 +23,8 @@
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs" Link="Common\System\EnumTypes.cs" />
     <Compile Include="$(CommonTestPath)System\FunctionPointerTests.cs" Link="Common\System\FunctionPointerTests.cs" />
-    <Compile Include="$(CommonTestPath)System\FunctionPointerTests.CallingConventions.cs" Link="Common\System\FunctionPointerTests.CallingConventions.cs" />
-    <Compile Include="$(CommonTestPath)System\FunctionPointerTests.Identity.cs" Link="Common\System\FunctionPointerTests.Identity.cs" />
+    <Compile Include="$(CommonTestPath)System\FunctionPointerCallingConventionTests.cs" Link="Common\System\FunctionPointerCallingConventionTests.cs" />
+    <Compile Include="$(CommonTestPath)System\FunctionPointerEqualityTests.cs" Link="Common\System\FunctionPointerEqualityTests.cs" />
     <Compile Include="$(CommonTestPath)System\MockType.cs" Link="Common\System\MockType.cs" />
     <Compile Include="$(CommonTestPath)System\ModifiedTypeTests.cs" Link="Common\System\ModifiedTypeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs" Link="Common\System\Collections\CollectionAsserts.cs" />
@@ -338,7 +338,7 @@
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true" />
 
-    <ProjectReference Include="$(CommonPath)..\tests\System\TestReflectionILAssembly\TestReflectionILAssembly.ilproj" Link="Common\System\TestReflectionILAssembly\TestReflectionILAssembly.ilproj" />
+    <ProjectReference Include="$(CommonPath)..\tests\System\TestILAssembly\TestILAssembly.ilproj" Link="Common\System\TestILAssembly\TestILAssembly.ilproj" />
     <ProjectReference Include="$(CommonPath)..\tests\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" Link="Common\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" />
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />

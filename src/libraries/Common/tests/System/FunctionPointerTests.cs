@@ -279,8 +279,9 @@ namespace System.Tests.Types
             Assert.Equal<Type>(Type.EmptyTypes, fnPtrType.GetFunctionPointerReturnType().GetRequiredCustomModifiers());
         }
 
-        public unsafe partial class FunctionPointerHolder
+        private unsafe class FunctionPointerHolder
         {
+#pragma warning disable 0649
             public delegate*<void> ToString_1;
             public delegate*unmanaged<void> ToString_2;
             public delegate*<int> ToString_3;
@@ -292,20 +293,14 @@ namespace System.Tests.Types
             public delegate*<delegate*<int, string>, bool> ToString_9;
 
             public delegate* managed<int> Field_Int;
-            public delegate* managed<DateOnly> Field_DateOnly; // Verify non-primitive
             public delegate* managed<MyClass> Field_MyClass;
+#pragma warning restore 0649
+
             public delegate* managed<int> Prop_Int { get; }
-            public delegate* managed<DateOnly> Prop_DateOnly { get; }
             public delegate* managed<MyClass> Prop_MyClass { get; }
-            public delegate* managed<int> MethodReturnValue_Int() => default;
-            public delegate* managed<DateOnly> MethodReturnValue_DateOnly() => default;
-            public delegate* unmanaged<int> MethodUnmanagedReturnValue_Int() => default;
-            public delegate* unmanaged<DateOnly> MethodUnmanagedReturnValue_DateOnly() => default;
 
             public delegate* managed<int> MethodReturnValue1() => default;
             public delegate* managed<int> MethodReturnValue2() => default;
-            public delegate* unmanaged<int> MethodUnmanagedReturnValue1() => default;
-            public delegate* unmanaged<bool> MethodUnmanagedReturnValue2() => default;
 
             public delegate* unmanaged[Stdcall, MemberFunction]<string, ref bool*, MyClass, in MyStruct, double> SeveralArguments() => default;
             public delegate*<in int, out int, void> RequiredModifiers() => default;

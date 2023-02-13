@@ -8,8 +8,10 @@ using Xunit;
 
 namespace System.Tests.Types
 {
-    public partial class FunctionPointerTests
+    public partial class FunctionPointerCallingConventionTests
     {
+        private const BindingFlags Bindings = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -166,10 +168,30 @@ namespace System.Tests.Types
             Assert.Equal(0, returnType.GetRequiredCustomModifiers().Length);
         }
 
-        public unsafe partial class FunctionPointerHolder
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void GenericTypeParameter()
+        {
+            Type holder = typeof(FunctionPointerHolder).Project();
+            FieldInfo f = holder.GetField(nameof(FunctionPointerHolder._genericType), Bindings);
+            Type propType = f.FieldType.GetProperty("MyProp").GetModifiedPropertyType();
+
+            // Requires skipping past the return parameter metadata in order to get to the metadata for the first parameter.
+            Type paramType = propType.GetFunctionPointerParameterTypes()[1];
+            Type[] cc = paramType.GetFunctionPointerCallingConventions();
+            Assert.Equal(1, cc.Length);
+            Assert.Equal(typeof(CallConvCdecl).Project(), cc[0]);
+        }
+
+        private unsafe partial class FunctionPointerHolder
         {
             public delegate* unmanaged[Cdecl, MemberFunction]<int> MethodUnmanagedReturnValue_DifferentCallingConventions1() => default;
             public delegate* unmanaged[Stdcall, MemberFunction]<int> MethodUnmanagedReturnValue_DifferentCallingConventions2() => default;
+
+#pragma warning disable 0649
+            public MyGenericClass<delegate*<int, int, int>[]> _genericType;
+#pragma warning restore 0649
 
             // Methods to verify calling conventions and synthesized modopts.
             // The non-SuppressGCTransition variants are encoded with the CallKind byte.
@@ -183,6 +205,13 @@ namespace System.Tests.Types
             public void MethodCallConv_Thiscall_SuppressGCTransition(delegate* unmanaged[Thiscall, SuppressGCTransition]<void> f) { }
             public void MethodCallConv_Fastcall(delegate* unmanaged[Fastcall]<void> f) { }
             public void MethodCallConv_Fastcall_SuppressGCTransition(delegate* unmanaged[Fastcall, SuppressGCTransition]<void> f) { }
+
+            public class MyClass { }
+
+            public unsafe class MyGenericClass<T>
+            {
+                public delegate*<T, delegate* unmanaged[Cdecl]<void>, void> MyProp { get; }
+            }
         }
     }
 }

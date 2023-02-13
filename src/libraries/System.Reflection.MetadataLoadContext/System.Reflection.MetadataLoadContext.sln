@@ -19,7 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.MetadataL
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestFunctionPointerAssembly", "..\Common\tests\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj", "{F85BDD51-AC29-4D8D-8257-C509BED9A448}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestReflectionILAssembly", "..\Common\tests\System\TestReflectionILAssembly\TestReflectionILAssembly.ilproj", "{6DA9926C-8763-42A2-A51A-EDF8684C80A8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestILAssembly", "..\Common\tests\System\TestILAssembly\TestILAssembly.ilproj", "{6DA9926C-8763-42A2-A51A-EDF8684C80A8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{4361CEFA-8238-4247-9CC5-D99DF794843C}"
 EndProject

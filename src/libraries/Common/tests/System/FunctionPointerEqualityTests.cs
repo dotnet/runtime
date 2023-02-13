@@ -10,12 +10,14 @@ namespace System.Tests.Types
     // Also see ModifiedTypeTests which tests custom modifiers.
     // Unmodified Type instances are cached and keyed by the runtime.
     // Modified Type instances are created for each member.
-    public partial class FunctionPointerTests
+    public partial class FunctionPointerEqualityTests
     {
+        private const BindingFlags Bindings = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void FunctionUnmanagedPointerReturn_DifferentReturnValue()
+        public static unsafe void DifferentReturnValue()
         {
             Type t = typeof(FunctionPointerHolder).Project();
 
@@ -34,7 +36,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.Field_DateOnly), nameof(FunctionPointerHolder.Field_Int))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void SigEqualityInDifferentModule_Field(string name, string otherName)
+        public static unsafe void SigInDifferentModule_Field(string name, string otherName)
         {
             Type fph1 = typeof(FunctionPointerHolder).Project();
             Type fph2 = typeof(FunctionPointerHolderSeparateModule).Project();
@@ -54,7 +56,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.Prop_DateOnly), nameof(FunctionPointerHolder.Prop_Int))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void SigEqualityInDifferentModule_Property(string name, string otherName)
+        public static unsafe void SigInDifferentModule_Property(string name, string otherName)
         {
             Type fph1 = typeof(FunctionPointerHolder).Project();
             Type fph2 = typeof(FunctionPointerHolderSeparateModule).Project();
@@ -74,7 +76,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodReturnValue_DateOnly), nameof(FunctionPointerHolder.MethodReturnValue_Int))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void SigEqualityInDifferentModule_MethodReturn(string name, string otherName)
+        public static unsafe void SigInDifferentModule_MethodReturn(string name, string otherName)
         {
             Type fph1 = typeof(FunctionPointerHolder).Project();
             Type fph2 = typeof(FunctionPointerHolderSeparateModule).Project();
@@ -96,7 +98,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Fastcall))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void CallingConventionIdentity_Unmodified(string methodName1, string methodName2)
+        public static unsafe void CallingConvention_Unmodified(string methodName1, string methodName2)
         {
             Type t = typeof(FunctionPointerHolder).Project();
             MethodInfo m1 = t.GetMethod(methodName1, Bindings);
@@ -115,7 +117,7 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Fastcall))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void CallingConventionIdentity_Modified(string methodName1, string methodName2)
+        public static unsafe void CallingConvention_Modified(string methodName1, string methodName2)
         {
             Type t = typeof(FunctionPointerHolder).Project();
             MethodInfo m1 = t.GetMethod(methodName1, Bindings);
@@ -125,6 +127,31 @@ namespace System.Tests.Types
             Type fnPtrType2 = m2.GetParameters()[0].GetModifiedParameterType();
 
             Assert.True(fnPtrType1.IsFunctionPointerNotEqual(fnPtrType2));
+        }
+
+        private unsafe class FunctionPointerHolder
+        {
+#pragma warning disable 0649
+            public delegate* managed<int> Field_Int;
+            public delegate* managed<DateOnly> Field_DateOnly; // Verify non-primitive
+#pragma warning restore 0649
+
+            public delegate* managed<int> Prop_Int { get; }
+            public delegate* managed<DateOnly> Prop_DateOnly { get; }
+            public delegate* managed<int> MethodReturnValue_Int() => default;
+            public delegate* managed<DateOnly> MethodReturnValue_DateOnly() => default;
+
+            public delegate* unmanaged<int> MethodUnmanagedReturnValue1() => default;
+            public delegate* unmanaged<bool> MethodUnmanagedReturnValue2() => default;
+
+            // Methods to verify calling conventions and synthesized modopts.
+            // The non-SuppressGCTransition variants are encoded with the CallKind byte.
+            // The SuppressGCTransition variants are encoded as modopts (CallKind is "Unmananged").
+            public void MethodCallConv_Cdecl(delegate* unmanaged[Cdecl]<void> f) { }
+            public void MethodCallConv_Cdecl_SuppressGCTransition(delegate* unmanaged[Cdecl, SuppressGCTransition]<void> f) { }
+            public void MethodCallConv_Stdcall(delegate* unmanaged[Stdcall]<void> f) { }
+            public void MethodCallConv_Thiscall(delegate* unmanaged[Thiscall]<void> f) { }
+            public void MethodCallConv_Fastcall(delegate* unmanaged[Fastcall]<void> f) { }
         }
     }
 }

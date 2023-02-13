@@ -5,6 +5,6 @@
     <TestStrongNameKeyId>Microsoft</TestStrongNameKeyId>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="GenericWithModifiers.il" />
+    <Compile Include="TestILAssembly.il" />
   </ItemGroup>
 </Project>

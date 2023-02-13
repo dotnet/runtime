@@ -379,7 +379,7 @@ public:
 
     static FCDECL2(INT32, GetParameterOffset, SignatureNative* pSig, INT32 parameterIndex);
 
-    static FCDECL3(INT32, GetTypeParameterFromOffset, SignatureNative* pSig, INT32 offset, INT32 index);
+    static FCDECL3(INT32, GetTypeParameterOffset, SignatureNative* pSig, INT32 offset, INT32 index);
 
     static FCDECL2(FC_INT8_RET, GetCallingConventionFromFunctionPointerAtOffset, SignatureNative* pSig, INT32 offset);
 

@@ -1867,7 +1867,7 @@ FCIMPL2(INT32, SignatureNative::GetParameterOffset, SignatureNative* pSignatureU
 }
 FCIMPLEND
 
-FCIMPL3(INT32, SignatureNative::GetTypeParameterFromOffset, SignatureNative* pSignatureUNSAFE, INT32 offset, INT32 index)
+FCIMPL3(INT32, SignatureNative::GetTypeParameterOffset, SignatureNative* pSignatureUNSAFE, INT32 offset, INT32 index)
 {
     FCALL_CONTRACT;
 

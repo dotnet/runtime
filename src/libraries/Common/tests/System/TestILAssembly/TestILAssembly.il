@@ -7,12 +7,12 @@
   .ver 4:0:0:0
 }
 
-.assembly TestReflectionILAssembly
+.assembly TestILAssembly
 {
     .ver 1:0:0:0
 }
 
-.module TestReflectionILAssembly.dll
+.module TestILAssembly.dll
 
 .namespace System.Tests
 {

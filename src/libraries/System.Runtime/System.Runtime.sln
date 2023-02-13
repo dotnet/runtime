@@ -41,7 +41,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.ReflectionIn
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestCollectibleAssembly", "tests\TestCollectibleAssembly\TestCollectibleAssembly.csproj", "{C230AC88-A377-4BEB-824F-AB174C14DC86}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestReflectionILAssembly", "..\Common\tests\System\TestReflectionILAssembly\TestReflectionILAssembly.ilproj", "{AF7BA66D-EA0E-4755-8DA8-4CFE9B935F83}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestILAssembly", "..\Common\tests\System\TestILAssembly\TestILAssembly.ilproj", "{AF7BA66D-EA0E-4755-8DA8-4CFE9B935F83}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestFunctionPointerAssembly", "..\Common\tests\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj", "{B7975A39-2E87-4C6C-A7EC-1F5926676800}"
 EndProject

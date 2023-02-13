@@ -1641,7 +1641,7 @@ namespace System
         internal extern int GetParameterOffset(int parameterIndex);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int GetTypeParameterFromOffset(int offset, int index);
+        internal extern int GetTypeParameterOffset(int offset, int index);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern SignatureCallingConvention GetCallingConventionFromFunctionPointerAtOffset(int offset);
