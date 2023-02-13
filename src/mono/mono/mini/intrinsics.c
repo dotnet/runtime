@@ -1019,7 +1019,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			// This OP_LDTOKEN_FIELD later changes into a OP_VMOVE.
 			MonoClassField* field = (MonoClassField*) args [0]->inst_p1;
-			if (args [0]->opcode != OP_LDTOKEN_FIELD || !field || !field->type)
+			if (args [0]->opcode != OP_LDTOKEN_FIELD)
 					return NULL;
 
 			int alignment = 0;
@@ -1049,7 +1049,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, span_addr->dreg, field_ref->offset - obj_size, ptr_inst->dreg);
 			MonoClassField* field_len = mono_class_get_field_from_name_full (span->klass, "_length", NULL);
 			MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_len->offset - obj_size, num_elements);
-
 			EMIT_NEW_TEMPLOAD (cfg, ins, span->inst_c0);
 			return ins;
 		} else
