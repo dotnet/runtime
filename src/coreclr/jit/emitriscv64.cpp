@@ -678,6 +678,7 @@ void emitter::emitIns_R_R_R(
         (INS_mul <= ins && ins <= INS_remuw) ||
         (INS_addw <= ins && ins <= INS_sraw) ||
         (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
+        (INS_fadd_d <= ins && ins <= INS_fmax_d) ||
         (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d))
     {
