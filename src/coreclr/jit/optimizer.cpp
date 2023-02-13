@@ -5234,13 +5234,18 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->bbJumpDest);
 
 #ifdef DEBUG
-        // Verify profile for the two target blocks is consistent.
+        // If we're checkig profile data, see if profile for the two target blocks is consistent.
         //
-        const bool profileOk =
-            fgDebugCheckIncomingProfileData(bNewCond->bbNext) && fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest);
-        if ((JitConfig.JitProfileChecks() & 0x4) == 0x4)
+        if ((activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
         {
-            assert(profileOk);
+            const bool nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbNext);
+            const bool jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest);
+
+            if ((JitConfig.JitProfileChecks() & 0x4) == 0x4)
+            {
+                assert(nextProfileOk);
+                assert(jumpProfileOk);
+            }
         }
 #endif // DEBUG
     }

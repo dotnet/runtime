@@ -276,7 +276,8 @@ bool Compiler::fgEnsureFirstBBisScratch()
         fgFirstBB->bbRefs--;
 
         // The new scratch bb will fall through to the old first bb
-        fgAddRefPred(fgFirstBB, block);
+        FlowEdge* const edge = fgAddRefPred(fgFirstBB, block);
+        edge->setLikelihood(1.0);
         fgInsertBBbefore(fgFirstBB, block);
     }
     else
@@ -2812,6 +2813,18 @@ void Compiler::fgLinkBasicBlocks()
         }
     }
 
+    // If this is an OSR compile, note the original entry and
+    // the OSR entry block.
+    //
+    // We don't yet alter flow; see fgFixEntryFlowForOSR.
+    //
+    if (opts.IsOSR())
+    {
+        assert(info.compILEntry >= 0);
+        fgEntryBB    = fgLookupBB(0);
+        fgOSREntryBB = fgLookupBB(info.compILEntry);
+    }
+
     // Pred lists now established.
     //
     fgPredsComputed = true;
@@ -3943,39 +3956,36 @@ void Compiler::fgCheckForLoopsInHandlers()
 //
 void Compiler::fgFixEntryFlowForOSR()
 {
-    // Ensure lookup IL->BB lookup table is valid
+    // We should have looked for these blocks in fgLinkBasicBlocks.
     //
-    fgInitBBLookup();
+    assert(fgEntryBB != nullptr);
+    assert(fgOSREntryBB != nullptr);
 
-    // Remember the original entry block in case this method is tail recursive.
-    //
-    fgEntryBB = fgLookupBB(0);
-
-    // Find the OSR entry block.
-    //
-    assert(info.compILEntry >= 0);
-    BasicBlock* const osrEntry = fgLookupBB(info.compILEntry);
-
-    // Remember the OSR entry block so we can find it again later.
-    //
-    fgOSREntryBB = osrEntry;
-
-    // Now branch from method start to the right spot.
+    // Now branch from method start to the OSR entry.
     //
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->bbJumpKind == BBJ_NONE);
     fgRemoveRefPred(fgFirstBB->bbNext, fgFirstBB);
     fgFirstBB->bbJumpKind = BBJ_ALWAYS;
-    fgFirstBB->bbJumpDest = osrEntry;
-    fgAddRefPred(osrEntry, fgFirstBB);
+    fgFirstBB->bbJumpDest = fgOSREntryBB;
+    FlowEdge* const edge  = fgAddRefPred(fgOSREntryBB, fgFirstBB);
+    edge->setLikelihood(1.0);
 
-    // Give the method entry (which will be a scratch BB)
-    // the same weight as the OSR Entry.
+    // We don't know the right weight for this block, since
+    // execution of the method was interrupted within the
+    // loop containing fgOSREntryBB.
     //
-    fgFirstBB->inheritWeight(fgOSREntryBB);
+    // A plausible guess might be to sum the non-backedge
+    // weights of fgOSREntryBB and use those, but we don't
+    // have edge weights available yet. Note that might be
+    // an underestimate.
+    //
+    // For now we just guess that the loop will execute 100x.
+    //
+    fgFirstBB->inheritWeightPercentage(fgOSREntryBB, 1);
 
-    JITDUMP("OSR: redirecting flow at entry from entry " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
-            fgFirstBB->bbNum, osrEntry->bbNum);
+    JITDUMP("OSR: redirecting flow at method entry from " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
+            fgFirstBB->bbNum, fgOSREntryBB->bbNum);
 }
 
 /*****************************************************************************
