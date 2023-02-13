@@ -709,6 +709,8 @@ PCODE Thread::VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, KNONVOLATILE_CO
     return uControlPc;
 }
 
+extern void* g_hostingApiReturnAddress;
+
 // static
 UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 {
@@ -751,8 +753,9 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 
         uControlPc = GetIP(pContext);
 
-        if (uControlPc == 0)
+        if ((uControlPc == 0) || (uControlPc == (PCODE)g_hostingApiReturnAddress))
         {
+            uControlPc = 0;
             break;
         }
 #endif // !TARGET_UNIX
