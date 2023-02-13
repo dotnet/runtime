@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -105,34 +107,17 @@ namespace System.Globalization
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
-        private unsafe string NativeGetLocaleInfo(string localeName, LocaleStringData type, string? uiCultureName = null)
+        private static unsafe string NativeGetLocaleInfo(string localeName, LocaleStringData type, string? uiCultureName = null)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(localeName != null, "[CultureData.NativeGetLocaleInfo] Expected localeName to be not be null");
 
-            /*switch (type)
-            {
-                case LocaleStringData.NegativeInfinitySymbol:
-                    // not an equivalent in ICU; prefix the PositiveInfinitySymbol with NegativeSign
-                    return IcuGetLocaleInfo(localeName, LocaleStringData.NegativeSign) +
-                        IcuGetLocaleInfo(localeName, LocaleStringData.PositiveInfinitySymbol);
-            }*/
-
-            char* buffer = stackalloc char[Native_ULOC_KEYWORD_AND_VALUES_CAPACITY];
-            // this buffer is initialized
             Debug.Write("Globalization NativeGetLocaleInfo is called");
             System.Diagnostics.Debug.Write("Globalization NativeGetLocaleInfo is called localeName: " + localeName);
             System.Diagnostics.Debug.Write("Globalization NativeGetLocaleInfo is called type: " + type.ToString());
-            bool result = Interop.Globalization.NativeGetLocaleInfoString(localeName, (uint)type, buffer, Native_ULOC_KEYWORD_AND_VALUES_CAPACITY, uiCultureName);
-            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleInfo is called result: " + result.ToString());
-            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleInfo is called buffer: " + new string(buffer));
-            if (!result)
-            {
-                // Failed, just use empty string
-                Debug.Fail("[CultureData.NativeGetLocaleInfo(LocaleStringData)] Failed");
-                return string.Empty;
-            }
-            return new string(buffer);
+            string result = Interop.Globalization.NativeGetLocaleInfoString(localeName, (uint)type, Native_ULOC_KEYWORD_AND_VALUES_CAPACITY, uiCultureName);
+            System.Diagnostics.Debug.Write("Globalization NativeGetLocaleInfo is called result: " + result);
+            return result;
         }
 
         /*private int NativeGetLocaleInfo(LocaleNumberData type)

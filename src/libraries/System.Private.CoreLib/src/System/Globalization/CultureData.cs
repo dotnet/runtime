@@ -924,7 +924,7 @@ namespace System.Globalization
 
         // Parent name (which may be a custom locale/culture)
         // Ask using the real name, so that we get parents of neutrals
-        internal string ParentName => _sParent ??= GetLocaleInfoCore(_sRealName!, LocaleStringData.ParentName);
+        internal string ParentName => _sParent ??= string.Empty;
 
         // Localized pretty name for this locale (ie: Inglis (estados Unitos))
         internal string DisplayName

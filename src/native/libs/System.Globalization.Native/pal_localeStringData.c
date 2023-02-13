@@ -403,34 +403,6 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
     return UErrorCodeToBool(status);
 }
 
-/*
-PAL Function:
-GetLocaleInfoString
-
-Obtains string locale information.
-Returns 1 for success, 0 otherwise
-*/
-int32_t Native_GetLocaleInfoString(const UChar* localeName,
-                                                LocaleStringData localeStringData,
-                                                UChar* value,
-                                                int32_t valueLength,
-                                                const UChar* uiLocaleName)
-{
-#ifdef __APPLE__
-    
-       UChar* val = NativeGetLocaleInfoString(localeName,
-                                        localeStringData,
-                                        value,
-                                        valueLength,
-                                        uiLocaleName);
-
-        g_print("Globalization Native_GetLocaleInfoString val: %s", (char*)val);
-        g_print("Globalization Native_GetLocaleInfoString value: %s", (char*)value);
-        value = val;
-        return 1;
-#endif
-   
-}
 
 /*
 PAL Function:

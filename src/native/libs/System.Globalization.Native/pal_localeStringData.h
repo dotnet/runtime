@@ -51,11 +51,10 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeNam
                                                           int32_t valueLength,
                                                           const UChar* uiLocaleName);
 
-PALEXPORT int32_t Native_GetLocaleInfoString(const UChar* localeName,
+PALEXPORT const char* NativeGetLocaleInfoString(const char* localeName,
                                                           LocaleStringData localeStringData,
-                                                          UChar* value,
                                                           int32_t valueLength,
-                                                          const UChar* uiLocaleName);                                                          
+                                                          const char* uiLocaleName);                                                          
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                           int shortFormat, UChar* value,

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System;
 
 internal static partial class Interop
 {
@@ -11,9 +12,8 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool NativeGetLocaleName(string localeName, char* value, int valueLength);
 
-        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "Native_GetLocaleInfoString", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool NativeGetLocaleInfoString(string localeName, uint localeStringData, char* value, int valueLength, string? uiLocaleName = null);
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "NativeGetLocaleInfoString", StringMarshalling = StringMarshalling.Utf8)]
+        internal static unsafe partial string NativeGetLocaleInfoString(string localeName, uint localeStringData, int valueLength, string? uiLocaleName = null);
 
         /*[LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetDefaultLocaleName", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
