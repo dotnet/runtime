@@ -3356,7 +3356,7 @@ DONE:
 /* static */
 genTreeOps GenTree::ReverseRelop(genTreeOps relop)
 {
-    static const genTreeOps reverseOps[] = {
+    static constexpr genTreeOps reverseOps[] = {
         GT_NE,      // GT_EQ
         GT_EQ,      // GT_NE
         GT_GE,      // GT_LT
@@ -3365,18 +3365,24 @@ genTreeOps GenTree::ReverseRelop(genTreeOps relop)
         GT_LE,      // GT_GT
         GT_TEST_NE, // GT_TEST_EQ
         GT_TEST_EQ, // GT_TEST_NE
+#ifdef TARGET_XARCH
+        GT_BITTEST_NE, // GT_BITTEST_EQ
+        GT_BITTEST_EQ, // GT_BITTEST_NE
+#endif
     };
 
-    assert(reverseOps[GT_EQ - GT_EQ] == GT_NE);
-    assert(reverseOps[GT_NE - GT_EQ] == GT_EQ);
-
-    assert(reverseOps[GT_LT - GT_EQ] == GT_GE);
-    assert(reverseOps[GT_LE - GT_EQ] == GT_GT);
-    assert(reverseOps[GT_GE - GT_EQ] == GT_LT);
-    assert(reverseOps[GT_GT - GT_EQ] == GT_LE);
-
-    assert(reverseOps[GT_TEST_EQ - GT_EQ] == GT_TEST_NE);
-    assert(reverseOps[GT_TEST_NE - GT_EQ] == GT_TEST_EQ);
+    static_assert_no_msg(reverseOps[GT_EQ - GT_EQ] == GT_NE);
+    static_assert_no_msg(reverseOps[GT_NE - GT_EQ] == GT_EQ);
+    static_assert_no_msg(reverseOps[GT_LT - GT_EQ] == GT_GE);
+    static_assert_no_msg(reverseOps[GT_LE - GT_EQ] == GT_GT);
+    static_assert_no_msg(reverseOps[GT_GE - GT_EQ] == GT_LT);
+    static_assert_no_msg(reverseOps[GT_GT - GT_EQ] == GT_LE);
+    static_assert_no_msg(reverseOps[GT_TEST_EQ - GT_EQ] == GT_TEST_NE);
+    static_assert_no_msg(reverseOps[GT_TEST_NE - GT_EQ] == GT_TEST_EQ);
+#ifdef TARGET_XARCH
+    static_assert_no_msg(reverseOps[GT_BITTEST_EQ - GT_EQ] == GT_BITTEST_NE);
+    static_assert_no_msg(reverseOps[GT_BITTEST_NE - GT_EQ] == GT_BITTEST_EQ);
+#endif
 
     assert(OperIsCompare(relop));
     assert(relop >= GT_EQ && (unsigned)(relop - GT_EQ) < sizeof(reverseOps));
@@ -3392,7 +3398,7 @@ genTreeOps GenTree::ReverseRelop(genTreeOps relop)
 /* static */
 genTreeOps GenTree::SwapRelop(genTreeOps relop)
 {
-    static const genTreeOps swapOps[] = {
+    static constexpr genTreeOps swapOps[] = {
         GT_EQ,      // GT_EQ
         GT_NE,      // GT_NE
         GT_GT,      // GT_LT
@@ -3401,18 +3407,24 @@ genTreeOps GenTree::SwapRelop(genTreeOps relop)
         GT_LT,      // GT_GT
         GT_TEST_EQ, // GT_TEST_EQ
         GT_TEST_NE, // GT_TEST_NE
+#ifdef TARGET_XARCH
+        GT_BITTEST_EQ, // GT_BITTEST_EQ
+        GT_BITTEST_NE, // GT_BITTEST_NE
+#endif TARGET_XARCH
     };
 
-    assert(swapOps[GT_EQ - GT_EQ] == GT_EQ);
-    assert(swapOps[GT_NE - GT_EQ] == GT_NE);
-
-    assert(swapOps[GT_LT - GT_EQ] == GT_GT);
-    assert(swapOps[GT_LE - GT_EQ] == GT_GE);
-    assert(swapOps[GT_GE - GT_EQ] == GT_LE);
-    assert(swapOps[GT_GT - GT_EQ] == GT_LT);
-
-    assert(swapOps[GT_TEST_EQ - GT_EQ] == GT_TEST_EQ);
-    assert(swapOps[GT_TEST_NE - GT_EQ] == GT_TEST_NE);
+    static_assert_no_msg(swapOps[GT_EQ - GT_EQ] == GT_EQ);
+    static_assert_no_msg(swapOps[GT_NE - GT_EQ] == GT_NE);
+    static_assert_no_msg(swapOps[GT_LT - GT_EQ] == GT_GT);
+    static_assert_no_msg(swapOps[GT_LE - GT_EQ] == GT_GE);
+    static_assert_no_msg(swapOps[GT_GE - GT_EQ] == GT_LE);
+    static_assert_no_msg(swapOps[GT_GT - GT_EQ] == GT_LT);
+    static_assert_no_msg(swapOps[GT_TEST_EQ - GT_EQ] == GT_TEST_EQ);
+    static_assert_no_msg(swapOps[GT_TEST_NE - GT_EQ] == GT_TEST_NE);
+#ifdef TARGET_XARCH
+    static_assert_no_msg(swapOps[GT_BITTEST_EQ - GT_EQ] == GT_BITTEST_EQ);
+    static_assert_no_msg(swapOps[GT_BITTEST_NE - GT_EQ] == GT_BITTEST_NE);
+#endif
 
     assert(OperIsCompare(relop));
     assert(relop >= GT_EQ && (unsigned)(relop - GT_EQ) < sizeof(swapOps));
