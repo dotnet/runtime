@@ -3243,9 +3243,8 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         }
     }
 
-    GenTree* jcc = new (comp, GT_JCC) GenTreeCC(GT_JCC, cond);
-    BlockRange().InsertBefore(jtrue, jcc);
-    BlockRange().Remove(jtrue);
+    jtrue->SetOperRaw(GT_JCC);
+    jtrue->AsCC()->gtCondition = cond;
     return nullptr;
 }
 
