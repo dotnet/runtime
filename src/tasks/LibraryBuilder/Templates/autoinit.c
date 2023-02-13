@@ -20,7 +20,7 @@ void keep_init()
     appctx_values[1] = "APP_CONTEXT_BASE_DIRECTORY";
     appctx_values[2] = "System.TimeZoneInfo.LocalDateTimeOffset";
 
-	int ret = monovm_initialize (3, appctx_keys, appctx_values);
+    int ret = monovm_initialize (3, appctx_keys, appctx_values);
 }
 
 void

@@ -41,7 +41,7 @@
     <!-- common linker arguments for app and library builds -->
     <ItemGroup>
       <_CommonLinkerArgs Include="-framework Foundation" />
-      <_CommonLinkerArgs Include="-framework GSS" />
+      <_CommonLinkerArgs Condition="'$(TargetOS)' != 'tvos'" Include="-framework GSS" />
       <_CommonLinkerArgs Include="-framework Security" />
       <_CommonLinkerArgs Include="-framework UIKit" />
       <_CommonLinkerArgs Include="-lz" />

@@ -63,11 +63,6 @@ public class AppleAppBuilderTask : Task
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
-    /// List of paths to native libraries that will make up the framework project for the app
-    /// </summary>
-    public ITaskItem[] FrameworkLibraries { get; set; } = Array.Empty<ITaskItem>();
-
-    /// <summary>
     /// Additional linker arguments that apply to the app being built
     /// </summary>
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
@@ -277,12 +272,6 @@ public class AppleAppBuilderTask : Task
             }
         }
 
-        List<string> frameworkLibraries = new List<string>();
-        foreach (ITaskItem libItem in FrameworkLibraries)
-        {
-            frameworkLibraries.Add(libItem.ItemSpec);
-        }
-
         if (!ForceInterpreter && (isDevice || ForceAOT) && (assemblerFiles.Count == 0 && !UseNativeAOTRuntime))
         {
             throw new InvalidOperationException("Need list of AOT files for device builds.");
@@ -318,7 +307,7 @@ public class AppleAppBuilderTask : Task
 
         if (GenerateXcodeProject)
         {
-            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, frameworkLibraries, extraLinkerArgs,
+            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs,
                 AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, UseNativeAOTRuntime);
 
             if (BuildAppBundle)
@@ -344,7 +333,7 @@ public class AppleAppBuilderTask : Task
         }
         else if (GenerateCMakeProject)
         {
-             generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, frameworkLibraries, extraLinkerArgs,
+             generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs,
                 AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, UseNativeAOTRuntime);
         }
 

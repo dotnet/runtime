@@ -105,6 +105,11 @@ public class LibraryBuilderTask : AppBuilderTask
         StringBuilder extraSources = new StringBuilder();
         StringBuilder linkerArgs = new StringBuilder();
 
+        if (!ValidateValidTargetOS())
+        {
+            throw new ArgumentException($"{TargetOS} is not yet supported by the librarybuilder task.");
+        }
+
         if (!base.Execute())
         {
             // log something here
@@ -278,4 +283,11 @@ public class LibraryBuilderTask : AppBuilderTask
 
         return $"{libPrefix}{Name}{libExtension}";
     }
+
+    private bool ValidateValidTargetOS() =>
+        TargetOS switch
+        {
+            "android" or "ios" or "tvos" or "maccatalyst" => true,
+            _ => false
+        };
 }

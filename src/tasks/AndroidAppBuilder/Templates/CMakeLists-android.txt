@@ -23,6 +23,7 @@ include_directories("%MonoInclude%")
 
 target_link_libraries(
     monodroid
+    PUBLIC
     %NativeLibrariesToLink%
     %APP_LINKER_ARGS%
 )

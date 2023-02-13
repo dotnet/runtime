@@ -397,7 +397,6 @@ public partial class ApkBuilder
             Utils.GetEmbeddedResource("MainActivity.java")
                 .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName)));
 
-
         if (!string.IsNullOrEmpty(NativeMainSource))
             File.Copy(NativeMainSource, javaActivityPath, true);
 

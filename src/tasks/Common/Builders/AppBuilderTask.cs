@@ -89,7 +89,7 @@ public class AppBuilderTask : Task
             compiledAssembly.LibraryFile = file.GetMetadata("LibraryFile");
             compiledAssembly.DataFile = file.GetMetadata("AotDataFile");
             compiledAssembly.LlvmObjectFile = file.GetMetadata("LlvmObjectFile");
-            compiledAssembly.LlvmBitCodeFile = file.GetMetadata("LllvmBitcodeFile");
+            compiledAssembly.LlvmBitCodeFile = file.GetMetadata("LlvmBitcodeFile");
             compiledAssembly.ExportsFile = file.GetMetadata("ExportSymbolsFile");
 
             CompiledAssemblies.Add(compiledAssembly);

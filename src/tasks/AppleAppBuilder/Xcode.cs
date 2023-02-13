@@ -173,7 +173,6 @@ internal sealed class Xcode
         IEnumerable<string> asmFiles,
         IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
-        IEnumerable<string> frameworkLibraries,
         IEnumerable<string> extraLinkerArgs,
         string workspace,
         string binDir,
@@ -191,7 +190,7 @@ internal sealed class Xcode
         string? nativeMainSource = null,
         bool useNativeAOTRuntime = false)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, frameworkLibraries, extraLinkerArgs, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, useNativeAOTRuntime);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, useNativeAOTRuntime);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -234,7 +233,6 @@ internal sealed class Xcode
         IEnumerable<string> asmFiles,
         IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
-        IEnumerable<string> frameworkLibraries,
         IEnumerable<string> extraLinkerArgs,
         string workspace,
         string binDir,
@@ -401,27 +399,13 @@ internal sealed class Xcode
             toLink += $"    {asmLinkFile}{Environment.NewLine}";
         }
 
-        string frameworks = "";
-        if ((Target == TargetNames.iOS) || (Target == TargetNames.iOSsim) || (Target == TargetNames.MacCatalyst))
-        {
-            frameworks = "\"-framework GSS\"";
-        }
-
-        string frameworkLibrariesPaths = "";
-        foreach(string frameworkPath in frameworkLibraries)
-        {
-            frameworkLibrariesPaths += $"{frameworkPath} ";
-        }
-
         string appLinkerArgs = "";
         foreach(string linkerArg in extraLinkerArgs)
         {
-            appLinkerArgs += $"    {linkerArg}{Environment.NewLine}";
+            appLinkerArgs += $"    \"{linkerArg}\"{Environment.NewLine}";
         }
 
-        cmakeLists = cmakeLists.Replace("%FrameworksToLink%", frameworks);
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
-        cmakeLists = cmakeLists.Replace("%FRAMEWORK_LIBRARIES%", frameworkLibrariesPaths);
         cmakeLists = cmakeLists.Replace("%APP_LINKER_ARGS%", appLinkerArgs);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
         cmakeLists = cmakeLists.Replace("%AotTargetsList%", aotList);

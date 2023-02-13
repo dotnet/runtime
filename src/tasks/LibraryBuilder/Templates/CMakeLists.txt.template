@@ -23,6 +23,7 @@ add_library(
 )
 target_link_libraries(
     aot_library
+    PUBLIC
     ${DOTNET_AOT_OBJECTS}
 )
 
@@ -33,6 +34,7 @@ add_library(
 
 target_link_libraries(
     %LIBRARY_NAME%
+    PUBLIC
     aot_library
     %LIBRARY_LINKER_ARGS%
 )

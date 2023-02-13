@@ -62,8 +62,8 @@
         Exclude="$(AndroidAppDir)\*-stub-static.a" />
       <_RuntimeLibraries 
         Condition="'$(_TargetsDevice)' == ''"
-        Include="$(AndroidAppDir)\*.dylib;$(AndroidAppDir)\libmonosgen*.a;$(AndroidAppDir)\*-static.a"
-        Exclude="$(AndroidAppDir)\libmonosgen*.dylib;$(AndroidAppDir)\*-stub-static.a" />
+        Include="$(AndroidAppDir)\*.so;$(AndroidAppDir)\libmonosgen*.a;$(AndroidAppDir)\*-static.a"
+        Exclude="$(AndroidAppDir)\libmonosgen*.so;$(AndroidAppDir)\*-stub-static.a" />
 
       <!-- and not contains %(_UsedComponents)-static*.a -->
       <!-- if count > 0, remove all *-static components except in _UsedComponents -->
