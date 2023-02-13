@@ -230,7 +230,7 @@ jungdongheon
 #ifdef __riscv // TODO RISCV64
  #define YieldProcessor() asm volatile( "wfi");
  #define MemoryBarrier __sync_synchronize
-#endif // __riscv64
+#endif // __riscv
 
 #endif // _MSC_VER
 

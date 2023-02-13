@@ -5689,6 +5689,14 @@
     "any",
     "base"
   ],
+  "linux-riscv64": [
+    "linux-riscv64",
+    "linux",
+    "unix-riscv64",
+    "unix",
+    "any",
+    "base"
+  ],
   "linux-mips64": [
     "linux-mips64",
     "linux",
@@ -10495,6 +10503,12 @@
   ],
   "unix-loongarch64": [
     "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "unix-riscv64": [
+    "unix-riscv64",
     "unix",
     "any",
     "base"
