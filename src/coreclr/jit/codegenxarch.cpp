@@ -6859,9 +6859,9 @@ GenTreeCC* CodeGen::genTryFindFlagsConsumer(GenTree* producer)
 {
     assert((producer->gtFlags & GTF_SET_FLAGS) != 0);
     // After LSRA the next node may not always be the consumer since LSRA may
-    // insert resolution node. It's also possible nothing is consuming this
-    // compare's flags anymore, but these are both rare occurrences and the
-    // below loop usually exits on the first iteration.
+    // insert resolution node. It's also possible there is no consumer or that
+    // the consumer is an arithmetic node from decomposition. These are rare
+    // occurrences and the below loop usually exits on the first iteration.
     GenTree* candidate = producer->gtNext;
     for (int i = 0; i < 8; i++)
     {
