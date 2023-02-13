@@ -5,7 +5,7 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <!-- Test checks symbols, so don't run in non-debug builds. -->
-    <CLRTestTargetUnsupported Condition="'$(Configuration)' != 'Debug' or '$(TestBuildMode)' != 'nativeaot'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(Configuration)' != 'Debug' or '$(TestBuildMode)' != 'nativeaot' or '$(TargetOS)' != 'linux'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>
