@@ -1572,18 +1572,23 @@ Namespace Microsoft.VisualBasic.FileIO
         Private Shared Function RemoveEndingSeparator(ByVal Path As String) As String
             Debug.Assert(IO.Path.IsPathFullyQualified(Path))
 
+            Dim minLength As Integer = 0
             If IO.Path.IsPathRooted(Path) Then
-                ' If the path is rooted, attempt to check if it is a root path.
-                ' Note: IO.Path.GetPathRoot: C: -> C:, C:\ -> C:\, \\myshare\mydir -> \\myshare\mydir
-                ' BUT \\myshare\mydir\ -> \\myshare\mydir!!! This function will remove the ending separator of
-                ' \\myshare\mydir\ as well. Do not use IsRoot here.
-                If Path.Equals(IO.Path.GetPathRoot(Path), StringComparison.OrdinalIgnoreCase) Then
-                    Return Path
-                End If
+                ' If the path is rooted, do not remove separators from the root path.
+                minLength = IO.Path.GetPathRoot(Path).Length
             End If
 
-            ' Otherwise, remove all separators at the end.
-            Return Path.TrimEnd(IO.Path.DirectorySeparatorChar, IO.Path.AltDirectorySeparatorChar)
+            Dim length As Integer = Path.Length
+            While length > minLength
+                Dim c As Char = Path(length - 1)
+                If c <> IO.Path.DirectorySeparatorChar AndAlso
+                        c <> IO.Path.AltDirectorySeparatorChar Then
+                    Exit While
+                End If
+                length -= 1
+            End While
+
+            Return Path.Substring(0, length)
         End Function
 
         ''' <summary>

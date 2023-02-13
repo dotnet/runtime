@@ -988,7 +988,9 @@ namespace Microsoft.VisualBasic.FileIO.Tests
 
             if (PlatformDetection.IsWindows && PlatformDetection.IsNetCore)
             {
-                yield return new object[] { @"C:/", @"C:" }; // RemoveEndingSeparator() compares "C:/" to "C:\" and determines this is not a root path. Is that expected?
+                yield return new object[] { @"C:", @"C:" };
+                yield return new object[] { @"C:\\", @"C:\" };
+                yield return new object[] { @"C:/", @"C:/" };
                 yield return new object[] { @"C:/Documents", @"C:/Documents" };
                 yield return new object[] { @"C:/Documents/", @"C:/Documents" };
                 yield return new object[] { @"//server/share", @"//server/share" };
@@ -1000,7 +1002,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
             if (!PlatformDetection.IsWindows)
             {
                 yield return new object[] { @"/", @"/" };
-                yield return new object[] { @"//", @"//" };
+                yield return new object[] { @"//", @"/" };
                 yield return new object[] { @"/Documents", @"/Documents" };
                 yield return new object[] { @"/Documents/", @"/Documents" };
                 yield return new object[] { @"/Documents/A//", @"/Documents/A" };
