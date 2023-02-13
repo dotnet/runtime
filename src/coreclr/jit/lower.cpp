@@ -3307,7 +3307,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS.
     if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0) && relopOp1->SupportsSettingZeroFlag() &&
-        IsSafeToContainMem(relop, relopOp1))
+        IsInvariantInRange(relopOp1, relop))
     {
         relopOp1->gtFlags |= GTF_SET_FLAGS;
         relopOp1->SetUnusedValue();
