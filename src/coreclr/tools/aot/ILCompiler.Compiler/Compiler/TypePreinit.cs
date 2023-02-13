@@ -2198,7 +2198,12 @@ namespace ILCompiler
                 return new ReadOnlySpan<byte>(PointedToBytes, PointedToOffset, count);
             }
 
+            public sbyte DereferenceAsSByte() => (sbyte)AsExactByteCount(1)[0];
+            public short DereferenceAsInt16() => BitConverter.ToInt16(AsExactByteCount(2));
             public int DereferenceAsInt32() => BitConverter.ToInt32(AsExactByteCount(4));
+            public long DereferenceAsInt64() => BitConverter.ToInt64(AsExactByteCount(8));
+            public float DereferenceAsSingle() => BitConverter.ToSingle(AsExactByteCount(4));
+            public double DereferenceAsDouble() => BitConverter.ToDouble(AsExactByteCount(8));
         }
 
         private abstract class ReferenceTypeValue : Value
