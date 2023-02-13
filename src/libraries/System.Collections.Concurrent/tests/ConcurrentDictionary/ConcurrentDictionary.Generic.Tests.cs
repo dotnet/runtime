@@ -70,14 +70,18 @@ namespace System.Collections.Concurrent.Tests
             static Func<string, int> GetHashCodeFunc(ConcurrentDictionary<string, string> cd)
             {
                 // If the layout of ConcurrentDictionary changes, this will need to change as well.
-                object tables = cd.GetType().GetField("_tables", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(cd);
-                Assert.NotNull(tables);
+
+                FieldInfo tablesField = typeof(ConcurrentDictionary<string, string>).GetField("_tables", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.True(tablesField is not null, "_tables field not found");
+
+                object tables = tablesField.GetValue(cd);
+                Assert.True(tables is not null, "_tables was null");
 
                 FieldInfo comparerField = tables.GetType().GetField("_comparer", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                Assert.NotNull(comparerField);
+                Assert.True(comparerField is not null, "_comparer field not found");
 
                 IEqualityComparer<string> comparer = (IEqualityComparer<string>)comparerField.GetValue(tables);
-                Assert.NotNull(comparer);
+                Assert.True(comparer is not null, "_comparer was null");
 
                 return comparer.GetHashCode;
             }
