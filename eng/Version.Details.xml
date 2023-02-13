@@ -134,6 +134,10 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>0c78106337dbe19ce4dd99140636865cdc99d008</Sha>
     </Dependency>
+    <Dependency Name="System.Data.Common.TestData" Version="7.0.0-beta.23113.5">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>5d91c58fd4730b63f8bb74aad6e697460e93580e</Sha>
+    </Dependency>
     <Dependency Name="System.Drawing.Common.TestData" Version="7.0.0-beta.22553.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>0c78106337dbe19ce4dd99140636865cdc99d008</Sha>
