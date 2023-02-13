@@ -902,6 +902,9 @@ protected:
 
     void genCompareFloat(GenTree* treeNode);
     void genCompareInt(GenTree* treeNode);
+#ifdef TARGET_XARCH
+    bool genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+#endif
 
 #ifdef FEATURE_SIMD
 #ifdef TARGET_ARM64

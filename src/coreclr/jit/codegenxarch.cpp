@@ -6763,43 +6763,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
 
     var_types targetType = tree->TypeGet();
 
-    bool emitIns = true;
-    if (canReuseFlags)
-    {
-        if (tree->OperIsCompare())
-        {
-            GenCondition cond = GenCondition::FromIntegralRelop(tree);
-            if (emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), cond))
-            {
-                JITDUMP("Not emitting compare due to flags being already set\n");
-                emitIns = false;
-            }
-        }
-        else
-        {
-            GenTree* nextNode = tree->gtNext;
-            if ((nextNode != nullptr) && nextNode->OperIs(GT_JCC))
-            {
-                GenCondition cond = nextNode->AsCC()->gtCondition;
-                if (emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), cond))
-                {
-                    JITDUMP("Not emitting compare due to flags being already set\n");
-                    emitIns = false;
-                }
-                else if (emit->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(type), cond))
-                {
-                    JITDUMP("Not emitting compare due to sign being already set; modifying next JCC to branch on sign "
-                            "flag\n");
-                    nextNode->AsCC()->gtCondition = (cond.GetCode() == GenCondition::SLT)
-                                                        ? GenCondition(GenCondition::S)
-                                                        : GenCondition(GenCondition::NS);
-                    emitIns = false;
-                }
-            }
-        }
-    }
-
-    if (emitIns)
+    if (!canReuseFlags || !genCanAvoidEmittingCompareAgainstZero(tree, type))
     {
         // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
         if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
@@ -6821,6 +6785,83 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         inst_SETCC(GenCondition::FromIntegralRelop(tree), targetType, targetReg);
         genProduceReg(tree);
     }
+}
+
+//------------------------------------------------------------------------
+// genCanAvoidEmittingCompareAgainstZero: A peephole to check if we can avoid
+// emitting a compare against zero because the register was previously used
+// with an instruction that sets the zero flag.
+//
+// Parameters:
+//    tree   - the compare node
+//    opType - type of the compare
+//
+// Returns:
+//    True if the compare can be omitted.
+//
+bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType)
+{
+    GenTree* op1 = tree->gtGetOp1();
+    assert(tree->gtGetOp2()->IsIntegralConst(0));
+
+    if (!op1->isUsedFromReg())
+    {
+        return false;
+    }
+
+    GenTreeCC*   jcc = nullptr;
+    GenCondition cond;
+
+    if (tree->OperIsCompare())
+    {
+        cond = GenCondition::FromIntegralRelop(tree);
+    }
+    else
+    {
+        assert((tree->gtFlags & GTF_SET_FLAGS) != 0);
+        // LSRA may have inserted resolution nodes, so look ahead for the flags
+        // consumer for a few nodes.
+        GenTree* flagsConsumer = tree->gtNext;
+        for (int i = 0; i < 8; i++)
+        {
+            if ((flagsConsumer == nullptr) || (flagsConsumer->OperIs(GT_JCC)))
+            {
+                break;
+            }
+
+            if ((flagsConsumer->gtFlags & GTF_SET_FLAGS) != 0)
+            {
+                return false;
+            }
+
+            flagsConsumer = flagsConsumer->gtNext;
+        }
+
+        if (flagsConsumer == nullptr)
+        {
+            return false;
+        }
+
+        jcc  = flagsConsumer->AsCC();
+        cond = jcc->gtCondition;
+    }
+
+    if (GetEmitter()->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(opType), cond))
+    {
+        JITDUMP("Not emitting compare due to flags being already set\n");
+        return true;
+    }
+
+    if ((jcc != nullptr) && GetEmitter()->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(opType), cond))
+    {
+        JITDUMP("Not emitting compare due to sign being already set; modifying next JCC to branch on sign "
+                "flag\n");
+        jcc->gtCondition =
+            (cond.GetCode() == GenCondition::SLT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
+        return true;
+    }
+
+    return false;
 }
 
 #if !defined(TARGET_64BIT)
