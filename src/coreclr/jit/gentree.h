@@ -508,8 +508,6 @@ enum GenTreeFlags : unsigned int
     GTF_RELOP_JMP_USED          = 0x40000000, // GT_<relop> -- result of compare used for jump or ?:
     GTF_RELOP_ZTT               = 0x08000000, // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                               //               with explicit "loop test" in the header block.
-    GTF_RELOP_SJUMP_OPT         = 0x04000000, // GT_<relop> -- Swap signed jl/jge with js/jns during emitter, reuses flags
-                                              //               from previous instruction.
 
     GTF_JCMP_EQ                 = 0x80000000, // GTF_JCMP_EQ  -- Branch on equal rather than not equal
     GTF_JCMP_TST                = 0x40000000, // GTF_JCMP_TST -- Use bit test instruction rather than compare against zero instruction
@@ -2999,13 +2997,6 @@ struct GenTreeOp : public GenTreeUnOp
     {
     }
 #endif
-
-    // True if this relop is marked for a transform during the emitter
-    // phase, e.g., jge => jns
-    bool MarkedForSignJumpOpt() const
-    {
-        return (gtFlags & GTF_RELOP_SJUMP_OPT) != 0;
-    }
 };
 
 struct GenTreeVal : public GenTree

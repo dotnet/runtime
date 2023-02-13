@@ -6764,21 +6764,43 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     assert(genTypeSize(type) <= genTypeSize(TYP_I_IMPL));
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
-    // Sign jump optimization should only be set the following check
-    assert((tree->gtFlags & GTF_RELOP_SJUMP_OPT) == 0);
 
     var_types targetType = tree->TypeGet();
 
-    if (canReuseFlags && emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), tree->OperGet()))
+    bool emitIns = true;
+    if (canReuseFlags)
     {
-        JITDUMP("Not emitting compare due to flags being already set\n");
+        if (tree->OperIsCompare())
+        {
+            GenCondition cond = GenCondition::FromIntegralRelop(tree);
+            if (emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), cond))
+            {
+                JITDUMP("Not emitting compare due to flags being already set\n");
+                emitIns = false;
+            }
+        }
+        else
+        {
+            GenTree* nextNode = tree->gtNext;
+            if ((nextNode != nullptr) && nextNode->OperIs(GT_JCC))
+            {
+                GenCondition cond = nextNode->AsCC()->gtCondition;
+                if (emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), cond))
+                {
+                    JITDUMP("Not emitting compare due to flags being already set\n");
+                    emitIns = false;
+                }
+                else if (emit->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(type), cond))
+                {
+                    JITDUMP("Not emitting compare due to sign being already set; modifying next JCC to branch on sign flag\n");
+                    nextNode->AsCC()->gtCondition = (cond.GetCode() == GenCondition::SLT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
+                    emitIns = false;
+                }
+            }
+        }
     }
-    else if (canReuseFlags && emit->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(type), tree))
-    {
-        JITDUMP("Not emitting compare due to sign being already set, follow up instr will transform jump\n");
-        tree->gtFlags |= GTF_RELOP_SJUMP_OPT;
-    }
-    else
+
+    if (emitIns)
     {
         // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
         if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&

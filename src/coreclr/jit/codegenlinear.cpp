@@ -2619,16 +2619,6 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
 
         condition = GenCondition(GenCondition::P);
     }
-
-    if (relop->MarkedForSignJumpOpt())
-    {
-        // If relop was previously marked for a signed jump check optimization because of SF flag
-        // reuse, replace jge/jl with jns/js.
-
-        assert(relop->OperGet() == GT_LT || relop->OperGet() == GT_GE);
-        condition = (relop->OperGet() == GT_LT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
-    }
-
 #endif
 
     inst_JCC(condition, compiler->compCurBB->bbJumpDest);
