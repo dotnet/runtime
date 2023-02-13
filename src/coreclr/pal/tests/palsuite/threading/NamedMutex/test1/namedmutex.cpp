@@ -35,7 +35,7 @@ DWORD g_parentPid = static_cast<DWORD>(-1);
 extern char *(*test_strcpy)(char *dest, const char *src);
 extern int (*test_strcmp)(const char *s1, const char *s2);
 extern size_t (*test_strlen)(const char *s);
-extern int (*test_snprintf)(char *str, size_t size, const char *format, ...);
+extern int (*test_sprintf)(char *str, const char *format, ...);
 extern int (*test_sscanf)(const char *str, const char *format, ...);
 extern int(*test_close)(int fd);
 extern int (*test_unlink)(const char *pathname);
@@ -84,11 +84,11 @@ char *BuildName(const char *testName, char *buffer, const char *prefix0, const c
     if (g_isStress)
     {
         // Append the test name so that tests can run in parallel
-        nameLength += test_snprintf(&buffer[nameLength], nameLength, "%s", testName);
+        nameLength += test_sprintf(&buffer[nameLength], "%s", testName);
         buffer[nameLength++] = '_';
     }
 
-    nameLength += test_snprintf(&buffer[nameLength], nameLength, "%u", g_parentPid);
+    nameLength += test_sprintf(&buffer[nameLength], "%u", g_parentPid);
     return buffer;
 }
 
@@ -103,11 +103,11 @@ char *BuildGlobalShmFilePath(const char *testName, char *buffer, const char *nam
     if (g_isStress)
     {
         // Append the test name so that tests can run in parallel
-        pathLength += test_snprintf(&buffer[pathLength], pathLength, "%s", testName);
+        pathLength += test_sprintf(&buffer[pathLength], "%s", testName);
         buffer[pathLength++] = '_';
     }
 
-    pathLength += test_snprintf(&buffer[pathLength], pathLength, "%u", g_parentPid);
+    pathLength += test_sprintf(&buffer[pathLength], "%u", g_parentPid);
     return buffer;
 }
 
@@ -193,9 +193,9 @@ bool StartProcess(const char *funcName)
     processCommandLinePathLength += test_strlen(g_processPath);
     g_processCommandLinePath[processCommandLinePathLength++] = '\"';
     g_processCommandLinePath[processCommandLinePathLength++] = ' ';
-    processCommandLinePathLength += test_snprintf(&g_processCommandLinePath[processCommandLinePathLength], processCommandLinePathLength, "%s ", "threading/NamedMutex/test1/paltest_namedmutex_test1");
+    processCommandLinePathLength += test_sprintf(&g_processCommandLinePath[processCommandLinePathLength], "%s ", "threading/NamedMutex/test1/paltest_namedmutex_test1");
 
-    processCommandLinePathLength += test_snprintf(&g_processCommandLinePath[processCommandLinePathLength], processCommandLinePathLength, "%u", g_parentPid);
+    processCommandLinePathLength += test_sprintf(&g_processCommandLinePath[processCommandLinePathLength], "%u", g_parentPid);
     g_processCommandLinePath[processCommandLinePathLength++] = ' ';
     test_strcpy(&g_processCommandLinePath[processCommandLinePathLength], funcName);
     processCommandLinePathLength += test_strlen(funcName);
