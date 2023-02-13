@@ -11969,11 +11969,7 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     {
         size_t codeAlignment = sizeof(void*);
 
-        if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_64BYTE_ALIGN) != 0)
-        {
-            codeAlignment = 64;
-        }
-        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+        if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
         {
             codeAlignment = 32;
         }

@@ -3793,6 +3793,7 @@ void Compiler::lvaSortByRefCount()
                 case TYP_SIMD12:
                 case TYP_SIMD16:
                 case TYP_SIMD32:
+                case TYP_SIMD64:
 #endif // FEATURE_SIMD
                 case TYP_STRUCT:
                     break;

@@ -445,6 +445,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_simd12CnsMap(nullptr)
     , m_simd16CnsMap(nullptr)
     , m_simd32CnsMap(nullptr)
+    , m_simd64CnsMap(nullptr)
 #endif // FEATURE_SIMD
     , m_VNFunc0Map(nullptr)
     , m_VNFunc1Map(nullptr)
@@ -1699,6 +1700,12 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                     m_defs = new (alloc) Alloc<TYP_SIMD32>::Type[ChunkSize];
                     break;
                 }
+
+                case TYP_SIMD64:
+                {
+                    m_defs = new (alloc) Alloc<TYP_SIMD64>::Type[ChunkSize];
+                    break;
+                }
 #endif // FEATURE_SIMD
 
                 default:
@@ -1856,6 +1863,11 @@ ValueNum ValueNumStore::VNForSimd32Con(simd32_t cnsVal)
 {
     return VnForConst(cnsVal, GetSimd32CnsMap(), TYP_SIMD32);
 }
+
+ValueNum ValueNumStore::VNForSimd64Con(simd64_t cnsVal)
+{
+    return VnForConst(cnsVal, GetSimd64CnsMap(), TYP_SIMD64);
+}
 #endif // FEATURE_SIMD
 
 ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
@@ -1957,6 +1969,11 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         case TYP_SIMD32:
         {
             return VNForSimd32Con({});
+        }
+
+        case TYP_SIMD64:
+        {
+            return VNForSimd64Con({});
         }
 #endif // FEATURE_SIMD
 
@@ -3178,6 +3195,16 @@ simd32_t ValueNumStore::GetConstantSimd32(ValueNum argVN)
     assert(TypeOfVN(argVN) == TYP_SIMD32);
 
     return ConstantValue<simd32_t>(argVN);
+}
+
+// Given a simd64 constant value number return its value as a simd32.
+//
+simd64_t ValueNumStore::GetConstantSimd64(ValueNum argVN)
+{
+    assert(IsVNConstant(argVN));
+    assert(TypeOfVN(argVN) == TYP_SIMD64);
+
+    return ConstantValue<simd64_t>(argVN);
 }
 #endif // FEATURE_SIMD
 
@@ -7297,6 +7324,16 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                        cnsVal.u64[2], cnsVal.u64[3]);
                 break;
             }
+
+            case TYP_SIMD64:
+            {
+                simd64_t cnsVal = GetConstantSimd64(vn);
+                printf(
+                    "Simd64Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]",
+                    cnsVal.u64[0], cnsVal.u64[1], cnsVal.u64[2], cnsVal.u64[3], cnsVal.u64[4], cnsVal.u64[5],
+                    cnsVal.u64[6], cnsVal.u64[7]);
+                break;
+            }
 #endif // FEATURE_SIMD
 
             // These should be unreached.
@@ -8794,6 +8831,10 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
         case TYP_SIMD32:
             tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(tree->AsVecCon()->gtSimd32Val));
+            break;
+
+        case TYP_SIMD64:
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd64Con(tree->AsVecCon()->gtSimd64Val));
             break;
 #endif // FEATURE_SIMD
 

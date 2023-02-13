@@ -2280,6 +2280,18 @@ void Compiler::compSetProcessor()
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
+    {
+        if (!DoJitStressEvexEncoding())
+        {
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
+            instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
+        }
+        else
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
+        }
+    }
 #elif defined(TARGET_ARM64)
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
     {
@@ -2297,14 +2309,14 @@ void Compiler::compSetProcessor()
         if (canUseEvexEncoding())
         {
             codeGen->GetEmitter()->SetUseEvexEncoding(true);
-            // TODO-XArch-AVX512: Revisit other flags to be set once avx512 instructions are added.
+            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
         }
         if (canUseVexEncoding())
         {
             codeGen->GetEmitter()->SetUseVEXEncoding(true);
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
-            codeGen->GetEmitter()->SetContains256bitAVX(false);
+            codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
         }
     }
 #endif // TARGET_XARCH
