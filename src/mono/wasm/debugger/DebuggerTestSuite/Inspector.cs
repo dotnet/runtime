@@ -360,15 +360,17 @@ namespace DebuggerTests
                 await LaunchBrowser(start, span);
                 var init_cmds = new List<(string, Task<Result>)>();
                 initCmdList = _initCmdList;
+                Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
+                init_cmds.Add((APP_READY, readyTask));
                 if (DebuggerTestBase.RunningOnChrome)
                 {
-                    await Client.SendCommand("Debugger.enable", null, _cancellationTokenSource.Token);
-                    await Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token);
-                    await Client.SendCommand("Profiler.enable", null, _cancellationTokenSource.Token);
-                    await Client.SendCommand("Runtime.enable", null, _cancellationTokenSource.Token);
-                    await Client.SendCommand("Runtime.runIfWaitingForDebugger", null, _cancellationTokenSource.Token);
-                    await Client.SendCommand("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 }), _cancellationTokenSource.Token);
-                    await Client.SendCommand("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }), _cancellationTokenSource.Token);
+                    Console.WriteLine(await Client.SendCommand("Debugger.enable", null, _cancellationTokenSource.Token));
+                    Console.WriteLine(await Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token));
+                    Console.WriteLine(await Client.SendCommand("Profiler.enable", null, _cancellationTokenSource.Token));
+                    Console.WriteLine(await Client.SendCommand("Runtime.enable", null, _cancellationTokenSource.Token));
+                    Console.WriteLine(await Client.SendCommand("Runtime.runIfWaitingForDebugger", null, _cancellationTokenSource.Token));
+                    Console.WriteLine(await Client.SendCommand("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 }), _cancellationTokenSource.Token));
+                    Console.WriteLine(await Client.SendCommand("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }), _cancellationTokenSource.Token));
                 }
                 foreach (var cmdToInit in initCmdList)
                 {
@@ -383,8 +385,7 @@ namespace DebuggerTests
                     initCmdList.Add(("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 })));
                     initCmdList.Add(("Target.setAutoAttach",  JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true })));
                 }
-                Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
-                init_cmds.Add((APP_READY, readyTask));
+
 
                 _logger.LogInformation("waiting for the runtime to be ready");
                 while (!_cancellationTokenSource.IsCancellationRequested && init_cmds.Count > 0)

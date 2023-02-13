@@ -43,7 +43,7 @@ namespace DebuggerTests
                 await CheckValue(res.Value["result"], TEnum("System.Threading.Tasks.TaskStatus", "RanToCompletion"), "t.Status");
              });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [ConditionalFact(nameof(WasmSingleThreaded), nameof(RunningOnChrome))]
         public async Task AsyncLocalsInContinueWithInstanceUsingThisBlock() => await CheckInspectLocalsAtBreakpointSite(
              "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithInstanceUsingThisAsync", 5, "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithInstanceUsingThisAsync.AnonymousMethod__6_0",
              "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
