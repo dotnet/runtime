@@ -7,6 +7,12 @@ public class Program
 {
     public static int Main(string[] args)
     {
+        if (!runtimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            // Linux-only test
+            return 100;
+        }
+
         var llvmDwarfDumpPath = Path.Combine(
             Environment.GetEnvironmentVariable("CORE_ROOT"),
             "SuperFileCheck",
