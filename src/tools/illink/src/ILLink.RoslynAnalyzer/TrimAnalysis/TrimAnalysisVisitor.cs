@@ -328,16 +328,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					case SpecialType.System_Byte when constantValue is byte byteConstantValue:
 						constValue = new ConstIntValue (byteConstantValue);
 						return true;
-					case SpecialType.System_Int16 when constantValue is Int16 int16ConstantValue:
+					case SpecialType.System_Int16 when constantValue is short int16ConstantValue:
 						constValue = new ConstIntValue (int16ConstantValue);
 						return true;
-					case SpecialType.System_UInt16 when constantValue is UInt16 uint16ConstantValue:
+					case SpecialType.System_UInt16 when constantValue is ushort uint16ConstantValue:
 						constValue = new ConstIntValue (uint16ConstantValue);
 						return true;
-					case SpecialType.System_Int32 when constantValue is Int32 int32ConstantValue:
+					case SpecialType.System_Int32 when constantValue is int int32ConstantValue:
 						constValue = new ConstIntValue (int32ConstantValue);
 						return true;
-					case SpecialType.System_UInt32 when constantValue is UInt32 uint32ConstantValue:
+					case SpecialType.System_UInt32 when constantValue is uint uint32ConstantValue:
 						constValue = new ConstIntValue ((int) uint32ConstantValue);
 						return true;
 					}

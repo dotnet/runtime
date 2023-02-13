@@ -61,7 +61,11 @@ inline bool compUnixX86Abi()
 /*****************************************************************************/
 // The following are intended to capture only those #defines that cannot be replaced
 // with static const members of Target
-#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
+#define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 16
+
+#elif defined(TARGET_X86)
 #define REGMASK_BITS 32
 #define CSE_CONST_SHARED_LOW_BITS 16
 
@@ -146,13 +150,14 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-enum _regMask_enum : unsigned
+enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
+
 };
 
 #elif defined(TARGET_X86)
@@ -181,6 +186,13 @@ enum _regMask_enum : unsigned
 #error Unsupported target architecture
 #endif
 
+#if defined(TARGET_AMD64)
+// AVAILABLE_REG_COUNT is defined to be dynamic, based on whether AVX-512 high registers are available.
+#define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
+#else
+#define AVAILABLE_REG_COUNT ACTUAL_REG_COUNT
+#endif
+
 /*****************************************************************************/
 
 // TODO-Cleanup: The types defined below are mildly confusing: why are there both?
@@ -192,7 +204,7 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 typedef unsigned __int64 regMaskTP;
 #else
 typedef unsigned       regMaskTP;
@@ -528,7 +540,7 @@ inline regMaskTP genRegMask(regNumber reg)
     // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
     // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
     // and the result needs to be zero.
-    regMaskTP result = 1 << reg;
+    regMaskTP result = 1ULL << reg;
     assert(result == regMasks[reg]);
     return result;
 #else
