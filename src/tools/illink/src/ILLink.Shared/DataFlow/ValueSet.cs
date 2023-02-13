@@ -17,7 +17,7 @@ namespace ILLink.Shared.DataFlow
 	{
 		// Since we're going to do lot of type checks for this class a lot, it is much more efficient
 		// if the class is sealed (as then the runtime can do a simple method table pointer comparison)
-		sealed class EnumerableValues : HashSet<TValue>
+		private sealed class EnumerableValues : HashSet<TValue>
 		{
 			public EnumerableValues (IEnumerable<TValue> values) : base (values) { }
 
@@ -32,9 +32,9 @@ namespace ILLink.Shared.DataFlow
 
 		public struct Enumerator : IEnumerator<TValue>, IDisposable, IEnumerator
 		{
-			readonly object? _value;
-			int _state;  // 0 before begining, 1 at item, 2 after end
-			readonly IEnumerator<TValue>? _enumerator;
+			private readonly object? _value;
+			private int _state;  // 0 before begining, 1 at item, 2 after end
+			private readonly IEnumerator<TValue>? _enumerator;
 
 			internal Enumerator (object? values)
 			{
@@ -87,13 +87,13 @@ namespace ILLink.Shared.DataFlow
 		//   null - no values (empty set)
 		//   TValue - single value itself
 		//   EnumerableValues typed object - multiple values, stored in the hashset
-		readonly object? _values;
+		private readonly object? _values;
 
 		public ValueSet (TValue value) => _values = value;
 
 		public ValueSet (IEnumerable<TValue> values) => _values = new EnumerableValues (values);
 
-		ValueSet (EnumerableValues values) => _values = values;
+		private ValueSet (EnumerableValues values) => _values = values;
 
 		public static implicit operator ValueSet<TValue> (TValue value) => new (value);
 
@@ -119,6 +119,9 @@ namespace ILLink.Shared.DataFlow
 				return EqualityComparer<TValue>.Default.Equals ((TValue) _values, (TValue) other._values);
 			}
 		}
+
+		public static bool operator == (ValueSet<TValue> left, ValueSet<TValue> right) => left.Equals (right);
+		public static bool operator != (ValueSet<TValue> left, ValueSet<TValue> right) => !(left == right);
 
 		public override int GetHashCode ()
 		{
@@ -166,9 +169,9 @@ namespace ILLink.Shared.DataFlow
 		public override string ToString ()
 		{
 			StringBuilder sb = new ();
-			sb.Append ("{");
+			sb.Append ('{');
 			sb.Append (string.Join (",", this.Select (v => v.ToString ())));
-			sb.Append ("}");
+			sb.Append ('}');
 			return sb.ToString ();
 		}
 

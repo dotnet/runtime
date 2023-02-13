@@ -19,6 +19,8 @@ namespace System
         public static bool IsUbuntu => IsDistroAndVersion("ubuntu");
         public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsAlpine => IsDistroAndVersion("alpine");
+        public static bool IsAlpine313 => IsDistroAndVersion("alpine", 3, 13);
+        public static bool IsAlpine314 => IsDistroAndVersion("alpine", 3, 14);
         public static bool IsDebian8 => IsDistroAndVersion("debian", 8);
         public static bool IsDebian9 => IsDistroAndVersion("debian", 9);
         public static bool IsDebian10 => IsDistroAndVersion("debian", 10);
@@ -29,6 +31,7 @@ namespace System
         public static bool IsUbuntu1804 => IsDistroAndVersion("ubuntu", 18, 04);
         public static bool IsUbuntu1810OrHigher => IsDistroAndVersionOrHigher("ubuntu", 18, 10);
         public static bool IsMariner => IsDistroAndVersion("mariner");
+        public static bool IsMariner1 => IsDistroAndVersion("mariner", 1);
         public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");
@@ -52,12 +55,9 @@ namespace System
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
         public static bool IsNotRedHatFamily => !IsRedHatFamily;
         public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
+        public static bool IsCentos7 => IsDistroAndVersion("centos", 7);
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
-
-        public static bool IsSuperUser => IsBrowser || IsWindows ? false : libc.geteuid() == 0;
-
-        public static bool IsUnixAndSuperUser => !IsWindows && IsSuperUser;
 
         public static Version OpenSslVersion => !IsOSXLike && !IsWindows && !IsAndroid ?
             GetOpenSslVersion() :
@@ -213,7 +213,7 @@ namespace System
                 //       SunOS 5.11 illumos-63878f749f
                 //   on SmartOS:
                 //       SunOS 5.11 joyent_20200408T231825Z
-                var versionDescription = RuntimeInformation.OSDescription.Split(' ')[2];
+                string versionDescription = RuntimeInformation.OSDescription.Split(' ')[2];
                 switch (versionDescription)
                 {
                     case string version when version.StartsWith("omnios"):

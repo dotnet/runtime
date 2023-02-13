@@ -15,9 +15,6 @@ namespace BasicEventSourceTests
 {
     internal class TestUtilities
     {
-        // Specifies whether the process is elevated or not.
-        internal static bool IsProcessElevated => Environment.IsPrivilegedProcess;
-
         /// <summary>
         /// Confirms that there are no EventSources running.
         /// </summary>

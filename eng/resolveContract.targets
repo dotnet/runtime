@@ -23,9 +23,17 @@
 
   <ItemGroup Condition="'$(HasMatchingContract)' == 'true' and '$(ContractProject)' != ''">
     <ProjectReference Include="$(ContractProject)" ReferenceOutputAssembly="false" OutputItemType="ResolvedMatchingContract" />
-    <!-- We aren't referencing the contract, but make sure it's considered as an input to Compile so that if it changes we rebuild and rerun API compat -->
-    <ProjectReference Include="$(ContractProject)" ReferenceOutputAssembly="false" OutputItemType="CustomAdditionalCompileInputs" />
   </ItemGroup>
+
+  <!-- We aren't referencing the contract, but make sure it's considered as an input to Compile so that if it changes we rebuild and rerun API compat -->
+  <Target Name="AddResolvedMatchingContractToCompileInput"
+          BeforeTargets="CoreCompile"
+          AfterTargets="ResolveProjectReferences"
+          Condition="'@(ResolvedMatchingContract)' != ''">
+    <ItemGroup>
+      <CustomAdditionalCompileInputs Include="@(ResolvedMatchingContract)" />
+    </ItemGroup>
+  </Target>
 
   <!-- Allow P2Ps that target a source project to build against the corresponding ref project. -->
   <Target Name="AnnotateTargetPathWithTargetPlatformMonikerWithReferenceAssembly"

@@ -148,9 +148,9 @@ namespace ILCompiler.Dataflow
                 return;
             }
 
-            if (knownStacks.ContainsKey(newOffset))
+            if (knownStacks.TryGetValue(newOffset, out var knownStack))
             {
-                knownStacks[newOffset] = MergeStack(knownStacks[newOffset], newStack);
+                knownStacks[newOffset] = MergeStack(knownStack, newStack);
             }
             else
             {
@@ -319,7 +319,7 @@ namespace ILCompiler.Dataflow
             // are the same set of methods that we discovered and scanned above.
             if (_annotations.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod(startingMethod, out List<TypeSystemEntity>? compilerGeneratedCallees))
             {
-                var calleeMethods = compilerGeneratedCallees.OfType<MethodDefinition>();
+                var calleeMethods = compilerGeneratedCallees.OfType<MethodDesc>();
                 // https://github.com/dotnet/linker/issues/2845
                 // Disabled asserts due to a bug
                 // Debug.Assert (interproceduralState.Count == 1 + calleeMethods.Count ());
@@ -363,16 +363,16 @@ namespace ILCompiler.Dataflow
                 ValidateNoReferenceToReference(locals, methodBody, reader.Offset);
                 int curBasicBlock = blockIterator.MoveNext(reader.Offset);
 
-                if (knownStacks.ContainsKey(reader.Offset))
+                if (knownStacks.TryGetValue(reader.Offset, out var knownStack))
                 {
                     if (currentStack == null)
                     {
                         // The stack copy constructor reverses the stack
-                        currentStack = new Stack<StackSlot>(knownStacks[reader.Offset].Reverse());
+                        currentStack = new Stack<StackSlot>(knownStack.Reverse());
                     }
                     else
                     {
-                        currentStack = MergeStack(currentStack, knownStacks[reader.Offset]);
+                        currentStack = MergeStack(currentStack, knownStack);
                     }
                 }
 
@@ -477,6 +477,7 @@ namespace ILCompiler.Dataflow
                         {
                             if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
                             {
+                                HandleMethodReflectionAccess(methodBody, offset, methodOperand);
                                 TrackNestedFunctionReference(methodOperand, ref interproceduralState);
                             }
 
@@ -530,7 +531,19 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.ldtoken:
                         object obj = methodBody.GetObject(reader.ReadILToken());
-                        ScanLdtoken(obj, currentStack);
+                        ScanLdtoken(methodBody, offset, obj, currentStack);
+                        break;
+
+                    case ILOpcode.ldvirtftn:
+                        {
+                            if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
+                            {
+                                HandleMethodReflectionAccess(methodBody, offset, methodOperand);
+                            }
+
+                            PopUnknown(currentStack, 1, methodBody, offset);
+                            PushUnknown(currentStack);
+                        }
                         break;
 
                     case ILOpcode.ldind_i:
@@ -544,7 +557,6 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.ldind_u2:
                     case ILOpcode.ldind_u4:
                     case ILOpcode.ldlen:
-                    case ILOpcode.ldvirtftn:
                     case ILOpcode.localloc:
                     case ILOpcode.refanytype:
                     case ILOpcode.refanyval:
@@ -915,7 +927,7 @@ namespace ILCompiler.Dataflow
             currentStack.Push(newSlot);
         }
 
-        private static void ScanLdtoken(object operand, Stack<StackSlot> currentStack)
+        private void ScanLdtoken(MethodIL methodBody, int offset, object operand, Stack<StackSlot> currentStack)
         {
             if (operand is TypeDesc type)
             {
@@ -957,10 +969,16 @@ namespace ILCompiler.Dataflow
             {
                 StackSlot slot = new StackSlot(new RuntimeMethodHandleValue(method));
                 currentStack.Push(slot);
+
+                HandleMethodReflectionAccess(methodBody, offset, method);
             }
             else
             {
+                Debug.Assert(operand is FieldDesc);
+
                 PushUnknown(currentStack);
+
+                HandleFieldReflectionAccess(methodBody, offset, (FieldDesc)operand);
             }
         }
 
@@ -1205,6 +1223,16 @@ namespace ILCompiler.Dataflow
                 StoreInReference(methodArguments[(int)parameter.Index], newByRefValue, callingMethodBody, offset, locals, curBasicBlock, ref ipState);
             }
         }
+
+        /// <summary>
+        /// Called to handle reflection access to a method without any other specifics (ldtoken or ldftn for example)
+        /// </summary>
+        protected abstract void HandleMethodReflectionAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod);
+
+        /// <summary>
+        /// Called to handle reflection access to a field without any other specifics (ldtoken for example)
+        /// </summary>
+        protected abstract void HandleFieldReflectionAccess(MethodIL methodBody, int offset, FieldDesc accessedField);
 
         private void HandleCall(
             MethodIL callingMethodBody,

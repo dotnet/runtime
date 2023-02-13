@@ -37,10 +37,7 @@ internal static class ReflectionTest
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
-        // Need to implement RhGetCodeTarget for CppCodeGen
-#if !CODEGEN_CPP
         TestByRefLikeTypeMethod.Run();
-#endif
 #endif
         TestILScanner.Run();
         TestUnreferencedEnum.Run();
@@ -57,12 +54,14 @@ internal static class ReflectionTest
 #if !REFLECTION_FROM_USAGE
         TestNotReflectedIsNotReflectable.Run();
         TestGenericInstantiationsAreEquallyReflectable.Run();
+        TestStackTraces.Run();
 #endif
         TestAttributeInheritance2.Run();
         TestInvokeMethodMetadata.Run();
         TestVTableOfNullableUnderlyingTypes.Run();
         TestInterfaceLists.Run();
         TestMethodConsistency.Run();
+        TestIsValueTypeWithoutTypeHandle.Run();
 
         //
         // Mostly functionality tests
@@ -74,12 +73,13 @@ internal static class ReflectionTest
         TestInvokeMemberParamsCornerCase.Run();
         TestDefaultInterfaceInvoke.Run();
         TestCovariantReturnInvoke.Run();
-#if !CODEGEN_CPP
         TypeConstructionTest.Run();
         TestThreadStaticFields.Run();
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
-#endif
+        TestBaseOnlyUsedFromCode.Run();
+        TestEntryPoint.Run();
+
         return 100;
     }
 
@@ -245,7 +245,6 @@ internal static class ReflectionTest
                     throw new Exception();
             }
 
-#if !CODEGEN_CPP
             {
                 MethodInfo helloMethod = typeof(InvokeTestsGeneric<string>).GetTypeInfo().GetDeclaredMethod("GetHello");
                 string result = (string)helloMethod.Invoke(new InvokeTestsGeneric<string>(), new object[] { "world" });
@@ -273,7 +272,6 @@ internal static class ReflectionTest
                 if (result != "Hello 1 System.Double")
                     throw new Exception();
             }
-#endif
         }
     }
 
@@ -1102,12 +1100,9 @@ internal static class ReflectionTest
             if (!HasTypeHandle(usedNestedType))
                 throw new Exception($"{nameof(NeverUsedContainerType.UsedNestedType)} should have an EEType");
 
-            // Need to implement exceptions for CppCodeGen
-#if !CODEGEN_CPP
             // But the containing type doesn't need an EEType
             if (HasTypeHandle(neverUsedContainerType))
                 throw new Exception($"{nameof(NeverUsedContainerType)} should not have an EEType");
-#endif
         }
     }
 
@@ -1404,7 +1399,6 @@ internal static class ReflectionTest
                     throw new Exception("PartialCanon");
             }
 
-#if !CODEGEN_CPP // https://github.com/dotnet/corert/issues/7799
             Console.WriteLine("Search in system assembly");
             {
                 Type t = Type.GetType("System.Runtime.CompilerServices.SuppressIldasmAttribute", throwOnError: false);
@@ -1426,7 +1420,6 @@ internal static class ReflectionTest
                 if (t == null)
                     throw new Exception("CompilerGlobalScopeAttribute");
             }
-#endif
 #endif
 
             Console.WriteLine("Enum.GetValues");
@@ -1503,6 +1496,33 @@ internal static class ReflectionTest
 #if !MULTIMODULE_BUILD
             Assert.Equal("mscorlib", Assembly.Load("mscorlib, PublicKeyToken=cccccccccccccccc").GetName().Name);
 #endif
+        }
+    }
+
+    class TestBaseOnlyUsedFromCode
+    {
+        class SomeReferenceType { }
+
+        class SomeGenericClass<T>
+        {
+            public static string Cookie;
+        }
+
+        class OtherGenericClass<T>
+        {
+            public override string ToString() => SomeGenericClass<T>.Cookie;
+        }
+
+        public static void Run()
+        {
+            SomeGenericClass<SomeReferenceType>.Cookie = "Hello";
+
+            var inst = Activator.CreateInstance(typeof(OtherGenericClass<>).MakeGenericType(GetSomeReferenceType()));
+
+            if (inst.ToString() != "Hello")
+                throw new Exception();
+
+            static Type GetSomeReferenceType() => typeof(SomeReferenceType);
         }
     }
 
@@ -1598,6 +1618,58 @@ internal static class ReflectionTest
             var t = (Type)s_type.MakeGenericType(typeof(double)).GetMethod("Gimme").Invoke(null, Array.Empty<object>());
             if (t != typeof(double))
                 throw new Exception();
+        }
+    }
+
+    class TestStackTraces
+    {
+        class RefType { }
+        struct ValType { }
+
+        class C1<T>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static string M1(T c1m1param) => Environment.StackTrace;
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static string M2(T c1m2param) => Environment.StackTrace;
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static string M3<U>(T c1m3param1, U c1m3param2) => Environment.StackTrace;
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public static string M4<U>(T c1m4param1, U c1m4param2) => Environment.StackTrace;
+        }
+
+        public static void Run()
+        {
+            // These methods are visible to reflection
+            typeof(C1<RefType>).GetMethod(nameof(C1<RefType>.M1));
+            typeof(C1<RefType>).GetMethod(nameof(C1<RefType>.M3));
+            typeof(C1<ValType>).GetMethod(nameof(C1<ValType>.M1));
+            typeof(C1<ValType>).GetMethod(nameof(C1<ValType>.M3));
+
+            Check("C1", "M1", "c1m1param", true, C1<RefType>.M1(default));
+            Check("C1", "M1", "c1m1param", true, C1<ValType>.M1(default));
+            Check("C1", "M2", "c1m2param", false, C1<RefType>.M2(default));
+            Check("C1", "M2", "c1m2param", false, C1<ValType>.M2(default));
+            Check("C1", "M3", "c1m3param", true, C1<RefType>.M3<RefType>(default, default));
+            Check("C1", "M3", "c1m3param", true, C1<RefType>.M3<ValType>(default, default));
+            Check("C1", "M3", "c1m3param", true, C1<ValType>.M3<RefType>(default, default));
+            Check("C1", "M3", "c1m3param", true, C1<ValType>.M3<ValType>(default, default));
+            Check("C1", "M4", "c1m4param", false, C1<RefType>.M4<RefType>(default, default));
+            Check("C1", "M4", "c1m4param", false, C1<RefType>.M4<ValType>(default, default));
+            Check("C1", "M4", "c1m4param", false, C1<ValType>.M4<RefType>(default, default));
+            Check("C1", "M4", "c1m4param", false, C1<ValType>.M4<ValType>(default, default));
+
+            static void Check(string type, string method, string param, bool hasParam, string s)
+            {
+                if (!s.Contains(type))
+                    throw new Exception($"'{s}' doesn't contain '{type}'");
+                if (!s.Contains(method))
+                    throw new Exception($"'{s}' doesn't contain '{method}'");
+                if (hasParam && !s.Contains(param))
+                    throw new Exception($"'{s}' doesn't contain '{param}'");
+                if (!hasParam && s.Contains(param))
+                    throw new Exception($"'{s}' contains '{param}'");
+            }
         }
     }
 #endif
@@ -2038,6 +2110,84 @@ internal static class ReflectionTest
                 throw new Exception();
 
             static MethodInfo Grab<T>() => typeof(MyGenericType<T>).GetMethod(nameof(MyGenericType<T>.MyMethod));
+        }
+    }
+
+    class TestIsValueTypeWithoutTypeHandle
+    {
+        [Nothing(
+        ReferenceTypes = new[]
+        {
+            typeof(NonGenericType),
+            typeof(GenericType<int>),
+            typeof(ReferencedBaseType<int>),
+            typeof(GenericWithReferenceBaseType<int>)
+        },
+        ValueTypes = new[]
+        {
+            typeof(GenericStruct<int>),
+            typeof(NonGenericStruct),
+            typeof(Container<int>.GenericEnum)
+        })]
+        public static void Run()
+        {
+            var ps = MethodBase.GetCurrentMethod().GetCustomAttribute<NothingAttribute>();
+            foreach (var t in ps.ReferenceTypes)
+            {
+                AssertNoTypeHandle(t);
+                Console.WriteLine(t.IsValueType);
+            }
+            foreach (var t in ps.ValueTypes)
+            {
+                AssertNoTypeHandle(t);
+                Console.WriteLine(t.IsValueType);
+            }
+
+            if (!typeof(G<>).GetGenericArguments()[0].IsValueType)
+                throw new Exception();
+
+            static void AssertNoTypeHandle(Type t)
+            {
+                RuntimeTypeHandle h = default;
+                try
+                {
+                    h = t.TypeHandle;
+                }
+                catch (Exception) { }
+
+                if (!h.Equals(default(RuntimeTypeHandle)))
+                    throw new Exception();
+            }
+        }
+
+        public class GenericBaseType<T> { }
+        public class GenericType<T> : GenericBaseType<T> { }
+        public class NonGenericType : GenericBaseType<int> { }
+        public class ReferencedBaseType<T> { }
+        public class GenericWithReferenceBaseType<T> : ReferencedBaseType<T> { }
+        public struct GenericStruct<T> { }
+        public struct NonGenericStruct { }
+        public class Container<T>
+        {
+            public enum GenericEnum { }
+        }
+
+        class NothingAttribute : Attribute
+        {
+            public Type[] ReferenceTypes;
+            public Type[] ValueTypes;
+        }
+
+        class G<T> where T : struct { }
+    }
+
+    class TestEntryPoint
+    {
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestEntryPoint));
+            if (Assembly.GetEntryAssembly().EntryPoint == null)
+                throw new Exception();
         }
     }
 

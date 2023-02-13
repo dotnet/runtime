@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly t5 {}
+.assembly 'b59858' {}
 //=================================================
 
 // Generated Method Number 30907
@@ -42,7 +42,7 @@ call       void [System.Console]System.Console::WriteLine(class System.String)
   ret
 } }
 
-.class auto ansi C  extends ['mscorlib']System.Object {
+.class public auto ansi C  extends ['mscorlib']System.Object {
   .field public static value class ['mscorlib']System.DateTime static_unboxed_dt
   .field public static class ['mscorlib']System.DateTime static_boxed_dt
   .field public static int32 i4

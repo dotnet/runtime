@@ -25,17 +25,6 @@
 #include "treelifeupdater.h"
 #include "emit.h"
 
-#if 0
-// Enable USING_SCOPE_INFO flag to use psiScope/siScope info to report variables' locations.
-#define USING_SCOPE_INFO
-#endif
-#if 1
-// Enable USING_VARIABLE_LIVE_RANGE flag to use VariableLiveRange info to report variables' locations.
-// Note: if both USING_SCOPE_INFO and USING_VARIABLE_LIVE_RANGE are defined, then USING_SCOPE_INFO
-// information is reported to the debugger.
-#define USING_VARIABLE_LIVE_RANGE
-#endif
-
 // Forward reference types
 
 class CodeGenInterface;
@@ -69,6 +58,23 @@ public:
     {
         return compiler;
     }
+
+#if defined(TARGET_AMD64)
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+
+    // Call this function after the equivalent fields in Compiler have been initialized.
+    void CopyRegisterInfo();
+
+    regMaskTP get_RBM_ALLFLOAT() const
+    {
+        return this->rbmAllFloat;
+    }
+    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    {
+        return this->rbmFltCalleeTrash;
+    }
+#endif // TARGET_AMD64
 
     // genSpillVar is called by compUpdateLifeVar.
     // TODO-Cleanup: We should handle the spill directly in CodeGen, rather than
@@ -396,10 +402,6 @@ private:
     bool m_cgFullPtrRegMap;
 
 public:
-#ifdef USING_SCOPE_INFO
-    virtual void siUpdate() = 0;
-#endif // USING_SCOPE_INFO
-
     /* These are the different addressing modes used to access a local var.
      * The JIT has to report the location of the locals back to the EE
      * for debugging purposes.
@@ -565,7 +567,6 @@ protected:
     unsigned genStackLevel;
 
 public:
-#ifdef USING_VARIABLE_LIVE_RANGE
     //--------------------------------------------
     //
     // VariableLiveKeeper: Holds an array of "VariableLiveDescriptor", one for each variable
@@ -759,7 +760,6 @@ public:
 
 protected:
     VariableLiveKeeper* varLiveKeeper; // Used to manage VariableLiveRanges of variables
-#endif                                 // USING_VARIABLE_LIVE_RANGE
 
 #ifdef LATE_DISASM
 public:

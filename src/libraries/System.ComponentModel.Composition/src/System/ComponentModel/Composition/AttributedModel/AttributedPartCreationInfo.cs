@@ -20,8 +20,8 @@ namespace System.ComponentModel.Composition.AttributedModel
         private readonly ICompositionElement? _origin;
         private PartCreationPolicyAttribute? _partCreationPolicy;
         private ConstructorInfo? _constructor;
-        private IEnumerable<ExportDefinition>? _exports;
-        private IEnumerable<ImportDefinition>? _imports;
+        private List<ExportDefinition>? _exports;
+        private List<ImportDefinition>? _imports;
         private HashSet<string>? _contractNamesOnNonInterfaces;
 
         public AttributedPartCreationInfo(Type type, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
@@ -252,7 +252,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             _imports = GetImportDefinitions();
         }
 
-        private IEnumerable<ExportDefinition> GetExportDefinitions()
+        private List<ExportDefinition> GetExportDefinitions()
         {
             List<ExportDefinition> exports = new List<ExportDefinition>();
 
@@ -414,7 +414,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             return attributedProvider.IsAttributeDefined<InheritedExportAttribute>(false);
         }
 
-        private IEnumerable<ImportDefinition> GetImportDefinitions()
+        private List<ImportDefinition> GetImportDefinitions()
         {
             List<ImportDefinition> imports = new List<ImportDefinition>();
 

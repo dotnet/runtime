@@ -687,7 +687,7 @@ namespace System.IO.Compression
             return GetDataDecompressor(compressedStream);
         }
 
-        private Stream OpenInWriteMode()
+        private WrappedStream OpenInWriteMode()
         {
             if (_everOpenedForWrite)
                 throw new IOException(SR.CreateModeWriteOnceAndOneEntryAtATime);
@@ -708,7 +708,7 @@ namespace System.IO.Compression
             return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
         }
 
-        private Stream OpenInUpdateMode()
+        private WrappedStream OpenInUpdateMode()
         {
             if (_currentlyOpenForWrite)
                 throw new IOException(SR.UpdateModeOneStream);

@@ -12,6 +12,7 @@
 #include "fstream.h"
 #include "typestring.h"
 #include "clrversion.h"
+#include "hostinformation.h"
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
@@ -1134,9 +1135,36 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 		}
 	}
 
-	// fallback to the empty string if we can't get assembly info, e.g., if the runtime is
+	// get the name from the host if we can't get assembly info, e.g., if the runtime is
 	// suspended before an assembly is loaded.
-	return reinterpret_cast<const ep_char8_t*>("");
+	// We'll cache the value in a static function global as the caller expects the lifetime of this value
+	// to outlast the calling function.
+	static const ep_char8_t* entrypoint_assembly_name = nullptr;
+	if (entrypoint_assembly_name == nullptr)
+	{
+		const ep_char8_t* entrypoint_assembly_name_local;
+		SString assembly_name;
+		if (HostInformation::GetProperty (HOST_PROPERTY_ENTRY_ASSEMBLY_NAME, assembly_name))
+		{
+			entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>(assembly_name.GetCopyOfUTF8String ());
+		}
+		else
+		{
+			// fallback to the empty string
+			// Allocate a new empty string here so we consistently allocate with the same allocator no matter our code-path.
+			entrypoint_assembly_name_local = new ep_char8_t [1] { '\0' };
+		}
+		// Try setting this entrypoint name as the cached value.
+		// If someone else beat us to it, free the memory we allocated.
+		// We want to only leak the one global copy of the entrypoint name,
+		// not multiple copies.
+		if (InterlockedCompareExchangeT(&entrypoint_assembly_name, entrypoint_assembly_name_local, nullptr) != nullptr)
+		{
+			delete[] entrypoint_assembly_name_local;
+		}
+	}
+
+	return entrypoint_assembly_name;
 }
 
 static

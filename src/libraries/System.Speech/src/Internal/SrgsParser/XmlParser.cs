@@ -1847,7 +1847,7 @@ namespace System.Speech.Internal.SrgsParser
             // in srgs.xml: or  <ruleref uri="srgs.xml>
             if (_filename != null)
             {
-                if (uri.IndexOf(_shortFilename, StringComparison.Ordinal) == 0 && (uri.Length > _shortFilename.Length && uri[_shortFilename.Length] == '#' || uri.Length == _shortFilename.Length))
+                if (uri.StartsWith(_shortFilename, StringComparison.Ordinal) && (uri.Length > _shortFilename.Length && uri[_shortFilename.Length] == '#' || uri.Length == _shortFilename.Length))
                 {
                     ThrowSrgsException(SRID.InvalidRuleRefSelf);
                 }

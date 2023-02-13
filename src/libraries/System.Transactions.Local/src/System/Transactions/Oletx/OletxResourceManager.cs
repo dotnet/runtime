@@ -493,7 +493,7 @@ internal sealed class OletxResourceManager
         lock (ReenlistList)
         {
             // This will do a linear search of the list, but that is what we need to do because
-            // the enlistments may change indicies while notifications are outstanding.  Also,
+            // the enlistments may change indices while notifications are outstanding.  Also,
             // this does not throw if the enlistment isn't on the list.
             ReenlistPendingList.Remove(enlistment);
 
@@ -609,7 +609,7 @@ internal sealed class OletxResourceManager
                             // Make sure we have a prepare info.
                             if (localEnlistment.ProxyPrepareInfoByteArray == null)
                             {
-                                Debug.Assert(false, string.Format(null, "this.prepareInfoByteArray == null in RecoveryInformation()"));
+                                Debug.Fail("this.prepareInfoByteArray == null in RecoveryInformation()");
                                 if (etwLog.IsEnabled())
                                 {
                                     etwLog.InternalError();

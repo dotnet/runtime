@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.Logging
 {
@@ -163,7 +164,7 @@ namespace ILCompiler.Logging
                 var typeOrNamespaceName = nameBuilder.ToString();
                 GetMatchingTypes(module, declaringType: containingType, name: typeOrNamespaceName, arity: arity, results: results);
                 Debug.Assert(results.Count <= 1);
-                if (results.Any())
+                if (results.Count != 0)
                 {
                     // the name resolved to a type
                     var result = results.Single();
@@ -210,21 +211,17 @@ namespace ILCompiler.Logging
                 index = startIndex;
             }
 
-#if false
             if (memberTypes.HasFlag(MemberType.Property))
             {
                 GetMatchingProperties(id, ref index, containingType, memberName, results, acceptName);
                 endIndex = index;
                 index = startIndex;
             }
-#endif
 
             index = endIndex;
 
-#if false
             if (memberTypes.HasFlag(MemberType.Event))
                 GetMatchingEvents(containingType, memberName, results);
-#endif
 
             if (memberTypes.HasFlag(MemberType.Field))
                 GetMatchingFields(containingType, memberName, results);
@@ -536,7 +533,7 @@ namespace ILCompiler.Logging
                 string namepart;
                 if (indexOfLastDot > 0 && indexOfLastDot < name.Length - 1)
                 {
-                    namespacepart = name.Substring(indexOfLastDot - 1);
+                    namespacepart = name.Substring(0, indexOfLastDot);
                     namepart = name.Substring(indexOfLastDot + 1);
                 }
                 else
@@ -631,10 +628,9 @@ namespace ILCompiler.Logging
             index = endIndex;
         }
 
-#if false
-        static void GetMatchingProperties(string id, ref int index, TypeDesc type, string memberName, List<TypeSystemEntity> results, bool acceptName = false)
+        private static void GetMatchingProperties(string id, ref int index, TypeDesc typeDesc, string memberName, List<TypeSystemEntity> results, bool acceptName = false)
         {
-            if (type == null)
+            if (typeDesc is not EcmaType type)
                 return;
 
             int startIndex = index;
@@ -643,11 +639,14 @@ namespace ILCompiler.Logging
             List<string> parameters = null;
             // Unlike Roslyn, we don't need to decode property names because we are working
             // directly with IL.
-            foreach (var property in type.Properties)
+            foreach (var propertyHandle in type.MetadataReader.GetTypeDefinition(type.Handle).GetProperties())
             {
+                var p = new PropertyPseudoDesc(type, propertyHandle);
+
                 index = startIndex;
-                if (property.Name != memberName)
+                if (p.Name != memberName)
                     continue;
+
                 if (PeekNextChar(id, index) == '(')
                 {
                     if (parameters == null)
@@ -658,23 +657,22 @@ namespace ILCompiler.Logging
                     {
                         parameters.Clear();
                     }
-                    if (!ParseParameterList(id, ref index, property.DeclaringType, parameters))
+                    if (!ParseParameterList(id, ref index, p.OwningType, parameters))
                         continue;
-                    if (!AllParametersMatch(property.Parameters, parameters))
+                    if (!AllParametersMatch(p.Signature, parameters))
                         continue;
                 }
                 else
                 {
-                    if (!acceptName && property.Parameters.Count != 0)
+                    if (!acceptName && p.Signature.Length != 0)
                         continue;
                 }
-                results.Add(property);
+                results.Add(p);
                 endIndex = index;
             }
 
             index = endIndex;
         }
-#endif
 
         private static void GetMatchingFields(TypeDesc type, string memberName, List<TypeSystemEntity> results)
         {
@@ -688,19 +686,19 @@ namespace ILCompiler.Logging
             }
         }
 
-#if false
-        static void GetMatchingEvents(TypeDesc type, string memberName, List<TypeSystemEntity> results)
+        private static void GetMatchingEvents(TypeDesc typeDesc, string memberName, List<TypeSystemEntity> results)
         {
-            if (type == null)
+            if (typeDesc is not EcmaType type)
                 return;
-            foreach (var evt in type.Events)
+
+            foreach (var eventHandle in type.MetadataReader.GetTypeDefinition(type.Handle).GetEvents())
             {
-                if (evt.Name != memberName)
+                var e = new EventPseudoDesc(type, eventHandle);
+                if (e.Name != memberName)
                     continue;
-                results.Add(evt);
+                results.Add(e);
             }
         }
-#endif
 
         private static bool AllParametersMatch(MethodSignature methodParameters, List<string> expectedParameters)
         {
@@ -710,6 +708,20 @@ namespace ILCompiler.Logging
             for (int i = 0; i < expectedParameters.Count; i++)
             {
                 if (GetSignaturePart(methodParameters[i]) != expectedParameters[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static bool AllParametersMatch(PropertySignature propertyParameters, List<string> expectedParameters)
+        {
+            if (propertyParameters.Length != expectedParameters.Count)
+                return false;
+
+            for (int i = 0; i < expectedParameters.Count; i++)
+            {
+                if (GetSignaturePart(propertyParameters[i]) != expectedParameters[i])
                     return false;
             }
 

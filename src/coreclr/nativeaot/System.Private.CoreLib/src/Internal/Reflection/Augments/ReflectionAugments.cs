@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 
 using EETypeElementType = Internal.Runtime.EETypeElementType;
 
@@ -164,7 +165,8 @@ namespace Internal.Reflection.Augments
 
         public abstract Assembly[] GetLoadedAssemblies();
 
-        public abstract EnumInfo GetEnumInfo(Type type);
+        public abstract EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(Type type)
+            where TUnderlyingValue : struct, INumber<TUnderlyingValue>;
 
         public abstract DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type);
     }

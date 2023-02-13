@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial struct HandleCallAction
+	internal partial struct HandleCallAction
 	{
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 #pragma warning disable IDE0060 // Unused parameters - the other partial implementation may need the parameter
@@ -27,7 +27,7 @@ namespace ILLink.Shared.TrimAnalysis
 			_operation = operation;
 			_diagnosticContext = diagnosticContext;
 			_annotations = FlowAnnotations.Instance;
-			_reflectionAccessAnalyzer = new ReflectionAccessAnalyzer ();
+			_reflectionAccessAnalyzer = default;
 			_requireDynamicallyAccessedMembersAction = new (diagnosticContext, _reflectionAccessAnalyzer);
 		}
 
@@ -77,8 +77,8 @@ namespace ILLink.Shared.TrimAnalysis
 			return false;
 		}
 
-		// TODO: Does the analyzer need to do something here?
-		private partial void MarkStaticConstructor (TypeProxy type) { }
+		private partial void MarkStaticConstructor (TypeProxy type)
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForConstructorsOnType (_diagnosticContext, type.Type, BindingFlags.Static, parameterCount: 0);
 
 		private partial void MarkEventsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
 			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForEventsOnTypeHierarchy (_diagnosticContext, type.Type, name, bindingFlags);

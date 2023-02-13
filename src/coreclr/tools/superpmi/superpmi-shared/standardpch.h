@@ -82,13 +82,6 @@
 #include "..\external\msvcdis\inc\disarm64.h"
 #endif // USE_MSVCDIS
 
-#ifndef DIRECTORY_SEPARATOR_CHAR_A
-#define DIRECTORY_SEPARATOR_CHAR_A '\\'
-#endif
-#ifndef DIRECTORY_SEPARATOR_STR_A
-#define DIRECTORY_SEPARATOR_STR_A "\\"
-#endif
-
 #ifndef W
 #ifdef TARGET_UNIX
 #define W(str) u##str
@@ -97,9 +90,27 @@
 #endif // TARGET_UNIX
 #endif // !W
 
+#ifdef TARGET_UNIX
+#ifndef DIRECTORY_SEPARATOR_CHAR_A
+#define DIRECTORY_SEPARATOR_CHAR_A '/'
+#endif
+#ifndef DIRECTORY_SEPARATOR_STR_A
+#define DIRECTORY_SEPARATOR_STR_A "/"
+#endif
+#ifndef DIRECTORY_SEPARATOR_STR_W
+#define DIRECTORY_SEPARATOR_STR_W W("/")
+#endif
+#else // TARGET_UNIX
+#ifndef DIRECTORY_SEPARATOR_CHAR_A
+#define DIRECTORY_SEPARATOR_CHAR_A '\\'
+#endif
+#ifndef DIRECTORY_SEPARATOR_STR_A
+#define DIRECTORY_SEPARATOR_STR_A "\\"
+#endif
 #ifndef DIRECTORY_SEPARATOR_STR_W
 #define DIRECTORY_SEPARATOR_STR_W W("\\")
 #endif
+#endif // TARGET_UNIX
 
 #ifdef TARGET_UNIX
 #define PLATFORM_SHARED_LIB_SUFFIX_A PAL_SHLIB_SUFFIX

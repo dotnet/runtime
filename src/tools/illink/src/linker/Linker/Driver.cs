@@ -152,7 +152,7 @@ namespace Mono.Linker
 						numBackslash /= 2;
 					}
 					if (numBackslash > 0)
-						argBuilder.Append (new String ('\\', numBackslash));
+						argBuilder.Append (new string ('\\', numBackslash));
 					if (cur < 0 || (!inquote && char.IsWhiteSpace ((char) cur)))
 						break;
 					if (copyChar)
@@ -639,10 +639,10 @@ namespace Mono.Linker
 								return -1;
 							}
 
-							AssemblyRootMode rmode = AssemblyRootMode.Default;
+							AssemblyRootMode rmode = AssemblyRootMode.AllMembers;
 							var rootMode = GetNextStringValue ();
 							if (rootMode != null) {
-								var parsed_rmode = ParseAssemblyRootsMode (rootMode);
+								var parsed_rmode = ParseAssemblyRootMode (rootMode);
 								if (parsed_rmode is null)
 									return -1;
 
@@ -843,7 +843,7 @@ namespace Mono.Linker
 
 		private static IEnumerable<int> ProcessWarningCodes (string value)
 		{
-			string Unquote (string arg)
+			static string Unquote (string arg)
 			{
 				if (arg.Length > 1 && arg[0] == '"' && arg[arg.Length - 1] == '"')
 					return arg.Substring (1, arg.Length - 2);
@@ -1115,11 +1115,9 @@ namespace Mono.Linker
 			return null;
 		}
 
-		AssemblyRootMode? ParseAssemblyRootsMode (string s)
+		AssemblyRootMode? ParseAssemblyRootMode (string s)
 		{
 			switch (s.ToLowerInvariant ()) {
-			case "default":
-				return AssemblyRootMode.Default;
 			case "all":
 				return AssemblyRootMode.AllMembers;
 			case "visible":
@@ -1395,7 +1393,7 @@ namespace Mono.Linker
 		static void About ()
 		{
 			Console.WriteLine ("For more information, visit the project Web site");
-			Console.WriteLine ("   https://github.com/dotnet/linker");
+			Console.WriteLine ("   https://github.com/dotnet/runtime/tree/main/src/tools/illink");
 		}
 
 		static Pipeline GetStandardPipeline ()

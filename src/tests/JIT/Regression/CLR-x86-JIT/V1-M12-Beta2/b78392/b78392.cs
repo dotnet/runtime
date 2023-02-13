@@ -3,9 +3,9 @@
 //
 
 using System;
-class foo
+public class foo
 {
-    static int Main()
+    public static int Main()
     {
         byte[,] Param = new byte[2, 2];
         Param[0, 0] = 1;

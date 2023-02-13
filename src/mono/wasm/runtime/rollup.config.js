@@ -19,31 +19,20 @@ const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
 const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
 const terserConfig = {
     compress: {
-        defaults: false,// too agressive minification breaks subsequent emcc compilation
+        defaults: true,
+        passes: 2,
         drop_debugger: false,// we invoke debugger
         drop_console: false,// we log to console
-        unused: false,// this breaks stuff
-        // below are minification features which seems to work fine
-        collapse_vars: true,
-        conditionals: true,
-        computed_props: true,
-        properties: true,
-        dead_code: true,
-        if_return: true,
-        inline: true,
-        join_vars: true,
-        loops: true,
-        reduce_vars: true,
-        evaluate: true,
-        hoist_props: true,
-        sequences: true,
     },
     mangle: {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
         // and unit test at src\libraries\System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\timers.mjs
-        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message|mono_wasm_set_timeout_exec)/,
+        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_set_timeout_exec)/,
         keep_classnames: /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/,
     },
+    format: {
+        wrap_iife: true
+    }
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n";
@@ -81,7 +70,7 @@ function consts(dict) {
     let newDict = {};
     for (const k in dict) {
         const newKey = "consts:" + k;
-        const newVal = JSON.stringify (dict[k]);
+        const newVal = JSON.stringify(dict[k]);
         newDict[newKey] = `export default ${newVal}`;
     }
     return virtual(newDict);
@@ -113,7 +102,8 @@ const iffeConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: outputCodePlugins
+    plugins: outputCodePlugins,
+    onwarn: onwarn
 };
 const typesConfig = {
     input: "./export-types.ts",
@@ -326,4 +316,16 @@ function findWebWorkerInputs(basePath) {
         }
     }
     return results;
+}
+
+function onwarn(warning) {
+    if (warning.code === "CIRCULAR_DEPENDENCY") {
+        return;
+    }
+
+    if (warning.code === "UNRESOLVED_IMPORT" && warning.exporter === "process") {
+        return;
+    }
+
+    console.warn(`(!) ${warning.toString()}`);
 }

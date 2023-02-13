@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.DependencyModel
         private const int UnseekableStreamInitialRentSize = 4096;
         private static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
 
-        private readonly IDictionary<string, string> _stringPool = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _stringPool = new Dictionary<string, string>();
 
         public DependencyContext Read(Stream stream)
         {
@@ -448,7 +448,7 @@ namespace Microsoft.Extensions.DependencyModel
             };
         }
 
-        private IEnumerable<Dependency> ReadTargetLibraryDependencies(ref Utf8JsonReader reader)
+        private List<Dependency> ReadTargetLibraryDependencies(ref Utf8JsonReader reader)
         {
             var dependencies = new List<Dependency>();
 
@@ -780,7 +780,7 @@ namespace Microsoft.Extensions.DependencyModel
                             .Select(e => new RuntimeFile(e.Path, e.AssemblyVersion, e.FileVersion))
                             .ToArray();
 
-                        if (groupRuntimeAssemblies.Any())
+                        if (groupRuntimeAssemblies.Length != 0)
                         {
                             runtimeAssemblyGroups.Add(new RuntimeAssetGroup(
                                 ridGroup.Key,
@@ -792,7 +792,7 @@ namespace Microsoft.Extensions.DependencyModel
                             .Select(e => new RuntimeFile(e.Path, e.AssemblyVersion, e.FileVersion))
                             .ToArray();
 
-                        if (groupNativeLibraries.Any())
+                        if (groupNativeLibraries.Length != 0)
                         {
                             nativeLibraryGroups.Add(new RuntimeAssetGroup(
                                 ridGroup.Key,

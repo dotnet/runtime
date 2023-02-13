@@ -10,7 +10,7 @@
 .assembly b14326
 {
 }
-.class ILGEN_622380794 {
+.class public ILGEN_622380794 {
 
 //BEGIN STATIC FIELDS
 .field static	int32 field_0x0
@@ -22,7 +22,7 @@
 .field static	float32 field_0x6
 .field static	float64 field_0x7
 //END STATIC FIELDS
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	20
 

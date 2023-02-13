@@ -103,7 +103,7 @@ void auto_trace_launch_internal()
 
 void auto_trace_launch()
 {
-    for (int i = 0; i < g_n_tracers; ++i)
+    for (size_t i = 0; i < g_n_tracers; ++i)
     {
         auto_trace_launch_internal();
     }

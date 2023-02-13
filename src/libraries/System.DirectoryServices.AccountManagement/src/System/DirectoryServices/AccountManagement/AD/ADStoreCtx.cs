@@ -139,11 +139,11 @@ namespace System.DirectoryServices.AccountManagement
                 // to build a list of ldap attributes for each object type.
                 if (null != ldapAttribute)
                 {
-                    if (propertyNameToLdapAttr.ContainsKey(propertyName))
+                    if (propertyNameToLdapAttr.TryGetValue(propertyName, out string[] ldapAttributes))
                     {
-                        string[] props = new string[propertyNameToLdapAttr[propertyName].Length + 1];
-                        propertyNameToLdapAttr[propertyName].CopyTo(props, 0);
-                        props[propertyNameToLdapAttr[propertyName].Length] = ldapAttribute;
+                        string[] props = new string[ldapAttributes.Length + 1];
+                        ldapAttributes.CopyTo(props, 0);
+                        props[ldapAttributes.Length] = ldapAttribute;
                         propertyNameToLdapAttr[propertyName] = props;
                     }
                     else
@@ -1019,7 +1019,7 @@ namespace System.DirectoryServices.AccountManagement
             return FindByDate(principalType, new string[] { "accountExpires" }, matchType, dt);
         }
 
-        private ResultSet FindByDate(Type subtype, string[] ldapAttributes, MatchType matchType, DateTime value)
+        private ADEntriesSet FindByDate(Type subtype, string[] ldapAttributes, MatchType matchType, DateTime value)
         {
             Debug.Assert(ldapAttributes != null);
             Debug.Assert(ldapAttributes.Length > 0);

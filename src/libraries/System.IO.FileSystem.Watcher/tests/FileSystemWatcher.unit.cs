@@ -932,28 +932,25 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_File_Delete_MultipleFilters()
         {
-            FileSystemWatcherTest.Execute(() =>
+            // Check delete events against multiple filters
+
+            using var tempDir = new TempDirectory();
+            FileInfo fileOne = new FileInfo(Path.Combine(tempDir.Path, GetTestFileName()));
+            FileInfo fileTwo = new FileInfo(Path.Combine(tempDir.Path, GetTestFileName()));
+            FileInfo fileThree = new FileInfo(Path.Combine(tempDir.Path, GetTestFileName()));
+            fileOne.Create().Dispose();
+            fileTwo.Create().Dispose();
+            fileThree.Create().Dispose();
+
+            using (var watcher = new FileSystemWatcher(tempDir.Path))
             {
-                // Check delete events against multiple filters
+                watcher.Filters.Add(fileOne.Name);
+                watcher.Filters.Add(fileTwo.Name);
 
-                DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
-                FileInfo fileOne = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-                FileInfo fileTwo = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-                FileInfo fileThree = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
-                fileOne.Create().Dispose();
-                fileTwo.Create().Dispose();
-                fileThree.Create().Dispose();
-
-                using (var watcher = new FileSystemWatcher(directory.FullName))
-                {
-                    watcher.Filters.Add(fileOne.Name);
-                    watcher.Filters.Add(fileTwo.Name);
-
-                    ExpectEvent(watcher, WatcherChangeTypes.Deleted, () => fileOne.Delete(), cleanup: null, expectedPath : fileOne.FullName);
-                    ExpectEvent(watcher, WatcherChangeTypes.Deleted, () => fileTwo.Delete(), cleanup: null, expectedPath: fileTwo.FullName );
-                    ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, () => fileThree.Delete(), cleanup: null, expectedPath: fileThree.FullName);
-                }
-            }, maxAttempts: DefaultAttemptsForExpectedEvent, backoffFunc: (iteration) => RetryDelayMilliseconds, retryWhen: e => e is XunitException);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileOne.Delete, cleanup: () => fileOne.Create().Dispose(), expectedPath : fileOne.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, fileTwo.Delete, cleanup: () => fileTwo.Create().Dispose(), expectedPath: fileTwo.FullName );
+                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, fileThree.Delete, cleanup: () => fileThree.Create().Dispose(), expectedPath: fileThree.FullName);
+            }
         }
 
         [Fact]
@@ -1006,19 +1003,19 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Delete_MultipleFilters()
         {
-            DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
-            DirectoryInfo directoryOne = Directory.CreateDirectory(Path.Combine(directory.FullName, GetTestFileName()));
-            DirectoryInfo directoryTwo = Directory.CreateDirectory(Path.Combine(directory.FullName, GetTestFileName()));
-            DirectoryInfo directoryThree = Directory.CreateDirectory(Path.Combine(directory.FullName, GetTestFileName()));
+            using var tempDir = new TempDirectory();
+            DirectoryInfo directoryOne = Directory.CreateDirectory(Path.Combine(tempDir.Path, GetTestFileName()));
+            DirectoryInfo directoryTwo = Directory.CreateDirectory(Path.Combine(tempDir.Path, GetTestFileName()));
+            DirectoryInfo directoryThree = Directory.CreateDirectory(Path.Combine(tempDir.Path, GetTestFileName()));
 
-            using (var watcher = new FileSystemWatcher(directory.FullName))
+            using (var watcher = new FileSystemWatcher(tempDir.Path))
             {
                 watcher.Filters.Add(Path.GetFileName(directoryOne.FullName));
                 watcher.Filters.Add(Path.GetFileName(directoryTwo.FullName));
 
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, () => directoryOne.Delete(), cleanup: null, expectedPath: directoryOne.FullName);
-                ExpectEvent(watcher, WatcherChangeTypes.Deleted, () => directoryTwo.Delete(), cleanup: null, expectedPath: directoryTwo.FullName);
-                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, () => directoryThree.Delete(), cleanup: null, expectedPath: directoryThree.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryOne.Delete(), cleanup: () => directoryOne.Create(), expectedPath: directoryOne.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryTwo.Delete(), cleanup: () => directoryTwo.Create(), expectedPath: directoryTwo.FullName);
+                ExpectNoEvent(watcher, WatcherChangeTypes.Deleted, action: () => directoryThree.Delete(), cleanup: () => directoryThree.Create(), expectedPath: directoryThree.FullName);
             }
         }
 

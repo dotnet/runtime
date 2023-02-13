@@ -890,7 +890,7 @@ namespace System.Runtime.Serialization
             return dataNode;
         }
 
-        private IDataNode ReadUnknownXmlData(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
+        private XmlDataNode ReadUnknownXmlData(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
         {
             XmlDataNode dataNode = new XmlDataNode()
             {
@@ -901,8 +901,8 @@ namespace System.Runtime.Serialization
             if (xmlReader.NodeType == XmlNodeType.EndElement)
                 return dataNode;
 
-            IList<XmlAttribute>? xmlAttributes = null;
-            IList<XmlNode>? xmlChildNodes = null;
+            List<XmlAttribute>? xmlAttributes = null;
+            List<XmlNode>? xmlChildNodes = null;
 
             XmlNodeType nodeType = xmlReader.MoveToContent();
             if (nodeType != XmlNodeType.Text)
@@ -948,7 +948,7 @@ namespace System.Runtime.Serialization
             bool couldBeClassData = true;
             string? elementNs = null, elementName = null;
             var xmlChildNodes = new List<XmlNode>();
-            IList<XmlAttribute>? xmlAttributes = null;
+            List<XmlAttribute>? xmlAttributes = null;
             if (namespaces != null)
             {
                 xmlAttributes = new List<XmlAttribute>();

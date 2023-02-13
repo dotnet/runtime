@@ -73,7 +73,7 @@ namespace ILLink.RoslynAnalyzer
 					return;
 
 				context.RegisterOperationBlockAction (context => {
-					if (context.OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope ())
+					if (context.OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
 						return;
 
 
@@ -111,7 +111,7 @@ namespace ILLink.RoslynAnalyzer
 			// warnings about base type arguments.
 			if (context.ContainingSymbol is not null
 				&& context.ContainingSymbol is not INamedTypeSymbol
-				&& context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope ())
+				&& context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
 				return;
 
 			var symbol = context.SemanticModel.GetSymbolInfo (context.Node).Symbol;
@@ -164,7 +164,7 @@ namespace ILLink.RoslynAnalyzer
 			}
 		}
 
-		static IEnumerable<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (SingleValue sourceValue, SingleValue targetValue, Location location)
+		static List<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (SingleValue sourceValue, SingleValue targetValue, Location location)
 		{
 			// The target should always be an annotated value, but the visitor design currently prevents
 			// declaring this in the type system.
@@ -172,7 +172,7 @@ namespace ILLink.RoslynAnalyzer
 				throw new NotImplementedException ();
 
 			var diagnosticContext = new DiagnosticContext (location);
-			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, new ReflectionAccessAnalyzer ());
+			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, default (ReflectionAccessAnalyzer));
 			requireDynamicallyAccessedMembersAction.Invoke (sourceValue, targetWithDynamicallyAccessedMembers);
 
 			return diagnosticContext.Diagnostics;

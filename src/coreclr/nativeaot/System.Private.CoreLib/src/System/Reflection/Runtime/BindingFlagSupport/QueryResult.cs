@@ -14,8 +14,9 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //
     internal partial struct QueryResult<M> where M : MemberInfo
     {
-        public QueryResult(BindingFlags bindingAttr, QueriedMemberList<M> queriedMembers)
+        public QueryResult(MemberPolicies<M> policies, BindingFlags bindingAttr, QueriedMemberList<M> queriedMembers)
         {
+            _policies = policies;
             _lazyCount = 0;
             _bindingAttr = bindingAttr;
             _queriedMembers = queriedMembers;
@@ -114,8 +115,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                         if (match.DeclaringType.Equals(challenger.DeclaringType))
                             throw new AmbiguousMatchException();
 
-                        MemberPolicies<M> policies = MemberPolicies<M>.Default;
-                        if (!policies.OkToIgnoreAmbiguity(match, challenger))
+                        if (!_policies.OkToIgnoreAmbiguity(match, challenger))
                             throw new AmbiguousMatchException();
                     }
                     else
@@ -129,6 +129,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         private int UnfilteredCount => ((_bindingAttr & BindingFlags.DeclaredOnly) != 0) ? _queriedMembers.DeclaredOnlyCount : _queriedMembers.TotalCount;
 
+        private readonly MemberPolicies<M> _policies;
         private readonly BindingFlags _bindingAttr;
         private int _lazyCount; // Intentionally not marking as volatile. QueryResult is for short-term use within a single method call - no aspiration to be thread-safe.
         private QueriedMemberList<M> _queriedMembers;

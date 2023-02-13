@@ -102,9 +102,10 @@ namespace System.Net.Http
             get => _timeout;
             set
             {
-                if (value != s_infiniteTimeout && (value <= TimeSpan.Zero || value > s_maxTimeout))
+                if (value != s_infiniteTimeout)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(value, TimeSpan.Zero);
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, s_maxTimeout);
                 }
                 CheckDisposedOrStarted();
                 _timeout = value;
@@ -116,10 +117,7 @@ namespace System.Net.Http
             get => _maxResponseContentBufferSize;
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 if (value > HttpContent.MaxBufferSize)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value,

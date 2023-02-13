@@ -18,7 +18,7 @@
 }
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit Bug.Program
+.class public auto ansi beforefieldinit Bug.Program
        extends [System.Runtime]System.Object
 {
   .method static char ILGEN_METHOD(int16, unsigned int16, native unsigned int)

@@ -21,9 +21,8 @@ namespace ILLink.Shared.DataFlow
 		where TKey : IEquatable<TKey>
 		where TValue : IEquatable<TValue>
 	{
-		Dictionary<TKey, TValue>? Dictionary;
-
-		readonly TValue DefaultValue;
+		private Dictionary<TKey, TValue>? Dictionary;
+		private readonly TValue DefaultValue;
 
 		public DefaultValueDictionary (TValue defaultValue) => (Dictionary, DefaultValue) = (null, defaultValue);
 
@@ -81,13 +80,13 @@ namespace ILLink.Shared.DataFlow
 		public override string ToString ()
 		{
 			StringBuilder sb = new ();
-			sb.Append ("{");
+			sb.Append ('{');
 			if (Dictionary != null) {
 				foreach (var kvp in Dictionary)
 					sb.Append (Environment.NewLine).Append ('\t').Append (kvp.Key.ToString ()).Append (" -> ").Append (kvp.Value.ToString ());
 			}
 			sb.Append (Environment.NewLine).Append ("\t_ -> ").Append (DefaultValue.ToString ());
-			sb.Append (Environment.NewLine).Append ("}");
+			sb.Append (Environment.NewLine).Append ('}');
 			return sb.ToString ();
 		}
 
@@ -109,5 +108,8 @@ namespace ILLink.Shared.DataFlow
 		// Prevent warning CS0659 https://docs.microsoft.com/en-us/dotnet/csharp/misc/cs0659.
 		// This type should never be used as a dictionary key.
 		public override int GetHashCode () => throw new NotImplementedException ();
+
+		public static bool operator == (DefaultValueDictionary<TKey, TValue> left, DefaultValueDictionary<TKey, TValue> right) => left.Equals (right);
+		public static bool operator != (DefaultValueDictionary<TKey, TValue> left, DefaultValueDictionary<TKey, TValue> right) => !(left == right);
 	}
 }

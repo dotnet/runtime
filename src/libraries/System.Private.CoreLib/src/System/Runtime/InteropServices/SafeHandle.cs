@@ -169,10 +169,7 @@ namespace System.Runtime.InteropServices
                 // update predicated on the initial state (a conditional write).
                 // Check for closed state.
                 oldState = _state;
-                if ((oldState & StateBits.Closed) != 0)
-                {
-                    throw new ObjectDisposedException(nameof(SafeHandle), SR.ObjectDisposed_SafeHandleClosed);
-                }
+                ObjectDisposedException.ThrowIf((oldState & StateBits.Closed) != 0, this);
 
                 // Not closed, let's propose an update (to the ref count, just add
                 // StateBits.RefCountOne to the state to effectively add 1 to the ref count).
@@ -203,7 +200,7 @@ namespace System.Runtime.InteropServices
             // See AddRef above for the design of the synchronization here. Basically we
             // will try to decrement the current ref count and, if that would take us to
             // zero refs, set the closed state on the handle as well.
-            bool performRelease = false;
+            bool performRelease;
 
             // Might have to perform the following steps multiple times due to
             // interference from other AddRef's and Release's.
@@ -229,10 +226,7 @@ namespace System.Runtime.InteropServices
                 // unbalanced AddRef and Releases). (We might see a closed state before
                 // hitting zero though -- that can happen if SetHandleAsInvalid is
                 // used).
-                if ((oldState & StateBits.RefCount) == 0)
-                {
-                    throw new ObjectDisposedException(nameof(SafeHandle), SR.ObjectDisposed_SafeHandleClosed);
-                }
+                ObjectDisposedException.ThrowIf((oldState & StateBits.RefCount) == 0, this);
 
                 // If we're proposing a decrement to zero and the handle is not closed
                 // and we own the handle then we need to release the handle upon a

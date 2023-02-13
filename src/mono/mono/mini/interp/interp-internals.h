@@ -26,8 +26,10 @@
 #define TRACING_FLAG 0x1
 #define PROFILING_FLAG 0x2
 
-#define MINT_VT_ALIGNMENT 8
 #define MINT_STACK_SLOT_SIZE (sizeof (stackval))
+// This alignment provides us with straight forward support for Vector128
+#define MINT_STACK_ALIGNMENT (2 * MINT_STACK_SLOT_SIZE)
+#define MINT_SIMD_ALIGNMENT (MINT_STACK_ALIGNMENT)
 
 #define INTERP_STACK_SIZE (1024*1024)
 #define INTERP_REDZONE_SIZE (8*1024)
@@ -169,6 +171,8 @@ struct InterpMethod {
 	unsigned int vararg : 1;
 	unsigned int optimized : 1;
 	unsigned int needs_thread_attach : 1;
+	// If set, this method is MulticastDelegate.Invoke
+	unsigned int is_invoke : 1;
 #if PROFILE_INTERP
 	long calls;
 	long opcounts;
@@ -297,12 +301,6 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 
 void
 mono_interp_error_cleanup (MonoError *error);
-
-gboolean
-mono_interp_is_method_multicastdelegate_invoke (MonoMethod *method);
-
-MONO_NEVER_INLINE void
-mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args);
 
 #if HOST_BROWSER
 

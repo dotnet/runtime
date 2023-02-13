@@ -279,9 +279,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             if (_tfm is not null)
             {
-                runtimeOptions.Add(
-                    Constants.Tfm.RuntimeConfigPropertyName,
-                    _tfm);
+                runtimeOptions.Add("tfm", _tfm);
             }
 
             if (_properties.Count > 0)

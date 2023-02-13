@@ -5,7 +5,7 @@
 
   <!-- For MacCatalyst, adhoc is the default.  Set it here so that we don't have to specify when running local -->
   <PropertyGroup>
-    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == '' and '$(TargetOS)' == 'MacCatalyst'">adhoc</DevTeamProvisioning>
+    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == '' and '$(TargetOS)' == 'maccatalyst'">adhoc</DevTeamProvisioning>
   </PropertyGroup>
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->

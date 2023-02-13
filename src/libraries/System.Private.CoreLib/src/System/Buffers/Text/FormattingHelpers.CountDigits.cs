@@ -65,40 +65,37 @@ namespace System.Buffers.Text
                 15, 16, 16, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 19, 19, 20
             };
             Debug.Assert(log2ToPow10.Length == 64);
+
+            // TODO: Replace with log2ToPow10[BitOperations.Log2(value)] once https://github.com/dotnet/runtime/issues/79257 is fixed
             uint index = Unsafe.Add(ref MemoryMarshal.GetReference(log2ToPow10), BitOperations.Log2(value));
 
-            // TODO https://github.com/dotnet/runtime/issues/60948: Use ReadOnlySpan<ulong> instead of ReadOnlySpan<byte>.
             // Read the associated power of 10.
-            ReadOnlySpan<byte> powersOf10 = new byte[]
+            ReadOnlySpan<ulong> powersOf10 = new ulong[]
             {
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // unused entry to avoid needing to subtract
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0
-                0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 10
-                0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 100
-                0xE8, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 1000
-                0x10, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 10000
-                0xA0, 0x86, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, // 100000
-                0x40, 0x42, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, // 1000000
-                0x80, 0x96, 0x98, 0x00, 0x00, 0x00, 0x00, 0x00, // 10000000
-                0x00, 0xE1, 0xF5, 0x05, 0x00, 0x00, 0x00, 0x00, // 100000000
-                0x00, 0xCA, 0x9A, 0x3B, 0x00, 0x00, 0x00, 0x00, // 1000000000
-                0x00, 0xE4, 0x0B, 0x54, 0x02, 0x00, 0x00, 0x00, // 10000000000
-                0x00, 0xE8, 0x76, 0x48, 0x17, 0x00, 0x00, 0x00, // 100000000000
-                0x00, 0x10, 0xA5, 0xD4, 0xE8, 0x00, 0x00, 0x00, // 1000000000000
-                0x00, 0xA0, 0x72, 0x4E, 0x18, 0x09, 0x00, 0x00, // 10000000000000
-                0x00, 0x40, 0x7A, 0x10, 0xF3, 0x5A, 0x00, 0x00, // 100000000000000
-                0x00, 0x80, 0xC6, 0xA4, 0x7E, 0x8D, 0x03, 0x00, // 1000000000000000
-                0x00, 0x00, 0xC1, 0x6F, 0xF2, 0x86, 0x23, 0x00, // 10000000000000000
-                0x00, 0x00, 0x8A, 0x5D, 0x78, 0x45, 0x63, 0x01, // 100000000000000000
-                0x00, 0x00, 0x64, 0xA7, 0xB3, 0xB6, 0xE0, 0x0D, // 1000000000000000000
-                0x00, 0x00, 0xE8, 0x89, 0x04, 0x23, 0xC7, 0x8A, // 10000000000000000000
+                0, // unused entry to avoid needing to subtract
+                0,
+                10,
+                100,
+                1000,
+                10000,
+                100000,
+                1000000,
+                10000000,
+                100000000,
+                1000000000,
+                10000000000,
+                100000000000,
+                1000000000000,
+                10000000000000,
+                100000000000000,
+                1000000000000000,
+                10000000000000000,
+                100000000000000000,
+                1000000000000000000,
+                10000000000000000000,
             };
-            Debug.Assert((index + 1) * sizeof(ulong) <= powersOf10.Length);
-            ulong powerOf10 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref MemoryMarshal.GetReference(powersOf10), index * sizeof(ulong)));
-            if (!BitConverter.IsLittleEndian)
-            {
-                powerOf10 = BinaryPrimitives.ReverseEndianness(powerOf10);
-            }
+            Debug.Assert((index + 1) <= powersOf10.Length);
+            ulong powerOf10 = Unsafe.Add(ref MemoryMarshal.GetReference(powersOf10), index);
 
             // Return the number of digits based on the power of 10, shifted by 1
             // if it falls below the threshold.
@@ -110,50 +107,45 @@ namespace System.Buffers.Text
         public static int CountDigits(uint value)
         {
             // Algorithm based on https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster.
-            // TODO https://github.com/dotnet/runtime/issues/60948: Use ReadOnlySpan<long> instead of ReadOnlySpan<byte>.
-            ReadOnlySpan<byte> table = new byte[]
+            ReadOnlySpan<long> table = new long[]
             {
-                0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, // 4294967296
-                0xF6, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00, // 8589934582
-                0xF6, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00, // 8589934582
-                0xF6, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00, // 8589934582
-                0x9C, 0xFF, 0xFF, 0xFF, 0x02, 0x00, 0x00, 0x00, // 12884901788
-                0x9C, 0xFF, 0xFF, 0xFF, 0x02, 0x00, 0x00, 0x00, // 12884901788
-                0x9C, 0xFF, 0xFF, 0xFF, 0x02, 0x00, 0x00, 0x00, // 12884901788
-                0x18, 0xFC, 0xFF, 0xFF, 0x03, 0x00, 0x00, 0x00, // 17179868184
-                0x18, 0xFC, 0xFF, 0xFF, 0x03, 0x00, 0x00, 0x00, // 17179868184
-                0x18, 0xFC, 0xFF, 0xFF, 0x03, 0x00, 0x00, 0x00, // 17179868184
-                0xF0, 0xD8, 0xFF, 0xFF, 0x04, 0x00, 0x00, 0x00, // 21474826480
-                0xF0, 0xD8, 0xFF, 0xFF, 0x04, 0x00, 0x00, 0x00, // 21474826480
-                0xF0, 0xD8, 0xFF, 0xFF, 0x04, 0x00, 0x00, 0x00, // 21474826480
-                0xF0, 0xD8, 0xFF, 0xFF, 0x04, 0x00, 0x00, 0x00, // 21474826480
-                0x60, 0x79, 0xFE, 0xFF, 0x05, 0x00, 0x00, 0x00, // 25769703776
-                0x60, 0x79, 0xFE, 0xFF, 0x05, 0x00, 0x00, 0x00, // 25769703776
-                0x60, 0x79, 0xFE, 0xFF, 0x05, 0x00, 0x00, 0x00, // 25769703776
-                0xC0, 0xBD, 0xF0, 0xFF, 0x06, 0x00, 0x00, 0x00, // 30063771072
-                0xC0, 0xBD, 0xF0, 0xFF, 0x06, 0x00, 0x00, 0x00, // 30063771072
-                0xC0, 0xBD, 0xF0, 0xFF, 0x06, 0x00, 0x00, 0x00, // 30063771072
-                0x80, 0x69, 0x67, 0xFF, 0x07, 0x00, 0x00, 0x00, // 34349738368
-                0x80, 0x69, 0x67, 0xFF, 0x07, 0x00, 0x00, 0x00, // 34349738368
-                0x80, 0x69, 0x67, 0xFF, 0x07, 0x00, 0x00, 0x00, // 34349738368
-                0x80, 0x69, 0x67, 0xFF, 0x07, 0x00, 0x00, 0x00, // 34349738368
-                0x00, 0x1F, 0x0A, 0xFA, 0x08, 0x00, 0x00, 0x00, // 38554705664
-                0x00, 0x1F, 0x0A, 0xFA, 0x08, 0x00, 0x00, 0x00, // 38554705664
-                0x00, 0x1F, 0x0A, 0xFA, 0x08, 0x00, 0x00, 0x00, // 38554705664
-                0x00, 0x36, 0x65, 0xC4, 0x09, 0x00, 0x00, 0x00, // 41949672960
-                0x00, 0x36, 0x65, 0xC4, 0x09, 0x00, 0x00, 0x00, // 41949672960
-                0x00, 0x36, 0x65, 0xC4, 0x09, 0x00, 0x00, 0x00, // 41949672960
-                0x00, 0x00, 0x00, 0x00, 0x0A, 0x00, 0x00, 0x00, // 42949672960
-                0x00, 0x00, 0x00, 0x00, 0x0A, 0x00, 0x00, 0x00, // 42949672960
+                4294967296,
+                8589934582,
+                8589934582,
+                8589934582,
+                12884901788,
+                12884901788,
+                12884901788,
+                17179868184,
+                17179868184,
+                17179868184,
+                21474826480,
+                21474826480,
+                21474826480,
+                21474826480,
+                25769703776,
+                25769703776,
+                25769703776,
+                30063771072,
+                30063771072,
+                30063771072,
+                34349738368,
+                34349738368,
+                34349738368,
+                34349738368,
+                38554705664,
+                38554705664,
+                38554705664,
+                41949672960,
+                41949672960,
+                41949672960,
+                42949672960,
+                42949672960,
             };
-            Debug.Assert(table.Length == (32 * sizeof(long)), "Every result of uint.Log2(value) needs a long entry in the table.");
+            Debug.Assert(table.Length == 32, "Every result of uint.Log2(value) needs a long entry in the table.");
 
-            long tableValue = Unsafe.ReadUnaligned<long>(ref Unsafe.Add(ref MemoryMarshal.GetReference(table), uint.Log2(value) * sizeof(long)));
-            if (!BitConverter.IsLittleEndian)
-            {
-                tableValue = BinaryPrimitives.ReverseEndianness(tableValue);
-            }
-
+            // TODO: Replace with table[uint.Log2(value)] once https://github.com/dotnet/runtime/issues/79257 is fixed
+            long tableValue = Unsafe.Add(ref MemoryMarshal.GetReference(table), uint.Log2(value));
             return (int)((value + tableValue) >> 32);
         }
 

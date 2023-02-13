@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -118,7 +119,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[KeptBaseType (typeof (MyReflect))]
+		[KeptBaseType (typeof (MyReflect), By = ProducedBy.Trimmer)]
 		class MyReflectDerived : MyReflect
 		{
 		}
@@ -167,8 +168,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			public static void Test ()
 			{
-				new MyReflectOverType (typeof (TestType)).GetFields (BindingFlags.Instance | BindingFlags.Public);
+				var i = new MyReflectOverType (typeof (TestType));
+				i.GetFields (BindingFlags.Instance | BindingFlags.Public);
+
+#if NATIVEAOT
+				MarkIReflect ();
+#endif
 			}
+
+#if NATIVEAOT
+			[UnconditionalSuppressMessage ("test", "IL2111")]
+			[Kept]
+			static void MarkIReflect ()
+			{
+				// In Native AOT the test infra doesn't setup the compiler in a way where it will force preserve
+				// all external types. Like here, it will actually track usage of methods on IReflect
+				// and remove any which are not used. We don't want that for this test.
+				typeof (IReflect).RequiresAll ();
+			}
+#endif
 		}
 	}
 }

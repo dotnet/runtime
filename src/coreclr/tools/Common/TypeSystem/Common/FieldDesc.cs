@@ -91,7 +91,7 @@ namespace Internal.TypeSystem
         {
             FieldDesc field = this;
 
-            TypeDesc owningType = field.OwningType;
+            DefType owningType = field.OwningType;
             TypeDesc instantiatedOwningType = owningType.InstantiateSignature(typeInstantiation, methodInstantiation);
             if (owningType != instantiatedOwningType)
                 field = instantiatedOwningType.Context.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)instantiatedOwningType);
