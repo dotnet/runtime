@@ -1863,10 +1863,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForCompare(treeNode->AsOp());
             break;
 
-        case GT_JTRUE:
-            genCodeForJumpTrue(treeNode->AsOp());
-            break;
-
         case GT_JCC:
             genCodeForJcc(treeNode->AsCC());
             break;
