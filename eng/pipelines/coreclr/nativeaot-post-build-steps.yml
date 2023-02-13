@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   testBuildArgs: ''
   helixQueues: ''
+  liveLibrariesBuildConfig: ''
 
 steps:
 # Can't run arm/arm64 tests on x64 build machines

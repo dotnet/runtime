@@ -214,6 +214,7 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
+              liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
@@ -248,6 +249,7 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot /p:BuildNativeAotFrameworkObjects=true
+              liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
@@ -284,6 +286,7 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
+              liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
