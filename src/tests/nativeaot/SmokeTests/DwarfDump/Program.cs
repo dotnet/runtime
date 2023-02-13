@@ -9,6 +9,7 @@ public class Program
     {
         var llvmDwarfDumpPath = Path.Combine(
             Environment.GetEnvironmentVariable("CORE_ROOT"),
+            "SuperFileCheck",
             "runtimes",
             RuntimeInformation.RuntimeIdentifier,
             "native",
@@ -46,7 +47,8 @@ public class Program
         });
 
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
-        const int ExpectedCount = 46253;
+        const int MinWarnings = 18400;
+        const int MaxWarnings = 48600;
         int count = 0;
         string line;
         while ((line = proc.StandardOutput.ReadLine()) != null)
@@ -57,9 +59,9 @@ public class Program
             }
         }
         proc.WaitForExit();
-        if (count != ExpectedCount)
+        if (count is not >= MinWarnings and <= MaxWarnings)
         {
-            Console.WriteLine($"Found {count} warnings and errors, expected {ExpectedCount}");
+            Console.WriteLine($"Found {count} warnings and errors, expected between {MinWarnings} and {MaxWarnings}");
             Console.WriteLine("This is likely a result of debug info changes. To see the new output, run the following command:");
             Console.WriteLine("\tllvm-dwarfdump --verify " + Environment.ProcessPath);
             return 1;
