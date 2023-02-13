@@ -102,7 +102,7 @@ typedef enum {
 
 #define PROFILE_INTERP 0
 
-#ifndef HOST_BROWSER
+#if !HOST_BROWSER && __GNUC__
 #define INTERP_ENABLE_SIMD
 #endif
 
