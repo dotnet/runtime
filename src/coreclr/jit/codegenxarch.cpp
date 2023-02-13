@@ -6809,7 +6809,7 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
         return false;
     }
 
-    GenTreeCC*   jcc = nullptr;
+    GenTreeCC*   cc = nullptr;
     GenCondition cond;
 
     if (tree->OperIsCompare())
@@ -6818,32 +6818,13 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
     }
     else
     {
-        assert((tree->gtFlags & GTF_SET_FLAGS) != 0);
-        // LSRA may have inserted resolution nodes, so look ahead for the flags
-        // consumer for a few nodes.
-        GenTree* flagsConsumer = tree->gtNext;
-        for (int i = 0; i < 8; i++)
-        {
-            if ((flagsConsumer == nullptr) || (flagsConsumer->OperIs(GT_JCC)))
-            {
-                break;
-            }
-
-            if ((flagsConsumer->gtFlags & GTF_SET_FLAGS) != 0)
-            {
-                return false;
-            }
-
-            flagsConsumer = flagsConsumer->gtNext;
-        }
-
-        if (flagsConsumer == nullptr)
+        cc = genTryFindFlagsConsumer(tree);
+        if (cc == nullptr)
         {
             return false;
         }
 
-        jcc  = flagsConsumer->AsCC();
-        cond = jcc->gtCondition;
+        cond = cc->gtCondition;
     }
 
     if (GetEmitter()->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(opType), cond))
@@ -6852,16 +6833,52 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
         return true;
     }
 
-    if ((jcc != nullptr) && GetEmitter()->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(opType), cond))
+    if ((cc != nullptr) && GetEmitter()->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(opType), cond))
     {
-        JITDUMP("Not emitting compare due to sign being already set; modifying next JCC to branch on sign "
-                "flag\n");
-        jcc->gtCondition =
+        JITDUMP("Not emitting compare due to sign being already set; modifying [V%02u] to check sign flag\n",
+                Compiler::dspTreeID(cc));
+        cc->gtCondition =
             (cond.GetCode() == GenCondition::SLT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
         return true;
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// genTryFindFlagsConsumer: Given a node that produces flags, try to look ahead
+// for the node that consumes those flags.
+//
+// Parameters:
+//    producer - the node that produces CPU flags
+//
+// Returns:
+//    A node that consumes the flags, or nullptr if no such node was found.
+//
+GenTreeCC* CodeGen::genTryFindFlagsConsumer(GenTree* producer)
+{
+    assert((producer->gtFlags & GTF_SET_FLAGS) != 0);
+    // After LSRA the next node may not always be the consumer since LSRA may
+    // insert resolution node. It's also possible nothing is consuming this
+    // compare's flags anymore, but these are both rare occurrences and the
+    // below loop usually exits on the first iteration.
+    GenTree* candidate = producer->gtNext;
+    for (int i = 0; i < 8; i++)
+    {
+        if (candidate == nullptr)
+        {
+            return nullptr;
+        }
+
+        if (candidate->OperIs(GT_JCC, GT_SETCC))
+        {
+            return candidate->AsCC();
+        }
+
+        candidate = candidate->gtNext;
+    }
+
+    return nullptr;
 }
 
 #if !defined(TARGET_64BIT)

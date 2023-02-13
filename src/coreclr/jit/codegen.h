@@ -904,6 +904,7 @@ protected:
     void genCompareInt(GenTree* treeNode);
 #ifdef TARGET_XARCH
     bool genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    GenTreeCC* genTryFindFlagsConsumer(GenTree* flagsProducer);
 #endif
 
 #ifdef FEATURE_SIMD
