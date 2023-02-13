@@ -46,7 +46,6 @@ namespace System.Threading
         {
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-
             ReliableEnterTimeout(obj, 0, ref lockTaken);
         }
 
@@ -62,7 +61,6 @@ namespace System.Threading
         {
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-
             ReliableEnterTimeout(obj, millisecondsTimeout, ref lockTaken);
         }
 
