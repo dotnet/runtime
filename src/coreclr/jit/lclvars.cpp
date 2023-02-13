@@ -3809,8 +3809,6 @@ void Compiler::lvaSortByRefCount()
             }
         }
 
-        varDsc->lvTrackedCandidate = varDsc->lvTracked;
-
         if (varDsc->lvTracked)
         {
             trackedCandidates[trackedCandidateCount++] = lclNum;
@@ -4708,8 +4706,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
                 varDsc->lvImplicitlyReferenced = 1;
             }
 
-            varDsc->lvTracked          = 0;
-            varDsc->lvTrackedCandidate = 0;
+            varDsc->lvTracked = 0;
 
             if (setSlotNumbers)
             {
