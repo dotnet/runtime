@@ -10,9 +10,6 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest> <!-- to avoid OOMs with source generation in wasm: https://github.com/dotnet/runtime/pull/60701 -->
 
-    <!-- Remove once the repo moves to a sufficiently high-enough version for file-scoped types -->
-    <MicrosoftCodeAnalysisVersion Condition="'$(DotNetBuildFromSource)' != 'true'">4.4.0-1.22356.23</MicrosoftCodeAnalysisVersion>
-
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />
