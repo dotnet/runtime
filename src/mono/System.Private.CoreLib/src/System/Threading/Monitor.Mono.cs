@@ -46,13 +46,13 @@ namespace System.Threading
         {
             if (lockTaken)
                 throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
+
             ReliableEnterTimeout(obj, 0, ref lockTaken);
         }
 
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
             bool lockTaken = false;
-
             TryEnter(obj, millisecondsTimeout, ref lockTaken);
             return lockTaken;
         }
