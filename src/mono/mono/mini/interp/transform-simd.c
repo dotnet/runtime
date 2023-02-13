@@ -104,8 +104,13 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 		vector_klass = mono_class_from_mono_type_internal (csignature->params [0]);
 	if (!m_class_is_simd_type (vector_klass))
 		return FALSE;
+
 	MonoType *arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
+	if (!mono_type_is_primitive (arg_type))
+		return FALSE;
 	MonoTypeEnum atype = arg_type->type;
+	if (atype == MONO_TYPE_BOOLEAN)
+		return FALSE;
 	int vector_size = mono_class_value_size (vector_klass, NULL);
 	int arg_size = mono_class_value_size (mono_class_from_mono_type_internal (arg_type), NULL);
 	g_assert (vector_size == SIZEOF_V128);
@@ -280,7 +285,11 @@ emit_sri_vector128_t (TransformData *td, MonoMethod *cmethod, MonoMethodSignatur
 	// First argument is always vector
 	MonoClass *vector_klass = cmethod->klass;
 	MonoType *arg_type = mono_class_get_context (vector_klass)->class_inst->type_argv [0];
+	if (!mono_type_is_primitive (arg_type))
+		return FALSE;
 	MonoTypeEnum atype = arg_type->type;
+	if (atype == MONO_TYPE_BOOLEAN)
+		return FALSE;
 	int vector_size = mono_class_value_size (vector_klass, NULL);
 	int arg_size = mono_class_value_size (mono_class_from_mono_type_internal (arg_type), NULL);
 	g_assert (vector_size == SIZEOF_V128);
