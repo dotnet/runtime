@@ -3221,6 +3221,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         }
 
         case TYP_SIMD32:
+        case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
         {
             simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
 
@@ -3231,6 +3232,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             break;
         }
         break;
+
 #endif // FEATURE_SIMD
 
         case TYP_BYREF:

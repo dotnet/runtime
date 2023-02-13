@@ -8830,12 +8830,10 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             break;
 
         case TYP_SIMD32:
+        case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
             tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(tree->AsVecCon()->gtSimd32Val));
             break;
 
-        case TYP_SIMD64:
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd64Con(tree->AsVecCon()->gtSimd64Val));
-            break;
 #endif // FEATURE_SIMD
 
         case TYP_FLOAT:

@@ -7660,7 +7660,7 @@ void emitter::emitIns_ARX_R(
         fmt = emitInsModeFormat(ins, IF_ARD_RRD);
 
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
-        assert(!CodeGen::instIsFP(ins) && (EA_SIZE(attr) <= EA_32BYTE));
+        assert(!CodeGen::instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE));
 
         id->idReg1(reg);
     }
@@ -10903,13 +10903,18 @@ void emitter::emitDispIns(
         }
 
         case IF_RWR_RRD_RRD_CNS:
-            assert(IsVexEncodedInstruction(ins));
+            assert(IsVexOrEvexEncodedInstruction(ins));
             assert(IsThreeOperandAVXInstruction(ins));
             printf("%s, ", emitRegName(id->idReg1(), attr));
             printf("%s, ", emitRegName(id->idReg2(), attr));
 
             switch (ins)
             {
+                case INS_vinsert64x4:
+                {
+                    attr = EA_32BYTE;
+                    break;
+                }
                 case INS_vinsertf128:
                 case INS_vinserti128:
                 {
@@ -17625,6 +17630,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vextracti128:
         case INS_vinsertf128:
         case INS_vinserti128:
+        case INS_vinsert64x4:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;
             break;
