@@ -3832,17 +3832,26 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
             LIR::Range& blockRange = LIR::AsRange(block);
             GenTree*    jmp        = blockRange.LastNode();
             assert(jmp->OperIsConditionalJump());
-            if (jmp->OperGet() == GT_JTRUE)
-            {
-                jmp->AsOp()->gtOp1->gtFlags &= ~GTF_SET_FLAGS;
-            }
 
             bool               isClosed;
             unsigned           sideEffects;
-            LIR::ReadOnlyRange jmpRange = blockRange.GetTreeRange(jmp, &isClosed, &sideEffects);
+            LIR::ReadOnlyRange jmpRange;
 
-            // TODO-LIR: this should really be checking GTF_ALL_EFFECT, but that produces unacceptable
-            //            diffs compared to the existing backend.
+            if (jmp->OperIs(GT_JCC))
+            {
+                // For nodes that consume CPU flags we have an invariant until
+                // resolution that the previous node sets those CPU flags.
+                GenTree* prevNode = jmp->gtPrev;
+                assert((prevNode != nullptr) && ((prevNode->gtFlags & GTF_SET_FLAGS) != 0));
+                prevNode->gtFlags &= ~GTF_SET_FLAGS;
+                jmpRange = blockRange.GetTreeRange(prevNode, &isClosed, &sideEffects);
+                jmpRange = LIR::ReadOnlyRange(jmpRange.FirstNode(), jmp);
+            }
+            else
+            {
+                jmpRange = blockRange.GetTreeRange(jmp, &isClosed, &sideEffects);
+            }
+
             if (isClosed && ((sideEffects & GTF_SIDE_EFFECT) == 0))
             {
                 // If the jump and its operands form a contiguous, side-effect-free range,

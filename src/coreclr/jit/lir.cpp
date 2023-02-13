@@ -308,6 +308,26 @@ LIR::ReadOnlyRange::ReadOnlyRange(GenTree* firstNode, GenTree* lastNode) : m_fir
 }
 
 //------------------------------------------------------------------------
+// LIR::ReadOnlyRange::operator=:
+//    Move assignment operator= for LIR ranges.
+//
+// Arguments:
+//    other - The range to move from.
+//
+LIR::ReadOnlyRange& LIR::ReadOnlyRange::operator=(ReadOnlyRange&& other)
+{
+    m_firstNode = other.m_firstNode;
+    m_lastNode  = other.m_lastNode;
+
+#ifdef DEBUG
+    other.m_firstNode = nullptr;
+    other.m_lastNode  = nullptr;
+#endif
+
+    return *this;
+}
+
+//------------------------------------------------------------------------
 // LIR::ReadOnlyRange::FirstNode: Returns the first node in the range.
 //
 GenTree* LIR::ReadOnlyRange::FirstNode() const
