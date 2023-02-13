@@ -6792,8 +6792,11 @@ void CodeGen::genCompareInt(GenTree* treeNode)
                 }
                 else if (emit->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(type), cond))
                 {
-                    JITDUMP("Not emitting compare due to sign being already set; modifying next JCC to branch on sign flag\n");
-                    nextNode->AsCC()->gtCondition = (cond.GetCode() == GenCondition::SLT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
+                    JITDUMP("Not emitting compare due to sign being already set; modifying next JCC to branch on sign "
+                            "flag\n");
+                    nextNode->AsCC()->gtCondition = (cond.GetCode() == GenCondition::SLT)
+                                                        ? GenCondition(GenCondition::S)
+                                                        : GenCondition(GenCondition::NS);
                     emitIns = false;
                 }
             }
