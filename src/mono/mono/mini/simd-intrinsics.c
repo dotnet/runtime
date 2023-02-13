@@ -339,7 +339,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 					} else if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
 						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
 						ins->inst_c1 = arg_type;
-						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [1]->dreg);
+						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [1]->dreg, ins->dreg);
 						ins->inst_c0 = OP_FMUL;
 						return ins;
 					} else if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type == MONO_TYPE_GENERICINST)) {
@@ -385,7 +385,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				} else if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
 					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
 					ins->inst_c1 = arg_type;
-					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, ins->dreg, args [1]->dreg);
+					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [1]->dreg, ins->dreg);
 					ins->inst_c0 = OP_IMUL;
 					return ins;
 				}
@@ -1621,24 +1621,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (size != 16)
 			return NULL;
 
-		int intrins = -1;
 		switch (arg0_type) {
 		case MONO_TYPE_I2:
-			intrins = INTRINS_WASM_NARROW_SIGNED_V16;
-			break;
 		case MONO_TYPE_I4:
-			intrins = INTRINS_WASM_NARROW_SIGNED_V8;
-			break;
+		case MONO_TYPE_I8:
 		case MONO_TYPE_U2:
-			intrins = INTRINS_WASM_NARROW_UNSIGNED_V16;
-			break;
 		case MONO_TYPE_U4:
-			intrins = INTRINS_WASM_NARROW_UNSIGNED_V8;
-			break;
+		case MONO_TYPE_U8:
+			return emit_simd_ins_for_sig (cfg, klass, OP_WASM_EXTRACT_NARROW, -1, -1, fsig, args);
 		}
-
-		if (intrins != -1)
-			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, intrins, arg0_type, fsig, args);
 
 		return NULL;
 #else
@@ -2032,7 +2023,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_set_Item: {
 		// WithElement is marked as Intrinsic, but handling this in set_Item leads to better code
 		g_assert (fsig->hasthis && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_I4 && fsig->params [1]->type == MONO_TYPE_R4);
-		int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
+
+		gboolean indirect = FALSE;
+		int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
 
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
@@ -2040,6 +2033,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->sreg3 = args [1]->dreg;
 		ins->inst_c1 = MONO_TYPE_R4;
 		ins->dreg = dreg;
+		if (indirect)
+			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, dreg);
+
 		return ins;
 	}
 	case SN_Add:

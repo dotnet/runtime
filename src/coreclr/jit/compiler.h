@@ -10753,20 +10753,19 @@ private:
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
     unsigned  cntCalleeTrashFloat;
-    unsigned  availableRegCount;
 
 public:
     regMaskTP get_RBM_ALLFLOAT() const
     {
-        return rbmAllFloat;
+        return this->rbmAllFloat;
     }
     regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
-        return rbmFltCalleeTrash;
+        return this->rbmFltCalleeTrash;
     }
     unsigned get_CNT_CALLEE_TRASH_FLOAT() const
     {
-        return cntCalleeTrashFloat;
+        return this->cntCalleeTrashFloat;
     }
 
 #endif // TARGET_AMD64

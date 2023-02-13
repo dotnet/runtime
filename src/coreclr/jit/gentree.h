@@ -24,6 +24,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "valuenumtype.h"
 #include "jitstd.h"
 #include "jithashtable.h"
+#include "gentreeopsdef.h"
 #include "simd.h"
 #include "namedintrinsiclist.h"
 #include "layout.h"
@@ -63,24 +64,6 @@ enum SpecialCodeKind
 };
 
 /*****************************************************************************/
-
-enum genTreeOps : BYTE
-{
-#define GTNODE(en, st, cm, ok) GT_##en,
-#include "gtlist.h"
-
-    GT_COUNT,
-
-#ifdef TARGET_64BIT
-    // GT_CNS_NATIVELONG is the gtOper symbol for GT_CNS_LNG or GT_CNS_INT, depending on the target.
-    // For the 64-bit targets we will only use GT_CNS_INT as it used to represent all the possible sizes
-    GT_CNS_NATIVELONG = GT_CNS_INT,
-#else
-    // For the 32-bit targets we use a GT_CNS_LNG to hold a 64-bit integer constant and GT_CNS_INT for all others.
-    // In the future when we retarget the JIT for x86 we should consider eliminating GT_CNS_LNG
-    GT_CNS_NATIVELONG = GT_CNS_LNG,
-#endif
-};
 
 // The following enum defines a set of bit flags that can be used
 // to classify expression tree nodes.
@@ -1990,6 +1973,8 @@ public:
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSeq, ssize_t* pOffset);
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
+
+    bool SupportsSettingZeroFlag();
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily

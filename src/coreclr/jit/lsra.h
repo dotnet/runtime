@@ -1242,7 +1242,7 @@ private:
         // Did we apply CONST_AVAILABLE heuristics
         FORCEINLINE bool isConstAvailable()
         {
-            return (score & CONST_AVAILABLE) != 0;
+            return constAvailableApplied;
         }
 
     private:
@@ -1251,13 +1251,10 @@ private:
         ScoreMappingTable* mappingTable                                 = nullptr;
 #endif
         LinearScan*  linearScan      = nullptr;
-        int          score           = 0;
         Interval*    currentInterval = nullptr;
         RefPosition* refPosition     = nullptr;
 
-        RegisterType regType         = RegisterType::TYP_UNKNOWN;
-        LsraLocation currentLocation = MinLocation;
-        RefPosition* nextRefPos      = nullptr;
+        RegisterType regType = RegisterType::TYP_UNKNOWN;
 
         regMaskTP candidates;
         regMaskTP preferences     = RBM_NONE;
@@ -1271,7 +1268,8 @@ private:
         RefPosition* lastRefPosition;
         regMaskTP    callerCalleePrefs = RBM_NONE;
         LsraLocation lastLocation;
-        RegRecord*   prevRegRec = nullptr;
+
+        regMaskTP foundRegBit;
 
         regMaskTP prevRegBit = RBM_NONE;
 
@@ -1279,7 +1277,6 @@ private:
         regMaskTP freeCandidates;
         regMaskTP matchingConstants;
         regMaskTP unassignedSet;
-        regMaskTP foundRegBit;
 
         // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
         // as they all require similar computation.
@@ -1287,10 +1284,11 @@ private:
         regMaskTP preferenceSet;
         regMaskTP coversRelatedSet;
         regMaskTP coversFullSet;
-        bool      coversSetsCalculated = false;
-        bool      found                = false;
-        bool      skipAllocation       = false;
-        regNumber foundReg             = REG_NA;
+        bool      coversSetsCalculated  = false;
+        bool      found                 = false;
+        bool      skipAllocation        = false;
+        bool      coversFullApplied     = false;
+        bool      constAvailableApplied = false;
 
         // If the selected register is already assigned to the current internal
         FORCEINLINE bool isAlreadyAssigned()
@@ -1886,6 +1884,7 @@ private:
     int BuildPutArgReg(GenTreeUnOp* node);
     int BuildCall(GenTreeCall* call);
     int BuildCmp(GenTree* tree);
+    int BuildCmpOperands(GenTree* tree);
     int BuildBlockStore(GenTreeBlk* blkNode);
     int BuildModDiv(GenTree* tree);
     int BuildIntrinsic(GenTree* tree);
@@ -1936,17 +1935,21 @@ private:
     int BuildLclHeap(GenTree* tree);
 
 #if defined(TARGET_AMD64)
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+    unsigned  availableRegCount;
+
     regMaskTP get_RBM_ALLFLOAT() const
     {
-        return compiler->rbmAllFloat;
+        return this->rbmAllFloat;
     }
     regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
-        return compiler->rbmFltCalleeTrash;
+        return this->rbmFltCalleeTrash;
     }
     unsigned get_AVAILABLE_REG_COUNT() const
     {
-        return compiler->availableRegCount;
+        return this->availableRegCount;
     }
 #endif // TARGET_AMD64
 

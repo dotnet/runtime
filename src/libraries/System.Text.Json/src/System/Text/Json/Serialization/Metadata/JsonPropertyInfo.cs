@@ -173,9 +173,9 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private ICustomAttributeProvider? _attributeProvider;
-        internal string? MemberName { get; private protected set; }
-        internal MemberTypes MemberType { get; private protected set; }
-        internal bool IsVirtual { get; private set; }
+        internal string? MemberName { get; set; }
+        internal MemberTypes MemberType { get; set; }
+        internal bool IsVirtual { get; set; }
 
         /// <summary>
         /// Specifies whether the current property is a special extension data property.
@@ -321,41 +321,10 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private protected abstract void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo);
-        private protected abstract void DetermineMemberAccessors(MemberInfo memberInfo);
 
-        private void DeterminePoliciesFromMember(MemberInfo memberInfo)
-        {
-            JsonPropertyOrderAttribute? orderAttr = memberInfo.GetCustomAttribute<JsonPropertyOrderAttribute>(inherit: false);
-            Order = orderAttr?.Order ?? 0;
-
-            JsonNumberHandlingAttribute? numberHandlingAttr = memberInfo.GetCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
-            NumberHandling = numberHandlingAttr?.Handling;
-        }
-
-        private void DeterminePropertyNameFromMember(MemberInfo memberInfo)
-        {
-            JsonPropertyNameAttribute? nameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(inherit: false);
-            string? name;
-            if (nameAttribute != null)
-            {
-                name = nameAttribute.Name;
-            }
-            else if (Options.PropertyNamingPolicy != null)
-            {
-                name = Options.PropertyNamingPolicy.ConvertName(memberInfo.Name);
-            }
-            else
-            {
-                name = memberInfo.Name;
-            }
-
-            if (name == null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(this);
-            }
-
-            Name = name;
-        }
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        internal abstract void  DetermineReflectionPropertyAccessors(MemberInfo memberInfo);
 
         private void CacheNameAsUtf8BytesAndEscapedNameSection()
         {
@@ -521,11 +490,10 @@ namespace System.Text.Json.Serialization.Metadata
                 potentialNumberType == JsonTypeInfo.ObjectType;
         }
 
-        private void DetermineIsRequired(MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)
-        {
-            IsRequired = memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) != null
-                || (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute());
-        }
+        /// <summary>
+        /// Creates a <see cref="JsonPropertyInfo"/> instance whose type matches that of the current property.
+        /// </summary>
+        internal abstract JsonParameterInfo CreateJsonParameterInfo(JsonParameterInfoValues parameterInfoValues);
 
         internal abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         internal abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
@@ -553,44 +521,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool HasGetter => _untypedGet is not null;
         internal bool HasSetter => _untypedSet is not null;
-
-        internal void InitializeUsingMemberReflection(MemberInfo memberInfo, JsonConverter? customConverter, JsonIgnoreCondition? ignoreCondition, bool shouldCheckForRequiredKeyword)
-        {
-            Debug.Assert(AttributeProvider == null);
-
-            switch (AttributeProvider = memberInfo)
-            {
-                case PropertyInfo propertyInfo:
-                    {
-                        MemberName = propertyInfo.Name;
-                        IsVirtual = propertyInfo.IsVirtual();
-                        MemberType = MemberTypes.Property;
-                        break;
-                    }
-                case FieldInfo fieldInfo:
-                    {
-                        MemberName = fieldInfo.Name;
-                        MemberType = MemberTypes.Field;
-                        break;
-                    }
-                default:
-                    Debug.Fail("Only FieldInfo and PropertyInfo members are supported.");
-                    break;
-            }
-
-            CustomConverter = customConverter;
-            DeterminePoliciesFromMember(memberInfo);
-            DeterminePropertyNameFromMember(memberInfo);
-            DetermineIsRequired(memberInfo, shouldCheckForRequiredKeyword);
-
-            if (ignoreCondition != JsonIgnoreCondition.Always)
-            {
-                DetermineMemberAccessors(memberInfo);
-            }
-
-            IgnoreCondition = ignoreCondition;
-            IsExtensionData = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) != null;
-        }
 
         internal bool IgnoreNullTokensOnRead { get; private protected set; }
         internal bool IgnoreDefaultValuesOnWrite { get; private protected set; }
