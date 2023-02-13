@@ -364,7 +364,6 @@ extends:
           runtimeFlavor: mono
           platforms:
           - tvossimulator_x64
-          - iossimulator_x86
           - linux_arm
           jobParameters:
             testGroup: innerloop
@@ -383,7 +382,6 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - ios_arm
           - linux_musl_x64
           jobParameters:
             testGroup: innerloop
