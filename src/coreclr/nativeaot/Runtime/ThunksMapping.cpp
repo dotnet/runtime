@@ -121,9 +121,9 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         return NULL;
     }
 
-#if defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
 #if defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)
-    RhFailFast(); // TODO: add pthread_jit_write_protect_np workaround
+    RhFailFast(); // we don't expect to get here on these platforms
 #elif defined(HOST_OSX)
     pthread_jit_write_protect_np(0);
 #else
@@ -232,9 +232,9 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         }
     }
 
-#if defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
 #if defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)
-    RhFailFast(); // TODO: add pthread_jit_write_protect_np workaround
+    RhFailFast(); // we don't expect to get here on these platforms
 #elif defined(HOST_OSX)
     pthread_jit_write_protect_np(1);
 #else

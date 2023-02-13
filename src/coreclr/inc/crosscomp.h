@@ -17,7 +17,7 @@
 #define MAKE_TARGET_DLLNAME_W(name) name W(".dll")
 #define MAKE_TARGET_DLLNAME_A(name) name ".dll"
 #else // TARGET_WINDOWS
-#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#ifdef TARGET_APPLE
 #define MAKE_TARGET_DLLNAME_W(name) W("lib") name W(".dylib")
 #define MAKE_TARGET_DLLNAME_A(name)  "lib" name  ".dylib"
 #else

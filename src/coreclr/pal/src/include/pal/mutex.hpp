@@ -126,7 +126,7 @@ Miscellaneous
 //   future, their use is disabled for compatibility.
 #if HAVE_FULLY_FEATURED_PTHREAD_MUTEXES && \
     HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES && \
-    !(defined(__FreeBSD__) || defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS))
+    !(defined(__FreeBSD__) || defined(TARGET_APPLE))
 
     #define NAMED_MUTEX_USE_PTHREAD_MUTEX 1
 #else

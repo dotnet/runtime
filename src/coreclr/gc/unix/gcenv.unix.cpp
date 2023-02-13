@@ -235,7 +235,7 @@ bool GCToOSInterface::Initialize()
     {
         s_flushUsingMemBarrier = TRUE;
     }
-#if !(defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS))
+#ifndef TARGET_APPLE
     else
     {
         assert(g_helperPage == 0);
@@ -267,7 +267,7 @@ bool GCToOSInterface::Initialize()
             return false;
         }
     }
-#endif // !(defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS))
+#endif // !TARGET_APPLE
 
     InitializeCGroup();
 
@@ -407,7 +407,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
         assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#ifdef TARGET_APPLE
     else
     {
         mach_msg_type_number_t cThreads;
@@ -455,7 +455,7 @@ void GCToOSInterface::FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#endif // TARGET_APPLE
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,
@@ -843,7 +843,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
-#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !(defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS))
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
     if (cacheSize == 0)
     {
         // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
@@ -893,7 +893,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
-#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !(defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS))
+#if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
     if (cacheLevel != 3)
     {
         // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info

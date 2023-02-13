@@ -799,7 +799,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 {
     // Only accept activations from the current process
     if (g_activationFunction != NULL && (siginfo->si_pid == getpid()
-#if defined(HOST_OSX) || defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)
+#if defined(HOST_APPLE)
     // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
     // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
     || siginfo->si_pid == 0

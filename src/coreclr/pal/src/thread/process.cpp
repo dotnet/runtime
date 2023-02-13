@@ -2473,7 +2473,7 @@ InitializeFlushProcessWriteBuffers()
         }
     }
 
-#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_APPLE)
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -2503,7 +2503,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#endif // defined(TARGET_APPLE)
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2553,7 +2553,7 @@ FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_APPLE)
     else
     {
         mach_msg_type_number_t cThreads;
@@ -2601,7 +2601,7 @@ FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#endif // defined(TARGET_APPLE)
 }
 
 /*++

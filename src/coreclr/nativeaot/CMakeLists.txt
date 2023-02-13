@@ -26,10 +26,10 @@ if(CLR_CMAKE_HOST_UNIX)
   add_compile_options(-fno-exceptions)    # Native AOT runtime doesn't use C++ exception handling
   add_compile_options(-nostdlib)
 
-  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+  if(CLR_CMAKE_TARGET_APPLE)
     add_definitions(-D_XOPEN_SOURCE)
     add_definitions(-DFEATURE_OBJCMARSHAL)
-  endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+  endif(CLR_CMAKE_TARGET_APPLE)
 
   if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
     # Allow 16 byte compare-exchange
