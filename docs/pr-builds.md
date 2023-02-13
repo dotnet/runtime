@@ -14,7 +14,7 @@ For mobile platforms and wasm we run some smoke tests that aim to protect the qu
 This pipeline is also required, and its intent is to cover a developer innerloop scenarios that could be affected by any change, like running a specific build command or running tests inside Visual Studio, etc.
 
 ### Dotnet-linker-tests
-This is also a required pipeline. The purpose of this pipeline is to test that the libraries code is linker friendly. Meaning that when we trim our libraries using the ILLink, we don't have any trimming bugs, like a required method on a specific scenario is trimmed away by accident.
+This is also a required pipeline. The purpose of this pipeline is to test that the libraries code is ILLink friendly. Meaning that when we trim our libraries using the ILLink, we don't have any trimming bugs, like a required method on a specific scenario is trimmed away by accident.
 
 ### Runtime-staging
 This pipeline runs on every change, however it behaves a little different than the other pipelines. This pipeline, will not fail if there are test failures, however it will fail if there is a timeout or a build failure. The reason why we fail on build failures is because we want to protect the developer innerloop (building the repository) for this platform.

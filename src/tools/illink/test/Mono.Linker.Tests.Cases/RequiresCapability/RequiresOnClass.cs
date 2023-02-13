@@ -442,7 +442,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			DerivedWithRequires2.NestedClass.NestedStaticMethod ();
 		}
 
-		// TODO: Parameter signature differs between linker and analyzer
+		// TODO: Parameter signature differs between trimming tools and analyzer
 		[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.TestSuppressions(", "Type[])")]
 		[ExpectedWarning ("IL3050", "RequiresOnClass.ClassWithRequires.TestSuppressions(", "Type[])", ProducedBy = ProducedBy.Analyzer)]
 		static void TestSuppressionsOnClass ()
@@ -519,14 +519,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "BaseWithRequiresOnType.Method()")]
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
-			// Linker skips warnings for base method overrides, assuming it is covered by RUC on the base method.
+			// ILLink skips warnings for base method overrides, assuming it is covered by RUC on the base method.
 			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnType.Method()", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)")]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()")]
 			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()")]
-			// Linker skips warnings for interface overrides, assuming it is covered by RUC on the interface method.
+			// ILLink skips warnings for interface overrides, assuming it is covered by RUC on the interface method.
 			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method(Int32)", ProducedBy = ProducedBy.Analyzer)]
-			// Linker incorrectly skips warnings for derived method, under the assumption that
+			// ILLink incorrectly skips warnings for derived method, under the assumption that
 			// it will be covered by the base method. But in this case the base method
 			// is unannotated (and the mismatch produces no warning because the derived
 			// type has RUC).

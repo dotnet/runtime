@@ -1164,7 +1164,7 @@ DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_MANAGED, ConvertToManaged, SM_Ptr
 DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_UNMANAGED, ConvertToUnmanaged, SM_Str_RetPtrByte)
 DEFINE_METHOD(UTF8STRINGMARSHALLER, FREE, Free, SM_PtrByte_RetVoid)
 
-// The generator for the linker XML doesn't understand inner classes so generation
+// The generator for the ILLink XML doesn't understand inner classes so generation
 // needs to skip the following type.
 // See https://github.com/dotnet/runtime/issues/71847
 #ifndef FOR_ILLINK

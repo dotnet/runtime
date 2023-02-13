@@ -14,7 +14,7 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 namespace Mono.Linker.Tests.Cases.Basic
 {
 	/// <summary>
-	/// This test is only to ensure that the linker does not crash when programs use ref fields (new to dotnet 7). This test does not validate any expected behaviors around ref fields.
+	/// This test is only to ensure that the trimming does not crash when programs use ref fields (new to dotnet 7). This test does not validate any expected behaviors around ref fields.
 	/// </summary>
 	[ExpectedNoWarnings]
 	[SkipKeptItemsValidation]

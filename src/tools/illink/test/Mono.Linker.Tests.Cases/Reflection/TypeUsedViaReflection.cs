@@ -348,7 +348,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		/// <summary>
-		/// This test verifies that if `TypeParser.ParseTypeName` hits an exception and returns null that the linker doesn't fail
+		/// This test verifies that if `TypeParser.ParseTypeName` hits an exception and returns null that ILLink doesn't fail
 		/// </summary>
 		[Kept]
 		static void TestInvalidTypeName ()

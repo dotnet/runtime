@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.BaseProvidesInterfaceEd
 	/// creating a psuedo-circular assembly reference (but not quite since <see cref="Base"/> doesn't implement IFoo itself).
 	/// In the linker, IsMethodNeededByInstantiatedTypeDueToPreservedScope would iterate through <see cref="Base"/>'s method's base methods,
 	/// and in the process would trigger the assembly of <see cref="IFoo"/> to be processed. Since that assembly also has <see cref="Derived2"/> that 
-	/// inherits from <see cref="Base"/> and implements <see cref="IBar"/> using <see cref="Base"/>'s methods, the linker adds 
+	/// inherits from <see cref="Base"/> and implements <see cref="IBar"/> using <see cref="Base"/>'s methods, ILLink adds 
 	/// <see cref="IBar"/>'s method as a base to <see cref="Base"/>'s method, which modifies the collection as it's being iterated, causing an exception.
 	/// </summary>
 	[SetupCompileBefore ("base.dll", new[] { "Dependencies/Base.cs" })] // Base Implements IFoo.Method (psuedo-reference to ifoo.dll)

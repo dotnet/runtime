@@ -16,7 +16,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <PropertyGroup>
     <IntermediateLinkDir Condition=" '$(IntermediateLinkDir)' == '' ">$(IntermediateOutputPath)linked\</IntermediateLinkDir>
     <IntermediateLinkDir Condition=" !HasTrailingSlash('$(IntermediateLinkDir)') ">$(IntermediateLinkDir)\</IntermediateLinkDir>
-    <!-- Used to enable incremental build for the linker target. -->
+    <!-- Used to enable incremental build for the ILLink target. -->
     <_LinkSemaphore>$(IntermediateLinkDir)Link.semaphore</_LinkSemaphore>
   </PropertyGroup>
 
@@ -57,7 +57,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <SuppressTrimAnalysisWarnings Condition="'$(SuppressTrimAnalysisWarnings)' == ''">false</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
-  <!-- Suppress warnings produced by the linker or by the ILLink Roslyn analyzer. -->
+  <!-- Suppress warnings produced by the trimming or by the ILLink Roslyn analyzer. -->
   <PropertyGroup Condition="'$(SuppressTrimAnalysisWarnings)' == 'true'">
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --notrimwarn</_ExtraTrimmerArgs>
     <EnableTrimAnalyzer Condition="'$(EnableTrimAnalyzer)' == ''">false</EnableTrimAnalyzer>
@@ -73,7 +73,7 @@ Copyright (c) .NET Foundation. All rights reserved.
                      ILLink
 
     Replace the files to be published with versions that have been
-    passed through the linker. Also prevent removed files from being
+    passed through ILLink. Also prevent removed files from being
     included in the generated deps.json.
     ============================================================
     -->
@@ -111,7 +111,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     ============================================================
                      _RunILLink
 
-    Execute the linker. This target runs incrementally, only executing
+    Execute ILLink. This target runs incrementally, only executing
     if the output semaphore file is out of date with respect to the inputs.
     ============================================================
     -->
@@ -331,14 +331,14 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_ComputeManagedAssemblyToLink" DependsOnTargets="_ComputeAssembliesToPostprocessOnPublish">
 
-    <!-- NB: There should not be non-managed assemblies in this list, but we still give the linker a chance to
+    <!-- NB: There should not be non-managed assemblies in this list, but we still give the ILLink a chance to
          further refine this list. It currently drops C++/CLI assemblies in ComputeManageAssemblies. -->
     <ComputeManagedAssemblies Assemblies="@(ResolvedFileToPublish->WithMetadataValue('PostprocessAssembly', 'true'))">
       <Output TaskParameter="ManagedAssemblies" ItemName="ManagedAssemblyToLink" />
     </ComputeManagedAssemblies>
 
     <ItemGroup>
-      <!-- The linker implicitly picks up PDBs next to input assemblies. We will filter these out of the publish set. -->
+      <!-- ILLink implicitly picks up PDBs next to input assemblies. We will filter these out of the publish set. -->
       <__PDBToLink Include="@(ResolvedFileToPublish)" Exclude="@(ManagedAssemblyToLink->'%(RelativeDir)%(Filename).pdb')" />
       <_PDBToLink Include="@(ResolvedFileToPublish)" Exclude="@(__PDBToLink)" />
     </ItemGroup>

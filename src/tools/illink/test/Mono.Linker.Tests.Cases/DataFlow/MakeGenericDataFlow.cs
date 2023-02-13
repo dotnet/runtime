@@ -433,7 +433,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = ProducedBy.Trimmer)]
 			static void TestUnknownMethodButNoTypeArguments (MethodInfo mi)
 			{
-				// Thechnically linker could figure this out, but it's not worth the complexity - such call will always fail at runtime.
+				// Technically trimming could figure this out, but it's not worth the complexity - such call will always fail at runtime.
 				mi.MakeGenericMethod (Type.EmptyTypes);
 			}
 

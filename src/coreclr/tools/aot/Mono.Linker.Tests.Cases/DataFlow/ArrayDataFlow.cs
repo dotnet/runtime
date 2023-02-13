@@ -577,7 +577,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				arr[0].RequiresAll ();
 			}
 
-			// Linker only incidentally matches the analyzer behavior here.
+			// ILLink only incidentally matches the analyzer behavior here.
 			// https://github.com/dotnet/linker/issues/2737
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll))]
 			static void TestNullCoalescingAssignmentToEmptyComplex ()

@@ -427,10 +427,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			static bool MessageTextContains (string message, string value)
 			{
-				// This is a workaround for different formatting of methods between ilc and linker/analyzer
+				// This is a workaround for different formatting of methods between ilc and illink/analyzer
 				// Sometimes they're written with a space after comma and sometimes without
 				//    Method(String,String)   - ilc
-				//    Method(String, String)  - linker/analyzer
+				//    Method(String, String)  - illink/analyzer
 				return message.Contains (value) || message.Contains (NameUtils.ConvertSignatureToIlcFormat (value));
 			}
 		}

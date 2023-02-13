@@ -121,7 +121,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicEvents) + "()")]
 
-		// Linker merges branches going forward.
+		// Trimming merges branches going forward.
 		[ExpectedWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2073", nameof (MultipleFinallyPaths) + "()", nameof (GetWithPublicFields) + "()",
@@ -323,7 +323,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicConstructors) + "()")]
 
-		// Linker merges branches going forward.
+		// Trimming merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll4) + "(Type)", nameof (GetWithPublicProperties) + "()",
@@ -485,7 +485,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()")]
-		// Linker merges branches going forward.
+		// Trimming merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void CatchInTry ()
@@ -510,7 +510,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// The bug was producing this warning:
 		// [ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicConstructors) + "()")]
 
-		// Linker merges branches going forward.
+		// Trimming merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll1) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void CatchInTryWithFinally ()
@@ -540,7 +540,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()")]
 
-		// Linker merges branches going forward.
+		// Trimming merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void TestCatchesHaveSeparateState ()
@@ -711,7 +711,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
-		// Linker merges branches going forward.
+		// Trimming merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void NestedFinally ()
@@ -741,7 +741,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
-		// Linker merges branches going forward.
+		// Trimming merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll3) + "(Type)", nameof (GetWithPublicFields) + "()",
 			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void NestedFinallyWithPredecessor ()
@@ -782,7 +782,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()")]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields) + "()")]
 
-		// Linker merges branches going forward.
+		// Trimming merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void ExceptionFilterStateChange ()
@@ -821,7 +821,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll6) + "(Type)", nameof (GetWithPublicFields) + "()")]
 		[ExpectedWarning ("IL2072", nameof (RequireAll6) + "(Type)", nameof (GetWithPublicProperties) + "()")]
 
-		// Linker merges branches going forward.
+		// Trimming merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicMethods) + "()",
@@ -857,7 +857,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicFields))]
 		[ExpectedWarning ("IL2072", nameof (RequireAll2) + "(Type)", nameof (GetWithPublicProperties))]
 
-		// Linker merges branches going forward.
+		// Trimming merges branches going forward.
 		[ExpectedWarning ("IL2072", nameof (RequireAll) + "(Type)", nameof (GetWithPublicMethods),
 			ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		public static void ExceptionFilterWithBranch ()

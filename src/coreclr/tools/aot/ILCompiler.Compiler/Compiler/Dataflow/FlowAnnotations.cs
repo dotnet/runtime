@@ -218,7 +218,7 @@ namespace ILLink.Shared.TrimAnalysis
             //   class DerivedAtRuntimeFromBase
             //   {
             //       // No point in adding annotation on the return value - nothing will look at it anyway
-            //       // Linker will not see this code, so there are no checks
+            //       // Trimming tools will not see this code, so there are no checks
             //       public override Type GetTypeWithFields() { return typeof(TestType); }
             //   }
             //

@@ -215,7 +215,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()")]
-		// Linker produces extraneous warnings
+		// ILLink produces extraneous warnings
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicFields) + "(String)",
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer)]
@@ -362,7 +362,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		// Analyzer gets this right, but linker doesn't consider backwards branches.
+		// Analyzer gets this right, but ILLink doesn't consider backwards branches.
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()",
 			ProducedBy = ProducedBy.Analyzer)]
@@ -379,7 +379,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			prev.RequiresPublicMethods (); // this produces no warning, even though "prev" will have the value from GetWithPublicFields!
 		}
 
-		// Analyzer gets this right, but linker doesn't consider backwards branches.
+		// Analyzer gets this right, but ILLink doesn't consider backwards branches.
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()",
 			ProducedBy = ProducedBy.Analyzer)]

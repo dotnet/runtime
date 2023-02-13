@@ -297,7 +297,7 @@ class Program
 
     /// <summary>
     /// Tests that we properly track dictionary dependencies of generic methods.
-    /// (Getting this wrong is a linker failure.)
+    /// (Getting this wrong is a trimming failure.)
     /// </summary>
     class TestDictionaryDependencyTracking
     {

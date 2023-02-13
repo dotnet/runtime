@@ -38,7 +38,7 @@ namespace LinkerAnalyzer
 				{ "a|alldeps", "show all dependencies", v => { showAllDeps = v != null; } },
 				{ "h|help", "show this message and exit.", v => showUsage = v != null },
 				{ "l|linkedpath=", "sets the linked assemblies directory path. Enables displaying size estimates.", v => { linkedPath = v; } },
-				{ "r|rawdeps=", "show raw vertex dependencies. Raw vertex VALUE is in the raw format written by linker to the dependency XML file. VALUE can be regular expression", v => { showRawDeps = v != null; rawName = v; } },
+				{ "r|rawdeps=", "show raw vertex dependencies. Raw vertex VALUE is in the raw format written by illink to the dependency XML file. VALUE can be regular expression", v => { showRawDeps = v != null; rawName = v; } },
 				{ "roots", "show root dependencies.", v => showRoots = v != null },
 				{ "stat", "show statistic of loaded dependencies.", v => showStat = v != null },
 				{ "tree", "reduce the dependency graph to the tree.", v => reduceToTree = v != null },

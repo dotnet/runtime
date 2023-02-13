@@ -333,10 +333,10 @@ namespace Mono.Linker.Dataflow
 			// Note about Activator.CreateInstance<T>
 			// There are 2 interesting cases:
 			//  - The generic argument for T is either specific type or annotated - in that case generic instantiation will handle this
-			//    since from .NET 6+ the T is annotated with PublicParameterlessConstructor annotation, so the linker would apply this as for any other method.
+			//    since from .NET 6+ the T is annotated with PublicParameterlessConstructor annotation, so the trimming tools would apply this as for any other method.
 			//  - The generic argument for T is unannotated type - the generic instantiantion handling has a special case for handling PublicParameterlessConstructor requirement
 			//    in such that if the generic argument type has the "new" constraint it will not warn (as it is effectively the same thing semantically).
-			//    For all other cases, the linker would have already produced a warning.
+			//    For all other cases, the trimming tools would have already produced a warning.
 
 			default:
 				throw new NotImplementedException ("Unhandled intrinsic");
@@ -355,12 +355,12 @@ namespace Mono.Linker.Dataflow
 				foreach (var uniqueValue in methodReturnValue) {
 					if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes) {
 						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
-							throw new InvalidOperationException ($"Internal linker error: processing of call from {callingMethodDefinition.GetDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
+							throw new InvalidOperationException ($"Internal trimming error: processing of call from {callingMethodDefinition.GetDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
 					} else if (uniqueValue is SystemTypeValue) {
 						// SystemTypeValue can fulfill any requirement, so it's always valid
 						// The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
 					} else {
-						throw new InvalidOperationException ($"Internal linker error: processing of call from {callingMethodDefinition.GetDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
+						throw new InvalidOperationException ($"Internal trimming error: processing of call from {callingMethodDefinition.GetDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
 					}
 				}
 			}

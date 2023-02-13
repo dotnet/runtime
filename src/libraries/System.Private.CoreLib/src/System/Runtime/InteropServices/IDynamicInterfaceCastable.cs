@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices
     /// </summary>
     /// <remarks>
     /// This attribute is used to enforce policy in the runtime and make
-    /// <see cref="IDynamicInterfaceCastable" /> scenarios linker friendly.
+    /// <see cref="IDynamicInterfaceCastable" /> scenarios trimming friendly.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
     public sealed class DynamicInterfaceCastableImplementationAttribute : Attribute

@@ -143,7 +143,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public static int AnnotatedMethod () => 42;
 		}
 
-		// Linker sees the call to AnnotatedMethod in the static .ctor, but analyzer doesn't see the static .ctor at all
+		// ILLink sees the call to AnnotatedMethod in the static .ctor, but analyzer doesn't see the static .ctor at all
 		// since it's fully compiler generated, instead it sees the call on the field initialization itself.
 		[LogContains ("IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresOnStaticConstructor.TypeIsBeforeFieldInit..cctor():" +
 			" Using member 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresOnStaticConstructor.TypeIsBeforeFieldInit.AnnotatedMethod()'" +

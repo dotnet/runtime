@@ -87,7 +87,7 @@ namespace ILCompiler
             {
                 XPathNavigator nav = _document.CreateNavigator();
 
-                // Initial structure check - ignore XML document which don't look like linker XML format
+                // Initial structure check - ignore XML document which don't look like ILLink XML format
                 if (!nav.MoveToChild(LinkerElementName, XmlNamespace))
                     return;
 

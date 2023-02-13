@@ -177,10 +177,10 @@
   <data name="FailedToWriteOutputMessage" xml:space="preserve">
     <value>Failed to write '{0}'.</value>
   </data>
-  <data name="LinkerUnexpectedErrorTitle" xml:space="preserve">
+  <data name="ILLinkUnexpectedErrorTitle" xml:space="preserve">
     <value>There was an unexpected error while trimming. An exception with more details is printed to the MSBuild log. Please share this stack trace with the IL Linker team to further investigate the cause and possible solution.</value>
   </data>
-  <data name="LinkerUnexpectedErrorMessage" xml:space="preserve">
+  <data name="ILLinkUnexpectedErrorMessage" xml:space="preserve">
     <value>IL Trimmer has encountered an unexpected error. Please report the issue at https://aka.ms/report-illink</value>
   </data>
   <data name="ErrorProcessingXmlLocationTitle" xml:space="preserve">
@@ -550,7 +550,7 @@
     <value>Invoking members on dynamic types is not trimming-compatible. Types or members might have been removed by the trimmer.</value>
   </data>
   <data name="AttributeShouldOnlyBeUsedOnceOnMemberTitle" xml:space="preserve">
-    <value>The linker found multiple instances of attribute on a member. This attribute is only allowed to have one instance.</value>
+    <value>The IL Linker found multiple instances of attribute on a member. This attribute is only allowed to have one instance.</value>
   </data>
   <data name="AttributeShouldOnlyBeUsedOnceOnMemberMessage" xml:space="preserve">
     <value>Attribute '{0}' should only be used once on '{1}</value>

@@ -37,7 +37,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				t.RequiresAll ();
 			}
 
-			// Linker tracks all assignments of hoisted locals, so this produces warnings.
+			// Trimming tracks all assignments of hoisted locals, so this produces warnings.
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresPublicFields), CompilerGeneratedCode = true,
 				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicFields), nameof (DataFlowTypeExtensions.RequiresPublicMethods), CompilerGeneratedCode = true,
@@ -80,7 +80,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll), CompilerGeneratedCode = true)]
-			// Linker includes backwards branches for hoisted locals, by virtue of tracking all assignments.
+			// Trimming includes backwards branches for hoisted locals, by virtue of tracking all assignments.
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll), CompilerGeneratedCode = true)]
 			static IEnumerable<int> FlowAcrossYieldReturnWithBackwardsBranch (int n = 0)
 			{
@@ -226,7 +226,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				t.RequiresAll ();
 			}
 
-			// Linker tracks all assignments of hoisted locals, so this produces warnings.
+			// Trimming tracks all assignments of hoisted locals, so this produces warnings.
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresPublicFields), CompilerGeneratedCode = true,
 				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicFields), nameof (DataFlowTypeExtensions.RequiresPublicMethods), CompilerGeneratedCode = true,
@@ -372,7 +372,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll))]
-				// Linker includes backwards branches for hoisted locals, by virtue of tracking all assignments.
+				// Trimming includes backwards branches for hoisted locals, by virtue of tracking all assignments.
 				[ExpectedWarning ("IL2072", nameof (GetWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll))]
 				void LocalFunction () => t.RequiresAll ();
 			}

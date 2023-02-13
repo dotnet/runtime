@@ -217,8 +217,8 @@ namespace ILCompiler.Dataflow
                     {
                         string displayName = $"local variable V_{localReference.LocalIndex}";
                         throw new InvalidOperationException(MessageContainer.CreateErrorMessage(
-                            $"""In method {method.OwningMethod.GetDisplayName()}, local variable V_{localVariableIndex} references {displayName} of type {localReference.ReferencedType.GetDisplayName()} which is a reference. Linker dataflow tracking has failed.""",
-                            (int)DiagnosticId.LinkerUnexpectedError,
+                            $"""In method {method.OwningMethod.GetDisplayName()}, local variable V_{localVariableIndex} references {displayName} of type {localReference.ReferencedType.GetDisplayName()} which is a reference. ILLink dataflow tracking has failed.""",
+                            (int)DiagnosticId.ILLinkUnexpectedError,
                             origin: new MessageOrigin(method, ilOffset)).ToMSBuildString());
                     }
                 }
@@ -1044,7 +1044,7 @@ namespace ILCompiler.Dataflow
                         if (valueWithStaticType.StaticType is not null && FlowAnnotations.IsTypeInterestingForDataflow(valueWithStaticType.StaticType))
                             throw new InvalidOperationException(MessageContainer.CreateErrorMessage(
                                 $"Unhandled StoreReference call. Unhandled attempt to store a value in {value} of type {value.GetType()}.",
-                                (int)DiagnosticId.LinkerUnexpectedError,
+                                (int)DiagnosticId.ILLinkUnexpectedError,
                                 origin: new MessageOrigin(method, offset)).ToMSBuildString());
                         // This should only happen for pointer derefs, which can't point to interesting types
                         break;
@@ -1314,7 +1314,7 @@ namespace ILCompiler.Dataflow
             ValueNodeList methodParams,
             out MultiValue methodReturnValue);
 
-        // Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for the linker are nearly always less than 32 elements.
+        // Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for the IL Linker are nearly always less than 32 elements.
         private const int MaxTrackedArrayValues = 32;
 
         private static void MarkArrayValuesAsUnknown(ArrayValue arrValue, int curBasicBlock)

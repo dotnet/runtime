@@ -6,7 +6,7 @@ This specification defines the semantics of "feature attributes", in terms of a 
 
 There's a history in .NET of using the terms "features" and "capabilities" to describe closely related concepts.
 
-In the linker and runtime we often refer to "feature switches", which are toggles that can tell illink and NativeAot to treat specific predefined properties as constants. There are also "runtime features" such as support for new language features like byref fields.
+In runtime we often refer to "feature switches", which are toggles that can tell illink and NativeAot to treat specific predefined properties as constants. There are also "runtime features" such as support for new language features like byref fields.
 
 We also often refer to "platform capabilities" such as the ability to run dynamic code, or the ability to create new threads. Sometimes the deployment model may restrict the set of available APIs; in that case we also may refer to "capabilities" (for example the ability to access files on disk, which is not available in single-file apps).
 
@@ -26,7 +26,7 @@ The ILLink Roslyn analyzer also produces warnings for these attributes, but does
 
 There is also the possibility that we will create an attribute-based model which allows users to define their own feature attributes; see this draft for example: https://github.com/dotnet/designs/pull/261. The semantics outlined here could be extended to those attributes if we determine that they are appropriate there.
 
-We would also like to share as much code as possible for this logic between the linker, NativeAot, the corresponding analyzers, and possibly future analyzers.
+We would also like to share as much code as possible for this logic between the ILLink, NativeAot, the corresponding analyzers, and possibly future analyzers.
 
 ## Goals
 

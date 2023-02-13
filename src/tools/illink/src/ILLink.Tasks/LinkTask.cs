@@ -15,7 +15,7 @@ namespace ILLink.Tasks
 	{
 		/// <summary>
 		///   Paths to the assembly files that should be considered as
-		///   input to the linker.
+		///   input to the ILLink.
 		///   Optional metadata:
 		///       TrimMode ("copy", "link", etc...): sets the illink action to take for this assembly.
 		///   There is an optional metadata for each optimization that can be set to "True" or "False" to
@@ -27,7 +27,7 @@ namespace ILLink.Tasks
 		///       IPConstProp
 		///       Sealer
 		///   Optional metadata "TrimmerSingleWarn" may also be set to "True"/"False" to control
-		///   whether the linker produces granular warnings for this assembly.
+		///   whether ILLink produces granular warnings for this assembly.
 		///   Maps to '-reference', and possibly '--action', '--enable-opt', '--disable-opt', '--verbose'
 		/// </summary>
 		[Required]
@@ -174,7 +174,7 @@ namespace ILLink.Tasks
 		public string ExtraArgs { get; set; }
 
 		/// <summary>
-		///   Make illink dump dependencies file for linker analyzer tool.
+		///   Make illink dump dependencies file for ILLink analyzer tool.
 		///   Maps to '--dump-dependencies'.
 		/// </summary>
 		public bool DumpDependencies { get; set; }
@@ -207,12 +207,12 @@ namespace ILLink.Tasks
 		public string DefaultAction { get; set; }
 
 		/// <summary>
-		///   A list of custom steps to insert into the linker pipeline.
+		///   A list of custom steps to insert into the ILLink pipeline.
 		///   Each ItemSpec should be the path to the assembly containing the custom step.
 		///   Each Item requires "Type" metadata with the name of the custom step type.
 		///   Optional metadata:
-		///   BeforeStep: The name of a linker step. The custom step will be inserted before it.
-		///   AfterStep: The name of a linker step. The custom step will be inserted after it.
+		///   BeforeStep: The name of a ILLink step. The custom step will be inserted before it.
+		///   AfterStep: The name of a ILLink step. The custom step will be inserted after it.
 		///   The default (if neither BeforeStep or AfterStep is specified) is to insert the
 		///   custom step at the end of the pipeline.
 		///   It is an error to specify both BeforeStep and AfterStep.
@@ -261,7 +261,7 @@ namespace ILLink.Tasks
 #pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
 				var taskDirectory = Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location);
 #pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
-				// The linker always runs on .NET Core, even when using desktop MSBuild to host ILLink.Tasks.
+				// IL Linker always runs on .NET Core, even when using desktop MSBuild to host ILLink.Tasks.
 				_illinkPath = Path.Combine (Path.GetDirectoryName (taskDirectory), "net8.0", "illink.dll");
 				return _illinkPath;
 			}

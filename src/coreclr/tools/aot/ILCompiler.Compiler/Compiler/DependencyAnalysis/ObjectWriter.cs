@@ -721,7 +721,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (_targetPlatform.IsOSXLike)
                 {
                     // Emit a symbol for beginning of the frame. This is workaround for ld64
-                    // linker bug which would produce DWARF with incorrect pcStart offsets for
+                    // ILLink tool bug which would produce DWARF with incorrect pcStart offsets for
                     // exception handling blocks if there is no symbol present for them.
                     //
                     // To make things simple we just reuse blobSymbolName and change `_lsda`
@@ -914,7 +914,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!(node is ISymbolNode))
                 return false;
 
-            // These intentionally clash with one another, but are merged with linker directives so should not be Comdat folded
+            // These intentionally clash with one another, but are merged with ILLink tool directives so should not be Comdat folded
             if (node is ModulesSectionNode)
                 return false;
 

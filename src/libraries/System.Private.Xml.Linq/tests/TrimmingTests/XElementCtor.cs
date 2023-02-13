@@ -12,7 +12,7 @@ using System.Xml.Serialization;
 
 /// <summary>
 /// Tests that the internal parameterless XElement ctor is not trimmed when used in an application that the IL Linker is run on.
-/// The test simulates the linker being run on the output of running sgen on an assembly that contains a simple POCO to be (de)serialized.
+/// The test simulates ILLink being run on the output of running sgen on an assembly that contains a simple POCO to be (de)serialized.
 /// The POCO has a field of type XElement. The ctor is needed to deserialize into this type.
 /// </summary>
 public class Program

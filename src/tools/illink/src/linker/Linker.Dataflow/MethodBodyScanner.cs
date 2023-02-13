@@ -189,8 +189,8 @@ namespace Mono.Linker.Dataflow
 					if (val is LocalVariableReferenceValue localReference && localReference.ReferencedType.IsByReference) {
 						string displayName = $"local variable V_{localReference.LocalDefinition.Index}";
 						throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (
-							$"""In method {method.FullName}, local variable V_{localVariable.Index} references {displayName} of type {localReference.ReferencedType.GetDisplayName ()} which is a reference. Linker dataflow tracking has failed.""",
-							(int) DiagnosticId.LinkerUnexpectedError,
+							$"""In method {method.FullName}, local variable V_{localVariable.Index} references {displayName} of type {localReference.ReferencedType.GetDisplayName ()} which is a reference. ILLink dataflow tracking has failed.""",
+							(int) DiagnosticId.ILLinkUnexpectedError,
 							origin: new MessageOrigin (method, ilOffset)));
 					}
 				}
@@ -881,7 +881,7 @@ namespace Mono.Linker.Dataflow
 					if (valueWithStaticType.StaticType is not null && _context.Annotations.FlowAnnotations.IsTypeInterestingForDataflow (valueWithStaticType.StaticType))
 						throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (
 							$"Unhandled StoreReference call. Unhandled attempt to store a value in {value} of type {value.GetType ()}.",
-							(int) DiagnosticId.LinkerUnexpectedError,
+							(int) DiagnosticId.ILLinkUnexpectedError,
 							origin: new MessageOrigin (method, operation.Offset)));
 					// This should only happen for pointer derefs, which can't point to interesting types
 					break;
@@ -1140,7 +1140,7 @@ namespace Mono.Linker.Dataflow
 			ValueNodeList methodParams,
 			out MultiValue methodReturnValue);
 
-		// Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for the linker are nearly always less than 32 elements.
+		// Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for the IL Linker are nearly always less than 32 elements.
 		private const int MaxTrackedArrayValues = 32;
 
 		private static void MarkArrayValuesAsUnknown (ArrayValue arrValue, int curBasicBlock)

@@ -107,32 +107,32 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			set { }
 		}
 
-		[RequiresUnreferencedCode ("Linker adds a trailing period to this message")]
-		[RequiresAssemblyFiles ("Linker adds a trailing period to this message")]
-		[RequiresDynamicCode ("Linker adds a trailing period to this message")]
+		[RequiresUnreferencedCode ("Adds a trailing period to this message")]
+		[RequiresAssemblyFiles ("Adds a trailing period to this message")]
+		[RequiresDynamicCode ("Adds a trailing period to this message")]
 		static void WarningMessageWithoutEndingPeriod ()
 		{
 		}
 
-		[ExpectedWarning ("IL2026", "Linker adds a trailing period to this message.")]
-		[ExpectedWarning ("IL3002", "Linker adds a trailing period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL3050", "Linker adds a trailing period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL2026", "Adds a trailing period to this message.")]
+		[ExpectedWarning ("IL3002", "Adds a trailing period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL3050", "Adds a trailing period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 		static void TestThatTrailingPeriodIsAddedToMessage ()
 		{
 			WarningMessageWithoutEndingPeriod ();
 		}
 
-		[RequiresUnreferencedCode ("Linker does not add a period to this message.")]
-		[RequiresAssemblyFiles ("Linker does not add a period to this message.")]
-		[RequiresDynamicCode ("Linker does not add a period to this message.")]
+		[RequiresUnreferencedCode ("Does not add a period to this message.")]
+		[RequiresAssemblyFiles ("Does not add a period to this message.")]
+		[RequiresDynamicCode ("Does not add a period to this message.")]
 		static void WarningMessageEndsWithPeriod ()
 		{
 		}
 
-		[LogDoesNotContain ("Linker does not add a period to this message..")]
-		[ExpectedWarning ("IL2026", "Linker does not add a period to this message.")]
-		[ExpectedWarning ("IL3002", "Linker does not add a period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL3050", "Linker does not add a period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[LogDoesNotContain ("Does not add a period to this message..")]
+		[ExpectedWarning ("IL2026", "Does not add a period to this message.")]
+		[ExpectedWarning ("IL3002", "Does not add a period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL3050", "Does not add a period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 		static void TestThatTrailingPeriodIsNotDuplicatedInWarningMessage ()
 		{
 			WarningMessageEndsWithPeriod ();
