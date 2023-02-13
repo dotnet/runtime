@@ -634,8 +634,8 @@ INST3(movdqu8,           "movdqu8",           IUM_WR, SSEFLT(0x7F), BAD_CODE,   
 INST3(movdqu16,          "movdqu16",          IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_TT_FULL_MEM,    INS_FLAGS_None)
 INST3(movdqu32,          "movdqu32",          IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_TT_FULL_MEM,    INS_FLAGS_None)
 INST3(movdqu64,          "movdqu64",          IUM_WR, SSEFLT(0x7F), BAD_CODE,     SSEFLT(0x6F),                            INS_TT_FULL_MEM,    INS_FLAGS_None)
-INST3(vinsert32x8,       "insert32x8",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x1A),                             INS_TT_TUPLE4,    INS_Flags_IsDstDstSrcAVXInstruction)    // Insert 256-bit packed floating point values
-INST3(vinsert64x4,       "insert64x4",        IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x1A),                             INS_TT_TUPLE8,    INS_Flags_IsDstDstSrcAVXInstruction)    // Insert 256-bit packed floating point values
+INST3(vinsertf64x4,      "insertf64x4",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x1A),                             INS_TT_TUPLE4,    INS_Flags_IsDstDstSrcAVXInstruction)    // Insert 256-bit packed double-precision floating point values
+INST3(vinserti64x4,      "inserti64x4",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x3A),                             INS_TT_TUPLE4,    INS_Flags_IsDstDstSrcAVXInstruction)    // Insert 256-bit packed quadword integer values
 
 INST3(LAST_AVX512_INSTRUCTION, "LAST_AVX512_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
 
