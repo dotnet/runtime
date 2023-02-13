@@ -1314,7 +1314,8 @@ namespace ILCompiler.Dataflow
             ValueNodeList methodParams,
             out MultiValue methodReturnValue);
 
-        // Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for trimming are nearly always less than 32 elements.        private const int MaxTrackedArrayValues = 32;
+        // Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for trimming are nearly always less than 32 elements.
+        private const int MaxTrackedArrayValues = 32;
 
         private static void MarkArrayValuesAsUnknown(ArrayValue arrValue, int curBasicBlock)
         {
