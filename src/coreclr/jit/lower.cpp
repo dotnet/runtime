@@ -3300,11 +3300,15 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     assert(jtrue->gtNext == nullptr);
 
     GenCondition cond = GenCondition::FromRelop(relop);
-    // Optimize FP x != x to only check parity flag. This is a common way of checking NaN.
-    if ((cond.GetCode() == GenCondition::FNEU) && relopOp1->OperIs(GT_LCL_VAR) && GenTree::Compare(relopOp1, relopOp2))
+#ifdef TARGET_XARCH
+    // Optimize FP x != x to only check parity flag. This is a common way of
+    // checking NaN and avoids two branches that we would otherwise emit.
+    if ((cond.GetCode() == GenCondition::FNEU) && relopOp1->OperIsLocal() && GenTree::Compare(relopOp1, relopOp2) &&
+        IsInvariantInRange(relopOp1, relop) && IsInvariantInRange(relopOp2, relop))
     {
         cond = GenCondition(GenCondition::P);
     }
+#endif
 
     // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS.
     if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0) && relopOp1->SupportsSettingZeroFlag() &&
