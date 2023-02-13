@@ -282,22 +282,6 @@ void SEHCleanupSignals()
     }
 }
 
-/*++
-Function :
-    SEHCleanupAbort()
-
-    Restore default SIGABORT signal handlers
-
-    (no parameters, no return value)
---*/
-void SEHCleanupAbort()
-{
-    if (g_registered_signal_handlers)
-    {
-        restore_signal(SIGABRT, &g_previous_sigabrt);
-    }
-}
-
 /* internal function definitions **********************************************/
 
 /*++
