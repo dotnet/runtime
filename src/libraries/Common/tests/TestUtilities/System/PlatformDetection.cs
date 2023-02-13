@@ -154,6 +154,7 @@ namespace System
         public static bool IsLineNumbersSupported => !IsNativeAot;
 
         public static bool IsInContainer => GetIsInContainer();
+        public static bool IsNotInContainer => !IsInContainer;
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
 
 #if NETCOREAPP
@@ -201,6 +202,7 @@ namespace System
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
         public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host
+        public static bool IsSingleFile => !HasAssemblyFiles;
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
@@ -422,8 +424,10 @@ namespace System
 #pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
                 SslProtocols.Ssl3 => "SSL 3.0",
 #pragma warning restore CS0618
+#pragma warning disable SYSLIB0039 // TLS versions 1.0 and 1.1 have known vulnerabilities
                 SslProtocols.Tls => "TLS 1.0",
                 SslProtocols.Tls11 => "TLS 1.1",
+#pragma warning restore SYSLIB0039
                 SslProtocols.Tls12 => "TLS 1.2",
 #if !NETFRAMEWORK
                 SslProtocols.Tls13 => "TLS 1.3",
@@ -493,6 +497,7 @@ namespace System
             return (protocol & s_androidSupportedSslProtocols.Value) == protocol;
         }
 
+#pragma warning disable SYSLIB0039 // TLS versions 1.0 and 1.1 have known vulnerabilities
         private static bool GetTls10Support()
         {
             // on macOS and Android TLS 1.0 is supported.
@@ -531,6 +536,7 @@ namespace System
 
             return OpenSslGetTlsSupport(SslProtocols.Tls11);
         }
+#pragma warning restore SYSLIB0039
 
         private static bool GetTls12Support()
         {

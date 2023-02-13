@@ -121,6 +121,26 @@ mono_jiterp_encode_leb52 (unsigned char * destination, double doubleValue, int v
 	}
 }
 
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_encode_leb_signed_boundary (unsigned char * destination, int bits, int sign) {
+	if (!destination)
+		return 0;
+
+	int64_t value;
+	switch (bits) {
+		case 32:
+			value = sign >= 0 ? INT_MAX : INT_MIN;
+			break;
+		case 64:
+			value = sign >= 0 ? INT64_MAX : INT64_MIN;
+			break;
+		default:
+			return 0;
+	}
+
+	return mono_jiterp_encode_leb64_ref(destination, &value, TRUE);
+}
+
 // Many of the following functions implement various opcodes or provide support for opcodes
 //  so that jiterpreter traces don't have to inline dozens of wasm instructions worth of
 //  complex logic - these are designed to match interp.c
@@ -384,7 +404,7 @@ mono_jiterp_box_ref (MonoVTable *vtable, MonoObject **dest, void *src, gboolean 
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
+mono_jiterp_conv (void *dest, void *src, int opcode) {
 	switch (opcode) {
 		case MINT_CONV_OVF_I4_I8: {
 			gint64 val = *(gint64*)src;
@@ -431,6 +451,17 @@ mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
 				return 1;
 			}
 			return 0;
+		}
+
+		case MINT_CONV_OVF_I8_R8:
+		case MINT_CONV_OVF_I8_R4: {
+			double val;
+			if (opcode == MINT_CONV_OVF_I8_R4)
+				val = *(float*)src;
+			else
+				val = *(double*)src;
+
+			return mono_try_trunc_i64(val, dest);
 		}
 	}
 

@@ -387,6 +387,11 @@ GenTree* MorphInitBlockHelper::MorphCommaBlock(Compiler* comp, GenTreeOp* firstC
 
     GenTree* effectiveVal = lastComma->gtGetOp2();
 
+    if (!effectiveVal->OperIsIndir() && !effectiveVal->IsLocal())
+    {
+        return firstComma;
+    }
+
     assert(effectiveVal == firstComma->gtEffectiveVal());
 
     GenTree* effectiveValAddr = comp->gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
