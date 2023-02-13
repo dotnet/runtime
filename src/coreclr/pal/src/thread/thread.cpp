@@ -2596,7 +2596,7 @@ void *
 CPalThread::GetStackBase()
 {
     void* stackBase;
-#if defined(TARGET_APPLE)
+#ifdef TARGET_APPLE
     // This is an Apple specific method
     stackBase = pthread_get_stackaddr_np(pthread_self());
 #else
@@ -2636,7 +2636,7 @@ void *
 CPalThread::GetStackLimit()
 {
     void* stackLimit;
-#if defined(TARGET_APPLE)
+#ifdef TARGET_APPLE
     // This is an Apple specific method
     stackLimit = ((BYTE *)pthread_get_stackaddr_np(pthread_self()) -
                    pthread_get_stacksize_np(pthread_self()));

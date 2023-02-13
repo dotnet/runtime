@@ -1313,7 +1313,7 @@ PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
     #error "Unknown OS"
 #endif
 }
-#endif // defined(HOST_APPLE) && defined(HOST_ARM64)
+#endif // HOST_APPLE && HOST_ARM64
 
 #if HAVE_VM_ALLOCATE
 //---------------------------------------------------------------------------------------
