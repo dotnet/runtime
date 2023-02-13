@@ -38,7 +38,7 @@ namespace System.Drawing
                     ValueStringBuilder sb = default;
                     sb.Append(font.Name);
                     sb.Append(culture.TextInfo.ListSeparator[0]);
-                    sb.Append(" ");
+                    sb.Append(' ');
                     sb.Append(font.Size.ToString(culture.NumberFormat));
 
                     switch (font.Unit)
