@@ -25,10 +25,10 @@ if(CLR_CMAKE_TARGET_LINUX)
     )
 endif(CLR_CMAKE_TARGET_LINUX)
 
-if(CLR_CMAKE_HOST_APPLE)
+if(CLR_CMAKE_TARGET_APPLE)
     list(APPEND DBGUTIL_SOURCES
         machoreader.cpp
     )
-endif(CLR_CMAKE_HOST_APPLE)
+endif(CLR_CMAKE_TARGET_APPLE)
 
 add_library_clr(dbgutil STATIC ${DBGUTIL_SOURCES})
