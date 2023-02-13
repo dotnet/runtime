@@ -513,7 +513,8 @@ protected:
         OPSZ8      = 3,
         OPSZ16     = 4,
         OPSZ32     = 5,
-        OPSZ_COUNT = 6,
+        OPSZ64     = 6,
+        OPSZ_COUNT = 7,
 #ifdef TARGET_AMD64
         OPSZP = OPSZ8,
 #else
@@ -2061,6 +2062,7 @@ private:
     CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue);
     CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue);
     CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
+    CORINFO_FIELD_HANDLE emitSimd64Const(simd64_t constValue);
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
@@ -2674,11 +2676,11 @@ public:
 
     struct dataSection
     {
-        // Note to use alignments greater than 32 requires modification in the VM
+        // Note to use alignments greater than 64 requires modification in the VM
         // to support larger alignments (see ICorJitInfo::allocMem)
         //
         const static unsigned MIN_DATA_ALIGN = 4;
-        const static unsigned MAX_DATA_ALIGN = 32;
+        const static unsigned MAX_DATA_ALIGN = 64;
 
         enum sectionType
         {
@@ -2989,9 +2991,9 @@ inline emitAttr emitActualTypeSize(T type)
 /* static */ inline emitter::opSize emitter::emitEncodeSize(emitAttr size)
 {
     assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE || size == EA_16BYTE ||
-           size == EA_32BYTE);
+           size == EA_32BYTE || size == EA_64BYTE);
 
-    return emitSizeEncode[((int)size) - 1];
+    return emitSizeEncode[genLog2(size)];
 }
 
 /* static */ inline emitAttr emitter::emitDecodeSize(emitter::opSize ensz)

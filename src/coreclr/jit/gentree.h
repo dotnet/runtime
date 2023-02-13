@@ -3363,6 +3363,13 @@ struct GenTreeVecCon : public GenTree
     static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val);
 
     static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, simd32_t& simd32Val, var_types baseType);
+
+// TODO-XArch-AVX512: Keep only one implementation once GenTreeVecCon supports gtSimd64Val.
+#if defined(TARGET_XARCH)
+    static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd64_t& simd64Val);
+
+    static bool HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, simd64_t& simd64Val, var_types baseType);
+#endif
 #endif // FEATURE_HW_INTRINSICS
 
     bool IsAllBitsSet() const
@@ -3387,10 +3394,12 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD32:
+            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
             {
                 return (gtSimd32Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[1] == 0xFFFFFFFFFFFFFFFF) &&
                        (gtSimd32Val.u64[2] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[3] == 0xFFFFFFFFFFFFFFFF);
             }
+
 #endif // FEATURE_SIMD
 
             default:
@@ -3431,12 +3440,14 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD32:
+            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
             {
                 return (left->gtSimd32Val.u64[0] == right->gtSimd32Val.u64[0]) &&
                        (left->gtSimd32Val.u64[1] == right->gtSimd32Val.u64[1]) &&
                        (left->gtSimd32Val.u64[2] == right->gtSimd32Val.u64[2]) &&
                        (left->gtSimd32Val.u64[3] == right->gtSimd32Val.u64[3]);
             }
+
 #endif // FEATURE_SIMD
 
             default:
@@ -3468,10 +3479,12 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD32:
+            case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
             {
                 return (gtSimd32Val.u64[0] == 0x0000000000000000) && (gtSimd32Val.u64[1] == 0x0000000000000000) &&
                        (gtSimd32Val.u64[2] == 0x0000000000000000) && (gtSimd32Val.u64[3] == 0x0000000000000000);
             }
+
 #endif // FEATURE_SIMD
 
             default:

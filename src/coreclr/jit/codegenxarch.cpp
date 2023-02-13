@@ -569,8 +569,11 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
                 case TYP_SIMD64:
                 {
-                    simd64_t             constValue = vecCon->gtSimd64Val;
-                    CORINFO_FIELD_HANDLE hnd        = emit->emitSimd64Const(constValue);
+                    simd64_t constValue;
+                    // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
+                    constValue.v256[0]       = vecCon->gtSimd32Val;
+                    constValue.v256[1]       = vecCon->gtSimd32Val;
+                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd64Const(constValue);
 
                     emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
                     break;

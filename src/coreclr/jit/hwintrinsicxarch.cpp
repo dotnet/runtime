@@ -148,6 +148,10 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             return InstructionSet_Vector256;
         }
+        else if (strncmp(className, "Vector512", 9) == 0)
+        {
+            return InstructionSet_Vector512;
+        }
     }
     else if (strcmp(className, "Fma") == 0)
     {
@@ -388,6 +392,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_SSE42_X64:
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
+        case InstructionSet_Vector512: // TODO-XArch-AVX512 : Not fully implemented currently.
         case InstructionSet_X86Base:
         case InstructionSet_X86Base_X64:
         case InstructionSet_X86Serialize:
@@ -506,9 +511,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
 
-    if ((isa == InstructionSet_Vector256) && !compExactlyDependsOn(InstructionSet_AVX))
+    if (((isa == InstructionSet_Vector256) && !compExactlyDependsOn(InstructionSet_AVX)) ||
+        (((isa == InstructionSet_Vector512) && !compExactlyDependsOn(InstructionSet_AVX512F))))
     {
-        // We don't want to deal with TYP_SIMD32 if the compiler doesn't otherwise support the type.
+        // We don't want to deal with TYP_SIMD32 or TYP_SIMD64 if the compiler doesn't otherwise support the type.
         return nullptr;
     }
 
@@ -1087,6 +1093,108 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector512_Create:
+        {
+            if (sig->numArgs == 1)
+            {
+#if defined(TARGET_X86)
+                if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->IsIntegralConst())
+                {
+                    // TODO-XARCH-CQ: It may be beneficial to emit the movq
+                    // instruction, which takes a 64-bit memory address and
+                    // works on 32-bit x86 systems.
+                    break;
+                }
+#endif // TARGET_X86
+
+                op1     = impPopStack().val;
+                retNode = gtNewSimdCreateBroadcastNode(retType, op1, simdBaseJitType, simdSize);
+                break;
+            }
+
+            uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
+            assert(sig->numArgs == simdLength);
+
+            bool isConstant = true;
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    GenTree* arg = impStackTop(index).val;
+
+                    if (!arg->IsCnsFltOrDbl())
+                    {
+                        isConstant = false;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                assert(varTypeIsIntegral(simdBaseType));
+
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    GenTree* arg = impStackTop(index).val;
+
+                    if (!arg->IsIntegralConst())
+                    {
+                        isConstant = false;
+                        break;
+                    }
+                }
+            }
+
+#if defined(TARGET_X86)
+            if (varTypeIsLong(simdBaseType))
+            {
+                // TODO-XARCH-CQ: It may be beneficial to emit the movq
+                // instruction, which takes a 64-bit memory address and
+                // works on 32-bit x86 systems.
+                break;
+            }
+#endif // TARGET_X86
+
+            IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
+
+            // TODO-CQ: We don't handle contiguous args for anything except TYP_FLOAT today
+
+            GenTree* prevArg           = nullptr;
+            bool     areArgsContiguous = (simdBaseType == TYP_FLOAT);
+
+            for (int i = sig->numArgs - 1; i >= 0; i--)
+            {
+                GenTree* arg = impPopStack().val;
+
+                if (areArgsContiguous)
+                {
+                    if (prevArg != nullptr)
+                    {
+                        // Recall that we are popping the args off the stack in reverse order.
+                        areArgsContiguous = areArgumentsContiguous(arg, prevArg);
+                    }
+
+                    prevArg = arg;
+                }
+
+                nodeBuilder.AddOperand(i, arg);
+            }
+
+            if (areArgsContiguous)
+            {
+                op1                 = nodeBuilder.GetOperand(0);
+                GenTree* op1Address = CreateAddressNodeForSimdHWIntrinsicCreate(op1, simdBaseType, simdSize);
+                retNode             = gtNewOperNode(GT_IND, retType, op1Address);
+            }
+            else
+            {
+                retNode =
+                    gtNewSimdHWIntrinsicNode(retType, std::move(nodeBuilder), intrinsic, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
         case NI_Vector128_CreateScalar:
         case NI_Vector256_CreateScalar:
         {
@@ -1276,7 +1384,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         simd32_t simd32Val = {};
 
-                        assert((simdSize == 16) || (simdSize == 32));
+                        assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
                         simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
                         // We want to tightly pack the most significant byte of each short/ushort
@@ -1406,6 +1514,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_get_Zero:
         case NI_Vector256_get_Zero:
+        case NI_Vector512_get_Zero:
         {
             assert(sig->numArgs == 0);
             retNode = gtNewZeroConNode(retType);

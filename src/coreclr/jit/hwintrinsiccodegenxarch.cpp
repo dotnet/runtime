@@ -1120,6 +1120,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_Vector128_ToVector256Unsafe:
+        case NI_Vector256_ToVector512Unsafe:
         case NI_Vector256_GetLower:
         {
             if (op1->isContained() || op1->isUsedFromSpillTemp())
