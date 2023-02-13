@@ -10,6 +10,7 @@
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
+    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -107,6 +108,7 @@
         RuntimeComponents="$(RuntimeComponents)"
         EnableAppSandbox="$(EnableAppSandbox)"
         DiagnosticPorts="$(DiagnosticPorts)"
+        StripSymbolTable="$(StripDebugSymbols)"
         AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />

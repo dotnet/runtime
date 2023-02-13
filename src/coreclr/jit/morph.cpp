@@ -27,13 +27,6 @@ PhaseStatus Compiler::fgMorphInit()
 {
     bool madeChanges = false;
 
-#if !FEATURE_EH
-    // If we aren't yet supporting EH in a compiler bring-up, remove as many EH handlers as possible, so
-    // we can pass tests that contain try/catch EH, but don't actually throw any exceptions.
-    fgRemoveEH();
-    madeChanges = true;
-#endif // !FEATURE_EH
-
     // We could allow ESP frames. Just need to reserve space for
     // pushing EBP if the method becomes an EBP-frame after an edit.
     // Note that requiring a EBP Frame disallows double alignment.  Thus if we change this
@@ -3983,13 +3976,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
             if (!omitCopy && fgGlobalMorph)
             {
-                omitCopy = !varDsc->lvPromoted && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
-            }
-
-            if (!omitCopy && (totalAppearances == 1))
-            {
-                // fgMightHaveLoop() is expensive; check it last, only if necessary.
-                omitCopy = call->IsNoReturn() || !fgMightHaveLoop();
+                omitCopy = !varDsc->lvPromoted && !varDsc->lvIsStructField && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
             }
 
             if (omitCopy)
@@ -13098,7 +13085,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 // and we have already computed the edge weights, so
                 // we will try to adjust some of the weights
                 //
-                flowList*   edgeTaken = fgGetPredForBlock(bTaken, block);
+                FlowEdge*   edgeTaken = fgGetPredForBlock(bTaken, block);
                 BasicBlock* bUpdated  = nullptr; // non-NULL if we updated the weight of an internal block
 
                 // We examine the taken edge (block -> bTaken)
@@ -13140,7 +13127,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     weight_t newMinWeight;
                     weight_t newMaxWeight;
 
-                    flowList* edge;
+                    FlowEdge* edge;
                     // Now fix the weights of the edges out of 'bUpdated'
                     switch (bUpdated->bbJumpKind)
                     {

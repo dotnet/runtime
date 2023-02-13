@@ -118,9 +118,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public object InvokeMember (string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) => throw new NotImplementedException ();
 		}
 
-		// NativeAOT: Doesn't preserve this type because there's no need. The type itself is never instantiated
-		// there's only a field of that type and accessed to that field can be made without knowing it's type (just memory address access)
-		[Kept (By = ProducedBy.Trimmer)]
+		[Kept]
 		[KeptBaseType (typeof (MyReflect), By = ProducedBy.Trimmer)]
 		class MyReflectDerived : MyReflect
 		{

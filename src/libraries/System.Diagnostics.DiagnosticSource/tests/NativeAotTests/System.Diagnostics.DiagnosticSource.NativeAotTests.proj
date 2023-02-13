@@ -1,7 +1,12 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
-  <ItemGroup>
+
+  <ItemGroup Condition="'$([MSBuild]::IsOSPlatform(Windows))' == 'true'">
+    <TestConsoleAppSourceFiles Include="DiagnosticSourceEventSourceTests.cs"
+                               EnabledProperties="EventSourceSupport;EnableNativeEventPipe" />
+  </ItemGroup>
+  <ItemGroup Condition="'$([MSBuild]::IsOSPlatform(Windows))' == 'false'">
     <TestConsoleAppSourceFiles Include="DiagnosticSourceEventSourceTests.cs"
                                EnabledProperties="EventSourceSupport" />
   </ItemGroup>

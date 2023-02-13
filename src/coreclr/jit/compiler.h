@@ -2313,21 +2313,21 @@ public:
     } // Get the index to use as the cache key for sharing throw blocks
 #endif // !FEATURE_EH_FUNCLETS
 
-    // Returns a flowList representing the "EH predecessors" of "blk".  These are the normal predecessors of
-    // "blk", plus one special case: if "blk" is the first block of a handler, considers the predecessor(s) of the first
+    // Returns a FlowEdge representing the "EH predecessors" of "blk".  These are the normal predecessors of
+    // "blk", plus one special case: if "blk" is the first block of a handler, considers the predecessor(s) of the
     // first block of the corresponding try region to be "EH predecessors".  (If there is a single such predecessor,
     // for example, we want to consider that the immediate dominator of the catch clause start block, so it's
     // convenient to also consider it a predecessor.)
-    flowList* BlockPredsWithEH(BasicBlock* blk);
+    FlowEdge* BlockPredsWithEH(BasicBlock* blk);
 
     // This table is useful for memoization of the method above.
-    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, flowList*> BlockToFlowListMap;
-    BlockToFlowListMap* m_blockToEHPreds;
-    BlockToFlowListMap* GetBlockToEHPreds()
+    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, FlowEdge*> BlockToFlowEdgeMap;
+    BlockToFlowEdgeMap* m_blockToEHPreds;
+    BlockToFlowEdgeMap* GetBlockToEHPreds()
     {
         if (m_blockToEHPreds == nullptr)
         {
-            m_blockToEHPreds = new (getAllocator()) BlockToFlowListMap(getAllocator());
+            m_blockToEHPreds = new (getAllocator()) BlockToFlowEdgeMap(getAllocator());
         }
         return m_blockToEHPreds;
     }
@@ -2360,10 +2360,6 @@ public:
     EHblkDsc* fgAddEHTableEntry(unsigned XTnum);
 
 #endif // FEATURE_EH_FUNCLETS
-
-#if !FEATURE_EH
-    void fgRemoveEH();
-#endif // !FEATURE_EH
 
     void fgSortEHTable();
 
@@ -4512,8 +4508,7 @@ public:
 #endif // FEATURE_JIT_METHOD_PERF
 
     bool fgModified;             // True if the flow graph has been modified recently
-    bool fgComputePredsDone;     // Have we computed the bbPreds list
-    bool fgCheapPredsValid;      // Is the bbCheapPreds list valid?
+    bool fgPredsComputed;        // Have we computed the bbPreds list
     bool fgDomsComputed;         // Have we computed the dominator sets?
     bool fgReturnBlocksComputed; // Have we computed the return blocks list?
     bool fgOptimizedFinally;     // Did we optimize any try-finallys?
@@ -4600,7 +4595,7 @@ public:
     bool     fgPrintInlinedMethods;
 #endif
 
-    jitstd::vector<flowList*>* fgPredListSortVector;
+    jitstd::vector<FlowEdge*>* fgPredListSortVector;
 
     //-------------------------------------------------------------------------
 
@@ -4635,22 +4630,15 @@ public:
     void fgAddFinallyTargetFlags();
 
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
     PhaseStatus fgTailMergeThrows();
     void fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                             BasicBlock* nonCanonicalBlock,
                                             BasicBlock* canonicalBlock,
-                                            flowList*   predEdge);
+                                            FlowEdge*   predEdge);
     void fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
                                        BasicBlock* nonCanonicalBlock,
                                        BasicBlock* canonicalBlock,
-                                       flowList*   predEdge);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // Sometimes we need to defer updating the BBF_FINALLY_TARGET bit. fgNeedToAddFinallyTargetBits signals
-    // when this is necessary.
-    bool fgNeedToAddFinallyTargetBits;
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+                                       FlowEdge*   predEdge);
 
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
                                                   BasicBlock*      handler,
@@ -5224,22 +5212,6 @@ protected:
     void fgUpdateChangedFlowGraph(FlowGraphUpdates updates);
 
 public:
-    // Compute the predecessors of the blocks in the control flow graph.
-    void fgComputePreds();
-
-    // Remove all predecessor information.
-    void fgRemovePreds();
-
-    // Compute the cheap flow graph predecessors lists. This is used in some early phases
-    // before the full predecessors lists are computed.
-    void fgComputeCheapPreds();
-
-private:
-    void fgAddCheapPred(BasicBlock* block, BasicBlock* blockPred);
-
-    void fgRemoveCheapPred(BasicBlock* block, BasicBlock* blockPred);
-
-public:
     enum GCPollType
     {
         GCPOLL_NONE,
@@ -5329,13 +5301,13 @@ public:
 
     bool fgIsFirstBlockOfFilterOrHandler(BasicBlock* block);
 
-    flowList* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred);
+    FlowEdge* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred);
 
-    flowList* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, flowList*** ptrToPred);
+    FlowEdge* fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, FlowEdge*** ptrToPred);
 
-    flowList* fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred);
+    FlowEdge* fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred);
 
-    flowList* fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred);
+    FlowEdge* fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred);
 
     void fgRemoveBlockAsPred(BasicBlock* block);
 
@@ -5347,11 +5319,11 @@ public:
 
     void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
 
-    flowList* fgAddRefPred(BasicBlock* block,
+    FlowEdge* fgAddRefPred(BasicBlock* block,
                            BasicBlock* blockPred,
-                           flowList*   oldEdge           = nullptr,
+                           FlowEdge*   oldEdge           = nullptr,
                            bool        initializingPreds = false); // Only set to 'true' when we are computing preds in
-                                                                   // fgComputePreds()
+                                                                   // fgLinkBasicBlocks()
 
     void fgFindBasicBlocks();
 
@@ -9380,6 +9352,11 @@ public:
         }
 #endif
 
+        bool IsTier0() const
+        {
+            return jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
+        }
+
         bool IsInstrumented() const
         {
             return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
@@ -10476,6 +10453,8 @@ public:
 
     bool compJitHaltMethod();
 
+    void dumpRegMask(regMaskTP regs) const;
+
 #endif
 
     /*
@@ -10750,6 +10729,47 @@ public:
     GenTree* fgMorphMultiregStructArg(CallArg* arg);
 
     bool killGCRefs(GenTree* tree);
+
+#if defined(TARGET_AMD64)
+private:
+    // The following are for initializing register allocator "constants" defined in targetamd64.h
+    // that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which increases
+    // the number of SIMD (xmm, ymm, and zmm) registers from 16 to 32.
+    // As only 64-bit xarch has the capability to have the additional registers, we limit the changes
+    // to TARGET_AMD64 only.
+    //
+    // Users of these values need to define four accessor functions:
+    //
+    //    regMaskTP get_RBM_ALLFLOAT();
+    //    regMaskTP get_RBM_FLT_CALLEE_TRASH();
+    //    unsigned get_CNT_CALLEE_TRASH_FLOAT();
+    //    unsigned get_AVAILABLE_REG_COUNT();
+    //
+    // which return the values of these variables.
+    //
+    // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
+    // TARGET_AMD64 requires one.
+    //
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+    unsigned  cntCalleeTrashFloat;
+
+public:
+    regMaskTP get_RBM_ALLFLOAT() const
+    {
+        return this->rbmAllFloat;
+    }
+    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    {
+        return this->rbmFltCalleeTrash;
+    }
+    unsigned get_CNT_CALLEE_TRASH_FLOAT() const
+    {
+        return this->cntCalleeTrashFloat;
+    }
+
+#endif // TARGET_AMD64
+
 }; // end of class Compiler
 
 //---------------------------------------------------------------------------------------------------------------------

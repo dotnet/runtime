@@ -1151,12 +1151,19 @@ namespace Internal.JitInterface
                 // supplied by RyuJIT is a concrete instantiation.
                 if (type != method.OwningType)
                 {
-                    Debug.Assert(type.HasSameTypeDefinition(method.OwningType));
-                    Instantiation methodInst = method.Instantiation;
-                    method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)type);
-                    if (methodInst.Length > 0)
+                    if (type.IsArray)
                     {
-                        method = method.MakeInstantiatedMethod(methodInst);
+                        method = ((ArrayType)type).GetArrayMethod(((ArrayMethod)method).Kind);
+                    }
+                    else
+                    {
+                        Debug.Assert(type.HasSameTypeDefinition(method.OwningType));
+                        Instantiation methodInst = method.Instantiation;
+                        method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)type);
+                        if (methodInst.Length > 0)
+                        {
+                            method = method.MakeInstantiatedMethod(methodInst);
+                        }
                     }
                 }
             }
@@ -3073,7 +3080,7 @@ namespace Internal.JitInterface
         public static CORINFO_OS TargetToOs(TargetDetails target)
         {
             return target.IsWindows ? CORINFO_OS.CORINFO_WINNT :
-                   target.IsOSX ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
+                   target.IsOSXLike ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
         }
 
         private void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)

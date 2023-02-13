@@ -188,6 +188,7 @@ typedef struct MonoAotOptions {
 	char *llvm_outfile;
 	char *data_outfile;
 	char *export_symbols_outfile;
+	char *compiled_methods_outfile;
 	GList *profile_files;
 	GList *mibc_profile_files;
 	gboolean save_temps;
@@ -407,6 +408,7 @@ typedef struct MonoAotCompile {
 	FILE *logfile;
 	FILE *instances_logfile;
 	FILE *data_outfile;
+	FILE *compiled_methods_outfile;
 	int datafile_offset;
 	int gc_name_offset;
 	// In this mode, we are emitting dedupable methods that we encounter
@@ -8548,6 +8550,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->llvm_outfile = g_strdup (arg + strlen ("llvm-outfile="));
 		} else if (str_begins_with (arg, "export-symbols-outfile=")) {
 			opts->export_symbols_outfile = g_strdup (arg + strlen ("export-symbols-outfile="));
+		} else if (str_begins_with (arg, "compiled-methods-outfile=")) {
+			opts->compiled_methods_outfile = g_strdup (arg + strlen ("compiled-methods-outfile="));
 		} else if (str_begins_with (arg, "temp-path=")) {
 			opts->temp_path = clean_path (g_strdup (arg + strlen ("temp-path=")));
 		} else if (str_begins_with (arg, "save-temps")) {
@@ -9567,6 +9571,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_acfg_unlock (acfg);
 
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
+
+	if (acfg->aot_opts.compiled_methods_outfile && acfg->compiled_methods_outfile != NULL) {
+		if (!mono_method_is_generic_impl (method) && method->token != 0)
+			fprintf (acfg->compiled_methods_outfile, "%x\n", method->token);
+	}
 }
 
 static mono_thread_start_return_t WINAPI
@@ -14527,6 +14536,12 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->logfile = fopen (acfg->aot_opts.logfile, "a+");
 	}
 
+	if (acfg->aot_opts.compiled_methods_outfile && !acfg->dedup_collect_only) {
+		acfg->compiled_methods_outfile = fopen (acfg->aot_opts.compiled_methods_outfile, "w+");
+		if (!acfg->compiled_methods_outfile)
+			aot_printerrf (acfg, "Unable to open compiled-methods-outfile specified file %s\n", acfg->aot_opts.compiled_methods_outfile);
+	}
+
 	if (acfg->aot_opts.data_outfile) {
 		acfg->data_outfile = fopen (acfg->aot_opts.data_outfile, "w+");
 		if (!acfg->data_outfile) {
@@ -14881,6 +14896,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 
 	current_acfg = NULL;
+
+	if (acfg->compiled_methods_outfile) {
+		fclose (acfg->compiled_methods_outfile);
+	}
 
 	return emit_aot_image (acfg);
 }
@@ -15245,6 +15264,13 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		assemblies [dedup_aindex] = atmp;
 
 		dedup_methods = g_hash_table_new (NULL, NULL);
+	}
+
+	if (aot_opts.compiled_methods_outfile) {
+		if (g_ensure_directory_exists (aot_opts.compiled_methods_outfile) == FALSE) {
+			fprintf (stderr, "AOT : failed to create the directory to save the compiled method names: %s\n", aot_opts.compiled_methods_outfile);
+			exit (1);
+		}
 	}
 
 	for (int i = 0; i < nassemblies; ++i) {
