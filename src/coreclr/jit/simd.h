@@ -32,7 +32,12 @@ enum SIMDLevel
     // AVX2 - Hardware has AVX and AVX2 instruction set.
     // Vector<T> length is 256-bit and SIMD instructions are VEX-256 encoded.
     // Floating-point instructions are VEX-128 encoded.
-    SIMD_AVX2_Supported = 3
+    SIMD_AVX2_Supported = 3,
+
+    // AVX512F - Hardware has AVX, AVX2 and AVX512F instruction set.
+    // Vector<T> length is 512-bit and SIMD instructions are EVEX encoded.
+    // Floating-point instructions are EVEX encoded.
+    SIMD_AVX512F_Supported = 4
 #endif
 };
 
@@ -146,6 +151,40 @@ struct simd32_t
     {
         return (u64[0] != other.u64[0]) || (u64[1] != other.u64[1]) || (u64[2] != other.u64[2]) ||
                (u64[3] != other.u64[3]);
+    }
+};
+
+struct simd64_t
+{
+    union
+    {
+        float    f32[16];
+        double   f64[8];
+        int8_t   i8[64];
+        int16_t  i16[32];
+        int32_t  i32[16];
+        int64_t  i64[8];
+        uint8_t  u8[64];
+        uint16_t u16[32];
+        uint32_t u32[16];
+        uint64_t u64[8];
+        simd8_t  v64[8];
+        simd16_t v128[4];
+        simd32_t v256[2];
+    };
+
+    bool operator==(const simd64_t& other) const
+    {
+        return (u64[0] == other.u64[0]) && (u64[1] == other.u64[1]) && (u64[2] == other.u64[2]) &&
+               (u64[3] == other.u64[3]) && (u64[4] == other.u64[4]) && (u64[5] == other.u64[5]) &&
+               (u64[6] == other.u64[6]) && (u64[7] == other.u64[7]);
+    }
+
+    bool operator!=(const simd32_t& other) const
+    {
+        return (u64[0] != other.u64[0]) || (u64[1] != other.u64[1]) || (u64[2] != other.u64[2]) ||
+               (u64[3] != other.u64[3]) || (u64[4] != other.u64[4]) || (u64[5] != other.u64[5]) ||
+               (u64[6] != other.u64[6]) || (u64[7] != other.u64[7]);
     }
 };
 

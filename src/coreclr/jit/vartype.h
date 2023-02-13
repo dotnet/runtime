@@ -71,6 +71,7 @@ inline bool varTypeIsSIMD(T vt)
         case TYP_SIMD12:
         case TYP_SIMD16:
         case TYP_SIMD32:
+        case TYP_SIMD64:
             return true;
         default:
             return false;
