@@ -506,10 +506,11 @@ public:
     unsigned char lvIsRegArg : 1;          // is this an argument that was passed by register?
     unsigned char lvFramePointerBased : 1; // 0 = off of REG_SPBASE (e.g., ESP), 1 = off of REG_FPBASE (e.g., EBP)
 
-    unsigned char lvOnFrame : 1;  // (part of) the variable lives on the frame
-    unsigned char lvRegister : 1; // assigned to live in a register? For RyuJIT backend, this is only set if the
-                                  // variable is in the same register for the entire function.
-    unsigned char lvTracked : 1;  // is this a tracked variable?
+    unsigned char lvOnFrame : 1;          // (part of) the variable lives on the frame
+    unsigned char lvRegister : 1;         // assigned to live in a register? For RyuJIT backend, this is only set if the
+                                          // variable is in the same register for the entire function.
+    unsigned char lvTracked : 1;          // is this a tracked variable?
+    unsigned char lvTrackedCandidate : 1; // was this variable a candidate to be tracked?
     bool          lvTrackedNonStruct()
     {
         return lvTracked && lvType != TYP_STRUCT;
