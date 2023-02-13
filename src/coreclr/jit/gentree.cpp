@@ -3410,7 +3410,7 @@ genTreeOps GenTree::SwapRelop(genTreeOps relop)
 #ifdef TARGET_XARCH
         GT_BITTEST_EQ, // GT_BITTEST_EQ
         GT_BITTEST_NE, // GT_BITTEST_NE
-#endif TARGET_XARCH
+#endif
     };
 
     static_assert_no_msg(swapOps[GT_EQ - GT_EQ] == GT_EQ);
