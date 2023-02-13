@@ -103,7 +103,7 @@ extends:
           buildConfig: checked
           platforms:
           - linux_x64
-          container: debian-11-gcc12-amd64-20220511124845-b7a6185
+          container: debian-11-gcc12-amd64
           jobParameters:
             testGroup: innerloop
             compilerName: gcc

@@ -427,7 +427,7 @@ namespace System.Text.Json
             {
                 if (propertyName != null)
                 {
-                    if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                    if (propertyName.AsSpan().IndexOfAny(ReadStack.s_specialCharacters) >= 0)
                     {
                         sb.Append(@"['");
                         sb.Append(propertyName);
