@@ -353,10 +353,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_TEST_EQ:
         case GT_CMP:
         case GT_TEST:
-            // On ARM64 genCodeForCompare does not consume its own operands because
-            // genCodeForBinary also has this behavior and it can end up calling
-            // genCodeForCompare when generating compare chains for GT_AND.
-            // Thus, we must do it here.
             genConsumeOperands(treeNode->AsOp());
             genCodeForCompare(treeNode->AsOp());
             break;
