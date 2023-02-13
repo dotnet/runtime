@@ -5210,23 +5210,18 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get { throw null; } }
         }
     }
+    
     [System.CLSCompliantAttribute(false)]
     public abstract partial class X86Base
     {
         internal X86Base() { }
         public static bool IsSupported { get { throw null; } }
         public static (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId) { throw null; }
-        public static (uint Quotient, uint Remainder) DivRem(uint lower, uint upper, uint divisor) { throw null; }
-        public static (int Quotient, int Remainder) DivRem(uint lower, int upper, int divisor) { throw null; }
-        public static (nuint Quotient, nuint Remainder) DivRem(nuint lower, nuint upper, nuint divisor) { throw null; }
-        public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) { throw null; }
         public static void Pause() { throw null; }
         public abstract partial class X64
         {
             internal X64() { }
             public static bool IsSupported { get { throw null; } }
-            public static (ulong Quotient, ulong Remainder) DivRem(ulong lower, ulong upper, ulong divisor) { throw null; }
-            public static (long Quotient, long Remainder) DivRem(ulong lower, long upper, long divisor) { throw null; }
         }
     }
 
