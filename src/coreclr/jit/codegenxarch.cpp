@@ -6858,24 +6858,22 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
 GenTreeCC* CodeGen::genTryFindFlagsConsumer(GenTree* producer)
 {
     assert((producer->gtFlags & GTF_SET_FLAGS) != 0);
-    // After LSRA the next node may not always be the consumer since LSRA may
-    // insert resolution node. It's also possible there is no consumer or that
-    // the consumer is an arithmetic node from decomposition. These are rare
-    // occurrences and the below loop usually exits on the first iteration.
-    GenTree* candidate = producer->gtNext;
-    for (int i = 0; i < 8; i++)
+    // We allow skipping some nodes where we know for sure that the flags are
+    // not consumed. In particular we handle resolution nodes. If we see any
+    // other node after the compare (which is an uncommon case, happens
+    // sometimes with decomposition) then we assume it could consume the flags.
+    for (GenTree* candidate = producer->gtNext; candidate != nullptr; candidate = candidate->gtNext)
     {
-        if (candidate == nullptr)
+        if ((candidate->OperIs(GT_LCL_VAR, GT_COPY) && candidate->IsUnusedValue()) || candidate->OperIs(GT_SWAP))
         {
-            return nullptr;
+            // Resolution node
+            continue;
         }
 
         if (candidate->OperIs(GT_JCC, GT_SETCC))
         {
             return candidate->AsCC();
         }
-
-        candidate = candidate->gtNext;
     }
 
     return nullptr;
