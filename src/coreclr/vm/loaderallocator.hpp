@@ -624,6 +624,12 @@ public:
     // basis.
     EEMarshalingData *GetMarshalingData();
 
+    EEMarshalingData* GetMarshalingDataIfAvailable()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pMarshalingData;
+    }
+
 private:
     // Deletes marshaling data at shutdown (which contains cached factories that needs to be released)
     void DeleteMarshalingData();

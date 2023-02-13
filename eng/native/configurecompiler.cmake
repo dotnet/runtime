@@ -452,6 +452,8 @@ if (CLR_CMAKE_HOST_UNIX)
   # optimization in the IEEE 754 specification and is therefore considered unsafe.
   add_compile_options(-ffp-contract=off)
 
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
+
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wno-unknown-warning-option)
 

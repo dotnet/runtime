@@ -120,6 +120,11 @@ public class WasmAppBuilder : Task
         public AssemblyEntry(string name) : base(name, "assembly") {}
     }
 
+    private sealed class PdbEntry : AssetEntry
+    {
+        public PdbEntry(string name) : base(name, "pdb") {}
+    }
+
     private sealed class SatelliteAssemblyEntry : AssetEntry
     {
         public SatelliteAssemblyEntry(string name, string culture) : base(name, "resource")
@@ -260,7 +265,7 @@ public class WasmAppBuilder : Task
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
-                    config.Assets.Add(new AssemblyEntry(Path.GetFileName(pdb)));
+                    config.Assets.Add(new PdbEntry(Path.GetFileName(pdb)));
             }
         }
 

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -15,7 +15,12 @@ namespace System.Text.Json
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct ReadStack
     {
-        internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
+        private const string SpecialCharacters = ". '/\"[]()\t\n\r\f\b\\\u0085\u2028\u2029";
+#if NET8_0_OR_GREATER
+        internal static readonly IndexOfAnyValues<char> s_specialCharacters = IndexOfAnyValues.Create(SpecialCharacters);
+#else
+        internal static ReadOnlySpan<char> s_specialCharacters => SpecialCharacters.AsSpan();
+#endif
 
         /// <summary>
         /// Exposes the stackframe that is currently active.
@@ -320,7 +325,7 @@ namespace System.Text.Json
             {
                 if (propertyName != null)
                 {
-                    if (propertyName.IndexOfAny(SpecialCharacters) != -1)
+                    if (propertyName.AsSpan().IndexOfAny(s_specialCharacters) >= 0)
                     {
                         sb.Append(@"['");
                         sb.Append(propertyName);
