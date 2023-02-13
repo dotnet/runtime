@@ -39,6 +39,12 @@ namespace System.Net.Http
             StatusCode = statusCode;
         }
 
+        public HttpRequestException(string? message, Exception? inner, HttpStatusCode? statusCode, HttpRequestError httpRequestError)
+            : this(message, inner, statusCode)
+        {
+            HttpRequestError = httpRequestError;
+        }
+
         /// <summary>
         /// Gets the HTTP status code to be returned with the exception.
         /// </summary>
@@ -47,12 +53,15 @@ namespace System.Net.Http
         /// </value>
         public HttpStatusCode? StatusCode { get; }
 
+        public HttpRequestError? HttpRequestError { get; }
+
         // This constructor is used internally to indicate that a request was not successfully sent due to an IOException,
         // and the exception occurred early enough so that the request may be retried on another connection.
-        internal HttpRequestException(string? message, Exception? inner, RequestRetryType allowRetry)
+        internal HttpRequestException(string? message, Exception? inner, RequestRetryType allowRetry, HttpRequestError? httpRequestError = null)
             : this(message, inner)
         {
             AllowRetry = allowRetry;
+            HttpRequestError = httpRequestError;
         }
     }
 }

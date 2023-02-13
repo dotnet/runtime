@@ -134,11 +134,32 @@ namespace System.Net.Http
             }
         }
 
-        internal static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
+        internal static Exception CreateWrappedException(Exception exception, string host, int port, CancellationToken cancellationToken)
         {
-            return CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
-                CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :
-                new HttpRequestException($"{error.Message} ({host}:{port})", error, RequestRetryType.RetryOnNextProxy);
+            return CancellationHelper.ShouldWrapInOperationCanceledException(exception, cancellationToken) ?
+                CancellationHelper.CreateOperationCanceledException(exception, cancellationToken) :
+                new HttpRequestException($"{exception.Message} ({host}:{port})", exception, RequestRetryType.RetryOnNextProxy, DeduceError(exception));
+
+            static HttpRequestError? DeduceError(Exception ex)
+            {
+                if (ex is SocketException socketEx)
+                {
+                    return socketEx.SocketErrorCode switch
+                    {
+                        SocketError.HostNotFound => HttpRequestError.NameResolutionError,
+
+                        SocketError.ConnectionAborted or
+                        SocketError.ConnectionRefused or
+                        SocketError.ConnectionReset or
+                        SocketError.NetworkDown or
+                        SocketError.NetworkReset or
+                        SocketError.NetworkUnreachable => HttpRequestError.ConnectionError,
+
+                        _ => HttpRequestError.TransportError,
+                    };
+                }
+                return null;
+            }
         }
     }
 }

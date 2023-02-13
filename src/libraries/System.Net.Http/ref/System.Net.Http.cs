@@ -251,7 +251,9 @@ namespace System.Net.Http
         public HttpRequestException(string? message) { }
         public HttpRequestException(string? message, System.Exception? inner) { }
         public HttpRequestException(string? message, System.Exception? inner, System.Net.HttpStatusCode? statusCode) { }
+        public HttpRequestException(string? message, Exception? inner, HttpStatusCode? statusCode, HttpRequestError httpRequestError) { }
         public System.Net.HttpStatusCode? StatusCode { get { throw null; } }
+        public System.Net.Http.HttpRequestError? HttpRequestError { get { throw null; } }
     }
     public partial class HttpRequestMessage : System.IDisposable
     {
@@ -451,6 +453,27 @@ namespace System.Net.Http
         public StringContent(string content, System.Text.Encoding? encoding, System.Net.Http.Headers.MediaTypeHeaderValue mediaType) : base (default(byte[])) { }
         public StringContent(string content, System.Text.Encoding? encoding, string mediaType) : base (default(byte[])) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
+    public enum HttpRequestError
+    {
+        NameResolutionError,
+        ConnectionError,
+        TransportError,
+        SecureConnectionError,
+        HttpProtocolError,
+
+        ResponseEnded,
+        InvalidResponse,
+        InvalidResponseHeader,
+        ContentBufferSizeExceeded,
+        ResponseHeaderExceededLengthLimit,
+        UnsupportedExtendedConnect,
+        RequestedVersionError,
+    }
+    public class HttpResponseReadException : IOException
+    {
+        public HttpRequestError HttpRequestError { get { throw null; } }
+        public HttpResponseReadException(HttpRequestError httpRequestError, string message, Exception? innerException = null) { }
     }
 }
 namespace System.Net.Http.Headers
@@ -894,25 +917,5 @@ namespace System.Net.Http.Headers
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.WarningHeaderValue? parsedValue) { throw null; }
-    }
-
-    public enum HttpRequestError
-    {
-        NameResolutionError,
-        SocketError,
-        SecureConnectionError,
-        HttpProtocolError,
-
-        ResponseEnded,
-        InvalidResponse,
-        InvalidResponseHeader,
-        ContentBufferSizeExceeded,
-        ResponseHeaderExceededLengthLimit
-    }
-
-    public class HttpResponseReadException : IOException
-    {
-        public HttpRequestError HttpRequestError { get { throw null; } }
-        public HttpResponseReadException(HttpRequestError httpRequestError, string message, Exception? innerException = null) { }
     }
 }

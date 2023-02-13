@@ -6,7 +6,8 @@ namespace System.Net.Http
     public enum HttpRequestError
     {
         NameResolutionError,
-        SocketError,
+        ConnectionError,
+        TransportError,
         SecureConnectionError,
         HttpProtocolError,
 
@@ -14,6 +15,8 @@ namespace System.Net.Http
         InvalidResponse,
         InvalidResponseHeader,
         ContentBufferSizeExceeded,
-        ResponseHeaderExceededLengthLimit
+        ResponseHeaderExceededLengthLimit,
+        UnsupportedExtendedConnect,
+        RequestedVersionError,
     }
 }
