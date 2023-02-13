@@ -1415,17 +1415,43 @@ namespace ILCompiler
                         }
                         break;
 
+                    case ILOpcode.ldind_i1:
+                    case ILOpcode.ldind_u1:
+                    case ILOpcode.ldind_i2:
+                    case ILOpcode.ldind_u2:
                     case ILOpcode.ldind_i4:
                     case ILOpcode.ldind_u4:
+                    case ILOpcode.ldind_i8:
                         {
                             StackEntry entry = stack.Pop();
                             if (entry.Value is ByRefValue byRefVal)
                             {
                                 switch (opcode)
                                 {
+                                    case ILOpcode.ldind_i1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsSByte()));
+                                        break;
+                                    case ILOpcode.ldind_u1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)byRefVal.DereferenceAsSByte()));
+                                        break;
+                                    case ILOpcode.ldind_i2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsInt16()));
+                                        break;
+                                    case ILOpcode.ldind_u2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)byRefVal.DereferenceAsInt16()));
+                                        break;
                                     case ILOpcode.ldind_i4:
                                     case ILOpcode.ldind_u4:
                                         stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsInt32()));
+                                        break;
+                                    case ILOpcode.ldind_i8:
+                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(byRefVal.DereferenceAsInt64()));
+                                        break;
+                                    case ILOpcode.ldind_r4:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(byRefVal.DereferenceAsSingle()));
+                                        break;
+                                    case ILOpcode.ldind_r8:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(byRefVal.DereferenceAsDouble()));
                                         break;
                                 }
                             }
