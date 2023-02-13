@@ -309,11 +309,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildCast(tree->AsCast());
             break;
 
-        case GT_JTRUE:
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-
         case GT_JMP:
             srcCount = 0;
             assert(dstCount == 0);

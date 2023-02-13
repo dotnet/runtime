@@ -2588,41 +2588,6 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 #endif // !defined(TARGET_64BIT)
 
 #ifndef TARGET_LOONGARCH64
-//------------------------------------------------------------------------
-// genCodeForJumpTrue: Generate code for a GT_JTRUE node.
-//
-// Arguments:
-//    jtrue - The node
-//
-void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
-{
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
-    assert(jtrue->OperIs(GT_JTRUE));
-
-    GenTreeOp*   relop     = jtrue->gtGetOp1()->AsOp();
-    GenCondition condition = GenCondition::FromRelop(relop);
-
-    if (condition.PreferSwap())
-    {
-        condition = GenCondition::Swap(condition);
-    }
-
-#if defined(TARGET_XARCH)
-    if ((condition.GetCode() == GenCondition::FNEU) &&
-        (relop->gtGetOp1()->GetRegNum() == relop->gtGetOp2()->GetRegNum()) &&
-        !relop->gtGetOp1()->isUsedFromSpillTemp() && !relop->gtGetOp2()->isUsedFromSpillTemp())
-    {
-        // For floating point, `x != x` is a common way of
-        // checking for NaN. So, in the case where both
-        // operands are the same, we can optimize codegen
-        // to only do a single check.
-
-        condition = GenCondition(GenCondition::P);
-    }
-#endif
-
-    inst_JCC(condition, compiler->compCurBB->bbJumpDest);
-}
 
 //------------------------------------------------------------------------
 // genCodeForJcc: Generate code for a GT_JCC node.

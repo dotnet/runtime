@@ -1191,7 +1191,6 @@ protected:
     void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
-    void genCodeForJumpTrue(GenTreeOp* jtrue);
 #if defined(TARGET_LOONGARCH64)
     // TODO: refactor for LA.
     void genCodeForJumpCompare(GenTreeOp* tree);
