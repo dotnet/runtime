@@ -40,8 +40,8 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 			// The test simulates the following issue.
 			// https://github.com/dotnet/linker/issues/2921
 			// The suppressed warning is issued in the 'if' branch.
-			// With feature switched to false, ILLink sees only the 'else' branch.
-			// The 'else' branch contains trimmer-compatible code, ILLink  identifies the suppression as redundant.
+			// With feature switched to false, the trimming tools sees only the 'else' branch.
+			// The 'else' branch contains trimmer-compatible code, the trimming tools  identifies the suppression as redundant.
 
 			[ExpectedWarning ("IL2121", "IL2072", ProducedBy = ProducedBy.Trimmer)]
 			[UnconditionalSuppressMessage ("Test", "IL2072")]

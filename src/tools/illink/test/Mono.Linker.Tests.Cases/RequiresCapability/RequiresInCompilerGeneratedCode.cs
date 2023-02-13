@@ -1996,7 +1996,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--")]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--")]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
-			// Trimming tools correctly emits warnings about reflection access to local functions with Requires
+			// Trimming tools correctly emit warnings about reflection access to local functions with Requires
 			// or which inherit Requires from the containing method. The analyzer doesn't bind to local functions
 			// so does not warn here.
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithRequires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
@@ -2006,7 +2006,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			// NativeAot doesn't associate Requires on method with the local functions it contains.
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
-			// Trimming tools warn about reflection access to compiler-generated code
+			// ILLink warn about reflection access to compiler-generated code
 			// https://github.com/dotnet/runtime/issues/68786
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection),
 				ProducedBy = ProducedBy.Trimmer)]
@@ -2027,7 +2027,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			// NativeAot doesn't associate Requires on method with the local functions it contains.
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
-			// Trimming tools warn about reflection access to compiler-generated code
+			// ILLink warn about reflection access to compiler-generated code
 			// https://github.com/dotnet/runtime/issues/68786
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), "<" + nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection) + ">",
 				ProducedBy = ProducedBy.Trimmer)]

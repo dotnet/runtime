@@ -71,7 +71,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// This is a very special case - normally there's basically no way to "new up" a Type instance via the "new" operator.
-			// The trimming and analyzer see an unknown value and thus warns that it doesn't fulfill the All annotation.
+			// The trimming tools and analyzer see an unknown value and thus warns that it doesn't fulfill the All annotation.
 			[ExpectedWarning ("IL2062", nameof (TestAllPropagated))]
 			public static void Test ()
 			{

@@ -4,7 +4,7 @@
 namespace System.Runtime.CompilerServices
 {
 	// This attribute is normally implemented in CoreLib as internal, but in order to test
-	// illink behavior around it, we need to be able to use it in the tests.
+	// ILLink behavior around it, we need to be able to use it in the tests.
 	[AttributeUsage (AttributeTargets.Method)]
 	public sealed class IntrinsicAttribute : Attribute
 	{
