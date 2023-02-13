@@ -136,7 +136,6 @@
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AppleTestRunner.dll</MainLibraryFileName>
     
-      <iOSLikeDedup Condition="'$(TargetOS)' == 'ios'">true</iOSLikeDedup>
       <AppleAppDir>$(PublishDir)</AppleAppDir>
       <AppleAppBundleDir>$(BundleDir)</AppleAppBundleDir>
     </PropertyGroup>

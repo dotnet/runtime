@@ -2,6 +2,7 @@
   <!-- iOS/tvOS device + arm64 simulators need to AOT -->
   <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or (('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64')">
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
+    <iOSLikeDedup Condition="'$(RunAOTCompilation)' == 'true' and '$(TargetOS)' == 'ios'">true</iOSLikeDedup>
   </PropertyGroup>
 
   <!-- iOS/tvOS arm64 simulators do not support JIT, so force interpreter fallback, devices should FullAOT -->
