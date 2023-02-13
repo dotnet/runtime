@@ -45,7 +45,20 @@
     <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)' == '' and '$(InferPlatformFromTargetArchitecture)' == 'true'">$(TargetArchitecture)</Platform>
   </PropertyGroup>
-  
+
+  <PropertyGroup Label="SetOSTargetMinVersions">
+    <!-- Minimum Apple target OS versions, keep in sync with src/native/libs/build-native.sh -->
+    <iOSVersionMin>11.0</iOSVersionMin>
+    <tvOSVersionMin>11.0</tvOSVersionMin>
+    <watchOSVersionMin>2.0</watchOSVersionMin>
+    <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
+    <macOSVersionMin>10.15</macOSVersionMin>
+    <macOSVersionMin Condition="('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst') and '$(TargetArchitecture)' == 'arm64'">11.0</macOSVersionMin>
+
+    <!-- Minimum version of the Android API level we target, keep in sync with eng/native/build-commons.sh -->
+    <AndroidApiLevelMin>21</AndroidApiLevelMin>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- Set OutDirName (Arcade specific property that must be set before the Arcade SDK is imported) to change the BaseOutputPath and
          BaseIntermediateOutputPath properties to include the ref subfolder. -->

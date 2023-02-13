@@ -859,8 +859,23 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
             }
             break;
 
-            case BBJ_RETURN:
             case BBJ_THROW:
+
+                // Ignore impact of throw blocks on flow,  if we're doing minimal
+                // method profiling, and it appears the method can return without throwing.
+                //
+                // fgReturnCount is provisionally set in fgFindBasicBlocks based on
+                // the raw IL stream prescan.
+                //
+                if (JitConfig.JitMinimalJitProfiling() && (fgReturnCount > 0))
+                {
+                    break;
+                }
+
+                __fallthrough;
+
+            case BBJ_RETURN:
+
             {
                 // Pseudo-edge back to method entry.
                 //
@@ -1725,18 +1740,34 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
 
         var_types typ =
             entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ? TYP_INT : TYP_LONG;
-        // Read Basic-Block count value
-        GenTree* valueNode =
-            m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
 
-        // Increment value by 1
-        GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
+        if (JitConfig.JitInterlockedProfiling() > 0)
+        {
+            // Form counter address
+            GenTree* addressNode = m_comp->gtNewIconHandleNode(addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR);
 
-        // Write new Basic-Block count value
-        GenTree* lhsNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
-        GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
+            // Interlocked increment
+            GenTree* xAddNode = m_comp->gtNewOperNode(GT_XADD, typ, addressNode, m_comp->gtNewIconNode(1, typ));
 
-        m_comp->fgNewStmtAtBeg(instrumentedBlock, asgNode);
+            // Ignore result.
+            m_comp->fgNewStmtAtBeg(instrumentedBlock, xAddNode);
+        }
+        else
+        {
+            // Read Basic-Block count value
+            GenTree* valueNode =
+                m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+
+            // Increment value by 1
+            GenTree* rhsNode = m_comp->gtNewOperNode(GT_ADD, typ, valueNode, m_comp->gtNewIconNode(1, typ));
+
+            // Write new Basic-Block count value
+            GenTree* lhsNode =
+                m_comp->gtNewIndOfIconHandleNode(typ, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+            GenTree* asgNode = m_comp->gtNewAssignNode(lhsNode, rhsNode);
+
+            m_comp->fgNewStmtAtBeg(instrumentedBlock, asgNode);
+        }
 
         if (probe->kind != EdgeKind::Duplicate)
         {
@@ -2172,6 +2203,15 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     const bool useEdgeProfiles = edgesEnabled && !prejit;
     const bool minimalProfiling =
         prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
+
+    // In majority of cases, methods marked with [Intrinsic] are imported directly
+    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes.
+    if (minimalProfiling && (info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
+    {
+        fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
+        fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
     if (minimalProfiling && (fgBBcount < 2))
     {

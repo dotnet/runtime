@@ -37,34 +37,11 @@ using Xunit;
 
 namespace MonoTests.System.Drawing.Imaging
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported))]
     public class PngCodecTest
     {
-        private bool IsArm64Process()
-        {
-            if (Environment.OSVersion.Platform != PlatformID.Unix || !Environment.Is64BitProcess)
-                return false;
-
-            try
-            {
-                var process = new global::System.Diagnostics.Process();
-                process.StartInfo.FileName = "uname";
-                process.StartInfo.Arguments = "-m";
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.UseShellExecute = false;
-                process.Start();
-                process.WaitForExit();
-                var output = process.StandardOutput.ReadToEnd();
-
-                return output.Trim() == "aarch64";
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         /* Checks bitmap features on a known 1bbp bitmap */
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [Fact]
         public void Bitmap1bitFeatures()
         {
             string sInFile = Helpers.GetTestBitmapPath("1bit.png");
@@ -93,7 +70,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [Fact]
         public void Bitmap1bitPixels()
         {
             string sInFile = Helpers.GetTestBitmapPath("1bit.png");
@@ -169,7 +146,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [Fact]
         public void Bitmap1bitData()
         {
             string sInFile = Helpers.GetTestBitmapPath("1bit.png");
@@ -272,12 +249,9 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         /* Checks bitmap features on a known 2bbp bitmap */
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable2)]
+        [Fact]
         public void Bitmap2bitFeatures()
         {
-            if (IsArm64Process())
-                Assert.True(false, "https://bugzilla.xamarin.com/show_bug.cgi?id=41171");
-
             string sInFile = Helpers.GetTestBitmapPath("81674-2bpp.png");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
@@ -304,12 +278,9 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable2)]
+        [Fact]
         public void Bitmap2bitPixels()
         {
-            if (IsArm64Process())
-                Assert.True(false, "https://bugzilla.xamarin.com/show_bug.cgi?id=41171");
-
             string sInFile = Helpers.GetTestBitmapPath("81674-2bpp.png");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
@@ -333,12 +304,9 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable2)]
+        [Fact]
         public void Bitmap2bitData()
         {
-            if (IsArm64Process())
-                Assert.True(false, "https://bugzilla.xamarin.com/show_bug.cgi?id=41171");
-
             string sInFile = Helpers.GetTestBitmapPath("81674-2bpp.png");
             using (Bitmap bmp = new Bitmap(sInFile))
             {
@@ -395,7 +363,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         /* Checks bitmap features on a known 4bbp bitmap */
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [Fact]
         public void Bitmap4bitFeatures()
         {
             string sInFile = Helpers.GetTestBitmapPath("4bit.png");
@@ -438,7 +406,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [Fact]
         public void Bitmap4bitPixels()
         {
             string sInFile = Helpers.GetTestBitmapPath("4bit.png");
@@ -515,7 +483,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [Fact]
         public void Bitmap4bitData()
         {
             string sInFile = Helpers.GetTestBitmapPath("4bit.png");
@@ -659,25 +627,25 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [Fact]
         public void Save_24bppRgb()
         {
             Save(PixelFormat.Format24bppRgb, PixelFormat.Format24bppRgb, true);
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [Fact]
         public void Save_32bppRgb()
         {
             Save(PixelFormat.Format32bppRgb, PixelFormat.Format32bppArgb, true);
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [Fact]
         public void Save_32bppArgb()
         {
             Save(PixelFormat.Format32bppArgb, PixelFormat.Format32bppArgb, true);
         }
 
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [Fact]
         public void Save_32bppPArgb()
         {
             Save(PixelFormat.Format32bppPArgb, PixelFormat.Format32bppArgb, true);

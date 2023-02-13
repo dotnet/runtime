@@ -10901,9 +10901,16 @@ field_access_end:
 					} else {
 						EMIT_NEW_PCONST (cfg, ins, handle);
 					}
+
 					EMIT_NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, ins->dreg);
 					EMIT_NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
+					ins->opcode = OP_LDTOKEN_FIELD;
+					ins->inst_c0 = n;
+					ins->inst_p1 = handle;
+
+					cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+					cfg->cbb->needs_decompose = TRUE;
 				}
 			}
 

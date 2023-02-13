@@ -15,8 +15,6 @@ namespace System.Text.Json.Serialization.Converters
     {
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
 
-        private static readonly char[] s_specialChars = new[] { ',', ' ' };
-
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
 
@@ -89,7 +87,7 @@ namespace System.Text.Json.Serialization.Converters
                 _nameCacheForReading?.TryAdd(jsonName, value);
 
                 // If enum contains special char, make it failed to serialize or deserialize.
-                if (name.IndexOfAny(s_specialChars) != -1)
+                if (name.AsSpan().IndexOfAny(',', ' ') >= 0)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(typeof(T), name);
                 }

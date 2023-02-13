@@ -5,12 +5,34 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
     public partial class DefaultJsonTypeInfoResolver
     {
+        internal static MemberAccessor MemberAccessor
+        {
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get
+            {
+                return s_memberAccessor ??=
+#if NETCOREAPP
+                // if dynamic code isn't supported, fallback to reflection
+                RuntimeFeature.IsDynamicCodeSupported ?
+                    new ReflectionEmitCachingMemberAccessor() :
+                    new ReflectionMemberAccessor();
+#elif NETFRAMEWORK
+                    new ReflectionEmitCachingMemberAccessor();
+#else
+                    new ReflectionMemberAccessor();
+#endif
+            }
+        }
+
+        private static MemberAccessor? s_memberAccessor;
+
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonTypeInfo CreateTypeInfoCore(Type type, JsonConverter converter, JsonSerializerOptions options)
@@ -25,7 +47,7 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.PopulatePolymorphismMetadata();
             typeInfo.MapInterfaceTypesToCallbacks();
 
-            Func<object>? createObject = JsonSerializerOptions.MemberAccessorStrategy.CreateConstructor(typeInfo.Type);
+            Func<object>? createObject = MemberAccessor.CreateConstructor(typeInfo.Type);
             typeInfo.SetCreateObjectIfCompatible(createObject);
             typeInfo.CreateObjectForExtensionDataProperty = createObject;
 
@@ -221,7 +243,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             JsonPropertyInfo jsonPropertyInfo = typeInfo.CreatePropertyUsingReflection(typeToConvert);
-            jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition, shouldCheckForRequiredKeyword);
+            PopulatePropertyInfo(jsonPropertyInfo, memberInfo, customConverter, ignoreCondition, shouldCheckForRequiredKeyword);
             return jsonPropertyInfo;
         }
 
@@ -284,6 +306,126 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             typeInfo.ParameterInfoValues = jsonParameters;
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static void PopulatePropertyInfo(JsonPropertyInfo jsonPropertyInfo, MemberInfo memberInfo, JsonConverter? customConverter, JsonIgnoreCondition? ignoreCondition, bool shouldCheckForRequiredKeyword)
+        {
+            Debug.Assert(jsonPropertyInfo.AttributeProvider == null);
+
+            switch (jsonPropertyInfo.AttributeProvider = memberInfo)
+            {
+                case PropertyInfo propertyInfo:
+                    jsonPropertyInfo.MemberName = propertyInfo.Name;
+                    jsonPropertyInfo.IsVirtual = propertyInfo.IsVirtual();
+                    jsonPropertyInfo.MemberType = MemberTypes.Property;
+                    break;
+                case FieldInfo fieldInfo:
+                    jsonPropertyInfo.MemberName = fieldInfo.Name;
+                    jsonPropertyInfo.MemberType = MemberTypes.Field;
+                    break;
+                default:
+                    Debug.Fail("Only FieldInfo and PropertyInfo members are supported.");
+                    break;
+            }
+
+            jsonPropertyInfo.CustomConverter = customConverter;
+            DeterminePropertyPolicies(jsonPropertyInfo, memberInfo);
+            DeterminePropertyName(jsonPropertyInfo, memberInfo);
+            DeterminePropertyIsRequired(jsonPropertyInfo, memberInfo, shouldCheckForRequiredKeyword);
+
+            if (ignoreCondition != JsonIgnoreCondition.Always)
+            {
+                jsonPropertyInfo.DetermineReflectionPropertyAccessors(memberInfo);
+            }
+
+            jsonPropertyInfo.IgnoreCondition = ignoreCondition;
+            jsonPropertyInfo.IsExtensionData = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) != null;
+        }
+
+        private static void DeterminePropertyPolicies(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
+        {
+            JsonPropertyOrderAttribute? orderAttr = memberInfo.GetCustomAttribute<JsonPropertyOrderAttribute>(inherit: false);
+            propertyInfo.Order = orderAttr?.Order ?? 0;
+
+            JsonNumberHandlingAttribute? numberHandlingAttr = memberInfo.GetCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
+            propertyInfo.NumberHandling = numberHandlingAttr?.Handling;
+        }
+
+        private static void DeterminePropertyName(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
+        {
+            JsonPropertyNameAttribute? nameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(inherit: false);
+            string? name;
+            if (nameAttribute != null)
+            {
+                name = nameAttribute.Name;
+            }
+            else if (propertyInfo.Options.PropertyNamingPolicy != null)
+            {
+                name = propertyInfo.Options.PropertyNamingPolicy.ConvertName(memberInfo.Name);
+            }
+            else
+            {
+                name = memberInfo.Name;
+            }
+
+            if (name == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(propertyInfo);
+            }
+
+            propertyInfo.Name = name;
+        }
+
+        private static void DeterminePropertyIsRequired(JsonPropertyInfo propertyInfo, MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)
+        {
+            propertyInfo.IsRequired =
+                memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) != null
+                || (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute());
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        internal static void DeterminePropertyAccessors<T>(JsonPropertyInfo<T> jsonPropertyInfo, MemberInfo memberInfo)
+        {
+            Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
+
+            switch (memberInfo)
+            {
+                case PropertyInfo propertyInfo:
+                    bool useNonPublicAccessors = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+
+                    MethodInfo? getMethod = propertyInfo.GetMethod;
+                    if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
+                    {
+                        jsonPropertyInfo.Get = DefaultJsonTypeInfoResolver.MemberAccessor.CreatePropertyGetter<T>(propertyInfo);
+                    }
+
+                    MethodInfo? setMethod = propertyInfo.SetMethod;
+                    if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
+                    {
+                        jsonPropertyInfo.Set = DefaultJsonTypeInfoResolver.MemberAccessor.CreatePropertySetter<T>(propertyInfo);
+                    }
+
+                    break;
+
+                case FieldInfo fieldInfo:
+                    Debug.Assert(fieldInfo.IsPublic);
+
+                    jsonPropertyInfo.Get = DefaultJsonTypeInfoResolver.MemberAccessor.CreateFieldGetter<T>(fieldInfo);
+
+                    if (!fieldInfo.IsInitOnly)
+                    {
+                        jsonPropertyInfo.Set = DefaultJsonTypeInfoResolver.MemberAccessor.CreateFieldSetter<T>(fieldInfo);
+                    }
+
+                    break;
+
+                default:
+                    Debug.Fail($"Invalid MemberInfo type: {memberInfo.MemberType}");
+                    break;
+            }
         }
     }
 }

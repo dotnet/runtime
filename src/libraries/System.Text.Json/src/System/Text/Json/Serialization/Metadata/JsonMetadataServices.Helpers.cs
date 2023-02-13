@@ -166,5 +166,63 @@ namespace System.Text.Json.Serialization.Metadata
 
             // NB we don't need to sort source gen properties here since they were already sorted at compile time.
         }
+
+        private static JsonPropertyInfo<T> CreatePropertyInfoCore<T>(JsonPropertyInfoValues<T> propertyInfoValues, JsonSerializerOptions options)
+        {
+            var propertyInfo = new JsonPropertyInfo<T>(propertyInfoValues.DeclaringType, declaringTypeInfo: null, options);
+
+            DeterminePropertyName(propertyInfo,
+                declaredPropertyName: propertyInfoValues.PropertyName,
+                declaredJsonPropertyName: propertyInfoValues.JsonPropertyName);
+
+            propertyInfo.MemberName = propertyInfoValues.PropertyName;
+            propertyInfo.MemberType = propertyInfoValues.IsProperty ? MemberTypes.Property : MemberTypes.Field;
+            propertyInfo.SrcGen_IsPublic = propertyInfoValues.IsPublic;
+            propertyInfo.SrcGen_HasJsonInclude = propertyInfoValues.HasJsonInclude;
+            propertyInfo.IsExtensionData = propertyInfoValues.IsExtensionData;
+            propertyInfo.CustomConverter = propertyInfoValues.Converter;
+
+            if (propertyInfo.IgnoreCondition != JsonIgnoreCondition.Always)
+            {
+                propertyInfo.Get = propertyInfoValues.Getter!;
+                propertyInfo.Set = propertyInfoValues.Setter;
+            }
+
+            propertyInfo.IgnoreCondition = propertyInfoValues.IgnoreCondition;
+            propertyInfo.JsonTypeInfo = propertyInfoValues.PropertyTypeInfo;
+            propertyInfo.NumberHandling = propertyInfoValues.NumberHandling;
+
+            return propertyInfo;
+        }
+
+        private static void DeterminePropertyName(
+            JsonPropertyInfo propertyInfo,
+            string declaredPropertyName,
+            string? declaredJsonPropertyName)
+        {
+            string? name;
+
+            // Property name settings.
+            if (declaredJsonPropertyName != null)
+            {
+                name = declaredJsonPropertyName;
+            }
+            else if (propertyInfo.Options.PropertyNamingPolicy == null)
+            {
+                name = declaredPropertyName;
+            }
+            else
+            {
+                name = propertyInfo.Options.PropertyNamingPolicy.ConvertName(declaredPropertyName);
+            }
+
+            // Compat: We need to do validation before we assign Name so that we get InvalidOperationException rather than ArgumentNullException
+            if (name == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(propertyInfo);
+            }
+
+            propertyInfo.Name = name;
+        }
     }
 }
