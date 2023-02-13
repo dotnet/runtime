@@ -174,7 +174,7 @@ const char* CodeGen::genSizeStr(emitAttr attr)
 
     if (EA_ATTR(size) == attr)
     {
-        return sizes[size > 0 ? genLog2(size) + 1 : size];
+        return (size > 0) ? sizes[genLog2(size)] : "";
     }
     else if (attr == EA_GCREF)
     {

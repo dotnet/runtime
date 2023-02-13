@@ -17517,34 +17517,6 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
             return argCnt == cnsArgCnt;
         }
 
-#if defined(TARGET_XARCH)
-        case NI_Vector512_Create:
-        {
-            // Zero out the simd32Val
-            simd32Val = {};
-
-            // These intrinsics are meant to set the same value to every element.
-            if ((argCnt == 1) && HandleArgForHWIntrinsicCreate(node->Op(1), 0, simd32Val, simdBaseType))
-            {
-                cnsArgCnt = 1;
-            }
-            else
-            {
-                for (unsigned i = 1; i <= argCnt / 2; i++)
-                {
-                    if (HandleArgForHWIntrinsicCreate(node->Op(i), i - 1, simd32Val, simdBaseType))
-                    {
-                        cnsArgCnt++;
-                    }
-                }
-            }
-
-            assert((argCnt == 1) || (argCnt == (simdSize / genTypeSize(simdBaseType))));
-            return argCnt == cnsArgCnt;
-        }
-
-#endif
-
         default:
         {
             return false;

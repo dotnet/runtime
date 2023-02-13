@@ -10910,7 +10910,8 @@ void emitter::emitDispIns(
 
             switch (ins)
             {
-                case INS_vinsert64x4:
+                case INS_vinsertf64x4:
+                case INS_vinserti64x4:
                 {
                     attr = EA_32BYTE;
                     break;
@@ -17630,7 +17631,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vextracti128:
         case INS_vinsertf128:
         case INS_vinserti128:
-        case INS_vinsert64x4:
+        case INS_vinsertf64x4:
+        case INS_vinserti64x4:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;
             break;
