@@ -107,11 +107,8 @@ internal static partial class TermInfo
             {
                 // Read in all of the terminfo data
                 long termInfoLength = RandomAccess.GetLength(fd);
-                // according to the term and tic man pages, 4096 is the terminfo file size max
-                // Fedora includes terminfo files that are slightly larger than 4096.
-                const int MaxTermInfoLength = 8096;
                 const int HeaderLength = 12;
-                if (termInfoLength <= HeaderLength || termInfoLength > MaxTermInfoLength)
+                if (termInfoLength <= HeaderLength)
                 {
                     throw new InvalidOperationException(SR.IO_TermInfoInvalid);
                 }
