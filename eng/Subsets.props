@@ -72,8 +72,7 @@
     <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
                                         '$(BuildTargetFramework)' == '' or
                                         '$(BuildAllConfigurations)' == 'true'">libs.native+</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.sfx+libs.oob+</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets Condition="'$(TargetsMobile)' == 'true' and !$(_subset.Contains('+clr.nativeaotlibs+'))">$(DefaultLibrariesSubsets)+libs.pretest</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.sfx+libs.oob+libs.pretest</DefaultLibrariesSubsets>
 
     <DefaultToolsSubsets>tools.illink</DefaultToolsSubsets>
 
@@ -111,6 +110,9 @@
 
     <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
     <UseNativeAotCoreLib Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr.native+')) and !$(_subset.Contains('+clr.runtime+'))">true</UseNativeAotCoreLib>
+
+    <!-- If we're using only the NativeAOT CoreLib then also default testing to NativeAOT -->
+    <TestNativeAot Condition="'$(UseNativeAotCoreLib)' == 'true'">true</TestNativeAot>
   </PropertyGroup>
 
   <ItemGroup>
