@@ -6835,7 +6835,7 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
 
     if ((cc != nullptr) && GetEmitter()->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(opType), cond))
     {
-        JITDUMP("Not emitting compare due to sign being already set; modifying [V%02u] to check sign flag\n",
+        JITDUMP("Not emitting compare due to sign being already set; modifying [%06u] to check sign flag\n",
                 Compiler::dspTreeID(cc));
         cc->gtCondition =
             (cond.GetCode() == GenCondition::SLT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
