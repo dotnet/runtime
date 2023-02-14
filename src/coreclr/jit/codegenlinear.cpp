@@ -1610,12 +1610,20 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
         }
-        else if (tree->OperIsCompare() || tree->OperIs(GT_AND) || tree->OperIsConditionalCompare())
+        else if (tree->OperIsCompare() || tree->OperIs(GT_AND))
         {
             // Compares can be contained by a SELECT.
-            // Compares, ANDs and conditional compares may be contained in a chain.
+            // Compares and ANDs may be contained in a chain.
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
+        }
+        else if (tree->OperIsConditionalCompare())
+        {
+            assert(false);
+            // Conditional compares may be contained.
+            genConsumeRegs(tree->AsConditional()->gtCond);
+            genConsumeRegs(tree->AsConditional()->gtOp1);
+            genConsumeRegs(tree->AsConditional()->gtOp2);
         }
 #endif
         else if (tree->OperIsLocalRead())
@@ -2592,37 +2600,13 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
     assert(jtrue->OperIs(GT_JTRUE));
 
-    GenTreeOp*   relop = jtrue->gtGetOp1()->AsOp();
-    GenCondition condition;
+    GenTree* relop = jtrue->gtGetOp1();
 
     // Operands should never be contained inside a jtrue.
     assert(!relop->isContained());
 
-#if defined(TARGET_ARM64)
-    if (relop->OperIsConditionalCompare())
-    {
-        // Find the last contained compare in the chain.
-        assert(relop->gtType == TYP_VOID);
-        GenTreeOp* lastCompare = relop->gtGetOp2()->AsOp();
-        assert(lastCompare->isContained());
-        while (!lastCompare->OperIsCompare())
-        {
-            assert(lastCompare->OperIs(GT_AND) || lastCompare->OperIsConditionalCompare());
-            lastCompare = lastCompare->gtGetOp2()->AsOp();
-            assert(lastCompare->isContained());
-        }
-        condition = GenCondition::FromRelop(lastCompare);
-        if (relop->OperIs(GT_CCMP_NE))
-        {
-            condition = GenCondition::Reverse(condition);
-        }
-    }
-    else
-#endif
-    {
-        assert(relop->OperIsCompare());
-        condition = GenCondition::FromRelop(relop);
-    }
+    assert(relop->OperIsCompare() || relop->OperIsConditionalCompare());
+    GenCondition condition = GenCondition::FromRelop(relop);
 
     if (condition.PreferSwap())
     {

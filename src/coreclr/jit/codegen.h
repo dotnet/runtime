@@ -883,11 +883,11 @@ protected:
     void genCkfinite(GenTree* treeNode);
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
-    void genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCond);
+    void genCodeForChainedCompare(GenTreeOp* tree, GenCondition prevCond);
     void genCodeForContainedCompareChain(GenTree* tree, bool* inchain, GenCondition* prevCond);
+    void genCodeForConditionalCompare(GenTreeConditional* tree);
 #endif
     void genCodeForSelect(GenTreeOp* select);
-    void genCodeForConditionalCompare(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);
     void genPutArgStk(GenTreePutArgStk* treeNode);
     void genPutArgReg(GenTreeOp* tree);

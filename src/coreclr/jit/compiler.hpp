@@ -4271,6 +4271,14 @@ void GenTree::VisitOperands(TVisitor visitor)
         }
 
         case GT_SELECT:
+#if defined(TARGET_ARM64)
+        case GT_CCMP_EQ:
+        case GT_CCMP_NE:
+        case GT_CCMP_LT:
+        case GT_CCMP_LE:
+        case GT_CCMP_GE:
+        case GT_CCMP_GT:
+#endif
         {
             GenTreeConditional* const cond = this->AsConditional();
             if (visitor(cond->gtCond) == VisitResult::Abort)

@@ -1371,7 +1371,13 @@ public:
 
     static bool OperIsConditional(genTreeOps gtOper)
     {
+#if defined(TARGET_ARM64)
+        static_assert_no_msg(
+            AreContiguous(GT_SELECT, GT_CCMP_EQ, GT_CCMP_NE, GT_CCMP_LT, GT_CCMP_LE, GT_CCMP_GE, GT_CCMP_GT));
+        return (GT_SELECT <= gtOper) && (gtOper <= GT_CCMP_GT);
+#else
         return (GT_SELECT == gtOper);
+#endif
     }
 
     bool OperIsConditional() const
@@ -1382,7 +1388,8 @@ public:
     static bool OperIsConditionalCompare(genTreeOps gtOper)
     {
 #if defined(TARGET_ARM64)
-        return (GT_CCMP_EQ == gtOper || GT_CCMP_NE == gtOper);
+        static_assert_no_msg(AreContiguous(GT_CCMP_EQ, GT_CCMP_NE, GT_CCMP_LT, GT_CCMP_LE, GT_CCMP_GE, GT_CCMP_GT));
+        return (GT_CCMP_EQ <= gtOper) && (gtOper <= GT_CCMP_GT);
 #else
         return false;
 #endif
@@ -1392,6 +1399,20 @@ public:
     {
         return OperIsConditionalCompare(OperGet());
     }
+
+#if defined(TARGET_ARM64)
+    static genTreeOps OperCovertCompareToConditionalCompare(genTreeOps oper)
+    {
+        assert(OperIsCmpCompare(oper));
+        return (genTreeOps)(oper - GT_EQ + GT_CCMP_EQ);
+    }
+
+    static genTreeOps OperCovertConditionalCompareToCompare(genTreeOps oper)
+    {
+        assert(OperIsConditionalCompare(oper));
+        return (genTreeOps)(oper - GT_CCMP_EQ + GT_EQ);
+    }
+#endif
 
     static bool OperIsCC(genTreeOps gtOper)
     {
@@ -8409,9 +8430,13 @@ public:
 
     static GenCondition FromRelop(GenTree* relop)
     {
-        assert(relop->OperIsCompare());
+        assert(relop->OperIsCompare() || relop->OperIsConditionalCompare());
 
-        if (varTypeIsFloating(relop->gtGetOp1()))
+        if (relop->OperIsConditionalCompare())
+        {
+            return FromConditionalRelop(relop);
+        }
+        else if (varTypeIsFloating(relop->gtGetOp1()))
         {
             return FromFloatRelop(relop);
         }
@@ -8471,6 +8496,13 @@ public:
         }
 
         return GenCondition(static_cast<Code>(code));
+    }
+
+    static GenCondition FromConditionalRelop(GenTree* relop)
+    {
+        assert(relop->OperIsConditionalCompare());
+        assert(!varTypeIsFloating(relop->AsConditional()->gtOp1) && !varTypeIsFloating(relop->AsConditional()->gtOp2));
+        return FromIntegralRelop((genTreeOps)(relop->OperGet() - GT_CCMP_EQ + GT_EQ), relop->IsUnsigned());
     }
 
     static GenCondition Reverse(GenCondition condition)

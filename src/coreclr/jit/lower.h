@@ -91,6 +91,7 @@ private:
     bool ContainCheckCompareChainForAnd(GenTree* tree);
     void ContainCheckChainedCompare(GenTreeOp* cmp);
     void ContainCheckNeg(GenTreeOp* neg);
+    void ContainCheckConditionalCompare(GenTreeConditional* ccmp);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);

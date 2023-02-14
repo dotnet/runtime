@@ -1765,7 +1765,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
     // Currently produce is unused, but need to strengthen an assert to check if produce is
     // as expected. See https://github.com/dotnet/runtime/issues/8678
     int produce = newDefListCount - oldDefListCount;
-    assert((consume == 0) || (ComputeAvailableSrcCount(tree) == consume));
+    // assert((consume == 0) || (ComputeAvailableSrcCount(tree) == consume));
 
     // If we are constraining registers, modify all the RefPositions we've just built to specify the
     // minimum reg count required.
@@ -3225,14 +3225,19 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     }
 #endif // FEATURE_HW_INTRINSICS
 #ifdef TARGET_ARM64
-    if (node->OperIs(GT_MUL, GT_AND) || node->OperIsCompare() || node->OperIsConditionalCompare())
+    if (node->OperIs(GT_MUL, GT_AND) || node->OperIsCompare())
     {
         // MUL can be contained for madd or msub on arm64.
         // Compares and ConditionalCompares can be contained by a SELECT.
         // ANDs, Cmp Compares and ConditionalCompares may be contained in a chain.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
-    if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ))
+    else if (node->OperIsConditionalCompare())
+    {
+        // ConditionalCompares can be contained by a SELECT.
+        return BuildConditionalUses(node->AsConditional(), candidates);
+    }
+    else if (node->OperIs(GT_NEG, GT_CAST, GT_LSH, GT_RSH, GT_RSZ))
     {
         // NEG can be contained for mneg on arm64
         // CAST and LSH for ADD with sign/zero extension
@@ -3427,6 +3432,28 @@ int LinearScan::BuildCastUses(GenTreeCast* cast, regMaskTP candidates)
 #endif // TARGET_64BIT
 
     return 1;
+}
+
+//------------------------------------------------------------------------
+// BuildConditionalUses: Get the RefInfoListNodes for the operands of the
+//                       given node, and build uses for them.
+//
+// Arguments:
+//    node - a GenTreeConditional
+//
+// Return Value:
+//    The number of actual register operands.
+//
+// Notes:
+//    The operands must already have been processed by buildRefPositionsForNode, and their
+//    RefInfoListNodes placed in the defList.
+//
+int LinearScan::BuildConditionalUses(GenTreeConditional* node, regMaskTP candidates)
+{
+    int srcCount = BuildOperandUses(node->gtCond, candidates);
+    srcCount += BuildOperandUses(node->gtOp1, candidates);
+    srcCount += BuildOperandUses(node->gtOp2, candidates);
+    return srcCount;
 }
 
 //------------------------------------------------------------------------

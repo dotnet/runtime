@@ -823,22 +823,27 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 }
 
 //------------------------------------------------------------------------
-// BuildSelect: Build RefPositions for a GT_SELECT node.
+// BuildSelect: Build RefPositions for a conditional node.
 //
 // Arguments:
-//    select - The GT_SELECT node
+//    select - The conditional node
 //
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildSelect(GenTreeOp* select)
+int LinearScan::BuildSelect(GenTreeOp* tree)
 {
-    assert(select->OperIs(GT_SELECT));
+    assert(tree->OperIsConditional());
+    GenTreeConditional* conditional = tree->AsConditional();
 
-    int srcCount = BuildOperandUses(select->AsConditional()->gtCond);
-    srcCount += BuildOperandUses(select->gtOp1);
-    srcCount += BuildOperandUses(select->gtOp2);
-    BuildDef(select);
+    int srcCount = BuildOperandUses(conditional->gtCond);
+    srcCount += BuildOperandUses(conditional->gtOp1);
+    srcCount += BuildOperandUses(conditional->gtOp2);
+
+    if (tree->TypeGet() != TYP_VOID)
+    {
+        BuildDef(conditional);
+    }
 
     return srcCount;
 }

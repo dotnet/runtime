@@ -2243,19 +2243,6 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-#if defined(TARGET_ARM64)
-    if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE))
-    {
-        if (ContainCheckCompareChainForAnd(cmp))
-        {
-            // Turn the chain into a CCMP node
-            JITDUMP("Switching node to CCMP:\n");
-            cmp->SetOper(cmp->OperIs(GT_TEST_EQ) ? GT_CCMP_NE : GT_CCMP_EQ);
-            DISPNODE(cmp);
-        }
-    }
-#endif
-
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
 
@@ -2458,6 +2445,30 @@ void Lowering::ContainCheckChainedCompare(GenTreeOp* cmp)
     }
 }
 
+//------------------------------------------------------------------------
+// ContainCheckConditionalCompare : determine whether the source of a conditional compare should
+//                                  be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckConditionalCompare(GenTreeConditional* ccmp)
+{
+    if (!comp->opts.OptimizationEnabled())
+    {
+        return;
+    }
+
+    // Always try to contain the condition to prevent setting flags.
+    if (IsSafeToContainMem(ccmp, ccmp->gtCond))
+    {
+        ccmp->gtCond->SetContained();
+    }
+
+    // Do the same containing as a standard compare
+    CheckImmedAndMakeContained(ccmp, ccmp->gtOp2);
+}
+
 #endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
@@ -2485,7 +2496,7 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
     {
         if (IsSafeToContainMem(node, cond))
         {
-            cond->AsOp()->SetContained();
+            cond->SetContained();
         }
     }
 

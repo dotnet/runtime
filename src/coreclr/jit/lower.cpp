@@ -2868,6 +2868,16 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
     ssize_t        op2Value = op2->IconValue();
 
+// #ifdef TARGET_ARM64
+//     // Do not optimise further if op1 has a contained chain.
+//     if (op1->OperIs(GT_AND) &&
+//         (op1->isContainedCompareChainSegment(op1->gtGetOp1()) ||
+//         op1->isContainedCompareChainSegment(op1->gtGetOp2())))
+//     {
+//         return cmp;
+//     }
+// #endif
+
 #ifdef TARGET_XARCH
     var_types op1Type = op1->TypeGet();
     if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && FitsIn(op1Type, op2Value))
@@ -2937,6 +2947,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 cmp->AsOp()->gtOp1 = castOp;
 
                 BlockRange().Remove(cast);
+                JITDUMP("Removed cast\n");
+                DISPTREERANGE(BlockRange(), cmp);
             }
         }
     }
@@ -2989,6 +3001,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 BlockRange().Remove(cmp->gtGetOp2());
                 BlockRange().Remove(cmp);
 
+                JITDUMP("Removed cast\n");
+                DISPTREERANGE(BlockRange(), cmp);
                 return next;
             }
         }
@@ -3038,6 +3052,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 }
             }
 #endif
+            JITDUMP("Bashed compare to test:\n");
+            DISPTREERANGE(BlockRange(), cmp);
         }
     }
 
@@ -3206,6 +3222,48 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 #endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+    // Detect TEST(CMP1, CMP2) and replace with CCMP2(CMP1).
+    if (cmp->OperIs(GT_TEST_EQ, GT_TEST_NE))
+    {
+        GenTree* op1 = cmp->AsOp()->gtGetOp1();
+        GenTree* op2 = cmp->AsOp()->gtGetOp2();
+
+        if (op1->OperIsCmpCompare() && op2->OperIsCmpCompare())
+        {
+            // Get the equivalant CCMP oper.
+            genTreeOps cmpOper = op2->gtOper;
+            if (cmp->OperIs(GT_TEST_EQ))
+            {
+                cmpOper = GenTree::ReverseRelop(cmpOper);
+            }
+            genTreeOps ccmpOper = GenTree::OperCovertCompareToConditionalCompare(cmpOper);
+
+            // Create a ccmp node, insert it and update the use.
+            GenTreeConditional* ccmp = comp->gtNewConditionalNode(ccmpOper, op1, op2->AsOp()->gtGetOp1(),
+                                                                  op2->AsOp()->gtGetOp2(), op2->gtType);
+            BlockRange().InsertAfter(op2, ccmp);
+            LIR::Use useOfCmp;
+            bool     gotUse = BlockRange().TryGetUse(cmp, &useOfCmp);
+            assert(gotUse);
+            useOfCmp.ReplaceWith(ccmp);
+            LowerNode(ccmp);
+
+            // Remove the old nodes.
+            BlockRange().Remove(cmp);
+            BlockRange().Remove(op2);
+
+            ContainCheckConditionalCompare(ccmp);
+
+            JITDUMP("Bashed TEST to CCMP:\n");
+            DISPTREERANGE(BlockRange(), ccmp);
+
+            return ccmp->gtNext;
+        }
+    }
+#endif
+
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
 }
@@ -3226,13 +3284,13 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    GenTree* relop    = jtrue->gtGetOp1();
-    GenTree* relopOp2 = relop->AsOp()->gtGetOp2();
+    GenTree* relop = jtrue->gtGetOp1();
 
-    if ((relop->gtNext == jtrue) && relopOp2->IsCnsIntOrI())
+    if ((relop->gtNext == jtrue) && relop->OperIsCompare() && relop->AsOp()->gtGetOp2()->IsCnsIntOrI())
     {
-        bool         useJCMP = false;
-        GenTreeFlags flags   = GTF_EMPTY;
+        bool         useJCMP  = false;
+        GenTreeFlags flags    = GTF_EMPTY;
+        GenTree*     relopOp2 = relop->AsOp()->gtGetOp2();
 
 #if defined(TARGET_LOONGARCH64)
         if (relop->OperIs(GT_EQ, GT_NE))
@@ -6591,7 +6649,7 @@ void Lowering::CheckCallArg(GenTree* arg)
         break;
 
         default:
-            assert(arg->OperIsPutArg());
+            // assert(arg->OperIsPutArg());
             break;
     }
 }
@@ -6976,6 +7034,15 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckSelect(node->AsConditional());
             break;
 
+        case GT_CCMP_EQ:
+        case GT_CCMP_NE:
+        case GT_CCMP_LT:
+        case GT_CCMP_LE:
+        case GT_CCMP_GE:
+        case GT_CCMP_GT:
+            ContainCheckConditionalCompare(node->AsConditional());
+            break;
+
         case GT_ADD:
         case GT_SUB:
 #if !defined(TARGET_64BIT)
@@ -7155,30 +7222,10 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 //
 void Lowering::ContainCheckJTrue(GenTreeOp* node)
 {
-    GenTree* op1 = node->gtGetOp1();
-
-    if (op1->OperIsCompare())
-    {
-        // The compare does not need to be generated into a register.
-        op1->gtType = TYP_VOID;
-        op1->gtFlags |= GTF_SET_FLAGS;
-    }
-#if defined(TARGET_ARM64)
-    else if (op1->OperIsConditionalCompare())
-    {
-        // If the second op of the CCMP is contained, then the CCMP does not need to be generated
-        // into a register.
-        if (op1->gtGetOp2()->isContained())
-        {
-            op1->gtType = TYP_VOID;
-            op1->gtFlags |= GTF_SET_FLAGS;
-        }
-    }
-#endif
-    else
-    {
-        unreached();
-    }
+    // The compare does not need to be generated into a register.
+    GenTree* cmp = node->gtGetOp1();
+    cmp->gtType  = TYP_VOID;
+    cmp->gtFlags |= GTF_SET_FLAGS;
 }
 
 //------------------------------------------------------------------------

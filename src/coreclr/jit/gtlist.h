@@ -149,6 +149,15 @@ GTNODE(TEST_NE          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
 // Conditional select with 3 operands: condition, true value, false value
 GTNODE(SELECT           , GenTreeConditional ,0,GTK_SPECIAL)
+// Sets the condition flags according to the combined results of its children.
+#if defined(TARGET_ARM64)
+GTNODE(CCMP_EQ         , GenTreeConditional  ,0,GTK_SPECIAL|DBK_NOTHIR)
+GTNODE(CCMP_NE         , GenTreeConditional  ,0,GTK_SPECIAL|DBK_NOTHIR)
+GTNODE(CCMP_LT         , GenTreeConditional  ,0,GTK_SPECIAL|DBK_NOTHIR)
+GTNODE(CCMP_LE         , GenTreeConditional  ,0,GTK_SPECIAL|DBK_NOTHIR)
+GTNODE(CCMP_GE         , GenTreeConditional  ,0,GTK_SPECIAL|DBK_NOTHIR)
+GTNODE(CCMP_GT         , GenTreeConditional  ,0,GTK_SPECIAL|DBK_NOTHIR)
+#endif
 
 GTNODE(COMMA            , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(QMARK            , GenTreeQmark       ,0,GTK_BINOP|GTK_EXOP|DBK_NOTLIR)
@@ -241,11 +250,6 @@ GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF|DBK_NOTHIR)
 #ifdef TARGET_XARCH
 // The XARCH BT instruction. Like CMP, this sets the condition flags (CF to be precise) and does not produce a value.
 GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR))
-#endif
-// Sets the condition flags according to the combined results of its children.
-#if defined(TARGET_ARM64)
-GTNODE(CCMP_EQ          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
-GTNODE(CCMP_NE          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------
