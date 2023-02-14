@@ -32,6 +32,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
     <RunILLink>false</RunILLink>
+    <_IsApplePlatform Condition="'$(TargetOS)' == 'osx' or $(TargetOS.StartsWith('ios'))">true</_IsApplePlatform>
   </PropertyGroup>
 
   <!-- Set up the defaults for the compatibility mode -->
@@ -65,14 +66,14 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(TargetOS)' == 'windows'">.exe</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(TargetOS)' != 'windows'"></NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Shared'">.dll</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and ('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator') and '$(NativeLib)' == 'Shared'">.dylib</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(NativeLib)' == 'Shared'">.so</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">.dylib</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(_IsApplePlatform)' != 'true' and '$(NativeLib)' == 'Shared'">.so</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Static'">.a</NativeBinaryExt>
 
-    <NativeSymbolExt Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'">.dwarf</NativeSymbolExt>
+    <NativeSymbolExt Condition="'$(_IsApplePlatform)' == 'true'">.dwarf</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(TargetOS)' == 'windows'">.pdb</NativeSymbolExt>
-    <NativeSymbolExt Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'">.dbg</NativeSymbolExt>
+    <NativeSymbolExt Condition="'$(TargetOS)' != 'windows' and '$(_IsApplePlatform)' != 'true'">.dbg</NativeSymbolExt>
 
     <ExportsFileExt Condition="'$(TargetOS)' == 'windows'">.def</ExportsFileExt>
     <ExportsFileExt Condition="'$(TargetOS)' != 'windows'">.exports</ExportsFileExt>
@@ -306,12 +307,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="/OUT:&quot;$(NativeBinary)&quot;" Condition="'$(TargetOS)' == 'windows'" />
       <CustomLinkerArg Include="/DEF:&quot;$(ExportsFile)&quot;" Condition="'$(TargetOS)' == 'windows' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(TargetOS)' == 'windows' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
-      <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator') and $(ExportsFile) != ''" />
-      <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="'$(TargetOS)' != 'windows' and '$(_IsApplePlatform)' != 'true' and $(ExportsFile) != ''" />
       <CustomLinkerArg Condition="Exists('$(_Win32ResFile)')" Include="&quot;$(_Win32ResFile)&quot;" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
-    <ItemGroup Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'">
+    <ItemGroup Condition="'$(TargetOS)' != 'windows' and '$(_IsApplePlatform)' != 'true'">
       <CustomLinkerArg Include="-Wl,--discard-all" />
       <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(UseLLVMLinker)' != 'true'" />
     </ItemGroup>
@@ -326,8 +327,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <!-- https://github.com/dotnet/runtimelab/issues/956 - we IgnoreStandardErrorWarningFormat on macOS because there's a lot of warnings -->
     <PropertyGroup>
       <_IgnoreLinkerWarnings>false</_IgnoreLinkerWarnings>
-      <_IgnoreLinkerWarnings Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'">true</_IgnoreLinkerWarnings>
-      <StripFlag Condition="('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator') and '$(NativeLib)' == 'Shared'">-x</StripFlag> <!-- keep global symbols in dylib -->
+      <_IgnoreLinkerWarnings Condition="'$(_IsApplePlatform)' == 'true'">true</_IgnoreLinkerWarnings>
+      <StripFlag Condition="'$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">-x</StripFlag> <!-- keep global symbols in dylib -->
     </PropertyGroup>
 
     <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" />
@@ -342,13 +343,13 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="chmod 644 &quot;$(NativeBinary)&quot;" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Shared'" />
 
     <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
-    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' != 'windows' and '$(_IsApplePlatform)' != 'true'"
       Command="
         &quot;$(ObjCopyName)&quot; --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot; &amp;&amp;
         &quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot; &amp;&amp;
         &quot;$(ObjCopyName)&quot; --add-gnu-debuglink=&quot;$(NativeBinary)$(NativeSymbolExt)&quot; &quot;$(NativeBinary)&quot;" />
 
-    <Exec Condition="'$(StripSymbols)' == 'true' and ('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator') and '$(NativeLib)' != 'Static'"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' != 'Static'"
       Command="
         dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot; &amp;&amp;
         strip -no_code_signature_warning $(StripFlag) &quot;$(NativeBinary)&quot;" />
