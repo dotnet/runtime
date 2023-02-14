@@ -464,13 +464,13 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         None,
         Nop,
         BitCast,
+        NarrowCastOfLclVar,
 #ifdef FEATURE_HW_INTRINSICS
         GetElement,
         WithElement,
 #endif // FEATURE_HW_INTRINSICS
         LclVar,
-        LclFld,
-        NarrowCastOfLclVar
+        LclFld
     };
 
     ArrayStack<Value> m_valueStack;
@@ -1375,6 +1375,7 @@ private:
 #ifdef TARGET_64BIT
             if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
 #else  // TARGET_64BIT
+            // For non-64bit targets, do not do this for long types.
             if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc) && !varTypeIsLong(varDsc))
 #endif // !TARGET_64BIT
             {
