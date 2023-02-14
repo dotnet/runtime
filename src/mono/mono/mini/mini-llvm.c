@@ -7883,6 +7883,10 @@ MONO_RESTORE_WARNING
 				}
 				break;
 			}
+#if TARGET_SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I4:
 			case MONO_TYPE_U4: {
 				guint32* v = (guint32*)ins->inst_p0;
@@ -7892,6 +7896,10 @@ MONO_RESTORE_WARNING
 				}
 				break;
 			}
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
 			case MONO_TYPE_I8:
 			case MONO_TYPE_U8: {
 				guint64* v = (guint64*)ins->inst_p0;
