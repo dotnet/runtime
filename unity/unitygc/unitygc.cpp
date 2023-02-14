@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <mutex>
 #include <unordered_map>
 
 #include "gcenv.base.h"
@@ -781,10 +782,9 @@ class GCHandleStore : public IGCHandleStore
 
     virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type)
     {
-        int32_t index = m_dwCurrentIndex;
-        assert(index < m_dwMaxIndex);
-        m_pHandles[m_dwCurrentIndex++] = (OBJECTHANDLE)object;
-        return (OBJECTHANDLE)&m_pHandles[index];
+        Object** handle = (Object**)malloc(sizeof(Object*));
+        *handle = object;
+        return (OBJECTHANDLE)handle;
     }
 
     virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type, int heapToAffinitizeTo)
@@ -802,8 +802,10 @@ class GCHandleStore : public IGCHandleStore
     virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary)
     {
         auto handle = CreateHandleOfType(primary, HNDTYPE_DEFAULT);
-
-        m_dependentHandleSecondary.insert(std::unordered_map<OBJECTHANDLE, Object*>::value_type(handle, secondary));
+        {
+            std::lock_guard<std::mutex> lock(m_lock);
+            m_dependentHandleSecondary.insert(std::unordered_map<OBJECTHANDLE, Object*>::value_type(handle, secondary));
+        }
 
         return handle;
     }
@@ -811,16 +813,20 @@ class GCHandleStore : public IGCHandleStore
     // helpers
     Object* GetDependentHandleSecondary(OBJECTHANDLE handle)
     {
-        auto iter = m_dependentHandleSecondary.find(handle);
-        if (iter != m_dependentHandleSecondary.end())
-            return iter->second;
+        {
+            std::lock_guard<std::mutex> lock(m_lock);
+            auto iter = m_dependentHandleSecondary.find(handle);
+            if (iter != m_dependentHandleSecondary.end())
+                return iter->second;
+        }
 
         return NULL;
     }
 
     void DestroyHandle(OBJECTHANDLE handle)
     {
-        *(Object**)handle = nullptr;
+        *(Object**)handle = NULL;
+        free(handle);
     }
 
 
@@ -829,12 +835,10 @@ class GCHandleStore : public IGCHandleStore
         *(Object**)handle = object;
     }
 
-    GCHandleStore() :
-        m_dwMaxIndex(100000),
-        m_dwCurrentIndex(0)
-
+    GCHandleStore()
     {
-        m_pHandles = (OBJECTHANDLE*)calloc(m_dwMaxIndex, sizeof(OBJECTHANDLE));
+        static_assert(sizeof(OBJECTHANDLE) == sizeof(Object*),
+            "Expected OBJECTHANDLE to be pointer sized.");
     }
 
     virtual ~GCHandleStore()
@@ -842,9 +846,7 @@ class GCHandleStore : public IGCHandleStore
 
     }
     private:
-        OBJECTHANDLE* m_pHandles;
-        int32_t m_dwMaxIndex;
-        int32_t m_dwCurrentIndex;
+        std::mutex m_lock;
         std::unordered_map<OBJECTHANDLE, Object*> m_dependentHandleSecondary;
 };
 
