@@ -163,18 +163,18 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
 #endif
 
     // Build list of back edges for block begBlk.
-    flowList* backedgeList = nullptr;
+    FlowEdge* backedgeList = nullptr;
 
     for (BasicBlock* const predBlock : begBlk->PredBlocks())
     {
         // Is this a back edge?
         if (predBlock->bbNum >= begBlk->bbNum)
         {
-            backedgeList = new (this, CMK_FlowList) flowList(predBlock, backedgeList);
+            backedgeList = new (this, CMK_FlowEdge) FlowEdge(predBlock, backedgeList);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
-            genFlowNodeSize += sizeof(flowList);
+            genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
         }
     }
@@ -217,9 +217,9 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
             bool reachable = false;
             bool dominates = false;
 
-            for (flowList* tmp = backedgeList; tmp != nullptr; tmp = tmp->flNext)
+            for (FlowEdge* tmp = backedgeList; tmp != nullptr; tmp = tmp->getNextPredEdge())
             {
-                BasicBlock* backedge = tmp->getBlock();
+                BasicBlock* backedge = tmp->getSourceBlock();
 
                 reachable |= fgReachable(curBlk, backedge);
                 dominates |= fgDominate(curBlk, backedge);
@@ -2021,8 +2021,8 @@ private:
             // This must be a block we inserted to connect fall-through after moving blocks.
             // To determine if it's in the loop or not, use the number of its unique predecessor
             // block.
-            assert(block->bbPreds->getBlock() == block->bbPrev);
-            assert(block->bbPreds->flNext == nullptr);
+            assert(block->bbPreds->getSourceBlock() == block->bbPrev);
+            assert(block->bbPreds->getNextPredEdge() == nullptr);
             return block->bbPrev->bbNum;
         }
         return block->bbNum;
@@ -5201,8 +5201,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const testToNextWeight  = weightNext * testToNextLikelihood;
         weight_t const testToAfterWeight = weightNext * testToAfterLikelihood;
 
-        flowList* const edgeTestToNext  = fgGetPredForBlock(bTest->bbJumpDest, bTest);
-        flowList* const edgeTestToAfter = fgGetPredForBlock(bTest->bbNext, bTest);
+        FlowEdge* const edgeTestToNext  = fgGetPredForBlock(bTest->bbJumpDest, bTest);
+        FlowEdge* const edgeTestToAfter = fgGetPredForBlock(bTest->bbNext, bTest);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum,
                 bTest->bbJumpDest->bbNum, testToNextWeight);
@@ -5222,8 +5222,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         weight_t const blockToNextWeight  = weightBlock * blockToNextLikelihood;
         weight_t const blockToAfterWeight = weightBlock * blockToAfterLikelihood;
 
-        flowList* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->bbNext, bNewCond);
-        flowList* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->bbJumpDest, bNewCond);
+        FlowEdge* const edgeBlockToNext  = fgGetPredForBlock(bNewCond->bbNext, bNewCond);
+        FlowEdge* const edgeBlockToAfter = fgGetPredForBlock(bNewCond->bbJumpDest, bNewCond);
 
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (enter loop)\n", bNewCond->bbNum,
                 bNewCond->bbNext->bbNum, blockToNextWeight);
@@ -5234,10 +5234,19 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         edgeBlockToAfter->setEdgeWeights(blockToAfterWeight, blockToAfterWeight, bNewCond->bbJumpDest);
 
 #ifdef DEBUG
-        // Verify profile for the two target blocks is consistent.
+        // If we're checkig profile data, see if profile for the two target blocks is consistent.
         //
-        fgDebugCheckIncomingProfileData(bNewCond->bbNext);
-        fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest);
+        if ((activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
+        {
+            const bool nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbNext);
+            const bool jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->bbJumpDest);
+
+            if ((JitConfig.JitProfileChecks() & 0x4) == 0x4)
+            {
+                assert(nextProfileOk);
+                assert(jumpProfileOk);
+            }
+        }
 #endif // DEBUG
     }
 
@@ -7052,7 +7061,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
         // Don't hoist expressions that are not heavy: tree->GetCostEx() < (2*IND_COST_EX)
         if (tree->GetCostEx() < (2 * IND_COST_EX))
         {
-            JITDUMP("    tree cost too low: %d < %d (loopVarCount %u >= availableRegCount %u)\n", tree->GetCostEx(),
+            JITDUMP("    tree cost too low: %d < %d (loopVarCount %u >= availRegCount %u)\n", tree->GetCostEx(),
                     2 * IND_COST_EX, loopVarCount, availRegCount);
             return false;
         }
@@ -7071,7 +7080,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
         // Don't hoist expressions that barely meet CSE cost requirements: tree->GetCostEx() == MIN_CSE_COST
         if (tree->GetCostEx() <= MIN_CSE_COST + 1)
         {
-            JITDUMP("    tree not good CSE: %d <= %d (varInOutCount %u > availableRegCount %u)\n", tree->GetCostEx(),
+            JITDUMP("    tree not good CSE: %d <= %d (varInOutCount %u > availRegCount %u)\n", tree->GetCostEx(),
                     2 * MIN_CSE_COST + 1, varInOutCount, availRegCount)
             return false;
         }
@@ -8166,8 +8175,8 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
                 if (useEdgeWeights)
                 {
-                    const flowList* edgeToEntry    = fgGetPredForBlock(entry, head);
-                    const flowList* edgeToSkipLoop = fgGetPredForBlock(skipLoopBlock, head);
+                    const FlowEdge* edgeToEntry    = fgGetPredForBlock(entry, head);
+                    const FlowEdge* edgeToSkipLoop = fgGetPredForBlock(skipLoopBlock, head);
                     noway_assert(edgeToEntry != nullptr);
                     noway_assert(edgeToSkipLoop != nullptr);
 
@@ -8385,12 +8394,12 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         }
     }
 
-    flowList* const edgeToPreHeader = fgGetPredForBlock(preHead, head);
+    FlowEdge* const edgeToPreHeader = fgGetPredForBlock(preHead, head);
     noway_assert(edgeToPreHeader != nullptr);
     edgeToPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, preHead);
 
     noway_assert(fgGetPredForBlock(entry, preHead) == nullptr);
-    flowList* const edgeFromPreHeader = fgAddRefPred(entry, preHead);
+    FlowEdge* const edgeFromPreHeader = fgAddRefPred(entry, preHead);
     edgeFromPreHeader->setEdgeWeights(preHead->bbWeight, preHead->bbWeight, entry);
 
     /*
@@ -9541,8 +9550,8 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update edges if m_b1: BBJ_COND and m_b2: BBJ_COND
 
-        flowList* edge1 = m_comp->fgGetPredForBlock(m_b1->bbJumpDest, m_b1);
-        flowList* edge2;
+        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->bbJumpDest, m_b1);
+        FlowEdge* edge2;
 
         if (m_sameTarget)
         {

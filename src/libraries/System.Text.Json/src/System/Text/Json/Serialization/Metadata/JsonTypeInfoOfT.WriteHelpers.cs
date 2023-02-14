@@ -32,7 +32,6 @@ namespace System.Text.Json.Serialization.Metadata
                 // this avoids creating a WriteStack and calling into the converter infrastructure.
 
                 Debug.Assert(SerializeHandler != null);
-                Debug.Assert(CanUseSerializeHandler);
                 Debug.Assert(Converter is JsonMetadataServicesConverter<T>);
 
                 SerializeHandler(writer, rootValue!);

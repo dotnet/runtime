@@ -487,28 +487,32 @@ namespace DebuggerTests
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false );
-               Assert.Equal(
-                    $"Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'",
+                var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false );
+                Assert.Equal(
+                        $"Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'",
+                        res.Error["result"]?["description"]?.Value<string>());
+
+                (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false);
+                Assert.Equal(
+                    "Unable to evaluate method 'MyMethod'. Too many arguments passed.",
                     res.Error["result"]?["description"]?.Value<string>());
 
-               (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false);
-               Assert.Equal(
-                   "Unable to evaluate method 'MyMethod'. Too many arguments passed.",
-                   res.Error["result"]?["description"]?.Value<string>());
+                (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
+                Assert.Contains("No implementation of method 'CallMethodWithParm' matching 'this.CallMethodWithParm(\"1\")' found in type DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.", res.Error["result"]?["description"]?.Value<string>());
 
-               (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
-               Assert.Contains("No implementation of method 'CallMethodWithParm' matching 'this.CallMethodWithParm(\"1\")' found in type DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.", res.Error["result"]?["description"]?.Value<string>());
+                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
+                Assert.Equal("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["result"]?["description"]?.Value<string>());
+                var exceptionDetailsStack = res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0];
+                Assert.Equal("DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run", exceptionDetailsStack?["functionName"]?.Value<string>());
+                Assert.Equal(358, exceptionDetailsStack?["lineNumber"]?.Value<int>());
+                Assert.Equal(16, exceptionDetailsStack?["columnNumber"]?.Value<int>());;
 
-               (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
-               Assert.Equal("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["message"]?.Value<string>());
-
-               (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
-               Assert.Equal("Method 'MyMethod' not found in type 'string'", res.Error["result"]?["description"]?.Value<string>());
-           });
+                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
+                Assert.Equal("Method 'MyMethod' not found in type 'string'", res.Error["result"]?["description"]?.Value<string>());
+            });
 
         [Fact]
         public async Task EvaluateSimpleMethodCallsWithoutParms() => await CheckInspectLocalsAtBreakpointSite(
@@ -578,9 +582,13 @@ namespace DebuggerTests
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 var (_, res) = await EvaluateOnCallFrame(id, "f.idx0[2]", expect_ok: false );
-                Assert.Equal("Unable to evaluate element access 'f.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["message"]?.Value<string>());
+                Assert.Equal("Unable to evaluate element access 'f.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["result"]?["description"]?.Value<string>());
+                var exceptionDetailsStack = res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0];
+                Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", exceptionDetailsStack?["functionName"]?.Value<string>());
+                Assert.Equal(556, exceptionDetailsStack?["lineNumber"]?.Value<int>());
+                Assert.Equal(12, exceptionDetailsStack?["columnNumber"]?.Value<int>());
                 (_, res) = await EvaluateOnCallFrame(id, "f[1]", expect_ok: false );
-                Assert.Equal( "Unable to evaluate element access 'f[1]': Cannot apply indexing with [] to an object of type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate'", res.Error["message"]?.Value<string>());
+                Assert.Equal( "Unable to evaluate element access 'f[1]': Cannot apply indexing with [] to an object of type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate'", res.Error["result"]?["description"]?.Value<string>());
            });
 
         [Fact]
@@ -711,7 +719,11 @@ namespace DebuggerTests
                 // indexing with expression of a wrong type
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 var (_, res) = await EvaluateOnCallFrame(id, "f.numList[\"a\" + 1]", expect_ok: false );
-                Assert.Equal("Unable to evaluate element access 'f.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["message"]?.Value<string>());
+                Assert.Equal("Unable to evaluate element access 'f.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["result"]?["description"]?.Value<string>());
+                var exceptionDetailsStack = res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0];
+                Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", exceptionDetailsStack?["functionName"]?.Value<string>());
+                Assert.Equal(556, exceptionDetailsStack?["lineNumber"]?.Value<int>());
+                Assert.Equal(12, exceptionDetailsStack?["columnNumber"]?.Value<int>());
             });
 
         [ConditionalFact(nameof(RunningOnChrome))]
@@ -870,5 +882,36 @@ namespace DebuggerTests
                props = await GetObjectOnFrame(frame, "this");
                CheckNumber(props, "a", 11);
            });
+
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task EvaluateMethodWithBPWhilePausedInADifferentMethodAndNotHit(bool setBreakpointBeforePause)
+        {
+            await cli.SendCommand("DotnetDebugger.setEvaluationOptions", JObject.FromObject(new { options = new { noFuncEval = false } }), token);
+            var waitForScript = WaitForConsoleMessage("console.warning: MONO_WASM: Adding an id (0) that already exists in commands_received");
+            if (setBreakpointBeforePause)
+                await SetBreakpointInMethod("debugger-test.dll", "TestEvaluateDontPauseOnBreakpoint", "MyMethod2", 1);
+            await CheckInspectLocalsAtBreakpointSite(
+            "TestEvaluateDontPauseOnBreakpoint", "run", 3, "TestEvaluateDontPauseOnBreakpoint.run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] TestEvaluateDontPauseOnBreakpoint:run'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                if (!setBreakpointBeforePause)
+                    await SetBreakpointInMethod("debugger-test.dll", "TestEvaluateDontPauseOnBreakpoint", "MyMethod2", 1);
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("myVar.MyMethod2()", TString("Object 11")),
+                    ("myVar.MyMethod3()", TString("Object 11")),
+                    ("myVar.MyCount", TString("Object 11")),
+                    ("myVar.MyMethod()", TString("Object 10")),
+                    ("myVar", TObject("TestEvaluateDontPauseOnBreakpoint", description: "Object 11")));
+                var props = await GetObjectOnFrame(pause_location["callFrames"][0], "myVar");
+                await CheckString(props, "MyCount", "Object 11");
+           });
+           await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0,  "TestEvaluateDontPauseOnBreakpoint.MyMethod2");
+           await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0,  "TestEvaluateDontPauseOnBreakpoint.MyMethod");
+           Assert.False(waitForScript.IsCompleted);
+        }
     }
 }

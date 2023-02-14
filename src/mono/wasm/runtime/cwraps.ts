@@ -106,6 +106,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_offset_of_array_data", "number", []],
     [false, "mono_jiterp_encode_leb52", "number", ["number", "number", "number"]],
     [false, "mono_jiterp_encode_leb64_ref", "number", ["number", "number", "number"]],
+    [false, "mono_jiterp_encode_leb_signed_boundary", "number", ["number", "number", "number"]],
     [true, "mono_jiterp_type_is_byref", "number", ["number"]],
     [true, "mono_jiterp_get_size_of_stackval", "number", []],
     [true, "mono_jiterp_parse_option", "number", ["string"]],
@@ -122,6 +123,8 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_type_to_ldind", "number", ["number"]],
     [true, "mono_jiterp_type_to_stind", "number", ["number"]],
     [true, "mono_jiterp_imethod_to_ftnptr", "number", ["number"]],
+    [true, "mono_jiterp_debug_count", "number", []],
+    [true, "mono_jiterp_get_trace_hit_count", "number", ["number"]],
 ];
 
 export interface t_Cwraps {
@@ -246,6 +249,10 @@ export interface t_Cwraps {
     // Returns bytes written (or 0 if writing failed)
     // Source is the address of a 64-bit int or uint
     mono_jiterp_encode_leb64_ref(destination: VoidPtr, source: VoidPtr, valueIsSigned: number): number;
+    // Returns bytes written (or 0 if writing failed)
+    // bits is either 32 or 64 (the size of the value)
+    // sign is >= 0 for INTnn_MAX and < 0 for INTnn_MIN
+    mono_jiterp_encode_leb_signed_boundary(destination: VoidPtr, bits: number, sign: number): number;
     mono_jiterp_type_is_byref(type: MonoType): number;
     mono_jiterp_get_size_of_stackval(): number;
     mono_jiterp_type_get_raw_value_size(type: MonoType): number;
@@ -262,6 +269,8 @@ export interface t_Cwraps {
     mono_jiterp_type_to_ldind(type: MonoType): number;
     mono_jiterp_type_to_stind(type: MonoType): number;
     mono_jiterp_imethod_to_ftnptr(imethod: VoidPtr): VoidPtr;
+    mono_jiterp_debug_count(): number;
+    mono_jiterp_get_trace_hit_count(traceIndex: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

@@ -69,6 +69,13 @@
         "vargaz"
       ],
       "label": "os-tvos"
+    },
+    {
+      "lead": "lewing",
+      "owners": [
+        "pavelsavara"
+      ],
+      "label": "os-wasi"
     }
   ],
   "areas": [
@@ -136,6 +143,13 @@
         "BrzVlad"
       ],
       "label": "area-Codegen-Interpreter-mono"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
+        "fanyang-mono"
+      ],
+      "label": "area-Codegen-Intrinsic-mono"
     },
     {
       "lead": "SamMonoRT",
@@ -436,7 +450,7 @@
         "TIHan",
         "dotnet/jit-contrib"
       ],
-      "label": "area-ILVerification"
+      "label": "area-Tools-ILVerification"
     },
     {
       "lead": "agocke",
@@ -540,7 +554,8 @@
       "lead": "agocke",
       "owners": [
         "jkotas",
-        "MichalStrehovsky"
+        "MichalStrehovsky",
+        "dotnet/ilc-contrib"
       ],
       "label": "area-NativeAOT-coreclr"
     },
@@ -1218,7 +1233,7 @@
       "owners": [
         "lambdageek"
       ],
-      "label": "area-System.Reflection-mono"
+      "label": "area-VM-reflection-mono"
     },
     {
       "lead": "ericstj",
@@ -1473,9 +1488,9 @@
       "label": "area-System.Threading.Tasks"
     },
     {
-      "lead": "HongGit",
+      "lead": "ajcvickers",
       "owners": [
-        "HongGit"
+        "roji"
       ],
       "label": "area-System.Transactions"
     },
@@ -1498,7 +1513,7 @@
       "owners": [
         "lambdageek"
       ],
-      "label": "area-Threading-mono"
+      "label": "area-VM-threading-mono"
     },
     {
       "lead": "mangod9",
@@ -1510,7 +1525,7 @@
     {
       "lead": "agocke",
       "owners": [
-        "sbomer"
+        "dotnet/illink"
       ],
       "label": "area-Tools-ILLink"
     },
@@ -1559,6 +1574,13 @@
         "lambdageek"
       ],
       "label": "area-VM-meta-mono"
+    },
+    {
+      "lead": "lewing",
+      "owners": [
+        "dotnet/net-sdk-workload-contributors"
+      ],
+      "label": "area-Workloads"
     }
   ]
 }

@@ -73,22 +73,7 @@ public:
           m_pAllocMemTracker(pAllocMemTracker)
     {
         LIMITED_METHOD_CONTRACT;
-        SetBMTData(
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL);
+        SetBMTData();
     }
 public:
     //==========================================================================
@@ -2226,21 +2211,21 @@ private:
     bmtEnumFieldInfo *bmtEnumFields;
 
     void SetBMTData(
-        LoaderAllocator *bmtAllocator,
-        bmtErrorInfo *bmtError,
-        bmtProperties *bmtProp,
-        bmtVtable *bmtVT,
-        bmtParentInfo *bmtParent,
-        bmtInterfaceInfo *bmtInterface,
-        bmtMetaDataInfo *bmtMetaData,
-        bmtMethodInfo *bmtMethod,
-        bmtMethAndFieldDescs *bmtMFDescs,
-        bmtFieldPlacement *bmtFP,
-        bmtInternalInfo *bmtInternal,
-        bmtGCSeriesInfo *bmtGCSeries,
-        bmtMethodImplInfo *bmtMethodImpl,
-        const bmtGenericsInfo *bmtGenerics,
-        bmtEnumFieldInfo *bmtEnumFields);
+        LoaderAllocator *bmtAllocator = NULL,
+        bmtErrorInfo *bmtError = NULL,
+        bmtProperties *bmtProp = NULL,
+        bmtVtable *bmtVT = NULL,
+        bmtParentInfo *bmtParent = NULL,
+        bmtInterfaceInfo *bmtInterface = NULL,
+        bmtMetaDataInfo *bmtMetaData = NULL,
+        bmtMethodInfo *bmtMethod = NULL,
+        bmtMethAndFieldDescs *bmtMFDescs = NULL,
+        bmtFieldPlacement *bmtFP = NULL,
+        bmtInternalInfo *bmtInternal = NULL,
+        bmtGCSeriesInfo *bmtGCSeries = NULL,
+        bmtMethodImplInfo *bmtMethodImpl = NULL,
+        const bmtGenericsInfo *bmtGenerics = NULL,
+        bmtEnumFieldInfo *bmtEnumFields = NULL);
 
     // --------------------------------------------------------------------------------------------
     // Returns the parent bmtRTType pointer. Can be null if no parent exists.

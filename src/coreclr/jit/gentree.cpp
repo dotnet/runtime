@@ -1064,7 +1064,7 @@ regMaskTP GenTree::gtGetContainedRegMask()
 {
     if (!isContained())
     {
-        return gtGetRegMask();
+        return isUsedFromReg() ? gtGetRegMask() : RBM_NONE;
     }
 
     regMaskTP mask = 0;
@@ -8166,11 +8166,12 @@ GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVo
     // should be labeled as simd intrinsic related struct. This is done so that
     // we do not promote the local, thus avoiding conflicting access methods
     // (fields vs. whole-register).
-    if (varTypeIsSIMD(srcOrFillVal) && srcOrFillVal->OperIsHWIntrinsic())
+    if (varTypeIsSIMD(srcOrFillVal) && srcOrFillVal->OperIs(GT_HWINTRINSIC, GT_CNS_VEC))
     {
         // TODO-Cleanup: similar logic already exists in "gtNewAssignNode",
         // however, it is not enabled for x86. Fix that and delete this code.
         GenTreeLclVar* dstLclNode = nullptr;
+
         if (dst->OperIs(GT_LCL_VAR))
         {
             dstLclNode = dst->AsLclVar();
@@ -18757,6 +18758,46 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 }
 
 //------------------------------------------------------------------------
+// SupportsSettingZeroFlag: Returns true if this is an arithmetic operation
+// whose codegen supports setting the "zero flag" as part of its operation.
+//
+// Return Value:
+//    True if so. A false return does not imply that codegen for the node will
+//    not trash the zero flag.
+//
+// Remarks:
+//    For example, for EQ (AND x y) 0, both xarch and arm64 can emit
+//    instructions that directly set the flags after the 'AND' and thus no
+//    comparison is needed.
+//
+//    The backend expects any node for which the flags will be consumed to be
+//    marked with GTF_SET_FLAGS.
+//
+bool GenTree::SupportsSettingZeroFlag()
+{
+#if defined(TARGET_XARCH)
+    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
+    {
+        return true;
+    }
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIs(GT_HWINTRINSIC) && emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(AsHWIntrinsic())))
+    {
+        return true;
+    }
+#endif
+#elif defined(TARGET_ARM64)
+    if (OperIs(GT_AND, GT_ADD, GT_SUB))
+    {
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // Create: Create or retrieve a field sequence for the given field handle.
 //
 // The field sequence instance contains some cached information relevant to
@@ -18853,7 +18894,7 @@ void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTree* op)
     {
         setLclRelatedToSIMDIntrinsic(op);
     }
-    else if (op->OperIs(GT_OBJ) && op->AsIndir()->Addr()->OperIs(GT_LCL_VAR_ADDR))
+    else if (op->OperIsBlk() && op->AsIndir()->Addr()->OperIs(GT_LCL_VAR_ADDR))
     {
         setLclRelatedToSIMDIntrinsic(op->AsIndir()->Addr());
     }
@@ -19100,6 +19141,27 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
     }
 #elif defined(TARGET_ARM64)
     return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
+#else
+    return false;
+#endif
+}
+
+//------------------------------------------------------------------------
+// isEvexCompatibleHWIntrinsic: Checks if the intrinsic has a compatible
+// EVEX form for its intended lowering instruction.
+//
+// Return Value:
+// true if the intrisic node lowering instruction has an EVEX form
+//
+bool GenTree::isEvexCompatibleHWIntrinsic()
+{
+    assert(gtOper == GT_HWINTRINSIC);
+
+// TODO-XARCH-AVX512 remove the ReturnsPerElementMask check once K registers have been properly
+// implemented in the register allocator
+#if defined(TARGET_AMD64)
+    return HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId()) &&
+           !HWIntrinsicInfo::ReturnsPerElementMask(AsHWIntrinsic()->GetHWIntrinsicId());
 #else
     return false;
 #endif

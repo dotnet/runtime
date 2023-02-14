@@ -88,6 +88,10 @@ export type MonoConfig = {
      */
     maxParallelDownloads?: number,
     /**
+     * We are making up to 2 more delayed attempts to download same asset. Default true.
+     */
+    enableDownloadRetry?: boolean,
+    /**
      * Name of the assembly with main entrypoint
      */
     mainAssemblyName?: string,
@@ -214,6 +218,7 @@ export type RuntimeHelpers = {
 
     loaded_files: string[];
     maxParallelDownloads: number;
+    enableDownloadRetry: boolean;
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
     enablePerfMeasure: boolean;
