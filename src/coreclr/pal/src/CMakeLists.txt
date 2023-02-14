@@ -1,5 +1,5 @@
 if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
-  # On OSX platforms and *BSD, we use the libunwind that's part of the OS
+  # On OSX and *BSD, we use the libunwind that's part of the OS
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
 endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
 

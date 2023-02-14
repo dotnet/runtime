@@ -2473,7 +2473,7 @@ InitializeFlushProcessWriteBuffers()
         }
     }
 
-#ifdef TARGET_APPLE
+#ifdef TARGET_OSX
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -2503,7 +2503,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // TARGET_APPLE
+#endif // TARGET_OSX
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2570,7 +2570,6 @@ FlushProcessWriteBuffers()
             // Request the threads pointer values to force the thread to emit a memory barrier
             size_t registers = 128;
             machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
-
             if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
             {
                 CHECK_MACH("thread_get_register_pointer_values()", machret);
