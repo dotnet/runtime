@@ -157,13 +157,14 @@ namespace System.Collections.Concurrent
 
         internal ConcurrentDictionary(int concurrencyLevel, int capacity, bool growLockArray, IEqualityComparer<TKey>? comparer)
         {
-            if (concurrencyLevel == -1)
+            if (concurrencyLevel <= 0)
             {
+                if (concurrencyLevel != -1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(concurrencyLevel), SR.ConcurrentDictionary_ConcurrencyLevelMustBePositiveOrNegativeOne);
+                }
+
                 concurrencyLevel = DefaultConcurrencyLevel;
-            }
-            else
-            {
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(concurrencyLevel);
             }
 
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
