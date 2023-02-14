@@ -1494,15 +1494,21 @@ class SuperPMIReplayAsmDiffs:
 
         # Set up some settings we'll use below.
 
+        # These vars are force overridden in the SPMI runs for both the base and diff, always.
+        replay_vars = {
+            "DOTNET_JitAlignLoops": "0", # disable loop alignment to filter noise
+            "DOTNET_JitEnableNoWayAssert": "1",
+            "DOTNET_JitNoForceFallback": "1",
+        }
+
+        # These vars are used in addition to the replay vars when creating disassembly for the interesting contexts
         asm_dotnet_vars = {
             "DOTNET_JitDisasm": "*",
             "DOTNET_JitUnwindDump": "*",
             "DOTNET_JitEHDump": "*",
-            "DOTNET_JitAlignLoops": "0", # disable loop alignment to filter noise
             "DOTNET_JitDiffableDasm": "1",
-            "DOTNET_JitEnableNoWayAssert": "1",
-            "DOTNET_JitNoForceFallback": "1",
-            "DOTNET_JitDisasmWithGC": "1" }
+            "DOTNET_JitDisasmWithGC": "1"
+        }
 
         if self.coreclr_args.gcinfo:
             asm_dotnet_vars.update({
@@ -1531,16 +1537,27 @@ class SuperPMIReplayAsmDiffs:
         altjit_replay_flags = target_flags
 
         base_option_flags = []
+        base_option_flags_for_diff_artifact = []
+        diff_option_flags = []
+        diff_option_flags_for_diff_artifact = []
+
+        for key, val in replay_vars.items():
+            assert(key.startswith("DOTNET_"))
+            name = key[len("DOTNET_"):]
+            base_option_flags += [ "-jitoption", "force", name + "=" + val ]
+            base_option_flags_for_diff_artifact += [ "-jitoption", "force", name + "=" + val ]
+            diff_option_flags += [ "-jit2option", "force", name + "=" + val ]
+            diff_option_flags_for_diff_artifact += [ "-jitoption", "force", name + "=" + val ]
+
         if self.coreclr_args.base_jit_option:
             for o in self.coreclr_args.base_jit_option:
                 base_option_flags += "-jitoption", o
+                base_option_flags_for_diff_artifact += "-jitoption", o
         if self.coreclr_args.jitoption:
             for o in self.coreclr_args.jitoption:
                 base_option_flags += "-jitoption", o
-        base_option_flags_for_diff_artifact = base_option_flags
+                base_option_flags_for_diff_artifact += "-jitoption", o
 
-        diff_option_flags = []
-        diff_option_flags_for_diff_artifact = []
         if self.coreclr_args.diff_jit_option:
             for o in self.coreclr_args.diff_jit_option:
                 diff_option_flags += "-jit2option", o
@@ -1748,6 +1765,8 @@ class SuperPMIReplayAsmDiffs:
                     logging.info("Differences found. To replay SuperPMI use:".format(len(diffs)))
 
                     logging.info("")
+                    for var, value in replay_vars.items():
+                        print_platform_specific_environment_vars(logging.INFO, self.coreclr_args, var, value)
                     for var, value in asm_dotnet_vars.items():
                         print_platform_specific_environment_vars(logging.INFO, self.coreclr_args, var, value)
                     logging.info("%s %s -c ### %s %s", self.superpmi_path, " ".join(altjit_replay_flags), self.diff_jit_path, mch_file)
