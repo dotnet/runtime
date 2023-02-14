@@ -199,6 +199,17 @@ namespace System.Net.Security
 
             IntPtr subject = Certificate.Handle;
             IntPtr issuer = caCert.Handle;
+            Debug.Assert(subject != 0);
+            Debug.Assert(issuer != 0);
+
+            // This should not happen - but in the event that it does, we can't give null pointers when building the
+            // request, so skip stapling, and set it as forbidden so we don't bother looking for new stapled responses
+            // in the future.
+            if (subject == 0 || issuer == 0)
+            {
+                _staplingForbidden = true;
+                return null;
+            }
 
             using (SafeOcspRequestHandle ocspRequest = Interop.Crypto.X509BuildOcspRequest(subject, issuer))
             {
