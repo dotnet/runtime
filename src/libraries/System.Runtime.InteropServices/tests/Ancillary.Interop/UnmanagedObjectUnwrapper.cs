@@ -5,7 +5,7 @@ namespace System.Runtime.InteropServices.Marshalling;
 
 // This type should be inlined in the COM source generator and made internal
 // This type allows the generated code to call a private explicit implementation of IUnmanagedObjectUnwrapper.GetObjectForUnmanagedWrapper
-public unsafe static class UnmanagedObjectUnwrapper
+internal unsafe static class UnmanagedObjectUnwrapper
 {
     public static object GetObjectForUnmanagedWrapper<T>(void* ptr) where T : IUnmanagedObjectUnwrapper
     {
