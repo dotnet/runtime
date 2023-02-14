@@ -2178,7 +2178,26 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // DIV implicitly put op1(lower) to EAX and op2(upper) to EDX
                 srcCount += BuildOperandUses(op1, RBM_EAX);
                 srcCount += BuildOperandUses(op2, RBM_EDX);
-                srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
+
+                if (!op3->isContained())
+                {
+                    // For non-contained nodes, we want to make sure we delay free the register for
+                    // op3 with respect to both op1 and op2. In other words, op3 shouldn't get same
+                    // register that is assigned to either of op1 and op2.
+
+                    RefPosition* op3RefPosition;
+                    srcCount += BuildDelayFreeUses(op3, op1, RBM_NONE, &op3RefPosition);
+                    if ((op3RefPosition != nullptr) && !op3RefPosition->delayRegFree)
+                    {
+                        // If op3 was not marked as delay-free for op1, mark it as delay-free
+                        // if needed for op2.
+                        DelayFreeUses(op3RefPosition, op2);
+                    }
+                }
+                else
+                {
+                    srcCount += BuildOperandUses(op3);
+                }
 
                 // result put in EAX and EDX
                 BuildDef(intrinsicTree, RBM_EAX, 0);

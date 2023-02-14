@@ -3257,23 +3257,65 @@ void LinearScan::setDelayFree(RefPosition* use)
 }
 
 //------------------------------------------------------------------------
+// DelayFreeUses: Mark useRefPosition as delay-free, if applicable for the
+//                rmw node.
+//
+// Arguments:
+//    rmwNode           - The node that has RMW semantics (if applicable)
+//    useRefPosition - The use refposition that need to be delay-freed.
+//
+void LinearScan::DelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
+{
+    assert(useRefPosition != nullptr);
+
+    Interval* rmwInterval  = nullptr;
+    bool      rmwIsLastUse = false;
+    GenTree*  addr         = nullptr;
+    if ((rmwNode != nullptr) && isCandidateLocalRef(rmwNode))
+    {
+        rmwInterval = getIntervalForLocalVarNode(rmwNode->AsLclVar());
+        // Note: we don't handle multi-reg vars here. It's not clear that there are any cases
+        // where we'd encounter a multi-reg var in an RMW context.
+        assert(!rmwNode->AsLclVar()->IsMultiReg());
+        rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
+    }
+    // If node != rmwNode, then definitely node should be marked as "delayFree".
+    // However, if node == rmwNode, then we can mark node as "delayFree" only if
+    // none of the node/rmwNode are the last uses. If either of them are last use,
+    // we can safely reuse the rmwNode as destination.
+    if ((useRefPosition->getInterval() != rmwInterval) || (!rmwIsLastUse && !useRefPosition->lastUse))
+    {
+        setDelayFree(useRefPosition);
+    }
+}
+
+//------------------------------------------------------------------------
 // BuildDelayFreeUses: Build Use RefPositions for an operand that might be contained,
 //                     and which may need to be marked delayRegFree
 //
 // Arguments:
-//    node       - The node of interest
-//    rmwNode    - The node that has RMW semantics (if applicable)
-//    candidates - The set of candidates for the uses
+//    node              - The node of interest
+//    rmwNode           - The node that has RMW semantics (if applicable)
+//    candidates        - The set of candidates for the uses
+//    useRefPositionRef - If a use refposition is created, returns it. If none created, sets it to nullptr.
 //
 // Return Value:
 //    The number of source registers used by the *parent* of this node.
 //
-int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP candidates)
+int LinearScan::BuildDelayFreeUses(GenTree*      node,
+                                   GenTree*      rmwNode,
+                                   regMaskTP     candidates,
+                                   RefPosition** useRefPositionRef)
 {
     RefPosition* use          = nullptr;
     Interval*    rmwInterval  = nullptr;
     bool         rmwIsLastUse = false;
     GenTree*     addr         = nullptr;
+    if (useRefPositionRef != nullptr)
+    {
+        *useRefPositionRef = nullptr;
+    }
+
     if ((rmwNode != nullptr) && isCandidateLocalRef(rmwNode))
     {
         rmwInterval = getIntervalForLocalVarNode(rmwNode->AsLclVar());
@@ -3328,6 +3370,11 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
         {
             setDelayFree(use);
         }
+
+        if (useRefPositionRef != nullptr)
+        {
+            *useRefPositionRef = use;
+        }
         return 1;
     }
 
@@ -3353,6 +3400,11 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
             setDelayFree(use);
         }
         srcCount++;
+    }
+
+    if (useRefPositionRef != nullptr)
+    {
+        *useRefPositionRef = use;
     }
     return srcCount;
 }
