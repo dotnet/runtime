@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // The runtime tests have the name spacespace and methods to facilitate sharing.
-namespace System.Tests.Types
+namespace System.Reflection.Tests
 {
     internal static class FunctionPointerTestsExtensions
     {
-        public static Type Project(this Type type) => Reflection.Tests.TestUtils.Project(type);
-
         public static bool IsMetadataLoadContext => true;
 
         /// <summary>

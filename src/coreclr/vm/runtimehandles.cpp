@@ -926,12 +926,14 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsUnmanagedFunctionPointer, ReflectClass
     CONTRACTL_END;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    BOOL unmanaged = FALSE;
     TypeHandle typeHandle = refType->GetType();
-    if (!typeHandle.IsFnPtrType())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
-    BOOL unmanaged = (fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_UNMANAGED) == IMAGE_CEE_CS_CALLCONV_UNMANAGED;
+    if (typeHandle.IsFnPtrType())
+    {
+        FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
+        unmanaged = (fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_UNMANAGED) == IMAGE_CEE_CS_CALLCONV_UNMANAGED;
+    }
+    
     FC_RETURN_BOOL(unmanaged);
 }
 FCIMPLEND

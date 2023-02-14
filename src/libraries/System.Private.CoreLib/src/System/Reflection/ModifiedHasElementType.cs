@@ -25,7 +25,7 @@ namespace System.Reflection
 
             Type Initialize()
             {
-                Interlocked.CompareExchange(ref _elementType, GetTypeParameter(typeImpl.GetElementType()!, 0), null);
+                Interlocked.CompareExchange(ref _elementType, GetTypeParameter(UnmodifiedType.GetElementType()!, 0), null);
                 return _elementType!;
             }
         }

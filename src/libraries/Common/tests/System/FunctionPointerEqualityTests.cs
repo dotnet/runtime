@@ -31,6 +31,46 @@ namespace System.Tests.Types
             Assert.False(fcnPtr1.IsFunctionPointerEqual(fcnPtr2));
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void ObjectEquals_ModifiedTypes()
+        {
+            Type holder = typeof(FunctionPointerHolder).Project();
+
+            MethodInfo m1 = holder.GetMethod(nameof(FunctionPointerHolder.MethodIntReturnValue1), Bindings);
+            Type t1 = m1.ReturnParameter.GetModifiedParameterType();
+
+            MethodInfo m2 = holder.GetMethod(nameof(FunctionPointerHolder.MethodIntReturnValue2), Bindings);
+            Type t2 = m2.ReturnParameter.GetModifiedParameterType();
+
+            Assert.False(ReferenceEquals(t1, t1.UnderlyingSystemType));
+
+            // Modified types do not support Equals other than when references are equal.
+            Assert.True(t1.Equals(t1));
+            Assert.False(t1.Equals(t2));
+            Assert.False(((object)t1).Equals(t2));
+            Assert.False(t1.Equals((object)t2));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void ObjectEquals_OneSideModifiedType()
+        {
+            Type holder = typeof(FunctionPointerHolder).Project();
+
+            MethodInfo m1 = holder.GetMethod(nameof(FunctionPointerHolder.MethodIntReturnValue1), Bindings);
+            Type modifiedType = m1.ReturnParameter.GetModifiedParameterType();
+            Type t = typeof(int).Project();
+
+            Assert.False(ReferenceEquals(modifiedType, modifiedType.UnderlyingSystemType));
+            Assert.False(ReferenceEquals(modifiedType, t));
+            Assert.False(modifiedType.Equals(t));
+            Assert.False(((object)modifiedType).Equals(t));
+            Assert.False(modifiedType.Equals((object)t));
+        }
+
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.Field_Int), nameof(FunctionPointerHolder.Field_DateOnly))]
         [InlineData(nameof(FunctionPointerHolder.Field_DateOnly), nameof(FunctionPointerHolder.Field_Int))]
@@ -143,6 +183,9 @@ namespace System.Tests.Types
 
             public delegate* unmanaged<int> MethodUnmanagedReturnValue1() => default;
             public delegate* unmanaged<bool> MethodUnmanagedReturnValue2() => default;
+
+            public int MethodIntReturnValue1() => default;
+            public int MethodIntReturnValue2() => default;
 
             // Methods to verify calling conventions and synthesized modopts.
             // The non-SuppressGCTransition variants are encoded with the CallKind byte.

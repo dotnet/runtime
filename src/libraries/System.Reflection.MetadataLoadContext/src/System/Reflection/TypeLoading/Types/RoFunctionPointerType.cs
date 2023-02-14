@@ -128,7 +128,7 @@ namespace System.Reflection.TypeLoading
 
             for (int i = 0; i < args.Length; i++)
             {
-                if (!args[i].Equals(otherArgs[i]))
+                if (args[i] != otherArgs[i])
                     return false;
             }
 

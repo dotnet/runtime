@@ -4,6 +4,10 @@
 // TypeDelegator
 //
 // This class wraps a Type object and delegates all methods to that Type.
+//
+// When changes are made here, also consider changing the ModifiedType class
+// in both the runtime and in MetadataLoadContext since those classes also
+// wrap Type.
 
 using System.Diagnostics.CodeAnalysis;
 using CultureInfo = System.Globalization.CultureInfo;

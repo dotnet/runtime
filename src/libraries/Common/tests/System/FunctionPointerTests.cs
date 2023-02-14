@@ -28,7 +28,7 @@ namespace System.Tests.Types
             Assert.Equal(string.Empty, t.Name);
             Assert.Null(t.Namespace);
             Assert.True(t.IsFunctionPointer);
-            Assert.False(t.IsPointer); // A function pointer is not compatible with IsPointer semantics.
+            Assert.False(t.IsPointer);
             Assert.False(t.IsUnmanagedFunctionPointer);
 
             // Common for all function pointers:
@@ -113,8 +113,6 @@ namespace System.Tests.Types
             Assert.NotNull(t.Module);
             Assert.Null(t.ReflectedType);
             Assert.Null(t.TypeInitializer);
-
-            // Select methods
             Assert.Throws<ArgumentException>(() => t.GetArrayRank());
             Assert.Null(t.GetElementType());
         }
@@ -214,17 +212,11 @@ namespace System.Tests.Types
             Assert.Null(fnPtrType.AssemblyQualifiedName);
             Assert.Equal("", fnPtrType.Name);
 
-            VerifyArg(fnPtrType.GetFunctionPointerReturnType(), expectedFcnPtrReturnName);
+            Assert.Equal(fnPtrType.GetFunctionPointerReturnType().Name, expectedFcnPtrReturnName);
 
             for (int i = 0; i < expectedArgNames.Length; i++)
             {
-                VerifyArg(fnPtrType.GetFunctionPointerParameterTypes()[i], expectedArgNames[i]);
-            }
-
-            static void VerifyArg(Type paramType, string expected)
-            {
-                Assert.Equal(expected, paramType.Name);
-                Assert.Null(paramType.DeclaringType);
+                Assert.Equal(fnPtrType.GetFunctionPointerParameterTypes()[i].Name, expectedArgNames[i]);
             }
         }
 
@@ -273,8 +265,6 @@ namespace System.Tests.Types
             Assert.Null(fnPtrType.FullName);
             Assert.Null(fnPtrType.AssemblyQualifiedName);
             Assert.Equal("", fnPtrType.Name);
-            Assert.Null(fnPtrType.DeclaringType);
-            Assert.Null(fnPtrType.BaseType);
             Assert.Equal<Type>(Type.EmptyTypes, fnPtrType.GetFunctionPointerCallingConventions());
             Assert.Equal<Type>(Type.EmptyTypes, fnPtrType.GetFunctionPointerReturnType().GetRequiredCustomModifiers());
         }

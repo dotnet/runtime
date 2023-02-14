@@ -27,7 +27,7 @@ namespace System.Reflection
 
             Type Initialize()
             {
-                Interlocked.CompareExchange(ref _returnType, GetTypeParameter(typeImpl.GetFunctionPointerReturnType(), 0), null);
+                Interlocked.CompareExchange(ref _returnType, GetTypeParameter(UnmodifiedType.GetFunctionPointerReturnType(), 0), null);
                 return _returnType!;
             }
         }
@@ -38,7 +38,7 @@ namespace System.Reflection
 
             Type[] Initialize()
             {
-                Type[] parameterTypes = typeImpl.GetFunctionPointerParameterTypes();
+                Type[] parameterTypes = UnmodifiedType.GetFunctionPointerParameterTypes();
                 for (int i = 0; i < parameterTypes.Length; i++)
                 {
                     parameterTypes[i] = GetTypeParameter(parameterTypes[i], i + 1);

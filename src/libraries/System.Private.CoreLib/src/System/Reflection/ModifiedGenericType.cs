@@ -22,7 +22,7 @@ namespace System.Reflection
 
             Type[] Initialize()
             {
-                Type[] genericArguments = typeImpl.GetGenericArguments();
+                Type[] genericArguments = UnmodifiedType.GetGenericArguments();
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
                     genericArguments[i] = GetTypeParameter(genericArguments[i], i);

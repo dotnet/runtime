@@ -24,28 +24,16 @@ namespace System.Reflection.TypeLoading
         {
             if (obj is RoType objType)
             {
-                if (objType is RoTypeDelegator ftObj)
+                if (obj is not RoModifiedType)
                 {
-                    objType = ftObj.TypeImpl;
+                    return base.Equals(objType);
                 }
-
-                if (this is RoTypeDelegator ftThis)
-                {
-                    // Call this Equals() again, but with actual type.
-                    return ftThis.TypeImpl.Equals(objType);
-                }
-
-                return base.Equals(objType);
             }
-            else
-            {
-                return false;
-            }
+
+            return false;
         }
 
         public override int GetHashCode() => base.GetHashCode();
-
-        // Type classifiers
         public abstract override bool IsTypeDefinition { get; }
         public abstract override bool IsGenericTypeDefinition { get; }
         protected abstract override bool HasElementTypeImpl();
@@ -278,8 +266,8 @@ namespace System.Reflection.TypeLoading
 
         // Identify interesting subgroups of Types
         protected sealed override bool IsCOMObjectImpl() => false;   // RCW's are irrelevant in a MetadataLoadContext without object creation.
-        public sealed override bool IsEnum => (GetBaseTypeClassification() & BaseTypeClassification.IsEnum) != 0;
-        protected sealed override bool IsValueTypeImpl() => (GetBaseTypeClassification() & BaseTypeClassification.IsValueType) != 0;
+        public override bool IsEnum => (GetBaseTypeClassification() & BaseTypeClassification.IsEnum) != 0;
+        protected override bool IsValueTypeImpl() => (GetBaseTypeClassification() & BaseTypeClassification.IsValueType) != 0;
 
         // Metadata
         public abstract override int MetadataToken { get; }

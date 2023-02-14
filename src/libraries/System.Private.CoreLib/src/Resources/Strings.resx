@@ -3995,5 +3995,7 @@
   <data name="InvalidOperation_NotFunctionPointer" xml:space="preserve">
     <value>Method may only be called on a Type for which Type.IsFunctionPointer is true.</value>
   </data>
+  <data name="NotSupported_ModifiedType" xml:space="preserve">
+    <value>Modified types do not support this member. Use the UnderlyingSystemType property to call this member.</value>
+  </data>
 </root>
-

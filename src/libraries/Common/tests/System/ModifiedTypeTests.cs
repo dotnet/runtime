@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Tests;
 using System.Runtime.CompilerServices;
@@ -15,6 +15,134 @@ namespace System.Tests.Types
     public partial class ModifiedTypeTests
     {
         private const BindingFlags Bindings = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static unsafe void TypeMembers()
+        {
+            FieldInfo fi = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._volatileInt), Bindings);
+
+            Type unmodifiedType = fi.FieldType;
+            CommonMembers(unmodifiedType);
+            UnmodifiedTypeMembers(unmodifiedType);
+
+            Type modifiedType = fi.GetModifiedFieldType();
+            CommonMembers(modifiedType);
+            ModifiedTypeMembers(modifiedType);
+
+            void CommonMembers(Type t)
+            {
+                Assert.Equal("System.Int32", t.ToString());
+                Assert.NotNull(t.AssemblyQualifiedName);
+                Assert.Equal("Int32", t.Name);
+                Assert.Equal("System", t.Namespace);
+                Assert.False(t.IsFunctionPointer);
+                Assert.False(t.IsPointer);
+                Assert.False(t.IsUnmanagedFunctionPointer);
+                Assert.NotNull(t.Assembly);
+                Assert.True(t.Attributes != default);
+                Assert.False(t.ContainsGenericParameters);
+                Assert.False(t.ContainsGenericParameters);
+                var _ = t.GUID; // Just ensure it doesn't throw.
+                Assert.Throws<InvalidOperationException>(() => t.GenericParameterAttributes);
+                Assert.Throws<InvalidOperationException>(() => t.GenericParameterPosition);
+                Assert.Throws<InvalidOperationException>(() => t.GetFunctionPointerCallingConventions());
+                Assert.Throws<InvalidOperationException>(() => t.GetFunctionPointerParameterTypes());
+                Assert.Throws<InvalidOperationException>(() => t.GetFunctionPointerReturnType());
+                Assert.False(t.HasElementType);
+                Assert.False(t.IsAbstract);
+                Assert.True(t.IsAnsiClass);
+                Assert.False(t.IsArray);
+                Assert.False(t.IsAutoClass);
+                Assert.False(t.IsAutoLayout);
+                Assert.False(t.IsByRef);
+                Assert.False(t.IsByRefLike);
+                Assert.False(t.IsCOMObject);
+                Assert.False(t.IsClass);
+                Assert.False(t.IsAbstract);
+                Assert.False(t.IsConstructedGenericType);
+                Assert.False(t.IsContextful);
+                Assert.False(t.IsEnum);
+                Assert.False(t.IsExplicitLayout);
+                Assert.False(t.IsGenericMethodParameter);
+                Assert.False(t.IsGenericParameter);
+                Assert.False(t.IsGenericType);
+                Assert.False(t.IsGenericTypeDefinition);
+                Assert.False(t.IsGenericTypeParameter);
+                Assert.False(t.IsImport);
+                Assert.False(t.IsInterface);
+                Assert.True(t.IsLayoutSequential);
+                Assert.False(t.IsMarshalByRef);
+                Assert.False(t.IsNotPublic);
+                Assert.True(t.IsPublic);
+                Assert.False(t.IsSZArray);
+                Assert.True(t.IsSealed);
+
+                if (FunctionPointerTestsExtensions.IsMetadataLoadContext)
+                {
+                    Assert.Throws<InvalidOperationException>(() => t.IsSecurityCritical);
+                    Assert.Throws<InvalidOperationException>(() => t.IsSecuritySafeCritical);
+                    Assert.Throws<InvalidOperationException>(() => t.IsSecurityTransparent);
+                }
+                else
+                {
+                    Assert.True(t.IsSecurityCritical);
+                    Assert.False(t.IsSecuritySafeCritical);
+                    Assert.False(t.IsSecurityTransparent);
+                }
+
+                Assert.True(t.IsSerializable);
+                Assert.False(t.IsSignatureType);
+                Assert.False(t.IsSpecialName);
+                Assert.True(t.IsTypeDefinition);
+                Assert.False(t.IsUnicodeClass);
+                Assert.True(t.IsValueType);
+                Assert.False(t.IsVariableBoundArray);
+                Assert.Equal(MemberTypes.TypeInfo, t.MemberType);
+                Assert.NotNull(t.Module);
+
+                Assert.False(t.IsNestedAssembly);
+                Assert.False(t.IsNestedFamANDAssem);
+                Assert.False(t.IsNestedFamORAssem);
+                Assert.False(t.IsNestedFamily);
+                Assert.False(t.IsNestedPrivate);
+                Assert.False(t.IsNestedPublic);
+                Assert.Throws<ArgumentException>(() => t.GetArrayRank());
+                Assert.Null(t.GetElementType());
+                Assert.False(t.GenericTypeArguments.Any());
+            }
+
+            void UnmodifiedTypeMembers(Type t)
+            {
+                Assert.False(t.GetOptionalCustomModifiers().Any());
+                Assert.False(t.GetRequiredCustomModifiers().Any());
+                Assert.True(t.IsPrimitive);
+                Assert.NotNull(t.BaseType);
+                Assert.Null(t.DeclaringType);
+                Assert.Null(t.ReflectedType);
+                Assert.Null(t.TypeInitializer);
+                Assert.True(t.MetadataToken != 0);
+                Assert.False(t.IsNested);
+                Assert.True(t.IsVisible);
+            }
+
+            void ModifiedTypeMembers(Type t)
+            {
+                Assert.False(t.GetOptionalCustomModifiers().Any());
+                Assert.True(t.GetRequiredCustomModifiers().Any()); // The volatile modifier.
+                Assert.True(t.IsPrimitive);
+                Assert.Throws<NotSupportedException>(() => t.BaseType);
+                Assert.Throws<NotSupportedException>(() => t.DeclaringType);
+                Assert.Throws<NotSupportedException>(() => t.ReflectedType);
+                Assert.Throws<NotSupportedException>(() => t.TypeInitializer);
+                Assert.Throws<NotSupportedException>(() => t.MetadataToken);
+
+                // These can call DeclaringType which is not supported.
+                Assert.Throws<NotSupportedException>(() => t.IsNested);
+                Assert.Throws<NotSupportedException>(() => t.IsVisible);
+            }
+        }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
@@ -65,10 +193,10 @@ namespace System.Tests.Types
             Assert.False(arrayGenericFcnPtr.IsGenericTypeDefinition);
             Assert.False(IsModifiedType(arrayGenericFcnPtr));
 
-            Type genericParam = arrayGenericFcnPtr.GetGenericArguments()[0];
-            Assert.False(IsModifiedType(genericParam));
+            Type genericArg = arrayGenericFcnPtr.GetGenericArguments()[0];
+            Assert.False(IsModifiedType(genericArg));
 
-            Type fcnPtr = genericParam.GetElementType();
+            Type fcnPtr = genericArg.GetElementType();
             Assert.True(fcnPtr.IsFunctionPointer);
             Assert.False(IsModifiedType(fcnPtr));
 
@@ -87,10 +215,10 @@ namespace System.Tests.Types
             Assert.True(arrayGenericFcnPtr.IsGenericType);
             Assert.False(arrayGenericFcnPtr.IsGenericTypeDefinition);
 
-            Type genericParam = arrayGenericFcnPtr.GetGenericArguments()[0];
-            Assert.True(IsModifiedType(genericParam));
+            Type genericArg = arrayGenericFcnPtr.GetGenericArguments()[0];
+            Assert.True(IsModifiedType(genericArg));
 
-            Type fcnPtr = genericParam.GetElementType();
+            Type fcnPtr = genericArg.GetElementType();
             Assert.True(fcnPtr.IsFunctionPointer);
             Assert.True(IsModifiedType(fcnPtr));
 
@@ -511,7 +639,7 @@ namespace System.Tests.Types
 
             Type a1 = mi.GetParameters()[0].ParameterType;
             Assert.False(IsModifiedType(a1));
-            Assert.Equal(typeof(Tuple<int, bool>).Project(), a1);
+            Assert.Equal(typeof(Tuple<int, bool>).Project(), a1.Project());
 
             Type ga1 = a1.GetGenericArguments()[0];
             Assert.False(IsModifiedType(ga1));
@@ -533,7 +661,7 @@ namespace System.Tests.Types
 
             Type a1 = mi.GetParameters()[0].GetModifiedParameterType();
             Assert.True(IsModifiedType(a1));
-            Assert.Equal(typeof(Tuple<int, bool>).Project(), a1.UnderlyingSystemType);
+            Assert.Equal(typeof(Tuple<int, bool>).Project(), a1.UnderlyingSystemType.Project());
 
             Type ga1 = a1.GetGenericArguments()[0];
             Assert.True(IsModifiedType(ga1));
@@ -606,6 +734,11 @@ namespace System.Tests.Types
             public int InitProperty_Int { get; init; }
             public static delegate*<out int, void> Property_FcnPtr { get; set; }
 
+            public static delegate*<out int, void> _fcnPtrP0Out;
+            public static delegate*<delegate*<out int, void>, void> _fcnPtr_fcnPtrP0Out;
+            public static delegate*<delegate*<ref int, void>, void> _fcnPtr_fcnPtrP0Ref;
+            public static delegate*<delegate*<out int, void>> _fcnPtr_fcnPtrRetP0Out;
+
             public delegate*
             <
                 delegate*<int>, // p0
@@ -618,12 +751,6 @@ namespace System.Tests.Types
                 >,
                 bool // ret
             >[] Property_FcnPtr_Complex { get; }
-
-            public static delegate*<out int, void> FcnPtrP0Out { get; set; }
-            public static delegate*<out int, void> _fcnPtrP0Out;
-            public static delegate*<delegate*<out int, void>, void> _fcnPtr_fcnPtrP0Out;
-            public static delegate*<delegate*<ref int, void>, void> _fcnPtr_fcnPtrP0Ref;
-            public static delegate*<delegate*<out int, void>> _fcnPtr_fcnPtrRetP0Out;
 
             public static delegate*
             <
