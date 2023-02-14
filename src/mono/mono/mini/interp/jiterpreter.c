@@ -1110,7 +1110,6 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_get_hashcode (MonoObject ** ppObj)
 {
 	MonoObject *obj = *ppObj;
-	g_assert (obj);
 	return mono_object_hash_internal (obj);
 }
 
@@ -1118,7 +1117,6 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_try_get_hashcode (MonoObject ** ppObj)
 {
 	MonoObject *obj = *ppObj;
-	g_assert (obj);
 	return mono_object_try_get_hash_internal (obj);
 }
 
