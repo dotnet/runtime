@@ -1348,6 +1348,29 @@ mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpoin
 	return compiled_ptr;
 }
 
+gpointer
+mono_gsharedvt_constrained_call_fast (gpointer mp, MonoGsharedvtConstrainedCallInfo *info, gpointer *out_receiver)
+{
+	switch (info->call_type) {
+	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_VTYPE:
+		/* Calling a vtype method with a vtype receiver */
+		*out_receiver = mp;
+		return info->code;
+	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_REF:
+		/* Calling a ref method with a ref receiver */
+		*out_receiver = *(gpointer*)mp;
+		return info->code;
+	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_BOX: {
+		ERROR_DECL (error);
+		*out_receiver = mono_value_box_checked (info->klass, mp, error);
+		mono_error_assert_ok (error);
+		return info->code;
+	}
+	default:
+		return NULL;
+	}
+}
+
 static MonoMethod*
 constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gpointer *this_arg, MonoError *error)
 {
@@ -1427,7 +1450,8 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
  * MP is NULL if CMETHOD is a static virtual method.
  */
 MonoObject*
-mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, guint8 *deref_args, gpointer *args)
+mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass,
+								 MonoGsharedvtConstrainedCallInfo *info, guint8 *deref_args, gpointer *args)
 {
 	ERROR_DECL (error);
 	MonoObject *o;
@@ -1435,26 +1459,40 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 	gpointer this_arg;
 	gpointer new_args [16];
 
-	/* Object.GetType () is an intrinsic under netcore */
-	if (!mono_class_is_ginst (cmethod->klass) && !cmethod->is_inflated && !strcmp (cmethod->name, "GetType")) {
-		MonoVTable *vt;
+	switch (info->call_type) {
+	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_VTYPE:
+		/* Calling a vtype method with a vtype receiver */
+		this_arg = mp;
+		m = info->method;
+		break;
+	case MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_REF:
+		/* Calling a ref method with a ref receiver */
+		this_arg = *(gpointer*)mp;
+		m = info->method;
+		break;
+	default:
+		/* Object.GetType () is an intrinsic under netcore */
+		if (!mono_class_is_ginst (cmethod->klass) && !cmethod->is_inflated && !strcmp (cmethod->name, "GetType")) {
+			MonoVTable *vt;
 
-		vt = mono_class_vtable_checked (klass, error);
+			vt = mono_class_vtable_checked (klass, error);
+			if (!is_ok (error)) {
+				mono_error_set_pending_exception (error);
+				return NULL;
+			}
+			return vt->type;
+		}
+
+		m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg, error);
 		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
 			return NULL;
 		}
-		return vt->type;
+		if (!m)
+			return NULL;
+		break;
 	}
 
-	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg, error);
-	if (!is_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
-
-	if (!m)
-		return NULL;
 	if (deref_args) {
 		/* Have to deref gsharedvt ref arguments since the runtime invoke expects it */
 		MonoMethodSignature *fsig = mono_method_signature_internal (m);

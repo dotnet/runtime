@@ -1595,6 +1595,14 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeAddress(tree);
         }
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+        else if (tree->OperIsCompare())
+        {
+            // Compares can be contained by SELECT/compare chains.
+            genConsumeRegs(tree->gtGetOp1());
+            genConsumeRegs(tree->gtGetOp2());
+        }
+#endif
 #ifdef TARGET_ARM64
         else if (tree->OperIs(GT_BFIZ))
         {
@@ -1610,10 +1618,9 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             assert(cast->isContained());
             genConsumeAddress(cast->CastOp());
         }
-        else if (tree->OperIsCompare() || tree->OperIs(GT_AND))
+        else if (tree->OperIs(GT_AND))
         {
-            // Compares can be contained by a SELECT.
-            // ANDs and Cmp Compares may be contained in a chain.
+            // ANDs may be contained in a chain.
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }

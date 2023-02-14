@@ -3976,13 +3976,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
             if (!omitCopy && fgGlobalMorph)
             {
-                omitCopy = !varDsc->lvPromoted && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
-            }
-
-            if (!omitCopy && (totalAppearances == 1))
-            {
-                // fgMightHaveLoop() is expensive; check it last, only if necessary.
-                omitCopy = call->IsNoReturn() || !fgMightHaveLoop();
+                omitCopy = !varDsc->lvPromoted && !varDsc->lvIsStructField && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
             }
 
             if (omitCopy)
@@ -13091,7 +13085,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 // and we have already computed the edge weights, so
                 // we will try to adjust some of the weights
                 //
-                flowList*   edgeTaken = fgGetPredForBlock(bTaken, block);
+                FlowEdge*   edgeTaken = fgGetPredForBlock(bTaken, block);
                 BasicBlock* bUpdated  = nullptr; // non-NULL if we updated the weight of an internal block
 
                 // We examine the taken edge (block -> bTaken)
@@ -13133,7 +13127,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     weight_t newMinWeight;
                     weight_t newMaxWeight;
 
-                    flowList* edge;
+                    FlowEdge* edge;
                     // Now fix the weights of the edges out of 'bUpdated'
                     switch (bUpdated->bbJumpKind)
                     {

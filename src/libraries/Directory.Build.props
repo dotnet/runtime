@@ -48,6 +48,8 @@
     <!-- Nullability is enabled by default except for test projects, which instead default to annotations. -->
     <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' != 'true'">enable</Nullable>
     <Nullable Condition="'$(Nullable)' == '' and '$(IsTestProject)' == 'true'">annotations</Nullable>
+    <!-- EnableAOTAnalyzer is enabled by default for src projects. -->
+    <EnableAOTAnalyzer Condition="'$(EnableAOTAnalyzer)' == '' and '$(IsSourceProject)' == 'true'">true</EnableAOTAnalyzer>
   </PropertyGroup>
 
   <!-- Set up common paths -->

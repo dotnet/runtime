@@ -42,6 +42,7 @@ void jiterp_preserve_module (void);
 #include <mono/mini/llvm-runtime.h>
 #include <mono/mini/llvmonly-runtime.h>
 #include <mono/utils/options.h>
+#include <mono/utils/atomic.h>
 
 #include "jiterpreter.h"
 
@@ -118,6 +119,26 @@ mono_jiterp_encode_leb52 (unsigned char * destination, double doubleValue, int v
 
 		return mono_jiterp_encode_leb64_ref(destination, &value, valueIsSigned);
 	}
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_encode_leb_signed_boundary (unsigned char * destination, int bits, int sign) {
+	if (!destination)
+		return 0;
+
+	int64_t value;
+	switch (bits) {
+		case 32:
+			value = sign >= 0 ? INT_MAX : INT_MIN;
+			break;
+		case 64:
+			value = sign >= 0 ? INT64_MAX : INT64_MIN;
+			break;
+		default:
+			return 0;
+	}
+
+	return mono_jiterp_encode_leb64_ref(destination, &value, TRUE);
 }
 
 // Many of the following functions implement various opcodes or provide support for opcodes
@@ -383,7 +404,7 @@ mono_jiterp_box_ref (MonoVTable *vtable, MonoObject **dest, void *src, gboolean 
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
+mono_jiterp_conv (void *dest, void *src, int opcode) {
 	switch (opcode) {
 		case MINT_CONV_OVF_I4_I8: {
 			gint64 val = *(gint64*)src;
@@ -430,6 +451,17 @@ mono_jiterp_conv_ovf (void *dest, void *src, int opcode) {
 				return 1;
 			}
 			return 0;
+		}
+
+		case MINT_CONV_OVF_I8_R8:
+		case MINT_CONV_OVF_I8_R4: {
+			double val;
+			if (opcode == MINT_CONV_OVF_I8_R4)
+				val = *(float*)src;
+			else
+				val = *(double*)src;
+
+			return mono_try_trunc_i64(val, dest);
 		}
 	}
 
@@ -699,6 +731,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_LDTSFLDA:
 		case MINT_SAFEPOINT:
 		case MINT_INTRINS_GET_HASHCODE:
+		case MINT_INTRINS_TRY_GET_HASHCODE:
 		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
 		case MINT_INTRINS_ENUM_HASFLAG:
 		case MINT_ADD_MUL_I4_IMM:
@@ -861,6 +894,57 @@ should_generate_trace_here (InterpBasicBlock *bb) {
 	return FALSE;
 }
 
+typedef struct {
+	// 64-bits because it can get very high if estimate heat is turned on
+	gint64 hit_count;
+	JiterpreterThunk thunk;
+} TraceInfo;
+
+#define MAX_TRACE_SEGMENTS 256
+#define TRACE_SEGMENT_SIZE 1024
+
+static volatile gint32 trace_count = 0;
+static TraceInfo *trace_segments[MAX_TRACE_SEGMENTS] = { NULL };
+
+static TraceInfo *
+trace_info_allocate_segment (gint32 index) {
+	g_assert (index < MAX_TRACE_SEGMENTS);
+
+	volatile gpointer *slot = (volatile gpointer *)&trace_segments[index];
+	gpointer segment = g_malloc0 (sizeof(TraceInfo) * TRACE_SEGMENT_SIZE);
+	gpointer result = mono_atomic_cas_ptr (slot, segment, NULL);
+	if (result != NULL) {
+		g_free (segment);
+		return (TraceInfo *)result;
+	} else {
+		return (TraceInfo *)segment;
+	}
+}
+
+static TraceInfo *
+trace_info_get (gint32 index) {
+	g_assert (index >= 0);
+	int segment_index = index / TRACE_SEGMENT_SIZE,
+		element_index = index % TRACE_SEGMENT_SIZE;
+
+	g_assert (segment_index < MAX_TRACE_SEGMENTS);
+
+	TraceInfo *segment = trace_segments[segment_index];
+	if (!segment)
+		segment = trace_info_allocate_segment (segment_index);
+
+	return &segment[element_index];
+}
+
+static gint32
+trace_info_alloc () {
+	gint32 index = trace_count++;
+	TraceInfo *info = trace_info_get (index);
+	info->hit_count = 0;
+	info->thunk = NULL;
+	return index;
+}
+
 /*
  * Insert jiterpreter entry points at the correct candidate locations:
  * The first basic block of the function,
@@ -907,14 +991,57 @@ jiterp_insert_entry_points (void *_td)
 			should_generate = TRUE;
 
 		if (enabled && should_generate) {
+			gint32 trace_index = trace_info_alloc ();
+
 			td->cbb = bb;
-			mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
+			InterpInst *ins = mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
+			memcpy(ins->data, &trace_index, sizeof (trace_index));
+
 			// Note that we only clear enter_at_next here, after generating a trace.
 			// This means that the flag will stay set intentionally if we keep failing
 			//  to generate traces, perhaps due to a string of small basic blocks
 			//  or multiple call instructions.
 			enter_at_next = bb->contains_call_instruction;
 		}
+	}
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_get_trace_hit_count (gint32 trace_index) {
+	return trace_info_get (trace_index)->hit_count;
+}
+
+JiterpreterThunk
+mono_interp_tier_prepare_jiterpreter_fast (
+	void *frame, MonoMethod *method, const guint16 *ip,
+	const guint16 *start_of_body, int size_of_body
+) {
+	if (!mono_opt_jiterpreter_traces_enabled)
+		return (JiterpreterThunk)(void*)JITERPRETER_NOT_JITTED;
+
+	guint32 trace_index = READ32 (ip + 1);
+	TraceInfo *trace_info = trace_info_get (trace_index);
+	g_assert (trace_info);
+
+	if (trace_info->thunk)
+		return trace_info->thunk;
+
+#ifdef DISABLE_THREADS
+	gint64 count = trace_info->hit_count++;
+#else
+	gint64 count = mono_atomic_inc_i64(&trace_info->hit_count);
+#endif
+
+	if (count == mono_opt_jiterpreter_minimum_trace_hit_count) {
+		JiterpreterThunk result = mono_interp_tier_prepare_jiterpreter(
+			frame, method, ip, (gint32)trace_index,
+			start_of_body, size_of_body
+		);
+		trace_info->thunk = result;
+		return result;
+	} else {
+		// Hit count not reached, or already reached but compilation is not done yet
+		return (JiterpreterThunk)(void*)JITERPRETER_TRAINING;
 	}
 }
 
@@ -976,6 +1103,14 @@ mono_jiterp_get_hashcode (MonoObject ** ppObj)
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_try_get_hashcode (MonoObject ** ppObj)
+{
+	MonoObject *obj = *ppObj;
+	g_assert (obj);
+	return mono_object_try_get_hash_internal (obj);
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_get_signature_has_this (MonoMethodSignature *sig)
 {
 	return sig->hasthis;
@@ -1031,6 +1166,29 @@ mono_jiterp_get_array_rank (gint32 *dest, MonoObject **src)
 
 	*dest = m_class_get_rank (mono_object_class (*src));
 	return 1;
+}
+
+// Returns 1 on success so that the trace can do br_if to bypass its bailout
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_set_object_field (
+	uint8_t *locals, guint32 fieldOffsetBytes,
+	guint32 targetLocalOffsetBytes, guint32 sourceLocalOffsetBytes
+) {
+	MonoObject * targetObject = *(MonoObject **)(locals + targetLocalOffsetBytes);
+	if (!targetObject)
+		return 0;
+	MonoObject ** target = (MonoObject **)(((uint8_t *)targetObject) + fieldOffsetBytes);
+	mono_gc_wbarrier_set_field_internal (
+		targetObject, target,
+		*(MonoObject **)(locals + sourceLocalOffsetBytes)
+	);
+	return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_debug_count ()
+{
+	return mono_debug_count();
 }
 
 // HACK: fix C4206

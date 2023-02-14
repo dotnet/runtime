@@ -7699,7 +7699,7 @@ BOOL grow_mark_stack (mark*& m, size_t& len, size_t init_len)
     if (tmp)
     {
         memcpy (tmp, m, len * sizeof (mark));
-        delete m;
+        delete[] m;
         m = tmp;
         len = new_size;
         return TRUE;
@@ -14728,7 +14728,7 @@ gc_heap::self_destroy()
     release_card_table (card_table);
 
     // destroy the mark stack
-    delete mark_stack_array;
+    delete[] mark_stack_array;
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
     if (finalize_queue)

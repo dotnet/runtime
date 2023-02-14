@@ -1332,11 +1332,6 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
 
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-            structLcl = structVal->AsLclVarCommon();
-            // Wrap it in a GT_OBJ.
-            structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
-            FALLTHROUGH;
-
         case GT_IND:
         case GT_OBJ:
         case GT_BLK:
@@ -1414,12 +1409,6 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
 
         structLcl = gtNewLclvNode(tmpNum, structType)->AsLclVarCommon();
         structVal = structLcl;
-
-        if (structType == TYP_STRUCT)
-        {
-            // Wrap it in a GT_OBJ
-            structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
-        }
     }
 
     if (structLcl != nullptr)
@@ -6369,7 +6358,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             //
             for (BasicBlock* const succ : block->Succs())
             {
-                fgRemoveRefPred(succ, block);
+                // We may have degenerate flow, make sure to fully remove
+                fgRemoveAllRefPreds(succ, block);
             }
 
             // Change block to BBJ_THROW so we won't trigger importation of successors.
