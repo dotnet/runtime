@@ -64,9 +64,9 @@ namespace Microsoft.Interop
                 return new ComInterfaceContext(3, Guid.Empty);
             });
 
-            context.RegisterSourceOutput(invalidTypeDiagnostics, static (context, invalidMethod) =>
+            context.RegisterSourceOutput(invalidTypeDiagnostics, static (context, invalidType) =>
             {
-                context.ReportDiagnostic(invalidMethod.Diagnostic);
+                context.ReportDiagnostic(invalidType.Diagnostic);
             });
 
             // Zip the incremental interface context back with the symbols and syntax for the interface
@@ -127,7 +127,7 @@ namespace Microsoft.Interop
             var methodsToGenerate = methodsWithDiagnostics.Where(static data => data.Diagnostic is null);
             var invalidMethodDiagnostics = methodsWithDiagnostics.Where(static data => data.Diagnostic is not null);
 
-            context.RegisterSourceOutput(invalidTypeDiagnostics, static (context, invalidMethod) =>
+            context.RegisterSourceOutput(invalidMethodDiagnostics, static (context, invalidMethod) =>
             {
                 context.ReportDiagnostic(invalidMethod.Diagnostic);
             });
