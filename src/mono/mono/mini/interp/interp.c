@@ -8745,11 +8745,16 @@ mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res)
 		mono_jiterp_stackval_to_data (type, frame.stack, res);
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip)
+EMSCRIPTEN_KEEPALIVE volatile size_t *
+mono_jiterp_get_polling_required_address ()
 {
-	if (G_UNLIKELY (mono_polling_required))
-		do_safepoint (frame, get_context(), ip);
+	return &mono_polling_required;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_do_safepoint (InterpFrame *frame, guint16 *ip)
+{
+	do_safepoint (frame, get_context(), ip);
 }
 
 EMSCRIPTEN_KEEPALIVE gpointer

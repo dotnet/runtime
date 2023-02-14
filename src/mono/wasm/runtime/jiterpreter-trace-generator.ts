@@ -92,6 +92,11 @@ function getArgI32 (ip: MintOpcodePtr, indexPlusOne: number) {
     return getI32(src);
 }
 
+function getArgU32 (ip: MintOpcodePtr, indexPlusOne: number) {
+    const src = copyIntoScratchBuffer(<any>ip + (2 * indexPlusOne), 4);
+    return getU32(src);
+}
+
 function getArgF32 (ip: MintOpcodePtr, indexPlusOne: number) {
     const src = copyIntoScratchBuffer(<any>ip + (2 * indexPlusOne), 4);
     return getF32(src);
@@ -266,13 +271,26 @@ export function generate_wasm_body (
                 //  will result in decent trace candidates becoming nops which adds overhead
                 //  and leaves us in the interp.
                 if (abortAtJittedLoopBodies && (result >= builder.options.minimumTraceLength)) {
-                    if (!inBranchBlock || firstOpcodeInBlock)
+                    if (!inBranchBlock || firstOpcodeInBlock) {
+                        // Use mono_jiterp_trace_transfer to call the target trace recursively
+                        // Ideally we would import the trace function to do a direct call instead
+                        //  of an indirect one, but right now the import section is generated
+                        //  before we generate the function body, so it would be non-trivial to
+                        //  do this. It's still faster than returning to the interpreter main loop
+                        const targetTrace = getArgU32(ip, 1);
+                        builder.ip_const(ip);
+                        builder.i32_const(targetTrace);
+                        builder.local("frame");
+                        builder.local("pLocals");
+                        builder.callImport("transfer");
+                        builder.appendU8(WasmOpcode.return_);
                         ip = abort;
+                    }
                 }
                 break;
 
             case MintOpcode.MINT_TIER_PREPARE_JITERPRETER:
-            case MintOpcode.MINT_TIER_NOP_JITERPRETER:
+            case MintOpcode.MINT_TIER_NOP_JITERPRETER: // FIXME: Should we abort for NOPs like ENTERs?
             case MintOpcode.MINT_NOP:
             case MintOpcode.MINT_DEF:
             case MintOpcode.MINT_DUMMY_USE:
@@ -2755,8 +2773,15 @@ function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: Bailou
 }
 
 function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {
+    // Check whether a safepoint is required
+    builder.ptr_const(cwraps.mono_jiterp_get_polling_required_address());
+    builder.appendU8(WasmOpcode.i32_load);
+    builder.appendMemarg(0, 2);
+    // If the polling flag is set we call mono_jiterp_do_safepoint()
+    builder.block(WasmValtype.void, WasmOpcode.if_);
     builder.local("frame");
     // Not ip_const, because we can't pass relative IP to do_safepoint
     builder.i32_const(ip);
     builder.callImport("safepoint");
+    builder.endBlock();
 }
