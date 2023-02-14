@@ -1366,12 +1366,12 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_method_access;
 
 	/* Inject code throwing MethodAccessException */
-	interp_add_ins (td, MINT_MONO_LDPTR);
+	interp_add_ins (td, MINT_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 	td->last_ins->data [0] = get_data_item_index (td, method);
 
-	interp_add_ins (td, MINT_MONO_LDPTR);
+	interp_add_ins (td, MINT_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 	td->last_ins->data [0] = get_data_item_index (td, target_method);
@@ -1418,7 +1418,7 @@ interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 
 	char *msg = mono_mem_manager_strdup (td->mem_manager, mono_error_get_message (error_msg));
 
-	interp_add_ins (td, MINT_MONO_LDPTR);
+	interp_add_ins (td, MINT_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 	td->last_ins->data [0] = get_data_item_index (td, msg);
@@ -2467,7 +2467,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				return_val_if_nok (error, FALSE);
 
 				td->sp--;
-				interp_add_ins (td, MINT_MONO_LDPTR);
+				interp_add_ins (td, MINT_LDPTR);
 				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, systype);
@@ -7198,7 +7198,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					break;
 				}
 
-				interp_add_ins (td, MINT_MONO_LDPTR);
+				interp_add_ins (td, MINT_LDPTR);
 				gpointer systype = mono_type_get_object_checked ((MonoType*)handle, error);
 				goto_if_nok (error, exit);
 				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
@@ -7206,7 +7206,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->data [0] = get_data_item_index (td, systype);
 				td->ip = next_ip + 5;
 			} else {
-				interp_add_ins (td, MINT_LDTOKEN);
+				interp_add_ins (td, MINT_LDPTR);
 				push_type_vt (td, klass, sizeof (gpointer));
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, handle);
@@ -7420,7 +7420,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_MONO_METHODCONST:
 				token = read32 (td->ip + 1);
 				td->ip += 5;
-				interp_add_ins (td, MINT_MONO_LDPTR);
+				interp_add_ins (td, MINT_LDPTR);
 				push_simple_type (td, STACK_TYPE_I);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, mono_method_get_wrapper_data (method, token));
@@ -7428,7 +7428,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_MONO_PINVOKE_ADDR_CACHE: {
 				token = read32 (td->ip + 1);
 				td->ip += 5;
-				interp_add_ins (td, MINT_MONO_LDPTR);
+				interp_add_ins (td, MINT_LDPTR);
 				g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 				push_simple_type (td, STACK_TYPE_I);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
@@ -7493,7 +7493,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				++td->ip;
 				break;
 			case CEE_MONO_LDPTR_INT_REQ_FLAG:
-				interp_add_ins (td, MINT_MONO_LDPTR);
+				interp_add_ins (td, MINT_LDPTR);
 				push_type (td, STACK_TYPE_MP, NULL);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, &mono_thread_interruption_request_flag);
@@ -9342,7 +9342,7 @@ retry:
 			} else if (MINT_IS_LDC_I8 (opcode)) {
 				local_defs [dreg].type = LOCAL_VALUE_I8;
 				local_defs [dreg].l = interp_get_const_from_ldc_i8 (ins);
-			} else if (ins->opcode == MINT_MONO_LDPTR) {
+			} else if (ins->opcode == MINT_LDPTR) {
 #if SIZEOF_VOID_P == 8
 				local_defs [dreg].type = LOCAL_VALUE_I8;
 				local_defs [dreg].l = (gint64)td->data_items [ins->data [0]];
