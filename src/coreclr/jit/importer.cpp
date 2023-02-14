@@ -10594,19 +10594,30 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 lclTyp = JITtype2varType(info.compCompHnd->asCorInfoType(resolvedToken.hClass));
 
+                ClassLayout* layout = nullptr;
+
                 if (lclTyp == TYP_STRUCT)
                 {
-                    lclTyp = impNormStructType(resolvedToken.hClass);
+                    layout = typGetObjLayout(resolvedToken.hClass);
+                    if (varTypeIsSIMD(layout->GetType()))
+                    {
+                        lclTyp = layout->GetType();
+                    }
+                    else
+                    {
+                        lclTyp = impNormStructType(resolvedToken.hClass);
+                    }
                 }
 
                 if (lclTyp != TYP_STRUCT)
                 {
+                    assert(layout == nullptr);
                     op2 = gtNewZeroConNode(genActualType(lclTyp));
                     goto STIND_VALUE;
                 }
 
                 op1 = impPopStack().val;
-                op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1);
+                op1 = gtNewStructVal(layout, op1);
                 op2 = gtNewIconNode(0);
                 op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
                 goto SPILL_APPEND;
