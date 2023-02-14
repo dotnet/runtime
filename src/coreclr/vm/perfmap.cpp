@@ -22,13 +22,21 @@ Volatile<bool> PerfMap::s_enabled = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 
+enum 
+{
+    DISABLED,
+    ALL,
+    JITDUMP,
+    PERFMAP
+};
+
 // Initialize the map for the process - called from EEStartupHelper.
 void PerfMap::Initialize()
 {
     LIMITED_METHOD_CONTRACT;
 
     // Only enable the map if requested.
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled))
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == ALL || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == PERFMAP)
     {
         // Get the current process id.
         int currentPid = GetCurrentProcessId();
@@ -49,7 +57,9 @@ void PerfMap::Initialize()
         }
 
         s_enabled = true;
-
+    }
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == ALL || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == JITDUMP)
+    {    
         const char* jitdumpPath;
         char jitdumpPathBuffer[4096];
 
