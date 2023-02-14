@@ -114,12 +114,19 @@ namespace System.Net.Security
             // On Linux, AddRootCertificate will start a background download of an OCSP response,
             // unless this context was built "offline", or this came from the internal Create(X509Certificate2)
             ctx.SetNoOcspFetch(offline || noOcspFetch);
-            ctx.AddRootCertificate(root);
+
+            bool transferredOwnership = false;
+            ctx.AddRootCertificate(root, ref transferredOwnership);
+
+            if (!transferredOwnership)
+            {
+                root?.Dispose();
+            }
 
             return ctx;
         }
 
-        private partial void AddRootCertificate(X509Certificate2? rootCertificate);
+        partial void AddRootCertificate(X509Certificate2? rootCertificate, ref bool transferredOwnership);
         partial void SetNoOcspFetch(bool noOcspFetch);
 
         internal SslStreamCertificateContext Duplicate()

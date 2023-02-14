@@ -73,16 +73,15 @@ namespace System.Net.Security
             _staplingForbidden = noOcspFetch;
         }
 
-        private partial void AddRootCertificate(X509Certificate2? rootCertificate)
+        partial void AddRootCertificate(X509Certificate2? rootCertificate, ref bool transferredOwnership)
         {
             if (IntermediateCertificates.Length == 0)
             {
                 _ca = rootCertificate;
+                transferredOwnership = true;
             }
             else
             {
-                // The root certificate isn't needed, so dispose of it.
-                rootCertificate?.Dispose();
                 _ca = IntermediateCertificates[0];
             }
 
