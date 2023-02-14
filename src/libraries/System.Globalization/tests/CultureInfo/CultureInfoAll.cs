@@ -658,81 +658,72 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(CultureInfo_TestData))]
-        public void LcidTest(int lcid, string[] cultureNames, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName, bool expectToFallbackOnBrowser = false)
+        public void LcidTest(int lcid, string[] cultureNames, string specificCultureName, string threeLetterISOLanguageName, string threeLetterWindowsLanguageName, string alternativeCultureName, string consoleUICultureName)
         {
-            if (!expectToFallbackOnBrowser || PlatformDetection.IsNotBrowser)
+            _ = alternativeCultureName;
+
+            CultureInfo ci = new CultureInfo(lcid);
+            Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
+
+            Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
+            Assert.True(ci.UseUserOverride, "UseUserOverride for lcid created culture expected to be true");
+            Assert.False(ci.IsReadOnly, "IsReadOnly for lcid created culture expected to be false");
+            if (ci.ThreeLetterISOLanguageName != "")
             {
-                _ = alternativeCultureName;
-
-                CultureInfo ci = new CultureInfo(lcid);
-                Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
-
-                Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
-                Assert.True(ci.UseUserOverride, "UseUserOverride for lcid created culture expected to be true");
-                Assert.False(ci.IsReadOnly, "IsReadOnly for lcid created culture expected to be false");
-                if (ci.ThreeLetterISOLanguageName != "")
-                {
-                    Assert.Equal(threeLetterISOLanguageName, ci.ThreeLetterISOLanguageName);
-                }
-                if (ci.ThreeLetterWindowsLanguageName != "ZZZ")
-                {
-                    Assert.True((threeLetterWindowsLanguageName == ci.ThreeLetterWindowsLanguageName) || (threeLetterWindowsLanguageName == "CHT" && ci.ThreeLetterWindowsLanguageName == "ZHH"));
-                }
-                ci = new CultureInfo(cultureNames[0]);
-                Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
-                Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
-                Assert.True(ci.UseUserOverride, "UseUserOverride for named created culture expected to be true");
-                Assert.False(ci.IsReadOnly, "IsReadOnly for named created culture expected to be false");
-
-                ci = new CultureInfo(lcid, false);
-                Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
-                Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
-                Assert.False(ci.UseUserOverride, "UseUserOverride with false user override culture expected to be false");
-                Assert.False(ci.IsReadOnly, "IsReadOnly with false user override culture expected to be false");
-
-                ci = CultureInfo.GetCultureInfo(lcid);
-                Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
-                Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
-                Assert.False(ci.UseUserOverride, "UseUserOverride with Culture created by GetCultureInfo and lcid expected to be false");
-                Assert.True(ci.IsReadOnly, "IsReadOnly with Culture created by GetCultureInfo and lcid expected to be true");
-
-                ci = CultureInfo.GetCultureInfo(cultureNames[0]);
-                Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
-                Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
-                Assert.False(ci.UseUserOverride, "UseUserOverride with Culture created by GetCultureInfo and name expected to be false");
-                Assert.True(ci.IsReadOnly, "IsReadOnly with Culture created by GetCultureInfo and name expected to be true");
-
-                ci = CultureInfo.GetCultureInfo(cultureNames[0], "");
-                Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
-                Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
-                Assert.False(ci.UseUserOverride, "UseUserOverride with Culture created by GetCultureInfo and sort name expected to be false");
-                Assert.True(ci.IsReadOnly, "IsReadOnly with Culture created by GetCultureInfo and sort name expected to be true");
-                Assert.Equal(CultureInfo.InvariantCulture.TextInfo, ci.TextInfo);
-                Assert.Equal(CultureInfo.InvariantCulture.CompareInfo, ci.CompareInfo);
-
-                ci = CultureInfo.CreateSpecificCulture(cultureNames[0]);
-                TestCultureName(specificCultureName, ci.Name);
-
-                // CultureInfo.GetCultureInfoByIetfLanguageTag doesn't support alternative sort LCID's.
-                if (lcid <= 0xffff && lcid != 0x040a)
-                {
-                    ci = CultureInfo.GetCultureInfoByIetfLanguageTag(cultureNames[0]);
-                    Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
-                    TestCultureName(ci.Name, ci.IetfLanguageTag);
-                    Assert.True(lcid == ci.KeyboardLayoutId || (ushort)lcid == (ushort)ci.KeyboardLayoutId);
-                }
-
-                if (ci.GetConsoleFallbackUICulture().Name != "")
-                {
-                    Assert.Equal(consoleUICultureName, ci.GetConsoleFallbackUICulture().Name);
-                }
+                Assert.Equal(threeLetterISOLanguageName, ci.ThreeLetterISOLanguageName);
             }
-            else
+            if (ci.ThreeLetterWindowsLanguageName != "ZZZ")
             {
-                CultureInfo culture = new CultureInfo(lcid);
-                Assert.Equal("en-US", culture.Name, StringComparer.OrdinalIgnoreCase);
+                Assert.True((threeLetterWindowsLanguageName == ci.ThreeLetterWindowsLanguageName) || (threeLetterWindowsLanguageName == "CHT" && ci.ThreeLetterWindowsLanguageName == "ZHH"));
+            }
+            ci = new CultureInfo(cultureNames[0]);
+            Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
+            Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
+            Assert.True(ci.UseUserOverride, "UseUserOverride for named created culture expected to be true");
+            Assert.False(ci.IsReadOnly, "IsReadOnly for named created culture expected to be false");
+
+            ci = new CultureInfo(lcid, false);
+            Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
+            Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
+            Assert.False(ci.UseUserOverride, "UseUserOverride with false user override culture expected to be false");
+            Assert.False(ci.IsReadOnly, "IsReadOnly with false user override culture expected to be false");
+
+            ci = CultureInfo.GetCultureInfo(lcid);
+            Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
+            Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
+            Assert.False(ci.UseUserOverride, "UseUserOverride with Culture created by GetCultureInfo and lcid expected to be false");
+            Assert.True(ci.IsReadOnly, "IsReadOnly with Culture created by GetCultureInfo and lcid expected to be true");
+
+            ci = CultureInfo.GetCultureInfo(cultureNames[0]);
+            Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
+            Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
+            Assert.False(ci.UseUserOverride, "UseUserOverride with Culture created by GetCultureInfo and name expected to be false");
+            Assert.True(ci.IsReadOnly, "IsReadOnly with Culture created by GetCultureInfo and name expected to be true");
+
+            ci = CultureInfo.GetCultureInfo(cultureNames[0], "");
+            Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
+            Assert.True(lcid == ci.LCID || (ushort)lcid == (ushort)ci.LCID);
+            Assert.False(ci.UseUserOverride, "UseUserOverride with Culture created by GetCultureInfo and sort name expected to be false");
+            Assert.True(ci.IsReadOnly, "IsReadOnly with Culture created by GetCultureInfo and sort name expected to be true");
+            Assert.Equal(CultureInfo.InvariantCulture.TextInfo, ci.TextInfo);
+            Assert.Equal(CultureInfo.InvariantCulture.CompareInfo, ci.CompareInfo);
+
+            ci = CultureInfo.CreateSpecificCulture(cultureNames[0]);
+            TestCultureName(specificCultureName, ci.Name);
+
+            // CultureInfo.GetCultureInfoByIetfLanguageTag doesn't support alternative sort LCID's.
+            if (lcid <= 0xffff && lcid != 0x040a)
+            {
+                ci = CultureInfo.GetCultureInfoByIetfLanguageTag(cultureNames[0]);
+                Assert.Contains(ci.Name, cultureNames, StringComparer.OrdinalIgnoreCase);
+                TestCultureName(ci.Name, ci.IetfLanguageTag);
+                Assert.True(lcid == ci.KeyboardLayoutId || (ushort)lcid == (ushort)ci.KeyboardLayoutId);
             }
 
+            if (ci.GetConsoleFallbackUICulture().Name != "")
+            {
+                Assert.Equal(consoleUICultureName, ci.GetConsoleFallbackUICulture().Name);
+            }
         }
 
         private static string[] hans = new[] { "zh-CN", "zh-CHS", "zh-Hans" };
