@@ -2597,6 +2597,45 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             break;
     }
 
+    // Allow some lighweight intrinsics in Tier0 which can improve throughput
+    // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
+    // in this case unlike mustExpand.
+    bool betterToExpand = false;
+
+    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
+    // To be fixed in https://github.com/dotnet/runtime/pull/77465
+    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+
+    if (!mustExpand && tier0opts)
+    {
+        switch (ni)
+        {
+            // This one is just `return true/false`
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+
+            // We need these to be able to fold "typeof(...) == typeof(...)"
+            case NI_System_RuntimeTypeHandle_GetValueInternal:
+            case NI_System_Type_GetTypeFromHandle:
+            case NI_System_Type_op_Equality:
+            case NI_System_Type_op_Inequality:
+
+            // Simple cases
+            case NI_System_String_get_Chars:
+            case NI_System_String_get_Length:
+            case NI_System_Span_get_Item:
+            case NI_System_Span_get_Length:
+            case NI_System_ReadOnlySpan_get_Item:
+            case NI_System_ReadOnlySpan_get_Length:
+                betterToExpand = true;
+                break;
+
+            default:
+                // Unsafe.* are all small enough to prefer expansions.
+                betterToExpand = ni >= NI_SRCS_UNSAFE_START && ni <= NI_SRCS_UNSAFE_END;
+                break;
+        }
+    }
+
     GenTree* retNode = nullptr;
 
     // Under debug and minopts, only expand what is required.
@@ -2604,7 +2643,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // If that call is an intrinsic and is expanded, codegen for NextCallReturnAddress will fail.
     // To avoid that we conservatively expand only required intrinsics in methods that call
     // the NextCallReturnAddress intrinsic.
-    if (!mustExpand && (opts.OptimizationDisabled() || info.compHasNextCallRetAddr))
+    if (!mustExpand && ((opts.OptimizationDisabled() && !betterToExpand) || info.compHasNextCallRetAddr))
     {
         *pIntrinsicName = NI_Illegal;
         return retNode;
