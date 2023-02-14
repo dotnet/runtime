@@ -2445,6 +2445,42 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				has_refs = m_class_has_references (klass);
 
 			*op = has_refs ? MINT_LDC_I4_1 : MINT_LDC_I4_0;
+		} else if (!strcmp (tm, "CreateSpan") && csignature->param_count == 1 &&
+				td->last_ins->opcode == MINT_LDPTR && td->last_ins->dreg == td->sp [-1].local) {
+			MonoGenericContext* ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			MonoType *span_arg_type = mini_get_underlying_type (ctx->method_inst->type_argv [0]);
+
+			MonoClassField *field = (MonoClassField*)td->data_items [td->last_ins->data [0]];
+			int alignment = 0;
+			int element_size = mono_type_size (span_arg_type, &alignment);
+			int num_elements = mono_type_size (field->type, &alignment) / element_size;
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+			const int swizzle = 1;
+#else
+			const int swizzle = element_size;
+#endif
+			gpointer data_ptr = (gpointer)mono_field_get_rva (field, swizzle);
+			// instead of the field, we push directly the associated data
+			td->last_ins->data [0] = get_data_item_index (td, data_ptr);
+
+			// push the length of this span
+			push_simple_type (td, STACK_TYPE_I4);
+			interp_get_ldc_i4_from_const (td, NULL, num_elements, td->sp [-1].local);
+
+			// create span
+			interp_add_ins (td, MINT_INTRINS_SPAN_CTOR);
+			td->sp -= 2;
+			interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
+
+			MonoClass *ret_class = mono_class_from_mono_type_internal (csignature->ret);
+			push_type_vt (td, ret_class, mono_class_value_size (ret_class, NULL));
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+
+			td->ip += 5;
+			return TRUE;
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "RuntimeMethodHandle") && !strcmp (tm, "GetFunctionPointer") && csignature->param_count == 1) {
 		// We must intrinsify this method on interp so we don't return a pointer to native code entering interpreter
