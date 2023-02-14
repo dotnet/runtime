@@ -25,6 +25,21 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <_CommonLinkerArgs Include="libz.so" />
+      <_CommonLinkerArgs Include="log" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_LoadICU" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLatestJapaneseEra" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_ChangeCase" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_CloseSortHandle" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocales" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleInfoInt" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleTimeFormat" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_ToUnicode" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_NormalizeString" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetTimeZoneDisplayName" />
+    </ItemGroup>
+
+    <ItemGroup>
       <AotInputAssemblies Include="$(PublishDir)\*.dll">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
@@ -78,19 +93,24 @@
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
 
+    <ItemGroup>
+      <_ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
+    </ItemGroup>
+
     <AndroidAppBuilderTask
-        RuntimeIdentifier="$(RuntimeIdentifier)"
-        ProjectName="HelloAndroid"
+        AppDir="$(PublishDir)"
+        Assemblies="@(BundleAssemblies)"
+        DiagnosticPorts="$(DiagnosticPorts)"
+        ExtraLinkerArguments="@(_ExtraAppLinkerArgs)"
         ForceInterpreter="$(MonoForceInterpreter)"
         ForceAOT="$(ForceAOT)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\android-$(TargetArchitecture)\native\include\mono-2.0"
-        Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="$(AssemblyName).dll"
-        StripDebugSymbols="$(StripDebugSymbols)"
-        RuntimeComponents="$(RuntimeComponents)"
-        DiagnosticPorts="$(DiagnosticPorts)"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\android-$(TargetArchitecture)\native\include\mono-2.0"
         OutputDir="$(ApkDir)"
-        AppDir="$(PublishDir)">
+        ProjectName="HelloAndroid"
+        RuntimeComponents="$(RuntimeComponents)"
+        RuntimeIdentifier="$(RuntimeIdentifier)"
+        StripDebugSymbols="$(StripDebugSymbols)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
