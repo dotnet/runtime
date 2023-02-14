@@ -8,8 +8,10 @@ namespace System.Text.Json.Serialization
 {
     internal struct ReferenceEqualsWrapper : IEquatable<ReferenceEqualsWrapper>
     {
-        private object _object;
+        private readonly object _object;
+
         public ReferenceEqualsWrapper(object obj) => _object = obj;
+
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is ReferenceEqualsWrapper otherObj && Equals(otherObj);
         public bool Equals(ReferenceEqualsWrapper obj) => ReferenceEquals(_object, obj._object);
         public override int GetHashCode() => RuntimeHelpers.GetHashCode(_object);

@@ -13,8 +13,9 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class FuncJSGenerator : BaseJSGenerator
     {
-        private bool _isAction;
-        private MarshalerType[] _argumentMarshalerTypes;
+        private readonly bool _isAction;
+        private readonly MarshalerType[] _argumentMarshalerTypes;
+
         public FuncJSGenerator(bool isAction, MarshalerType[] argumentMarshalerTypes)
             : base(isAction ? MarshalerType.Action : MarshalerType.Function, new Forwarder())
         {

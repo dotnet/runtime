@@ -108,15 +108,15 @@ public sealed partial class QuicStream
         }
     };
     private MsQuicBuffers _sendBuffers = new MsQuicBuffers();
-    private object _sendBuffersLock = new object();
+    private readonly object _sendBuffersLock = new object();
 
     private readonly long _defaultErrorCode;
 
-    private bool _canRead;
-    private bool _canWrite;
+    private readonly bool _canRead;
+    private readonly bool _canWrite;
 
     private long _id = -1;
-    private QuicStreamType _type;
+    private readonly QuicStreamType _type;
 
     /// <summary>
     /// Stream id, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-types-and-identifier" />.

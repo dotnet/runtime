@@ -25,18 +25,18 @@ namespace System.Net.Http
         private readonly HttpRequestMessage _request;
         private Http3Connection _connection;
         private long _streamId = -1; // A stream does not have an ID until the first I/O against it. This gets set almost immediately following construction.
-        private QuicStream _stream;
+        private readonly QuicStream _stream;
         private ArrayBuffer _sendBuffer;
         private ArrayBuffer _recvBuffer;
         private TaskCompletionSource<bool>? _expect100ContinueCompletionSource; // True indicates we should send content (e.g. received 100 Continue).
         private bool _disposed;
-        private CancellationTokenSource _requestBodyCancellationSource;
+        private readonly CancellationTokenSource _requestBodyCancellationSource;
 
         // Allocated when we receive a :status header.
         private HttpResponseMessage? _response;
 
         // Header decoding.
-        private QPackDecoder _headerDecoder;
+        private readonly QPackDecoder _headerDecoder;
         private HeaderState _headerState;
         private int _headerBudgetRemaining;
 
