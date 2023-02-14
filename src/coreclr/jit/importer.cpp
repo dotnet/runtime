@@ -10615,8 +10615,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     goto STIND_VALUE;
                 }
 
-                assert(layout != nullptr);
-
                 op1 = impPopStack().val;
                 op1 = gtNewStructVal(layout, op1);
                 op2 = gtNewIconNode(0);
