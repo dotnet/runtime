@@ -18,11 +18,8 @@ class PerfMap
 private:
     static Volatile<bool> s_enabled;
 
-    // The one and only PerfMap for the process.
-    static PerfMap * s_Current;
-
-    // Indicates whether optimization tiers should be shown for methods in perf maps
-    static bool s_ShowOptimizationTiers;
+    // Set to true if an error is encountered when writing to the file.
+    static unsigned s_StubsMapped;
 
     // The file stream to write the map to.
     CFileStream * m_FileStream;
@@ -33,16 +30,16 @@ private:
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
 
-    // Set to true if an error is encountered when writing to the file.
-    unsigned m_StubsMapped;
-
     // Construct a new map for the specified pid.
     PerfMap(int pid);
 
-    // Write a line to the map file.
-    void WriteLine(SString & line);
-
 protected:
+    // Indicates whether optimization tiers should be shown for methods in perf maps
+    static bool s_ShowOptimizationTiers;
+
+    // The one and only PerfMap for the process.
+    static PerfMap * s_Current;
+
     // Construct a new map without a specified file name.
     // Used for offline creation of NGEN map files.
     PerfMap();
@@ -53,9 +50,6 @@ protected:
     // Open the perf map file for write.
     void OpenFile(SString& path);
 
-    // Does the actual work to log a method to the map.
-    void LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, const char *optimizationTier);
-
     // Does the actual work to log an image
     void LogImage(PEFile * pFile);
 
@@ -63,6 +57,9 @@ protected:
     static void GetNativeImageSignature(PEFile * pFile, WCHAR * pwszSig, unsigned int nSigSize);
 
 public:
+    // Write a line to the map file.
+    void WriteLine(SString & line);
+
     // Initialize the map for the current process.
     static void Initialize();
 
@@ -90,6 +87,9 @@ private:
 
     // Specify the address format since it's now possible for 'perf script' to output file offsets or RVAs.
     bool m_EmitRVAs;
+
+    // Does the actual work to log a method to the map.
+    void LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, const char *optimizationTier);
 
     // Log a pre-compiled method to the map.
     void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode, PEImageLayout *pLoadedLayout, const char *optimizationTier);
