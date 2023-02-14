@@ -126,15 +126,14 @@ add_subdirectory(pal/prebuilt/inc)
 set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
 include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
 
-
 if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
   add_subdirectory(debug/debug-pal)
+endif()
 
-  add_subdirectory(minipal)
+add_subdirectory(minipal)
 
-  if(CLR_CMAKE_TARGET_WIN32)
-    add_subdirectory(gc/sample)
-  endif()
+if(CLR_CMAKE_TARGET_WIN32)
+  add_subdirectory(gc/sample)
 endif()
 
 #-------------------------------------
