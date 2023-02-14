@@ -73,7 +73,7 @@ namespace System.Collections.Concurrent.Tests
                 // If the layout of ConcurrentDictionary changes, this will need to change as well.
 
                 FieldInfo tablesField = AssertNotNull(typeof(ConcurrentDictionary<string, string>).GetField("_tables", BindingFlags.Instance | BindingFlags.NonPublic));
-                Type tablesType = AssertNotNull(Type.GetType("System.Collections.Concurrent.ConcurrentDictionary`2+Tables, System.Collections.Concurrent"));
+                Type tablesType = Type.GetType("System.Collections.Concurrent.ConcurrentDictionary`2+Tables, System.Collections.Concurrent", throwOnError: true);
                 object tables = AssertNotNull(tablesField.GetValue(cd));
 
                 FieldInfo comparerField = AssertNotNull(tablesType.GetField("_comparer", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public));
