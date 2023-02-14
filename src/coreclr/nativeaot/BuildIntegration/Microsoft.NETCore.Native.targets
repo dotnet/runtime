@@ -66,13 +66,13 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(TargetOS)' != 'windows'"></NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Shared'">.dll</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and ('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator') and '$(NativeLib)' == 'Shared'">.dylib</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and ('$(TargetOS)' == 'freebsd' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'linux-musl') and '$(NativeLib)' == 'Shared'">.so</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(NativeLib)' == 'Shared'">.so</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'windows' and '$(NativeLib)' == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Static'">.a</NativeBinaryExt>
 
     <NativeSymbolExt Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'">.dwarf</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(TargetOS)' == 'windows'">.pdb</NativeSymbolExt>
-    <NativeSymbolExt Condition="'$(TargetOS)' == 'freebsd' or '$(TargetOS)' != 'linux' or '$(TargetOS)' == 'linux-musl'">.dbg</NativeSymbolExt>
+    <NativeSymbolExt Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'">.dbg</NativeSymbolExt>
 
     <ExportsFileExt Condition="'$(TargetOS)' == 'windows'">.def</ExportsFileExt>
     <ExportsFileExt Condition="'$(TargetOS)' != 'windows'">.exports</ExportsFileExt>
@@ -307,11 +307,11 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="/DEF:&quot;$(ExportsFile)&quot;" Condition="'$(TargetOS)' == 'windows' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(TargetOS)' == 'windows' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
       <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator') and $(ExportsFile) != ''" />
-      <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="('$(TargetOS)' == 'freebsd' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'linux-musl') and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and $(ExportsFile) != ''" />
       <CustomLinkerArg Condition="Exists('$(_Win32ResFile)')" Include="&quot;$(_Win32ResFile)&quot;" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
-    <ItemGroup Condition="('$(TargetOS)' == 'freebsd' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'linux-musl')">
+    <ItemGroup Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'">
       <CustomLinkerArg Include="-Wl,--discard-all" />
       <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(UseLLVMLinker)' != 'true'" />
     </ItemGroup>
@@ -342,7 +342,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="chmod 644 &quot;$(NativeBinary)&quot;" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Shared'" />
 
     <!-- strip symbols, see https://github.com/dotnet/runtime/blob/5d3288d/eng/native/functions.cmake#L374 -->
-    <Exec Condition="'$(StripSymbols)' == 'true' and ('$(TargetOS)' == 'freebsd' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'linux-musl')"
+    <Exec Condition="'$(StripSymbols)' == 'true' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'"
       Command="
         &quot;$(ObjCopyName)&quot; --only-keep-debug &quot;$(NativeBinary)&quot; &quot;$(NativeBinary)$(NativeSymbolExt)&quot; &amp;&amp;
         &quot;$(ObjCopyName)&quot; --strip-debug --strip-unneeded &quot;$(NativeBinary)&quot; &amp;&amp;
