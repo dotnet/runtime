@@ -214,6 +214,22 @@
       <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
     </ItemGroup>
 
+    <!-- common linker arguments for appbuilder -->
+    <ItemGroup>
+      <_CommonLinkerArgs Include="libz.so" />
+      <_CommonLinkerArgs Include="log" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_LoadICU" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLatestJapaneseEra" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_ChangeCase" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_CloseSortHandle" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocales" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleInfoInt" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetLocaleTimeFormat" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_ToUnicode" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_NormalizeString" />
+      <_CommonLinkerArgs Include="-u GlobalizationNative_GetTimeZoneDisplayName" />
+    </ItemGroup>
+
     <Copy
         SourceFiles="@(TestAssemblies)"
         DestinationFolder="$(BuildDir)" />
@@ -235,15 +251,16 @@
         DestinationFolder="$(BuildDir)" />
 
     <AndroidAppBuilderTask
-        RuntimeIdentifier="$(RuntimeIdentifier)"
-        ProjectName="$(Category)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
-        RuntimeComponents="$(RuntimeComponents)"
-        DiagnosticPorts="$(DiagnosticPorts)"
-        StripDebugSymbols="$(StripDebugSymbols)"
-        ForceInterpreter="$(MonoInterp)"
         AppDir="$(BuildDir)"
-        OutputDir="$(AppDir)">
+        DiagnosticPorts="$(DiagnosticPorts)"
+        ExtraLinkerArguments="@(_CommonLinkerArgs)"
+        ForceInterpreter="$(MonoInterp)"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
+        OutputDir="$(AppDir)"
+        ProjectName="$(Category)"
+        RuntimeComponents="$(RuntimeComponents)"
+        RuntimeIdentifier="$(RuntimeIdentifier)"
+        StripDebugSymbols="$(StripDebugSymbols)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
