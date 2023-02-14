@@ -157,7 +157,7 @@ elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s39
     set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
   endif()
 else()
-  message(FATAL_ERROR "Arch is ${TARGET_ARCH_NAME}. Only armel, arm, armv6, arm64, loongarch64, s390x, ppc64le and x86 are supported!")
+  message(FATAL_ERROR "Arch '${TARGET_ARCH_NAME}' is not supported in this context!")
 endif()
 
 if(TARGET_ARCH_NAME MATCHES "^(x86|s390x|armv6|loongarch64|riscv64|ppc64le)$")
