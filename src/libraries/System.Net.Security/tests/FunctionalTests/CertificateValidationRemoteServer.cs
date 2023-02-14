@@ -106,9 +106,11 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Linux)]
         [ConditionalTheory]
         [OuterLoop("Subject to system load race conditions")]
-        [InlineData(false)]
-        [InlineData(true)]
-        public Task ConnectWithRevocation_StapledOcsp(bool offlineContext)
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public Task ConnectWithRevocation_StapledOcsp(bool offlineContext, bool noIntermediates)
         {
             // Offline will only work if
             // a) the revocation has been checked recently enough that it is cached, or
@@ -116,7 +118,7 @@ namespace System.Net.Security.Tests
             //
             // At high load, the server's background fetch might not have completed before
             // this test runs.
-            return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext);
+            return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext, noIntermediates);
         }
 
         [Fact]
@@ -192,7 +194,8 @@ namespace System.Net.Security.Tests
 
         private async Task ConnectWithRevocation_WithCallback_Core(
             X509RevocationMode revocationMode,
-            bool? offlineContext = false)
+            bool? offlineContext = false,
+            bool noIntermediates = false)
         {
             string offlinePart = offlineContext.HasValue ? offlineContext.GetValueOrDefault().ToString().ToLower() : "null";
             string serverName = $"{revocationMode.ToString().ToLower()}.{offlinePart}.server.example";
@@ -203,13 +206,15 @@ namespace System.Net.Security.Tests
                 PkiOptions.EndEntityRevocationViaOcsp | PkiOptions.CrlEverywhere,
                 out RevocationResponder responder,
                 out CertificateAuthority rootAuthority,
-                out CertificateAuthority intermediateAuthority,
+                out CertificateAuthority[] intermediateAuthorities,
                 out X509Certificate2 serverCert,
+                intermediateAuthorityCount: noIntermediates ? 0 : 1,
                 subjectName: serverName,
                 keySize: 2048,
                 extensions: TestHelper.BuildTlsServerCertExtensions(serverName));
 
-            X509Certificate2 issuerCert = intermediateAuthority.CloneIssuerCert();
+            CertificateAuthority issuingAuthority = noIntermediates ? rootAuthority : intermediateAuthorities[0];
+            X509Certificate2 issuerCert = issuingAuthority.CloneIssuerCert();
             X509Certificate2 rootCert = rootAuthority.CloneIssuerCert();
 
             SslClientAuthenticationOptions clientOpts = new SslClientAuthenticationOptions
@@ -247,14 +252,13 @@ namespace System.Net.Security.Tests
             await using (serverStream)
             using (responder)
             using (rootAuthority)
-            using (intermediateAuthority)
             using (serverCert)
             using (issuerCert)
             using (rootCert)
             await using (SslStream tlsClient = new SslStream(clientStream))
             await using (SslStream tlsServer = new SslStream(serverStream))
             {
-                intermediateAuthority.Revoke(serverCert, serverCert.NotBefore);
+                issuingAuthority.Revoke(serverCert, serverCert.NotBefore);
 
                 SslServerAuthenticationOptions serverOpts = new SslServerAuthenticationOptions();
 
