@@ -432,6 +432,7 @@
                          Include="-D WASI_AFTER_RUNTIME_LOADED_CALLS=&quot;@(WasiAfterRuntimeLoadedCalls, ' ')&quot;" />
       <_WasiSdkClangArgs Include="-o &quot;$(_WasmOutputFileName.Replace('\', '/'))&quot;" />
     </ItemGroup>
+
     <WriteLinesToFile Lines="@(_WasiSdkClangArgs)" File="$(_WasmIntermediateOutputPath)clang-compile.rsp" Overwrite="true" />
     <!--<Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; @(_WasiSdkClangArgs, ' ')" />-->
     <Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; @$(_WasmIntermediateOutputPath)clang-compile.rsp" />

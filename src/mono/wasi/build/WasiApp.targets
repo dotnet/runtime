@@ -1,6 +1,6 @@
 <Project>
-  <UsingTask TaskName="WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasiAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <!--
       Required public items/properties:
@@ -319,7 +319,7 @@
 
   <Target Name="_GetWasiGenerateAppBundleDependencies">
     <PropertyGroup>
-      <!--<WasmIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>-->
+      <WasmIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>
 
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
     </PropertyGroup>
@@ -328,7 +328,7 @@
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
 
-      <!--<WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />-->
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
 
       <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
@@ -341,10 +341,23 @@
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
           DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasiGenerateAppBundleDependencies;_WasiDefaultGenerateAppBundle;_GenerateRunWasmtimeScript" />
 
-  <Target Name="_WasiDefaultGenerateAppBundle" Condition="'$(WasmSingleFileBundle)' != 'true'">
-    <!-- placeholder bundle generator -->
-    <Copy SourceFiles="@(_WasmAssembliesInternal)" DestinationFolder="$(WasmAppDir)\managed" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(WasmNativeAsset)" DestinationFolder="$(WasmAppDir)" SkipUnchangedFiles="true" />
+  <Target Name="_WasiDefaultGenerateAppBundle">
+
+    <WasiAppBuilder
+      AppDir="$(WasmAppDir)"
+      Assemblies="@(_WasmAssembliesInternal)"
+      MainAssemblyName="$(WasmMainAssemblyFileName)"
+      IsSingleFileBundle="$(WasmSingleFileBundle)"
+      HostConfigs="@(HostConfig)"
+      RuntimeArgsForHost="@(WasmMonoRuntimeArgs)"
+      DefaultHostConfig="$(DefaultWasmHostConfig)"
+      InvariantGlobalization="$(InvariantGlobalization)"
+      SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
+      IcuDataFileName="$(WasmIcuDataFileName)"
+      ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
+      NativeAssets="@(WasmNativeAsset)"
+      DebugLevel="$(WasmDebugLevel)"
+      />
   </Target>
 
   <Target Name="_GenerateRunWasmtimeScript">
