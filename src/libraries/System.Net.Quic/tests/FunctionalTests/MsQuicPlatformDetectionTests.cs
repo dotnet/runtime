@@ -31,7 +31,7 @@ namespace System.Net.Quic.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/81901", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine314), nameof(PlatformDetection.IsInContainer))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
-        public async Task SupportedLinuxPlatformsWithMsquic_IsSupportedIsTrue()
+        public async Task SupportedLinuxPlatformsWithMsQuic_IsSupportedIsTrue()
         {
             using Process find = new Process();
             find.StartInfo.FileName = "find";
@@ -57,7 +57,7 @@ namespace System.Net.Quic.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/81901", typeof(PlatformDetection), nameof(PlatformDetection.IsMariner1), nameof(PlatformDetection.IsInContainer))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/81901", typeof(PlatformDetection), nameof(PlatformDetection.IsCentos7), nameof(PlatformDetection.IsInContainer))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82055", typeof(PlatformDetection), nameof(PlatformDetection.IsUbuntu1804), nameof(PlatformDetection.IsArmProcess), nameof(PlatformDetection.IsInContainer))]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux), nameof(PlatformDetection.IsInHelix))]
         public void SupportedLinuxPlatforms_IsSupportedIsTrue()
         {
             _output.WriteLine($"Running on {PlatformDetection.GetDistroVersionString()}");
