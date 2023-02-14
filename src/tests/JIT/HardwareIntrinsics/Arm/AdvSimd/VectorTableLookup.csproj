@@ -12,6 +12,7 @@
     <AssemblyName>System.Private.CoreLib</AssemblyName>
     <NoWarn>436</NoWarn>
     <NoWarn>436</NoWarn>
+    <ProduceOnlyReferenceAssembly>true</ProduceOnlyReferenceAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(RepoRoot)/src/libraries/System.Private.CoreLib/src/System/Runtime/CompilerServices/IntrinsicAttribute.cs" />

@@ -27,6 +27,9 @@
     <MergedWrapperProjectReference Remove="General/Vector512_1/**/*_ro.csproj" Condition="'$(CLRTestPriorityToBuild)' &lt; '1'" />
     <MergedWrapperProjectReference Remove="X86/**/*_ro.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
 
+    <!-- it's a reference assembly that shouldn't be added to the consolidated project -->
+    <MergedWrapperProjectReference Remove="Arm/AdvSimd/VectorTableLookup.csproj" />
+
     <ProjectReference Include="@(MergedWrapperProjectReference)" />
   </ItemGroup>
 </Project>
