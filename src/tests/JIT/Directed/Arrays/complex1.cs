@@ -13,7 +13,7 @@ struct Complex
 	c = a * b;
   }
 };
-public 
+
 public class Complex_Array_Test
 {
 	public static int Main()
