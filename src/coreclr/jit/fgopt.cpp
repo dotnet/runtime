@@ -3839,7 +3839,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 
             if (jmp->OperIs(GT_JCC))
             {
-                // For nodes that consume CPU flags we have an invariant until
+                // For JCC we have an invariant until
                 // resolution that the previous node sets those CPU flags.
                 GenTree* prevNode = jmp->gtPrev;
                 assert((prevNode != nullptr) && ((prevNode->gtFlags & GTF_SET_FLAGS) != 0));
