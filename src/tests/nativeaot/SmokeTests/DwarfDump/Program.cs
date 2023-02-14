@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -39,8 +42,8 @@ public class Program
 
         proc = Process.Start(new ProcessStartInfo
         {
-            FileName = "/bin/sh",
-            Arguments = $"-c \"{llvmDwarfDumpPath} --verify {Environment.ProcessPath}",
+            FileName = llvmDwarfDumpPath,
+            Arguments = $"--verify {Environment.ProcessPath}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false
@@ -59,12 +62,13 @@ public class Program
             }
         }
         proc.WaitForExit();
+        Console.WriteLine($"Found {count} warnings and errors");
         if (count is not >= MinWarnings and <= MaxWarnings)
         {
             Console.WriteLine($"Found {count} warnings and errors, expected between {MinWarnings} and {MaxWarnings}");
             Console.WriteLine("This is likely a result of debug info changes. To see the new output, run the following command:");
             Console.WriteLine("\tllvm-dwarfdump --verify " + Environment.ProcessPath);
-            return 1;
+            return 10;
         }
         return 100;
     }
