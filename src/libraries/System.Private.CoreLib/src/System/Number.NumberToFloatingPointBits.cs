@@ -110,7 +110,7 @@ namespace System
             }
         }
 
-        private static readonly double[] s_Pow10DoubleTable =  {
+        private static ReadOnlySpan<double> Pow10DoubleTable => new double[] {
             1e0,    // 10^0
             1e1,    // 10^1
             1e2,    // 10^2
@@ -1113,7 +1113,7 @@ namespace System
                 if ((mantissa <= info.MaxMantissaFastPath) && (fastExponent <= info.MaxExponentFastPath))
                 {
                     double mantissa_d = mantissa;
-                    double scale = s_Pow10DoubleTable[fastExponent];
+                    double scale = Pow10DoubleTable[fastExponent];
 
                     if (fractionalDigitsPresent != 0)
                     {
@@ -1193,7 +1193,7 @@ namespace System
                 if ((mantissa <= info.MaxMantissaFastPath) && (fastExponent <= info.MaxExponentFastPath))
                 {
                     double mantissa_d = mantissa;
-                    double scale = s_Pow10DoubleTable[fastExponent];
+                    double scale = Pow10DoubleTable[fastExponent];
 
                     if (fractionalDigitsPresent != 0)
                     {
@@ -1274,7 +1274,7 @@ namespace System
                 if ((mantissa <= info.MaxMantissaFastPath) && (fastExponent <= info.MaxExponentFastPath))
                 {
                     double mantissa_d = mantissa;
-                    double scale = s_Pow10DoubleTable[fastExponent];
+                    double scale = Pow10DoubleTable[fastExponent];
 
                     if (fractionalDigitsPresent != 0)
                     {
