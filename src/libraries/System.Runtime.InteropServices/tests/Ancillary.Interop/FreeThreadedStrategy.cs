@@ -4,31 +4,32 @@
 // Implementations of the COM strategy interfaces defined in Com.cs that we would want to ship (can be internal only if we don't want to allow users to provide their own implementations in v1).
 using System.Runtime.CompilerServices;
 
-namespace System.Runtime.InteropServices.Marshalling;
-
-internal sealed unsafe class FreeThreadedStrategy : IIUnknownStrategy
+namespace System.Runtime.InteropServices.Marshalling
 {
-    public static readonly IIUnknownStrategy Instance = new FreeThreadedStrategy();
-
-    void* IIUnknownStrategy.CreateInstancePointer(void* unknown)
+    internal sealed unsafe class FreeThreadedStrategy : IIUnknownStrategy
     {
-        return unknown;
-    }
+        public static readonly IIUnknownStrategy Instance = new FreeThreadedStrategy();
 
-    unsafe int IIUnknownStrategy.QueryInterface(void* thisPtr, in Guid handle, out void* ppObj)
-    {
-        int hr = Marshal.QueryInterface((nint)thisPtr, ref Unsafe.AsRef(in handle), out nint ppv);
-        if (hr < 0)
+        void* IIUnknownStrategy.CreateInstancePointer(void* unknown)
         {
-            ppObj = null;
+            return unknown;
         }
-        else
-        {
-            ppObj = (void*)ppv;
-        }
-        return hr;
-    }
 
-    unsafe int IIUnknownStrategy.Release(void* thisPtr)
-        => Marshal.Release((nint)thisPtr);
+        unsafe int IIUnknownStrategy.QueryInterface(void* thisPtr, in Guid handle, out void* ppObj)
+        {
+            int hr = Marshal.QueryInterface((nint)thisPtr, ref Unsafe.AsRef(in handle), out nint ppv);
+            if (hr < 0)
+            {
+                ppObj = null;
+            }
+            else
+            {
+                ppObj = (void*)ppv;
+            }
+            return hr;
+        }
+
+        unsafe int IIUnknownStrategy.Release(void* thisPtr)
+            => Marshal.Release((nint)thisPtr);
+    }
 }

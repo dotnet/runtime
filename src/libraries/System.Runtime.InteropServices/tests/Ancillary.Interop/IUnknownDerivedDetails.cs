@@ -6,35 +6,36 @@
 
 using System.Reflection;
 
-namespace System.Runtime.InteropServices.Marshalling;
-
-/// <summary>
-/// Details for the IUnknown derived interface.
-/// </summary>
-public interface IUnknownDerivedDetails
+namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Interface ID.
+    /// Details for the IUnknown derived interface.
     /// </summary>
-    public Guid Iid { get; }
-
-    /// <summary>
-    /// Managed type used to project the IUnknown derived interface.
-    /// </summary>
-    public Type Implementation { get; }
-
-    /// <summary>
-    /// A pointer to the virtual method table to enable unmanaged callers to call a managed implementation of the interface.
-    /// </summary>
-    public unsafe void* VirtualMethodTableManagedImplementation { get; }
-
-    internal static IUnknownDerivedDetails? GetFromAttribute(RuntimeTypeHandle handle)
+    public interface IUnknownDerivedDetails
     {
-        var type = Type.GetTypeFromHandle(handle);
-        if (type is null)
+        /// <summary>
+        /// Interface ID.
+        /// </summary>
+        public Guid Iid { get; }
+
+        /// <summary>
+        /// Managed type used to project the IUnknown derived interface.
+        /// </summary>
+        public Type Implementation { get; }
+
+        /// <summary>
+        /// A pointer to the virtual method table to enable unmanaged callers to call a managed implementation of the interface.
+        /// </summary>
+        public unsafe void* VirtualMethodTableManagedImplementation { get; }
+
+        internal static IUnknownDerivedDetails? GetFromAttribute(RuntimeTypeHandle handle)
         {
-            return null;
+            var type = Type.GetTypeFromHandle(handle);
+            if (type is null)
+            {
+                return null;
+            }
+            return (IUnknownDerivedDetails?)type.GetCustomAttribute(typeof(IUnknownDerivedAttribute<,>));
         }
-        return (IUnknownDerivedDetails?)type.GetCustomAttribute(typeof(IUnknownDerivedAttribute<,>));
     }
 }

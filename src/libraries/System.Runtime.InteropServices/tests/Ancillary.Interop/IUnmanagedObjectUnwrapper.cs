@@ -6,21 +6,22 @@
 
 using System.Numerics;
 
-namespace System.Runtime.InteropServices.Marshalling;
-
-/// <summary>
-/// A factory to create an unmanaged "this pointer" from a managed object and to get a managed object from an unmanaged "this pointer".
-/// </summary>
-/// <remarks>
-/// This interface would be used by the VTable source generator to enable users to indicate how to get the managed object from the "this pointer".
-/// We can hard-code the ComWrappers logic here if we don't want to ship this interface.
-/// </remarks>
-public unsafe interface IUnmanagedObjectUnwrapper
+namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Get the object wrapped by <paramref name="ptr"/>.
+    /// A factory to create an unmanaged "this pointer" from a managed object and to get a managed object from an unmanaged "this pointer".
     /// </summary>
-    /// <param name="ptr">A an unmanaged "this pointer".</param>
-    /// <returns>The object wrapped by <paramref name="ptr"/>.</returns>
-    public static abstract object GetObjectForUnmanagedWrapper(void* ptr);
+    /// <remarks>
+    /// This interface would be used by the VTable source generator to enable users to indicate how to get the managed object from the "this pointer".
+    /// We can hard-code the ComWrappers logic here if we don't want to ship this interface.
+    /// </remarks>
+    internal unsafe interface IUnmanagedObjectUnwrapper
+    {
+        /// <summary>
+        /// Get the object wrapped by <paramref name="ptr"/>.
+        /// </summary>
+        /// <param name="ptr">A an unmanaged "this pointer".</param>
+        /// <returns>The object wrapped by <paramref name="ptr"/>.</returns>
+        public static abstract object GetObjectForUnmanagedWrapper(void* ptr);
+    }
 }

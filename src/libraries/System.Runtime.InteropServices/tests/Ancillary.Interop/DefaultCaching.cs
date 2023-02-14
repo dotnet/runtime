@@ -4,40 +4,41 @@
 // Implementations of the COM strategy interfaces defined in Com.cs that we would want to ship (can be internal only if we don't want to allow users to provide their own implementations in v1).
 using System.Collections.Generic;
 
-namespace System.Runtime.InteropServices.Marshalling;
-
-internal sealed unsafe class DefaultCaching : IIUnknownCacheStrategy
+namespace System.Runtime.InteropServices.Marshalling
 {
-    // [TODO] Implement some smart/thread-safe caching
-    private readonly Dictionary<RuntimeTypeHandle, IIUnknownCacheStrategy.TableInfo> _cache = new();
-
-    IIUnknownCacheStrategy.TableInfo IIUnknownCacheStrategy.ConstructTableInfo(RuntimeTypeHandle handle, IUnknownDerivedDetails details, void* ptr)
+    internal sealed unsafe class DefaultCaching : IIUnknownCacheStrategy
     {
-        var obj = (void***)ptr;
-        return new IIUnknownCacheStrategy.TableInfo()
+        // [TODO] Implement some smart/thread-safe caching
+        private readonly Dictionary<RuntimeTypeHandle, IIUnknownCacheStrategy.TableInfo> _cache = new();
+
+        IIUnknownCacheStrategy.TableInfo IIUnknownCacheStrategy.ConstructTableInfo(RuntimeTypeHandle handle, IUnknownDerivedDetails details, void* ptr)
         {
-            ThisPtr = obj,
-            Table = *obj,
-            ManagedType = details.Implementation.TypeHandle
-        };
-    }
-
-    bool IIUnknownCacheStrategy.TryGetTableInfo(RuntimeTypeHandle handle, out IIUnknownCacheStrategy.TableInfo info)
-    {
-        return _cache.TryGetValue(handle, out info);
-    }
-
-    bool IIUnknownCacheStrategy.TrySetTableInfo(RuntimeTypeHandle handle, IIUnknownCacheStrategy.TableInfo info)
-    {
-        return _cache.TryAdd(handle, info);
-    }
-
-    void IIUnknownCacheStrategy.Clear(IIUnknownStrategy unknownStrategy)
-    {
-        foreach (var info in _cache.Values)
-        {
-            _ = unknownStrategy.Release(info.ThisPtr);
+            var obj = (void***)ptr;
+            return new IIUnknownCacheStrategy.TableInfo()
+            {
+                ThisPtr = obj,
+                Table = *obj,
+                ManagedType = details.Implementation.TypeHandle
+            };
         }
-        _cache.Clear();
+
+        bool IIUnknownCacheStrategy.TryGetTableInfo(RuntimeTypeHandle handle, out IIUnknownCacheStrategy.TableInfo info)
+        {
+            return _cache.TryGetValue(handle, out info);
+        }
+
+        bool IIUnknownCacheStrategy.TrySetTableInfo(RuntimeTypeHandle handle, IIUnknownCacheStrategy.TableInfo info)
+        {
+            return _cache.TryAdd(handle, info);
+        }
+
+        void IIUnknownCacheStrategy.Clear(IIUnknownStrategy unknownStrategy)
+        {
+            foreach (var info in _cache.Values)
+            {
+                _ = unknownStrategy.Release(info.ThisPtr);
+            }
+            _cache.Clear();
+        }
     }
 }

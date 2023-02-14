@@ -4,23 +4,24 @@
 // This type is for the COM source generator and implements part of the COM-specific interactions.
 // This API need to be exposed to implement the COM source generator in one form or another.
 
-namespace System.Runtime.InteropServices.Marshalling;
-
-[AttributeUsage(AttributeTargets.Interface)]
-public class IUnknownDerivedAttribute<T, TImpl> : Attribute, IUnknownDerivedDetails
-    where T : IIUnknownInterfaceType
-    where TImpl : T
+namespace System.Runtime.InteropServices.Marshalling
 {
-    public IUnknownDerivedAttribute()
+    [AttributeUsage(AttributeTargets.Interface)]
+    public class IUnknownDerivedAttribute<T, TImpl> : Attribute, IUnknownDerivedDetails
+        where T : IIUnknownInterfaceType
+        where TImpl : T
     {
+        public IUnknownDerivedAttribute()
+        {
+        }
+
+        /// <inheritdoc />
+        public Guid Iid => T.Iid;
+
+        /// <inheritdoc />
+        public Type Implementation => typeof(TImpl);
+
+        /// <inheritdoc />
+        public unsafe void* VirtualMethodTableManagedImplementation => T.VirtualMethodTableManagedImplementation;
     }
-
-    /// <inheritdoc />
-    public Guid Iid => T.Iid;
-
-    /// <inheritdoc />
-    public Type Implementation => typeof(TImpl);
-
-    /// <inheritdoc />
-    public unsafe void* VirtualMethodTableManagedImplementation => T.VirtualMethodTableManagedImplementation;
 }

@@ -4,9 +4,10 @@
 // This type is for the COM source generator and implements part of the COM-specific interactions.
 // This API need to be exposed to implement the COM source generator in one form or another.
 
-namespace System.Runtime.InteropServices.Marshalling;
-
-public interface IIUnknownInterfaceType : IUnmanagedInterfaceType
+namespace System.Runtime.InteropServices.Marshalling
 {
-    public abstract static Guid Iid { get; }
+    public interface IIUnknownInterfaceType : IUnmanagedInterfaceType
+    {
+        public abstract static Guid Iid { get; }
+    }
 }

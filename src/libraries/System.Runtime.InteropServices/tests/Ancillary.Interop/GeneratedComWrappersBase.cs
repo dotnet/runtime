@@ -6,45 +6,46 @@
 
 using System.Collections;
 
-namespace System.Runtime.InteropServices.Marshalling;
-
-public abstract class GeneratedComWrappersBase : ComWrappers
+namespace System.Runtime.InteropServices.Marshalling
 {
-    protected virtual IIUnknownInterfaceDetailsStrategy CreateInterfaceDetailsStrategy() => DefaultIUnknownInterfaceDetailsStrategy.Instance;
-
-    protected virtual IIUnknownStrategy CreateIUnknownStrategy() => FreeThreadedStrategy.Instance;
-
-    protected virtual IIUnknownCacheStrategy CreateCacheStrategy() => new DefaultCaching();
-
-    protected override sealed unsafe object CreateObject(nint externalComObject, CreateObjectFlags flags)
+    public abstract class GeneratedComWrappersBase : ComWrappers
     {
-        if (flags.HasFlag(CreateObjectFlags.TrackerObject)
-            || flags.HasFlag(CreateObjectFlags.Aggregation))
+        protected virtual IIUnknownInterfaceDetailsStrategy CreateInterfaceDetailsStrategy() => DefaultIUnknownInterfaceDetailsStrategy.Instance;
+
+        protected virtual IIUnknownStrategy CreateIUnknownStrategy() => FreeThreadedStrategy.Instance;
+
+        protected virtual IIUnknownCacheStrategy CreateCacheStrategy() => new DefaultCaching();
+
+        protected override sealed unsafe object CreateObject(nint externalComObject, CreateObjectFlags flags)
         {
-            throw new NotSupportedException();
+            if (flags.HasFlag(CreateObjectFlags.TrackerObject)
+                || flags.HasFlag(CreateObjectFlags.Aggregation))
+            {
+                throw new NotSupportedException();
+            }
+
+            var rcw = new ComObject(CreateInterfaceDetailsStrategy(), CreateIUnknownStrategy(), CreateCacheStrategy(), (void*)externalComObject);
+            if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
+            {
+                // Set value on MyComObject to enable the FinalRelease option.
+                // This could also be achieved through an internal factory
+                // function on ComObject type.
+            }
+            return rcw;
         }
 
-        var rcw = new ComObject(CreateInterfaceDetailsStrategy(), CreateIUnknownStrategy(), CreateCacheStrategy(), (void*)externalComObject);
-        if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
+        protected override sealed void ReleaseObjects(IEnumerable objects)
         {
-            // Set value on MyComObject to enable the FinalRelease option.
-            // This could also be achieved through an internal factory
-            // function on ComObject type.
+            throw new NotImplementedException();
         }
-        return rcw;
-    }
 
-    protected override sealed void ReleaseObjects(IEnumerable objects)
-    {
-        throw new NotImplementedException();
-    }
-
-    public ComObject GetOrCreateUniqueObjectForComInstance(nint comInstance, CreateObjectFlags flags)
-    {
-        if (flags.HasFlag(CreateObjectFlags.Unwrap))
+        public ComObject GetOrCreateUniqueObjectForComInstance(nint comInstance, CreateObjectFlags flags)
         {
-            throw new ArgumentException("Cannot create a unique object if unwrapping a ComWrappers-based COM object is requested.", nameof(flags));
+            if (flags.HasFlag(CreateObjectFlags.Unwrap))
+            {
+                throw new ArgumentException("Cannot create a unique object if unwrapping a ComWrappers-based COM object is requested.", nameof(flags));
+            }
+            return (ComObject)GetOrCreateObjectForComInstance(comInstance, flags | CreateObjectFlags.UniqueInstance);
         }
-        return (ComObject)GetOrCreateObjectForComInstance(comInstance, flags | CreateObjectFlags.UniqueInstance);
     }
 }
