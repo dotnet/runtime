@@ -32,7 +32,6 @@
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
-    <_EmccLinkUndefinedSymbolsFile>$(WasmObjDir)src\symbols.undefined</_EmccLinkUndefinedSymbolsFile>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
   </PropertyGroup>
 
@@ -164,6 +163,7 @@
     </PropertyGroup>
     <ItemGroup>
       <_EmccLinkFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
+      <!-- <_EmccLinkFlags Include="-s LLD_REPORT_UNDEFINED=0" /> -->
       <_EmccCommonFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-msimd128" />
       <_EmccCommonFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
@@ -185,8 +185,6 @@
       <!-- remove -Wno-limited-postlink-optimizations once below issue is fixed
            active issue: https://github.com/emscripten-core/emscripten/pull/16727 -->
       <_EmccLinkFlags Include="-Wno-limited-postlink-optimizations"/>
-
-      <_EmccLinkUndefinedSymbols Include="icudt68_dat" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
@@ -241,10 +239,6 @@
                       Lines="@(_EmccLinkFlags)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
-    <WriteLinesToFile File="$(_EmccLinkUndefinedSymbolsFile)"
-                      Lines="@(_EmccLinkUndefinedSymbols)"
-                      WriteOnlyWhenDifferent="true"
-                      Overwrite="true" />
   </Target>
 
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
@@ -268,7 +262,6 @@
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
 
       <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
-      <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -Wl,--allow-undefined-file=$(_EmccLinkUndefinedSymbolsFile)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
 
