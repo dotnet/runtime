@@ -248,70 +248,80 @@ namespace System.Net.Security.Tests
                 serverCert = temp;
             }
 
-            await using (clientStream)
-            await using (serverStream)
-            using (responder)
-            using (rootAuthority)
-            using (serverCert)
-            using (issuerCert)
-            using (rootCert)
-            await using (SslStream tlsClient = new SslStream(clientStream))
-            await using (SslStream tlsServer = new SslStream(serverStream))
+            try
             {
-                issuingAuthority.Revoke(serverCert, serverCert.NotBefore);
-
-                SslServerAuthenticationOptions serverOpts = new SslServerAuthenticationOptions();
-
-                if (offlineContext.HasValue)
+                await using (clientStream)
+                await using (serverStream)
+                using (responder)
+                using (rootAuthority)
+                using (serverCert)
+                using (issuerCert)
+                using (rootCert)
+                await using (SslStream tlsClient = new SslStream(clientStream))
+                await using (SslStream tlsServer = new SslStream(serverStream))
                 {
-                    serverOpts.ServerCertificateContext = SslStreamCertificateContext.Create(
-                        serverCert,
-                        new X509Certificate2Collection(issuerCert),
-                        offlineContext.GetValueOrDefault());
+                    issuingAuthority.Revoke(serverCert, serverCert.NotBefore);
 
-                    if (revocationMode == X509RevocationMode.Offline)
+                    SslServerAuthenticationOptions serverOpts = new SslServerAuthenticationOptions();
+
+                    if (offlineContext.HasValue)
                     {
-                        if (offlineContext.GetValueOrDefault(false))
+                        serverOpts.ServerCertificateContext = SslStreamCertificateContext.Create(
+                            serverCert,
+                            new X509Certificate2Collection(issuerCert),
+                            offlineContext.GetValueOrDefault());
+
+                        if (revocationMode == X509RevocationMode.Offline)
                         {
-                            // Add a delay just to show we're not winning because of race conditions.
-                            await Task.Delay(200);
-                        }
-                        else
-                        {
-                            if (!OperatingSystem.IsLinux())
+                            if (offlineContext.GetValueOrDefault(false))
                             {
-                                throw new InvalidOperationException(
-                                    "This test configuration uses reflection and is only defined for Linux.");
+                                // Add a delay just to show we're not winning because of race conditions.
+                                await Task.Delay(200);
                             }
-
-                            FieldInfo pendingDownloadTaskField = typeof(SslStreamCertificateContext).GetField(
-                                "_pendingDownload",
-                                BindingFlags.Instance | BindingFlags.NonPublic);
-
-                            if (pendingDownloadTaskField is null)
+                            else
                             {
-                                throw new InvalidOperationException("Cannot find the pending download field.");
-                            }
+                                if (!OperatingSystem.IsLinux())
+                                {
+                                    throw new InvalidOperationException(
+                                        "This test configuration uses reflection and is only defined for Linux.");
+                                }
 
-                            Task download = (Task)pendingDownloadTaskField.GetValue(serverOpts.ServerCertificateContext);
+                                FieldInfo pendingDownloadTaskField = typeof(SslStreamCertificateContext).GetField(
+                                    "_pendingDownload",
+                                    BindingFlags.Instance | BindingFlags.NonPublic);
 
-                            // If it's null, it should mean it has already finished. If not, it might not have.
-                            if (download is not null)
-                            {
-                                await download;
+                                if (pendingDownloadTaskField is null)
+                                {
+                                    throw new InvalidOperationException("Cannot find the pending download field.");
+                                }
+
+                                Task download = (Task)pendingDownloadTaskField.GetValue(serverOpts.ServerCertificateContext);
+
+                                // If it's null, it should mean it has already finished. If not, it might not have.
+                                if (download is not null)
+                                {
+                                    await download;
+                                }
                             }
                         }
                     }
+                    else
+                    {
+                        serverOpts.ServerCertificate = serverCert;
+                    }
+
+                    Task serverTask = tlsServer.AuthenticateAsServerAsync(serverOpts);
+                    Task clientTask = tlsClient.AuthenticateAsClientAsync(clientOpts);
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(clientTask, serverTask);
                 }
-                else
+            }
+            finally
+            {
+                foreach (CertificateAuthority intermediateAuthority in intermediateAuthorities)
                 {
-                    serverOpts.ServerCertificate = serverCert;
+                    intermediateAuthority.Dispose();
                 }
-
-                Task serverTask = tlsServer.AuthenticateAsServerAsync(serverOpts);
-                Task clientTask = tlsClient.AuthenticateAsClientAsync(clientOpts);
-
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(clientTask, serverTask);
             }
 
             static bool CertificateValidationCallback(
