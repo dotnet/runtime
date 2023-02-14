@@ -231,12 +231,5 @@ namespace System.Configuration.Internal
 
         public virtual IDisposable Impersonate() => new DummyDisposable();
 
-#if NETFRAMEWORK // Obsolete: CAS (.NET Framework only)
-        public virtual void GetRestrictedPermissions(IInternalConfigRecord configRecord, out PermissionSet permissionSet, out bool isHostReady)
-        {
-            permissionSet = new PermissionSet(null);
-            isHostReady = true;
-        }
-#endif
     }
 }

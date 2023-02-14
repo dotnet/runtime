@@ -304,12 +304,5 @@ namespace System.Configuration.Internal
 
         public IDisposable Impersonate() => new DummyDisposable();
 
-#if NETFRAMEWORK
-        public void GetRestrictedPermissions(IInternalConfigRecord configRecord, out PermissionSet permissionSet, out bool isHostReady)
-        {
-            permissionSet = new PermissionSet(null);
-            isHostReady = true;
-        }
-#endif
     }
 }

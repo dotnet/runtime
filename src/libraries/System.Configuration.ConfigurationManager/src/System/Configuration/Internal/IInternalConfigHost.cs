@@ -103,8 +103,5 @@ namespace System.Configuration.Internal
 
         IDisposable Impersonate();
 
-#if NETFRAMEWORK // Obsolete: CAS (.NET Framework only)
-        void GetRestrictedPermissions(IInternalConfigRecord configRecord, out PermissionSet permissionSet, out bool isHostReady);
-#endif
     }
 }
