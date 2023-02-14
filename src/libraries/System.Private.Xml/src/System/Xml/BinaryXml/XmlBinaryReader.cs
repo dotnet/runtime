@@ -3489,7 +3489,9 @@ namespace System.Xml
             Debug.Assert(_checkCharacters, "this.checkCharacters");
             // grab local copy (perf)
 
-            ReadOnlySpan<byte> data = _data.AsSpan(_tokDataPos, _end - _tokDataPos);
+            // Get the bytes for the current token. _tokDataPos is the beginning position,
+            // and _pos has advanced to the next token (1 past the end of this token).
+            ReadOnlySpan<byte> data = _data.AsSpan(_tokDataPos, _pos - _tokDataPos);
             Debug.Assert(data.Length % 2 == 0, "Data size should not be odd");
 
             if (!attr)

@@ -130,7 +130,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
 
         public override bool Execute()
         {
-            if (RuntimeGroups != null && RuntimeGroups.Any() && RuntimeJson == null)
+            if (RuntimeGroups != null && RuntimeGroups.Length != 0 && RuntimeJson == null)
             {
                 Log.LogError($"{nameof(RuntimeJson)} argument must be specified when {nameof(RuntimeGroups)} is specified.");
                 return false;
@@ -370,7 +370,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             }
         }
 
-        private static bool CompatibilityMapEquals(IDictionary<string, IEnumerable<string>> left, IDictionary<string, IEnumerable<string>> right)
+        private static bool CompatibilityMapEquals(IDictionary<string, IEnumerable<string>> left, Dictionary<string, IEnumerable<string>> right)
         {
             if (left.Count != right.Count)
             {

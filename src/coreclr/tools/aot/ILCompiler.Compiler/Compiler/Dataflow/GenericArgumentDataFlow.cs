@@ -18,7 +18,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILCompiler.Dataflow
 {
-    public readonly struct GenericArgumentDataFlow
+    internal readonly struct GenericArgumentDataFlow
     {
         private readonly Logger _logger;
         private readonly NodeFactory _factory;

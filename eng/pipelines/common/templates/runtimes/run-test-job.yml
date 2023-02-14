@@ -139,12 +139,8 @@ jobs:
 
     # Only build GCSimulator tests when the gc-simulator group is specified.
     - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - name: testTreeFilterArg
-          value: 'tree GC/Scenarios/GCSimulator'
-      - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - name: testTreeFilterArg
-          value: '-tree:GC/Scenarios/GCSimulator'
+      - name: testTreeFilterArg
+        value: 'tree GC/Scenarios/GCSimulator'
 
     # Variables used for SuperPMI collection
     - ${{ if eq(parameters.SuperPmiCollect, true) }}:
@@ -536,6 +532,7 @@ jobs:
         ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
           scenarios:
           - jitstress_isas_avx512_forceevex
+          - jitstress_isas_avx512_forceevex_stresshighregs
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx

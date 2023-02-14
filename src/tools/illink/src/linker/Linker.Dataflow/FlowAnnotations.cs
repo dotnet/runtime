@@ -15,7 +15,7 @@ using Mono.Linker.Dataflow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	sealed partial class FlowAnnotations
+	internal sealed partial class FlowAnnotations
 	{
 		readonly LinkContext _context;
 		readonly Dictionary<TypeDefinition, TypeAnnotations> _annotations = new Dictionary<TypeDefinition, TypeAnnotations> ();
@@ -194,7 +194,7 @@ namespace ILLink.Shared.TrimAnalysis
 			// class, interface, struct can have annotations
 			DynamicallyAccessedMemberTypes typeAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (type);
 
-			var annotatedFields = new ArrayBuilder<FieldAnnotation> ();
+			ArrayBuilder<FieldAnnotation> annotatedFields = default;
 
 			// First go over all fields with an explicit annotation
 			if (type.HasFields) {

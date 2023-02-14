@@ -155,6 +155,7 @@
     <TestEnvironment Include="jitstress_isas_2_x86_nosse42" JitStress="2" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nossse3" JitStress="2" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
     <TestEnvironment Include="jitstress_isas_avx512_forceevex" JitForceEVEXEncoding="1" /> <!-- Depends on AVX512 -->
+    <TestEnvironment Include="jitstress_isas_avx512_forceevex_stresshighregs" JitForceEVEXEncoding="1" JitStressRegs="0x2000" /> <!-- Depends on AVX512 -->
     <TestEnvironment Include="jitstressregs1_x86_noavx" JitStressRegs="1" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs2_x86_noavx" JitStressRegs="2" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs3_x86_noavx" JitStressRegs="3" EnableAVX="0" />
