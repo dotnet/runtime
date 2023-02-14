@@ -24,7 +24,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <TargetOS Condition="$(RuntimeIdentifier.StartsWith('win'))">windows</TargetOS>
     <TargetOS Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</TargetOS>
     <TargetOS Condition="$(RuntimeIdentifier.StartsWith('ios'))">ios</TargetOS>
-    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('iossimulator'))">iossimulator</OSIdentifier>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('iossimulator'))">iossimulator</TargetOS>
     <TargetOS Condition="$(RuntimeIdentifier.StartsWith('freebsd'))">freebsd</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">linux</TargetOS>
     <NativeDebugSymbols Condition="$(DebugSymbols) == 'true' or ($(DebugType) != 'none' and $(DebugType) != '')">true</NativeDebugSymbols>
