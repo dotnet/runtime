@@ -142,7 +142,7 @@ public class FullRangeComparisonTest
     public static void Ge_uint_consume(uint a1, uint a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, hs
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{hs|lo}}
         //
         // X64-FULL-LINE:        cmov{{ae|b}} {{[a-z0-9]+}}, {{.*}}
 
