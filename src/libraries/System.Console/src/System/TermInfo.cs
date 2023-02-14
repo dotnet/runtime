@@ -258,9 +258,8 @@ namespace System
                     // Read in all of the terminfo data
                     long termInfoLength = Interop.CheckIo(Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_END)); // jump to the end to get the file length
                     Interop.CheckIo(Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_SET)); // reset back to beginning
-                    const int MaxTermInfoLength = 4096; // according to the term and tic man pages, 4096 is the terminfo file size max
                     const int HeaderLength = 12;
-                    if (termInfoLength <= HeaderLength || termInfoLength > MaxTermInfoLength)
+                    if (termInfoLength <= HeaderLength)
                     {
                         throw new InvalidOperationException(SR.IO_TermInfoInvalid);
                     }
