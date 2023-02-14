@@ -6,104 +6,38 @@ using System.Runtime.CompilerServices;
 
 namespace CodeGenTests
 {
-    class IntOr
+    class UnsafeTests
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void SideEffect()
+        static byte UnsafeAsNarrowCast_Short(short value)
         {
+            // X64-NOT: dword ptr
+            return Unsafe.As<short, byte>(ref value);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static bool Test_UInt32_UInt32_CastByte_Or(uint x, uint y)
+        static byte UnsafeAsNarrowCast_Int(int value)
         {
-            // X64-NOT: movzx
-
-            // We expect 'or reg8, reg8'.
-            // X64: or {{[a-z]+[l|b]}}, {{[a-z]+[l|b]}}
-
-            if ((byte)((byte)x | y) == 0)
-            {
-                SideEffect();
-                return true;
-            }
-            return false;
+            // X64-NOT: dword ptr
+            return Unsafe.As<int, byte>(ref value);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static bool Test_UInt32_ByRef_CastByte_CastByte_Or(uint x, ref uint y)
+        static byte UnsafeAsNarrowCast_Long(long value)
         {
-            // X64-NOT: movzx
-
-            // We expect 'or reg8, mem8'.
-            // X64: or {{[a-z]+[l|b]}}, byte ptr
-
-            if ((byte)((byte)x | (byte)y) == 0)
-            {
-                SideEffect();
-                return true;
-            }
-            return false;
+            // X64-NOT: qword ptr
+            return Unsafe.As<long, byte>(ref value);
         }
 
         static int Main()
         {
-            uint leftMostBit  = 0b10000000000000000000000000000000;
-            uint rightMostBit = 0b00000000000000000000000000000001;
-            uint noBits       = 0b00000000000000000000000000000000;
-
-            if (!Test_UInt32_UInt32_CastByte_Or(leftMostBit, leftMostBit))
+            if (UnsafeAsNarrowCast_Short(255) != 255)
                 return 0;
 
-            if (Test_UInt32_UInt32_CastByte_Or(leftMostBit, rightMostBit))
+            if (UnsafeAsNarrowCast_Int(255) != 255)
                 return 0;
 
-            if (!Test_UInt32_UInt32_CastByte_Or(leftMostBit, noBits))
-                return 0;
-
-            if (Test_UInt32_UInt32_CastByte_Or(rightMostBit, leftMostBit))
-                return 0;
-
-            if (Test_UInt32_UInt32_CastByte_Or(rightMostBit, rightMostBit))
-                return 0;
-
-            if (Test_UInt32_UInt32_CastByte_Or(rightMostBit, noBits))
-                return 0;
-
-            if (!Test_UInt32_UInt32_CastByte_Or(noBits, leftMostBit))
-                return 0;
-
-            if (Test_UInt32_UInt32_CastByte_Or(noBits, rightMostBit))
-                return 0;
-
-            if (!Test_UInt32_UInt32_CastByte_Or(noBits, noBits))
-                return 0;
-
-            // ByRef
-            if (!Test_UInt32_ByRef_CastByte_CastByte_Or(leftMostBit, ref leftMostBit))
-                return 0;
-
-            if (Test_UInt32_ByRef_CastByte_CastByte_Or(leftMostBit, ref rightMostBit))
-                return 0;
-
-            if (!Test_UInt32_ByRef_CastByte_CastByte_Or(leftMostBit, ref noBits))
-                return 0;
-
-            if (Test_UInt32_ByRef_CastByte_CastByte_Or(rightMostBit, ref leftMostBit))
-                return 0;
-
-            if (Test_UInt32_ByRef_CastByte_CastByte_Or(rightMostBit, ref rightMostBit))
-                return 0;
-
-            if (Test_UInt32_ByRef_CastByte_CastByte_Or(rightMostBit, ref noBits))
-                return 0;
-
-            if (!Test_UInt32_ByRef_CastByte_CastByte_Or(noBits, ref leftMostBit))
-                return 0;
-
-            if (Test_UInt32_ByRef_CastByte_CastByte_Or(noBits, ref rightMostBit))
-                return 0;
-
-            if (!Test_UInt32_ByRef_CastByte_CastByte_Or(noBits, ref noBits))
+            if (UnsafeAsNarrowCast_Long(255) != 255)
                 return 0;
 
             return 100;
