@@ -67,6 +67,11 @@ namespace System.Text.Json.Serialization.Metadata
 
             JsonTypeInfo.ValidateType(type);
             JsonTypeInfo typeInfo = CreateJsonTypeInfo(type, options);
+            typeInfo.OriginatingResolver = this;
+
+            // We've finished configuring the metadata, brand the instance as user-unmodified.
+            // This should be the last update operation in the resolver to avoid resetting the flag.
+            typeInfo.IsCustomized = false;
 
             if (_modifiers != null)
             {
