@@ -109,6 +109,7 @@ namespace System.Globalization
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
         private static unsafe string NativeGetLocaleInfo(string localeName, LocaleStringData type, string? uiCultureName = null)
         {
+            //
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(localeName != null, "[CultureData.NativeGetLocaleInfo] Expected localeName to be not be null");
 

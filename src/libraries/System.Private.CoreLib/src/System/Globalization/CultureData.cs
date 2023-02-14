@@ -2359,6 +2359,7 @@ namespace System.Globalization
         /// The numeric values of the enum members match their Win32 counterparts.  The CultureData Win32 PAL implementation
         /// takes a dependency on this fact, in order to prevent having to construct a mapping from internal values to LCTypes.
         /// </remarks>
+        //important
         private enum LocaleStringData : uint
         {
             /// <summary>localized name of locale, eg "German (Germany)" in UI language (corresponds to LOCALE_SLOCALIZEDDISPLAYNAME)</summary>
