@@ -10611,10 +10611,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (lclTyp != TYP_STRUCT)
                 {
-                    assert(layout == nullptr);
                     op2 = gtNewZeroConNode(genActualType(lclTyp));
                     goto STIND_VALUE;
                 }
+
+                assert(layout != nullptr);
 
                 op1 = impPopStack().val;
                 op1 = gtNewStructVal(layout, op1);
