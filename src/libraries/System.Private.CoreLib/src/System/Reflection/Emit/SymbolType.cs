@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using CultureInfo = System.Globalization.CultureInfo;
@@ -531,5 +532,43 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
         #endregion
+
+    #region Mono Specific Overrides
+#if MONO
+        // Called from the runtime to return the corresponding finished Type object
+        internal override Type RuntimeResolve()
+        {
+            if (_typeKind == TypeKind.IsArray)
+            {
+                Type et = _baseType.RuntimeResolve();
+                if (_rank == 1)
+                {
+                    return et.MakeArrayType();
+                }
+
+                return et.MakeArrayType(_rank);
+            }
+
+            return InternalResolve();
+        }
+        internal override Type InternalResolve()
+        {
+            switch (_typeKind)
+            {
+                case TypeKind.IsArray :
+                    {
+                        Type et = _baseType.InternalResolve();
+                        if (_rank == 1)
+                            return et.MakeArrayType();
+                        return et.MakeArrayType(_rank);
+                    }
+                case TypeKind.IsByRef : return _baseType.InternalResolve().MakeByRefType();
+                case TypeKind.IsPointer : return _baseType.InternalResolve().MakePointerType();
+            }
+
+            throw new NotSupportedException();
+        }
+#endif
+    #endregion
     }
 }

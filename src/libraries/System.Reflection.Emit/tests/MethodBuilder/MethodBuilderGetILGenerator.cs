@@ -83,7 +83,7 @@ namespace System.Reflection.Emit.Tests
             Assert.NotNull(method.GetILGenerator());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))] 
+        [Fact]
         public void LoadPointerTypeInILGeneratedMethod()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
@@ -102,7 +102,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal("TestType*", createdMethod.Invoke(null, null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
         public void LoadArrayTypeInILGeneratedMethod()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
