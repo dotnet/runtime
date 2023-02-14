@@ -707,7 +707,7 @@ namespace System.Net
             makeNtlm2Hash(_credential.Domain, _credential.UserName, _credential.Password, ntlm2hash);
 
             // Get random bytes for client challenge
-            byte[] clientChallenge = new byte[ChallengeLength];
+            Span<byte> clientChallenge = stackalloc byte[ChallengeLength];
             RandomNumberGenerator.Fill(clientChallenge);
 
             // Create empty LM2 response.
