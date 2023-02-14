@@ -29,7 +29,7 @@ namespace Microsoft.Interop
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
                 Debug.Assert(info.MarshallingAttributeInfo is NativeThisInfo);
-                TypeSyntax? unwrapperType = ((NativeThisInfo)info.MarshallingAttributeInfo).UnwrapperType;
+                TypeSyntax unwrapperType = ((NativeThisInfo)info.MarshallingAttributeInfo).UnwrapperType;
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
                 {
                     yield break;
