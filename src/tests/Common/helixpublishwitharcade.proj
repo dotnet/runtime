@@ -479,18 +479,11 @@
       <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <XUnitLogCheckerCommand Condition="'$(TestWrapperTargetsWindows)' != 'true'">dotnet %24HELIX_CORRELATION_PAYLOAD/XUnitLogChecker/</XUnitLogCheckerCommand>
-      <XUnitLogCheckerCommand Condition="'$(TestWrapperTargetsWindows)' == 'true'">dotnet %25HELIX_CORRELATION_PAYLOAD%25/XUnitLogChecker/</XUnitLogCheckerCommand>
-      <XUnitLogCheckerCommand>$(XUnitLogCheckerCommand)XUnitLogChecker.dll $(_MergedWrapperRunScriptDirectoryRelative) ''</XUnitLogCheckerCommand>
-    </PropertyGroup>
-
     <ItemGroup>
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export WasmTestAppArgs=&quot;$WasmTestAppArgs --exclusion-list=TestExclusionList.txt&quot;" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set WasmTestAppArgs=%WasmTestAppArgs% --exclusion-list=TestExclusionList.txt" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
       <HelixCommandLines Include="$(_MergedWrapperRunScriptRelative)" />
-      <HelixCommandLines Include="$(XUnitLogCheckerCommand)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
