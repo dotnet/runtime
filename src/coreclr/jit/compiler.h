@@ -5319,11 +5319,9 @@ public:
 
     void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
 
-    FlowEdge* fgAddRefPred(BasicBlock* block,
-                           BasicBlock* blockPred,
-                           FlowEdge*   oldEdge           = nullptr,
-                           bool        initializingPreds = false); // Only set to 'true' when we are computing preds in
-                                                                   // fgLinkBasicBlocks()
+    // initializingPreds is only 'true' when we are computing preds in fgLinkBasicBlocks()
+    template <bool initializingPreds = false>
+    FlowEdge* fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge = nullptr);
 
     void fgFindBasicBlocks();
 
@@ -10753,20 +10751,19 @@ private:
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
     unsigned  cntCalleeTrashFloat;
-    unsigned  availableRegCount;
 
 public:
     regMaskTP get_RBM_ALLFLOAT() const
     {
-        return rbmAllFloat;
+        return this->rbmAllFloat;
     }
     regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
-        return rbmFltCalleeTrash;
+        return this->rbmFltCalleeTrash;
     }
     unsigned get_CNT_CALLEE_TRASH_FLOAT() const
     {
-        return cntCalleeTrashFloat;
+        return this->cntCalleeTrashFloat;
     }
 
 #endif // TARGET_AMD64

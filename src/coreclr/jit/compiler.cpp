@@ -3334,7 +3334,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmAllFloat         = RBM_ALLFLOAT_INIT;
     rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
     cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
-    availableRegCount   = ACTUAL_REG_COUNT;
 
     if (DoJitStressEvexEncoding())
     {
@@ -3342,10 +3341,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
     }
-    else
-    {
-        availableRegCount -= CNT_HIGHFLOAT;
-    }
+
+    codeGen->CopyRegisterInfo();
 #endif // TARGET_AMD64
 }
 
@@ -3779,31 +3776,15 @@ void Compiler::compSetOptimizationLevel()
         }
     }
 
-#if 0
-    // The code in this #if can be used to debug optimization issues according to method hash.
-    // To use, uncomment, rebuild and set environment variables minoptshashlo and minoptshashhi.
 #ifdef DEBUG
-    unsigned methHash = info.compMethodHash();
-    char* lostr = getenv("minoptshashlo");
-    unsigned methHashLo = 0;
-    if (lostr != nullptr)
+    static ConfigMethodRange s_onlyOptimizeRange;
+    s_onlyOptimizeRange.EnsureInit(JitConfig.JitOnlyOptimizeRange());
+
+    if (!theMinOptsValue && !s_onlyOptimizeRange.IsEmpty())
     {
-        sscanf_s(lostr, "%x", &methHashLo);
-        char* histr = getenv("minoptshashhi");
-        unsigned methHashHi = UINT32_MAX;
-        if (histr != nullptr)
-        {
-            sscanf_s(histr, "%x", &methHashHi);
-            if (methHash >= methHashLo && methHash <= methHashHi)
-            {
-                printf("MinOpts for method %s, hash = %08x.\n",
-                    info.compFullName, methHash);
-                printf("");         // in our logic this causes a flush
-                theMinOptsValue = true;
-            }
-        }
+        unsigned methHash = info.compMethodHash();
+        theMinOptsValue   = !s_onlyOptimizeRange.Contains(methHash);
     }
-#endif
 #endif
 
     if (compStressCompile(STRESS_MIN_OPTS, 5))
@@ -4436,6 +4417,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // If we're going to instrument code, we may need to prepare before
     // we import.

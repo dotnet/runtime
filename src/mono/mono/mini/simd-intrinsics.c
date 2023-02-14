@@ -2023,7 +2023,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_set_Item: {
 		// WithElement is marked as Intrinsic, but handling this in set_Item leads to better code
 		g_assert (fsig->hasthis && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_I4 && fsig->params [1]->type == MONO_TYPE_R4);
-		int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
+
+		gboolean indirect = FALSE;
+		int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
 
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
@@ -2031,6 +2033,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->sreg3 = args [1]->dreg;
 		ins->inst_c1 = MONO_TYPE_R4;
 		ins->dreg = dreg;
+		if (indirect)
+			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, dreg);
+
 		return ins;
 	}
 	case SN_Add:

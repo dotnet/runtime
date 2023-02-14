@@ -141,6 +141,10 @@ export class WasmBuilder {
         return this.current.appendF64(value);
     }
 
+    appendBoundaryValue (bits: number, sign: number) {
+        return this.current.appendBoundaryValue(bits, sign);
+    }
+
     appendULeb (value: number | MintOpcodePtr) {
         return this.current.appendULeb(<any>value);
     }
@@ -517,7 +521,7 @@ export class WasmBuilder {
 
     getArrayView (fullCapacity?: boolean) {
         if (this.stackSize > 1)
-            throw new Error("Stack not empty");
+            throw new Error("Jiterpreter block stack not empty");
         return this.stack[0].getArrayView(fullCapacity);
     }
 
@@ -601,6 +605,17 @@ export class BlobBuilder {
         this.view.setFloat64(this.size, value, true);
         this.size += 8;
         return result;
+    }
+
+    appendBoundaryValue (bits: number, sign: number) {
+        if (this.size + 8 >= this.capacity)
+            throw new Error("Buffer full");
+
+        const bytesWritten = cwraps.mono_jiterp_encode_leb_signed_boundary(<any>(this.buffer + this.size), bits, sign);
+        if (bytesWritten < 1)
+            throw new Error(`Failed to encode ${bits} bit boundary value with sign ${sign}`);
+        this.size += bytesWritten;
+        return bytesWritten;
     }
 
     appendULeb (value: number) {
@@ -694,7 +709,8 @@ export const counters = {
     jitCallsCompiled: 0,
     directJitCallsCompiled: 0,
     failures: 0,
-    bytesGenerated: 0
+    bytesGenerated: 0,
+    nullChecksEliminated: 0,
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)
@@ -946,6 +962,7 @@ export type JiterpreterOptions = {
     useConstants: boolean;
     // Unwrap gsharedvt wrappers when compiling jitcalls if possible
     directJitCalls: boolean;
+    eliminateNullChecks: boolean;
     minimumTraceLength: number;
     minimumTraceHitCount: number;
     jitCallHitCount: number;
@@ -969,6 +986,7 @@ const optionNames : { [jsName: string] : string } = {
     "countBailouts": "jiterpreter-count-bailouts",
     "dumpTraces": "jiterpreter-dump-traces",
     "useConstants": "jiterpreter-use-constants",
+    "eliminateNullChecks": "jiterpreter-eliminate-null-checks",
     "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",

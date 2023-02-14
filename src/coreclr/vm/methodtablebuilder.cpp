@@ -11718,7 +11718,7 @@ void MethodTableBuilder::bmtMethodImplInfo::AddMethodImpl(
         // because this is a stacking allocator. However, the old array will get freed when all the stack allocator is freed.
         Entry *rgEntriesNew = new (pStackingAllocator) Entry[newEntriesCount];
         if (cMaxIndex > 0)
-            memcpy(rgEntriesNew, rgEntries, sizeof(Entry) * cMaxIndex);
+            memcpy((void*)rgEntriesNew, rgEntries, sizeof(Entry) * cMaxIndex);
 
         // Start using newly allocated array.
         rgEntries = rgEntriesNew;

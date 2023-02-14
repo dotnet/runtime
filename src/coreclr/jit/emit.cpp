@@ -120,17 +120,6 @@ void emitLocation::Print(LONG compMethodID) const
 }
 #endif // DEBUG
 
-#if defined(TARGET_AMD64)
-inline regMaskTP emitter::get_RBM_FLT_CALLEE_TRASH() const
-{
-    return emitComp->rbmFltCalleeTrash;
-}
-inline unsigned emitter::get_AVAILABLE_REG_COUNT() const
-{
-    return emitComp->availableRegCount;
-}
-#endif // TARGET_AMD64
-
 /*****************************************************************************
  *
  *  Return the name of an instruction format.
@@ -671,6 +660,10 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
     if (!comp->opts.disAsm)
         m_debugInfoSize = 0;
 #endif
+
+#if defined(TARGET_AMD64)
+    rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
+#endif // TARGET_AMD64
 }
 
 void emitter::emitEndCG()

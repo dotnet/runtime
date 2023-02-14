@@ -55,6 +55,7 @@ namespace ILCompiler
         private readonly XPathNavigator _document;
         private readonly Logger _logger;
         protected readonly ModuleDesc? _owningModule;
+        protected readonly bool _globalAttributeRemoval;
         private readonly IReadOnlyDictionary<string, bool> _featureSwitchValues;
         protected readonly TypeSystemContext _context;
 
@@ -70,10 +71,11 @@ namespace ILCompiler
             _featureSwitchValues = featureSwitchValues;
         }
 
-        protected ProcessLinkerXmlBase(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        protected ProcessLinkerXmlBase(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues, bool globalAttributeRemoval = false)
             : this(logger, context, documentStream, xmlDocumentLocation, featureSwitchValues)
         {
             _owningModule = resourceAssembly;
+            _globalAttributeRemoval = globalAttributeRemoval;
         }
 
         protected virtual bool ShouldProcessElement(XPathNavigator nav) => FeatureSettings.ShouldProcessElement(nav, _featureSwitchValues);
@@ -133,44 +135,46 @@ namespace ILCompiler
         {
             foreach (XPathNavigator assemblyNav in nav.SelectChildren("assembly", ""))
             {
-                // Errors for invalid assembly names should show up even if this element will be
-                // skipped due to feature conditions.
-                bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyName? name);
-                if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies)
-                {
-                    // NativeAOT doesn't have a way to eliminate all the occurrences of an attribute yet
-                    // https://github.com/dotnet/runtime/issues/77753
-                    //LogWarning(assemblyNav, DiagnosticId.XmlUnsupportedWildcard);
-                    continue;
-                }
-
-                ModuleDesc? assemblyToProcess = null;
-                if (!AllowedAssemblySelector.HasFlag(AllowedAssemblies.AnyAssembly))
-                {
-                    Debug.Assert(!processAllAssemblies);
-                    Debug.Assert(_owningModule != null);
-                    if (_owningModule.Assembly.GetName().Name != name!.Name)
-                    {
-#if !READYTORUN
-                        LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _owningModule.Assembly.GetName().Name ?? "", name.ToString());
-#endif
-                        continue;
-                    }
-                    assemblyToProcess = _owningModule;
-                }
-
                 if (!ShouldProcessElement(assemblyNav))
                     continue;
 
-                if (processAllAssemblies)
+                // Errors for invalid assembly names should show up even if this element will be
+                // skipped due to feature conditions.
+                bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyName? name);
+                if (processAllAssemblies && !_globalAttributeRemoval)
                 {
-                    throw new NotImplementedException();
-                    // We could avoid loading all references in this case: https://github.com/dotnet/linker/issues/1708
-                    //foreach (ModuleDesc assembly in GetReferencedAssemblies())
-                    //    ProcessAssembly(assembly, assemblyNav, warnOnUnresolvedTypes: false);
+#if !READYTORUN
+                    if (AllowedAssemblySelector != AllowedAssemblies.AllAssemblies)
+                        LogWarning(assemblyNav, DiagnosticId.XmlUnsuportedWildcard);
+#endif
+                    continue;
+                }
+                else if (!processAllAssemblies && _globalAttributeRemoval)
+                {
+                    continue;
+                }
+                else if (processAllAssemblies && _globalAttributeRemoval)
+                {
+                    Debug.Assert(_owningModule != null);
+                    ProcessAssembly(_owningModule, assemblyNav, warnOnUnresolvedTypes: false);
                 }
                 else
                 {
+                    ModuleDesc? assemblyToProcess = null;
+                    if (!AllowedAssemblySelector.HasFlag(AllowedAssemblies.AnyAssembly))
+                    {
+                        Debug.Assert(!processAllAssemblies);
+                        Debug.Assert(_owningModule != null);
+                        if (_owningModule.Assembly.GetName().Name != name!.Name)
+                        {
+#if !READYTORUN
+                            LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _owningModule.Assembly.GetName().Name ?? "", name.ToString());
+#endif
+                            continue;
+                        }
+                        assemblyToProcess = _owningModule;
+                    }
+
                     Debug.Assert(!processAllAssemblies);
                     ModuleDesc? assembly = assemblyToProcess ?? _context.ResolveAssembly(name!, false);
 
@@ -469,8 +473,8 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (PropertyPseudoDesc property in type.GetPropertiesOnTypeHierarchy(p => p.Name == name))
                 {
-                   foundMatch = true;
-                   ProcessProperty(type, property, nav, customData, false);
+                    foundMatch = true;
+                    ProcessProperty(type, property, nav, customData, false);
                 }
 
                 if (!foundMatch)
