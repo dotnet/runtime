@@ -110,6 +110,7 @@
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>6.0.0-beta.21518.1</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>6.0.0-beta.21518.1</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDataCommonTestDataVersion>6.0.0-beta.23113.6</SystemDataCommonTestDataVersion>
     <SystemDrawingCommonTestDataVersion>6.0.0-beta.21518.1</SystemDrawingCommonTestDataVersion>
     <SystemIOCompressionTestDataVersion>6.0.0-beta.21518.1</SystemIOCompressionTestDataVersion>
     <SystemIOPackagingTestDataVersion>6.0.0-beta.21518.1</SystemIOPackagingTestDataVersion>
