@@ -7850,7 +7850,7 @@ MONO_RESTORE_WARNING
 
 			const char *class_name = m_class_get_name (ins->klass);
 
-			if (!strcmp(class_name, "Vector64`1") || !strcmp (class_name, "Vector128`1") || !strcmp (class_name, "Vector256`1") || !strcmp (class_name, "Vector512`1")) {
+			if (!strcmp(class_name, "Vector`1") || !strcmp(class_name, "Vector64`1") || !strcmp (class_name, "Vector128`1") || !strcmp (class_name, "Vector256`1") || !strcmp (class_name, "Vector512`1")) {
 				MonoType *element_type = mono_class_get_context (ins->klass)->class_inst->type_argv [0];
 				etype = element_type->type;
 				ecount = mono_class_value_size (ins->klass, NULL) / mono_class_value_size (mono_class_from_mono_type_internal(element_type), NULL);
