@@ -128,7 +128,7 @@ namespace System.Text.Json.Nodes
                 InitializeIfRequired();
                 Debug.Assert(_dictionary != null);
                 string propertyName = _dictionary.FindValue(child)!.Value.Key;
-                if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
                     path.Add($"['{propertyName}']");
                 }

@@ -123,7 +123,7 @@ private:
     void LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);
 
-    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive);
+    bool IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive);
 
     // ------------------------------
     // Call Lowering
@@ -501,12 +501,18 @@ private:
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);
 
+    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive) const;
+    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const;
+
     // Checks for memory conflicts in the instructions between childNode and parentNode, and returns true if childNode
     // can be contained.
     bool IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const;
 
     // Similar to above, but allows bypassing a "transparent" parent.
     bool IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const;
+
+    // Check if marking an operand of a node as reg-optional is safe.
+    bool IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* node) const;
 
     inline LIR::Range& BlockRange() const
     {

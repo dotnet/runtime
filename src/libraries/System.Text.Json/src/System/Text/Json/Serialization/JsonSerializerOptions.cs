@@ -648,23 +648,6 @@ namespace System.Text.Json
 
         // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semantics or None of them.
         internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;
-        // Workaround https://github.com/dotnet/linker/issues/2715
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "Dynamic path is guarded by the runtime feature switch.")]
-        internal static MemberAccessor MemberAccessorStrategy =>
-            s_memberAccessorStrategy ??=
-#if NETCOREAPP
-                // if dynamic code isn't supported, fallback to reflection
-                RuntimeFeature.IsDynamicCodeSupported ?
-                    new ReflectionEmitCachingMemberAccessor() :
-                    new ReflectionMemberAccessor();
-#elif NETFRAMEWORK
-                    new ReflectionEmitCachingMemberAccessor();
-#else
-                    new ReflectionMemberAccessor();
-#endif
-
-        private static MemberAccessor? s_memberAccessorStrategy;
 
         /// <summary>
         /// Specifies whether the current instance has been locked for modification.

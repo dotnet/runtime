@@ -125,7 +125,7 @@ jobs:
           value: 'priority1'
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: priorityArg
-          value: '-priority=1'
+          value: '-priority 1'
 
     - librariesBuildArtifactName: ''
     - librariesOverrideArg: ''
