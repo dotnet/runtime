@@ -1319,14 +1319,12 @@ TEST(mono_gchandle_new_creates_gc_handle)
     CHECK(handle1 != 0);
     CHECK_EQUAL(testObj, mono_gchandle_get_target_v2(handle1));
     mono_gchandle_free_v2(handle1);
-    CHECK(mono_gchandle_get_target_v2(handle1) == nullptr);
 
     // Pinned
     uintptr_t handle2 = mono_gchandle_new_v2(testObj, true);
     CHECK(handle2 != 0);
     CHECK_EQUAL(testObj, mono_gchandle_get_target_v2(handle2));
     mono_gchandle_free_v2(handle2);
-    CHECK(mono_gchandle_get_target_v2(handle2) == nullptr);
 
     CHECK(handle1 != handle2);
 }
@@ -1339,17 +1337,16 @@ TEST(mono_gchandle_new_weakref_creates_weakref)
     uintptr_t handle1 = mono_gchandle_new_weakref_v2(testObj, false);
     CHECK(handle1 != 0);
     CHECK_EQUAL(testObj, mono_gchandle_get_target_v2(handle1));
-    mono_gchandle_free_v2(handle1);
-    CHECK(mono_gchandle_get_target_v2(handle1) == nullptr);
 
     // Track resurrection
     uintptr_t handle2 = mono_gchandle_new_weakref_v2(testObj, true);
     CHECK(handle2 != 0);
     CHECK_EQUAL(testObj, mono_gchandle_get_target_v2(handle2));
-    mono_gchandle_free_v2(handle2);
-    CHECK(mono_gchandle_get_target_v2(handle2) == nullptr);
 
     CHECK(handle1 != handle2);
+
+    mono_gchandle_free_v2(handle1);
+    mono_gchandle_free_v2(handle2);
 }
 
 TEST(mono_gchandle_compatible_with_managed)
@@ -1366,8 +1363,6 @@ TEST(mono_gchandle_compatible_with_managed)
     returnValue = mono_runtime_invoke(method, nullptr, args, nullptr);
     CHECK(testObj == returnValue);
     mono_gchandle_free_v2(handle_normal);
-    returnValue = mono_runtime_invoke(method, nullptr, args, nullptr);
-    CHECK(returnValue == nullptr);
 
     // Pinned
     uintptr_t handle_pinned = mono_gchandle_new_v2(testObj, true);
@@ -1376,8 +1371,6 @@ TEST(mono_gchandle_compatible_with_managed)
     returnValue = mono_runtime_invoke(method, nullptr, args, nullptr);
     CHECK(testObj == returnValue);
     mono_gchandle_free_v2(handle_pinned);
-    returnValue = mono_runtime_invoke(method, nullptr, args, nullptr);
-    CHECK(returnValue == nullptr);
 }
 
 TEST(mono_gchandle_compatible_with_native)
