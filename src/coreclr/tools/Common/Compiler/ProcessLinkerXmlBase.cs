@@ -212,11 +212,7 @@ namespace ILCompiler
 
                 // TODO: Process exported types
 
-                // TODO: Semantics differ and xml format is cecil specific, therefore they are discrepancies on things like nested types
-                // for now just hack replacing / for + to support basic resolving of nested types
-                // https://github.com/dotnet/runtime/issues/73083
-                fullname = fullname.Replace("/", "+");
-                TypeDesc type = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(assembly, fullname, throwIfNotFound: false);
+                TypeDesc type = TypeParser.GetType(assembly, fullname, throwIfNotFound: false);
 
                 if (type == null)
                 {

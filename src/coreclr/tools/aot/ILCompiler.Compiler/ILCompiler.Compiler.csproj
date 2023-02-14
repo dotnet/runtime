@@ -327,6 +327,7 @@
     <Compile Include="..\..\Common\Compiler\PseudoDescExtensions.cs" Link="Compiler\PseudoDescExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeParser.cs" Link="Compiler\TypeParser.cs" />
     <Compile Include="..\..\Common\Compiler\TypePreserve.cs" Link="Compiler\TypePreserve.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
 
