@@ -464,7 +464,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         None,
         Nop,
         BitCast,
-        NarrowCastOfLclVar,
+        NarrowCast,
 #ifdef FEATURE_HW_INTRINSICS
         GetElement,
         WithElement,
@@ -1250,7 +1250,7 @@ private:
                 lclNode = indir->AsLclVarCommon();
                 break;
 
-            case IndirTransform::NarrowCastOfLclVar:
+            case IndirTransform::NarrowCast:
                 assert(varTypeIsIntegral(indir));
                 assert(varTypeIsIntegral(varDsc));
                 assert(*val.Use() == indir);
@@ -1379,7 +1379,7 @@ private:
             if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc) && !varTypeIsLong(varDsc))
 #endif // !TARGET_64BIT
             {
-                return IndirTransform::NarrowCastOfLclVar;
+                return IndirTransform::NarrowCast;
             }
 
 #ifdef FEATURE_HW_INTRINSICS
