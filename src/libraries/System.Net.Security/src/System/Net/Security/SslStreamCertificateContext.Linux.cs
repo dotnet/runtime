@@ -73,7 +73,7 @@ namespace System.Net.Security
             _staplingForbidden = noOcspFetch;
         }
 
-        partial void AddRootCertificate(X509Certificate2? rootCertificate)
+        private partial void AddRootCertificate(X509Certificate2? rootCertificate)
         {
             if (IntermediateCertificates.Length == 0)
             {
@@ -81,6 +81,8 @@ namespace System.Net.Security
             }
             else
             {
+                // The root certificate isn't needed, so dispose of it.
+                rootCertificate?.Dispose();
                 _ca = IntermediateCertificates[0];
             }
 

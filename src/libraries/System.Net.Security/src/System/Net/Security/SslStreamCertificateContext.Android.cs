@@ -17,5 +17,13 @@ namespace System.Net.Security
         }
 
         internal static SslStreamCertificateContext Create(X509Certificate2 target) => Create(target, null);
+
+#pragma warning disable CA1822 //does not access instance data and can be marked as static. Other partials do access instance data.
+        private partial void AddRootCertificate(X509Certificate2? rootCertificate)
+        {
+            // Android doesn't need the root. Dispose of it, if we have one.
+            rootCertificate?.Dispose();
+        }
+#pragma warning restore CA1822
     }
 }

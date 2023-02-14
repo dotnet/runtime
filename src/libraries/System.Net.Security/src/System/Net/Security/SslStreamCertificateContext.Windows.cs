@@ -105,5 +105,13 @@ namespace System.Net.Security
             IntermediateCertificates = intermediates;
             Trust = trust;
         }
+
+#pragma warning disable CA1822 //does not access instance data and can be marked as static. Other partials do access instance data.
+        private partial void AddRootCertificate(X509Certificate2? rootCertificate)
+        {
+            // Windows doesn't need the root. Dispose of it, if we have one.
+            rootCertificate?.Dispose();
+        }
+#pragma warning restore CA1822
     }
 }
