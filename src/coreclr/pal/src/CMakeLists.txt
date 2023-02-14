@@ -1,7 +1,7 @@
-if(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD)
-  # On Apple platforms and *BSD, we use the libunwind that's part of the OS
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
+  # On OSX platforms and *BSD, we use the libunwind that's part of the OS
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_FREEBSD)
+endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
@@ -16,7 +16,7 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep)
 
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
-elseif(NOT CLR_CMAKE_TARGET_APPLE)
+elseif(NOT CLR_CMAKE_TARGET_OSX)
   find_unwind_libs(UNWIND_LIBS)
 else()
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
@@ -66,18 +66,8 @@ if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   add_definitions(-DFEATURE_USE_SYSTEM_LIBUNWIND)
 endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
-if(CLR_CMAKE_TARGET_APPLE)
-  add_definitions(-DTARGET_APPLE)
-  if(CLR_CMAKE_TARGET_OSX)
-    add_definitions(-DTARGET_OSX)
-  elseif(CLR_CMAKE_TARGET_MACCATALYST)
-    add_definitions(-DTARGET_MACCATALYST)
-  elseif(CLR_CMAKE_TARGET_IOS)
-      add_definitions(-DTARGET_IOS)
-  elseif(CLR_CMAKE_TARGET_TVOS)
-    add_definitions(-DTARGET_TVOS)
-  endif()
-
+if(CLR_CMAKE_TARGET_OSX)
+  add_definitions(-DTARGET_OSX)
   if(CLR_CMAKE_TARGET_ARCH_AMD64)
     add_definitions(-DXSTATE_SUPPORTED)
   endif()
@@ -87,7 +77,7 @@ if(CLR_CMAKE_TARGET_APPLE)
     exception/machexception.cpp
     exception/machmessage.cpp
   )
-endif(CLR_CMAKE_TARGET_APPLE)
+endif(CLR_CMAKE_TARGET_OSX)
 
 if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
   add_definitions(-DFEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
@@ -119,12 +109,12 @@ set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/processor.cpp
 )
 
-if(NOT CLR_CMAKE_TARGET_APPLE)
+if(NOT CLR_CMAKE_TARGET_OSX)
   list(APPEND PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/callsignalhandlerwrapper.S
     arch/${PAL_ARCH_SOURCES_DIR}/signalhandlerhelper.cpp
   )
-endif(NOT CLR_CMAKE_TARGET_APPLE)
+endif(NOT CLR_CMAKE_TARGET_OSX)
 
 if(CLR_CMAKE_HOST_ARCH_ARM)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -277,7 +267,7 @@ if(CLR_CMAKE_TARGET_LINUX)
   target_sources(tracepointprovider INTERFACE $<TARGET_OBJECTS:tracepointprovider_obj>)
 endif(CLR_CMAKE_TARGET_LINUX)
 
-if(CLR_CMAKE_TARGET_APPLE)
+if(CLR_CMAKE_TARGET_OSX)
   find_library(COREFOUNDATION CoreFoundation)
   find_library(CORESERVICES CoreServices)
   find_library(SECURITY Security)
@@ -288,7 +278,7 @@ if(CLR_CMAKE_TARGET_APPLE)
     ${SECURITY}
     ${SYSTEM}
   )
-endif(CLR_CMAKE_TARGET_APPLE)
+endif(CLR_CMAKE_TARGET_OSX)
 
 if(CLR_CMAKE_TARGET_FREEBSD)
   target_link_libraries(coreclrpal

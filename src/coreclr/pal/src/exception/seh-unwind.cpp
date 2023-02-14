@@ -54,8 +54,8 @@ Abstract:
 
 #endif // HOST_UNIX
 
-#if defined(TARGET_APPLE) && defined(HOST_ARM64)
-// Apple platforms use ARM64 instead of AARCH64 to describe these registers
+#if defined(TARGET_OSX) && defined(HOST_ARM64)
+// MacOS uses ARM64 instead of AARCH64 to describe these registers
 // Create aliases to reuse more code
 enum
 {
@@ -96,7 +96,7 @@ enum
     UNW_AARCH64_V30 = UNW_ARM64_D30,
     UNW_AARCH64_V31 = UNW_ARM64_D31
 };
-#endif // defined(TARGET_APPLE) && defined(HOST_ARM64)
+#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
 
 
 //----------------------------------------------------------------------
@@ -273,7 +273,7 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
     {
         unwContext->fpregs[i] = winContext->D[i];
     }
-#elif defined(HOST_ARM64) && !defined(TARGET_APPLE)
+#elif defined(HOST_ARM64) && !defined(TARGET_OSX)
     unwContext->uc_mcontext.pc       = winContext->Pc;
     unwContext->uc_mcontext.sp       = winContext->Sp;
     unwContext->uc_mcontext.regs[29] = winContext->Fp;
@@ -315,7 +315,7 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
     unw_set_reg(cursor, UNW_X86_EBX, winContext->Ebx);
     unw_set_reg(cursor, UNW_X86_ESI, winContext->Esi);
     unw_set_reg(cursor, UNW_X86_EDI, winContext->Edi);
-#elif defined(HOST_ARM64) && defined(TARGET_APPLE)
+#elif defined(HOST_ARM64) && defined(TARGET_OSX)
     // unw_cursor_t is an opaque data structure on macOS
     // As noted in WinContextToUnwindContext this didn't work for Linux
     // TBD whether this will work for macOS.
@@ -439,12 +439,12 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_fpreg(cursor, UNW_AARCH64_V30, (unw_fpreg_t*)&winContext->V[30].Low);
     unw_get_fpreg(cursor, UNW_AARCH64_V31, (unw_fpreg_t*)&winContext->V[31].Low);
 
-#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+#if defined(TARGET_OSX) && defined(TARGET_ARM64)
     // Strip pointer authentication bits which seem to be leaking out of libunwind
     // Seems like ptrauth_strip() / __builtin_ptrauth_strip() should work, but currently
     // errors with "this target does not support pointer authentication"
     winContext->Pc = winContext->Pc & 0x7fffffffffffull;
-#endif // defined(TARGET_APPLE) && defined(TARGET_ARM64)
+#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
 #elif (defined(HOST_UNIX) && defined(HOST_S390X))
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R15);
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->PSWAddr);

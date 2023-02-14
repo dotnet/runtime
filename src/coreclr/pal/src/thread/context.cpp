@@ -618,7 +618,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
             FPREG_Xmm(native, i) = lpContext->FltSave.XmmRegisters[i];
         }
 #elif defined(HOST_ARM64)
-#ifdef TARGET_APPLE
+#ifdef TARGET_OSX
         _STRUCT_ARM_NEON_STATE64* fp = GetNativeSigSimdContext(native);
         fp->__fpsr = lpContext->Fpsr;
         fp->__fpcr = lpContext->Fpcr;
@@ -637,7 +637,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 *(NEON128*) &fp->fp_q[i] = lpContext->V[i];
             }
         }
-#else // TARGET_APPLE
+#else // TARGET_OSX
         fpsimd_context* fp = GetNativeSigSimdContext(native);
         if (fp)
         {
@@ -648,7 +648,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 *(NEON128*) &fp->vregs[i] = lpContext->V[i];
             }
         }
-#endif // TARGET_APPLE
+#endif // TARGET_OSX
 #elif defined(HOST_ARM)
         VfpSigFrame* fp = GetNativeSigSimdContext(native);
         if (fp)
@@ -780,7 +780,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             lpContext->FltSave.XmmRegisters[i] = FPREG_Xmm(native, i);
         }
 #elif defined(HOST_ARM64)
-#ifdef TARGET_APPLE
+#ifdef TARGET_OSX
         const _STRUCT_ARM_NEON_STATE64* fp = GetConstNativeSigSimdContext(native);
         lpContext->Fpsr = fp->__fpsr;
         lpContext->Fpcr = fp->__fpcr;
@@ -799,7 +799,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 lpContext->V[i] = *(NEON128*) &fp->fp_q[i];
             }
         }
-#else // TARGET_APPLE
+#else // TARGET_OSX
         const fpsimd_context* fp = GetConstNativeSigSimdContext(native);
         if (fp)
         {
@@ -810,7 +810,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
                 lpContext->V[i] = *(NEON128*) &fp->vregs[i];
             }
         }
-#endif // TARGET_APPLE
+#endif // TARGET_OSX
 #elif defined(HOST_ARM)
         const VfpSigFrame* fp = GetConstNativeSigSimdContext(native);
         if (fp)
@@ -1655,10 +1655,6 @@ EXIT:
 
 #endif // !HAVE_MACH_EXCEPTIONS
 
-#if (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
-extern "C" void sys_icache_invalidate(const void* start, size_t len);
-#endif
-
 /*++
 Function:
   DBG_FlushInstructionCache: processor-specific portion of
@@ -1691,8 +1687,6 @@ DBG_FlushInstructionCache(
         __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
         begin = endOrNextPageBegin;
     }
-#elif (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
-    sys_icache_invalidate (lpBaseAddress, dwSize);
 #else
     __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
 #endif
