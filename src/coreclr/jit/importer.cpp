@@ -10599,14 +10599,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (lclTyp == TYP_STRUCT)
                 {
                     layout = typGetObjLayout(resolvedToken.hClass);
-                    if (varTypeIsSIMD(layout->GetType()))
-                    {
-                        lclTyp = layout->GetType();
-                    }
-                    else
-                    {
-                        lclTyp = impNormStructType(resolvedToken.hClass);
-                    }
+                    lclTyp = layout->GetType();
                 }
 
                 if (lclTyp != TYP_STRUCT)
