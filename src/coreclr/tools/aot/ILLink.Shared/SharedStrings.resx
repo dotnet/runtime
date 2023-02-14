@@ -177,10 +177,10 @@
   <data name="FailedToWriteOutputMessage" xml:space="preserve">
     <value>Failed to write '{0}'.</value>
   </data>
-  <data name="ILLinkUnexpectedErrorTitle" xml:space="preserve">
+  <data name="LinkerUnexpectedErrorTitle" xml:space="preserve">
     <value>There was an unexpected error while trimming. An exception with more details is printed to the MSBuild log. Please share this stack trace with the IL Linker team to further investigate the cause and possible solution.</value>
   </data>
-  <data name="ILLinkUnexpectedErrorMessage" xml:space="preserve">
+  <data name="LinkerUnexpectedErrorMessage" xml:space="preserve">
     <value>IL Trimmer has encountered an unexpected error. Please report the issue at https://aka.ms/report-illink</value>
   </data>
   <data name="ErrorProcessingXmlLocationTitle" xml:space="preserve">

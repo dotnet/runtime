@@ -22,7 +22,7 @@ namespace ILLink.Shared
 		CouldNotFindAssemblyReference = 1009,
 		CouldNotLoadAssembly = 1010,
 		FailedToWriteOutput = 1011,
-		ILLinkUnexpectedError = 1012,
+		LinkerUnexpectedError = 1012,
 		ErrorProcessingXmlLocation = 1013,
 		XmlDocumentLocationHasInvalidFeatureDefault = 1014,
 		UnrecognizedCommandLineOption = 1015,

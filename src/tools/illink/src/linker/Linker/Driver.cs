@@ -833,7 +833,7 @@ namespace Mono.Linker
 				Context.LogError (null, DiagnosticId.FailedToResolveMetadataElement, re.Message);
 				break;
 			default:
-				Context.LogError (null, DiagnosticId.ILLinkUnexpectedError);
+				Context.LogError (null, DiagnosticId.LinkerUnexpectedError);
 				break;
 			}
 			return false;

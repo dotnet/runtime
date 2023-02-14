@@ -16,12 +16,12 @@ namespace System.Reflection.PortableExecutable
         public PEMagic Magic { get; }
 
         /// <summary>
-        /// ILLink major version number.
+        /// The linker major version number.
         /// </summary>
         public byte MajorLinkerVersion { get; }
 
         /// <summary>
-        /// ILLink minor version number.
+        /// The linker minor version number.
         /// </summary>
         public byte MinorLinkerVersion { get; }
 

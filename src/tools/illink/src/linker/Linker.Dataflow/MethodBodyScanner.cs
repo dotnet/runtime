@@ -190,7 +190,7 @@ namespace Mono.Linker.Dataflow
 						string displayName = $"local variable V_{localReference.LocalDefinition.Index}";
 						throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (
 							$"""In method {method.FullName}, local variable V_{localVariable.Index} references {displayName} of type {localReference.ReferencedType.GetDisplayName ()} which is a reference. Dataflow tracking has failed.""",
-							(int) DiagnosticId.ILLinkUnexpectedError,
+							(int) DiagnosticId.LinkerUnexpectedError,
 							origin: new MessageOrigin (method, ilOffset)));
 					}
 				}
@@ -881,7 +881,7 @@ namespace Mono.Linker.Dataflow
 					if (valueWithStaticType.StaticType is not null && _context.Annotations.FlowAnnotations.IsTypeInterestingForDataflow (valueWithStaticType.StaticType))
 						throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (
 							$"Unhandled StoreReference call. Unhandled attempt to store a value in {value} of type {value.GetType ()}.",
-							(int) DiagnosticId.ILLinkUnexpectedError,
+							(int) DiagnosticId.LinkerUnexpectedError,
 							origin: new MessageOrigin (method, operation.Offset)));
 					// This should only happen for pointer derefs, which can't point to interesting types
 					break;
