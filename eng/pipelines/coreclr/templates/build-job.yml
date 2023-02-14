@@ -108,6 +108,8 @@ jobs:
       # Variables used by arcade to gather asset manifests
       - name: _DotNetPublishToBlobFeed
         value: true
+    - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      - group: AzureDevOps-Artifact-Feeds-Pats
     - name: officialBuildIdArg
       value: ''
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -174,6 +176,24 @@ jobs:
           feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
+
+    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
+        - task: Bash@3
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+            arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - task: PowerShell@2
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+            arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
