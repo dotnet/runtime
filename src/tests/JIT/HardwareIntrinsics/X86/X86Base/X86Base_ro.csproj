@@ -13,6 +13,6 @@
   <ItemGroup>
     <Compile Include="Program.X86Base.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <ProjectReference Include="DivRem.csproj" Aliases="CoreLib"  Private="false" />
+    <ProjectReference Include="DivRem.RefOnly.csproj" Aliases="CoreLib" OutputItemType="ReferencePath" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>
