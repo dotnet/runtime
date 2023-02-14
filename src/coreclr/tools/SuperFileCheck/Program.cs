@@ -86,7 +86,7 @@ namespace SuperFileCheck
         /// </summary>
         static void VerifyCheckPrefixes(string str, string[] checkPrefixes)
         {
-            var invalidFullLinePattern = $"({String.Join('|', checkPrefixes)})+?({{LITERAL}})?(:|-NEXT-FULL-LINE:)";
+            var invalidFullLinePattern = $"({String.Join('|', checkPrefixes)})+?({{LITERAL}})?(-NEXT-FULL-LINE:)";
             var invalidRegex = new System.Text.RegularExpressions.Regex(invalidFullLinePattern);
             if (invalidRegex.Count(str) > 0)
             {
