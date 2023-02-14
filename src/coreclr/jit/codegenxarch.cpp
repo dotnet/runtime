@@ -6864,15 +6864,18 @@ GenTreeCC* CodeGen::genTryFindFlagsConsumer(GenTree* producer)
     // sometimes with decomposition) then we assume it could consume the flags.
     for (GenTree* candidate = producer->gtNext; candidate != nullptr; candidate = candidate->gtNext)
     {
-        if ((candidate->OperIs(GT_LCL_VAR, GT_COPY) && candidate->IsUnusedValue()) || candidate->OperIs(GT_SWAP))
-        {
-            // Resolution node
-            continue;
-        }
-
         if (candidate->OperIs(GT_JCC, GT_SETCC))
         {
             return candidate->AsCC();
+        }
+
+        // The following nodes can be inserted between the compare and the user
+        // of the flags by resolution. Codegen for these will never modify CPU
+        // flags.
+        if (!candidate->OperIs(GT_LCL_VAR, GT_COPY, GT_SWAP))
+        {
+            // For other nodes we do the conservative thing.
+            return nullptr;
         }
     }
 
