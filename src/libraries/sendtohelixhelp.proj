@@ -17,8 +17,9 @@
     <EnableDefaultBuildHelixWorkItems>true</EnableDefaultBuildHelixWorkItems>
   </PropertyGroup>
 
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasi.targets" Condition="'$(TargetOS)' == 'wasi'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" Condition="'$(TargetOS)' == 'browser'" />
-  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'browser'" />
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'" />
 
   <PropertyGroup Condition="'$(_workItemTimeout)' == ''">
     <!-- Normal jobs have a 30 minute timeout for arm/arm64, and 15 minute timeout otherwise.
@@ -70,10 +71,10 @@
     <HelixType>test/functional/cli/$(TestScope)/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
     <!-- XHarness telemetry not supported with custom WASM workloads yet -->
-    <EnableXHarnessTelemetry Condition="'$(TargetOS)' == 'browser'">false</EnableXHarnessTelemetry>
+    <EnableXHarnessTelemetry Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</EnableXHarnessTelemetry>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
@@ -93,12 +94,14 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <UseTestEnvFile Condition="'$(UseTestEnvFile)' == ''">true</UseTestEnvFile>
+
     <!-- Set the name of the scenario file. Note that this is only used in invocations where $(Scenario) is set
          (which is when this project is invoked to call the "CreateTestEnvFile" target).
     -->
     <TestEnvFileName></TestEnvFileName>
     <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' == 'windows'">SetStressModes_$(Scenario).cmd</TestEnvFileName>
-    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'browser'">SetStressModes_$(Scenario).sh</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'">SetStressModes_$(Scenario).sh</TestEnvFileName>
   </PropertyGroup>
 
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject

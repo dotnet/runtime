@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30524.135
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33209.295
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Linker", "src\linker\Mono.Linker.csproj", "{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}"
 EndProject
@@ -33,16 +33,21 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tlens", "src\tlens\tlens.cs
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILLink.CodeFixProvider", "src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj", "{6D20F334-B7E4-4585-854B-8A0E2B29B4AA}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ILLink.Shared", "src\ILLink.Shared\ILLink.Shared.shproj", "{92F5E753-2179-46DC-BDCE-736858C18DC7}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ILLink.Shared", "src\ILLink.Shared\ILLink.Shared.shproj", "{FF598E93-8E9E-4091-9F50-61A7572663AE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILLink.RoslynAnalyzer.Tests.Generator", "test\ILLink.RoslynAnalyzer.Tests.Generator\ILLink.RoslynAnalyzer.Tests.Generator.csproj", "{3DDE7064-4B68-4979-8843-FDF4CE5A5140}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "external", "external", "{8FD57ADB-B449-4960-A141-845C1E2E26EC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil", "external\cecil\Mono.Cecil.csproj", "{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "cecil", "cecil", "{223B8007-F26C-4E28-B28D-E43C97F7EE23}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "symbols", "symbols", "{19C783E3-B710-4F25-A977-0ADDA4D2CFEE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil.Pdb", "external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj", "{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}"
+EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		src\ILLink.Shared\ILLink.Shared.projitems*{92f5e753-2179-46dc-bdce-736858c18dc7}*SharedItemsImports = 13
-		src\ILLink.Shared\ILLink.Shared.projitems*{dd28e2b1-057b-4b4d-a04d-b2ebd9e76e46}*SharedItemsImports = 5
-		src\ILLink.Shared\ILLink.Shared.projitems*{f1a44a78-34ee-408b-8285-9a26f0e7d4f2}*SharedItemsImports = 5
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
@@ -208,6 +213,30 @@ Global
 		{3DDE7064-4B68-4979-8843-FDF4CE5A5140}.Release|x64.Build.0 = Release|Any CPU
 		{3DDE7064-4B68-4979-8843-FDF4CE5A5140}.Release|x86.ActiveCfg = Release|Any CPU
 		{3DDE7064-4B68-4979-8843-FDF4CE5A5140}.Release|x86.Build.0 = Release|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Debug|x64.Build.0 = Debug|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Debug|x86.Build.0 = Debug|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Release|x64.ActiveCfg = Release|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Release|x64.Build.0 = Release|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Release|x86.ActiveCfg = Release|Any CPU
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D}.Release|x86.Build.0 = Release|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Debug|x64.Build.0 = Debug|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Debug|x86.Build.0 = Debug|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Release|x64.ActiveCfg = Release|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Release|x64.Build.0 = Release|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Release|x86.ActiveCfg = Release|Any CPU
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -223,8 +252,17 @@ Global
 		{8DA71B3B-5809-44E5-A018-5DE5C6FF6C2A} = {03EB085F-3E2E-4A68-A7DF-951ADF59A0CC}
 		{6D20F334-B7E4-4585-854B-8A0E2B29B4AA} = {AA0569FB-73E9-4B42-9A19-714BB1229DAE}
 		{3DDE7064-4B68-4979-8843-FDF4CE5A5140} = {C2969923-7BAA-4FE4-853C-F670B0D3C6C8}
+		{7C068318-84AF-4861-9E5F-6F8A3BF38C9D} = {8FD57ADB-B449-4960-A141-845C1E2E26EC}
+		{223B8007-F26C-4E28-B28D-E43C97F7EE23} = {8FD57ADB-B449-4960-A141-845C1E2E26EC}
+		{19C783E3-B710-4F25-A977-0ADDA4D2CFEE} = {223B8007-F26C-4E28-B28D-E43C97F7EE23}
+		{AF7722A0-D1A7-4294-A181-B88B6BD67C6E} = {19C783E3-B710-4F25-A977-0ADDA4D2CFEE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E43A3901-42B0-48CA-BB36-5CD40A99A6EE}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		src\ILLink.Shared\ILLink.Shared.projitems*{dd28e2b1-057b-4b4d-a04d-b2ebd9e76e46}*SharedItemsImports = 5
+		src\ILLink.Shared\ILLink.Shared.projitems*{f1a44a78-34ee-408b-8285-9a26f0e7d4f2}*SharedItemsImports = 5
+		src\ILLink.Shared\ILLink.Shared.projitems*{ff598e93-8e9e-4091-9f50-61a7572663ae}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

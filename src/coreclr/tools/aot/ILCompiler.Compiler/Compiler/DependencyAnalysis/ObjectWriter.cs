@@ -718,7 +718,7 @@ namespace ILCompiler.DependencyAnalysis
                     Debug.Assert(false);
                 }
 
-                if (_targetPlatform.OperatingSystem == TargetOS.OSX)
+                if (_targetPlatform.IsOSXLike)
                 {
                     // Emit a symbol for beginning of the frame. This is workaround for ld64
                     // linker bug which would produce DWARF with incorrect pcStart offsets for
@@ -792,9 +792,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private void AppendExternCPrefix(Utf8StringBuilder sb)
         {
-            if (_targetPlatform.OperatingSystem == TargetOS.OSX)
+            if (_targetPlatform.IsOSXLike)
             {
-                // On OSX, we need to prefix an extra underscore to account for correct linkage of
+                // On OSX-like systems, we need to prefix an extra underscore to account for correct linkage of
                 // extern "C" functions.
                 sb.Append('_');
             }
@@ -908,7 +908,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_isSingleFileCompilation)
                 return false;
 
-            if (_targetPlatform.OperatingSystem == TargetOS.OSX)
+            if (_targetPlatform.IsOSXLike)
                 return false;
 
             if (!(node is ISymbolNode))
@@ -1249,6 +1249,16 @@ namespace ILCompiler.DependencyAnalysis
                     vendor = "apple";
                     sys = "darwin16";
                     abi = "macho";
+                    break;
+                case TargetOS.iOS:
+                    vendor = "apple";
+                    sys = "ios11.0";
+                    abi = "macho";
+                    break;
+                case TargetOS.iOSSimulator:
+                    vendor = "apple";
+                    sys = "ios11.0";
+                    abi = "simulator";
                     break;
                 case TargetOS.WebAssembly:
                     vendor = "unknown";

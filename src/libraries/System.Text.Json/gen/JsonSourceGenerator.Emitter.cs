@@ -26,6 +26,7 @@ namespace System.Text.Json.SourceGeneration
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
             private const string DefaultContextBackingStaticVarName = "s_defaultContext";
             internal const string GetConverterFromFactoryMethodName = "GetConverterFromFactory";
+            private const string OriginatingResolverPropertyName = "OriginatingResolver";
             private const string InfoVarName = "info";
             private const string PropertyInfoVarName = "propertyInfo";
             internal const string JsonContextVarName = "jsonContext";
@@ -40,9 +41,9 @@ namespace System.Text.Json.SourceGeneration
             private const string ValueVarName = "value";
             private const string WriterVarName = "writer";
 
-            private static AssemblyName _assemblyName = typeof(Emitter).Assembly.GetName();
+            private static readonly AssemblyName s_assemblyName = typeof(Emitter).Assembly.GetName();
             private static readonly string s_generatedCodeAttributeSource = $@"
-[global::System.CodeDom.Compiler.GeneratedCodeAttribute(""{_assemblyName.Name}"", ""{_assemblyName.Version}"")]
+[global::System.CodeDom.Compiler.GeneratedCodeAttribute(""{s_assemblyName.Name}"", ""{s_assemblyName.Version}"")]
 ";
 
             // global::fully.qualified.name for referenced types
@@ -1159,6 +1160,9 @@ private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonS
 {{
     {typeInfoPropertyTypeRef}? {JsonTypeInfoReturnValueLocalVariableName} = null;
     {WrapWithCheckForCustomConverter(metadataInitSource, typeCompilableName)}
+
+    { /* NB OriginatingResolver should be the last property set by the source generator. */ ""}
+    {JsonTypeInfoReturnValueLocalVariableName}.{OriginatingResolverPropertyName} = this;
 
     return {JsonTypeInfoReturnValueLocalVariableName};
 }}

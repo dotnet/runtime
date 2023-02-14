@@ -325,7 +325,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					Assert.True (linked.DeclaringType.Interfaces.Select (i => i.InterfaceType).Contains (overriddenMethod.DeclaringType),
 						$"Method {linked} overrides method {overriddenMethod}, but {linked.DeclaringType} does not implement interface {overriddenMethod.DeclaringType}");
 				} else {
-					TypeReference baseType = linked.DeclaringType;
+					TypeDefinition baseType = linked.DeclaringType;
 					TypeReference overriddenType = overriddenMethod.DeclaringType;
 					while (baseType is not null) {
 						if (baseType.Equals (overriddenType))

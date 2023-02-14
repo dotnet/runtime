@@ -345,8 +345,8 @@ namespace System.Xml.Schema
     /// </summary>
     internal sealed class NamespaceListNode : SyntaxTreeNode
     {
-        private NamespaceList namespaceList;
-        private object particle;
+        private readonly NamespaceList namespaceList;
+        private readonly object particle;
 
         public NamespaceListNode(NamespaceList namespaceList, object particle)
         {

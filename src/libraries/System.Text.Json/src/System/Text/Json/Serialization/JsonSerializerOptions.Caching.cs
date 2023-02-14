@@ -18,6 +18,15 @@ namespace System.Text.Json
         /// Encapsulates all cached metadata referenced by the current <see cref="JsonSerializerOptions" /> instance.
         /// Context can be shared across multiple equivalent options instances.
         /// </summary>
+        internal CachingContext CacheContext
+        {
+            get
+            {
+                Debug.Assert(IsReadOnly);
+                return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
+            }
+        }
+
         private CachingContext? _cachingContext;
 
         // Simple LRU cache for the public (de)serialize entry points that avoid some lookups in _cachingContext.
@@ -59,7 +68,7 @@ namespace System.Text.Json
 
             if (IsReadOnly)
             {
-                typeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(type);
+                typeInfo = CacheContext.GetOrAddTypeInfo(type);
                 if (ensureConfigured)
                 {
                     typeInfo?.EnsureConfigured();
@@ -140,13 +149,6 @@ namespace System.Text.Json
             _objectTypeInfo = null;
         }
 
-        private CachingContext? GetCachingContext()
-        {
-            Debug.Assert(IsReadOnly);
-
-            return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
-        }
-
         /// <summary>
         /// Stores and manages all reflection caches for one or more <see cref="JsonSerializerOptions"/> instances.
         /// NB the type encapsulates the original options instance and only consults that one when building new types;
@@ -175,14 +177,15 @@ namespace System.Text.Json
             // If changing please ensure that src/ILLink.Descriptors.LibraryBuild.xml is up-to-date.
             public int Count => _jsonTypeInfoCache.Count;
 
-            public JsonTypeInfo? GetOrAddJsonTypeInfo(Type type) =>
+            public JsonTypeInfo? GetOrAddTypeInfo(Type type) =>
 #if NETCOREAPP
                 _jsonTypeInfoCache.GetOrAdd(type, static (type, options) => options.GetTypeInfoNoCaching(type), Options);
 #else
                 _jsonTypeInfoCache.GetOrAdd(type, _jsonTypeInfoFactory);
 #endif
 
-            public bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo) => _jsonTypeInfoCache.TryGetValue(type, out typeInfo);
+            public bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
+                => _jsonTypeInfoCache.TryGetValue(type, out typeInfo);
 
             public void Clear()
             {

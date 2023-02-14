@@ -977,7 +977,7 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_opcode_3reg(p, q, op, rd, rn, rm) \
 	do { \
 		g_assert ((q) << 2 && (rm) < 32 && (rn) < 32 && (rd) < 32); \
-		arm_emit ((p), (op) | (q) << 30) | (rm) << 16 | (rn) << 5 | (rd)); \
+		arm_emit ((p), (op) | (q) << 30 | (rm) << 16 | (rn) << 5 | (rd)); \
 	} while (0)
 
 #define VREG_LOW 0b0

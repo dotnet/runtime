@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <_SampleProject>Wasm.Browser.Threads.Sample.csproj</_SampleProject>
     <WasmEnableThreads>true</WasmEnableThreads>
   </PropertyGroup>
 

@@ -133,7 +133,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1019`__ | Couldn't find a field of type Microsoft.Extensions.Logging.ILogger |
 |  __`SYSLIB1020`__ | Found multiple fields of type Microsoft.Extensions.Logging.ILogger |
 |  __`SYSLIB1021`__ | Can't have the same template with different casing |
-|  __`SYSLIB1022`__ | Can't have malformed format strings (like dangling {, etc)  |
+|  __`SYSLIB1022`__ | Logging method contains malformed format strings |
 |  __`SYSLIB1023`__ | Generating more than 6 arguments is not supported |
 |  __`SYSLIB1024`__ | Argument is using the unsupported out parameter modifier |
 |  __`SYSLIB1025`__ | Multiple logging methods cannot use the same event name within a class |

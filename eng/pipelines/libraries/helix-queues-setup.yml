@@ -196,7 +196,7 @@ jobs:
       - (Ubuntu.1804.Amd64)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-webassembly
 
     # Browser WebAssembly windows
-    - ${{ if eq(parameters.platform, 'browser_wasm_win') }}:
+    - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
       - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly
 
     ${{ insert }}: ${{ parameters.jobParameters }}

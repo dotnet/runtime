@@ -795,6 +795,7 @@ MINI_OP(OP_LOAD_GOTADDR, "load_gotaddr", IREG, NONE, NONE)
 MINI_OP(OP_DUMMY_USE, "dummy_use", NONE, IREG, NONE)
 MINI_OP(OP_NOT_REACHED, "not_reached", NONE, NONE, NONE)
 MINI_OP(OP_NOT_NULL, "not_null", NONE, IREG, NONE)
+MINI_OP(OP_LDTOKEN_FIELD, "ldtoken_field", VREG, VREG, NONE)
 
 /* SIMD opcodes. */
 
@@ -853,6 +854,7 @@ MINI_OP(OP_WASM_SIMD_BITMASK, "wasm_bitmask", IREG, XREG, NONE)
 MINI_OP3(OP_WASM_SIMD_SHUFFLE, "wasm_shuffle", XREG, XREG, XREG, XREG)
 MINI_OP(OP_WASM_SIMD_SUM, "wasm_sum", XREG, XREG, NONE)
 MINI_OP(OP_WASM_SIMD_SWIZZLE, "wasm_swizzle", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTRACT_NARROW, "wasm_extract_narrow", XREG, XREG, XREG)
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)

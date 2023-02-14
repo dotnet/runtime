@@ -6,6 +6,7 @@ AOT?=false
 TARGET?=iossimulator
 DEPLOY_AND_RUN?=true
 APP_SANDBOX?=false
+STRIP_DEBUG_SYMBOLS?=false # only used when measuring SOD via build-appbundle make target
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
 #If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
@@ -51,6 +52,7 @@ run-sim: clean appbuilder
 build-appbundle: clean appbuilder
 	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetOS=$(TARGET) /p:TargetArchitecture=$(MONO_ARCH) \
 	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
+	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	/p:UseLLVM=$(USE_LLVM) /p:ForceAOT=$(AOT) /bl \
 
 run-catalyst:

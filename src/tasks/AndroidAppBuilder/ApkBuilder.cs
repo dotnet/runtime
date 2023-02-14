@@ -420,7 +420,7 @@ public partial class ApkBuilder
         {
             string[] classFiles = Directory.GetFiles(Path.Combine(OutputDir, "obj"), "*.class", SearchOption.AllDirectories);
 
-            if (!classFiles.Any())
+            if (classFiles.Length == 0)
                 throw new InvalidOperationException("Didn't find any .class files");
 
             Utils.RunProcess(logger, d8, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: OutputDir);

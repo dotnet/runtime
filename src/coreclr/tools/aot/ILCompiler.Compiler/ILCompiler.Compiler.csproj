@@ -351,6 +351,7 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.EnumMethods.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.ValueTypeMethods.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
+    <Compile Include="Compiler\CustomAttributeExtensions.cs" />
     <Compile Include="Compiler\Dataflow\ArrayValue.cs" />
     <Compile Include="Compiler\Dataflow\AttributeDataFlow.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedCallGraph.cs" />
@@ -606,6 +607,8 @@
     <Compile Include="Compiler\Logging\DocumentationSignatureParser.cs" />
     <Compile Include="Compiler\Logging\MessageContainer.cs" />
     <Compile Include="Compiler\Logging\MessageOrigin.cs" />
+    <Compile Include="Compiler\Logging\SuppressMessageInfo.cs" />
+    <Compile Include="Compiler\Logging\UnconditionalSuppressMessageAttributeState.cs" />
     <Compile Include="Compiler\XmlObjectDumper.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />

@@ -252,9 +252,6 @@
   <data name="TypeInfoImmutable" xml:space="preserve">
     <value>This JsonTypeInfo instance is marked read-only or has already been used in serialization or deserialization.</value>
   </data>
-  <data name="PropertyInfoImmutable" xml:space="preserve">
-    <value>This JsonTypeInfo instance is marked read-only or has already been used in serialization or deserialization.</value>
-  </data>
   <data name="MaxDepthMustBePositive" xml:space="preserve">
     <value>Max depth must be positive.</value>
   </data>

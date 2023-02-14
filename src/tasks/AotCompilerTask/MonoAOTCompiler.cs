@@ -107,6 +107,46 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDirectPInvoke { get; set; }
 
     /// <summary>
+    /// When this option is specified, the mono aot compiler will generate direct calls for only specified direct pinvokes.
+    /// Specified direct pinvokes can be in the format of 'module' to generate direct calls for all entrypoints in the module,
+    /// or 'module!entrypoint' to generate direct calls for individual entrypoints in a module. 'module' will trump 'module!entrypoint'.
+    /// For a direct call to be generated, the managed code must call the native function through a direct pinvoke, e.g.
+    ///
+    /// [DllImport("module", EntryPoint="entrypoint")]
+    /// public static extern <ret> ManagedName (arg)
+    ///
+    /// or
+    ///
+    /// [DllImport("module")]
+    /// public static extern <ret> entrypoint (arg)
+    ///
+    /// The native sources must be supplied in the direct pinvoke sources parammeter in the LibraryBuilder to generate a shared library.
+    /// If not using the LibraryBuilder, the native sources must be linked manually in the final executable or library.
+    /// This requires UseStaticLinking=true, can be used in conjunction with DirectPInvokeLists, but is incompatible with UseDirectPInvoke.
+    /// </summary>
+    public ITaskItem[] DirectPInvokes { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
+    /// When this option is specified, the mono aot compiler will generate direct calls for only specified direct pinvokes in the provided files.
+    /// Specified direct pinvokes can be in the format of 'module' to generate direct calls for all entrypoints in the module,
+    /// or 'module!entrypoint' to generate direct calls for individual entrypoints in a module. 'module' will trump 'module!entrypoint'.
+    /// For a direct call to be generated, the managed code must call the native function through a direct pinvoke, e.g.
+    ///
+    /// [DllImport("module", EntryPoint="entrypoint")]
+    /// public static extern <ret> ManagedName (arg)
+    ///
+    /// or
+    ///
+    /// [DllImport("module")]
+    /// public static extern <ret> entrypoint (arg)
+    ///
+    /// The native sources must be supplied in the direct pinvoke sources parammeter in the LibraryBuilder to generate a shared library.
+    /// If not using the LibraryBuilder, the native sources must be linked manually in the final executable or library.
+    /// This requires UseStaticLinking=true, can be used in conjunction with DirectPInvokes, but is incompatible with UseDirectPInvoke.
+    /// </summary>
+    public ITaskItem[] DirectPInvokeLists { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// Instructs the AOT compiler to emit DWARF debugging information.
     /// </summary>
     public bool UseDwarfDebug { get; set; }
@@ -364,9 +404,21 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new LogAsErrorException($"'{nameof(UseDirectIcalls)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
         }
 
-        if (UseDirectPInvoke && !UseStaticLinking)
+        if (UseDirectPInvoke && (DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0))
         {
-            throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
+            throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}' flag trumps specified '{nameof(DirectPInvokes)}' and '{nameof(DirectPInvokeLists)}' arguments. Unset either the flag or the specific direct pinvoke arguments.");
+        }
+
+        if (UseDirectPInvoke || DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0)
+        {
+            if (!UseStaticLinking)
+                throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}', '{nameof(DirectPInvokes)}', and '{nameof(DirectPInvokeLists)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
+
+            foreach (var directPInvokeList in DirectPInvokeLists)
+            {
+                if (!File.Exists(directPInvokeList.GetMetadata("FullPath")))
+                    throw new LogAsErrorException($"Could not find file '{directPInvokeList}'.");
+            }
         }
 
         if (UseStaticLinking && (parsedOutputType == MonoAotOutputType.Library))
@@ -609,6 +661,25 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (UseStaticLinking)
         {
             aotArgs.Add($"static");
+        }
+
+        if (UseDirectPInvoke)
+        {
+            aotArgs.Add($"direct-pinvoke");
+        }
+
+        if (DirectPInvokes.Length > 0)
+        {
+            var directPInvokesSB = new StringBuilder("direct-pinvokes=");
+            Array.ForEach(DirectPInvokes, directPInvokeItem => directPInvokesSB.Append($"{directPInvokeItem.ItemSpec};"));
+            aotArgs.Add(directPInvokesSB.ToString());
+        }
+
+        if (DirectPInvokeLists.Length > 0)
+        {
+            var directPInvokeListsSB = new StringBuilder("direct-pinvoke-lists=");
+            Array.ForEach(DirectPInvokeLists, directPInvokeListItem => directPInvokeListsSB.Append($"{directPInvokeListItem.GetMetadata("FullPath")};"));
+            aotArgs.Add(directPInvokeListsSB.ToString());
         }
 
         if (UseDwarfDebug)

@@ -1304,14 +1304,24 @@ DONE:
             const bool         mustImportEntryBlock = gtIsRecursiveCall(methHnd) || actualCall->IsInlineCandidate() ||
                                               actualCall->IsGuardedDevirtualizationCandidate();
 
-            // Only schedule importation if we're not currently importing.
+            // Only schedule importation if we're not currently importing the entry BB.
             //
             if (opts.IsOSR() && mustImportEntryBlock && (compCurBB != fgEntryBB))
             {
-                JITDUMP("\ninlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
+                JITDUMP("\nOSR: inlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
                         " for importation\n",
                         dspTreeID(call), fgEntryBB->bbNum);
                 impImportBlockPending(fgEntryBB);
+
+                if (!fgOSROriginalEntryBBProtected && (fgEntryBB != fgFirstBB))
+                {
+                    // Protect fgEntryBB from deletion, since it may not have any
+                    // explicit flow references until morph.
+                    //
+                    fgEntryBB->bbRefs += 1;
+                    fgOSROriginalEntryBBProtected = true;
+                    JITDUMP("   also protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+                }
             }
         }
     }

@@ -65,9 +65,9 @@ jobs:
 
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-        - _subset: libs+libs.tests
+        - _subset: tools+libs+libs.tests
         - ${{ if and(eq(parameters.runTests, false), eq(parameters.useHelix, false)) }}:
-          - _subset: libs
+          - _subset: tools+libs
         - _buildAction: ''
         - _additionalBuildArguments: ''
         - ${{ parameters.variables }}

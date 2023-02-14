@@ -8,6 +8,7 @@
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
     <OutputType>library</OutputType>
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
+    <_WasmPThreadPoolSize Condition="'$(WasmEnableThreads)'=='true'">10</_WasmPThreadPoolSize>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>

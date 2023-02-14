@@ -27,7 +27,7 @@ const terserConfig = {
     mangle: {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
         // and unit test at src\libraries\System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\timers.mjs
-        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message|mono_wasm_set_timeout_exec)/,
+        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_set_timeout_exec)/,
         keep_classnames: /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/,
     },
     format: {

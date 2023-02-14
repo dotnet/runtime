@@ -231,11 +231,11 @@ namespace ILLink.Tasks
 
 		private string DotNetPath {
 			get {
-				if (!String.IsNullOrEmpty (_dotnetPath))
+				if (!string.IsNullOrEmpty (_dotnetPath))
 					return _dotnetPath;
 
 				_dotnetPath = Environment.GetEnvironmentVariable (DotNetHostPathEnvironmentName);
-				if (String.IsNullOrEmpty (_dotnetPath))
+				if (string.IsNullOrEmpty (_dotnetPath))
 					throw new InvalidOperationException ($"{DotNetHostPathEnvironmentName} is not set");
 
 				return _dotnetPath;
@@ -255,7 +255,7 @@ namespace ILLink.Tasks
 
 		public string ILLinkPath {
 			get {
-				if (!String.IsNullOrEmpty (_illinkPath))
+				if (!string.IsNullOrEmpty (_illinkPath))
 					return _illinkPath;
 
 #pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
@@ -366,10 +366,10 @@ namespace ILLink.Tasks
 				// Add per-assembly optimization arguments
 				foreach (var optimization in _optimizationNames) {
 					string optimizationValue = assembly.GetMetadata (optimization);
-					if (String.IsNullOrEmpty (optimizationValue))
+					if (string.IsNullOrEmpty (optimizationValue))
 						continue;
 
-					if (!Boolean.TryParse (optimizationValue, out bool enabled))
+					if (!bool.TryParse (optimizationValue, out bool enabled))
 						throw new ArgumentException ($"optimization metadata {optimization} must be True or False");
 
 					SetOpt (args, optimization, assemblyName, enabled);
@@ -377,8 +377,8 @@ namespace ILLink.Tasks
 
 				// Add per-assembly verbosity arguments
 				string singleWarn = assembly.GetMetadata ("TrimmerSingleWarn");
-				if (!String.IsNullOrEmpty (singleWarn)) {
-					if (!Boolean.TryParse (singleWarn, out bool value))
+				if (!string.IsNullOrEmpty (singleWarn)) {
+					if (!bool.TryParse (singleWarn, out bool value))
 						throw new ArgumentException ($"TrimmerSingleWarn metadata must be True or False");
 
 					if (value)
@@ -450,7 +450,7 @@ namespace ILLink.Tasks
 				foreach (var customData in CustomData) {
 					var key = customData.ItemSpec;
 					var value = customData.GetMetadata ("Value");
-					if (String.IsNullOrEmpty (value))
+					if (string.IsNullOrEmpty (value))
 						throw new ArgumentException ("custom data requires \"Value\" metadata");
 					args.Append ("--custom-data ").Append (' ').Append (key).Append ('=').AppendLine (Quote (value));
 				}
@@ -460,7 +460,7 @@ namespace ILLink.Tasks
 				foreach (var featureSetting in FeatureSettings) {
 					var feature = featureSetting.ItemSpec;
 					var featureValue = featureSetting.GetMetadata ("Value");
-					if (String.IsNullOrEmpty (featureValue))
+					if (string.IsNullOrEmpty (featureValue))
 						throw new ArgumentException ("feature settings require \"Value\" metadata");
 					args.Append ("--feature ").Append (feature).Append (' ').AppendLine (featureValue);
 				}
@@ -486,11 +486,11 @@ namespace ILLink.Tasks
 					// handle optional before/aftersteps
 					var beforeStep = customStep.GetMetadata ("BeforeStep");
 					var afterStep = customStep.GetMetadata ("AfterStep");
-					if (!String.IsNullOrEmpty (beforeStep) && !String.IsNullOrEmpty (afterStep))
+					if (!string.IsNullOrEmpty (beforeStep) && !string.IsNullOrEmpty (afterStep))
 						throw new ArgumentException ("custom step may not have both \"BeforeStep\" and \"AfterStep\" metadata");
-					if (!String.IsNullOrEmpty (beforeStep))
+					if (!string.IsNullOrEmpty (beforeStep))
 						customStepString = $"-{beforeStep}:{customStepString}";
-					if (!String.IsNullOrEmpty (afterStep))
+					if (!string.IsNullOrEmpty (afterStep))
 						customStepString = $"+{afterStep}:{customStepString}";
 
 					args.AppendLine (Quote (customStepString));
