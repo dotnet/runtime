@@ -155,6 +155,7 @@
 	This should help weak consistency archs.
  */
 #include "config.h"
+
 #ifdef HAVE_SGEN_GC
 
 #ifdef __MACH__
@@ -4081,6 +4082,98 @@ sgen_check_canary_for_object (gpointer addr)
 			fwrite (window_start, sizeof (char), window_end - window_start, stderr);
 		}
 	}
+}
+
+
+#define MEM_PRESSURE_COUNT  4
+#define MAX_MEMORYPRESSURE_RATIO  10  
+guint64 memory_pressure_gc_count = 0;
+guint64 memory_pressure_iteration = 0;
+guint64 memory_pressure_adds[MEM_PRESSURE_COUNT] = {0, 0, 0, 0}; 
+guint64 memory_pressure_removes[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure removals
+const unsigned min_memorypressure_budget = 4 * 1024 * 1024;        // 4 MB
+
+// Resets pressure accounting after a gen2 GC has occurred.
+static void check_pressure_counts ()
+{
+    if (memory_pressure_gc_count != sgen_gc_collection_count(GENERATION_OLD))
+    {
+        memory_pressure_gc_count = sgen_gc_collection_count(GENERATION_OLD);
+        memory_pressure_iteration++;
+
+        guint32 p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
+        memory_pressure_adds[p] = 0;   // new pressure will be accumulated here
+        memory_pressure_removes[p] = 0;
+    }
+}
+
+void sgen_remove_memory_pressure (guint64 bytes_allocated)
+{
+    check_pressure_counts();
+
+    guint32 p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
+    mono_atomic_fetch_add_i64((gint64*)&memory_pressure_removes[p], bytes_allocated);
+}
+
+void sgen_add_memory_pressure (guint64 bytes_allocated)
+{
+
+    check_pressure_counts ();
+
+    guint p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
+    guint64 new_mem_value = mono_atomic_fetch_add_i64 ((gint64*)&memory_pressure_adds[p], bytes_allocated);
+    
+    // AddMemoryPressure contains unrolled loops which depend on MEM_PRESSURE_COUNT
+    g_assert (MEM_PRESSURE_COUNT == 4);
+
+    guint64 add = memory_pressure_adds[0] + memory_pressure_adds[1] + memory_pressure_adds[2] + memory_pressure_adds[3] - memory_pressure_adds[p];
+    guint64 rem = memory_pressure_removes[0] + memory_pressure_removes[1] + memory_pressure_removes[2] + memory_pressure_removes[3] - memory_pressure_removes[p];
+
+    if (new_mem_value >= min_memorypressure_budget)
+    {
+        guint64 budget = min_memorypressure_budget;
+
+        if (memory_pressure_iteration >= MEM_PRESSURE_COUNT) // wait until we have enough data points
+        {
+            // Adjust according to effectiveness of GC
+            // Scale budget according to past memory_pressure_adds / memory_pressure_removes ratio
+            if (add >= rem * MAX_MEMORYPRESSURE_RATIO)
+            {
+                budget = min_memorypressure_budget * MAX_MEMORYPRESSURE_RATIO;
+            }
+            else if (add > rem)
+            {
+                g_assert (rem != 0);
+
+                // Avoid overflow by calculating addPressure / remPressure as fixed point (1 = 1024)
+                budget = (add * 1024 / rem) * budget / 1024;
+            }
+        }
+
+        // If still over budget, check current managed heap size
+        if (new_mem_value >= budget)
+        {
+	    guint64 heap_over_3 =  sgen_gc_info.heap_size_bytes / 3;
+
+            if (budget < heap_over_3) // Max
+            {
+                budget = heap_over_3;
+            }
+
+            if (new_mem_value >= budget)
+            {
+                // last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
+                if ((size_t)(mono_time_since_last_stw() + time_last) > (time_last * 5))
+                {
+		    sgen_gc_collect (GENERATION_OLD);
+                    check_pressure_counts ();
+		}
+            }
+        }
+    }
 }
 
 #endif /* HAVE_SGEN_GC */
