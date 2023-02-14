@@ -103,10 +103,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
         _proxyPrepareInfoByteArray = new byte[prepareInfoLength];
         Array.Copy(prepareInfoByteArray, _proxyPrepareInfoByteArray, prepareInfoLength);
 
-        byte[] txGuidByteArray = new byte[16];
-        Array.Copy(_proxyPrepareInfoByteArray, txGuidByteArray, 16);
-
-        _transactionGuid = new Guid(txGuidByteArray);
+        _transactionGuid = new Guid(_proxyPrepareInfoByteArray.AsSpan(0, 16));
         TransactionGuidString = _transactionGuid.ToString();
 
         TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;

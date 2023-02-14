@@ -1,17 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Security;
 using System.Diagnostics;
-using Microsoft.Win32.SafeHandles;
+using System.Runtime.InteropServices;
 
 namespace System.Net.WebSockets
 {
     internal static class WebSocketProtocolComponent
     {
-        private static readonly string s_dummyWebsocketKeyBase64 = Convert.ToBase64String(new byte[16]);
+        private const string EmptyWebsocketKeyBase64 = "AAAAAAAAAAAAAAAAAAAAAA=="; // same as Convert.ToBase64String(new byte[16])
         private static readonly IntPtr s_webSocketDllHandle;
         private static readonly string? s_supportedVersion;
 
@@ -29,7 +26,7 @@ namespace System.Net.WebSockets
                 }
             };
 
-        private static readonly Interop.WebSocket.HttpHeader[]? s_ServerFakeRequestHeaders;
+        private static readonly Interop.WebSocket.HttpHeader[]? s_serverFakeRequestHeaders;
 
         internal enum Action
         {
@@ -77,7 +74,7 @@ namespace System.Net.WebSockets
 
             s_supportedVersion = GetSupportedVersion();
 
-            s_ServerFakeRequestHeaders = new Interop.WebSocket.HttpHeader[]
+            s_serverFakeRequestHeaders = new Interop.WebSocket.HttpHeader[]
             {
                 new Interop.WebSocket.HttpHeader()
                 {
@@ -102,7 +99,7 @@ namespace System.Net.WebSockets
                 new Interop.WebSocket.HttpHeader()
                 {
                     Name = HttpKnownHeaderNames.SecWebSocketKey,
-                    Value = s_dummyWebsocketKeyBase64,
+                    Value = EmptyWebsocketKeyBase64,
                 }
             };
         }
@@ -217,8 +214,8 @@ namespace System.Net.WebSockets
                     IntPtr.Zero,
                     IntPtr.Zero,
                     0,
-                    s_ServerFakeRequestHeaders!,
-                    (uint)s_ServerFakeRequestHeaders!.Length,
+                    s_serverFakeRequestHeaders!,
+                    (uint)s_serverFakeRequestHeaders!.Length,
                     out _,
                     out _);
                 ThrowOnError(errorCode);
