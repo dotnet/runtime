@@ -264,7 +264,7 @@ namespace System.Diagnostics.Tracing
             }
             else if (task != 0)
             {
-                return providerName + "task" + task.ToString();
+                return $"{providerName}task{task}";
             }
             else
             {

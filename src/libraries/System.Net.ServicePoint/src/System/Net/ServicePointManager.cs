@@ -197,8 +197,8 @@ namespace System.Net
         }
 
         private static string MakeQueryString(Uri address) => address.IsDefaultPort ?
-            address.Scheme + "://" + address.DnsSafeHost :
-            address.Scheme + "://" + address.DnsSafeHost + ":" + address.Port.ToString();
+            $"{address.Scheme}://{address.DnsSafeHost}" :
+            $"{address.Scheme}://{address.DnsSafeHost}:{address.Port}";
 
         private static string MakeQueryString(Uri address, bool isProxy)
         {
