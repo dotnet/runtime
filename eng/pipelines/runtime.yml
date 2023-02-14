@@ -103,7 +103,7 @@ extends:
           buildConfig: checked
           platforms:
           - linux_x64
-          container: debian-11-gcc12-amd64-20220511124845-b7a6185
+          container: debian-11-gcc12-amd64
           jobParameters:
             testGroup: innerloop
             compilerName: gcc
@@ -364,7 +364,6 @@ extends:
           runtimeFlavor: mono
           platforms:
           - tvossimulator_x64
-          - iossimulator_x86
           - linux_arm
           jobParameters:
             testGroup: innerloop
@@ -383,7 +382,6 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - ios_arm
           - linux_musl_x64
           jobParameters:
             testGroup: innerloop

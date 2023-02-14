@@ -527,7 +527,7 @@ namespace System.Diagnostics
                                 // at the end.  If instanceName ends in ".", ".e", or ".ex" we remove it.
                                 if (instanceName.Length == 15)
                                 {
-                                    if (instanceName.EndsWith(".", StringComparison.Ordinal))
+                                    if (instanceName.EndsWith("."))
                                     {
                                         instanceName = instanceName.Slice(0, 14);
                                     }

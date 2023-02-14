@@ -78,12 +78,12 @@ void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
 #ifdef DEBUG
     // Verify caller of this method checked safety.
     //
-    const bool isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
+    const bool isSafeToMarkRegOptional = IsSafeToMarkRegOptional(parentNode, childNode);
 
-    if (!isSafeToContainMem)
+    if (!isSafeToMarkRegOptional)
     {
         JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", comp->dspTreeID(childNode), comp->dspTreeID(parentNode));
-        assert(isSafeToContainMem);
+        assert(isSafeToMarkRegOptional);
     }
 #endif
 }
@@ -100,16 +100,11 @@ void Lowering::TryMakeSrcContainedOrRegOptional(GenTree* parentNode, GenTree* ch
     // HWIntrinsic nodes should use TryGetContainableHWIntrinsicOp and its relevant handling
     assert(!parentNode->OperIsHWIntrinsic());
 
-    if (!IsSafeToContainMem(parentNode, childNode))
-    {
-        return;
-    }
-
-    if (IsContainableMemoryOp(childNode))
+    if (IsContainableMemoryOp(childNode) && IsSafeToContainMem(parentNode, childNode))
     {
         MakeSrcContained(parentNode, childNode);
     }
-    else
+    else if (IsSafeToMarkRegOptional(parentNode, childNode))
     {
         MakeSrcRegOptional(parentNode, childNode);
     }
@@ -140,6 +135,86 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 }
 
 //------------------------------------------------------------------------
+// IsInvariantInRange: Check if a node is invariant in the specified range. In
+// other words, can 'node' be moved to right before 'endExclusive' without its
+// computation changing values?
+//
+// Arguments:
+//    node         -  The node.
+//    endExclusive -  The exclusive end of the range to check invariance for.
+//
+// Returns:
+//    True if 'node' can be evaluated at any point between its current
+//    location and 'endExclusive' without giving a different result; otherwise
+//    false.
+//
+bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
+{
+    assert((node != nullptr) && (endExclusive != nullptr));
+
+    // Quick early-out for unary cases
+    //
+    if (node->gtNext == endExclusive)
+    {
+        return true;
+    }
+
+    m_scratchSideEffects.Clear();
+    m_scratchSideEffects.AddNode(comp, node);
+
+    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
+    {
+        assert((cur != nullptr) && "Expected first node to precede end node");
+        const bool strict = true;
+        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// IsInvariantInRange: Check if a node is invariant in the specified range,
+// ignoring conflicts with one particular node.
+//
+// Arguments:
+//    node         - The node.
+//    endExclusive - The exclusive end of the range to check invariance for.
+//    ignoreNode   - A node to ignore interference checks with, for example
+//                   because it will retain its relative order with 'node'.
+//
+// Returns:
+//    True if 'node' can be evaluated at any point between its current location
+//    and 'endExclusive' without giving a different result; otherwise false.
+//
+bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const
+{
+    assert((node != nullptr) && (endExclusive != nullptr));
+
+    m_scratchSideEffects.Clear();
+    m_scratchSideEffects.AddNode(comp, node);
+
+    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
+    {
+        assert((cur != nullptr) && "Expected first node to precede end node");
+        if (cur == ignoreNode)
+        {
+            continue;
+        }
+
+        const bool strict = true;
+        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // IsSafeToContainMem: Checks for conflicts between childNode and parentNode,
 // and returns 'true' iff memory operand childNode can be contained in parentNode.
 //
@@ -152,31 +227,12 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 //
 bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const
 {
-    // Quick early-out for unary cases
-    //
-    if (childNode->gtNext == parentNode)
-    {
-        return true;
-    }
-
-    m_scratchSideEffects.Clear();
-    m_scratchSideEffects.AddNode(comp, childNode);
-
-    for (GenTree* node = childNode->gtNext; node != parentNode; node = node->gtNext)
-    {
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, node, strict))
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return IsInvariantInRange(childNode, parentNode);
 }
 
 //------------------------------------------------------------------------
 // IsSafeToContainMem: Checks for conflicts between childNode and grandParentNode
-// and returns 'true' iff memory operand childNode can be contained in ancestorNode
+// and returns 'true' iff memory operand childNode can be contained in grandParentNode.
 //
 // Arguments:
 //    grandParentNode - any non-leaf node
@@ -188,24 +244,63 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const
 //
 bool Lowering::IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const
 {
-    m_scratchSideEffects.Clear();
-    m_scratchSideEffects.AddNode(comp, childNode);
+    return IsInvariantInRange(childNode, grandparentNode, parentNode);
+}
 
-    for (GenTree* node = childNode->gtNext; node != grandparentNode; node = node->gtNext)
+//------------------------------------------------------------------------
+// IsSafeToMarkRegOptional: Check whether it is safe to mark 'childNode' as
+// reg-optional in 'parentNode'.
+//
+// Arguments:
+//    parentNode - parent of 'childNode'
+//    childNode  - some node that is an input to `parentNode`
+//
+// Return value:
+//    True if it is safe to mark childNode as reg-optional; otherwise false.
+//
+// Remarks:
+//    Unlike containment, reg-optionality can only rarely introduce new
+//    conflicts, because reg-optionality mostly does not cause the child node
+//    to be evaluated at a new point in time:
+//
+//    1. For LIR edges (i.e. anything that isn't GT_LCL_VAR) reg-optionality
+//       indicates that if the edge was spilled to a temp at its def, the parent
+//       node can use it directly from its spill location without reloading it
+//       into a register first. This is always safe as as spill temps cannot
+//       interfere.
+//
+//       For example, an indirection can be marked reg-optional even if there
+//       is interference between it and its parent; the indirection will still
+//       be evaluated at its original position, but if the value is spilled to
+//       stack, then reg-optionality can allow using the value from the spill
+//       location directly. Similarly, GT_LCL_FLD nodes are never register
+//       candidates and can be handled the same way.
+//
+//    2. For GT_LCL_VAR reg-optionality indicates that the node can use the
+//       local directly from its home location. IR invariants guarantee that the
+//       local is not defined between its LIR location and the parent node (see
+//       CheckLclVarSemanticsHelper). That means the only case where it could
+//       interfere is due to it being address exposed. So this is the only unsafe
+//       case.
+//
+bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) const
+{
+    if (!childNode->OperIs(GT_LCL_VAR))
     {
-        if (node == parentNode)
-        {
-            continue;
-        }
-
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, node, strict))
-        {
-            return false;
-        }
+        // LIR edges never interfere. This includes GT_LCL_FLD, see the remarks above.
+        return true;
     }
 
-    return true;
+    LclVarDsc* dsc = comp->lvaGetDesc(childNode->AsLclVarCommon());
+    if (!dsc->IsAddressExposed())
+    {
+        // Safe by IR invariants (no assignments occur between parent and node).
+        return true;
+    }
+
+    // We expect this to have interference as otherwise we could have marked it
+    // contained instead of reg-optional.
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -299,8 +394,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 #endif
             break;
         case GT_SELECT:
-            ContainCheckSelect(node->AsConditional());
-            break;
+            return LowerSelect(node->AsConditional());
 
 #ifdef TARGET_X86
         case GT_SELECT_HI:
@@ -2530,15 +2624,16 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// IsInvariantInRange: Check if a node is invariant in the specified range. In
-// other words, can 'node' be moved to right before 'endExclusive' without its
-// computation changing values?
+// IsCFGCallArgInvariantInRange: A cheap version of IsInvariantInRange to check
+// if a node is invariant in the specified range. In other words, can 'node' be
+// moved to right before 'endExclusive' without its computation changing
+// values?
 //
 // Arguments:
 //    node         -  The node.
 //    endExclusive -  The exclusive end of the range to check invariance for.
 //
-bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive)
+bool Lowering::IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive)
 {
     assert(node->Precedes(endExclusive));
 
@@ -2603,7 +2698,7 @@ void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
         GenTree* operand = node->AsOp()->gtGetOp1();
         JITDUMP("Checking if we can move operand of GT_PUTARG_* node:\n");
         DISPTREE(operand);
-        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsInvariantInRange(operand, call))
+        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsCFGCallArgInvariantInRange(operand, call))
         {
             JITDUMP("...yes, moving to after validator call\n");
             BlockRange().Remove(operand);
@@ -3278,6 +3373,53 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     assert(jtrue->gtNext == nullptr);
     return nullptr;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerSelect: Lower a GT_SELECT node.
+//
+// Arguments:
+//     select - The node
+//
+// Return Value:
+//     The next node to lower.
+//
+GenTree* Lowering::LowerSelect(GenTreeConditional* select)
+{
+    GenTree* cond     = select->gtCond;
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
+    // Replace SELECT cond 1/0 0/1 with (perhaps reversed) cond
+    if (cond->OperIsCompare() && ((trueVal->IsIntegralConst(0) && falseVal->IsIntegralConst(1)) ||
+                                  (trueVal->IsIntegralConst(1) && falseVal->IsIntegralConst(0))))
+    {
+        assert(select->TypeIs(TYP_INT, TYP_LONG));
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(select, &use))
+        {
+            if (trueVal->IsIntegralConst(0))
+            {
+                GenTree* reversed = comp->gtReverseCond(cond);
+                assert(reversed == cond);
+            }
+
+            // Codegen supports also TYP_LONG typed compares so we can just
+            // retype the compare instead of inserting a cast.
+            cond->gtType = select->TypeGet();
+
+            BlockRange().Remove(trueVal);
+            BlockRange().Remove(falseVal);
+            BlockRange().Remove(select);
+            use.ReplaceWith(cond);
+
+            return cond->gtNext;
+        }
+    }
+
+    ContainCheckSelect(select);
+    return select->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -5482,7 +5624,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     {
         if (index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
         {
-            if (IsSafeToContainMem(parent, index))
+            if (IsInvariantInRange(index, parent))
             {
                 // Check containment safety against the parent node - this will ensure that LEA with the contained
                 // index will itself always be contained. We do not support uncontained LEAs with contained indices.
@@ -5505,7 +5647,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
             if (cast->CastOp()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) &&
                 (genTypeSize(targetType) == (1U << shiftBy)) && (scale == 1) && (offset == 0))
             {
-                if (IsSafeToContainMem(parent, index))
+                if (IsInvariantInRange(index, parent))
                 {
                     // Check containment safety against the parent node - this will ensure that LEA with the contained
                     // index will itself always be contained. We do not support uncontained LEAs with contained indices.
@@ -7214,7 +7356,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 #if defined(TARGET_ARM64)
     // Verify containment safety before creating an LEA that must be contained.
     //
-    const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+    const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
 #else
     const bool     isContainable         = true;
 #endif
@@ -7275,7 +7417,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
 #if defined(TARGET_ARM64)
         // Verify containment safety before creating an LEA that must be contained.
         //
-        const bool isContainable = (ind->Addr() != nullptr) && IsSafeToContainMem(ind, ind->Addr());
+        const bool isContainable = (ind->Addr() != nullptr) && IsInvariantInRange(ind->Addr(), ind);
 #else
         const bool isContainable         = true;
 #endif

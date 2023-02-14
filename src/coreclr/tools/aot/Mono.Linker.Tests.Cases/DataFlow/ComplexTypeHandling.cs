@@ -28,9 +28,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestArrayInAttributeParameter_ViaReflection ();
 		}
 
-		// NativeAOT: No need to preserve the element type if it's never instantiated
-		// There will be a reflection record about it, but we don't validate that yet
-		[Kept (By = ProducedBy.Trimmer)]
+		[Kept]
 		class ArrayElementType
 		{
 			public ArrayElementType () { }
@@ -58,9 +56,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicMethods (typeof (T[]));
 		}
 
-		// NativeAOT: No need to preserve the element type if it's never instantiated
-		// There will be a reflection record about it, but we don't validate that yet
-		[Kept (By = ProducedBy.Trimmer)]
+		[Kept]
 		class ArrayElementInGenericType
 		{
 			public ArrayElementInGenericType () { }

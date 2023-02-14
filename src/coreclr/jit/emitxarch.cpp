@@ -619,6 +619,54 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 }
 
 //------------------------------------------------------------------------
+// AreUpper32BitsSignExtended: check if some previously emitted
+//     instruction sign-extended the upper 32 bits.
+//
+// Arguments:
+//    reg - register of interest
+//
+// Return Value:
+//    true if previous instruction upper 32 bits are sign-extended.
+//    false if it did not, or if we can't safely determine.
+bool emitter::AreUpper32BitsSignExtended(regNumber reg)
+{
+    // Only allow GPRs.
+    // If not a valid register, then return false.
+    if (!genIsValidIntReg(reg))
+        return false;
+
+    // Only consider if safe
+    //
+    if (!emitCanPeepholeLastIns())
+    {
+        return false;
+    }
+
+    instrDesc* id = emitLastIns;
+
+    if (id->idReg1() != reg)
+    {
+        return false;
+    }
+
+    // movsx always sign extends to 8 bytes. W-bit is set.
+    if (id->idIns() == INS_movsx)
+    {
+        return true;
+    }
+
+#ifdef TARGET_AMD64
+    // movsxd is always an 8 byte operation. W-bit is set.
+    if (id->idIns() == INS_movsxd)
+    {
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // AreFlagsSetToZeroCmp: Checks if the previous instruction set the SZ, and optionally OC, flags to
 //                       the same values as if there were a compare to 0
 //

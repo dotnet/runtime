@@ -691,6 +691,20 @@ namespace ILCompiler
                 }
             }
         }
+
+        public IEnumerable<TypeDesc> AllEETypes
+        {
+            get
+            {
+                foreach (var node in MarkedNodes)
+                {
+                    if (node is IEETypeNode)
+                    {
+                        yield return ((IEETypeNode)node).Type;
+                    }
+                }
+            }
+        }
     }
 
     public sealed class ConstrainedCallInfo

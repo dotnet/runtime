@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Concurrent.Tests
 {
@@ -70,16 +71,22 @@ namespace System.Collections.Concurrent.Tests
             static Func<string, int> GetHashCodeFunc(ConcurrentDictionary<string, string> cd)
             {
                 // If the layout of ConcurrentDictionary changes, this will need to change as well.
-                object tables = cd.GetType().GetField("_tables", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(cd);
-                Assert.NotNull(tables);
 
-                FieldInfo comparerField = tables.GetType().GetField("_comparer", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                Assert.NotNull(comparerField);
+                FieldInfo tablesField = AssertNotNull(typeof(ConcurrentDictionary<string, string>).GetField("_tables", BindingFlags.Instance | BindingFlags.NonPublic));
+                Type tablesType = Type.GetType("System.Collections.Concurrent.ConcurrentDictionary`2+Tables, System.Collections.Concurrent", throwOnError: true);
+                object tables = AssertNotNull(tablesField.GetValue(cd));
 
-                IEqualityComparer<string> comparer = (IEqualityComparer<string>)comparerField.GetValue(tables);
-                Assert.NotNull(comparer);
+                FieldInfo comparerField = AssertNotNull(tablesType.GetField("_comparer", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public));
+                comparerField = AssertNotNull((FieldInfo)tables.GetType().GetMemberWithSameMetadataDefinitionAs(comparerField));
+                IEqualityComparer<string> comparer = AssertNotNull((IEqualityComparer<string>)comparerField.GetValue(tables));
 
                 return comparer.GetHashCode;
+
+                static T AssertNotNull<T>(T value, [CallerArgumentExpression(nameof(value))] string valueArg = null)
+                {
+                    Assert.True(value is not null, valueArg);
+                    return value;
+                }
             }
 
             Func<string, int> nonRandomizedOrdinal = GetHashCodeFunc(new ConcurrentDictionary<string, string>(StringComparer.Ordinal));
