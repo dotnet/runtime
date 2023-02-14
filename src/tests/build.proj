@@ -25,6 +25,7 @@
     <RestoreProjects Include="Common\GenerateHWIntrinsicTests\GenerateHWIntrinsicTests_Arm.csproj" />
     <RestoreProjects Include="Common\GenerateHWIntrinsicTests\GenerateHWIntrinsicTests_General.csproj" />
     <RestoreProjects Include="Common\GenerateHWIntrinsicTests\GenerateHWIntrinsicTests_X86.csproj" />
+    <RestoreProjects Include="Common\XUnitLogChecker\XUnitLogChecker.csproj" />
     <RestoreProjects Include="Common\XUnitWrapperGenerator\XUnitWrapperGenerator.csproj" />
     <RestoreProjects Include="Common\XUnitWrapperLibrary\XUnitWrapperLibrary.csproj" />
     <RestoreProjects Include="Common\XHarnessRunnerLibrary\XHarnessRunnerLibrary.csproj" />
@@ -508,6 +509,10 @@
       Projects="$(MSBuildProjectFile)"
       Targets="EmitTestExclusionList"
       Properties="XunitTestBinBase=$(XunitTestBinBase)" />
+
+    <MSBuild
+      Projects="Common\XUnitLogChecker\XUnitLogChecker.csproj"
+      Targets="Build" />
   </Target>
 
   <Target Name="BuildTestWrappers"
