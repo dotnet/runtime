@@ -29,6 +29,7 @@ namespace BasicEventSourceTests
             PlatformDetection.IsPrivilegedProcess && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
 
         /// ETW only works with elevated process
+        [SkipOnCoreClr("JitStress slows this too much", RuntimeTestModes.JitStress | RuntimeTestModes.JitStressRegs)]
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
         public void Test_EventSource_EtwManifestGeneration()
         {
@@ -74,7 +75,8 @@ namespace BasicEventSourceTests
                 }
             }, options).Dispose();
         }
-
+   
+        [SkipOnCoreClr("JitStress slows this too much", RuntimeTestModes.JitStress | RuntimeTestModes.JitStressRegs)]
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
         public void Test_EventSource_EtwManifestGenerationRollover()
         {
