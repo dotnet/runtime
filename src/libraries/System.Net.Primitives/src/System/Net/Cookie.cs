@@ -711,7 +711,7 @@ namespace System.Net
 
         public override int GetHashCode()
         {
-            return (Name + "=" + Value + ";" + Path + "; " + Domain + "; " + Version).GetHashCode();
+            return HashCode.Combine(Name, Value, Path, Domain, Version);
         }
 
         public override string ToString()

@@ -49,12 +49,12 @@ namespace System.Net
 
         public override int GetHashCode()
         {
-            return StringComparer.OrdinalIgnoreCase.GetHashCode(ToString());
+            return HashCode.Combine((int)_family, StringComparer.OrdinalIgnoreCase.GetHashCode(_host), _port);
         }
 
         public override string ToString()
         {
-            return _family + "/" + _host + ":" + _port;
+            return $"{_family}/{_host}:{_port}";
         }
 
         public string Host
