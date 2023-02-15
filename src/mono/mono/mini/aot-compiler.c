@@ -6589,7 +6589,8 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						direct_call_target = symbol;
 						patch_info->type = MONO_PATCH_INFO_NONE;
 					} else if ((m_class_get_image (patch_info->data.method->klass) == acfg->image) && !got_only && is_direct_callable (acfg, method, patch_info)) {
-#if !defined(TARGET_IOS) || defined(TARGET_TVOS)
+						// FIXME: Currently it only works for wasm. On other platforms it fails as some callees require initialization.
+#ifdef TARGET_WASM
 						MonoCompile *callee_cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, cmethod);
 
 						// Don't compile inflated methods if we're doing dedup
@@ -14886,7 +14887,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	TV_GETTIME (btv);
 
 	acfg->stats.jit_time = GINT64_TO_INT (TV_ELAPSED (atv, btv));
-#if !defined(TARGET_IOS) || defined(TARGET_TVOS)
+	// Current implementation uses dedup_methods hash table for storing extra methods which are emitted in a dedup AOT image.
+	// Previously, cfg->skip flag in dedup_skip_methods is used for indicating if a method should be emitted in an AOT image.
+	// Method dedup_skip_methods is used only for wasm.
+#ifdef TARGET_WASM
 	dedup_skip_methods (acfg);
 #endif
 	if (acfg->dedup_collect_only) {
