@@ -139,11 +139,11 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> inputBufferSpan = inputBuffer.AsSpan(inputOffset, inputCount);
             int bytesToTransform = _inputIndex + inputBufferSpan.Length;
 
-            byte[]? tmpBufferArray = null;
+            byte[]? transformBufferArray = null;
             Span<byte> transformBuffer = stackalloc byte[StackAllocSize];
             if (bytesToTransform > StackAllocSize)
             {
-                transformBuffer = tmpBufferArray = CryptoPool.Rent(inputCount);
+                transformBuffer = transformBufferArray = CryptoPool.Rent(inputCount);
             }
 
             transformBuffer = AppendInputBuffers(inputBufferSpan, transformBuffer);
@@ -157,14 +157,14 @@ namespace System.Security.Cryptography
 
                 _inputIndex = bytesToTransform;
 
-                ReturnToCryptoPool(tmpBufferArray, transformBuffer.Length);
+                ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
 
                 return 0;
             }
 
             ConvertFromBase64(transformBuffer, outputBuffer.AsSpan(outputOffset), out _, out int written);
 
-            ReturnToCryptoPool(tmpBufferArray, transformBuffer.Length);
+            ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
 
             return written;
         }
@@ -185,7 +185,7 @@ namespace System.Security.Cryptography
 
             // The common case is inputCount <= Base64InputBlockSize
             byte[]? transformBufferArray = null;
-            Span<byte> transformBuffer = stackalloc byte[StackAllocSize]; // TODO rename to transformBuffer
+            Span<byte> transformBuffer = stackalloc byte[StackAllocSize];
 
             if (bytesToTransform > StackAllocSize)
             {
