@@ -349,8 +349,8 @@ set(monosgen-sources "${icu_shim_sources};${mini_sources};${ZLIB_SOURCES}")
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
 target_link_libraries (monosgen-objects PRIVATE monoapi eglib_api utils_objects sgen_objects metadata_objects)
-add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
-target_link_libraries (monosgen-static PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
+target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
+add_library(monosgen-static STATIC $<TARGET_OBJECTS:eglib_objects> $<TARGET_OBJECTS:utils_objects> $<TARGET_OBJECTS:sgen_objects> $<TARGET_OBJECTS:metadata_objects> $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
 
 if(DISABLE_COMPONENTS OR AOT_COMPONENTS)
