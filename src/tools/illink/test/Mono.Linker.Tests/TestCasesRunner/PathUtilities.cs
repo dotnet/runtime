@@ -9,12 +9,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public static class PathUtilities
 	{
-#if DEBUG
-		public const string ConfigDirectoryName = "Debug";
-#else
-		public const string ConfigDirectoryName = "Release";
-#endif
-
 #if NET8_0
 		public const string TFMDirectoryName = "net8.0";
 #elif NET7_0
