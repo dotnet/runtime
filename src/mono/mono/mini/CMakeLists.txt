@@ -1,4 +1,8 @@
-project(mini)
+project(mini C)
+
+if(ENABLE_LLVM OR ENABLE_LLVM_RUNTIME OR HOST_BROWSER OR (HAVE_SYS_ICU AND NOT HOST_WASI))
+  enable_language(CXX)
+endif()
 
 include(FindPython3)
 

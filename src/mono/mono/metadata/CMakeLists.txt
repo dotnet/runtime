@@ -1,4 +1,4 @@
-project(metadata)
+project(metadata C)
 
 #
 # This library contains the icall tables if the runtime was configured with DISABLE_ICALL_TABLES

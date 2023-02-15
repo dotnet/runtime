@@ -1,4 +1,4 @@
-project(eglib)
+project(eglib C)
 
 set(eglib_win32_sources
     gdate-win32.c gdir-win32.c gfile-win32.c gmisc-win32.c

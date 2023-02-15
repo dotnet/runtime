@@ -1,4 +1,4 @@
-project(utils)
+project(utils C)
 
 set(utils_win32_sources
     mono-os-semaphore-win32.c

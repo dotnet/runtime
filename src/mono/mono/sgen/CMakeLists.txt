@@ -1,4 +1,4 @@
-project (sgen)
+project (sgen C)
 
 if(NOT MONO_GC STREQUAL "sgen")
     return()
