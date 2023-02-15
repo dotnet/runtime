@@ -569,7 +569,7 @@
       DestinationFile="$(MergedPayloadsRootDirectory)\%(MergedPayloads.PayloadGroup).zip" />
   </Target>
 
-  
+
   <PropertyGroup>
     <EnableAzurePipelinesReporter>$(PublishTestResults)</EnableAzurePipelinesReporter>
     <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' == '' ">false</EnableAzurePipelinesReporter>
@@ -628,6 +628,7 @@
     <HelixPreCommand Include="set __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
     <HelixPreCommand Include="set __CollectDumps=1" />
     <HelixPreCommand Include="set __CrashDumpFolder=%HELIX_DUMP_FOLDER%" />
+    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
     <HelixPreCommand Include="type %__TestEnv%" />
   </ItemGroup>
 
@@ -677,6 +678,7 @@
     <HelixPreCommand Include="export __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
     <HelixPreCommand Include="export __CollectDumps=1" />
     <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" />
+    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
     <HelixPreCommand Include="cat $__TestEnv" />
 
     <HelixPostCommand Include="find $HELIX_WORKITEM_PAYLOAD -name '*testResults.xml' -exec cp {} $HELIX_DUMP_FOLDER\; " />
@@ -781,8 +783,8 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="PrepareMergedStressHelixWorkItems" 
-          BeforeTargets="PrepareMergedHelixWorkItems" 
+  <Target Name="PrepareMergedStressHelixWorkItems"
+          BeforeTargets="PrepareMergedHelixWorkItems"
           Condition="'$(StripeMergedStressWorkItems)'=='true'"
           Outputs="%(_MergedStressWrapperMarker.Identity).dummy">
     <PropertyGroup>
@@ -830,14 +832,14 @@
       <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
       <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
     </XHarnessApkToTest>
-    
+
     <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
       <Arguments>--arg=env:TestExclusionListPath=TestExclusionList.txt</Arguments>
       <AndroidPackageName>net.dot.%(PayloadGroup)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessApkToTest>
-    
+
     <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
       <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</TestTarget>
       <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</TestTarget>
