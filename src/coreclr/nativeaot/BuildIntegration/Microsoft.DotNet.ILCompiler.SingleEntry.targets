@@ -10,7 +10,7 @@
     <OSIdentifier Condition="'$(OSIdentifier)' == '' and $(RuntimeIdentifier.StartsWith('tvossimulator'))">tvossimulator</OSIdentifier>
     <OSIdentifier Condition="'$(OSIdentifier)' == '' and $(RuntimeIdentifier.StartsWith('tvos'))">tvos</OSIdentifier>
     <OSIdentifier Condition="'$(OSIdentifier)' == '' and $(RuntimeIdentifier.StartsWith('freebsd'))">freebsd</OSIdentifier>
-    <OSIdentifier Condition="'$(OSIdentifier)' == '' and $(RuntimeIdentifier.StartsWith('linux-musl')) OR $(RuntimeIdentifier.StartsWith('alpine'))">linux-musl</OSIdentifier>
+    <OSIdentifier Condition="'$(OSIdentifier)' == '' and ($(RuntimeIdentifier.StartsWith('linux-musl')) or $(RuntimeIdentifier.StartsWith('alpine')))">linux-musl</OSIdentifier>
     <OSIdentifier Condition="'$(OSIdentifier)' == ''">linux</OSIdentifier>
 
     <!-- Determine TargetArchitecture from RuntimeIdentifier -->
