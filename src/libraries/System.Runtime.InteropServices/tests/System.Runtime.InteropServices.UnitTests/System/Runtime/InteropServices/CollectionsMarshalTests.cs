@@ -505,5 +505,52 @@ namespace System.Runtime.InteropServices.Tests
             public int Value;
             public int Property { get; set; }
         }
+
+        [Fact]
+        public void ListSetCount()
+        {
+            List<int> list = null!;
+            Assert.Throws<NullReferenceException>(() => CollectionsMarshal.SetCount(list, 3));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => CollectionsMarshal.SetCount(list, -1));
+
+            list = new();
+            Assert.Throws<ArgumentOutOfRangeException>(() => CollectionsMarshal.SetCount(list, -1));
+
+            CollectionsMarshal.SetCount(list, 5);
+            Assert.Equal(5, list.Count);
+
+            list = new() { 1, 2, 3, 4, 5 };
+            // make sure that size decrease preserves content
+            CollectionsMarshal.SetCount(list, 3);
+            Assert.Equal(3, list.Count);
+            Assert.Throws<ArgumentOutOfRangeException>(() => list[3]);
+            SequenceEquals(CollectionsMarshal.AsSpan(list), new int[] { 1, 2, 3 });
+
+            // make sure that size increase preserves content
+            CollectionsMarshal.SetCount(list, 5);
+            SequenceEquals(CollectionsMarshal.AsSpan(list)[..3], new int[] { 1, 2, 3 });
+
+            // make sure that reallocations preserve content
+            int newCount = list.Capacity * 2;
+            CollectionsMarshal.SetCount(list, newCount);
+            Assert.Equal(newCount, list.Count);
+            SequenceEquals(CollectionsMarshal.AsSpan(list)[..3], new int[] { 1, 2, 3 });
+
+            List<string> listReference = new() { "a", "b", "c", "d", "e" };
+            CollectionsMarshal.SetCount(listReference, 3);
+            // verify that reference types aren't cleared
+            SequenceEquals(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c" });
+
+            static void SequenceEquals<T>(ReadOnlySpan<T> actual, ReadOnlySpan<T> expected)
+            {
+                Assert.Equal(actual.Length, expected.Length);
+
+                for (int i = 0; i < actual.Length; i++)
+                {
+                    Assert.Equal(actual[i], expected[i]);
+                }
+            }
+        }
     }
 }
