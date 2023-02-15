@@ -2120,9 +2120,12 @@ namespace System.Net.Http
             {
                 if (e is IOException ||
                     e is ObjectDisposedException ||
-                    e is HttpProtocolException ||
                     e is InvalidOperationException)
                 {
+                    if (e is HttpResponseReadException responseReadEx)
+                    {
+                        throw new HttpRequestException(SR.net_http_client_execution_error, e, responseReadEx.HttpRequestError);
+                    }
                     throw new HttpRequestException(SR.net_http_client_execution_error, e);
                 }
 
@@ -2226,7 +2229,7 @@ namespace System.Net.Http
             throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
-            innerException as HttpProtocolException ?? new IOException(SR.net_http_request_aborted, innerException);
+            innerException as HttpResponseReadException ?? new IOException(SR.net_http_request_aborted, innerException);
 
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>

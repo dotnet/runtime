@@ -635,7 +635,7 @@ namespace System.Net.Http
                         _canRetry = true;
                     }
 
-                    throw new IOException(SR.net_http_invalid_response_premature_eof);
+                    throw new HttpResponseReadException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof);
                 }
 
 
@@ -1622,7 +1622,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             if (bytesRead == 0)
             {
-                throw new IOException(SR.net_http_invalid_response_premature_eof);
+                throw new HttpResponseReadException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof);
             }
         }
 
