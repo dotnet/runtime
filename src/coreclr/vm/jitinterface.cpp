@@ -9841,8 +9841,7 @@ bool CEEInfo::isCompatibleDelegate(
 
 /*********************************************************************/
     // return address of fixup area for late-bound N/Direct calls.
-void* CEEInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,
-                                        void **ppIndirection)
+void* CEEInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method)
 {
     CONTRACTL {
         NOTHROW;
@@ -9851,9 +9850,6 @@ void* CEEInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,
     } CONTRACTL_END;
 
     void * result = NULL;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
@@ -9875,11 +9871,12 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
 {
     WRAPPER_NO_CONTRACT;
 
-    void* pIndirection;
     {
         JIT_TO_EE_TRANSITION_LEAF();
 
         MethodDesc* pMD = GetMethod(method);
+        void* pIndirection;
+
         if (NDirectMethodDesc::TryGetResolvedNDirectTarget(pMD, &pIndirection))
         {
             pLookup->accessType = IAT_VALUE;
@@ -9891,8 +9888,7 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
     }
 
     pLookup->accessType = IAT_PVALUE;
-    pLookup->addr = getAddressOfPInvokeFixup(method, &pIndirection);
-    _ASSERTE(pIndirection == NULL);
+    pLookup->addr = getAddressOfPInvokeFixup(method);
 }
 
 /*********************************************************************/
