@@ -43,17 +43,16 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Sets the count of the <see cref="List{T}"/> to the specified value.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <param name="list">The list to set the count of.</param>
         /// <param name="count">The value to set the list's count to.</param>
         /// <exception cref="NullReferenceException">
         /// <paramref name="list"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="count"/> is negative/>.
+        /// <paramref name="count"/> is negative.
         /// </exception>
         /// <remarks>
-        /// When increasing the count, uninitialized is being exposed.
+        /// When increasing the count, uninitialized data is being exposed.
         /// </remarks>
         public static void SetCount<T>(List<T> list, int count)
         {
