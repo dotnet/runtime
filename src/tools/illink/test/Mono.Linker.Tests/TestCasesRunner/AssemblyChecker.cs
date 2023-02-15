@@ -1061,7 +1061,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual bool ShouldBeKept<T> (T member, string signature = null) where T : MemberReference, ICustomAttributeProvider
 		{
-			if (HasActiveKeptAttribute (member))
+			if (HasActiveKeptAttribute (member) || member.HasAttribute (nameof (KeptByAttribute)))
 				return true;
 
 			ICustomAttributeProvider cap = (ICustomAttributeProvider) member.DeclaringType;
