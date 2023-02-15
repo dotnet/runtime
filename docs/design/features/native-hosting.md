@@ -381,7 +381,7 @@ Starts the runtime and returns a function pointer to specified functionality of 
 In .NET Core 3.0 the function only works if `hostfxr_initialize_for_runtime_config` was used to initialize the host context.
 In .NET 5 the function also works if `hostfxr_initialize_for_dotnet_command_line` was used to initialize the host context. Also for .NET 5 it will only be allowed to request `hdt_load_assembly_and_get_function_pointer` or `hdt_get_function_pointer` on a context initialized via `hostfxr_initialize_for_dotnet_command_line`, all other runtime delegates will not be supported in this case.
 
-All returned runtime delegates use the `__stdcall` calling convention.
+All returned runtime delegates use the `__stdcall` calling convention on x86.
 
 ### Cleanup
 ``` C
@@ -475,16 +475,16 @@ int load_assembly(
 ```
 
 Calling this function will load the specified assembly in the default load context. It uses `AssemblyDependencyResolver` to register additional dependency resolution for the load context.
-* `assembly_path` - Path to the assembly to load. This path will also be used for dependency resolution via any `.deps.json` corresponding to the assembly.
+* `assembly_path` - Path to the assembly to load - requirements match the `assemblyPath` parameter of [AssemblyLoadContext.LoadFromAssemblyPath](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext.loadfromassemblypath). This path will also be used for dependency resolution via any `.deps.json` corresponding to the assembly.
 * `load_context` - the load context that be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
 * `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
 
 The runtime delegate type `hdt_load_assembly_bytes` allows loading a managed assembly from a byte array. Calling `hostfxr_get_runtime_delegate(handle, hdt_load_assembly_bytes, &helper)` returns a function pointer to the runtime helper with this signature:
 ```C
 int load_assembly_bytes(
-    const char *assembly_bytes,
+    const void *assembly_bytes,
     size_t     assembly_bytes_len,
-    const char *symbols_bytes,
+    const void *symbols_bytes,
     size_t     symbols_bytes_len,
     void       *load_context,
     void       *reserved);
@@ -492,9 +492,9 @@ int load_assembly_bytes(
 
 Calling this function will load the specified assembly in the default load context.
 * `assembly_bytes` - Bytes of the assembly to load.
-* `assembly_bytes_lenth` - Byte length of the assembly to load.
+* `assembly_bytes_len` - Byte length of the assembly to load.
 * `symbols_bytes` - Bytes of the symbols for the assembly to load.
-* `symbols_bytes_lenth` - Byte length of the symbols for the assembly to load.
+* `symbols_bytes_len` - Byte length of the symbols for the assembly to load.
 * `load_context` - the load context that be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
 * `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
 
