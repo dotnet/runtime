@@ -291,7 +291,10 @@ endif()
 
 if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
-target_link_libraries(mono-ee-interp monoapi)
+target_link_libraries(mono-ee-interp monoapi eglib_api)
+target_include_directories(mono-ee-interp PRIVATE ${PROJECT_BINARY_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/..)
 install(TARGETS mono-ee-interp LIBRARY)
 if(HOST_WASM AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 # Always optimize the interpreter, even in Debug builds.  Unoptimized interp_exec_method and
@@ -345,7 +348,7 @@ endif()
 set(monosgen-sources "${icu_shim_sources};${mini_sources};${ZLIB_SOURCES}")
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
-target_link_libraries (monosgen-objects PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
+target_link_libraries (monosgen-objects PRIVATE monoapi eglib_api utils_objects sgen_objects metadata_objects)
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
 target_link_libraries (monosgen-static PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
@@ -456,10 +459,10 @@ if(HOST_BROWSER)
   # Add two static libs containing llvm-runtime.cpp compiled for JS based/WASM EH
   # This is the only source file which contains a c++ throw or catch
   add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
-  target_link_libraries (mono-wasm-eh-js PRIVATE monoapi)
+  target_link_libraries (mono-wasm-eh-js PRIVATE monoapi eglib_api)
   install(TARGETS mono-wasm-eh-js LIBRARY)
   add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
-  target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi)
+  target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi eglib_api)
   set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
   install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
@@ -532,7 +535,7 @@ if(NOT DISABLE_EXECUTABLES)
   if(MONO_CROSS_COMPILE_EXECUTABLE_NAME)
     set_target_properties(mono-sgen PROPERTIES OUTPUT_NAME mono-aot-cross)
   endif()
-  target_link_libraries(mono-sgen PRIVATE monoapi monosgen-static eglib_objects ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
   # Alpine Linux implements ucontext in a different library
   if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
     target_link_libraries(mono-sgen PRIVATE ucontext)

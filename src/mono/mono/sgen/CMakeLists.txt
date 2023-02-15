@@ -61,7 +61,7 @@ set(sgen_sources "${sgen_sources_base}")
 set_source_files_properties(${sgen_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
 
 add_library(sgen_objects ${sgen_sources})
-target_link_libraries(sgen_objects PRIVATE monoapi eglib_objects utils_objects)
+target_link_libraries(sgen_objects PRIVATE monoapi eglib_api utils_objects)
 target_compile_definitions(sgen_objects PRIVATE -DMONO_DLL_EXPORT)
 target_include_directories(sgen_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..

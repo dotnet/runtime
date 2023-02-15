@@ -5,7 +5,10 @@ project(metadata)
 #
 if(DISABLE_ICALL_TABLES)
 add_library(mono-icall-table STATIC "icall-table.c")
-target_link_libraries(mono-icall-table monoapi)
+target_link_libraries(mono-icall-table PRIVATE monoapi eglib_api)
+target_include_directories(mono-icall-table PRIVATE ${PROJECT_BINARY_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/..)
 install(TARGETS mono-icall-table LIBRARY)
 else()
 set(icall_table_sources "icall-table.c")
@@ -197,7 +200,7 @@ set(metadata_sources "${metadata_platform_sources};${metadata_common_sources};${
 
 add_library(metadata_objects OBJECT ${metadata_sources})
 target_compile_definitions(metadata_objects PRIVATE ${metadata_compile_definitions})
-target_link_libraries(metadata_objects PRIVATE monoapi eglib_objects utils_objects)
+target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects)
 # note: metadata_objects is an object library, so this doesn't force linking with sgen,
 # it just adds the relevant include directories - which we need even with Boehm
 target_link_libraries(metadata_objects PRIVATE sgen_objects)

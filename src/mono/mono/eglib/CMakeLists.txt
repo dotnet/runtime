@@ -46,11 +46,13 @@ endif()
 
 set(eglib_sources "${eglib_platform_sources};${eglib_common_sources}")
 
+add_library(eglib_api INTERFACE ${eglib_headers})
+# to pick up eglib-config.h and glib.h, respectively
+target_include_directories(eglib_api INTERFACE ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR})
+
 add_library(eglib_objects OBJECT "${eglib_sources}")
-target_sources(eglib_objects PUBLIC ${eglib_headers})
 # to pick up config.h, and the eglib headers, respectively
 target_include_directories(eglib_objects PRIVATE
   ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR})
-# to pick up eglib-config.h
-target_include_directories(eglib_objects PUBLIC ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR})
+target_link_libraries (eglib_objects PUBLIC eglib_api)
