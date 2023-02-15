@@ -4862,6 +4862,38 @@
     "any",
     "base"
   ],
+  "fedora.39": [
+    "fedora.39",
+    "fedora",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.39-arm64": [
+    "fedora.39-arm64",
+    "fedora.39",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.39-x64": [
+    "fedora.39-x64",
+    "fedora.39",
+    "fedora-x64",
+    "fedora",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "freebsd": [
     "freebsd",
     "unix",
