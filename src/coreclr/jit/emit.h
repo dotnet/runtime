@@ -38,7 +38,11 @@
 #define EMIT_INSTLIST_VERBOSE (emitComp->verbose)
 #endif
 
+#ifdef TARGET_XARCH
 #define EMIT_BACKWARDS_NAVIGATION 1 // If 1, enable backwards navigation code for MIR (insGroup/instrDesc).
+#else
+#define EMIT_BACKWARDS_NAVIGATION 0
+#endif
 
 /*****************************************************************************/
 
