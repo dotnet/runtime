@@ -15,6 +15,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <EventSourceSupport>true</EventSourceSupport>
+    <EnableNativeEventPipe>true</EnableNativeEventPipe>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
