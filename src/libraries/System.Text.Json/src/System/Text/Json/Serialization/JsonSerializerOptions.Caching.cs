@@ -70,7 +70,7 @@ namespace System.Text.Json
             if (IsReadOnly)
             {
                 typeInfo = CacheContext.GetOrAddTypeInfo(type);
-                Debug.Assert(!ensureConfigured || typeInfo?.IsConfigured != false);
+                Debug.Assert(!ensureConfigured || typeInfo is null or { IsConfigured: true });
             }
             else if (resolveIfMutable)
             {

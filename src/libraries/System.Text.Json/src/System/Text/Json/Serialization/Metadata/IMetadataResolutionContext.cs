@@ -4,7 +4,7 @@
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
-    /// Used for resolving metadata recursively withing a <see cref="JsonTypeInfo"/> graph.
+    /// Used for resolving metadata recursively within a <see cref="JsonTypeInfo"/> graph.
     /// </summary>
     internal interface IMetadataResolutionContext
     {
