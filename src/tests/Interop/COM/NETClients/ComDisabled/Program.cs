@@ -12,6 +12,8 @@ namespace NetClient
     {
         static int Main()
         {
+            // Force this test to timeout by having it sleep for an hour.
+            Thread.Sleep(new TimeSpan(1, 0, 0));
             // RegFree COM is not supported on Windows Nano
             if (TestLibrary.Utilities.IsWindowsNanoServer)
             {
