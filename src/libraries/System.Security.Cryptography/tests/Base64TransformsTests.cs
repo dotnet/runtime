@@ -42,6 +42,7 @@ namespace System.Security.Cryptography.Tests
             yield return new object[] { "fo", "\tZ\tm8=\n" };
             yield return new object[] { "fo", "\tZ\tm8=\r\n" };
             yield return new object[] { "foo", " Z m 9 v" };
+            yield return new object[] { "abcdef", "YWJj\nZGVm" };
         }
 
         public static IEnumerable<object[]> TestData_Oversize()
