@@ -525,22 +525,22 @@ namespace System.Runtime.InteropServices.Tests
             CollectionsMarshal.SetCount(list, 3);
             Assert.Equal(3, list.Count);
             Assert.Throws<ArgumentOutOfRangeException>(() => list[3]);
-            SequenceEquals(CollectionsMarshal.AsSpan(list), new int[] { 1, 2, 3 });
+            SequenceEquals<int>(CollectionsMarshal.AsSpan(list), new int[] { 1, 2, 3 });
 
             // make sure that size increase preserves content
             CollectionsMarshal.SetCount(list, 5);
-            SequenceEquals(CollectionsMarshal.AsSpan(list)[..3], new int[] { 1, 2, 3 });
+            SequenceEquals<int>(CollectionsMarshal.AsSpan(list)[..3], new int[] { 1, 2, 3 });
 
             // make sure that reallocations preserve content
             int newCount = list.Capacity * 2;
             CollectionsMarshal.SetCount(list, newCount);
             Assert.Equal(newCount, list.Count);
-            SequenceEquals(CollectionsMarshal.AsSpan(list)[..3], new int[] { 1, 2, 3 });
+            SequenceEquals<int>(CollectionsMarshal.AsSpan(list)[..3], new int[] { 1, 2, 3 });
 
             List<string> listReference = new() { "a", "b", "c", "d", "e" };
             CollectionsMarshal.SetCount(listReference, 3);
             // verify that reference types aren't cleared
-            SequenceEquals(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c" });
+            SequenceEquals<string>(CollectionsMarshal.AsSpan(listReference), new string[] { "a", "b", "c" });
 
             static void SequenceEquals<T>(ReadOnlySpan<T> actual, ReadOnlySpan<T> expected)
             {
