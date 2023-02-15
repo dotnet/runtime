@@ -120,6 +120,7 @@
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>7.0.0-beta.23113.5</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>7.0.0-beta.23113.5</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDataCommonTestDataVersion>7.0.0-beta.23113.5</SystemDataCommonTestDataVersion>
     <SystemDrawingCommonTestDataVersion>7.0.0-beta.23113.5</SystemDrawingCommonTestDataVersion>
     <SystemFormatsTarTestDataVersion>7.0.0-beta.23113.5</SystemFormatsTarTestDataVersion>
     <SystemIOCompressionTestDataVersion>7.0.0-beta.23113.5</SystemIOCompressionTestDataVersion>
@@ -139,7 +140,7 @@
     <optimizationlinuxarm64MIBCRuntimeVersion>1.0.0-prerelease.22415.6</optimizationlinuxarm64MIBCRuntimeVersion>
     <optimizationPGOCoreCLRVersion>1.0.0-prerelease.22415.6</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
-    <MicrosoftDiaSymReaderNativeVersion>16.9.0-beta1.21055.5</MicrosoftDiaSymReaderNativeVersion>
+    <MicrosoftDiaSymReaderNativeVersion>16.11.23-beta1.23063.1</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta4.22355.1</SystemCommandLineVersion>
     <TraceEventVersion>3.0.3</TraceEventVersion>
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
