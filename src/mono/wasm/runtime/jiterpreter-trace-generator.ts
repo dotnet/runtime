@@ -25,6 +25,7 @@ import {
     trace, traceOnError, traceOnRuntimeError,
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
+    abortAtJittedLoopBodies,
 
     mostRecentOptions,
 
@@ -114,7 +115,8 @@ export function generate_wasm_body (
     endOfBody: MintOpcodePtr, builder: WasmBuilder, instrumentedTraceId: number
 ) : number {
     const abort = <MintOpcodePtr><any>0;
-    let isFirstInstruction = true;
+    let isFirstInstruction = true, inBranchBlock = false,
+        firstOpcodeInBlock = true;
     let result = 0;
     const traceIp = ip;
 
@@ -152,7 +154,7 @@ export function generate_wasm_body (
 
         const opname = info[0];
         const _ip = ip;
-        let is_dead_opcode = false;
+        let isDeadOpcode = false;
         /* This doesn't work for some reason
         const endOfOpcode = ip + <any>(info[1] * 2);
         if (endOfOpcode > endOfBody) {
@@ -180,6 +182,8 @@ export function generate_wasm_body (
             builder.ip_const(rip);
             builder.local("eip", WasmOpcode.set_local);
             append_branch_target_block(builder, ip);
+            inBranchBlock = true;
+            firstOpcodeInBlock = true;
             eraseInferredState();
         }
 
@@ -249,9 +253,26 @@ export function generate_wasm_body (
                 break;
             }
 
+            case MintOpcode.MINT_TIER_ENTER_JITERPRETER:
+                isDeadOpcode = true;
+                // If we hit an enter opcode and we're not currently in a branch block
+                //  or the enter opcode is the first opcode in a branch block, this likely
+                //  indicates that we've reached a loop body that was already jitted before
+                //  we were, and we should stop our trace here.
+                // Most loops have a prologue before them and having the loop body inside
+                //  the prologue trace is not going to especially boost throughput, while it
+                //  will make the prologue trace bigger (and thus slower to compile.)
+                // We don't want to abort before our trace is long enough though, since that
+                //  will result in decent trace candidates becoming nops which adds overhead
+                //  and leaves us in the interp.
+                if (abortAtJittedLoopBodies && (result >= builder.options.minimumTraceLength)) {
+                    if (!inBranchBlock || firstOpcodeInBlock)
+                        ip = abort;
+                }
+                break;
+
             case MintOpcode.MINT_TIER_PREPARE_JITERPRETER:
             case MintOpcode.MINT_TIER_NOP_JITERPRETER:
-            case MintOpcode.MINT_TIER_ENTER_JITERPRETER:
             case MintOpcode.MINT_NOP:
             case MintOpcode.MINT_DEF:
             case MintOpcode.MINT_DUMMY_USE:
@@ -261,7 +282,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_SDB_BREAKPOINT:
             case MintOpcode.MINT_SDB_INTR_LOC:
             case MintOpcode.MINT_SDB_SEQ_POINT:
-                is_dead_opcode = true;
+                isDeadOpcode = true;
                 break;
 
             case MintOpcode.MINT_SAFEPOINT:
@@ -885,7 +906,7 @@ export function generate_wasm_body (
             if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId)
                 builder.traceBuf.push(`${(<any>ip).toString(16)} ${opname}`);
 
-            if (!is_dead_opcode)
+            if (!isDeadOpcode)
                 result++;
 
             ip += <any>(info[1] * 2);

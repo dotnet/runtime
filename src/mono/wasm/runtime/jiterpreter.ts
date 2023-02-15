@@ -48,6 +48,9 @@ export const
     // When eliminating a null check, replace it with a runtime 'not null' assertion
     //  that will print a diagnostic message if the value is actually null
     nullCheckValidation = false,
+    // If we encounter an enter opcode that looks like a loop body and it was already
+    //  jitted, we should abort the current trace since it's not worth continuing
+    abortAtJittedLoopBodies = true,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code
