@@ -7371,6 +7371,20 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                                 break;
                             }
+                            case NI_X86Base_DivRem:
+                            case NI_X86Base_X64_DivRem:
+                            {
+                                // DIV only allows divisor (op3) in memory
+                                if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op3);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    MakeSrcRegOptional(node, op3);
+                                }
+                                break;
+                            }
 
                             default:
                             {

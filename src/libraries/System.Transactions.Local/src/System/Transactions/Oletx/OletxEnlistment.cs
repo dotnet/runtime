@@ -26,13 +26,13 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
     }
 
     private Phase0EnlistmentShim? _phase0Shim;
-    private bool _canDoSinglePhase;
+    private readonly bool _canDoSinglePhase;
     private IEnlistmentNotificationInternal? _iEnlistmentNotification;
     // The information that comes from/goes to the proxy.
     private byte[]? _proxyPrepareInfoByteArray;
 
     private bool _isSinglePhase;
-    private Guid _transactionGuid = Guid.Empty;
+    private readonly Guid _transactionGuid = Guid.Empty;
 
     // Set to true if we receive an AbortRequest while we still have
     // another notification, like prepare, outstanding.  It indicates that

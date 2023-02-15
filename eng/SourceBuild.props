@@ -9,8 +9,7 @@
     <BaseInnerSourceBuildCommand>./build.sh</BaseInnerSourceBuildCommand>
 
     <!-- TargetRid names what gets built. -->
-    <TargetRid Condition="'$(TargetRid)' == '' and '$(SourceBuildNonPortable)' == 'true'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</TargetRid>
-    <TargetRid Condition="'$(TargetRid)' == ''">$(__DistroRid)</TargetRid>
+    <TargetRid Condition="'$(TargetRid)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</TargetRid>
 
     <!-- Split e.g. 'fedora.33-x64' into 'fedora.33' and 'x64'. -->
     <_targetRidPlatformIndex>$(TargetRid.LastIndexOf('-'))</_targetRidPlatformIndex>

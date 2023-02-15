@@ -48,6 +48,9 @@ export const
     // When eliminating a null check, replace it with a runtime 'not null' assertion
     //  that will print a diagnostic message if the value is actually null
     nullCheckValidation = false,
+    // If we encounter an enter opcode that looks like a loop body and it was already
+    //  jitted, we should abort the current trace since it's not worth continuing
+    abortAtJittedLoopBodies = true,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code
@@ -260,6 +263,8 @@ function getTraceImports () {
         ["hasflag", "hasflag", getRawCwrap("mono_jiterp_enum_hasflag")],
         ["array_rank", "array_rank", getRawCwrap("mono_jiterp_get_array_rank")],
         ["stfld_o", "stfld_o", getRawCwrap("mono_jiterp_set_object_field")],
+        importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
+        importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -521,6 +526,21 @@ function initialize_builder (builder: WasmBuilder) {
         "notnull", {
             "ptr": WasmValtype.i32,
             "traceIp": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "cmpxchg_i32", {
+            "dest": WasmValtype.i32,
+            "newVal": WasmValtype.i32,
+            "expected": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "cmpxchg_i64", {
+            "dest": WasmValtype.i32,
+            "newVal": WasmValtype.i32,
+            "expected": WasmValtype.i32,
+            "oldVal": WasmValtype.i32,
         }, WasmValtype.void, true
     );
 }

@@ -19130,6 +19130,8 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         case NI_FMA_MultiplySubtractNegated:
         case NI_FMA_MultiplySubtractNegatedScalar:
         case NI_FMA_MultiplySubtractScalar:
+        case NI_X86Base_DivRem:
+        case NI_X86Base_X64_DivRem:
         {
             return true;
         }
@@ -24004,6 +24006,12 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
 
     switch (GetHWIntrinsicId())
     {
+#ifdef TARGET_XARCH
+        case NI_X86Base_DivRem:
+            return compiler->typGetBlkLayout(genTypeSize(GetSimdBaseType()) * 2);
+        case NI_X86Base_X64_DivRem:
+            return compiler->typGetBlkLayout(16);
+#endif // TARGET_XARCH
 #ifdef TARGET_ARM64
         case NI_AdvSimd_Arm64_LoadPairScalarVector64:
         case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
