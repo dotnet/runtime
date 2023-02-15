@@ -2309,8 +2309,10 @@ private:
 
     // Checks to see if we can cross between the two given IG boundaries.
     //
-    // When we cross IG boundaries, we need to make sure the previous IG was an extended one,
-    // and the GC interrupt status were the same on both.
+    // We have the following checks:
+    // 1. Looking backwards across an IG boundary can only be done if we're in an extension IG.
+    // 2. The IG of the previous instruction must have the same GC interrupt status as the current IG.
+    //    This is related to #2; it disallows peephole when the previous IG is GC and the current is NOGC.
     inline bool canPeepholeCrossIGBoundaries(insGroup* prevIG, insGroup* ig) const
     {
         if (emitCurIG == ig)
@@ -2330,8 +2332,10 @@ private:
 
     // Check if a peephole optimization involving emitLastIns is safe.
     //
-    // We must have a non-null emitLastIns to consult.
-    // The emitForceNewIG check here prevents peepholes from crossing nogc boundaries.
+    // We have the following checks:
+    // 1. There must be a non-null emitLastIns to consult (thus, we have a known "last" instruction).
+    // 2. `emitForceNewIG` is not set: this prevents peepholes from crossing nogc boundaries where
+    //    the next instruction is forced to create a new IG.
     bool emitCanPeepholeLastIns() const
     {
         assert(emitHasLastIns() == (emitLastInsIG != nullptr));
