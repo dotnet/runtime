@@ -36,7 +36,7 @@ namespace Mono.Linker.Steps
 		public virtual void Initialize (LinkContext context, MarkContext markContext)
 		{
 			InitializeSubSteps (context);
-			markContext.RegisterMarkAssemblyAction (assembly => BrowseAssembly (assembly));
+			markContext.RegisterMarkAssemblyAction (BrowseAssembly);
 		}
 
 		static bool HasSubSteps (List<ISubStep> substeps) => substeps?.Count > 0;

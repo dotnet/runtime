@@ -148,6 +148,11 @@ jobs:
       - name: clrRuntimePortableBuildArg
         value: '-portablebuild=false'
 
+    # Set a default empty argument for the pgo path.
+    # This will be set during the 'native prerequisites' step if PGO optimization is enabled.
+    - name: CoreClrPgoDataArg
+      value: ''
+
     - name: nativeSymbols
       value: ''
     - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:

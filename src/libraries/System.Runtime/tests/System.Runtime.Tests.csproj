@@ -334,8 +334,8 @@
 
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
-    <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
-    <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
+    <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" Condition="'$(TargetOS)' != 'wasi'" />
+    <ProjectReference Include="TestStructs\System.TestStructs.ilproj" Condition="'$(TargetOS)' != 'wasi'" />
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
     <!-- Used during reflection in tests. -->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />

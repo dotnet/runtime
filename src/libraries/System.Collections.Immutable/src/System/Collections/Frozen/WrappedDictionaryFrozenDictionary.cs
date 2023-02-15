@@ -9,10 +9,15 @@ using System.Threading;
 
 namespace System.Collections.Frozen
 {
+    /// <summary><see cref="FrozenDictionary{TKey, TValue}"/> implementation that just wraps a <see cref="Dictionary{TKey, TValue}"/>.</summary>
     internal sealed class WrappedDictionaryFrozenDictionary<TKey, TValue> :
         FrozenDictionary<TKey, TValue>, IDictionary<TKey, TValue>, IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : notnull
     {
+        // Note that while most of the FrozenDictionary implementations have an equivalent FrozenSet implementation,
+        // there's no corresponding WrappedHashSetFrozenSet<T> because HashSet<T> doesn't provide a way to implement
+        // FrozenSet<T>.FindItemIndex.
+
         private readonly Dictionary<TKey, TValue> _source;
         private TKey[]? _keys;
         private TValue[]? _values;

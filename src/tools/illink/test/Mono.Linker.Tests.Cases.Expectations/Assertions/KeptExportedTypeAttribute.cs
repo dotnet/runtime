@@ -13,8 +13,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public KeptExportedTypeAttribute (Type type)
 		{
-			if (type is null)
-				throw new ArgumentNullException (nameof (type));
+			ArgumentNullException.ThrowIfNull (type);
 		}
 	}
 }

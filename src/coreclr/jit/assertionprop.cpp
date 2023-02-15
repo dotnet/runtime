@@ -6157,6 +6157,8 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_ARR_LENGTH:
             break;
 
+        case GT_OBJ:
+        case GT_BLK:
         case GT_IND:
         {
             const ValueNum vn = tree->GetVN(VNK_Conservative);

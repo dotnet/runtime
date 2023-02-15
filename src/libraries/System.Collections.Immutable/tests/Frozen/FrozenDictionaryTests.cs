@@ -20,6 +20,8 @@ namespace System.Collections.Frozen.Tests
         protected override IDictionary<TKey, TValue> GenericIDictionaryFactory(int count) =>
             GenericIDictionaryFactory(count, optimizeForReading: true);
 
+        protected virtual bool AllowVeryLargeSizes => true;
+
         protected virtual IDictionary<TKey, TValue> GenericIDictionaryFactory(int count, bool optimizeForReading)
         {
             var d = new Dictionary<TKey, TValue>();
@@ -46,9 +48,12 @@ namespace System.Collections.Frozen.Tests
         [Theory]
         [InlineData(100_000, false)]
         [InlineData(100_000, true)]
-        public void CreateVeryLargeDictionary_Success(int largeCount, bool optimizeForReading)
+        public virtual void CreateVeryLargeDictionary_Success(int largeCount, bool optimizeForReading)
         {
-            GenericIDictionaryFactory(largeCount, optimizeForReading);
+            if (AllowVeryLargeSizes)
+            {
+                GenericIDictionaryFactory(largeCount, optimizeForReading);
+            }
         }
 
         [Fact]
@@ -406,7 +411,10 @@ namespace System.Collections.Frozen.Tests
         [InlineData(8_000_000, true)]
         public void CreateHugeDictionary_Success(int largeCount, bool optimizeForReading)
         {
-            GenericIDictionaryFactory(largeCount, optimizeForReading);
+            if (AllowVeryLargeSizes)
+            {
+                GenericIDictionaryFactory(largeCount, optimizeForReading);
+            }
         }
     }
 
@@ -429,7 +437,7 @@ namespace System.Collections.Frozen.Tests
     {
         protected override KeyValuePair<SimpleClass, SimpleClass> CreateT(int seed)
         {
-            return new KeyValuePair<SimpleClass, SimpleClass>(CreateTKey(seed), CreateTKey(seed + 500));
+            return new KeyValuePair<SimpleClass, SimpleClass>(CreateTKey(seed), CreateTValue(seed + 500));
         }
 
         protected override SimpleClass CreateTKey(int seed)
@@ -451,6 +459,36 @@ namespace System.Collections.Frozen.Tests
         public int CompareTo(SimpleClass? other) =>
             other is null ? -1 :
             Value.CompareTo(other.Value);
+    }
+
+    public class FrozenDictionary_Generic_Tests_SimpleStruct_int : FrozenDictionary_Generic_Tests<SimpleStruct, int>
+    {
+        protected override KeyValuePair<SimpleStruct, int> CreateT(int seed)
+        {
+            return new KeyValuePair<SimpleStruct, int>(CreateTKey(seed), CreateTValue(seed + 500));
+        }
+
+        protected override SimpleStruct CreateTKey(int seed) => new SimpleStruct { Value = seed + 1 };
+
+        protected override int CreateTValue(int seed) => seed;
+
+        protected override bool DefaultValueAllowed => true;
+
+        protected override bool AllowVeryLargeSizes => false; // hash code contention leads to longer running times
+    }
+
+    public struct SimpleStruct : IEquatable<SimpleStruct>, IComparable<SimpleStruct>
+    {
+        public int Value { get; set; }
+
+        public int CompareTo(SimpleStruct other) => Value.CompareTo(other.Value);
+
+        public bool Equals(SimpleStruct other) => Value == other.Value;
+
+        public override int GetHashCode() => 0; // to force hashcode contention in implementation
+
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is SimpleStruct other && Equals(other);
     }
 
     public sealed class NonDefaultEqualityComparer<TKey> : IEqualityComparer<TKey>
@@ -525,16 +563,18 @@ namespace System.Collections.Frozen.Tests
             var kvpArray = new KeyValuePair<string, int>[4];
             ((ICollection)frozen).CopyTo(kvpArray, 1);
             Assert.Equal(new KeyValuePair<string, int>(null, 0), kvpArray[0]);
-            Assert.Equal(new KeyValuePair<string, int>("hello", 123), kvpArray[1]);
-            Assert.Equal(new KeyValuePair<string, int>("world", 456), kvpArray[2]);
+            Assert.True(
+                (kvpArray[1].Equals(new KeyValuePair<string, int>("hello", 123)) && kvpArray[2].Equals(new KeyValuePair<string, int>("world", 456))) ||
+                (kvpArray[2].Equals(new KeyValuePair<string, int>("hello", 123)) && kvpArray[1].Equals(new KeyValuePair<string, int>("world", 456))));
             Assert.Equal(new KeyValuePair<string, int>(null, 0), kvpArray[3]);
 
             var deArray = new DictionaryEntry[4];
             ((ICollection)frozen).CopyTo(deArray, 2);
             Assert.Equal(new DictionaryEntry(null, null), deArray[0]);
             Assert.Equal(new DictionaryEntry(null, null), deArray[1]);
-            Assert.Equal(new DictionaryEntry("hello", 123), deArray[2]);
-            Assert.Equal(new DictionaryEntry("world", 456), deArray[3]);
+            Assert.True(
+                (deArray[2].Equals(new DictionaryEntry("hello", 123)) && deArray[3].Equals(new DictionaryEntry("world", 456))) ||
+                (deArray[3].Equals(new DictionaryEntry("hello", 123)) && deArray[2].Equals(new DictionaryEntry("world", 456))));
         }
 
         [Fact]

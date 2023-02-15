@@ -19,6 +19,8 @@ namespace Internal.TypeSystem
         NetBSD,
         SunOS,
         WebAssembly,
+        iOS,
+        iOSSimulator
     }
 
     public enum TargetAbi
@@ -303,13 +305,16 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Returns True if compiling for OSX
+        /// Returns True if compiling for OSX family of operating systems.
+        /// Currently including OSX, iOS and iOSSimulator
         /// </summary>
-        public bool IsOSX
+        public bool IsOSXLike
         {
             get
             {
-                return OperatingSystem == TargetOS.OSX;
+                return OperatingSystem == TargetOS.OSX ||
+                    OperatingSystem == TargetOS.iOS ||
+                    OperatingSystem == TargetOS.iOSSimulator;
             }
         }
 

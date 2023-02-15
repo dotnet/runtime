@@ -84,7 +84,7 @@ build_native()
             exit 1
         fi
 
-        # keep ANDROID_PLATFORM in sync with src/mono/Directory.Build.props
+        # keep ANDROID_PLATFORM in sync with SetOSTargetMinVersions in the root Directory.Build.props
         cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-21 $cmakeArgs"
 
         # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already

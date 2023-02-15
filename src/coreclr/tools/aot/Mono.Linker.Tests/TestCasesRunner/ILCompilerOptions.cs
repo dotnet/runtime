@@ -15,5 +15,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public Dictionary<string, bool> FeatureSwitches = new Dictionary<string, bool> ();
 		public List<string> Descriptors = new List<string> ();
 		public bool FrameworkCompilation;
+		public bool SingleWarn;
 	}
 }

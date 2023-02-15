@@ -31,17 +31,20 @@ unsigned BasicBlock::s_nMaxTrees;
 #endif // DEBUG
 
 #ifdef DEBUG
-flowList* ShuffleHelper(unsigned hash, flowList* res)
+FlowEdge* ShuffleHelper(unsigned hash, FlowEdge* res)
 {
-    flowList* head = res;
-    for (flowList *prev = nullptr; res != nullptr; prev = res, res = res->flNext)
+    FlowEdge* head = res;
+    for (FlowEdge *prev = nullptr; res != nullptr; prev = res, res = res->getNextPredEdge())
     {
-        unsigned blkHash = (hash ^ (res->getBlock()->bbNum << 16) ^ res->getBlock()->bbNum);
+        unsigned blkHash = (hash ^ (res->getSourceBlock()->bbNum << 16) ^ res->getSourceBlock()->bbNum);
         if (((blkHash % 1879) & 1) && prev != nullptr)
         {
             // Swap res with head.
-            prev->flNext = head;
-            std::swap(head->flNext, res->flNext);
+            prev->setNextPredEdge(head);
+            FlowEdge* const resNext  = res->getNextPredEdge();
+            FlowEdge* const headNext = head->getNextPredEdge();
+            head->setNextPredEdge(resNext);
+            res->setNextPredEdge(headNext);
             std::swap(head, res);
         }
     }
@@ -147,10 +150,10 @@ BasicBlock* EHSuccessorIterPosition::Current(Compiler* comp, BasicBlock* block)
     return m_curTry->ExFlowBlock();
 }
 
-flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
+FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
 {
-    BlockToFlowListMap* ehPreds = GetBlockToEHPreds();
-    flowList*           res;
+    BlockToFlowEdgeMap* ehPreds = GetBlockToEHPreds();
+    FlowEdge*           res;
     if (ehPreds->Lookup(blk, &res))
     {
         return res;
@@ -165,11 +168,11 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
         BasicBlock* tryStart = ehblk->ebdTryBeg;
         for (BasicBlock* const tryStartPredBlock : tryStart->PredBlocks())
         {
-            res = new (this, CMK_FlowList) flowList(tryStartPredBlock, res);
+            res = new (this, CMK_FlowEdge) FlowEdge(tryStartPredBlock, res);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
-            genFlowNodeSize += sizeof(flowList);
+            genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
         }
 
@@ -185,11 +188,11 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
         {
             if (bbInExnFlowRegions(tryIndex, bb) && !bb->isBBCallAlwaysPairTail())
             {
-                res = new (this, CMK_FlowList) flowList(bb, res);
+                res = new (this, CMK_FlowEdge) FlowEdge(bb, res);
 
 #if MEASURE_BLOCK_SIZE
                 genFlowNodeCnt += 1;
-                genFlowNodeSize += sizeof(flowList);
+                genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
             }
         }
@@ -201,7 +204,6 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
             res = ShuffleHelper(hash, res);
         }
 #endif // DEBUG
-
         ehPreds->Set(blk, res);
     }
     return res;
@@ -260,7 +262,7 @@ void BasicBlock::reorderPredList(Compiler* compiler)
     // Count number or entries.
     //
     int count = 0;
-    for (flowList* const pred : PredEdges())
+    for (FlowEdge* const pred : PredEdges())
     {
         count++;
     }
@@ -276,37 +278,37 @@ void BasicBlock::reorderPredList(Compiler* compiler)
     //
     if (compiler->fgPredListSortVector == nullptr)
     {
-        CompAllocator allocator        = compiler->getAllocator(CMK_FlowList);
-        compiler->fgPredListSortVector = new (allocator) jitstd::vector<flowList*>(allocator);
+        CompAllocator allocator        = compiler->getAllocator(CMK_FlowEdge);
+        compiler->fgPredListSortVector = new (allocator) jitstd::vector<FlowEdge*>(allocator);
     }
 
-    jitstd::vector<flowList*>* const sortVector = compiler->fgPredListSortVector;
+    jitstd::vector<FlowEdge*>* const sortVector = compiler->fgPredListSortVector;
     sortVector->clear();
 
     // Fill in the vector from the list.
     //
-    for (flowList* const pred : PredEdges())
+    for (FlowEdge* const pred : PredEdges())
     {
         sortVector->push_back(pred);
     }
 
     // Sort by increasing bbNum
     //
-    struct flowListBBNumCmp
+    struct FlowEdgeBBNumCmp
     {
-        bool operator()(const flowList* f1, const flowList* f2)
+        bool operator()(const FlowEdge* f1, const FlowEdge* f2)
         {
-            return f1->getBlock()->bbNum < f2->getBlock()->bbNum;
+            return f1->getSourceBlock()->bbNum < f2->getSourceBlock()->bbNum;
         }
     };
 
-    jitstd::sort(sortVector->begin(), sortVector->end(), flowListBBNumCmp());
+    jitstd::sort(sortVector->begin(), sortVector->end(), FlowEdgeBBNumCmp());
 
     // Rethread the list.
     //
-    flowList* last = nullptr;
+    FlowEdge* last = nullptr;
 
-    for (flowList* current : *sortVector)
+    for (FlowEdge* current : *sortVector)
     {
         if (last == nullptr)
         {
@@ -314,17 +316,21 @@ void BasicBlock::reorderPredList(Compiler* compiler)
         }
         else
         {
-            last->flNext = current;
+            last->setNextPredEdge(current);
         }
 
         last = current;
     }
 
-    last->flNext = nullptr;
+    last->setNextPredEdge(nullptr);
 
-    // Note this lastPred is only used transiently.
+    // Note bbLastPred is only used transiently, during
+    // initial pred list construction.
     //
-    bbLastPred = last;
+    if (!compiler->fgPredsComputed)
+    {
+        bbLastPred = last;
+    }
 }
 
 #ifdef DEBUG
@@ -527,57 +533,28 @@ void BasicBlock::dspFlags()
 unsigned BasicBlock::dspPreds()
 {
     unsigned count = 0;
-    for (flowList* const pred : PredEdges())
+    for (FlowEdge* const pred : PredEdges())
     {
         if (count != 0)
         {
             printf(",");
             count += 1;
         }
-        printf(FMT_BB, pred->getBlock()->bbNum);
+        printf(FMT_BB, pred->getSourceBlock()->bbNum);
         count += 4;
 
         // Account for %02u only handling 2 digits, but we can display more than that.
-        unsigned digits = CountDigits(pred->getBlock()->bbNum);
+        unsigned digits = CountDigits(pred->getSourceBlock()->bbNum);
         if (digits > 2)
         {
             count += digits - 2;
         }
 
         // Does this predecessor have an interesting dup count? If so, display it.
-        if (pred->flDupCount > 1)
+        if (pred->getDupCount() > 1)
         {
-            printf("(%u)", pred->flDupCount);
-            count += 2 + CountDigits(pred->flDupCount);
-        }
-    }
-    return count;
-}
-
-/*****************************************************************************
- *
- *  Display the bbCheapPreds basic block list (the block predecessors).
- *  Returns the number of characters printed.
- */
-
-unsigned BasicBlock::dspCheapPreds()
-{
-    unsigned count = 0;
-    for (BasicBlockList* pred = bbCheapPreds; pred != nullptr; pred = pred->next)
-    {
-        if (count != 0)
-        {
-            printf(",");
-            count += 1;
-        }
-        printf(FMT_BB, pred->block->bbNum);
-        count += 4;
-
-        // Account for %02u only handling 2 digits, but we can display more than that.
-        unsigned digits = CountDigits(pred->block->bbNum);
-        if (digits > 2)
-        {
-            count += digits - 2;
+            printf("(%u)", pred->getDupCount());
+            count += 2 + CountDigits(pred->getDupCount());
         }
     }
     return count;
@@ -731,14 +708,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
     if (showPreds)
     {
         printf(", preds={");
-        if (compiler->fgCheapPredsValid)
-        {
-            dspCheapPreds();
-        }
-        else
-        {
-            dspPreds();
-        }
+        dspPreds();
         printf("} succs={");
         dspSuccs(compiler);
         printf("}");
@@ -906,13 +876,15 @@ GenTree* BasicBlock::lastNode() const
 
 BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 {
-    if ((bbPreds == nullptr) || (bbPreds->flNext != nullptr) || (this == compiler->fgFirstBB))
+    assert(compiler->fgPredsComputed);
+
+    if ((bbPreds == nullptr) || (bbPreds->getNextPredEdge() != nullptr) || (this == compiler->fgFirstBB))
     {
         return nullptr;
     }
     else
     {
-        return bbPreds->getBlock();
+        return bbPreds->getSourceBlock();
     }
 }
 

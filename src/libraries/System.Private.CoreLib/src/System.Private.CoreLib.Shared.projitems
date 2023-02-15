@@ -560,12 +560,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix4x4.Impl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Plane.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Quaternion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Quaternion.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\TotalOrderIeee754Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector2.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector3.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector3.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\VectorDebugView_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\VectorMath.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Object.cs" />

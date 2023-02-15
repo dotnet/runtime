@@ -29,7 +29,6 @@
 bool Compiler::fgDominate(BasicBlock* b1, BasicBlock* b2)
 {
     noway_assert(fgDomsComputed);
-    assert(!fgCheapPredsValid);
 
     //
     // If the fgModified flag is false then we made some modifications to
@@ -113,7 +112,6 @@ bool Compiler::fgDominate(BasicBlock* b1, BasicBlock* b2)
 bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
 {
     noway_assert(fgDomsComputed);
-    assert(!fgCheapPredsValid);
 
     //
     // If the fgModified flag is false then we made some modifications to
@@ -232,8 +230,7 @@ void Compiler::fgUpdateChangedFlowGraph(FlowGraphUpdates updates)
 //
 void Compiler::fgComputeReachabilitySets()
 {
-    assert(fgComputePredsDone);
-    assert(!fgCheapPredsValid);
+    assert(fgPredsComputed);
 
 #ifdef DEBUG
     fgReachabilitySetsValid = false;
@@ -436,8 +433,6 @@ void Compiler::fgComputeEnterBlocksSet()
 template <typename CanRemoveBlockBody>
 bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 {
-    assert(!fgCheapPredsValid);
-
     bool hasUnreachableBlocks = false;
     bool changed              = false;
 
@@ -553,7 +548,7 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 //
 PhaseStatus Compiler::fgComputeReachability()
 {
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     fgComputeReturnBlocks();
 
@@ -931,8 +926,6 @@ void Compiler::fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, uns
 //
 void Compiler::fgComputeDoms()
 {
-    assert(!fgCheapPredsValid);
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -971,7 +964,7 @@ void Compiler::fgComputeDoms()
     bbRoot.bbPostOrderNum = 0;
     bbRoot.bbFlags        = BBF_EMPTY;
 
-    flowList flRoot(&bbRoot, nullptr);
+    FlowEdge flRoot(&bbRoot, nullptr);
 
     fgBBInvPostOrder[0] = &bbRoot;
 
@@ -1025,7 +1018,7 @@ void Compiler::fgComputeDoms()
         // Process each actual block; don't process the imaginary predecessor block.
         for (unsigned i = 1; i <= fgBBNumMax; ++i)
         {
-            flowList*   first   = nullptr;
+            FlowEdge*   first   = nullptr;
             BasicBlock* newidom = nullptr;
             block               = fgBBInvPostOrder[i];
 
@@ -1038,9 +1031,9 @@ void Compiler::fgComputeDoms()
             }
 
             // Pick up the first processed predecessor of the current block.
-            for (first = block->bbPreds; first != nullptr; first = first->flNext)
+            for (first = block->bbPreds; first != nullptr; first = first->getNextPredEdge())
             {
-                if (BlockSetOps::IsMember(this, processedBlks, first->getBlock()->bbNum))
+                if (BlockSetOps::IsMember(this, processedBlks, first->getSourceBlock()->bbNum))
                 {
                     break;
                 }
@@ -1049,21 +1042,21 @@ void Compiler::fgComputeDoms()
 
             // We assume the first processed predecessor will be the
             // immediate dominator and then compute the forward flow analysis.
-            newidom = first->getBlock();
-            for (flowList* p = block->bbPreds; p != nullptr; p = p->flNext)
+            newidom = first->getSourceBlock();
+            for (FlowEdge* p = block->bbPreds; p != nullptr; p = p->getNextPredEdge())
             {
-                if (p->getBlock() == first->getBlock())
+                if (p->getSourceBlock() == first->getSourceBlock())
                 {
                     continue;
                 }
-                if (p->getBlock()->bbIDom != nullptr)
+                if (p->getSourceBlock()->bbIDom != nullptr)
                 {
                     // fgIntersectDom is basically the set intersection between
                     // the dominance sets of the new IDom and the current predecessor
                     // Since the nodes are ordered in DFS inverse post order and
                     // IDom induces a tree, fgIntersectDom actually computes
                     // the lowest common ancestor in the dominator tree.
-                    newidom = fgIntersectDom(p->getBlock(), newidom);
+                    newidom = fgIntersectDom(p->getSourceBlock(), newidom);
                 }
             }
 
@@ -2569,13 +2562,13 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     noway_assert(block->bbJumpKind == BBJ_COND && block->bbJumpDest == block->bbNext);
     assert(compRationalIRForm == block->IsLIR());
 
-    flowList* flow = fgGetPredForBlock(block->bbNext, block);
-    noway_assert(flow->flDupCount == 2);
+    FlowEdge* flow = fgGetPredForBlock(block->bbNext, block);
+    noway_assert(flow->getDupCount() == 2);
 
     // Change the BBJ_COND to BBJ_NONE, and adjust the refCount and dupCount.
     block->bbJumpKind = BBJ_NONE;
     --block->bbNext->bbRefs;
-    --flow->flDupCount;
+    flow->decrementDupCount();
 
 #ifdef DEBUG
     block->bbJumpDest = nullptr;
@@ -2740,7 +2733,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         //
         if (fgHaveValidEdgeWeights && bDest->hasProfileWeight())
         {
-            flowList* edge1 = fgGetPredForBlock(bDest, block);
+            FlowEdge* edge1 = fgGetPredForBlock(bDest, block);
             noway_assert(edge1 != nullptr);
 
             weight_t edgeWeight;
@@ -2777,7 +2770,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 bDest->bbFlags |= BBF_RUN_RARELY; // Set the RarelyRun flag
             }
 
-            flowList* edge2 = fgGetPredForBlock(bDest->bbJumpDest, bDest);
+            FlowEdge* edge2 = fgGetPredForBlock(bDest->bbJumpDest, bDest);
 
             if (edge2 != nullptr)
             {
@@ -3118,7 +3111,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             {
                 if (fgHaveValidEdgeWeights)
                 {
-                    flowList* edge                = fgGetPredForBlock(bDest, block);
+                    FlowEdge* edge                = fgGetPredForBlock(bDest, block);
                     weight_t  branchThroughWeight = edge->edgeWeightMin();
 
                     if (bDest->bbWeight > branchThroughWeight)
@@ -4350,10 +4343,10 @@ bool Compiler::fgOptimizeSwitchJumps()
         //
         block->bbJumpKind                   = BBJ_COND;
         block->bbJumpDest                   = dominantTarget;
-        flowList* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
-        flowList* const blockToNewBlockEdge = newBlock->bbPreds;
-        assert(blockToNewBlockEdge->getBlock() == block);
-        assert(blockToTargetEdge->getBlock() == block);
+        FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
+        FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
+        assert(blockToNewBlockEdge->getSourceBlock() == block);
+        assert(blockToTargetEdge->getSourceBlock() == block);
 
         // Update profile data
         //
@@ -4370,11 +4363,11 @@ bool Compiler::fgOptimizeSwitchJumps()
         // one edge in the flowgraph. So we need to subtract off the profile data that now flows
         // along the peeled edge.
         //
-        for (flowList* pred = dominantTarget->bbPreds; pred != nullptr; pred = pred->flNext)
+        for (FlowEdge* pred = dominantTarget->bbPreds; pred != nullptr; pred = pred->getNextPredEdge())
         {
-            if (pred->getBlock() == newBlock)
+            if (pred->getSourceBlock() == newBlock)
             {
-                if (pred->flDupCount == 1)
+                if (pred->getDupCount() == 1)
                 {
                     // The only switch case leading to the dominant target was the one we peeled.
                     // So the edge from the switch now has zero weight.
@@ -4478,7 +4471,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
 #endif
         }
 
-        flowList* pred = bPrev->bbPreds;
+        FlowEdge* pred = bPrev->bbPreds;
 
         if (pred != nullptr)
         {
@@ -4490,19 +4483,19 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 if (bPrevPrev == nullptr)
                 {
                     // Initially we select the first block in the bbPreds list
-                    bPrevPrev = pred->getBlock();
+                    bPrevPrev = pred->getSourceBlock();
                     continue;
                 }
 
                 // Walk the flow graph lexically forward from pred->getBlock()
                 // if we find (block == bPrevPrev) then
                 // pred->getBlock() is an earlier predecessor.
-                for (tmpbb = pred->getBlock(); tmpbb != nullptr; tmpbb = tmpbb->bbNext)
+                for (tmpbb = pred->getSourceBlock(); tmpbb != nullptr; tmpbb = tmpbb->bbNext)
                 {
                     if (tmpbb == bPrevPrev)
                     {
                         /* We found an earlier predecessor */
-                        bPrevPrev = pred->getBlock();
+                        bPrevPrev = pred->getSourceBlock();
                         break;
                     }
                     else if (tmpbb == bPrev)
@@ -4514,7 +4507,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 }
 
                 // Onto the next predecessor
-                pred = pred->flNext;
+                pred = pred->getNextPredEdge();
             }
         }
 
@@ -4912,11 +4905,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                             // The edge bPrev -> bDest must have a higher minimum weight
                             // than every other edge into bDest
                             //
-                            flowList* edgeFromPrev = fgGetPredForBlock(bDest, bPrev);
+                            FlowEdge* edgeFromPrev = fgGetPredForBlock(bDest, bPrev);
                             noway_assert(edgeFromPrev != nullptr);
 
                             // Examine all of the other edges into bDest
-                            for (flowList* const edge : bDest->PredEdges())
+                            for (FlowEdge* const edge : bDest->PredEdges())
                             {
                                 if (edge != edgeFromPrev)
                                 {
@@ -5004,8 +4997,8 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         //                                                   V
                         //                  bDest --------------->   [BB08, weight 21]
                         //
-                        flowList* edgeToDest  = fgGetPredForBlock(bDest, bPrev);
-                        flowList* edgeToBlock = fgGetPredForBlock(block, bPrev);
+                        FlowEdge* edgeToDest  = fgGetPredForBlock(bDest, bPrev);
+                        FlowEdge* edgeToBlock = fgGetPredForBlock(block, bPrev);
                         noway_assert(edgeToDest != nullptr);
                         noway_assert(edgeToBlock != nullptr);
                         //

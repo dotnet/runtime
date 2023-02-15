@@ -212,14 +212,14 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         if (parentNode->OperIs(GT_ADD))
         {
             // Find "c + (a * b)" or "(a * b) + c"
-            return IsSafeToContainMem(parentNode, childNode);
+            return IsInvariantInRange(childNode, parentNode);
         }
 
         if (parentNode->OperIs(GT_SUB))
         {
             // Find "c - (a * b)"
             assert(childNode == parentNode->gtGetOp2());
-            return IsSafeToContainMem(parentNode, childNode);
+            return IsInvariantInRange(childNode, parentNode);
         }
 
         return false;
@@ -256,7 +256,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         {
             // These operations can still report flags
 
-            if (IsSafeToContainMem(parentNode, childNode))
+            if (IsInvariantInRange(childNode, parentNode))
             {
                 assert(shiftAmountNode->isContained());
                 return true;
@@ -271,7 +271,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
 
         if (parentNode->OperIs(GT_CMP, GT_OR, GT_XOR))
         {
-            if (IsSafeToContainMem(parentNode, childNode))
+            if (IsInvariantInRange(childNode, parentNode))
             {
                 assert(shiftAmountNode->isContained());
                 return true;
@@ -313,7 +313,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         {
             // These operations can still report flags
 
-            if (IsSafeToContainMem(parentNode, childNode))
+            if (IsInvariantInRange(childNode, parentNode))
             {
                 return true;
             }
@@ -327,7 +327,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
 
         if (parentNode->OperIs(GT_CMP))
         {
-            if (IsSafeToContainMem(parentNode, childNode))
+            if (IsInvariantInRange(childNode, parentNode))
             {
                 return true;
             }
@@ -692,7 +692,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     }
 #endif // !TARGET_ARM
 
-    if (!IsSafeToContainMem(blkNode, addrParent, addr))
+    if (!IsInvariantInRange(addr, blkNode, addrParent))
     {
         return;
     }
@@ -1604,6 +1604,9 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
 
+    // We support the return type being a SIMD for floating-point as a special optimization
+    assert(varTypeIsArithmetic(node) || (varTypeIsSIMD(node) && varTypeIsFloating(simdBaseType)));
+
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
 
@@ -1859,19 +1862,34 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         }
     }
 
-    // We will be constructing the following parts:
-    //   ...
-    //          /--*  tmp2 simd16
-    //   node = *  HWINTRINSIC   simd16 T ToScalar
+    if (varTypeIsSIMD(node->gtType))
+    {
+        // We're producing a vector result, so just return the result directly
 
-    // This is roughly the following managed code:
-    //   ...
-    //   return tmp2.ToScalar();
+        LIR::Use use;
 
-    node->ResetHWIntrinsicId((simdSize == 8) ? NI_Vector64_ToScalar : NI_Vector128_ToScalar, tmp2);
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            use.ReplaceWith(tmp2);
+        }
 
-    LowerNode(node);
-    return node->gtNext;
+        BlockRange().Remove(node);
+        return tmp2->gtNext;
+    }
+    else
+    {
+        // We will be constructing the following parts:
+        //   ...
+        //          /--*  tmp2 simd16
+        //   node = *  HWINTRINSIC   simd16 T ToScalar
+
+        // This is roughly the following managed code:
+        //   ...
+        //   return tmp2.ToScalar();
+
+        node->ResetHWIntrinsicId((simdSize == 8) ? NI_Vector64_ToScalar : NI_Vector128_ToScalar, tmp2);
+        return LowerNode(node);
+    }
 }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -1948,7 +1966,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 
     GenTree* addr = indirNode->Addr();
 
-    if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
+    if ((addr->OperGet() == GT_LEA) && IsInvariantInRange(addr, indirNode))
     {
         bool makeContained = true;
 
@@ -2212,13 +2230,13 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
                 srcIsContainable = true;
             }
 
-            if (srcIsContainable && IsSafeToContainMem(node, castOp))
+            if (srcIsContainable)
             {
-                if (IsContainableMemoryOp(castOp))
+                if (IsContainableMemoryOp(castOp) && IsSafeToContainMem(node, castOp))
                 {
                     MakeSrcContained(node, castOp);
                 }
-                else
+                else if (IsSafeToMarkRegOptional(node, castOp))
                 {
                     castOp->SetRegOptional();
                 }
@@ -2284,7 +2302,7 @@ bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
     else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) && varTypeIsIntegral(child->gtGetOp2()))
     {
         // Can the child compare be contained.
-        return IsSafeToContainMem(parent, child);
+        return IsInvariantInRange(child, parent);
     }
 
     return false;
@@ -2315,7 +2333,7 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
         return true;
     }
     // Can the child be contained.
-    else if (IsSafeToContainMem(parent, child))
+    else if (IsInvariantInRange(child, parent))
     {
         if (child->OperIs(GT_AND))
         {
@@ -2448,7 +2466,7 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
     if (cond->OperIsCompare())
     {
         // All compare node types (including TEST_) are containable.
-        if (IsSafeToContainMem(node, cond))
+        if (IsInvariantInRange(cond, node))
         {
             cond->AsOp()->SetContained();
         }
@@ -2514,7 +2532,7 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
         if ((childNode->gtFlags & GTF_SET_FLAGS))
             return;
 
-        if (IsSafeToContainMem(neg, childNode))
+        if (IsInvariantInRange(childNode, neg))
         {
             MakeSrcContained(neg, childNode);
         }

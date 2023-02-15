@@ -35,7 +35,7 @@ namespace System.Transactions.Oletx
         // filled with the propagation token from the serialization info.  Later, when
         // GetRealObject is called, this array is used to decide whether or not a new
         // transation needs to be created and if so, to create the transaction.
-        private byte[]? _propagationTokenForDeserialize;
+        private readonly byte[]? _propagationTokenForDeserialize;
 
         protected int Disposed;
 
@@ -462,7 +462,7 @@ namespace System.Transactions.Oletx
         // Transaction manager
         internal OletxTransactionManager OletxTransactionManagerInstance { get; }
 
-        private TransactionShim? _transactionShim;
+        private readonly TransactionShim? _transactionShim;
 
         // guid related to transaction
         internal Guid TxGuid { get; private set; }
@@ -492,7 +492,7 @@ namespace System.Transactions.Oletx
         internal OletxPhase1VolatileEnlistmentContainer? Phase1EnlistVolatilementContainer;
 
         // Used to get outcomes of transactions with a voter.
-        private OutcomeEnlistment? _outcomeEnlistment;
+        private readonly OutcomeEnlistment? _outcomeEnlistment;
 
         // This is a count of volatile and Phase0 durable enlistments on this transaction that have not yet voted.
         // This is incremented when an enlistment is made and decremented when the
@@ -514,8 +514,8 @@ namespace System.Transactions.Oletx
         // Enlistments on all clones of this Real transaction use this value.
         internal int _enlistmentCount;
 
-        private DateTime _creationTime;
-        private DateTime _lastStateChangeTime;
+        private readonly DateTime _creationTime;
+        private readonly DateTime _lastStateChangeTime;
         private TransactionTraceIdentifier _traceIdentifier = TransactionTraceIdentifier.Empty;
 
         // This field is set directly from the OletxCommittableTransaction constructor.  It will be null

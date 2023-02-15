@@ -717,7 +717,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Out, source_file, 15, 4, "TestAsyncStepOut");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(WasmSingleThreaded))]
         public async Task ResumeOutOfAsyncMethodToAsyncCallerWithBreakpoint()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";

@@ -2739,6 +2739,7 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
 {
     JITDUMP("Converting " FMT_BB " to BBJ_THROW\n", block->bbNum);
+    assert(fgPredsComputed);
 
     // Ordering of the following operations matters.
     // First, note if we are looking at the first block of a call always pair.
@@ -2768,20 +2769,7 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
         leaveBlk->bbPreds = nullptr;
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        // This function (fgConvertBBToThrowBB) can be called before the predecessor lists are created (e.g., in
-        // fgMorph). The fgClearFinallyTargetBit() function to update the BBF_FINALLY_TARGET bit depends on these
-        // predecessor lists. If there are no predecessor lists, we immediately clear all BBF_FINALLY_TARGET bits
-        // (to allow subsequent dead code elimination to delete such blocks without asserts), and set a flag to
-        // recompute them later, before they are required.
-        if (fgComputePredsDone)
-        {
-            fgClearFinallyTargetBit(leaveBlk->bbJumpDest);
-        }
-        else
-        {
-            fgClearAllFinallyTargetBits();
-            fgNeedToAddFinallyTargetBits = true;
-        }
+        fgClearFinallyTargetBit(leaveBlk->bbJumpDest);
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     }
 }

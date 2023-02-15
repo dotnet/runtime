@@ -32,6 +32,7 @@
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
+    <_EmccLinkUndefinedSymbolsFile>$(WasmObjDir)src\symbols.undefined</_EmccLinkUndefinedSymbolsFile>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
   </PropertyGroup>
 
@@ -178,11 +179,13 @@
       <_EmccLinkFlags Include="-s STRICT_JS=1" />
       <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
       <_EmccLinkFlags Include="-s MODULARIZE=1"/>
-      <_EmccLinkFlags Include="-Wl,--allow-undefined"/>
+      
       <_EmccLinkFlags Include="-s ENVIRONMENT=&quot;web,webview,worker,node,shell&quot;" />
       <!-- remove -Wno-limited-postlink-optimizations once below issue is fixed
            active issue: https://github.com/emscripten-core/emscripten/pull/16727 -->
       <_EmccLinkFlags Include="-Wno-limited-postlink-optimizations"/>
+
+      <_EmccLinkUndefinedSymbols Include="icudt68_dat" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(MonoWasmThreads)' == 'true'">
@@ -237,6 +240,10 @@
                       Lines="@(_EmccLinkFlags)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
+    <WriteLinesToFile File="$(_EmccLinkUndefinedSymbolsFile)"
+                      Lines="@(_EmccLinkUndefinedSymbols)"
+                      WriteOnlyWhenDifferent="true"
+                      Overwrite="true" />
   </Target>
 
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
@@ -254,11 +261,13 @@
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz  -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
+
       <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -s EXPORT_ES6=1</CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags>$(CMakeConfigurationLinkFlags) -Wl,--allow-undefined-file=$(_EmccLinkUndefinedSymbolsFile)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(MonoWasmThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
 

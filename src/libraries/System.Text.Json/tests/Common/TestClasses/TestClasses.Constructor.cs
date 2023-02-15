@@ -907,12 +907,14 @@ namespace System.Text.Json.Serialization.Tests
         public Point_3D_Struct Point3DStruct { get; }
         public ImmutableArray<int> ImmutableArray { get; }
         public int Int { get; }
+        public string String { get; }
 
-        public NullArgTester(Point_3D_Struct point3DStruct, ImmutableArray<int> immutableArray, int @int = 50)
+        public NullArgTester(Point_3D_Struct point3DStruct, ImmutableArray<int> immutableArray, int @int = 50, string @string = "defaultStr")
         {
             Point3DStruct = point3DStruct;
             ImmutableArray = immutableArray;
             Int = @int;
+            String = @string;
         }
     }
 
@@ -2057,7 +2059,7 @@ namespace System.Text.Json.Serialization.Tests
         public void Verify()
         {
             Assert.Equal(0, X);
-            Assert.Equal(0, Y); // We don't set parameter default value here.
+            Assert.Equal(5, Y); // We use the default parameter of the constructor.
         }
     }
     
