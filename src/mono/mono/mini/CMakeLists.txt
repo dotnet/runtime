@@ -5,10 +5,8 @@ include(FindPython3)
 include_directories(
   ${PROJECT_BINARY_DIR}/
   ${PROJECT_BINARY_DIR}/../..
-  ${PROJECT_BINARY_DIR}/../../mono/eglib
   ${CMAKE_CURRENT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../
-  ${PROJECT_SOURCE_DIR}/../eglib
   ${PROJECT_SOURCE_DIR}/../sgen)
 
 if(HOST_DARWIN)
@@ -34,7 +32,6 @@ endif()
 #
 # SUBDIRS
 #
-include(../eglib/CMakeLists.txt)
 include(../utils/CMakeLists.txt)
 include(../metadata/CMakeLists.txt)
 include(../sgen/CMakeLists.txt)
@@ -351,9 +348,9 @@ endif()
 set(monosgen-sources "${metadata_sources};${utils_sources};${sgen_sources};${icu_shim_sources};${mini_sources};${ZLIB_SOURCES}")
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
-target_link_libraries (monosgen-objects PRIVATE monoapi)
-add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>;$<TARGET_OBJECTS:eglib_objects>)
-target_link_libraries (monosgen-static PRIVATE monoapi)
+target_link_libraries (monosgen-objects PRIVATE monoapi eglib_objects)
+add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
+target_link_libraries (monosgen-static PRIVATE monoapi eglib_objects)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
 
 if(DISABLE_COMPONENTS OR AOT_COMPONENTS)
@@ -372,7 +369,7 @@ if(NOT DISABLE_SHARED_LIBS)
     add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects>)
     target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
   endif()
-  target_sources(monosgen-shared PRIVATE $<TARGET_OBJECTS:eglib_objects>)
+  target_link_libraries(monosgen-shared PRIVATE eglib_objects)
   # Alpine Linux implements ucontext in a different library
   if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
     target_link_libraries(monosgen-shared PRIVATE ucontext)
@@ -539,7 +536,7 @@ if(NOT DISABLE_EXECUTABLES)
   if(MONO_CROSS_COMPILE_EXECUTABLE_NAME)
     set_target_properties(mono-sgen PROPERTIES OUTPUT_NAME mono-aot-cross)
   endif()
-  target_link_libraries(mono-sgen PRIVATE monoapi monosgen-static ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  target_link_libraries(mono-sgen PRIVATE monoapi monosgen-static eglib_objects ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
   # Alpine Linux implements ucontext in a different library
   if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
     target_link_libraries(mono-sgen PRIVATE ucontext)

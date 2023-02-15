@@ -1,6 +1,6 @@
 project(mono)
 
-set(subdirs mini profiler)
+set(subdirs eglib mini profiler)
 
 foreach(dir ${subdirs})
   add_subdirectory(${dir})
