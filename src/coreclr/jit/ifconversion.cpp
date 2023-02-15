@@ -772,13 +772,10 @@ bool OptIfConversionDsc::optIfConvert()
         }
 
         // We may be inside an unnatural loop, so do the expensive check.
-        for (BasicBlock* succ : m_startBlock->GetAllSuccs(m_comp))
+        if (m_comp->optReachable(m_finalBlock, m_startBlock, nullptr))
         {
-            if (m_comp->optReachable(succ, m_startBlock, nullptr))
-            {
-                JITDUMP("Skipping if-conversion inside loop (via FG walk)\n");
-                return false;
-            }
+            JITDUMP("Skipping if-conversion inside loop (via FG walk)\n");
+            return false;
         }
     }
 
