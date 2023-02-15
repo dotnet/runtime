@@ -770,6 +770,25 @@ export function generate_wasm_body (
                 append_stloc_tail(builder, getArgU16(ip, 1), isI32 ? WasmOpcode.i32_store : WasmOpcode.i64_store);
                 break;
             }
+            case MintOpcode.MINT_MONO_CMPXCHG_I4:
+                builder.local("pLocals");
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load); // dest
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load); // newVal
+                append_ldloc(builder, getArgU16(ip, 4), WasmOpcode.i32_load); // expected
+                builder.callImport("cmpxchg_i32");
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                break;
+            case MintOpcode.MINT_MONO_CMPXCHG_I8:
+                // because i64 values can't pass through JS cleanly (c.f getRawCwrap and
+                // EMSCRIPTEN_KEEPALIVE), we pass addresses of newVal, expected and the return value
+                // to the helper function.  The "dest" for the compare-exchange is already a
+                // pointer, so load it normally
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load); // dest
+                append_ldloca(builder, getArgU16(ip, 3), 0); // newVal
+                append_ldloca(builder, getArgU16(ip, 4), 0); // expected
+                append_ldloca(builder, getArgU16(ip, 1), 8, true); // oldVal
+                builder.callImport("cmpxchg_i64");
+                break;
 
             default:
                 if (
