@@ -800,6 +800,11 @@ namespace System.Diagnostics.Tracing
             // change that needs more careful staging.
             List<KeyValuePair<SessionInfo, bool>> sessionsChanged = GetChangedSessions();
 
+            if (sessionsChanged.Count == 0)
+            {
+                sessionsChanged.Add(new KeyValuePair<SessionInfo, bool>(new SessionInfo(0, 0), true));
+            }
+
             foreach (KeyValuePair<SessionInfo, bool> session in sessionsChanged)
             {
                 int sessionChanged = session.Key.sessionIdBit;
