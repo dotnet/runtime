@@ -1254,7 +1254,6 @@ private:
 
                 lclNode    = BashToLclVar(indir->gtGetOp1(), lclNum);
                 *val.Use() = m_compiler->gtNewCastNode(genActualType(indir), lclNode, false, indir->TypeGet());
-
                 break;
 
             case IndirTransform::LclFld:
