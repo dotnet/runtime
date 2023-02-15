@@ -3391,8 +3391,6 @@ BOOL NDirectMethodDesc::TryGetResolvedNDirectTarget(_In_ MethodDesc* pMD, _Out_ 
     {
         // This is an early out to handle already resolved targets
         *ndirectTarget = pNMD->GetNDirectTarget();
-
-        _ASSERTE(*ndirectTarget == ResolveAndSetNDirectTarget(pNMD));
         return TRUE;
     }
 
