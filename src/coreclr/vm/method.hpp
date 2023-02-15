@@ -2849,7 +2849,7 @@ public:
 
     // Attempt to get a resolved NDirect target. This will return true for already resolved
     // targets and methods that are resolved at JIT time, such as those marked SuppressGCTransition
-    static BOOL TryGetResolvedNDirectTarget(_In_ MethodDesc* pMD, _Out_ void** ndirectTarget);
+    static BOOL TryGetResolvedNDirectTarget(_In_ NDirectMethodDesc* pMD, _Out_ void** ndirectTarget);
 
     // Retrieves the cached result of marshaling required computation, or performs the computation
     // if the result is not cached yet.

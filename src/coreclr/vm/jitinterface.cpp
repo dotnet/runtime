@@ -9840,8 +9840,9 @@ bool CEEInfo::isCompatibleDelegate(
 }
 
 /*********************************************************************/
-    // return address of fixup area for late-bound N/Direct calls.
-void* CEEInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method)
+// return address of fixup area for late-bound N/Direct calls.
+void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
+                                        CORINFO_CONST_LOOKUP *pLookup)
 {
     CONTRACTL {
         NOTHROW;
@@ -9849,46 +9850,26 @@ void* CEEInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void * result = NULL;
+    JIT_TO_EE_TRANSITION();
 
-    JIT_TO_EE_TRANSITION_LEAF();
+    MethodDesc* pMD = GetMethod(method);
+    _ASSERTE(pMD->IsNDirect());
 
-    MethodDesc* ftn = GetMethod(method);
-    _ASSERTE(ftn->IsNDirect());
-    NDirectMethodDesc *pMD = (NDirectMethodDesc*)ftn;
+    NDirectMethodDesc* pNMD = reinterpret_cast<NDirectMethodDesc*>(pMD);
 
-    result = (LPVOID)&(pMD->GetWriteableData()->m_pNDirectTarget);
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
-/*********************************************************************/
-// return address of fixup area for late-bound N/Direct calls.
-void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
-                                        CORINFO_CONST_LOOKUP *pLookup)
-{
-    WRAPPER_NO_CONTRACT;
-
+    void* pIndirection;
+    if (NDirectMethodDesc::TryGetResolvedNDirectTarget(pNMD, &pIndirection))
     {
-        JIT_TO_EE_TRANSITION_LEAF();
-
-        MethodDesc* pMD = GetMethod(method);
-        void* pIndirection;
-
-        if (NDirectMethodDesc::TryGetResolvedNDirectTarget(pMD, &pIndirection))
-        {
-            pLookup->accessType = IAT_VALUE;
-            pLookup->addr = pIndirection;
-            return;
-        }
-
-        EE_TO_JIT_TRANSITION_LEAF();
+        pLookup->accessType = IAT_VALUE;
+        pLookup->addr = pIndirection;
+    }
+    else
+    {
+        pLookup->accessType = IAT_PVALUE;
+        pLookup->addr = (LPVOID)&(pNMD->GetWriteableData()->m_pNDirectTarget);
     }
 
-    pLookup->accessType = IAT_PVALUE;
-    pLookup->addr = getAddressOfPInvokeFixup(method);
+    EE_TO_JIT_TRANSITION();
 }
 
 /*********************************************************************/
