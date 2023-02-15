@@ -997,7 +997,7 @@ namespace System.Text.Json.Serialization.Metadata
             public JsonPropertyInfo JsonPropertyInfo { get; }
         }
 
-        internal void ConfigureProperties(IMetadataResolutionContext context)
+        private void ConfigureProperties(IMetadataResolutionContext context)
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
             Debug.Assert(PropertyCache is null);
@@ -1067,7 +1067,7 @@ namespace System.Text.Json.Serialization.Metadata
                     : JsonUnmappedMemberHandling.Skip);
         }
 
-        internal void ConfigureConstructorParameters()
+        private void ConfigureConstructorParameters()
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
             Debug.Assert(Converter.ConstructorIsParameterized);
