@@ -5210,6 +5210,8 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get { throw null; } }
         }
     }
+    
+    [System.CLSCompliantAttribute(false)]
     public abstract partial class X86Base
     {
         internal X86Base() { }
