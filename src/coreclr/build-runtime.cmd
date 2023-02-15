@@ -332,7 +332,10 @@ REM ============================================================================
 :: When the host runs on an unknown rid, it falls back to the output rid
 :: Strip the architecture
 for /f "delims=-" %%i in ("%__OutputRid%") do set __FallbackOS=%%i
-if "%__FallbackOS%" == "" set __FallbackOS=win10
+:: The "win" host build is Windows 10 compatible
+if "%__FallbackOS%" == "win"       (set __FallbackOS=win10)
+:: Default to "win10" fallback
+if "%__FallbackOS%" == ""          (set __FallbackOS=win10)
 
 if %__BuildNative% EQU 1 (
     REM Scope environment changes start {
