@@ -9880,7 +9880,7 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
         JIT_TO_EE_TRANSITION_LEAF();
 
         MethodDesc* pMD = GetMethod(method);
-        if (NDirectMethodDesc::TryResolveNDirectTargetForNoGCTransition(pMD, &pIndirection))
+        if (NDirectMethodDesc::TryGetResolvedNDirectTarget(pMD, &pIndirection))
         {
             pLookup->accessType = IAT_VALUE;
             pLookup->addr = pIndirection;

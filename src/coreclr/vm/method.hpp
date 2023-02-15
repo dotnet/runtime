@@ -2851,8 +2851,9 @@ public:
     // Resolve the import to the NDirect target and set it on the NDirectMethodDesc.
     static void* ResolveAndSetNDirectTarget(_In_ NDirectMethodDesc* pMD);
 
-    // Attempt to import the NDirect target if a GC transition is suppressed.
-    static BOOL TryResolveNDirectTargetForNoGCTransition(_In_ MethodDesc* pMD, _Out_ void** ndirectTarget);
+    // Attempt to get a resolved NDirect target. This will return true for already resolved
+    // targets and methods that are resolved at JIT time, such as those marked SuppressGCTransition
+    static BOOL TryGetResolvedNDirectTarget(_In_ MethodDesc* pMD, _Out_ void** ndirectTarget);
 
     // Retrieves the cached result of marshaling required computation, or performs the computation
     // if the result is not cached yet.
