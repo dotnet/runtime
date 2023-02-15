@@ -201,6 +201,7 @@ target_link_libraries(metadata_objects PRIVATE monoapi eglib_objects utils_objec
 # note: metadata_objects is an object library, so this doesn't force linking with sgen,
 # it just adds the relevant include directories - which we need even with Boehm
 target_link_libraries(metadata_objects PRIVATE sgen_objects)
+target_compile_definitions(metadata_objects PRIVATE -DMONO_DLL_EXPORT)
 target_include_directories(metadata_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)

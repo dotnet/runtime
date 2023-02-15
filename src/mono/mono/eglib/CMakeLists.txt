@@ -53,5 +53,4 @@ target_include_directories(eglib_objects PRIVATE
   ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR})
 # to pick up eglib-config.h
-message (STATUS eglib binary dir: ${PROJECT_BINARY_DIR})
 target_include_directories(eglib_objects PUBLIC ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR})

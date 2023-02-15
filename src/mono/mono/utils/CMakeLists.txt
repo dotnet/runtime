@@ -263,6 +263,7 @@ endif()
 
 add_library(utils_objects OBJECT ${utils_sources})
 target_link_libraries(utils_objects PRIVATE monoapi eglib_objects)
+target_compile_definitions(utils_objects PRIVATE -DMONO_DLL_EXPORT)
 target_include_directories(utils_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
