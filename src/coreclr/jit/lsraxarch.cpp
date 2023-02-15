@@ -2191,7 +2191,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     {
                         // If op3 was not marked as delay-free for op1, mark it as delay-free
                         // if needed for op2.
-                        DelayFreeUses(op3RefPosition, op2);
+                        AddDelayFreeUses(op3RefPosition, op2);
                     }
                 }
                 else

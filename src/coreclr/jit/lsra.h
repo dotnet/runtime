@@ -1866,7 +1866,7 @@ private:
 
     int BuildSimple(GenTree* tree);
     int BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
-    void DelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
+    void AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
     int BuildDelayFreeUses(GenTree*      node,
                            GenTree*      rmwNode        = nullptr,
                            regMaskTP     candidates     = RBM_NONE,
