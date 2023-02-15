@@ -1700,14 +1700,14 @@ void emitter::emitCheckIGList()
 {
     assert(emitPrologIG != nullptr);
 
-#if EMIT_BACKWARDS_NAVIGATION
+#if defined(EMIT_BACKWARDS_NAVIGATION) && defined(DEBUG)
     struct IGIDPair
     {
         insGroup*  ig;
         instrDesc* id;
     };
     jitstd::list<IGIDPair> insList(emitComp->getAllocator(CMK_DebugOnly));
-#endif // EMIT_BACKWARDS_NAVIGATION
+#endif // EMIT_BACKWARDS_NAVIGATION && DEBUG
 
     size_t currentOffset = 0;
 
@@ -1795,7 +1795,7 @@ void emitter::emitCheckIGList()
             // assert((currIG->igFlags & IGF_NOGCINTERRUPT) == (prevIG->igFlags & IGF_NOGCINTERRUPT));
         }
 
-#if EMIT_BACKWARDS_NAVIGATION
+#if defined(EMIT_BACKWARDS_NAVIGATION) && defined(DEBUG)
         // Check that the instrDesc "prev" pointers are all correct.
         unsigned insCnt = currIG->igInsCnt;
         if (insCnt > 0)
@@ -1812,7 +1812,7 @@ void emitter::emitCheckIGList()
                 assert(id->idPrevSize() == idPrevSize);
             }
         }
-#endif // EMIT_BACKWARDS_NAVIGATION
+#endif // EMIT_BACKWARDS_NAVIGATION && DEBUG
     }
 
     if (emitTotalCodeSize != 0 && emitTotalCodeSize != currentOffset)
@@ -1821,7 +1821,7 @@ void emitter::emitCheckIGList()
         assert(!"bad total code size");
     }
 
-#if EMIT_BACKWARDS_NAVIGATION
+#if defined(EMIT_BACKWARDS_NAVIGATION) && defined(DEBUG)
 
     // Check that walking the instrDescs backwards using `emitPrevID` is correct. Compare the backwards
     // walk against a list of IDs that was constructed above while walking forwards (but constructed in
@@ -1841,7 +1841,7 @@ void emitter::emitCheckIGList()
             ++nextPair;
         } while (emitPrevID(ig, id));
     }
-#endif // EMIT_BACKWARDS_NAVIGATION
+#endif // EMIT_BACKWARDS_NAVIGATION && DEBUG
 }
 
 #endif // DEBUG
