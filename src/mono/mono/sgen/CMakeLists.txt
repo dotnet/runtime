@@ -1,3 +1,5 @@
+project (sgen)
+
 if(NOT MONO_GC STREQUAL "sgen")
     return()
 endif()
@@ -55,5 +57,11 @@ set(sgen_sources_base
     sgen-workers.c
     sgen-workers.h)
 
-addprefix(sgen_sources ../sgen/ "${sgen_sources_base}")
+set(sgen_sources "${sgen_sources_base}")
 set_source_files_properties(${sgen_sources} PROPERTIES COMPILE_DEFINITIONS "HAVE_SGEN_GC")
+
+add_library(sgen_objects ${sgen_sources})
+target_link_libraries(sgen_objects PRIVATE monoapi eglib_objects utils_objects)
+target_include_directories(sgen_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/..)

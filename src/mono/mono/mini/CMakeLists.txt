@@ -7,7 +7,7 @@ include_directories(
   ${PROJECT_BINARY_DIR}/../..
   ${CMAKE_CURRENT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../
-  ${PROJECT_SOURCE_DIR}/../sgen)
+  )
 
 if(HOST_DARWIN)
   set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
@@ -33,7 +33,6 @@ endif()
 # SUBDIRS
 #
 include(../metadata/CMakeLists.txt)
-include(../sgen/CMakeLists.txt)
 include(../component/CMakeLists.txt)
 
 if(HOST_WIN32)
@@ -344,12 +343,12 @@ if(HOST_WIN32)
 set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "/wd4005;/wd4127;/wd4131;/wd4244")
 endif()
 
-set(monosgen-sources "${metadata_sources};${sgen_sources};${icu_shim_sources};${mini_sources};${ZLIB_SOURCES}")
+set(monosgen-sources "${metadata_sources};${icu_shim_sources};${mini_sources};${ZLIB_SOURCES}")
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
-target_link_libraries (monosgen-objects PRIVATE monoapi eglib_objects utils_objects)
+target_link_libraries (monosgen-objects PRIVATE monoapi eglib_objects utils_objects sgen_objects)
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:monosgen-objects>)
-target_link_libraries (monosgen-static PRIVATE monoapi eglib_objects utils_objects)
+target_link_libraries (monosgen-static PRIVATE monoapi eglib_objects utils_objects sgen_objects)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
 
 if(DISABLE_COMPONENTS OR AOT_COMPONENTS)
@@ -368,13 +367,12 @@ if(NOT DISABLE_SHARED_LIBS)
     add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects>)
     target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
   endif()
-  target_link_libraries(monosgen-shared PRIVATE eglib_objects utils_objects)
   # Alpine Linux implements ucontext in a different library
   if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
     target_link_libraries(monosgen-shared PRIVATE ucontext)
   endif(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
   set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME})
-  target_link_libraries (monosgen-shared PRIVATE monoapi)
+  target_link_libraries(monosgen-shared PRIVATE monoapi eglib_objects utils_objects sgen_objects)
   target_include_directories (monosgen-shared PRIVATE monoapi)
   if(TARGET_WIN32)
     # on Windows the import library for the shared mono library will have the same name as the static library,
