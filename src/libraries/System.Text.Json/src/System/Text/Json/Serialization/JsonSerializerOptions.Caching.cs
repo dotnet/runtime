@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
@@ -69,10 +70,7 @@ namespace System.Text.Json
             if (IsReadOnly)
             {
                 typeInfo = CacheContext.GetOrAddTypeInfo(type);
-                if (ensureConfigured)
-                {
-                    typeInfo?.EnsureConfigured();
-                }
+                Debug.Assert(!ensureConfigured || typeInfo?.IsConfigured != false);
             }
             else if (resolveIfMutable)
             {
@@ -157,18 +155,13 @@ namespace System.Text.Json
         /// </summary>
         internal sealed class CachingContext
         {
-            private readonly ConcurrentDictionary<Type, JsonTypeInfo?> _jsonTypeInfoCache = new();
-#if !NETCOREAPP
-            private readonly Func<Type, JsonTypeInfo?> _jsonTypeInfoFactory;
-#endif
+            private readonly ConcurrentDictionary<Type, CacheEntry> _jsonTypeInfoCache = new();
+            private readonly ThreadLocal<ThreadLocalCachingContext?> _localContext = new();
 
             public CachingContext(JsonSerializerOptions options, int hashCode)
             {
                 Options = options;
                 HashCode = hashCode;
-#if !NETCOREAPP
-                _jsonTypeInfoFactory = Options.GetTypeInfoNoCaching;
-#endif
             }
 
             public JsonSerializerOptions Options { get; }
@@ -177,19 +170,236 @@ namespace System.Text.Json
             // If changing please ensure that src/ILLink.Descriptors.LibraryBuild.xml is up-to-date.
             public int Count => _jsonTypeInfoCache.Count;
 
-            public JsonTypeInfo? GetOrAddTypeInfo(Type type) =>
-#if NETCOREAPP
-                _jsonTypeInfoCache.GetOrAdd(type, static (type, options) => options.GetTypeInfoNoCaching(type), Options);
-#else
-                _jsonTypeInfoCache.GetOrAdd(type, _jsonTypeInfoFactory);
-#endif
+            public JsonTypeInfo? GetOrAddTypeInfo(Type type)
+            {
+                return _jsonTypeInfoCache.TryGetValue(type, out CacheEntry result)
+                    ? result.GetTypeInfoOrThrowCachedException()
+                    : AddTypeInfo(type);
 
+                JsonTypeInfo? AddTypeInfo(Type type)
+                {
+                    ThreadLocalCachingContext ctx = GetLocalContext(out bool isRootInvocation);
+                    try
+                    {
+                        return ctx.GetOrAddTypeInfo(type);
+                    }
+                    finally
+                    {
+                        if (isRootInvocation)
+                        {
+                            ctx.CommitToGlobalCache();
+                            _localContext.Value = null;
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Drive the configuration of an externally supplied <see cref="JsonTypeInfo"/>.
+            /// This is typically an instance that has been created by a user directly
+            /// without using a <see cref="TypeInfoResolver"/> source.
+            /// </summary>
+            public void ConfigureExternalTypeInfo(JsonTypeInfo typeInfo)
+            {
+                Debug.Assert(typeInfo.Options.CacheContext == this);
+                Debug.Assert(typeInfo.IsReadOnly);
+
+                ThreadLocalCachingContext ctx = GetLocalContext(out bool isRootInvocation);
+                Debug.Assert(isRootInvocation);
+
+                typeInfo.CachedConfigureException?.Throw();
+
+                // Because we're configuring an instance not owned by the cache,
+                // it is possible that multiple threads could be trying to configure it.
+                // Synchronize access by acquiring a lock on the cache itself.
+                lock (_jsonTypeInfoCache)
+                {
+                    if (typeInfo.IsConfigured)
+                        return;
+
+                    typeInfo.CachedConfigureException?.Throw();
+
+                    try
+                    {
+                        typeInfo.EnsureConfigured(ctx);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Because we're not caching the current typeInfo instance,
+                        // store any configuration exceptions on the instance itself.
+                        typeInfo.CachedConfigureException = ExceptionDispatchInfo.Capture(ex);
+                        throw;
+                    }
+                    finally
+                    {
+                        // Commit any nested metadata that were generated to the global cache.
+                        ctx.CommitToGlobalCache();
+                        _localContext.Value = null;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Returns any metadata that may have already been cached by the current context.
+            /// </summary>
             public bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
-                => _jsonTypeInfoCache.TryGetValue(type, out typeInfo);
+            {
+                CacheEntry entry;
+                if (_localContext.Value is ThreadLocalCachingContext ctx)
+                {
+                    ctx.TryGetEntry(type, out entry);
+                }
+                else
+                {
+                    _jsonTypeInfoCache.TryGetValue(type, out entry);
+                }
+
+                // Do not surface any cached exceptions here.
+                typeInfo = entry.TypeInfo;
+                return typeInfo is not null;
+            }
 
             public void Clear()
             {
                 _jsonTypeInfoCache.Clear();
+            }
+
+            private ThreadLocalCachingContext GetLocalContext(out bool isRootInvocation)
+            {
+                // Check if the thread already defines a local caching context.
+                // This is necessary to support certain converter factories such as
+                // Nullable<T> or F# optional type converters that need to
+                // recursively access metadata at construction time.
+                ThreadLocalCachingContext? ctx = _localContext.Value;
+
+                if (ctx is null)
+                {
+                    _localContext.Value = ctx = new(this);
+                    isRootInvocation = true;
+                }
+                else
+                {
+                    isRootInvocation = false;
+                }
+
+                return ctx;
+            }
+
+            /// <summary>
+            /// Defines a transient, thread-local caching context that is used for resolving and
+            /// configuring <see cref="JsonTypeInfo"/> metadata. It maintains a separate dictionary
+            /// for tracking new metadata instances that are encountered in the type graph.
+            /// Once configuration is complete, the local entries are committed to the
+            /// global metadata cache and the local context is discarded.
+            /// </summary>
+            private sealed class ThreadLocalCachingContext : IMetadataResolutionContext
+            {
+                private readonly CachingContext _cachingContext;
+                private readonly Dictionary<Type, CacheEntry> _threadLocalCache;
+                private KeyValuePair<Type, CacheEntry>? _firstEntry;
+
+                public ThreadLocalCachingContext(CachingContext cachingContext)
+                {
+                    _cachingContext = cachingContext;
+                    _threadLocalCache = new();
+                }
+
+                public bool TryGetEntry(Type type, out CacheEntry entry)
+                    => _cachingContext._jsonTypeInfoCache.TryGetValue(type, out entry) ||
+                       _threadLocalCache.TryGetValue(type, out entry);
+
+                public JsonTypeInfo? GetOrAddTypeInfo(Type type)
+                {
+                    if (TryGetEntry(type, out CacheEntry entry))
+                    {
+                        return entry.GetTypeInfoOrThrowCachedException();
+                    }
+
+                    try
+                    {
+                        JsonTypeInfo? typeInfo = _cachingContext.Options.GetTypeInfoNoCaching(type);
+
+                        // NB we're caching the freshly created JsonTypeInfo instance in the
+                        // local cache *before* calling EnsureConfigured to ensure that any
+                        // recursive occurrences are being resolved correctly.
+                        _threadLocalCache[type] = entry = new CacheEntry(typeInfo);
+                        typeInfo?.EnsureConfigured(this);
+
+                        return typeInfo;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Metadata generation or configuration failed with an exception.
+                        // Replace the local cache entry with the relevant result.
+                        ExceptionDispatchInfo edi = ExceptionDispatchInfo.Capture(ex);
+                        _threadLocalCache[type] = entry = new CacheEntry(edi);
+                        throw;
+                    }
+                    finally
+                    {
+                        _firstEntry ??= new(type, entry);
+                    }
+                }
+
+                JsonTypeInfo IMetadataResolutionContext.Resolve(Type type)
+                {
+                    JsonTypeInfo? typeInfo = GetOrAddTypeInfo(type);
+
+                    if (typeInfo is null)
+                    {
+                        ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, _cachingContext.Options.TypeInfoResolver);
+                    }
+
+                    return typeInfo;
+                }
+
+                /// <summary>
+                /// Commits the configured metadata entries from the local cache to the global cache.
+                /// </summary>
+                public void CommitToGlobalCache()
+                {
+                    ConcurrentDictionary<Type, CacheEntry> globalCache = _cachingContext._jsonTypeInfoCache;
+
+                    if (_firstEntry is KeyValuePair<Type, CacheEntry> firstEntry)
+                    {
+                        // This method does not provide synchronized access to the global cache.
+                        // Instead we try to insert the root-level entry first and use the result
+                        // to determine if the subsequent metadata entries should be cached.
+
+                        CacheEntry result = globalCache.GetOrAdd(firstEntry.Key, firstEntry.Value);
+
+                        bool isFirstEntryCommitted =
+                            ReferenceEquals(result.TypeInfo, firstEntry.Value.TypeInfo) &&
+                            ReferenceEquals(result.Exception, firstEntry.Value.Exception);
+
+                        if (isFirstEntryCommitted)
+                        {
+                            foreach (KeyValuePair<Type, CacheEntry> entry in _threadLocalCache)
+                            {
+                                Debug.Assert(entry.Value.TypeInfo is null or { IsConfigured: true });
+                                if (entry.Key != firstEntry.Key)
+                                {
+                                    globalCache.TryAdd(entry.Key, entry.Value);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            private readonly struct CacheEntry
+            {
+                public readonly JsonTypeInfo? TypeInfo;
+                public readonly ExceptionDispatchInfo? Exception;
+                public CacheEntry(JsonTypeInfo? typeInfo) => TypeInfo = typeInfo;
+                public CacheEntry(ExceptionDispatchInfo exception) => Exception = exception;
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public JsonTypeInfo? GetTypeInfoOrThrowCachedException()
+                {
+                    Exception?.Throw();
+                    return TypeInfo;
+                }
             }
         }
 
@@ -198,7 +408,7 @@ namespace System.Text.Json
         /// this approach uses a fixed-size array of weak references of <see cref="CachingContext"/> that can be looked up lock-free.
         /// Relevant caching contexts are looked up by linear traversal using the equality comparison defined by <see cref="EqualityComparer"/>.
         /// </summary>
-        internal static class TrackedCachingContexts
+        private static class TrackedCachingContexts
         {
             private const int MaxTrackedContexts = 64;
             private static readonly WeakReference<CachingContext>?[] s_trackedContexts = new WeakReference<CachingContext>[MaxTrackedContexts];

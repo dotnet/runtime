@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -270,7 +269,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool IsConfigured { get; private set; }
 
-        internal void Configure()
+        internal void Configure(IMetadataResolutionContext context)
         {
             Debug.Assert(ParentTypeInfo != null);
             Debug.Assert(!IsConfigured);
@@ -284,8 +283,8 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
-                _jsonTypeInfo.EnsureConfigured();
+                _jsonTypeInfo ??= context.Resolve(PropertyType);
+                _jsonTypeInfo.EnsureConfigured(context);
 
                 DetermineEffectiveConverter(_jsonTypeInfo);
                 DetermineNumberHandlingForProperty();
@@ -717,14 +716,8 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                Debug.Assert(_jsonTypeInfo?.IsConfigurationStarted == true);
-                // Even though this instance has already been configured,
-                // it is possible for contending threads to call the property
-                // while the wider JsonTypeInfo graph is still being configured.
-                // Call EnsureConfigured() to force synchronization if necessary.
-                JsonTypeInfo jsonTypeInfo = _jsonTypeInfo;
-                jsonTypeInfo.EnsureConfigured();
-                return jsonTypeInfo;
+                Debug.Assert(_jsonTypeInfo?.IsConfigured == true);
+                return _jsonTypeInfo;
             }
             set
             {

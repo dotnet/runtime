@@ -431,5 +431,124 @@ namespace System.Text.Json.Serialization.Tests
                 return TestData.WriteSuccessCases;
             }
         }
+
+        [Fact]
+        public static void JsonSerializerOptions_CachesMetadataResolversThatReturnNull()
+        {
+            var resolver = new ResolverThatReturnsNull();
+            var options = new JsonSerializerOptions { TypeInfoResolver = resolver };
+            options.MakeReadOnly();
+
+            Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+            Assert.Equal(1, resolver.TotalInvocations);
+
+            Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+            Assert.Equal(1, resolver.TotalInvocations);
+        }
+
+        public class ResolverThatReturnsNull : IJsonTypeInfoResolver
+        {
+            public int TotalInvocations { get; private set; }
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                TotalInvocations++;
+                return null;
+            }
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_CachesMetadataResolversThatThrow()
+        {
+            var resolver = new ResolverThatThrows();
+            var options = new JsonSerializerOptions { TypeInfoResolver = resolver };
+            options.MakeReadOnly();
+
+            Assert.Throws<NotImplementedException>(() => options.GetTypeInfo(typeof(string)));
+            Assert.Equal(1, resolver.TotalInvocations);
+
+            Assert.Throws<NotImplementedException>(() => options.GetTypeInfo(typeof(string)));
+            Assert.Equal(1, resolver.TotalInvocations);
+        }
+
+        public class ResolverThatThrows : IJsonTypeInfoResolver
+        {
+            public int TotalInvocations { get; private set; }
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                TotalInvocations++;
+                throw new NotImplementedException();
+            }
+        }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void JsonSerializerOptions_ResolverThatReturnsSingleton_MultiThreadingThrowsInvalidOperationException()
+        {
+            AggregateException ex = Assert.Throws<AggregateException>(() =>
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    // Exception might not always occur, repeat until it does.
+                    TestCore();
+                }
+            });
+
+            Assert.All(ex.InnerExceptions, static inner =>
+                Assert.IsType<InvalidOperationException>(inner));
+
+            static void TestCore()
+            {
+                var options = new JsonSerializerOptions();
+                options.TypeInfoResolver = new ResolverThatReturnsSingleton(typeof(LargeDataTestClass), options);
+                options.MakeReadOnly();
+
+                Parallel.For(0, 100, i =>
+                {
+                    options.GetTypeInfo(typeof(LargeDataTestClass));
+                });
+            }
+        }
+
+        public class ResolverThatReturnsSingleton : IJsonTypeInfoResolver
+        {
+            private readonly JsonTypeInfo _singletonTypeInfo;
+            private readonly DefaultJsonTypeInfoResolver _origin;
+
+            public ResolverThatReturnsSingleton(Type type, JsonSerializerOptions options)
+            {
+                _origin = new();
+                _singletonTypeInfo = _origin.GetTypeInfo(type, options);
+            }
+
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                Assert.Same(options, _singletonTypeInfo.Options);
+                if (type == _singletonTypeInfo.Type)
+                {
+                    return _singletonTypeInfo;
+                }
+
+                return _origin.GetTypeInfo(type, options);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void JsonTypeInfo_ExternalConfiguration_SupportsMultiThreading()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+            };
+
+            JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(LargeDataTestClass));
+            // Validate that the JsonTypeInfo is still mutable & unconfigured
+            typeInfo.NumberHandling = typeInfo.NumberHandling;
+
+            var value = new LargeDataTestClass();
+            Parallel.For(0, 100, i =>
+            {
+                JsonSerializer.Serialize(value, typeInfo);
+            });
+        }
     }
 }

@@ -326,14 +326,8 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                Debug.Assert(_elementTypeInfo is null or { IsConfigurationStarted: true });
-                // Even though this instance has already been configured,
-                // it is possible for contending threads to call the property
-                // while the wider JsonTypeInfo graph is still being configured.
-                // Call EnsureConfigured() to force synchronization if necessary.
-                JsonTypeInfo? elementTypeInfo = _elementTypeInfo;
-                elementTypeInfo?.EnsureConfigured();
-                return elementTypeInfo;
+                Debug.Assert(_elementTypeInfo is null or { IsConfigured: true });
+                return _elementTypeInfo;
             }
             set
             {
@@ -351,14 +345,8 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
-                Debug.Assert(_keyTypeInfo is null or { IsConfigurationStarted: true });
-                // Even though this instance has already been configured,
-                // it is possible for contending threads to call the property
-                // while the wider JsonTypeInfo graph is still being configured.
-                // Call EnsureConfigured() to force synchronization if necessary.
-                JsonTypeInfo? keyTypeInfo = _keyTypeInfo;
-                keyTypeInfo?.EnsureConfigured();
-                return keyTypeInfo;
+                Debug.Assert(_keyTypeInfo is null or { IsConfigured: true });
+                return _keyTypeInfo;
             }
             set
             {
@@ -542,65 +530,68 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         internal bool IsCustomized { get; set; } = true;
 
-        internal bool IsConfigured => _configurationState == ConfigurationState.Configured;
-        internal bool IsConfigurationStarted => _configurationState is not ConfigurationState.NotConfigured;
-        private volatile ConfigurationState _configurationState;
-        private enum ConfigurationState : byte { NotConfigured = 0, Configuring = 1, Configured = 2 };
+        internal bool IsConfigured => _isConfigured;
+        private bool _isConfigured;
 
-        private ExceptionDispatchInfo? _cachedConfigureError;
+        private IMetadataResolutionContext? _configuringContext;
+        internal ExceptionDispatchInfo? CachedConfigureException;
 
         internal void EnsureConfigured()
         {
             if (!IsConfigured)
-                ConfigureSynchronized();
+                ConfigureExternal();
 
-            void ConfigureSynchronized()
+            void ConfigureExternal()
             {
                 Options.MakeReadOnly();
                 MakeReadOnly();
 
-                _cachedConfigureError?.Throw();
-
-                lock (Options.CacheContext)
-                {
-                    if (_configurationState != ConfigurationState.NotConfigured)
-                    {
-                        // The value of _configurationState is either
-                        //    'Configuring': recursive instance configured by this thread or
-                        //    'Configured' : instance already configured by another thread.
-                        // We can safely yield the configuration operation in both cases.
-                        return;
-                    }
-
-                    _cachedConfigureError?.Throw();
-
-                    try
-                    {
-                        _configurationState = ConfigurationState.Configuring;
-                        Configure();
-                        _configurationState = ConfigurationState.Configured;
-                    }
-                    catch (Exception e)
-                    {
-                        _cachedConfigureError = ExceptionDispatchInfo.Capture(e);
-                        _configurationState = ConfigurationState.NotConfigured;
-                        throw;
-                    }
-                }
+                Options.CacheContext.ConfigureExternalTypeInfo(this);
             }
         }
 
-        private void Configure()
+        internal void EnsureConfigured(IMetadataResolutionContext context)
         {
-            Debug.Assert(Monitor.IsEntered(Options.CacheContext), "Configure called directly, use EnsureConfigured which synchronizes access to this method");
+            if (IsConfigured || _configuringContext == context)
+            {
+                // Type is already configured, or is a recursive occurrence within the same
+                // configuration context/thread. In both cases we can safely yield configuration.
+                return;
+            }
+
+            MakeReadOnly();
+
+            if (Interlocked.CompareExchange(ref _configuringContext, context, null) != null)
+            {
+                // A different thread is attempting to configure the same JsonTypeInfo instance.
+                // Even though this is not possible with the built-in resolvers, a pathological
+                // implementation could be producing singletons that are consumed by multiple threads.
+                ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoAlreadyBeingConfigured();
+            }
+
+            try
+            {
+                Configure(context);
+                _configuringContext = null;
+                Volatile.Write(ref _isConfigured, true);
+            }
+            catch
+            {
+                _configuringContext = null;
+                throw;
+            }
+        }
+
+        private void Configure(IMetadataResolutionContext context)
+        {
             Debug.Assert(Options.IsReadOnly);
             Debug.Assert(IsReadOnly);
 
-            PropertyInfoForTypeInfo.Configure();
+            PropertyInfoForTypeInfo.Configure(context);
 
             if (Kind == JsonTypeInfoKind.Object)
             {
-                ConfigureProperties();
+                ConfigureProperties(context);
 
                 if (Converter.ConstructorIsParameterized)
                 {
@@ -610,14 +601,14 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (ElementType != null)
             {
-                _elementTypeInfo ??= Options.GetTypeInfoInternal(ElementType);
-                _elementTypeInfo.EnsureConfigured();
+                _elementTypeInfo ??= context.Resolve(ElementType);
+                _elementTypeInfo.EnsureConfigured(context);
             }
 
             if (KeyType != null)
             {
-                _keyTypeInfo ??= Options.GetTypeInfoInternal(KeyType);
-                _keyTypeInfo.EnsureConfigured();
+                _keyTypeInfo ??= context.Resolve(KeyType);
+                _keyTypeInfo.EnsureConfigured(context);
             }
 
             DetermineIsCompatibleWithCurrentOptions();
@@ -1006,7 +997,7 @@ namespace System.Text.Json.Serialization.Metadata
             public JsonPropertyInfo JsonPropertyInfo { get; }
         }
 
-        internal void ConfigureProperties()
+        internal void ConfigureProperties(IMetadataResolutionContext context)
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
             Debug.Assert(PropertyCache is null);
@@ -1056,7 +1047,7 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                 }
 
-                property.Configure();
+                property.Configure(context);
             }
 
             NumberOfRequiredProperties = numberOfRequiredProperties;

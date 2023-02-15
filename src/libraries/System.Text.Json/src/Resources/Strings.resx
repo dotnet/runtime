@@ -650,6 +650,9 @@
   <data name="InvalidJsonTypeInfoOperationForKind" xml:space="preserve">
     <value>Invalid JsonTypeInfo operation for JsonTypeInfoKind '{0}'.</value>
   </data>
+  <data name="JsonTypeInfoAlreadyBeingConfigured" xml:space="preserve">
+    <value>This JsonTypeInfo instance is already being configured by another thread.</value>
+  </data>
   <data name="CreateObjectConverterNotCompatible" xml:space="preserve">
     <value>The converter for type '{0}' does not support setting 'CreateObject' delegates.</value>
   </data>

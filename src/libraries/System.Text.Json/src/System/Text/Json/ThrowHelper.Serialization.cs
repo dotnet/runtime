@@ -209,6 +209,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonTypeInfoAlreadyBeingConfigured()
+        {
+            throw new InvalidOperationException(SR.JsonTypeInfoAlreadyBeingConfigured);
+        }
+
+        [DoesNotReturn]
         public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray requiredPropertiesSet)
         {
             StringBuilder listOfMissingPropertiesBuilder = new();
