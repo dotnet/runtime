@@ -276,11 +276,10 @@ export function generate_wasm_body (
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
 
-            case MintOpcode.MINT_LDTOKEN:
             case MintOpcode.MINT_LDSTR:
             case MintOpcode.MINT_LDFTN:
             case MintOpcode.MINT_LDFTN_ADDR:
-            case MintOpcode.MINT_MONO_LDPTR: {
+            case MintOpcode.MINT_LDPTR: {
                 // Pre-load locals for the store op
                 builder.local("pLocals");
 
