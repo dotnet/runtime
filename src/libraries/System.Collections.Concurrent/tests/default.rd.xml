@@ -1,8 +1,0 @@
-<Directives>
-  <Application>
-    <Assembly Name="System.Collections.Concurrent">
-      <Type Name="System.Collections.Concurrent.ConcurrentDictionary`2[[System.String, System.Private.CoreLib],[System.String, System.Private.CoreLib]]" Dynamic="Required All" />
-      <Type Name="System.Collections.Concurrent.ConcurrentDictionary`2[[System.String, System.Private.CoreLib],[System.String, System.Private.CoreLib]]+Tables" Dynamic="Required All" />
-    </Assembly>
-  </Application>
-</Directives>

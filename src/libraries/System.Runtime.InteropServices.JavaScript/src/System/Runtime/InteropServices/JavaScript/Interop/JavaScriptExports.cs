@@ -245,7 +245,6 @@ namespace System.Runtime.InteropServices.JavaScript
             if (len == 0)
                 throw new InvalidOperationException(SR.EmptyProfileData);
 
-            var arr = new byte[len];
             fixed (void* p = &buf)
             {
                 var span = new ReadOnlySpan<byte>(p, len);
