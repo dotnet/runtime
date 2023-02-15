@@ -1,7 +1,7 @@
 <Project>
-  <UsingTask TaskName="WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="WasmCalculateInitialHeapSize" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmCalculateInitialHeapSize" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <!--
       Required public items/properties:

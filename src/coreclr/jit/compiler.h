@@ -5319,11 +5319,9 @@ public:
 
     void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
 
-    FlowEdge* fgAddRefPred(BasicBlock* block,
-                           BasicBlock* blockPred,
-                           FlowEdge*   oldEdge           = nullptr,
-                           bool        initializingPreds = false); // Only set to 'true' when we are computing preds in
-                                                                   // fgLinkBasicBlocks()
+    // initializingPreds is only 'true' when we are computing preds in fgLinkBasicBlocks()
+    template <bool initializingPreds = false>
+    FlowEdge* fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge = nullptr);
 
     void fgFindBasicBlocks();
 

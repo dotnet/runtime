@@ -24,6 +24,8 @@ namespace System.Reflection.Metadata.Tests
             public string Name;
         }
 
+        private delegate ReadOnlySpan<uint> GetTagToTokenTypeArrayFunc();
+
         private IEnumerable<XxxTag> GetTags()
         {
             Type[] types = new[] {
@@ -48,14 +50,14 @@ namespace System.Reflection.Metadata.Tests
                    {
                        GetTagToTokenTypeArray = () =>
                        {
-                           var array = typeInfo.GetDeclaredField("TagToTokenTypeArray");
+                           var array = typeInfo.GetDeclaredProperty("TagToTokenTypeArray");
                            var vector = typeInfo.GetDeclaredField("TagToTokenTypeByteVector");
 
                            Assert.True((array == null) ^ (vector == null), typeInfo.Name + " does not have exactly one of TagToTokenTypeArray or TagToTokenTypeByteVector");
 
                            if (array != null)
                            {
-                               return (uint[])array.GetValue(null);
+                               return ((GetTagToTokenTypeArrayFunc)array.GetGetMethod(nonPublic: true).CreateDelegate(typeof(GetTagToTokenTypeArrayFunc)))().ToArray();
                            }
 
                            Assert.Contains(vector.FieldType, new[] { typeof(uint), typeof(ulong) });

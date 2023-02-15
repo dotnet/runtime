@@ -12,7 +12,7 @@ namespace System.Net
     //
     internal abstract class DebugSafeHandleMinusOneIsInvalid : SafeHandleMinusOneIsInvalid
     {
-        private string _trace;
+        private readonly string _trace;
 
         protected DebugSafeHandleMinusOneIsInvalid(bool ownsHandle) : base(ownsHandle)
         {

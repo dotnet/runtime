@@ -74,7 +74,7 @@ namespace System.Collections.Concurrent
         /// comparer for the key type.
         /// </summary>
         /// <param name="concurrencyLevel">The estimated number of threads that will update the
-        /// <see cref="ConcurrentDictionary{TKey,TValue}"/> concurrently.</param>
+        /// <see cref="ConcurrentDictionary{TKey,TValue}"/> concurrently, or -1 to indicate a default value.</param>
         /// <param name="capacity">The initial number of elements that the <see cref="ConcurrentDictionary{TKey,TValue}"/> can contain.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="concurrencyLevel"/> is less than 1.</exception>
         /// <exception cref="ArgumentOutOfRangeException"> <paramref name="capacity"/> is less than 0.</exception>
@@ -125,7 +125,7 @@ namespace System.Collections.Concurrent
         /// <see cref="IEqualityComparer{TKey}"/>.
         /// </summary>
         /// <param name="concurrencyLevel">
-        /// The estimated number of threads that will update the <see cref="ConcurrentDictionary{TKey,TValue}"/> concurrently.
+        /// The estimated number of threads that will update the <see cref="ConcurrentDictionary{TKey,TValue}"/> concurrently, or -1 to indicate a default value.
         /// </param>
         /// <param name="collection">The <see cref="IEnumerable{T}"/> whose elements are copied to the new
         /// <see cref="ConcurrentDictionary{TKey,TValue}"/>.</param>
@@ -146,7 +146,7 @@ namespace System.Collections.Concurrent
         /// class that is empty, has the specified concurrency level, has the specified initial capacity, and
         /// uses the specified <see cref="IEqualityComparer{TKey}"/>.
         /// </summary>
-        /// <param name="concurrencyLevel">The estimated number of threads that will update the <see cref="ConcurrentDictionary{TKey,TValue}"/> concurrently.</param>
+        /// <param name="concurrencyLevel">The estimated number of threads that will update the <see cref="ConcurrentDictionary{TKey,TValue}"/> concurrently, or -1 to indicate a default value.</param>
         /// <param name="capacity">The initial number of elements that the <see cref="ConcurrentDictionary{TKey,TValue}"/> can contain.</param>
         /// <param name="comparer">The <see cref="IEqualityComparer{TKey}"/> implementation to use when comparing keys.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="concurrencyLevel"/> is less than 1. -or- <paramref name="capacity"/> is less than 0.</exception>
@@ -157,7 +157,16 @@ namespace System.Collections.Concurrent
 
         internal ConcurrentDictionary(int concurrencyLevel, int capacity, bool growLockArray, IEqualityComparer<TKey>? comparer)
         {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(concurrencyLevel);
+            if (concurrencyLevel <= 0)
+            {
+                if (concurrencyLevel != -1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(concurrencyLevel), SR.ConcurrentDictionary_ConcurrencyLevelMustBePositiveOrNegativeOne);
+                }
+
+                concurrencyLevel = DefaultConcurrencyLevel;
+            }
+
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             // The capacity should be at least as large as the concurrency level. Otherwise, we would have locks that don't guard
@@ -390,52 +399,57 @@ namespace System.Collections.Concurrent
                 object[] locks = tables._locks;
                 ref Node? bucket = ref GetBucketAndLock(tables, hashcode, out uint lockNo);
 
-                lock (locks[lockNo])
+                // Do a hot read on number of items stored in the bucket.  If it's empty, we can avoid
+                // taking the lock and fail fast.
+                if (tables._countPerLock[lockNo] != 0)
                 {
-                    // If the table just got resized, we may not be holding the right lock, and must retry.
-                    // This should be a rare occurrence.
-                    if (tables != _tables)
+                    lock (locks[lockNo])
                     {
-                        tables = _tables;
-                        if (!ReferenceEquals(comparer, tables._comparer))
+                        // If the table just got resized, we may not be holding the right lock, and must retry.
+                        // This should be a rare occurrence.
+                        if (tables != _tables)
                         {
-                            comparer = tables._comparer;
-                            hashcode = GetHashCode(comparer, key);
-                        }
-                        continue;
-                    }
-
-                    Node? prev = null;
-                    for (Node? curr = bucket; curr is not null; curr = curr._next)
-                    {
-                        Debug.Assert((prev is null && curr == bucket) || prev!._next == curr);
-
-                        if (hashcode == curr._hashcode && NodeEqualsKey(comparer, curr, key))
-                        {
-                            if (matchValue)
+                            tables = _tables;
+                            if (!ReferenceEquals(comparer, tables._comparer))
                             {
-                                bool valuesMatch = EqualityComparer<TValue>.Default.Equals(oldValue, curr._value);
-                                if (!valuesMatch)
+                                comparer = tables._comparer;
+                                hashcode = GetHashCode(comparer, key);
+                            }
+                            continue;
+                        }
+
+                        Node? prev = null;
+                        for (Node? curr = bucket; curr is not null; curr = curr._next)
+                        {
+                            Debug.Assert((prev is null && curr == bucket) || prev!._next == curr);
+
+                            if (hashcode == curr._hashcode && NodeEqualsKey(comparer, curr, key))
+                            {
+                                if (matchValue)
                                 {
-                                    value = default;
-                                    return false;
+                                    bool valuesMatch = EqualityComparer<TValue>.Default.Equals(oldValue, curr._value);
+                                    if (!valuesMatch)
+                                    {
+                                        value = default;
+                                        return false;
+                                    }
                                 }
-                            }
 
-                            if (prev is null)
-                            {
-                                Volatile.Write(ref bucket, curr._next);
-                            }
-                            else
-                            {
-                                prev._next = curr._next;
-                            }
+                                if (prev is null)
+                                {
+                                    Volatile.Write(ref bucket, curr._next);
+                                }
+                                else
+                                {
+                                    prev._next = curr._next;
+                                }
 
-                            value = curr._value;
-                            tables._countPerLock[lockNo]--;
-                            return true;
+                                value = curr._value;
+                                tables._countPerLock[lockNo]--;
+                                return true;
+                            }
+                            prev = curr;
                         }
-                        prev = curr;
                     }
                 }
 

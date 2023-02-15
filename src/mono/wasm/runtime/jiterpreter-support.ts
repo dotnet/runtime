@@ -141,6 +141,10 @@ export class WasmBuilder {
         return this.current.appendF64(value);
     }
 
+    appendBoundaryValue (bits: number, sign: number) {
+        return this.current.appendBoundaryValue(bits, sign);
+    }
+
     appendULeb (value: number | MintOpcodePtr) {
         return this.current.appendULeb(<any>value);
     }
@@ -517,7 +521,7 @@ export class WasmBuilder {
 
     getArrayView (fullCapacity?: boolean) {
         if (this.stackSize > 1)
-            throw new Error("Stack not empty");
+            throw new Error("Jiterpreter block stack not empty");
         return this.stack[0].getArrayView(fullCapacity);
     }
 
@@ -601,6 +605,17 @@ export class BlobBuilder {
         this.view.setFloat64(this.size, value, true);
         this.size += 8;
         return result;
+    }
+
+    appendBoundaryValue (bits: number, sign: number) {
+        if (this.size + 8 >= this.capacity)
+            throw new Error("Buffer full");
+
+        const bytesWritten = cwraps.mono_jiterp_encode_leb_signed_boundary(<any>(this.buffer + this.size), bits, sign);
+        if (bytesWritten < 1)
+            throw new Error(`Failed to encode ${bits} bit boundary value with sign ${sign}`);
+        this.size += bytesWritten;
+        return bytesWritten;
     }
 
     appendULeb (value: number) {

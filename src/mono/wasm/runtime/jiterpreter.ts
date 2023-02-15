@@ -251,7 +251,7 @@ function getTraceImports () {
         ["newobj_i", "newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")],
         ["ld_del_ptr", "ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")],
         ["ldtsflda", "ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")],
-        ["conv_ovf", "conv_ovf", getRawCwrap("mono_jiterp_conv_ovf")],
+        ["conv", "conv", getRawCwrap("mono_jiterp_conv")],
         ["relop_fp", "relop_fp", getRawCwrap("mono_jiterp_relop_fp")],
         ["safepoint", "safepoint", getRawCwrap("mono_jiterp_auto_safepoint")],
         ["hashcode", "hashcode", getRawCwrap("mono_jiterp_get_hashcode")],
@@ -461,7 +461,7 @@ function initialize_builder (builder: WasmBuilder) {
         }, WasmValtype.void, true
     );
     builder.defineType(
-        "conv_ovf", {
+        "conv", {
             "destination": WasmValtype.i32,
             "source": WasmValtype.i32,
             "opcode": WasmValtype.i32,
@@ -630,8 +630,9 @@ function generate_wasm (
             "math_lhs32": WasmValtype.i32,
             "math_rhs32": WasmValtype.i32,
             "math_lhs64": WasmValtype.i64,
-            "math_rhs64": WasmValtype.i64
-            // "tempi64": WasmValtype.i64
+            "math_rhs64": WasmValtype.i64,
+            "temp_f32": WasmValtype.f32,
+            "temp_f64": WasmValtype.f64,
         });
 
         if (emitPadding) {
@@ -751,6 +752,11 @@ function generate_wasm (
             console.log(`// MONO_WASM: ${traceName} generated, blob follows //`);
             let s = "", j = 0;
             try {
+                // We may have thrown an uncaught exception while inside a block,
+                //  so we need to pop it for getArrayView to work.
+                while (builder.activeBlocks > 0)
+                    builder.endBlock();
+
                 if (builder.inSection)
                     builder.endSection();
             } catch {
