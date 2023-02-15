@@ -62,6 +62,7 @@ jobs:
     variables:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
+          - group: AzureDevOps-Artifact-Feeds-Pats
 
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
@@ -115,6 +116,26 @@ jobs:
 
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
+
+    # Do not set up nuget sources for source build because the source build scripts already do this.
+    # This will cause the working tree to be dirty, which breaks the stash command when shallow clones are used, like in CI or official builds.
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(parameters.buildingOnSourceBuildImage, true)) }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
+        - task: Bash@3
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+            arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - task: PowerShell@2
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+            arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
     - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
       - task: DownloadPipelineArtifact@2
