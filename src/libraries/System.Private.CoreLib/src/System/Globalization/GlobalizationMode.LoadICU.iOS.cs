@@ -7,10 +7,7 @@ namespace System.Globalization
     {
         private static int LoadICU()
         {
-            // NativeAOT doesn't set ICU_DAT_FILE_PATH so we fallback to icudt.dat in the app bundle root in that case
-            string datPath = AppContext.GetData("ICU_DAT_FILE_PATH")?.ToString() ?? Interop.Globalization.GetICUDataPathFallback();
-
-            return Interop.Globalization.LoadICUData(datPath);
+            return Interop.Globalization.LoadICUData((string?)AppContext.GetData("ICU_DAT_FILE_PATH")); // we handle a null path in the native code
         }
     }
 }
