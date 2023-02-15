@@ -14,7 +14,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <_IsApplePlatform Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or $(TargetOS.StartsWith('ios')) or $(TargetOS.StartsWith('tvos'))">true</_IsApplePlatform>
     <CppCompilerAndLinkerAlternative />
     <CppCompilerAndLinkerAlternative Condition="'$(CppCompilerAndLinker)' == '' and '$(_IsApplePlatform)' != 'true'">gcc</CppCompilerAndLinkerAlternative>
     <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
