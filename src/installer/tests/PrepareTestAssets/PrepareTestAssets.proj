@@ -7,6 +7,23 @@
             CopyPotentiallyInternalPackagesForTestRestore;
             RestoreTestAssetProjects" />
 
+  <!--
+    Fetch the package version of 'Microsoft.NETCore.App.Runtime.<rid>'. The runtime nupkg project
+    always ships, so it may or may not have a stable version depending on product lifecycle.
+
+    Some test projects end in ".Tests", which Arcade detects and applies IsShipping=false. This
+    makes ProductVersion non-stable, so we can't rely on the test project's ProductVersion to be the
+    same as the package's version. Fetch this directly from the project to avoid guesswork.
+  -->
+  <Target Name="GetNETCoreAppRuntimePackVersion"
+          BeforeTargets="Build">
+    <MSBuild
+      Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj"
+      Targets="ReturnProductVersion">
+      <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackVersion" />
+    </MSBuild>
+  </Target>
+
   <Target Name="CleanTestAssets"
           DependsOnTargets="DetermineTestOutputDirectory">
     <!--

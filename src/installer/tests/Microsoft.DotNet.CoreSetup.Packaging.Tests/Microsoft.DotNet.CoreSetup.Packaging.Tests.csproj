@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\TestUtils\TestUtils.csproj" />
+    <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
     <OrderProjectReference Include="@(PkgprojProjectToBuild)" />
   </ItemGroup>
 

@@ -1,5 +1,35 @@
 <Project>
 
+  <Target Name="RefreshProjectTestAssets"
+          Condition="'$(UsesTestAssets)' == 'true' and '$(SkipTests)' != 'true'"
+          DependsOnTargets="DetermineTestOutputDirectory"
+          BeforeTargets="RunTests">
+    <!-- Build PrepareTestAssets once for all tests. -->
+    <MSBuild
+      Projects="$(TestDir)PrepareTestAssets\PrepareTestAssets.proj"
+      Targets="PrepareTestAssets" />
+
+    <!--
+      Set up the shared framework copy this set of tests should use. There's no known reason to have
+      one per test project, but RepoDirectoriesProvider may need some tweaking to share.
+    -->
+    <MSBuild Projects="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj"
+             Targets="PublishToDisk"
+             Properties="OutputPath=$(TestsOutputDir)sharedFrameworkPublish/" />
+
+    <!-- Create files with a name that describes what a test dir is. Useful if path abbreviated. -->
+    <WriteLinesToFile
+      File="$(TestsOutputRootDir)$(TestsOutputName)-is-$(MSBuildProjectName).txt"
+      Overwrite="true"
+      Lines="$(MSBuildProjectName) intermediates are located in '$(TestsOutputName)'. Abbreviated to work around path limits on Windows."
+      Condition="'$(TestsOutputName)' != '$(MSBuildProjectName)'" />
+    <WriteLinesToFile
+      File="$(TestsOutputDir)$(MSBuildProjectName).txt"
+      Overwrite="true"
+      Lines="$(MSBuildProjectName) intermediates are located in '$(TestsOutputName)'. Abbreviated to work around path limits on Windows."
+      Condition="'$(TestsOutputName)' != '$(MSBuildProjectName)'" />
+  </Target>
+
   <Target Name="SetupTestContextVariables"
           DependsOnTargets="
             GetProductVersions;

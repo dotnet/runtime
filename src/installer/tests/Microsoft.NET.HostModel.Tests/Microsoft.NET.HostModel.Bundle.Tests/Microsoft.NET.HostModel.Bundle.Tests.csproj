@@ -12,9 +12,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\TestUtils\TestUtils.csproj" />
-    <ProjectReference Include="..\..\..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
-    <ProjectReference Include="..\..\..\BundleHelper\BundleHelper.csproj" />
+    <ProjectReference Include="..\..\TestUtils\TestUtils.csproj" />
+    <ProjectReference Include="..\..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
+    <ProjectReference Include="..\..\BundleHelper\BundleHelper.csproj" />
   </ItemGroup>
 
 </Project>

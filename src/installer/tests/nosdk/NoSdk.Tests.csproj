@@ -8,7 +8,7 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
     <TestsOutputName>nosdk</TestsOutputName>
-    <UsesTestAssets>true</UsesTestAssets>
+    <UsesTestAssets>false</UsesTestAssets>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
