@@ -13,7 +13,7 @@ namespace System.Drawing
     /// </summary>
     public sealed class BufferedGraphics : IDisposable
     {
-        private Graphics? _targetGraphics;
+        private readonly Graphics? _targetGraphics;
         private readonly IntPtr _targetDC;
         private Graphics _bufferedGraphicsSurface;
         private BufferedGraphicsContext _context;
