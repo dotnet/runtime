@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     using (safeSecKeyRefHandle)
                     {
-                        ICertificatePal newPal;
+                        AppleCertificatePal newPal;
 
                         // SecItemImport doesn't seem to respect non-exportable import for PKCS#8,
                         // only PKCS#12.
@@ -115,6 +115,18 @@ namespace System.Security.Cryptography.X509Certificates
                         else
                         {
                             newPal = pal.MoveToKeychain(_keychain, safeSecKeyRefHandle) ?? pal;
+                        }
+
+                        if (_keychain is SafeTemporaryKeychainHandle)
+                        {
+                            // If we used temporary keychain we need to prevent deletion.
+                            // on 10.15+ if keychain is unlinked, certain certificate operations may fail.
+                            bool success = false;
+                            _keychain.DangerousAddRef(ref success);
+                            if (success)
+                            {
+                                newPal._tempKeychain = _keychain;
+                            }
                         }
 
                         X509Certificate2 cert = new X509Certificate2(newPal);

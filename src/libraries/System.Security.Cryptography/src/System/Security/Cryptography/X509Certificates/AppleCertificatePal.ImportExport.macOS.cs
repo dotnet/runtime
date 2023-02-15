@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
-        private SafeKeychainHandle? _tempKeychain;
+        internal SafeKeychainHandle? _tempKeychain;
 
         public static ICertificatePal FromBlob(
             ReadOnlySpan<byte> rawData,
