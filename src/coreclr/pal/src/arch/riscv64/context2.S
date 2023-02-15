@@ -78,6 +78,7 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
 
 LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
 
+    lw  t1, CONTEXT_ContextFlags(t4)
     andi t1, t1, 0x1 << CONTEXT_INTEGER_BIT
     beq t1, zero, LOCAL_LABEL(No_Restore_CONTEXT_INTEGER)
 
@@ -120,7 +121,7 @@ LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
     ld  ra, (CONTEXT_Ra)(t4)
     ld  fp, (CONTEXT_Fp)(t4)
     ld  sp, (CONTEXT_Sp)(t4)
-    ld  t1, (CONTEXT_Pc)(t4)
+    ld  t1, (CONTEXT_Pc)(t4) // TODO t1 is not restored.
     ld  t4, (CONTEXT_T4)(t4)
     jalr x0, t1, 0
 
@@ -139,7 +140,7 @@ LEAF_ENTRY RtlCaptureContext, _TEXT
     sw  t1, CONTEXT_ContextFlags(a0)
     ld  t1, 0(sp)
     EPILOG_STACK_FREE 16
-    tail  C_FUNC(CONTEXT_CaptureContext)
+    tail CONTEXT_CaptureContext
 LEAF_END RtlCaptureContext, _TEXT
 
 // Incoming:
@@ -205,6 +206,7 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
     lw  t1, CONTEXT_ContextFlags(a0)
 
     li  t0, CONTEXT_FLOATING_POINT
+    and  t3, t1, t0
     bne  t3, t0, LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT)
 
     addi  a0, a0, CONTEXT_FPU_OFFSET

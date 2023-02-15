@@ -3693,7 +3693,7 @@ YieldProcessor()
 #elif defined(HOST_LOONGARCH64)
     __asm__ volatile( "dbar 0;  \n");
 #elif defined(HOST_RISCV64)
-    __asm__ __volatile__( "wfi");
+    __asm__ __volatile__( "fence iorw, iorw"); // TODO
 #else
     return;
 #endif
