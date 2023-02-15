@@ -5079,7 +5079,7 @@ void LinearScan::allocateRegisters()
                 }
                 else if (lclVarInterval->registerType == TYP_SIMD64)
                 {
-                    allocate = false;
+                    allocate                           = false;
                     lclVarInterval->isPartiallySpilled = true;
                 }
                 else
