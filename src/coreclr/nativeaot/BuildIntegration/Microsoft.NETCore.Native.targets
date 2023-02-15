@@ -23,8 +23,11 @@ The .NET Foundation licenses this file to you under the MIT license.
     <IlcBuildTasksPath Condition="'$(IlcBuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\tools\netstandard\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <TargetOS Condition="$(RuntimeIdentifier.StartsWith('win'))">windows</TargetOS>
     <TargetOS Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</TargetOS>
-    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('ios'))">ios</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('maccatalyst'))">maccatalyst</TargetOS>
     <TargetOS Condition="$(RuntimeIdentifier.StartsWith('iossimulator'))">iossimulator</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('ios'))">ios</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('tvossimulator'))">tvossimulator</TargetOS>
+    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('tvos'))">tvos</TargetOS>
     <TargetOS Condition="$(RuntimeIdentifier.StartsWith('freebsd'))">freebsd</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">linux</TargetOS>
     <NativeDebugSymbols Condition="$(DebugSymbols) == 'true' or ($(DebugType) != 'none' and $(DebugType) != '')">true</NativeDebugSymbols>
