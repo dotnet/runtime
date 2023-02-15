@@ -3412,6 +3412,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_STOREX_MEMBASE:
+			arm_strfpq (code, sreg1, dreg, ins->inst_offset);
+			break;
+		case OP_LOADX_MEMBASE:
+			arm_ldrfpq (code, dreg, sreg1, ins->inst_offset);
+			break;
+		case OP_XZERO:
+			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			break;
+		case OP_XMOVE:
+			arm_movw (code, dreg, sreg1);
+			break;
 
 			/* BRANCH */
 		case OP_BR:
@@ -3483,6 +3495,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ARM64_CBNZX:
 			mono_add_patch_info_rel (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_true_bb, MONO_R_ARM64_CBZ);
 			arm_cbnzx (code, sreg1, 0);
+			break;
+		case OP_XBINOP:
+			switch (ins->inst_c0) {
+			case OP_IADD:
+				arm_neon_add (code, VREG_FULL, SIZE_2, dreg, sreg1, sreg2);
+				break;
+			case OP_ISUB:
+				arm_neon_sub_8h (code, dreg, sreg1, sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 			break;
 			/* ALU */
 		case OP_IADD:

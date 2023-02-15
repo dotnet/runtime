@@ -1192,9 +1192,11 @@ is_element_type_primitive (MonoType *vector_type)
 static MonoInst*
 emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {	
+#if defined(TARGET_AMD64) || defined(TARGET_WASM)
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
-
+#endif
+// FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
 		return NULL;
@@ -1208,6 +1210,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 	if (!strcmp (m_class_get_name (cfg->method->klass), "Vector256"))
 		return NULL; // TODO: Fix Vector256.WithUpper/WithLower
+
+// FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
+#ifdef TARGET_ARM64
+	if (!COMPILE_LLVM (cfg) && id != SN_Add)
+		return NULL;
+#endif
+	
 	
 	MonoClass *klass = cmethod->klass;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
