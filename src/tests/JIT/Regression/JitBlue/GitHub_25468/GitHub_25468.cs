@@ -27,7 +27,7 @@ public enum TargetFrameworkMoniker
     netcoreapp30
 }
 
-class GitHub_25468
+public class GitHub_25468
 {
     public readonly struct TypeSerializableValue
     {

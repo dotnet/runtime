@@ -538,7 +538,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private XmlSchemaType ExportMembersMapping(MembersMapping mapping, string? ns)
+        private XmlSchemaComplexType ExportMembersMapping(MembersMapping mapping, string? ns)
         {
             XmlSchemaComplexType type = new XmlSchemaComplexType();
             ExportTypeMembers(type, mapping.Members!, mapping.TypeName!, ns, false, false);
@@ -551,7 +551,7 @@ namespace System.Xml.Serialization
             return type;
         }
 
-        private XmlSchemaType ExportAnonymousPrimitiveMapping(PrimitiveMapping mapping)
+        private XmlSchemaSimpleType ExportAnonymousPrimitiveMapping(PrimitiveMapping mapping)
         {
             if (mapping is EnumMapping)
             {
@@ -1138,7 +1138,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private XmlSchemaType ExportEnumMapping(EnumMapping mapping, string? ns)
+        private XmlSchemaSimpleType ExportEnumMapping(EnumMapping mapping, string? ns)
         {
             if (!mapping.IncludeInSchema) throw new InvalidOperationException(SR.Format(SR.XmlCannotIncludeInSchema, mapping.TypeDesc!.Name));
             XmlSchemaSimpleType? dataType = (XmlSchemaSimpleType?)_types[mapping];

@@ -5,18 +5,10 @@ namespace System.Text.Json.Serialization
 {
     public partial class JsonConverter<T>
     {
-        internal sealed override object? ReadCoreAsObject(
-            ref Utf8JsonReader reader,
-            JsonSerializerOptions options,
-            scoped ref ReadStack state)
-        {
-            return ReadCore(ref reader, options, ref state);
-        }
-
         internal T? ReadCore(
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
-            scoped ref ReadStack state)
+            ref ReadStack state)
         {
             try
             {

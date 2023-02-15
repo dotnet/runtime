@@ -10,14 +10,14 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'switch'{}
+.assembly 'b16122'{}
 
-.class _switch {
+.class public _switch {
 
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
 .locals	(int32)

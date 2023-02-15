@@ -7,10 +7,10 @@ using System;
 namespace test
 {
 
-    class Class1
+    public class Class1
     {
 
-        static int Main()
+        public static int Main()
         {
             try
             {

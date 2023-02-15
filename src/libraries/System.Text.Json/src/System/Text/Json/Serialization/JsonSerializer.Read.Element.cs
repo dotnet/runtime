@@ -27,8 +27,9 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(this JsonElement element, JsonSerializerOptions? options = null)
         {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadUsingMetadata<TValue>(element, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -58,7 +59,8 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadUsingMetadata<object?>(element, jsonTypeInfo);
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -86,7 +88,29 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return ReadUsingMetadata<TValue>(element, jsonTypeInfo);
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Converts the <see cref="JsonElement"/> representing a single JSON value into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
+        /// <param name="element">The <see cref="JsonElement"/> to convert.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        public static object? Deserialize(this JsonElement element, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -133,13 +157,8 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
-            return ReadUsingMetadata<object?>(element, jsonTypeInfo);
-        }
-
-        private static TValue? ReadUsingMetadata<TValue>(JsonElement element, JsonTypeInfo jsonTypeInfo)
-        {
             ReadOnlySpan<byte> utf8Json = element.GetRawValue().Span;
-            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
     }
 }

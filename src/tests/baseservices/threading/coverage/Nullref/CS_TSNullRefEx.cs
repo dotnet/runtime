@@ -5,7 +5,7 @@ using System.Threading;
 using System.Runtime.Serialization;
 
 public class mytest {
-	public static int Main(String [] args) {
+	public static int Main() {
 		int                      rValue = 100;
 		ThreadStateException     ta     = null;
 		

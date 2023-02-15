@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Asn1
     // smallest supported by .NET that's not really a problem.
     internal partial struct Rc2CbcParameters
     {
-        private static readonly byte[] s_rc2EkbEncoding =
+        private static ReadOnlySpan<byte> Rc2EkbEncoding => new byte[]
         {
             0xbd, 0x56, 0xea, 0xf2, 0xa2, 0xf1, 0xac, 0x2a, 0xb0, 0x93, 0xd1, 0x9c, 0x1b, 0x33, 0xfd, 0xd0,
             0x30, 0x04, 0xb6, 0xdc, 0x7d, 0xdf, 0x32, 0x4b, 0xf7, 0xcb, 0x45, 0x9b, 0x31, 0xbb, 0x21, 0x5a,
@@ -34,26 +34,16 @@ namespace System.Security.Cryptography.Asn1
 
         internal Rc2CbcParameters(ReadOnlyMemory<byte> iv, int keySize)
         {
-            if (keySize > byte.MaxValue)
-            {
-                Rc2Version = keySize;
-            }
-            else
-            {
-                Rc2Version = s_rc2EkbEncoding[keySize];
-            }
+            Rc2Version = keySize > byte.MaxValue ?
+                keySize :
+                Rc2EkbEncoding[keySize];
 
             Iv = iv;
         }
 
-        internal int GetEffectiveKeyBits()
-        {
-            if (Rc2Version > byte.MaxValue)
-            {
-                return Rc2Version;
-            }
-
-            return Array.IndexOf(s_rc2EkbEncoding, (byte)Rc2Version);
-        }
+        internal int GetEffectiveKeyBits() =>
+            Rc2Version > byte.MaxValue ?
+                Rc2Version :
+                Rc2EkbEncoding.IndexOf((byte)Rc2Version);
     }
 }

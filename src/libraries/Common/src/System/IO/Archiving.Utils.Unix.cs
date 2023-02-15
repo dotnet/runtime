@@ -11,7 +11,7 @@ namespace System.IO
         {
             // Remove leading separators.
             int nonSlash = path.IndexOfAnyExcept('/');
-            if (nonSlash == -1)
+            if (nonSlash < 0)
             {
                 nonSlash = path.Length;
             }

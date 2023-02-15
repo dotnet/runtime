@@ -796,7 +796,7 @@ void SegmentTrimExcessPages(TableSegment *pSegment);
 /*
  * TableAllocBulkHandles
  *
- * Attempts to allocate the requested number of handes of the specified type.
+ * Attempts to allocate the requested number of handles of the specified type.
  *
  * Returns the number of handles that were actually allocated.  This is always
  * the same as the number of handles requested except in out-of-memory conditions,

@@ -21,7 +21,7 @@ public class X<K>
     public K k;
 }
 
-class B
+public class B
 {
     public static int Main()
     {

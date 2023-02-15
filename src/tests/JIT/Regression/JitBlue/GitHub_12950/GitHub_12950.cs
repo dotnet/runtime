@@ -4,7 +4,7 @@
 using System;
 using System.Numerics;
 
-class Program
+public class Program
 {
     struct BoundingBoxTest
     {
@@ -24,7 +24,7 @@ class Program
         var hmm = box.GetHashCode();
     }
     
-    static int Main(string[] args)
+    public static int Main()
     {
         var someMemory = new int[1];
         var someMoreMemory = new int[1];

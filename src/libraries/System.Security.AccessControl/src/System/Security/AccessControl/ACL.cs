@@ -173,11 +173,8 @@ namespace System.Security.AccessControl
                 throw new RankException(SR.Rank_MultiDimNotSupported);
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            else if (array.Length - index < Count)
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            if (array.Length - index < Count)
             {
                 throw new ArgumentOutOfRangeException(nameof(array), SR.ArgumentOutOfRange_ArrayTooSmall);
             }
@@ -238,14 +235,7 @@ namespace System.Security.AccessControl
         {
             ArgumentNullException.ThrowIfNull(binaryForm);
 
-            if (offset < 0)
-            {
-                //
-                // Offset must not be negative
-                //
-
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (binaryForm.Length - offset < HeaderLength)
             {
@@ -281,11 +271,8 @@ namespace System.Security.AccessControl
         {
             ArgumentNullException.ThrowIfNull(binaryForm);
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            else if (BinaryLength > MaxBinaryLength)
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            if (BinaryLength > MaxBinaryLength)
             {
                 throw new InvalidOperationException(SR.AccessControl_AclTooLong);
             }
@@ -520,10 +507,7 @@ namespace System.Security.AccessControl
 
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (value.BinaryLength % 4 != 0)
                 {
@@ -2160,10 +2144,7 @@ namespace System.Security.AccessControl
                     nameof(flags));
             }
 
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
+            ArgumentNullException.ThrowIfNull(sid);
 
             ThrowIfNotCanonical();
 
@@ -2603,10 +2584,7 @@ namespace System.Security.AccessControl
                     nameof(flags));
             }
 
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
+            ArgumentNullException.ThrowIfNull(sid);
 
             ThrowIfNotCanonical();
 

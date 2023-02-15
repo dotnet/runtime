@@ -3,8 +3,9 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly ldloca_s_r8 {}
-.class ldloca_s_r8 {
+.class public ldloca_s_r8 {
 
 .method public static int32 test_float64()
 {
@@ -2871,7 +2872,10 @@ FAIL:
         ret         
 }
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack       2
         call            int32 ldloca_s_r8::test_float64()

@@ -3666,12 +3666,6 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_GT:
             return true; // Allow the CSE of Comparison operators
 
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            return true; // allow SIMD intrinsics to be CSE-ed
-
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {

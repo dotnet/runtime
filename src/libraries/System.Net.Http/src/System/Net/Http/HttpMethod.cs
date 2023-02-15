@@ -82,7 +82,7 @@ namespace System.Net.Http
             {
                 throw new ArgumentException(SR.net_http_argument_empty_string, nameof(method));
             }
-            if (HttpRuleParser.GetTokenLength(method, 0) != method.Length)
+            if (!HttpRuleParser.IsToken(method))
             {
                 throw new FormatException(SR.net_http_httpmethod_format_error);
             }

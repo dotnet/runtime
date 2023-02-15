@@ -11,9 +11,6 @@ namespace System.Runtime.InteropServices
 
         private static IntPtr LoadLibraryHelper(string libraryName, int _ /*flags*/, ref LoadLibErrorTracker errorTracker)
         {
-            // do the Dos/Unix conversion
-            libraryName = libraryName.Replace('\\', '/');
-
             IntPtr ret = Interop.Sys.LoadLibrary(libraryName);
             if (ret == IntPtr.Zero)
             {

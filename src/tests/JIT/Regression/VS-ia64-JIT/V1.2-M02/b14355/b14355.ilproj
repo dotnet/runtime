@@ -8,7 +8,7 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="call01.il" />
+    <Compile Include="$(MSBuildProjectName).il" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\common\localloc_common.ilproj" />

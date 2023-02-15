@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 class Program
 {
-    static int Main(string[] args)
+    static int Main()
     {
         Assembly assembly = typeof(Class).GetTypeInfo().Assembly;
         Assert(CustomAttributeExtensions.GetCustomAttribute<SingleAttribute<int>>(assembly) != null);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -22,13 +23,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly NodeFactory _factory;
         private ReadyToRunSymbolNodeFactory _symbolNodeFactory;
-        private readonly MethodDesc[] _instrumentationDataMethods;
         private readonly ProfileDataManager _profileDataManager;
+        private readonly HashSet<MethodDesc> _methodsWithSynthesizedPgoData = new HashSet<MethodDesc>();
 
-        public InstrumentationDataTableNode(NodeFactory factory, MethodDesc[] instrumentationDataMethods, ProfileDataManager profileDataManager)
+        public InstrumentationDataTableNode(NodeFactory factory, ProfileDataManager profileDataManager)
         {
             _factory = factory;
-            _instrumentationDataMethods = instrumentationDataMethods;
             _profileDataManager = profileDataManager;
         }
 
@@ -183,12 +183,44 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunInstrumentationDataTable");
         }
 
+        // Register some MDs that had synthesized PGO data created to be physically embedded by this node, and add
+        // the appropriate dependencies of the embedding to a dependency list.
+        public void EmbedSynthesizedPgoDataForMethods(ref DependencyList dependencies, IEnumerable<MethodDesc> mds)
+        {
+            PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
+            foreach (MethodDesc md in mds)
+            {
+                PgoSchemaElem[] schema = _profileDataManager[md].SchemaData;
+                Debug.Assert(schema != null);
+
+                lock (_methodsWithSynthesizedPgoData)
+                {
+                    _methodsWithSynthesizedPgoData.Add(md);
+                }
+
+                PgoProcessor.EncodePgoData(schema, pgoEmitter, false);
+            }
+
+            foreach (Import imp in pgoEmitter.ReferencedImports)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(imp, "Dependency of synthesized PGO data");
+            }
+        }
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
-            foreach (MethodDesc method in _instrumentationDataMethods)
+            foreach (EcmaModule inputModule in _factory.CompilationModuleGroup.CompilationModuleSet)
             {
-                PgoProcessor.EncodePgoData(_profileDataManager[method].SchemaData, pgoEmitter, false);
+                foreach (MethodDesc method in _profileDataManager.GetInputProfileDataMethodsForModule(inputModule))
+                {
+                    PgoSchemaElem[] schema = _profileDataManager[method].SchemaData;
+                    if (schema != null)
+                    {
+                        PgoProcessor.EncodePgoData(schema, pgoEmitter, false);
+                    }
+                }
             }
             DependencyListEntry[] symbols = new DependencyListEntry[pgoEmitter.ReferencedImports.Count];
             for (int i = 0; i < symbols.Length; i++)
@@ -198,7 +230,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             return new DependencyList(symbols);
         }
-
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -216,7 +247,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             Dictionary<byte[], BlobVertex> uniqueInstrumentationData = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
 
-            foreach (MethodDesc method in _instrumentationDataMethods)
+            HashSet<MethodDesc> methodsToInsert = new();
+            foreach (EcmaModule inputModule in _factory.CompilationModuleGroup.CompilationModuleSet)
+            {
+                foreach (MethodDesc method in _profileDataManager.GetInputProfileDataMethodsForModule(inputModule))
+                {
+                    PgoSchemaElem[] schema = _profileDataManager[method].SchemaData;
+                    if (schema != null)
+                    {
+                        methodsToInsert.Add(method);
+                    }
+                }
+            }
+
+            methodsToInsert.UnionWith(_methodsWithSynthesizedPgoData);
+
+            MethodDesc[] methods = methodsToInsert.ToArray();
+            methods.MergeSort(TypeSystemComparer.Instance.Compare);
+
+            foreach (MethodDesc method in methods)
             {
                 pgoEmitter.Clear();
                 PgoProcessor.EncodePgoData(CorInfoImpl.ConvertTypeHandleHistogramsToCompactTypeHistogramFormat(_profileDataManager[method].SchemaData, factory.CompilationModuleGroup), pgoEmitter, false);

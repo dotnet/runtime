@@ -65,7 +65,7 @@ namespace Runtime_52864
             );
         }
 
-        static int Main()
+        public static int Main()
         {
             returnVal     = 100;
             Random random = new Random(Seed);

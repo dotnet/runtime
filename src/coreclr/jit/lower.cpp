@@ -78,12 +78,12 @@ void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
 #ifdef DEBUG
     // Verify caller of this method checked safety.
     //
-    const bool isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
+    const bool isSafeToMarkRegOptional = IsSafeToMarkRegOptional(parentNode, childNode);
 
-    if (!isSafeToContainMem)
+    if (!isSafeToMarkRegOptional)
     {
         JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", comp->dspTreeID(childNode), comp->dspTreeID(parentNode));
-        assert(isSafeToContainMem);
+        assert(isSafeToMarkRegOptional);
     }
 #endif
 }
@@ -100,16 +100,11 @@ void Lowering::TryMakeSrcContainedOrRegOptional(GenTree* parentNode, GenTree* ch
     // HWIntrinsic nodes should use TryGetContainableHWIntrinsicOp and its relevant handling
     assert(!parentNode->OperIsHWIntrinsic());
 
-    if (!IsSafeToContainMem(parentNode, childNode))
-    {
-        return;
-    }
-
-    if (IsContainableMemoryOp(childNode))
+    if (IsContainableMemoryOp(childNode) && IsSafeToContainMem(parentNode, childNode))
     {
         MakeSrcContained(parentNode, childNode);
     }
-    else
+    else if (IsSafeToMarkRegOptional(parentNode, childNode))
     {
         MakeSrcRegOptional(parentNode, childNode);
     }
@@ -140,6 +135,86 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 }
 
 //------------------------------------------------------------------------
+// IsInvariantInRange: Check if a node is invariant in the specified range. In
+// other words, can 'node' be moved to right before 'endExclusive' without its
+// computation changing values?
+//
+// Arguments:
+//    node         -  The node.
+//    endExclusive -  The exclusive end of the range to check invariance for.
+//
+// Returns:
+//    True if 'node' can be evaluated at any point between its current
+//    location and 'endExclusive' without giving a different result; otherwise
+//    false.
+//
+bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
+{
+    assert((node != nullptr) && (endExclusive != nullptr));
+
+    // Quick early-out for unary cases
+    //
+    if (node->gtNext == endExclusive)
+    {
+        return true;
+    }
+
+    m_scratchSideEffects.Clear();
+    m_scratchSideEffects.AddNode(comp, node);
+
+    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
+    {
+        assert((cur != nullptr) && "Expected first node to precede end node");
+        const bool strict = true;
+        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// IsInvariantInRange: Check if a node is invariant in the specified range,
+// ignoring conflicts with one particular node.
+//
+// Arguments:
+//    node         - The node.
+//    endExclusive - The exclusive end of the range to check invariance for.
+//    ignoreNode   - A node to ignore interference checks with, for example
+//                   because it will retain its relative order with 'node'.
+//
+// Returns:
+//    True if 'node' can be evaluated at any point between its current location
+//    and 'endExclusive' without giving a different result; otherwise false.
+//
+bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const
+{
+    assert((node != nullptr) && (endExclusive != nullptr));
+
+    m_scratchSideEffects.Clear();
+    m_scratchSideEffects.AddNode(comp, node);
+
+    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
+    {
+        assert((cur != nullptr) && "Expected first node to precede end node");
+        if (cur == ignoreNode)
+        {
+            continue;
+        }
+
+        const bool strict = true;
+        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // IsSafeToContainMem: Checks for conflicts between childNode and parentNode,
 // and returns 'true' iff memory operand childNode can be contained in parentNode.
 //
@@ -152,31 +227,12 @@ bool Lowering::CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNod
 //
 bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const
 {
-    // Quick early-out for unary cases
-    //
-    if (childNode->gtNext == parentNode)
-    {
-        return true;
-    }
-
-    m_scratchSideEffects.Clear();
-    m_scratchSideEffects.AddNode(comp, childNode);
-
-    for (GenTree* node = childNode->gtNext; node != parentNode; node = node->gtNext)
-    {
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, node, strict))
-        {
-            return false;
-        }
-    }
-
-    return true;
+    return IsInvariantInRange(childNode, parentNode);
 }
 
 //------------------------------------------------------------------------
 // IsSafeToContainMem: Checks for conflicts between childNode and grandParentNode
-// and returns 'true' iff memory operand childNode can be contained in ancestorNode
+// and returns 'true' iff memory operand childNode can be contained in grandParentNode.
 //
 // Arguments:
 //    grandParentNode - any non-leaf node
@@ -188,24 +244,63 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode) const
 //
 bool Lowering::IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const
 {
-    m_scratchSideEffects.Clear();
-    m_scratchSideEffects.AddNode(comp, childNode);
+    return IsInvariantInRange(childNode, grandparentNode, parentNode);
+}
 
-    for (GenTree* node = childNode->gtNext; node != grandparentNode; node = node->gtNext)
+//------------------------------------------------------------------------
+// IsSafeToMarkRegOptional: Check whether it is safe to mark 'childNode' as
+// reg-optional in 'parentNode'.
+//
+// Arguments:
+//    parentNode - parent of 'childNode'
+//    childNode  - some node that is an input to `parentNode`
+//
+// Return value:
+//    True if it is safe to mark childNode as reg-optional; otherwise false.
+//
+// Remarks:
+//    Unlike containment, reg-optionality can only rarely introduce new
+//    conflicts, because reg-optionality mostly does not cause the child node
+//    to be evaluated at a new point in time:
+//
+//    1. For LIR edges (i.e. anything that isn't GT_LCL_VAR) reg-optionality
+//       indicates that if the edge was spilled to a temp at its def, the parent
+//       node can use it directly from its spill location without reloading it
+//       into a register first. This is always safe as as spill temps cannot
+//       interfere.
+//
+//       For example, an indirection can be marked reg-optional even if there
+//       is interference between it and its parent; the indirection will still
+//       be evaluated at its original position, but if the value is spilled to
+//       stack, then reg-optionality can allow using the value from the spill
+//       location directly. Similarly, GT_LCL_FLD nodes are never register
+//       candidates and can be handled the same way.
+//
+//    2. For GT_LCL_VAR reg-optionality indicates that the node can use the
+//       local directly from its home location. IR invariants guarantee that the
+//       local is not defined between its LIR location and the parent node (see
+//       CheckLclVarSemanticsHelper). That means the only case where it could
+//       interfere is due to it being address exposed. So this is the only unsafe
+//       case.
+//
+bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) const
+{
+    if (!childNode->OperIs(GT_LCL_VAR))
     {
-        if (node == parentNode)
-        {
-            continue;
-        }
-
-        const bool strict = true;
-        if (m_scratchSideEffects.InterferesWith(comp, node, strict))
-        {
-            return false;
-        }
+        // LIR edges never interfere. This includes GT_LCL_FLD, see the remarks above.
+        return true;
     }
 
-    return true;
+    LclVarDsc* dsc = comp->lvaGetDesc(childNode->AsLclVarCommon());
+    if (!dsc->IsAddressExposed())
+    {
+        // Safe by IR invariants (no assignments occur between parent and node).
+        return true;
+    }
+
+    // We expect this to have interference as otherwise we could have marked it
+    // contained instead of reg-optional.
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -293,11 +388,19 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_JTRUE:
             return LowerJTrue(node->AsOp());
 
-        case GT_SELECT:
+        case GT_NEG:
 #ifdef TARGET_ARM64
-            ContainCheckSelect(node->AsConditional());
+            ContainCheckNeg(node->AsOp());
 #endif
             break;
+        case GT_SELECT:
+            return LowerSelect(node->AsConditional());
+
+#ifdef TARGET_X86
+        case GT_SELECT_HI:
+            ContainCheckSelect(node->AsOp());
+            break;
+#endif
 
         case GT_JMP:
             LowerJmpMethod(node);
@@ -379,12 +482,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckIntrinsic(node->AsOp());
             break;
 #endif // TARGET_XARCH
-
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            LowerSIMD(node->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -703,7 +800,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // Fix the pred for the default case: the default block target still has originalSwitchBB
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
     // to afterDefaultCondBlock.
-    flowList* oldEdge = comp->fgRemoveRefPred(jumpTab[jumpCnt - 1], afterDefaultCondBlock);
+    FlowEdge* oldEdge = comp->fgRemoveRefPred(jumpTab[jumpCnt - 1], afterDefaultCondBlock);
     comp->fgAddRefPred(jumpTab[jumpCnt - 1], originalSwitchBB, oldEdge);
 
     bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
@@ -795,7 +892,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // Remove the switch from the predecessor list of this case target's block.
             // We'll add the proper new predecessor edge later.
-            flowList* oldEdge = comp->fgRemoveRefPred(jumpTab[i], afterDefaultCondBlock);
+            FlowEdge* oldEdge = comp->fgRemoveRefPred(jumpTab[i], afterDefaultCondBlock);
 
             if (jumpTab[i] == followingBB)
             {
@@ -1346,7 +1443,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
             const LclVarDsc* varDsc = comp->lvaGetDesc(arg->AsLclVarCommon());
             type                    = varDsc->lvType;
         }
-        else if (arg->OperIs(GT_SIMD, GT_HWINTRINSIC))
+        else if (arg->OperIs(GT_HWINTRINSIC))
         {
             GenTreeJitIntrinsic* jitIntrinsic = reinterpret_cast<GenTreeJitIntrinsic*>(arg);
 
@@ -2527,15 +2624,16 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// IsInvariantInRange: Check if a node is invariant in the specified range. In
-// other words, can 'node' be moved to right before 'endExclusive' without its
-// computation changing values?
+// IsCFGCallArgInvariantInRange: A cheap version of IsInvariantInRange to check
+// if a node is invariant in the specified range. In other words, can 'node' be
+// moved to right before 'endExclusive' without its computation changing
+// values?
 //
 // Arguments:
 //    node         -  The node.
 //    endExclusive -  The exclusive end of the range to check invariance for.
 //
-bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive)
+bool Lowering::IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive)
 {
     assert(node->Precedes(endExclusive));
 
@@ -2600,7 +2698,7 @@ void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
         GenTree* operand = node->AsOp()->gtGetOp1();
         JITDUMP("Checking if we can move operand of GT_PUTARG_* node:\n");
         DISPTREE(operand);
-        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsInvariantInRange(operand, call))
+        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsCFGCallArgInvariantInRange(operand, call))
         {
             JITDUMP("...yes, moving to after validator call\n");
             BlockRange().Remove(operand);
@@ -2935,17 +3033,9 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
                 if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
                 {
-                    GenTree* op1 = castOp->gtGetOp1();
-                    if ((op1 != nullptr) && !op1->IsCnsIntOrI())
-                    {
-                        op1->ClearContained();
-                    }
-
-                    GenTree* op2 = castOp->gtGetOp2();
-                    if ((op2 != nullptr) && !op2->IsCnsIntOrI())
-                    {
-                        op2->ClearContained();
-                    }
+                    castOp->gtGetOp1()->ClearContained();
+                    castOp->gtGetOp2()->ClearContained();
+                    ContainCheckBinary(castOp->AsOp());
                 }
 
                 cmp->AsOp()->gtOp1 = castOp;
@@ -3113,19 +3203,11 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         // after op1 do not modify the flags so that it is safe to avoid generating a
         // test instruction.
 
-        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
-#ifdef TARGET_XARCH
-            (op1->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG)
-#ifdef FEATURE_HW_INTRINSICS
-             || (op1->OperIs(GT_HWINTRINSIC) &&
-                 emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(op1->AsHWIntrinsic())))
-#endif // FEATURE_HW_INTRINSICS
-                 )
-#else // TARGET_ARM64
-            op1->OperIs(GT_AND, GT_ADD, GT_SUB) &&
+        if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) && op1->SupportsSettingZeroFlag()
+#ifdef TARGET_ARM64
             // This happens in order to emit ARM64 'madd' and 'msub' instructions.
             // We cannot combine 'adds'/'subs' and 'mul'.
-            !(op1->gtGetOp2()->OperIs(GT_MUL) && op1->gtGetOp2()->isContained())
+            && !(op1->gtGetOp2()->OperIs(GT_MUL) && op1->gtGetOp2()->isContained())
 #endif
                 )
         {
@@ -3291,6 +3373,53 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     assert(jtrue->gtNext == nullptr);
     return nullptr;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerSelect: Lower a GT_SELECT node.
+//
+// Arguments:
+//     select - The node
+//
+// Return Value:
+//     The next node to lower.
+//
+GenTree* Lowering::LowerSelect(GenTreeConditional* select)
+{
+    GenTree* cond     = select->gtCond;
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+
+    // Replace SELECT cond 1/0 0/1 with (perhaps reversed) cond
+    if (cond->OperIsCompare() && ((trueVal->IsIntegralConst(0) && falseVal->IsIntegralConst(1)) ||
+                                  (trueVal->IsIntegralConst(1) && falseVal->IsIntegralConst(0))))
+    {
+        assert(select->TypeIs(TYP_INT, TYP_LONG));
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(select, &use))
+        {
+            if (trueVal->IsIntegralConst(0))
+            {
+                GenTree* reversed = comp->gtReverseCond(cond);
+                assert(reversed == cond);
+            }
+
+            // Codegen supports also TYP_LONG typed compares so we can just
+            // retype the compare instead of inserting a cast.
+            cond->gtType = select->TypeGet();
+
+            BlockRange().Remove(trueVal);
+            BlockRange().Remove(falseVal);
+            BlockRange().Remove(select);
+            use.ReplaceWith(cond);
+
+            return cond->gtNext;
+        }
+    }
+
+    ContainCheckSelect(select);
+    return select->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -3681,15 +3810,17 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             lclStore->ChangeOper(GT_STORE_OBJ);
             GenTreeBlk* objStore = lclStore->AsObj();
             objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
-#ifndef JIT32_GCENCODER
-            objStore->gtBlkOpGcUnsafe = false;
-#endif
-            objStore->gtBlkOpKind = GenTreeObj::BlkOpKindInvalid;
-            objStore->SetLayout(layout);
+            objStore->Initialize(layout);
             objStore->SetAddr(addr);
             objStore->SetData(src);
+
             BlockRange().InsertBefore(objStore, addr);
             LowerNode(objStore);
+
+            JITDUMP("lowering store lcl var/field (after):\n");
+            DISPTREERANGE(BlockRange(), objStore);
+            JITDUMP("\n");
+
             return;
         }
     }
@@ -3709,6 +3840,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     }
 
     LowerStoreLoc(lclStore);
+
     JITDUMP("lowering store lcl var/field (after):\n");
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
@@ -3777,12 +3909,26 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
         case GT_BLK:
         case GT_OBJ:
-            retVal->ChangeOper(GT_IND);
-            FALLTHROUGH;
         case GT_IND:
+        {
+            // Spill to a local if sizes don't match so we can avoid the "load more than requested"
+            // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
+            if (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size())
+            {
+                LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
+                unsigned tmpNum = comp->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
+                comp->lvaSetStruct(tmpNum, comp->info.compMethodInfo->args.retTypeClass, false);
+
+                ReplaceWithLclVar(retValUse, tmpNum);
+                LowerRetSingleRegStructLclVar(ret);
+                break;
+            }
+
+            retVal->ChangeOper(GT_IND);
             retVal->ChangeType(nativeReturnType);
             LowerIndir(retVal->AsIndir());
             break;
+        }
 
         case GT_LCL_VAR:
             LowerRetSingleRegStructLclVar(ret);
@@ -5478,7 +5624,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     {
         if (index->OperIs(GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
         {
-            if (IsSafeToContainMem(parent, index))
+            if (IsInvariantInRange(index, parent))
             {
                 // Check containment safety against the parent node - this will ensure that LEA with the contained
                 // index will itself always be contained. We do not support uncontained LEAs with contained indices.
@@ -5501,7 +5647,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
             if (cast->CastOp()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) &&
                 (genTypeSize(targetType) == (1U << shiftBy)) && (scale == 1) && (offset == 0))
             {
-                if (IsSafeToContainMem(parent, index))
+                if (IsInvariantInRange(index, parent))
                 {
                     // Check containment safety against the parent node - this will ensure that LEA with the contained
                     // index will itself always be contained. We do not support uncontained LEAs with contained indices.
@@ -6632,7 +6778,6 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
             break;
 
 #ifdef FEATURE_SIMD
-        case GT_SIMD:
         case GT_HWINTRINSIC:
             assert(node->TypeGet() != TYP_SIMD12);
             break;
@@ -6971,9 +7116,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
 
         case GT_SELECT:
-#ifdef TARGET_ARM64
             ContainCheckSelect(node->AsConditional());
-#endif
             break;
 
         case GT_ADD:
@@ -7045,11 +7188,6 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckIntrinsic(node->AsOp());
             break;
 #endif // TARGET_XARCH
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            ContainCheckSIMD(node->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             ContainCheckHWIntrinsic(node->AsHWIntrinsic());
@@ -7218,7 +7356,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 #if defined(TARGET_ARM64)
     // Verify containment safety before creating an LEA that must be contained.
     //
-    const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+    const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
 #else
     const bool     isContainable         = true;
 #endif
@@ -7279,13 +7417,16 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
 #if defined(TARGET_ARM64)
         // Verify containment safety before creating an LEA that must be contained.
         //
-        const bool isContainable = IsSafeToContainMem(ind, ind->Addr());
+        const bool isContainable = (ind->Addr() != nullptr) && IsInvariantInRange(ind->Addr(), ind);
 #else
         const bool isContainable         = true;
 #endif
 
-        TryCreateAddrMode(ind->Addr(), isContainable, ind);
-        ContainCheckIndir(ind);
+        if (!ind->OperIs(GT_NOP))
+        {
+            TryCreateAddrMode(ind->Addr(), isContainable, ind);
+            ContainCheckIndir(ind);
+        }
 
 #ifdef TARGET_XARCH
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
@@ -7333,14 +7474,23 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
 
+    GenTree* const addr = ind->Addr();
+    if (!comp->fgAddrCouldBeNull(addr))
+    {
+        addr->SetUnusedValue();
+        ind->gtBashToNOP();
+        JITDUMP("bash an unused indir [%06u] to NOP.\n", comp->dspTreeID(ind));
+        return;
+    }
+
     ind->ChangeType(comp->gtTypeForNullCheck(ind));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool useNullCheck = true;
-#elif TARGET_ARM
+#elif defined(TARGET_ARM)
     bool           useNullCheck          = false;
 #else  // TARGET_XARCH
-    bool useNullCheck = !ind->Addr()->isContained();
+    bool useNullCheck = !addr->isContained();
     ind->ClearDontExtend();
 #endif // !TARGET_XARCH
 
@@ -7556,70 +7706,36 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
     }
 }
 
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_HW_INTRINSICS)
 //----------------------------------------------------------------------------------------------
-// Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
+// Lowering::InsertNewSimdCreateScalarUnsafeNode: Inserts a new simd CreateScalarUnsafe node
 //
 //  Arguments:
-//     simdNode - The SIMD intrinsic node.
+//    simdType        - The return type of SIMD node being created
+//    op1             - The value of the lowest element of the simd value
+//    simdBaseJitType - the base JIT type of SIMD type of the intrinsic
+//    simdSize        - the size of the SIMD type of the intrinsic
 //
-void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
+// Returns:
+//    The inserted CreateScalarUnsafe node
+//
+// Remarks:
+//    If the created node is a vector constant, op1 will be removed from the block range
+//
+GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
+                                                       GenTree*    op1,
+                                                       CorInfoType simdBaseJitType,
+                                                       unsigned    simdSize)
 {
-    if (simdNode->TypeGet() == TYP_SIMD12)
+    assert(varTypeIsSIMD(simdType));
+
+    GenTree* result = comp->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseJitType, simdSize);
+    BlockRange().InsertAfter(op1, result);
+
+    if (result->IsVectorConst())
     {
-        // GT_SIMD node requiring to produce TYP_SIMD12 in fact
-        // produces a TYP_SIMD16 result
-        simdNode->gtType = TYP_SIMD16;
+        BlockRange().Remove(op1);
     }
-
-    if (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicInitN)
-    {
-        assert(simdNode->GetSimdBaseType() == TYP_FLOAT);
-
-        size_t argCount      = simdNode->GetOperandCount();
-        size_t constArgCount = 0;
-        float  constArgValues[4]{0, 0, 0, 0};
-
-        for (GenTree* arg : simdNode->Operands())
-        {
-            assert(arg->TypeIs(simdNode->GetSimdBaseType()));
-
-            if (arg->IsCnsFltOrDbl())
-            {
-                noway_assert(constArgCount < ArrLen(constArgValues));
-                constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->DconValue());
-                constArgCount++;
-            }
-        }
-
-        if (constArgCount == argCount)
-        {
-            for (GenTree* arg : simdNode->Operands())
-            {
-                BlockRange().Remove(arg);
-            }
-
-            // For SIMD12, even though there might be 12 bytes of constants, we need to store 16 bytes of data
-            // since we've bashed the node the TYP_SIMD16 and do a 16-byte indirection.
-            assert(varTypeIsSIMD(simdNode));
-            const unsigned cnsSize = genTypeSize(simdNode);
-            assert(cnsSize <= sizeof(constArgValues));
-
-            const unsigned cnsAlign =
-                (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : emitter::dataSection::MIN_DATA_ALIGN;
-
-            CORINFO_FIELD_HANDLE hnd =
-                comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign, simdNode->GetSimdBaseType());
-            GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(TYP_I_IMPL, hnd);
-            BlockRange().InsertBefore(simdNode, clsVarAddr);
-            simdNode->ChangeOper(GT_IND);
-            simdNode->AsOp()->gtOp1 = clsVarAddr;
-            ContainCheckIndir(simdNode->AsIndir());
-
-            return;
-        }
-    }
-
-    ContainCheckSIMD(simdNode);
+    return result;
 }
-#endif // FEATURE_SIMD
+#endif // FEATURE_HW_INTRINSICS

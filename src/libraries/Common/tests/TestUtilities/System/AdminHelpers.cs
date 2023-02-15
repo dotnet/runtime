@@ -34,6 +34,12 @@ namespace System
 
         public static unsafe bool IsProcessElevated()
         {
+            // Browser does not have the concept of an elevated process
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
+            {
+                return false;
+            }
+
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 uint userId = Interop.Sys.GetEUid();

@@ -104,7 +104,7 @@ namespace System.Text.Json.Serialization.Tests
             options.EnableDynamicTypes();
 
             // Guid (string)
-            string GuidJson = $"{DynamicTests.MyGuid.ToString("D")}";
+            string GuidJson = $"{DynamicTests.MyGuid:D}";
             string GuidJsonWithQuotes = $"\"{GuidJson}\"";
 
             dynamic dynamicString = new JsonDynamicString(GuidJson, options);

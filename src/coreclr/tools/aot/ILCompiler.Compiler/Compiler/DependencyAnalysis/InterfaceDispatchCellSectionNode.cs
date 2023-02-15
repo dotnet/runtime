@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -14,17 +14,15 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a section of the executable where interface dispatch cells and their slot information
     /// is stored.
     /// </summary>
-    public class InterfaceDispatchCellSectionNode : ArrayOfEmbeddedDataNode<InterfaceDispatchCellNode>
+    public class InterfaceDispatchCellSectionNode : DehydratableObjectNode, ISymbolDefinitionNode
     {
-        public InterfaceDispatchCellSectionNode(NodeFactory factory)
-            : base("__InterfaceDispatchCellSection_Start", "__InterfaceDispatchCellSection_End", new DispatchCellComparer(factory))
-        {
-        }
-
-        protected override void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly)
         {
             if (relocsOnly)
-                return;
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, Array.Empty<ISymbolDefinitionNode>());
+
+            var builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.AddSymbol(this);
 
             // The interface dispatch cell has an alignment requirement of 2 * [Pointer size] as part of the
             // synchronization mechanism of the two values in the runtime.
@@ -48,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
             //
             int runLength = 0;
             int currentSlot = NoSlot;
-            foreach (InterfaceDispatchCellNode node in NodesList)
+            foreach (InterfaceDispatchCellNode node in new SortedSet<InterfaceDispatchCellNode>(factory.MetadataManager.GetInterfaceDispatchCells(), new DispatchCellComparer(factory)))
             {
                 MethodDesc targetMethod = node.TargetMethod;
                 int targetSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
@@ -83,9 +81,22 @@ namespace ILCompiler.DependencyAnalysis
                 builder.EmitZeroPointer();
                 builder.EmitNaturalInt(currentSlot);
             }
+
+            return builder.ToObjectData();
         }
 
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+            => sb.Append(nameMangler.CompilationUnitPrefix).Append("__InterfaceDispatchCellSection_Start");
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory) => ObjectNodeSection.DataSection;
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
         public override int ClassCode => -1389343;
+
+        public int Offset => 0;
+
+        public override bool IsShareable => false;
+
+        public override bool StaticDependenciesAreComputed => true;
 
         /// <summary>
         /// Comparer that groups interface dispatch cells by their slot number.
@@ -93,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
         private sealed class DispatchCellComparer : IComparer<InterfaceDispatchCellNode>
         {
             private readonly NodeFactory _factory;
-            private readonly TypeSystemComparer _comparer = TypeSystemComparer.Instance;
+            private readonly CompilerComparer _comparer = CompilerComparer.Instance;
 
             public DispatchCellComparer(NodeFactory factory)
             {
@@ -119,7 +130,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (result != 0)
                     return result;
 
-                result = StringComparer.Ordinal.Compare(x.CallSiteIdentifier, y.CallSiteIdentifier);
+                result = _comparer.Compare(x.CallSiteIdentifier, y.CallSiteIdentifier);
                 if (result != 0)
                     return result;
 

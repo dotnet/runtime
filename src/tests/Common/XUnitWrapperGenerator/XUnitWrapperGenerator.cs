@@ -154,13 +154,24 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
         builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
 
+        builder.Append("\n"); // Make the FullRunner.g.cs file a bit more readable.
+        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
+        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
+        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+        builder.Append("\n");
+
         builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
-        builder.AppendLine($@"XUnitWrapperLibrary.TestSummary summary = new();");
-        // builder.AppendLine($@"XUnitWrapperLibrary.TestSummary summary = new(""{assemblyName}"");");
-        // builder.AppendLine("summary.OpenTempLog();");
+        // builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new(TestCount.Count);");
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
         builder.AppendLine("System.Console.SetOut(outputRecorder);");
+
+        builder.Append("\n");
+        builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.xml""))");
+        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
+        builder.AppendLine("statsCsvSw.WriteLine($\"{TestCount.Count},0,0,0\");");
 
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
@@ -181,14 +192,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     if (currentTestExecutor != 0)
                     {
                         testExecutorBuilder.AppendLine("}");
-                        testExecutorBuilder.AppendLine("}");
                     }
 
                     currentTestExecutor++;
-                    testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(){{");
-                    testExecutorBuilder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}_templog.xml"")) {{");
-                    builder.AppendLine($"TestExecutor{currentTestExecutor}();");
-                    testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empircally seems to work well
+                    testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(System.IO.StreamWriter tempLogSw, System.IO.StreamWriter statsCsvSw) {{");
+                    builder.AppendLine($"TestExecutor{currentTestExecutor}(tempLogSw, statsCsvSw);");
+                    testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
                 }
 
                 testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
@@ -197,10 +206,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             }
 
             testExecutorBuilder.AppendLine("}");
-            testExecutorBuilder.AppendLine("}");
         }
 
-        // builder.AppendLine($@"summary.CloseTempLog();");
+        // Closing the 'using' statements that stream the temporary files.
+        builder.AppendLine("}\n");
+
         builder.AppendLine($@"string testResults = summary.GetTestResultOutput(""{assemblyName}"");");
         builder.AppendLine($@"string workitemUploadRoot = System.Environment.GetEnvironmentVariable(""HELIX_WORKITEM_UPLOAD_ROOT"");");
         builder.AppendLine($@"if (workitemUploadRoot != null) System.IO.File.WriteAllText(System.IO.Path.Combine(workitemUploadRoot, ""{assemblyName}.testResults.xml.txt""), testResults);");
@@ -230,11 +240,23 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
         builder.AppendLine("System.Console.SetOut(outputRecorder);");
 
+        builder.Append("\n");
+        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
+        builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
+        builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+        builder.Append("\n");
+
         ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
 
         StringBuilder testExecutorBuilder = new();
         int testsLeftInCurrentTestExecutor = 0;
         int currentTestExecutor = 0;
+
+        // Open the stream writer for the temp log.
+        builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.templog.xml""))");
+        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
+        builder.AppendLine($"statsCsvSw.WriteLine(\"{testInfos.Length},0,0,0\");");
 
         if (testInfos.Length > 0)
         {
@@ -247,15 +269,26 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 {
                     if (currentTestExecutor != 0)
                         testExecutorBuilder.AppendLine("}");
+
                     currentTestExecutor++;
-                    testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}(XUnitWrapperLibrary.TestSummary summary, XUnitWrapperLibrary.TestFilter filter, XUnitWrapperLibrary.TestOutputRecorder outputRecorder, System.Diagnostics.Stopwatch stopwatch){{");
-                    builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch);");
+                    testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}("
+                                                   + "XUnitWrapperLibrary.TestSummary summary, "
+                                                   + "XUnitWrapperLibrary.TestFilter filter, "
+                                                   + "XUnitWrapperLibrary.TestOutputRecorder outputRecorder, "
+                                                   + "System.Diagnostics.Stopwatch stopwatch, "
+                                                   + "System.IO.StreamWriter tempLogSw, "
+                                                   + "System.IO.StreamWriter statsCsvSw){");
+
+                    builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch, tempLogSw, statsCsvSw);");
                     testsLeftInCurrentTestExecutor = 50; // Break test executors into groups of 50, which empirically seems to work well
                 }
+
                 testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
                 testsLeftInCurrentTestExecutor--;
             }
+
             testExecutorBuilder.AppendLine("}");
+            builder.AppendLine("}");
         }
 
         builder.AppendLine("return summary;");
@@ -719,6 +752,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 "tvos" => Xunit.TestPlatforms.tvOS,
                 "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
                 "browser" => Xunit.TestPlatforms.Browser,
+                "wasi" => Xunit.TestPlatforms.Wasi,
                 "freebsd" => Xunit.TestPlatforms.FreeBSD,
                 "netbsd" => Xunit.TestPlatforms.NetBSD,
                 null or "" or "anyos" => Xunit.TestPlatforms.Any,

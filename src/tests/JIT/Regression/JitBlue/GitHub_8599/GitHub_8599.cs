@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 // by narrowing the compare to ubyte. This should only happen if the constant fits in
 // a byte so it can be narrowed too, otherwise codegen produces an int sized compare.
 
-class Program
+public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int GetValue() => 301;
@@ -17,7 +17,7 @@ class Program
     {
     }
 
-    static int Main()
+    public static int Main()
     {
         if ((byte)GetValue() > 300)
         {

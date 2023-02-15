@@ -119,14 +119,14 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstOrDefault1()
         {
-            var val = (new int[] { 1, 2 }).AsQueryable().FirstOrDefault();
+            var val = new[] { 1, 2 }.AsQueryable().FirstOrDefault();
             Assert.Equal(1, val);
         }
 
         [Fact]
         public void FirstOrDefault2()
         {
-            var val = (new int[] { 0, 1, 2 }).AsQueryable().FirstOrDefault(n => n > 1);
+            var val = new[] { 0, 1, 2 }.AsQueryable().FirstOrDefault(n => n > 1);
             Assert.Equal(2, val);
         }
 

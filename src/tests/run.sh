@@ -12,12 +12,13 @@ function print_usage {
     echo '  -h|--help                        : Show usage information.'
     echo '  -v, --verbose                    : Show output from each test.'
     echo '  <arch>                           : One of x64, x86, arm, arm64, loongarch64, riscv64, wasm. Defaults to current architecture.'
-    echo '  Android                          : Set build OS to Android.'
+    echo '  android                          : Set build OS to Android.'
     echo '  --test-env=<path>                : Script to set environment variables for tests'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
     echo '  --enableEventLogging             : Enable event logging through LTTNG.'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
     echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
+    echo '  --synthesizepgo                  : Runs the tests allowing crossgen2 to synthesize PGO data'
     echo '  --jitstress=<n>                  : Runs the tests with DOTNET_JitStress=n'
     echo '  --jitstressregs=<n>              : Runs the tests with DOTNET_JitStressRegs=n'
     echo '  --jitminopts                     : Runs the tests with DOTNET_JITMinOpts=1'
@@ -97,8 +98,8 @@ do
         wasm)
             buildArch="wasm"
             ;;
-        Android)
-            buildOS="Android"
+        android)
+            buildOS="android"
             ;;
         debug|Debug)
             buildConfiguration="Debug"
@@ -139,6 +140,9 @@ do
             ;;
         --runcrossgen2tests)
             export RunCrossGen2=1
+            ;;
+        --synthesizepgo)
+            export CrossGen2SynthesizePgo=1
             ;;
         --sequential)
             runSequential=1
@@ -204,11 +208,11 @@ echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
 
 if [ "$buildArch" = "wasm" ]; then
-    runtestPyArguments+=("-os" "Browser")
+    runtestPyArguments+=("-os" "browser")
 fi
 
-if [ "$buildOS" = "Android" ]; then
-    runtestPyArguments+=("-os" "Android")
+if [ "$buildOS" = "android" ]; then
+    runtestPyArguments+=("-os" "android")
 fi
 
 if [[ -n "$testRootDir" ]]; then
@@ -253,6 +257,10 @@ fi
 
 if [[ -n "$RunCrossGen2" ]]; then
     runtestPyArguments+=("--run_crossgen2_tests")
+fi
+
+if [[ -n "$CrossGen2SynthesizePgo" ]]; then
+    runtestPyArguments+=("--synthesize_pgo")
 fi
 
 if [[ "$limitedCoreDumps" == "ON" ]]; then

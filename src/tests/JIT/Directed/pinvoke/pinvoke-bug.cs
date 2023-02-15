@@ -17,7 +17,7 @@ namespace PInvokeTest
         private static double g;
         private static bool b;
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             bool result = false;
             g = 0.0;

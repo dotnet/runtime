@@ -10,9 +10,9 @@ struct S
 }
 
 
-class Test_struct1
+public class Test_struct1
 {
-    public static void c(S s1)
+    static void c(S s1)
     {
         GC.Collect();
         Console.WriteLine(s1.str);

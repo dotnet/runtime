@@ -36,6 +36,8 @@ namespace ILCompiler
     {
         internal const int MetadataOffsetMask = 0xFFFFFF;
 
+        protected readonly MetadataManagerOptions _options;
+
         private byte[] _metadataBlob;
         private List<MetadataMapping<MetadataType>> _typeMappings;
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
@@ -47,6 +49,7 @@ namespace ILCompiler
         protected readonly ManifestResourceBlockingPolicy _resourceBlockingPolicy;
         protected readonly DynamicInvokeThunkGenerationPolicy _dynamicInvokeThunkGenerationPolicy;
 
+        private readonly List<InterfaceDispatchCellNode> _interfaceDispatchCells = new List<InterfaceDispatchCellNode>();
         private readonly SortedSet<NonGCStaticsNode> _cctorContextsGenerated = new SortedSet<NonGCStaticsNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
@@ -54,21 +57,54 @@ namespace ILCompiler
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
+        private readonly SortedSet<EmbeddedObjectNode> _frozenObjects = new SortedSet<EmbeddedObjectNode>(CompilerComparer.Instance);
         private readonly SortedSet<TypeGVMEntriesNode> _typeGVMEntries
             = new SortedSet<TypeGVMEntriesNode>(Comparer<TypeGVMEntriesNode>.Create((a, b) => TypeSystemComparer.Instance.Compare(a.AssociatedType, b.AssociatedType)));
         private readonly SortedSet<DefType> _typesWithDelegateMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private readonly SortedSet<DefType> _typesWithStructMarshalling = new SortedSet<DefType>(TypeSystemComparer.Instance);
         private HashSet<NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries = new HashSet<NativeLayoutTemplateMethodSignatureVertexNode>();
+        private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
+        private readonly SortedSet<MetadataType> _typesWithGenericStaticBaseInfo = new SortedSet<MetadataType>(TypeSystemComparer.Instance);
+
+        private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
         public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
-            ManifestResourceBlockingPolicy resourceBlockingPolicy, DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy)
+            ManifestResourceBlockingPolicy resourceBlockingPolicy, DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy,
+            MetadataManagerOptions options)
         {
             _typeSystemContext = typeSystemContext;
             _blockingPolicy = blockingPolicy;
             _resourceBlockingPolicy = resourceBlockingPolicy;
             _dynamicInvokeThunkGenerationPolicy = dynamicInvokeThunkGenerationPolicy;
+            _options = options;
+        }
+
+        public bool IsDataDehydrated => (_options & MetadataManagerOptions.DehydrateData) != 0;
+
+        internal ObjectNode.ObjectData PrepareForDehydration(DehydratableObjectNode node, ObjectNode.ObjectData hydratedData)
+        {
+            _dehydratableData.Add((node, hydratedData));
+
+            return new ObjectNode.ObjectData(new byte[hydratedData.Data.Length],
+                Array.Empty<Relocation>(),
+                hydratedData.Alignment,
+                hydratedData.DefinedSymbols);
+        }
+
+        public IEnumerable<ObjectNode.ObjectData> GetDehydratableData()
+        {
+#if DEBUG
+            // We're making an assumption that PrepareForDehydration was called in the emission order.
+            // Double check that here.
+            var comparer = new CompilerComparer();
+            for (int i = 1; i < _dehydratableData.Count; i++)
+                Debug.Assert(comparer.Compare(_dehydratableData[i - 1].Node, _dehydratableData[i].Node) < 0);
+#endif
+
+            foreach (var entry in _dehydratableData)
+                yield return entry.Data;
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
@@ -155,6 +191,12 @@ namespace ILCompiler
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeStatics), nativeStaticsTableNode, nativeStaticsTableNode, nativeStaticsTableNode.EndSymbol);
+
+            if (IsDataDehydrated)
+            {
+                var dehydratedDataNode = new DehydratedDataNode();
+                header.Add(ReadyToRunSectionType.DehydratedData, dehydratedDataNode, dehydratedDataNode, dehydratedDataNode.EndSymbol);
+            }
         }
 
         protected virtual void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
@@ -193,14 +235,14 @@ namespace ILCompiler
                 return;
             }
 
-            var reflectableMethodNode = obj as ReflectableMethodNode;
-            if (reflectableMethodNode != null)
+            var reflectedMethodNode = obj as ReflectedMethodNode;
+            if (reflectedMethodNode != null)
             {
-                _reflectableMethods.Add(reflectableMethodNode.Method);
+                _reflectableMethods.Add(reflectedMethodNode.Method);
             }
 
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
-            if (nonGcStaticSectionNode != null && nonGcStaticSectionNode.HasCCtorContext)
+            if (nonGcStaticSectionNode != null && nonGcStaticSectionNode.HasLazyStaticConstructor)
             {
                 _cctorContextsGenerated.Add(nonGcStaticSectionNode);
             }
@@ -220,6 +262,11 @@ namespace ILCompiler
                     _reflectableMethods.Add(method);
             }
 
+            if (obj is InterfaceDispatchCellNode dispatchCell)
+            {
+                _interfaceDispatchCells.Add(dispatchCell);
+            }
+
             if (obj is StructMarshallingDataNode structMarshallingDataNode)
             {
                 _typesWithStructMarshalling.Add(structMarshallingDataNode.Type);
@@ -233,6 +280,26 @@ namespace ILCompiler
             if (obj is NativeLayoutTemplateMethodSignatureVertexNode templateMethodEntry)
             {
                 _templateMethodEntries.Add(templateMethodEntry);
+            }
+
+            if (obj is NativeLayoutTemplateTypeLayoutVertexNode typeTemplate)
+            {
+                _typeTemplates.Add(typeTemplate.CanonType);
+            }
+
+            if (obj is FrozenObjectNode frozenObj)
+            {
+                _frozenObjects.Add(frozenObj);
+            }
+
+            if (obj is FrozenStringNode frozenStr)
+            {
+                _frozenObjects.Add(frozenStr);
+            }
+
+            if (obj is GenericStaticBaseInfoNode genericStaticBaseInfo)
+            {
+                _typesWithGenericStaticBaseInfo.Add(genericStaticBaseInfo.Type);
             }
         }
 
@@ -459,6 +526,8 @@ namespace ILCompiler
                 ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
             }
 
+            InlineableStringsResourceNode.AddDependenciesDueToResourceStringUse(ref dependencies, factory, method);
+
             GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
         }
 
@@ -616,6 +685,11 @@ namespace ILCompiler
             return _stackTraceMappings;
         }
 
+        internal IEnumerable<InterfaceDispatchCellNode> GetInterfaceDispatchCells()
+        {
+            return _interfaceDispatchCells;
+        }
+
         internal IEnumerable<NonGCStaticsNode> GetCctorContextMapping()
         {
             return _cctorContextsGenerated;
@@ -649,6 +723,21 @@ namespace ILCompiler
         public IEnumerable<MethodDesc> GetReflectableMethods()
         {
             return _reflectableMethods;
+        }
+
+        public IEnumerable<TypeDesc> GetTypeTemplates()
+        {
+            return _typeTemplates;
+        }
+
+        public IEnumerable<EmbeddedObjectNode> GetFrozenObjects()
+        {
+            return _frozenObjects;
+        }
+
+        public IEnumerable<MetadataType> GetTypesWithGenericStaticBaseInfos()
+        {
+            return _typesWithGenericStaticBaseInfo;
         }
 
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()
@@ -752,9 +841,17 @@ namespace ILCompiler
             return _blockingPolicy.IsBlocked(typicalMethodDefinition);
         }
 
-        public bool IsManifestResourceBlocked(ModuleDesc module, string resourceName)
+        public bool IsManifestResourceBlocked(NodeFactory factory, Internal.TypeSystem.Ecma.EcmaModule module, string resourceName)
         {
-            return _resourceBlockingPolicy.IsManifestResourceBlocked(module, resourceName);
+            if (_resourceBlockingPolicy.IsManifestResourceBlocked(module, resourceName))
+                return true;
+
+            // If this is a resource strings resource but we don't actually need it, block it.
+            if (InlineableStringsResourceNode.IsInlineableStringsResource(module, resourceName)
+                && !factory.InlineableStringResource(module).Marked)
+                return true;
+
+            return false;
         }
 
         public bool CanGenerateMetadata(MetadataType type)
@@ -837,5 +934,11 @@ namespace ILCompiler
         None = 0x00,
         Description = 0x01,
         RuntimeMapping = 0x02,
+    }
+
+    [Flags]
+    public enum MetadataManagerOptions
+    {
+        DehydrateData = 0x01,
     }
 }

@@ -516,7 +516,7 @@ namespace System.Xml
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsPublicId(publicId);
-            if (pos != -1)
+            if (pos >= 0)
             {
                 throw CreateInvalidCharException(publicId, pos, ExceptionType.XmlException);
             }
@@ -572,7 +572,7 @@ namespace System.Xml
             return XmlCharType.IsHighSurrogate(highChar) && XmlCharType.IsLowSurrogate(lowChar);
         }
 
-        // Valid PUBLIC ID character - as defined in XML 1.0 spec (fifth edition) production [13] PublidChar
+        // Valid PUBLIC ID character - as defined in XML 1.0 spec (fifth edition) production [13] PubidChar
         public static bool IsPublicIdChar(char ch)
         {
             return XmlCharType.IsPubidChar(ch);

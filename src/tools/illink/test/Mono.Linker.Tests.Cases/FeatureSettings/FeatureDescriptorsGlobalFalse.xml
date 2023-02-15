@@ -1,0 +1,8 @@
+<!-- Check that the feature attribute can be used on the linker element. -->
+<linker feature="GlobalCondition" featurevalue="false">
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureDescriptors">
+      <field name="GlobalConditionFalse" />
+    </type>
+  </assembly>
+</linker>

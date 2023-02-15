@@ -14,12 +14,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The globally defined DefaultGenApiDocIds.txt and the ApiCompatExcludeAttributes.txt exclude attribute files apply as well. -->
+    <ApiCompatExcludeAttributesFile Include="$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt" />
+    <ApiCompatExcludeAttributesFile Include="$(RepositoryEngineeringDir)ApiCompatExcludeAttributes.txt" />
     <ApiCompatExcludeAttributesFile Include="ApiCompatBaselineExcludedAttributes.txt" />
   </ItemGroup>
 
   <ItemGroup>
-    <ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppLatestStable)/$1" />
+    <ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppPrevious)/$1" />
     <ApiCompatNetStandard21LeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.1/$1" />
     <ApiCompatNetStandard20LeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.0/$1" />
     <ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppCurrent)/$1" />
@@ -33,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(NetCoreAppLatestStablePackageBaselineVersion)]" />
+    <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(NetCoreAppPreviousPackageBaselineVersion)]" />
     <PackageDownload Include="NETStandard.Library.Ref" Version="[$(NETStandardLibraryRefVersion)]" />
     <PackageDownload Include="NETStandard.Library" Version="[$(NetStandardLibraryVersion)]" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(MicrosoftDotNetApiCompatTaskVersion)" IsImplicitlyDefined="true" />
@@ -44,16 +45,16 @@
           AfterTargets="Build"
           Inputs="@(ReferencePathWithRefAssemblies);$(ApiCompatNetStandard20BaselineFile);$(ApiCompatNetStandard21BaselineFile);$(ApiCompatNetCoreAppLatestStableBaselineFile);@(ApiCompatExcludeAttributesFile)"
           Outputs="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt">
-    <Message Text="ApiCompat -> Comparing $(NetCoreAppCurrent) reference assemblies against .NETStandard2.x and .NETCoreApp$(NetCoreAppLatestStableVersion)..." Importance="high"  />
+    <Message Text="ApiCompat -> Comparing $(NetCoreAppCurrent) reference assemblies against .NETStandard2.x and $(NetCoreAppPrevious)..." Importance="high"  />
 
-    <!-- ApiCompat: NetCoreAppCurrent <-> NetCoreAppLatestStable -->
+    <!-- ApiCompat: NetCoreAppCurrent <-> NetCoreAppPrevious -->
     <Microsoft.DotNet.ApiCompat.Task.ValidateAssembliesTask
-      LeftAssemblies="$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.netcore.app.ref', '$(NetCoreAppLatestStablePackageBaselineVersion)', 'ref', '$(NetCoreAppLatestStable)'))"
+      LeftAssemblies="$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.netcore.app.ref', '$(NetCoreAppPreviousPackageBaselineVersion)', 'ref', '$(NetCoreAppPrevious)'))"
       RightAssemblies="@(ReferencePathWithRefAssemblies)"
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
-      GenerateCompatibilitySuppressionFile="$(GenerateCompatibilitySuppressionFile)"
-      CompatibilitySuppressionFilePath="$(ApiCompatNetCoreAppLatestStableBaselineFile)"
-      EnableRuleAttributesMustMatch="$(ApiCompatEnableRuleAttributesMustMatch)"
+      GenerateSuppressionFile="$(ApiCompatGenerateSuppressionFile)"
+      SuppressionFiles="$(ApiCompatNetCoreAppLatestStableBaselineFile)"
+      EnableRuleAttributesMustMatch="true"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
@@ -63,9 +64,9 @@
       LeftAssemblies="$(NETStandard21RefPath)netstandard.dll"
       RightAssemblies="@(ReferencePathWithRefAssemblies)"
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
-      GenerateCompatibilitySuppressionFile="$(GenerateCompatibilitySuppressionFile)"
-      CompatibilitySuppressionFilePath="$(ApiCompatNetStandard21BaselineFile)"
-      EnableRuleAttributesMustMatch="$(ApiCompatEnableRuleAttributesMustMatch)"
+      GenerateSuppressionFile="$(ApiCompatGenerateSuppressionFile)"
+      SuppressionFiles="$(ApiCompatNetStandard21BaselineFile)"
+      EnableRuleAttributesMustMatch="true"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetStandard21LeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />
@@ -75,9 +76,9 @@
       LeftAssemblies="$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library', '$(NetStandardLibraryVersion)', 'build', 'netstandard2.0', 'ref'))"
       RightAssemblies="@(ReferencePathWithRefAssemblies)"
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
-      GenerateCompatibilitySuppressionFile="$(GenerateCompatibilitySuppressionFile)"
-      CompatibilitySuppressionFilePath="$(ApiCompatNetStandard20BaselineFile)"
-      EnableRuleAttributesMustMatch="$(ApiCompatEnableRuleAttributesMustMatch)"
+      GenerateSuppressionFile="$(ApiCompatGenerateSuppressionFile)"
+      SuppressionFiles="$(ApiCompatNetStandard20BaselineFile)"
+      EnableRuleAttributesMustMatch="true"
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetStandard20LeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)" />

@@ -41,7 +41,7 @@ namespace VectorMathTests
             return 100;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             Point a = new Point(0, 0), b = new Point(1, 0);
             Point c = a + b;

@@ -64,7 +64,7 @@ mono_metadata_update_metadata_linear_search (MonoImage *base_image, MonoTableInf
 MonoMethod*
 mono_metadata_update_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
-uint32_t
+MONO_COMPONENT_API uint32_t
 mono_metadata_update_get_field_idx (MonoClassField *field);
 
 MonoClassField *
@@ -96,4 +96,21 @@ mono_metadata_update_get_num_methods_added (MonoClass *klass);
 
 uint32_t
 mono_metadata_update_get_method_params (MonoImage *image, uint32_t methoddef_token, uint32_t *out_param_count_opt);
+
+MONO_COMPONENT_API gpointer
+mono_metadata_update_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error);
+
+MonoProperty *
+mono_metadata_update_added_properties_iter (MonoClass *klass, gpointer *iter);
+
+uint32_t
+mono_metadata_update_get_property_idx (MonoProperty *prop);
+
+MonoEvent *
+mono_metadata_update_added_events_iter (MonoClass *klass, gpointer *iter);
+
+uint32_t
+mono_metadata_update_get_event_idx (MonoEvent *event);
+
+
 #endif /*__MONO_METADATA_UPDATE_H__*/

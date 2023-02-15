@@ -242,7 +242,7 @@ namespace ClassLibrary
             return (float)(mantissa * exponent);
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             List<Point> points = new List<Point>();
             Random random = new Random(13);

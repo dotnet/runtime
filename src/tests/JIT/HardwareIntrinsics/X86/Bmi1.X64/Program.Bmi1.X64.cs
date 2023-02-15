@@ -4,21 +4,14 @@
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.X86
+[assembly:Xunit.ActiveIssue("https://github.com/dotnet/runtime/issues/75767", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoLLVMAOT))]
+namespace JIT.HardwareIntrinsics.X86._Bmi1.X64
 {
     public static partial class Program
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {
-                ["AndNot.UInt64"] = AndNotUInt64,
-                ["ExtractLowestSetBit.UInt64"] = ExtractLowestSetBitUInt64,
-                ["GetMaskUpToLowestSetBit.UInt64"] = GetMaskUpToLowestSetBitUInt64,
-                ["ResetLowestSetBit.UInt64"] = ResetLowestSetBitUInt64,
-                ["TrailingZeroCount.UInt64"] = TrailingZeroCountUInt64,
-                ["BitFieldExtract.UInt64.3Op"] = BitFieldExtractUInt643Op,
-                ["BitFieldExtract.UInt64"] = BitFieldExtractUInt64,
-            };
+
         }
     }
 }

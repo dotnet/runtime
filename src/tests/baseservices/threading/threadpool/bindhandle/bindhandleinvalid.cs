@@ -7,7 +7,7 @@ using Microsoft.Win32.SafeHandles;
 
 class BindHandleInvalid
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         return (new BindHandleInvalid().RunTest());
     }

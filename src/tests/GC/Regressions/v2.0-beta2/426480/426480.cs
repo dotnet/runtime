@@ -33,7 +33,7 @@ public class Bug426480
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static int Main(String[] args)
+    public static int Main()
     {
         try
         {

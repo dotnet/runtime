@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -13,6 +14,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_ret_i8
+{
 .class public		_ret {
 
 //---- GLOBAL DATA ----------
@@ -69,13 +72,16 @@
 }
 
 //---- MAIN -----------------
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		9
 //====== begin testing ======
 // -- Even
 	ldc.i8		0xAAAAAAAAAAAAAAAA
-	call	int64 _ret::ret_test_0(int64)
+	call	int64 ldc_ret_i8._ret::ret_test_0(int64)
 	// -- Even
 	ldc.i8		0xAAAAAAAAAAAAAAAA
 	ceq
@@ -83,7 +89,7 @@
 
 // -- Odd
 	ldc.i8		0x5555555555555555
-	call	int64 _ret::ret_test_1(int64)
+	call	int64 ldc_ret_i8._ret::ret_test_1(int64)
 	// -- Odd
 	ldc.i8		0x5555555555555555
 	ceq
@@ -91,7 +97,7 @@
 
 // -- Max
 	ldc.i8		0x7FFFFFFFFFFFFFFF
-	call	int64 _ret::ret_test_2(int64)
+	call	int64 ldc_ret_i8._ret::ret_test_2(int64)
 	// -- Max
 	ldc.i8		0x7FFFFFFFFFFFFFFF
 	ceq
@@ -99,7 +105,7 @@
 
 // -- 1
 	ldc.i8		0x0000000000000001
-	call	int64 _ret::ret_test_3(int64)
+	call	int64 ldc_ret_i8._ret::ret_test_3(int64)
 	// -- 1
 	ldc.i8		0x0000000000000001
 	ceq
@@ -107,7 +113,7 @@
 
 // -- 0
 	ldc.i8		0x0000000000000000
-	call	int64 _ret::ret_test_4(int64)
+	call	int64 ldc_ret_i8._ret::ret_test_4(int64)
 	// -- 0
 	ldc.i8		0x0000000000000000
 	ceq
@@ -115,7 +121,7 @@
 
 // -- -1
 	ldc.i8		0xFFFFFFFFFFFFFFFF
-	call	int64 _ret::ret_test_5(int64)
+	call	int64 ldc_ret_i8._ret::ret_test_5(int64)
 	// -- -1
 	ldc.i8		0xFFFFFFFFFFFFFFFF
 	ceq
@@ -123,7 +129,7 @@
 
 // -- Min
 	ldc.i8		0x8000000000000000
-	call	int64 _ret::ret_test_6(int64)
+	call	int64 ldc_ret_i8._ret::ret_test_6(int64)
 	// -- Min
 	ldc.i8		0x8000000000000000
 	ceq
@@ -150,3 +156,4 @@ END:
 
 .assembly ldc_ret_i8{}
 
+}

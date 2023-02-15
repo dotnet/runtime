@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -917,15 +916,16 @@ namespace System
                         Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
 
                         // Load special control character codes used for input processing
-                        var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4]
+                        const int NumControlCharacterNames = 4;
+                        Interop.Sys.ControlCharacterNames* controlCharacterNames = stackalloc Interop.Sys.ControlCharacterNames[NumControlCharacterNames]
                         {
                             Interop.Sys.ControlCharacterNames.VERASE,
                             Interop.Sys.ControlCharacterNames.VEOL,
                             Interop.Sys.ControlCharacterNames.VEOL2,
                             Interop.Sys.ControlCharacterNames.VEOF
                         };
-                        var controlCharacterValues = new byte[controlCharacterNames.Length];
-                        Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length, out s_posixDisableValue);
+                        byte* controlCharacterValues = stackalloc byte[NumControlCharacterNames];
+                        Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, NumControlCharacterNames, out s_posixDisableValue);
                         s_veraseCharacter = controlCharacterValues[0];
                         s_veolCharacter = controlCharacterValues[1];
                         s_veol2Character = controlCharacterValues[2];
@@ -1032,7 +1032,16 @@ namespace System
                     byte c = bufPtr[i];
                     if (c < 127 && c >= 32) // ASCII/UTF-8 characters that take up a single position
                     {
-                        IncrementX();
+                        left++;
+
+                        // After printing in the last column, setting CursorLeft is expected to
+                        // place the cursor back in that same row.
+                        // Invalidate the cursor position rather than moving it to the next row.
+                        if (left >= width)
+                        {
+                            InvalidateCachedCursorPosition();
+                            return;
+                        }
                     }
                     else if (c == (byte)'\r')
                     {
@@ -1041,7 +1050,12 @@ namespace System
                     else if (c == (byte)'\n')
                     {
                         left = 0;
-                        IncrementY();
+                        top++;
+
+                        if (top >= height)
+                        {
+                            top = height - 1;
+                        }
                     }
                     else if (c == (byte)'\b')
                     {
@@ -1059,25 +1073,6 @@ namespace System
 
                 // We pass cursorVersion because it may have changed the earlier check by calling GetWindowSize.
                 SetCachedCursorPosition(left, top, cursorVersion);
-
-                void IncrementY()
-                {
-                    top++;
-                    if (top >= height)
-                    {
-                        top = height - 1;
-                    }
-                }
-
-                void IncrementX()
-                {
-                    left++;
-                    if (left >= width)
-                    {
-                        left = 0;
-                        IncrementY();
-                    }
-                }
             }
         }
 
@@ -1123,54 +1118,6 @@ namespace System
             lock (Console.Out) // synchronize with other writers
             {
                 Write(Interop.Sys.FileDescriptors.STDOUT_FILENO, data, mayChangeCursorPosition);
-            }
-        }
-
-        /// <summary>Provides a stream to use for Unix console input or output.</summary>
-        private sealed class UnixConsoleStream : ConsoleStream
-        {
-            /// <summary>The file descriptor for the opened file.</summary>
-            private readonly SafeFileHandle _handle;
-
-            private readonly bool _useReadLine;
-
-            /// <summary>Initialize the stream.</summary>
-            /// <param name="handle">The file handle wrapped by this stream.</param>
-            /// <param name="access">FileAccess.Read or FileAccess.Write.</param>
-            /// <param name="useReadLine">Use ReadLine API for reading.</param>
-            internal UnixConsoleStream(SafeFileHandle handle, FileAccess access, bool useReadLine = false)
-                : base(access)
-            {
-                Debug.Assert(handle != null, "Expected non-null console handle");
-                Debug.Assert(!handle.IsInvalid, "Expected valid console handle");
-                _handle = handle;
-                _useReadLine = useReadLine;
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    _handle.Dispose();
-                }
-                base.Dispose(disposing);
-            }
-
-            public override int Read(Span<byte> buffer) =>
-                _useReadLine ?
-                    ConsolePal.StdInReader.ReadLine(buffer) :
-                    ConsolePal.Read(_handle, buffer);
-
-            public override void Write(ReadOnlySpan<byte> buffer) =>
-                ConsolePal.Write(_handle, buffer);
-
-            public override void Flush()
-            {
-                if (_handle.IsClosed)
-                {
-                    throw Error.GetFileNotOpen();
-                }
-                base.Flush();
             }
         }
     }

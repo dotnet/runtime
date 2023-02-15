@@ -500,7 +500,7 @@ namespace System.Reflection
         internal static PropertyInfo GetPropertyFromHandle(RuntimePropertyHandle handle, RuntimeTypeHandle reflectedType)
         {
             if (handle.Value == IntPtr.Zero)
-                throw new ArgumentException("The handle is invalid.");
+                throw new ArgumentException(SR.Argument_InvalidHandle);
             PropertyInfo pi = internal_from_handle_type(handle.Value, reflectedType.Value);
             if (pi == null)
                 throw new ArgumentException("The property handle and the type handle are incompatible.");

@@ -11,7 +11,7 @@ namespace X
     //@ENDRENAME; Verify this renames
     using System;
 
-    class Y
+    public class Y
     {
         /*
         int     filt(unsigned a)
@@ -27,7 +27,7 @@ namespace X
             p[0] = (char)0;
         }
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             UInt32 ec;
             ec = (UInt32)0;

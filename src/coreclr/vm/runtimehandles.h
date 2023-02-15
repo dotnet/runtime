@@ -144,12 +144,6 @@ public:
     static FCDECL6(FC_BOOL_RET, SatisfiesConstraints, PTR_ReflectClassBaseObject pGenericParameter, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pGenericArgument);
 
     static
-    FCDECL1(FC_BOOL_RET, HasInstantiation, PTR_ReflectClassBaseObject pType);
-
-    static
-    FCDECL1(FC_BOOL_RET, IsGenericTypeDefinition, PTR_ReflectClassBaseObject pType);
-
-    static
     FCDECL1(FC_BOOL_RET, IsGenericVariable, PTR_ReflectClassBaseObject pType);
 
     static

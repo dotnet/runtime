@@ -1,0 +1,8 @@
+<linker>
+  <!-- IL2101 -->
+  <assembly fullname="test">
+    <type fullname="Mono.Linker.Tests.Cases.Substitutions.SubstitutionsErrorCases/ReferencedFromOtherAssembly">
+      <method signature="System.Int32 TestMethod()" body="stub" value="1" />
+    </type>
+  </assembly>
+</linker>

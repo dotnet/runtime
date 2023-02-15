@@ -929,7 +929,7 @@ public class Mutate
         }
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         try
         {

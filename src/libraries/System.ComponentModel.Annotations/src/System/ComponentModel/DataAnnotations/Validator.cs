@@ -408,9 +408,7 @@ namespace System.ComponentModel.DataAnnotations
             Debug.Assert(instance != null);
 
             // Step 1: Validate the object properties' validation attributes
-            var errors = new List<ValidationError>();
-            errors.AddRange(GetObjectPropertyValidationErrors(instance, validationContext, validateAllProperties,
-                breakOnFirstError));
+            List<ValidationError> errors = GetObjectPropertyValidationErrors(instance, validationContext, validateAllProperties, breakOnFirstError);
 
             // We only proceed to Step 2 if there are no errors
             if (errors.Count > 0)
@@ -460,7 +458,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="breakOnFirstError">Whether to break on the first error or validate everything.</param>
         /// <returns>A list of <see cref="ValidationError" /> instances.</returns>
         [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
-        private static IEnumerable<ValidationError> GetObjectPropertyValidationErrors(object instance,
+        private static List<ValidationError> GetObjectPropertyValidationErrors(object instance,
             ValidationContext validationContext, bool validateAllProperties, bool breakOnFirstError)
         {
             var properties = GetPropertyValues(instance, validationContext);
@@ -515,7 +513,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </returns>
         /// <remarks>Ignores indexed properties.</remarks>
         [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
-        private static ICollection<KeyValuePair<ValidationContext, object?>> GetPropertyValues(object instance,
+        private static List<KeyValuePair<ValidationContext, object?>> GetPropertyValues(object instance,
             ValidationContext validationContext)
         {
             var properties = TypeDescriptor.GetProperties(instance.GetType());

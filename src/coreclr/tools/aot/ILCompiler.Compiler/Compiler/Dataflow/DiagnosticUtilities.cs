@@ -24,9 +24,9 @@ namespace ILCompiler.Dataflow
             return method.GetDisplayName();
         }
 
-        internal static string GetGenericParameterDeclaringMemberDisplayName(GenericParameterOrigin origin)
+        internal static string GetGenericParameterDeclaringMemberDisplayName(GenericParameterDesc genericParameter)
         {
-            var param = (EcmaGenericParameter)origin.GenericParameter;
+            var param = (EcmaGenericParameter)genericParameter;
             var parent = param.Module.GetObject(param.MetadataReader.GetGenericParameter(param.Handle).Parent);
             if (parent is MethodDesc m)
                 return m.GetDisplayName();
@@ -67,34 +67,6 @@ namespace ILCompiler.Dataflow
 
             attribute = decoded.Value;
             return true;
-        }
-
-        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this PropertyPseudoDesc prop, string attributeNamespace, string attributeName)
-        {
-            var ecmaType = prop.OwningType as EcmaType;
-            var metadataReader = ecmaType.MetadataReader;
-
-            var attributeHandle = metadataReader.GetCustomAttributeHandle(prop.GetCustomAttributes,
-                attributeNamespace, attributeName);
-
-            if (attributeHandle.IsNil)
-                return null;
-
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
-        }
-
-        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EventPseudoDesc @event, string attributeNamespace, string attributeName)
-        {
-            var ecmaType = @event.OwningType as EcmaType;
-            var metadataReader = ecmaType.MetadataReader;
-
-            var attributeHandle = metadataReader.GetCustomAttributeHandle(@event.GetCustomAttributes,
-                attributeNamespace, attributeName);
-
-            if (attributeHandle.IsNil)
-                return null;
-
-            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
         }
 
         internal static string GetRequiresAttributeMessage(CustomAttributeValue<TypeDesc> attribute)

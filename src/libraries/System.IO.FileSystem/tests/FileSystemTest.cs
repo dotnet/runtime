@@ -102,7 +102,7 @@ namespace System.IO.Tests
         /// </remarks>
         protected static bool GetIsCaseSensitiveByProbing(string probingDirectory)
         {
-            string pathWithUpperCase = Path.Combine(probingDirectory, "CASESENSITIVETEST" + Guid.NewGuid().ToString("N"));
+            string pathWithUpperCase = Path.Combine(probingDirectory, $"CASESENSITIVETEST{Guid.NewGuid():N}");
             using (new FileStream(pathWithUpperCase, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 0x1000, FileOptions.DeleteOnClose))
             {
                 string lowerCased = pathWithUpperCase.ToLowerInvariant();

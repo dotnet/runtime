@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.X509Certificates
             return true;
         }
 
-        private static ICertificatePal ReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool ephemeralSpecified)
+        private static AndroidCertificatePal ReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool ephemeralSpecified)
         {
             using (var reader = new AndroidPkcs12Reader(rawData))
             {
@@ -522,7 +522,7 @@ namespace System.Security.Cryptography.X509Certificates
             _certData = new CertificateData(RawData);
         }
 
-        private ICertificatePal CopyWithPrivateKeyHandle(SafeKeyHandle privateKey)
+        private AndroidCertificatePal CopyWithPrivateKeyHandle(SafeKeyHandle privateKey)
         {
             // Add a global reference to the underlying cert object.
             var handle = new SafeX509Handle();

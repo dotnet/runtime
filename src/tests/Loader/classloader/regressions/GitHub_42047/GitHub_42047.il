@@ -89,7 +89,7 @@
 
 .class private auto ansi beforefieldinit Program
 {
-    .method private hidebysig static int32 Main (string[] args) cil managed
+    .method private hidebysig static int32 Main () cil managed
     {
         .entrypoint
 

@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 // a long shift. Tests below have known and unknown
 // long shifts where shift amount is 31 or 32.
 
-class P
+public class P
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static UInt32 G32()

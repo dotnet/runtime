@@ -4,7 +4,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
     <!-- COM tests are currently only supported only in Windows -->
-    <IgnoreForCI Condition="'$(TargetOS)' != 'Windows'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(TargetOS)' != 'windows'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\Marshal\MarshalComDisabledTests.cs" />

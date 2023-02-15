@@ -5,6 +5,7 @@
 
   <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.props" />
   <PropertyGroup>
+    <ImportTargetingPacksTargetsInWasmAppTargets>false</ImportTargetingPacksTargetsInWasmAppTargets>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack-non-existent</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
@@ -12,7 +13,7 @@
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
-    <IsWasmProject>true</IsWasmProject>
+    <IsBrowserWasmProject>true</IsBrowserWasmProject>
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
 
     <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>

@@ -142,9 +142,9 @@ unsafe struct CommandBytes : IEquatable<CommandBytes>
     }
 }
 
-static class Program
+public static class Program
 {
-    static int Main()
+    public static int Main()
     {
         var lookup = new Dictionary<CommandBytes, string>();
         void Add(string val)

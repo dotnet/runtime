@@ -109,6 +109,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Discard>]
         internal static partial void throw0();
 
+        [JSImport("returnError", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Any>]
+        internal static partial object returnError();
+
         [JSImport("echo1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.Void>>]
         internal static partial Task echo1_Task([JSMarshalAs<JSType.Promise<JSType.Void>>] Task arg1);
@@ -1011,12 +1015,12 @@ namespace JavaScriptTestHelperNamespace
             return message + "11";
         }
 
-        public partial class NestedClass
+        private partial class NestedClass
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
             public static string EchoString(string message) => message + "12";
         
-            public partial class DoubleNestedClass
+            private partial class DoubleNestedClass
             {
                 [System.Runtime.InteropServices.JavaScript.JSExport]
                 public static string EchoString(string message) => message + "13";

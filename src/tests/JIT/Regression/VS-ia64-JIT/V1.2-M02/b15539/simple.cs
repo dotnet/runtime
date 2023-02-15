@@ -12,7 +12,7 @@ internal struct VC
 }
 
 
-internal class A
+public class A
 {
     public static int Main()
     {
@@ -22,7 +22,7 @@ internal class A
         return test(vc);
     }
 
-    public static int test(VC vc)
+    static int test(VC vc)
     {
         if (vc.x == 5)
         {

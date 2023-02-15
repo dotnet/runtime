@@ -29,9 +29,9 @@ namespace GitHub_24253
         short l;
     }
 
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        public static int Main()
         {
             GetStruct(1);
             return 100;

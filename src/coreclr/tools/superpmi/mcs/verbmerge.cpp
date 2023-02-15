@@ -5,6 +5,7 @@
 #include "verbmerge.h"
 #include "simpletimer.h"
 #include "logging.h"
+#include "spmiutil.h"
 #include <stdio.h>
 
 // Do reads/writes in large 256MB chunks.
@@ -260,7 +261,8 @@ int verbMerge::FilterDirectory(LPCWSTR                      searchPattern,
         }
         else
         {
-            LogError("Failed to find pattern '%S'. GetLastError()=%u", searchPattern, GetLastError());
+            std::string searchPatternUtf8 = ConvertToUtf8(searchPattern);
+            LogError("Failed to find pattern '%s'. GetLastError()=%u", searchPatternUtf8.c_str(), GetLastError());
             result = -1;
         }
         goto CLEAN_UP;
@@ -349,7 +351,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
     {
         const _WIN32_FIND_DATAW& findData     = fileArray[i];
         LPWSTR                   fileFullPath = MergePathStrings(dir, findData.cFileName);
-
+#ifdef TARGET_WINDOWS
         if (wcslen(fileFullPath) > MAX_PATH) // This path is too long, use \\?\ to access it.
         {
             if (wcscmp(dir, W(".")) == 0)
@@ -377,6 +379,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
 
             fileFullPath = newBuffer;
         }
+#endif // TARGET_WINDOWS
 
         // Is it zero length? If so, skip it.
         if ((findData.nFileSizeLow == 0) && (findData.nFileSizeHigh == 0))

@@ -34,7 +34,7 @@ public class Q
     }
 
     // The calls to F should be devirtualized late
-    public static int Main(string[] args)
+    public static int Main()
     {
         int v0 = Choose(false).F(V(67));
         B b = Choose(true);

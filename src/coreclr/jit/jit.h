@@ -330,6 +330,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 typedef class ICorJitInfo* COMP_HANDLE;
 
+const CORINFO_OBJECT_HANDLE NO_OBJECT_HANDLE = nullptr;
 const CORINFO_CLASS_HANDLE  NO_CLASS_HANDLE  = nullptr;
 const CORINFO_FIELD_HANDLE  NO_FIELD_HANDLE  = nullptr;
 const CORINFO_METHOD_HANDLE NO_METHOD_HANDLE = nullptr;
@@ -427,7 +428,7 @@ public:
                               // the number of loop exits, etc.
 #define DATAFLOW_ITER 0       // Count iterations in lexical CSE and constant folding dataflow.
 #define DISPLAY_SIZES 0       // Display generated code, data, and GC information sizes.
-#define MEASURE_BLOCK_SIZE 0  // Collect stats about basic block and flowList node sizes and memory allocations.
+#define MEASURE_BLOCK_SIZE 0  // Collect stats about basic block and FlowEdge node sizes and memory allocations.
 #define MEASURE_FATAL 0       // Count the number of calls to fatal(), including NYIs and noway_asserts.
 #define MEASURE_NODE_SIZE 0   // Collect stats about GenTree node allocations.
 #define MEASURE_PTRTAB_SIZE 0 // Collect stats about GC pointer table allocations.

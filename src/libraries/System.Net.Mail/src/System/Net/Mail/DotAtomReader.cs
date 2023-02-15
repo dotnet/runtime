@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using System.Diagnostics;
 using System.Net.Mime;
 
@@ -43,7 +44,7 @@ namespace System.Net.Mail
             // Scan for the first invalid chars (including whitespace)
             for (; 0 <= index; index--)
             {
-                if (data[index] <= MailBnfHelper.Ascii7bitMaxValue // Any Unicode allowed
+                if (Ascii.IsValid(data[index]) // Any ASCII allowed
                  && (data[index] != MailBnfHelper.Dot && !MailBnfHelper.Atext[data[index]])) // Invalid char
                 {
                     break;

@@ -13,9 +13,9 @@ class B
     public string t = "This is safe";
 }
 
-class Class1
+public class Class1
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         B[,] ab = new B[1, 1];
         object[,] ao = ab;

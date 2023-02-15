@@ -203,7 +203,7 @@ public class LargeFuncletFrame
         }
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         new LargeFuncletFrame().Method0();
         return 100;

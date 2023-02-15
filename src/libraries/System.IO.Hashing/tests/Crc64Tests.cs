@@ -145,5 +145,16 @@ namespace System.IO.Hashing.Tests
         {
             StaticVerifyTryOneShotDriver(testCase);
         }
+
+        [Theory]
+        [MemberData(nameof(TestCases))]
+        public void VerifyHashToUInt64(TestCase testCase)
+        {
+            var alg = new Crc64();
+            alg.Append(testCase.Input);
+            AssertEqualHashNumber(testCase.OutputHex, alg.GetCurrentHashAsUInt64());
+
+            AssertEqualHashNumber(testCase.OutputHex, Crc64.HashToUInt64(testCase.Input));
+        }
     }
 }

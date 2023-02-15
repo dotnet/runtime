@@ -12,6 +12,7 @@ let legacyExportTargetInt;
 let jsExportTargetInt;
 let legacyExportTargetString;
 let jsExportTargetString;
+let _jiterpreter_dump_stats;
 
 function runLegacyExportInt(count) {
     for (let i = 0; i < count; i++) {
@@ -59,8 +60,12 @@ function importTargetThrows(value) {
 }
 
 class MainApp {
-    async init({ getAssemblyExports, setModuleImports, BINDING }) {
+    async init({ getAssemblyExports, setModuleImports, BINDING, INTERNAL }) {
         const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
+        INTERNAL.jiterpreter_apply_options({
+            enableStats: true
+        });
+        _jiterpreter_dump_stats = INTERNAL.jiterpreter_dump_stats.bind(INTERNAL);
         runBenchmark = exports.Sample.Test.RunBenchmark;
         setTasks = exports.Sample.Test.SetTasks;
         getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
@@ -93,28 +98,35 @@ class MainApp {
             setTasks(tasks.join(','));
         }
 
-        this.yieldBench();
+        const r = await fetch("/bootstrap.flag", {
+            method: 'POST',
+            body: "ok"
+        });
+        console.log("bootstrap post request complete, response: ", r);
+
+        while (true) {
+            const resultString = await this.yieldBench();
+            if (resultString.length == 0) break;
+            document.getElementById("out").innerHTML += resultString;
+            console.log(resultString);
+        }
+
+        _jiterpreter_dump_stats();
+        document.getElementById("out").innerHTML += "Finished";
+        const r1 = await fetch("/results.json", {
+            method: 'POST',
+            body: getFullJsonResults()
+        });
+        console.log("post request complete, response: ", r1);
+        const r2 = await fetch("/results.html", {
+            method: 'POST',
+            body: document.getElementById("out").innerHTML
+        });
+        console.log("post request complete, response: ", r2);
     }
 
-
     yieldBench() {
-        let promise = runBenchmark();
-        promise.then(ret => {
-            document.getElementById("out").innerHTML += ret;
-            if (ret.length > 0) {
-                setTimeout(() => { this.yieldBench(); }, 0);
-            } else {
-                document.getElementById("out").innerHTML += "Finished";
-                fetch("/results.json", {
-                    method: 'POST',
-                    body: getFullJsonResults()
-                }).then(r => { console.log("post request complete, response: ", r); });
-                fetch("/results.html", {
-                    method: 'POST',
-                    body: document.getElementById("out").innerHTML
-                }).then(r => { console.log("post request complete, response: ", r); });
-            }
-        });
+        return new Promise(resolve => setTimeout(() => resolve(runBenchmark()), 0));
     }
 
     async pageShow() {
@@ -166,6 +178,7 @@ try {
     globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
 
     const runtime = await dotnet
+        .withRuntimeOptions(["--jiterpreter-stats-enabled"])
         .withElementOnExit()
         .withExitCodeLogging()
         .create();

@@ -12,7 +12,7 @@ namespace MS.Internal.Xml.XPath
 {
     internal sealed class XPathMultyIterator : ResettableIterator
     {
-        private ResettableIterator[] arr;
+        private readonly ResettableIterator[] arr;
         private int firstNotEmpty;
         private int position;
 

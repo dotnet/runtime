@@ -19,6 +19,8 @@ namespace Sample
                 new ReverseChar(),
                 new IndexOfByte(),
                 new IndexOfChar(),
+                new SequenceEqualByte(),
+                new SequenceEqualChar(),
             };
         }
 
@@ -39,7 +41,7 @@ namespace Sample
         abstract class SpanByteMeasurement : SpanMeasurement
         {
             protected byte[] data;
-            int len = 64 * 1024;
+            protected int len = 64 * 1024;
 
             public override Task BeforeBatch()
             {
@@ -77,14 +79,14 @@ namespace Sample
             public override void RunStep()
             {
                 var span = new Span<byte>(data);
-                span.IndexOf<byte> ((byte)random.Next(256));
+                span.IndexOf<byte>((byte)random.Next(256));
             }
         }
 
         abstract class SpanCharMeasurement : SpanMeasurement
         {
             protected char[] data;
-            int len = 64 * 1024;
+            protected int len = 64 * 1024;
 
             public override Task BeforeBatch()
             {
@@ -121,6 +123,76 @@ namespace Sample
             {
                 var span = new Span<char>(data);
                 span.IndexOf<char>((char)random.Next(0x10000));
+            }
+        }
+
+        class SequenceEqualByte : SpanByteMeasurement
+        {
+            public override string Name => "SequenceEqual bytes";
+
+            protected byte[] data2;
+
+            public override Task BeforeBatch()
+            {
+                base.BeforeBatch();
+
+                data2 = new byte[len];
+                random = new(234567);
+                for (int i = 0; i < len; i++)
+                    data2[i] = (i < 3 * len / 4) ? data[i] : (byte)random.Next(0x100);
+
+                return Task.CompletedTask;
+            }
+
+            public override Task AfterBatch()
+            {
+                base.AfterBatch();
+
+                data2 = null;
+
+                return Task.CompletedTask;
+            }
+
+            public override void RunStep()
+            {
+                var span = new Span<byte>(data);
+                var span2 = new ReadOnlySpan<byte>(data2);
+                span.SequenceEqual(span2);
+            }
+        }
+
+        class SequenceEqualChar : SpanCharMeasurement
+        {
+            public override string Name => "SequenceEqual chars";
+
+            protected char[] data2;
+
+            public override Task BeforeBatch()
+            {
+                base.BeforeBatch();
+
+                data2 = new char[len];
+                random = new(234567);
+                for (int i = 0; i < len; i++)
+                    data2[i] = (i < 3 * len / 4) ? data[i] : (char)random.Next(0x10000);
+
+                return Task.CompletedTask;
+            }
+
+            public override Task AfterBatch()
+            {
+                base.AfterBatch();
+
+                data2 = null;
+
+                return Task.CompletedTask;
+            }
+
+            public override void RunStep()
+            {
+                var span = new Span<char>(data);
+                var span2 = new ReadOnlySpan<char>(data2);
+                span.SequenceEqual(span2);
             }
         }
     }

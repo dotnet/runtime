@@ -4,7 +4,7 @@
 
 using System;
 using System.Threading;
-class testout1
+public class testout1
 {
 
     public int sum = 0;

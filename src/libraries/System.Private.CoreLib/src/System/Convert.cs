@@ -102,8 +102,6 @@ namespace System
         // Need to special case Enum because typecode will be underlying type, e.g. Int32
         private static readonly Type EnumType = typeof(Enum);
 
-        internal const string Base64Table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-
         private const int Base64LineBreakPosition = 76;
         private const int Base64VectorizationLengthThreshold = 16;
 
@@ -2314,12 +2312,9 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(inArray);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
-            if (offset > (inArray.Length - length))
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
             return ToBase64String(new ReadOnlySpan<byte>(inArray, offset, length), options);
         }
@@ -2371,19 +2366,15 @@ namespace System
             ArgumentNullException.ThrowIfNull(inArray);
             ArgumentNullException.ThrowIfNull(outArray);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            if (offsetIn < 0)
-                throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_GenericPositive);
-            if (offsetOut < 0)
-                throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_GenericPositive);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offsetIn);
+            ArgumentOutOfRangeException.ThrowIfNegative(offsetOut);
             if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
 
             int inArrayLength = inArray.Length;
 
-            if (offsetIn > (inArrayLength - length))
-                throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetIn, inArrayLength - length);
 
             if (inArrayLength == 0)
                 return 0;
@@ -2395,8 +2386,7 @@ namespace System
             bool insertLineBreaks = options == Base64FormattingOptions.InsertLineBreaks;
             int charLengthRequired = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
 
-            if (offsetOut > outArrayLength - charLengthRequired)
-                throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_OffsetOut);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetOut, outArrayLength - charLengthRequired);
 
             if (Vector128.IsHardwareAccelerated && !insertLineBreaks && length >= Base64VectorizationLengthThreshold)
             {
@@ -2471,7 +2461,7 @@ namespace System
             OperationStatus status = Base64.EncodeToUtf8(bytes, MemoryMarshal.AsBytes(chars), out _, out int bytesWritten);
             Debug.Assert(status == OperationStatus.Done && charLengthRequired == bytesWritten);
 
-            // Now widen the ASCII bytes in-place to chars (if the vectorized ASCIIUtility.WidenAsciiToUtf16 is ever updated
+            // Now widen the ASCII bytes in-place to chars (if the vectorized Ascii.WidenAsciiToUtf16 is ever updated
             // to support in-place updates, it should be used here instead). Since the base64 bytes are all valid ASCII, the byte
             // data is guaranteed to be 1/2 as long as the char data, and we can widen in-place.
             ref ushort dest = ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(chars));
@@ -2522,7 +2512,7 @@ namespace System
             {
                 dest = ref Unsafe.Subtract(ref dest, 4);
                 src = ref Unsafe.Subtract(ref src, 4);
-                ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref Unsafe.As<ushort, char>(ref dest), Unsafe.ReadUnaligned<uint>(ref src));
+                Ascii.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref Unsafe.As<ushort, char>(ref dest), Unsafe.ReadUnaligned<uint>(ref src));
             }
 
             // The length produced by Base64 encoding is always a multiple of 4, so we don't need to handle
@@ -2543,8 +2533,8 @@ namespace System
             // Convert three bytes at a time to base64 notation.  This will consume 4 chars.
             int i;
 
-            // get a pointer to the Base64Table to avoid unnecessary range checking
-            fixed (char* base64 = Base64Table)
+            // get a pointer to the base64 table to avoid unnecessary range checking
+            fixed (byte* base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="u8)
             {
                 for (i = offset; i < calcLength; i += 3)
                 {
@@ -2558,10 +2548,10 @@ namespace System
                         }
                         charcount += 4;
                     }
-                    outChars[j] = base64[(inData[i] & 0xfc) >> 2];
-                    outChars[j + 1] = base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
-                    outChars[j + 2] = base64[((inData[i + 1] & 0x0f) << 2) | ((inData[i + 2] & 0xc0) >> 6)];
-                    outChars[j + 3] = base64[inData[i + 2] & 0x3f];
+                    outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
+                    outChars[j + 1] = (char)base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
+                    outChars[j + 2] = (char)base64[((inData[i + 1] & 0x0f) << 2) | ((inData[i + 2] & 0xc0) >> 6)];
+                    outChars[j + 3] = (char)base64[inData[i + 2] & 0x3f];
                     j += 4;
                 }
 
@@ -2577,17 +2567,17 @@ namespace System
                 switch (lengthmod3)
                 {
                     case 2: // One character padding needed
-                        outChars[j] = base64[(inData[i] & 0xfc) >> 2];
-                        outChars[j + 1] = base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
-                        outChars[j + 2] = base64[(inData[i + 1] & 0x0f) << 2];
-                        outChars[j + 3] = base64[64]; // Pad
+                        outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
+                        outChars[j + 1] = (char)base64[((inData[i] & 0x03) << 4) | ((inData[i + 1] & 0xf0) >> 4)];
+                        outChars[j + 2] = (char)base64[(inData[i + 1] & 0x0f) << 2];
+                        outChars[j + 3] = (char)base64[64]; // Pad
                         j += 4;
                         break;
                     case 1: // Two character padding needed
-                        outChars[j] = base64[(inData[i] & 0xfc) >> 2];
-                        outChars[j + 1] = base64[(inData[i] & 0x03) << 4];
-                        outChars[j + 2] = base64[64]; // Pad
-                        outChars[j + 3] = base64[64]; // Pad
+                        outChars[j] = (char)base64[(inData[i] & 0xfc) >> 2];
+                        outChars[j + 1] = (char)base64[(inData[i] & 0x03) << 4];
+                        outChars[j + 2] = (char)base64[64]; // Pad
+                        outChars[j + 3] = (char)base64[64]; // Pad
                         j += 4;
                         break;
                 }
@@ -2783,15 +2773,9 @@ namespace System
         public static byte[] FromBase64CharArray(char[] inArray, int offset, int length)
         {
             ArgumentNullException.ThrowIfNull(inArray);
-
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
-
-            if (offset > inArray.Length - length)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
             if (inArray.Length == 0)
             {
@@ -2980,12 +2964,9 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(inArray);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
-            if (offset > (inArray.Length - length))
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
             return ToHexString(new ReadOnlySpan<byte>(inArray, offset, length));
         }
@@ -3000,8 +2981,7 @@ namespace System
         {
             if (bytes.Length == 0)
                 return string.Empty;
-            if (bytes.Length > int.MaxValue / 2)
-                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_InputTooLarge);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, int.MaxValue / 2, nameof(bytes));
 
             return HexConverter.ToString(bytes, HexConverter.Casing.Upper);
         }

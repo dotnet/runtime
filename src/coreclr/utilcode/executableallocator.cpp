@@ -81,15 +81,15 @@ void ExecutableAllocator::DumpHolderUsage()
     LARGE_INTEGER freq;
     QueryPerformanceFrequency(&freq);
 
-    fprintf(stderr, "Map time with lock sum: %I64dms\n", g_mapTimeWithLockSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map time sum: %I64dms\n", g_mapTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map find RX time sum: %I64dms\n", g_mapFindRXTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Map create time sum: %I64dms\n", g_mapCreateTimeSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Unmap time with lock sum: %I64dms\n", g_unmapTimeWithLockSum / (freq.QuadPart / 1000));
-    fprintf(stderr, "Unmap time sum: %I64dms\n", g_unmapTimeSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Map time with lock sum: %lldms\n", g_mapTimeWithLockSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Map time sum: %lldms\n", g_mapTimeSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Map find RX time sum: %lldms\n", g_mapFindRXTimeSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Map create time sum: %lldms\n", g_mapCreateTimeSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Unmap time with lock sum: %lldms\n", g_unmapTimeWithLockSum / (freq.QuadPart / 1000));
+    fprintf(stderr, "Unmap time sum: %lldms\n", g_unmapTimeSum / (freq.QuadPart / 1000));
 
-    fprintf(stderr, "Reserve count: %I64d\n", g_reserveCount);
-    fprintf(stderr, "Release count: %I64d\n", g_releaseCount);
+    fprintf(stderr, "Reserve count: %lld\n", g_reserveCount);
+    fprintf(stderr, "Release count: %lld\n", g_releaseCount);
 
     fprintf(stderr, "ExecutableWriterHolder usage:\n");
 

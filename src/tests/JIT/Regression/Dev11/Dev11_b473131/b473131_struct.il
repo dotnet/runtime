@@ -291,7 +291,7 @@
   .field /*04000002*/ public uint8 two
 } // end of class mynamespace.e_t
 
-.class /*02000003*/ private auto ansi beforefieldinit mynamespace.myclass
+.class /*02000003*/ public auto ansi beforefieldinit mynamespace.myclass
        extends [mscorlib/*23000001*/]System.Object/*01000002*/
 {
   .method /*06000001*/ public hidebysig static 

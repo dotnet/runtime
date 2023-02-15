@@ -461,8 +461,6 @@ CorUnix::InternalCreateFile(
         goto done;
     }
 
-    FILEDosToUnixPathA( lpUnixPath );
-
     // Compute the absolute pathname to the file.  This pathname is used
     // to determine if two file names represent the same file.
     palError = InternalCanonicalizeRealPath(lpUnixPath, lpFullUnixPath);
@@ -1031,8 +1029,6 @@ DeleteFileA(
         goto done;
     }
 
-    FILEDosToUnixPathA( lpunixFileName );
-
     // Compute the absolute pathname to the file.  This pathname is used
     // to determine if two file names represent the same file.
     palError = InternalCanonicalizeRealPath(lpunixFileName, lpFullunixFileName);
@@ -1103,7 +1099,6 @@ GetFileAttributesA(
     struct stat stat_data;
     DWORD dwAttr = 0;
     DWORD dwLastError = 0;
-    PathCharString unixFileName;
 
     PERF_ENTRY(GetFileAttributesA);
     ENTRY("GetFileAttributesA(lpFileName=%p (%s))\n", lpFileName?lpFileName:"NULL", lpFileName?lpFileName:"NULL");
@@ -1115,18 +1110,9 @@ GetFileAttributesA(
         goto done;
     }
 
-
-    if( !unixFileName.Set(lpFileName, strlen(lpFileName)))
+    if ( stat(lpFileName, &stat_data) != 0 )
     {
-        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
-        goto done;
-    }
-
-    FILEDosToUnixPathA( unixFileName );
-
-    if ( stat(unixFileName, &stat_data) != 0 )
-    {
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
+        dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpFileName);
         goto done;
     }
 
@@ -1311,7 +1297,6 @@ GetFileAttributesExW(
         goto done;
     }
 
-    FILEDosToUnixPathA(name);
     /* do the stat */
     if ( stat(name, &stat_data) != 0 )
     {
@@ -1386,7 +1371,6 @@ SetFileAttributesA(
 
     DWORD dwLastError = 0;
     BOOL  bRet = FALSE;
-    LPSTR unixFileName = NULL;
 
     PERF_ENTRY(SetFileAttributesA);
     ENTRY("SetFileAttributesA(lpFileName=%p (%s), dwFileAttributes=%#x)\n",
@@ -1422,19 +1406,11 @@ SetFileAttributesA(
         goto done;
     }
 
-    if ((unixFileName = strdup(lpFileName)) == NULL)
-    {
-        ERROR("strdup() failed\n");
-        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
-        goto done;
-    }
-
-    FILEDosToUnixPathA( unixFileName );
-    if ( stat(unixFileName, &stat_data) != 0 )
+    if ( stat(lpFileName, &stat_data) != 0 )
     {
         TRACE("stat failed on %s; errno is %d (%s)\n",
-             unixFileName, errno, strerror(errno));
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
+             lpFileName, errno, strerror(errno));
+        dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpFileName);
         goto done;
     }
 
@@ -1470,10 +1446,10 @@ SetFileAttributesA(
     bRet = TRUE;
     if ( new_mode != stat_data.st_mode )
     {
-        if ( chmod(unixFileName, new_mode) != 0 )
+        if ( chmod(lpFileName, new_mode) != 0 )
         {
-            ERROR("chmod(%s, %#x) failed\n", unixFileName, new_mode);
-            dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
+            ERROR("chmod(%s, %#x) failed\n", lpFileName, new_mode);
+            dwLastError = FILEGetLastErrorFromErrnoAndFilename(lpFileName);
             bRet = FALSE;
         }
     }
@@ -1483,8 +1459,6 @@ done:
     {
         pThread->SetLastError(dwLastError);
     }
-
-    free(unixFileName);
 
     LOGEXIT("SetFileAttributesA returns BOOL %d\n", bRet);
     PERF_EXIT(SetFileAttributesA);
@@ -2657,16 +2631,15 @@ GetTempFileNameA(
     file_templatePS.CloseBuffer(length);
 
     chLastPathNameChar = file_template[strlen(file_template)-1];
-    if (chLastPathNameChar != '\\' && chLastPathNameChar != '/')
+    if (chLastPathNameChar != '/')
     {
-        strcat_s( file_template, file_templatePS.GetSizeOf(), "\\" );
+        strcat_s( file_template, file_templatePS.GetSizeOf(), "/" );
     }
 
     if ( lpPrefixString )
     {
         strncat_s( file_template, file_templatePS.GetSizeOf(), lpPrefixString, MAX_PREFIX );
     }
-    FILEDosToUnixPathA( file_template );
     strncat_s( file_template, file_templatePS.GetSizeOf(), "%.4x.TMP", MAX_SEEDSIZE );
 
     /* Create the file. */
@@ -3017,7 +2990,6 @@ CopyFileA(
     DWORD        dwSrcFileAttributes;
     struct stat  SrcFileStats;
 
-    LPSTR lpUnixPath = NULL;
     const int    buffer_size = 16*1024;
     char        *buffer = (char*)alloca(buffer_size);
     DWORD        bytes_read;
@@ -3065,18 +3037,10 @@ CopyFileA(
     }
 
     /* Need to preserve the owner/group and chmod() flags */
-    lpUnixPath = strdup(lpExistingFileName);
-    if ( lpUnixPath == NULL )
-    {
-        ERROR("strdup() failed\n");
-        pThread->SetLastError(FILEGetLastErrorFromErrno());
-        goto done;
-    }
-    FILEDosToUnixPathA(lpUnixPath);
-    if (stat (lpUnixPath, &SrcFileStats) == -1)
+    if (stat (lpExistingFileName, &SrcFileStats) == -1)
     {
         ERROR("stat() failed for %s\n", lpExistingFileName);
-        pThread->SetLastError(FILEGetLastErrorFromErrnoAndFilename(lpUnixPath));
+        pThread->SetLastError(FILEGetLastErrorFromErrnoAndFilename(lpExistingFileName));
         goto done;
     }
 
@@ -3094,17 +3058,6 @@ CopyFileA(
         goto done;
     }
 
-    free(lpUnixPath);
-    lpUnixPath = strdup(lpNewFileName);
-    if ( lpUnixPath == NULL )
-    {
-        ERROR("strdup() failed\n");
-        pThread->SetLastError(FILEGetLastErrorFromErrno());
-        goto done;
-    }
-    FILEDosToUnixPathA( lpUnixPath );
-
-
     // We don't set file attributes in CreateFile. The only attribute
     // that is reflected on disk in Unix is read-only, and we set that
     // here.
@@ -3115,11 +3068,11 @@ CopyFileA(
     }
 
     /* Make sure the new file has the same chmod() flags. */
-    if (chmod(lpUnixPath, SrcFileStats.st_mode & permissions) == -1)
+    if (chmod(lpNewFileName, SrcFileStats.st_mode & permissions) == -1)
     {
         WARN ("chmod() failed to set mode 0x%x on new file\n",
               SrcFileStats.st_mode & permissions);
-        pThread->SetLastError(FILEGetLastErrorFromErrnoAndFilename(lpUnixPath));
+        pThread->SetLastError(FILEGetLastErrorFromErrnoAndFilename(lpNewFileName));
         goto done;
     }
 
@@ -3154,10 +3107,6 @@ done:
     if ( hDest != INVALID_HANDLE_VALUE )
     {
         CloseHandle( hDest );
-    }
-    if (lpUnixPath)
-    {
-        free(lpUnixPath);
     }
 
     LOGEXIT("CopyFileA returns BOOL %d\n", bGood);

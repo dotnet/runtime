@@ -1073,18 +1073,9 @@ namespace System.Xml
             try
             {
                 ArgumentNullException.ThrowIfNull(buffer);
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 AdvanceState(Token.Text);
                 if (SaveAttrValue)
@@ -1108,18 +1099,9 @@ namespace System.Xml
             try
             {
                 ArgumentNullException.ThrowIfNull(buffer);
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 AdvanceState(Token.RawData);
                 if (SaveAttrValue)
@@ -1169,18 +1151,9 @@ namespace System.Xml
             try
             {
                 ArgumentNullException.ThrowIfNull(buffer);
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
-                if (count > buffer.Length - index)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - index);
 
                 AdvanceState(Token.Base64);
                 _writer.WriteBase64(buffer, index, count);
@@ -2099,7 +2072,7 @@ namespace System.Xml
             }
         }
 
-        private static Exception InvalidCharsException(string name, int badCharIndex)
+        private static ArgumentException InvalidCharsException(string name, int badCharIndex)
         {
             string[] badCharArgs = XmlException.BuildCharExceptionArgs(name, badCharIndex);
             string[] args = new string[3];

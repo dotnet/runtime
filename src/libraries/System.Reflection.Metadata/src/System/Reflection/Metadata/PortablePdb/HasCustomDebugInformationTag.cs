@@ -44,7 +44,7 @@ namespace System.Reflection.Metadata.Ecma335
         // Arbitrary value not equal to any of the token types in the array. This includes 0 which is TokenTypeIds.Module.
         internal const uint InvalidTokenType = uint.MaxValue;
 
-        internal static uint[] TagToTokenTypeArray =
+        internal static ReadOnlySpan<uint> TagToTokenTypeArray => new uint[]
         {
             TokenTypeIds.MethodDef,
             TokenTypeIds.FieldDef,
@@ -114,7 +114,7 @@ namespace System.Reflection.Metadata.Ecma335
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static EntityHandle ConvertToHandle(uint taggedReference)
         {
-            uint tokenType = TagToTokenTypeArray[taggedReference & TagMask];
+            uint tokenType = TagToTokenTypeArray[(int)(taggedReference & TagMask)];
             uint rowId = (taggedReference >> NumberOfBits);
 
             if (tokenType == InvalidTokenType || ((rowId & ~TokenTypeIds.RIDMask) != 0))

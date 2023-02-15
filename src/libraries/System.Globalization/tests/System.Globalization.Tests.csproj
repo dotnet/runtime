@@ -4,7 +4,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <UnicodeUcdVersion>14.0</UnicodeUcdVersion>
+    <UnicodeUcdVersion>15.0</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />

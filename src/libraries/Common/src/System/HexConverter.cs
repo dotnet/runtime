@@ -76,9 +76,6 @@ namespace System
             buffer[startingIndex] = (byte)(packedResult >> 8);
         }
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ToCharsBuffer(byte value, Span<char> buffer, int startingIndex = 0, Casing casing = Casing.Upper)
         {
@@ -190,9 +187,6 @@ namespace System
             }
         }
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
-        [System.Security.SecuritySafeCriticalAttribute]
-#endif
         public static unsafe string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
 #if NETFRAMEWORK || NETSTANDARD2_0
@@ -208,14 +202,10 @@ namespace System
             }
             return result.ToString();
 #else
-            fixed (byte* bytesPtr = bytes)
-            {
-                return string.Create(bytes.Length * 2, (Ptr: (IntPtr)bytesPtr, bytes.Length, casing), static (chars, args) =>
-                {
-                    var ros = new ReadOnlySpan<byte>((byte*)args.Ptr, args.Length);
-                    EncodeToUtf16(ros, chars, args.casing);
-                });
-            }
+#pragma warning disable CS8500 // takes address of managed type
+            return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
+                EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
+#pragma warning restore CS8500
 #endif
         }
 

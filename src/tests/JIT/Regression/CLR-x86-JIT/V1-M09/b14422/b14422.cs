@@ -19,7 +19,7 @@ namespace DefaultNamespace
          * @param args Array of parameters passed to the application
          * via the command line.
          */
-        public static int Main(String[] args)
+        public static int Main()
         {
             int i = 10;
             int j = i - 5;              // j = 5

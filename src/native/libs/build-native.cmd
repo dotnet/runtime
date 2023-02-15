@@ -3,10 +3,14 @@ setlocal
 
 :SetupArgs
 :: Initialize the args that will be passed to cmake
-set __sourceRootDir=%~dp0
-set __repoRoot=%~dp0..\..\..
-set __engNativeDir=%__repoRoot%\eng\native
-set __artifactsDir=%__repoRoot%\artifacts
+set "__sourceRootDir=%~dp0"
+:: remove trailing slash
+if %__sourceRootDir:~-1%==\ set "__sourceRootDir=%__sourceRootDir:~0,-1%"
+set "__repoRoot=%__sourceRootDir%\..\..\.."
+:: normalize
+for %%i in ("%__repoRoot%") do set "__repoRoot=%%~fi"
+set "__engNativeDir=%__repoRoot%\eng\native"
+set "__artifactsDir=%__repoRoot%\artifacts"
 set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
@@ -32,7 +36,8 @@ if /i [%1] == [wasm]        ( set __BuildArch=wasm&&shift&goto Arg_Loop)
 
 if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
 
-if /i [%1] == [Browser] ( set __TargetOS=Browser&&shift&goto Arg_Loop)
+if /i [%1] == [browser] ( set __TargetOS=browser&&shift&goto Arg_Loop)
+if /i [%1] == [wasi] ( set __TargetOS=wasi&&shift&goto Arg_Loop)
 
 if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 
@@ -85,7 +90,7 @@ echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Bu
 :: Regenerate the VS solution
 
 pushd "%__IntermediatesDir%"
-call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceRootDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__ExtraCmakeParams%
+call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceRootDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
 popd
 
@@ -94,7 +99,9 @@ popd
 set __generatorArgs=
 if [%__Ninja%] == [1] (
     set __generatorArgs=
-) else if [%__BuildArch%] == [wasm] (
+) else if [%__TargetOS%] == [browser] (
+    set __generatorArgs=
+) else if [%__TargetOS%] == [wasi] (
     set __generatorArgs=
 ) else (
     set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065

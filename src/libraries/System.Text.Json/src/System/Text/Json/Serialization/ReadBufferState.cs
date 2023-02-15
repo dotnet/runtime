@@ -122,7 +122,6 @@ namespace System.Text.Json.Serialization
                     // Copy the unprocessed data to the new buffer while shifting the processed bytes.
                     Buffer.BlockCopy(oldBuffer, _offset + bytesConsumed, newBuffer, 0, _count);
                     _buffer = newBuffer;
-                    _offset = 0;
                     _maxCount = _count;
 
                     // Clear and return the old buffer
@@ -133,9 +132,10 @@ namespace System.Text.Json.Serialization
                 {
                     // Shift the processed bytes to the beginning of buffer to make more room.
                     Buffer.BlockCopy(_buffer, _offset + bytesConsumed, _buffer, 0, _count);
-                    _offset = 0;
                 }
             }
+
+            _offset = 0;
         }
 
         private void ProcessReadBytes()

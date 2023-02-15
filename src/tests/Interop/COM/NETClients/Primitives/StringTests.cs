@@ -21,11 +21,11 @@ namespace NetClient
             Tuple.Create("", "def"),
             Tuple.Create("abc", ""),
             Tuple.Create("abc", "def"),
-            Tuple.Create("", "结合"),
-            Tuple.Create("结合", ""),
-            Tuple.Create("a", "结合"),
-            Tuple.Create("结合", "a"),
-            Tuple.Create("结合", "结合"),
+            Tuple.Create("", "\u7ED3\u5408"),
+            Tuple.Create("\u7ED3\u5408", ""),
+            Tuple.Create("a", "\u7ED3\u5408"),
+            Tuple.Create("\u7ED3\u5408", "a"),
+            Tuple.Create("\u7ED3\u5408", "\u7ED3\u5408"),
 
             // String marshalling is optimized where strings shorter than MAX_PATH are
             // allocated on the stack. Longer strings have memory allocated for them.
@@ -38,7 +38,7 @@ namespace NetClient
             "a",
             "abc",
             "reversible string",
-            "Unicode 相反 Unicode",
+            "Unicode \u76F8\u53CD Unicode",
 
             // Long string optimization validation
             "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901"

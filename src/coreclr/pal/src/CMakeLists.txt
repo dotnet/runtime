@@ -132,9 +132,7 @@ set(SOURCES
   cruntime/malloc.cpp
   cruntime/math.cpp
   cruntime/misc.cpp
-  cruntime/printf.cpp
   cruntime/printfcpp.cpp
-  cruntime/silent_printf.cpp
   cruntime/string.cpp
   cruntime/stringtls.cpp
   cruntime/thread.cpp
@@ -179,10 +177,7 @@ set(SOURCES
   safecrt/memmove_s.cpp
   safecrt/mbusafecrt.cpp
   safecrt/safecrt_input_s.cpp
-  safecrt/safecrt_output_l.cpp
-  safecrt/safecrt_output_s.cpp
   safecrt/safecrt_winput_s.cpp
-  safecrt/safecrt_woutput_s.cpp
   safecrt/splitpath_s.cpp
   safecrt/sprintf_s.cpp
   safecrt/sscanf_s.cpp
@@ -201,7 +196,6 @@ set(SOURCES
   safecrt/wcsncpy_s.cpp
   safecrt/wcstok_s.cpp
   safecrt/wmakepath_s.cpp
-  safecrt/wsplitpath_s.cpp
   safecrt/xtoa_s.cpp
   safecrt/xtow_s.cpp
   sharedmemory/sharedmemory.cpp
@@ -315,6 +309,11 @@ if(CLR_CMAKE_TARGET_LINUX)
   if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     target_link_libraries(coreclrpal ${UNWIND_LIBS})
   endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+
+  # bundled libunwind requires using libucontext on alpine and x86 and ppc64le
+  if(CLR_CMAKE_TARGET_ALPINE_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
+    target_link_libraries(coreclrpal ucontext)
+  endif(CLR_CMAKE_TARGET_ALPINE_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
 
 endif(CLR_CMAKE_TARGET_LINUX)
 

@@ -133,7 +133,7 @@ namespace System.Reflection.Runtime.General
                                 return null;
                             genericTypeArguments.Add(genericTypeArgument);
                         }
-                        return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments.ToArray());
+                        return genericTypeDefinition.GetConstructedGenericTypeNoConstraintCheck(genericTypeArguments.ToArray());
                     }
 
                 case HandleType.TypeReference:
@@ -185,13 +185,13 @@ namespace System.Reflection.Runtime.General
             if (outerTypeInfo != null)
             {
                 // It was a nested type. We've already resolved the containing type recursively - just find the nested among its direct children.
-                TypeInfo? resolvedTypeInfo = outerTypeInfo.GetDeclaredNestedType(name);
-                if (resolvedTypeInfo == null)
+                Type? resolvedType = outerTypeInfo.GetNestedType(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                if (resolvedType == null)
                 {
                     exception = Helpers.CreateTypeLoadException(outerTypeInfo.FullName + "+" + name, outerTypeInfo.Assembly);
                     return null;
                 }
-                return resolvedTypeInfo.CastToRuntimeTypeInfo();
+                return resolvedType.CastToRuntimeTypeInfo();
             }
 
 

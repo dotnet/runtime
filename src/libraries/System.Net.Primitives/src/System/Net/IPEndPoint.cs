@@ -144,11 +144,10 @@ namespace System.Net
             throw new FormatException(SR.bad_endpoint_string);
         }
 
-        public override string ToString()
-        {
-            string format = (_address.AddressFamily == AddressFamily.InterNetworkV6) ? "[{0}]:{1}" : "{0}:{1}";
-            return string.Format(format, _address.ToString(), Port.ToString(NumberFormatInfo.InvariantInfo));
-        }
+        public override string ToString() =>
+            _address.AddressFamily == AddressFamily.InterNetworkV6 ?
+                string.Create(NumberFormatInfo.InvariantInfo, $"[{_address}]:{_port}") :
+                string.Create(NumberFormatInfo.InvariantInfo, $"{_address}:{_port}");
 
         public override SocketAddress Serialize() => new SocketAddress(Address, Port);
 

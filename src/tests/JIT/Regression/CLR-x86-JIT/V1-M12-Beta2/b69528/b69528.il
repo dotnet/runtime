@@ -9,7 +9,7 @@
 }
 .assembly 'b69528' {}
 .assembly extern xunit.core {}
-.class ILGEN_0xa8b0959c {
+.class public ILGEN_0xa8b0959c {
 .field static	float32 field_0x2
 .method static int32  Method_0xc0d2787() {
 .maxstack	9
@@ -35,7 +35,7 @@ ldc.i4 15
 
  ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

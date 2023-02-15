@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace ret_i
+{
 .class public		_ret {
 
 
@@ -18,17 +21,20 @@
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
-.locals		(class _ret,int32)
+.locals		(class ret_i._ret,int32)
 .maxstack		5
-	newobj		instance void _ret::_ret()
+	newobj		instance void ret_i._ret::_ret()
 	stloc		0
 	ldc.i4		0xFF
 	stloc		1
 	ldloc		0
 	ldloca		1
-	call		instance int32& _ret::ret_test(int32&)
+	call		instance int32& ret_i._ret::ret_test(int32&)
 	ldloca		1
 	ceq
 	brfalse	FAIL
@@ -48,3 +54,4 @@ END:
 
 
 .assembly ret_i{}
+}

@@ -86,6 +86,7 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT    0x8013200B
 #define CLR_E_GC_BAD_HARD_LIMIT                0x8013200D
 #define CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT 0x8013200E
+#define CLR_E_GC_BAD_REGION_SIZE               0x8013200F
 
 #define NOERROR                 0x0
 #define ERROR_TIMEOUT           1460

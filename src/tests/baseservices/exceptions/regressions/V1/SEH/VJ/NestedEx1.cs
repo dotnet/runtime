@@ -105,7 +105,7 @@ class TestClass {
 		}
 	}
 
-	public static int Main(String [] args)
+	public static int Main()
 	{
                 int retVal = 100;
 		String str = "Done";

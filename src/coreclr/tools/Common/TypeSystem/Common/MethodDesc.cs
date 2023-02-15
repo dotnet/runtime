@@ -519,7 +519,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets a value indicating whether this method is a static constructor.
         /// </summary>
-        public bool IsStaticConstructor
+        public virtual bool IsStaticConstructor
         {
             get
             {
@@ -577,6 +577,14 @@ namespace Internal.TypeSystem
         /// Gets a value indicating that this method cannot be overridden.
         /// </summary>
         public virtual bool IsFinal
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public virtual bool IsPublic
         {
             get
             {

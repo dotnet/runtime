@@ -19,6 +19,8 @@ namespace Internal.TypeSystem
         NetBSD,
         SunOS,
         WebAssembly,
+        iOS,
+        iOSSimulator
     }
 
     public enum TargetAbi
@@ -109,12 +111,12 @@ namespace Internal.TypeSystem
             {
                 if (Architecture == TargetArchitecture.ARM)
                 {
-                    // Corresponds to alignment required for __m128 (there's no __m256)
+                    // Corresponds to alignment required for __m128 (there's no __m256/__m512)
                     return 8;
                 }
                 else if (Architecture == TargetArchitecture.ARM64)
                 {
-                    // Corresponds to alignmet required for __m256
+                    // Corresponds to alignmet required for __m128 (there's no __m256/__m512)
                     return 16;
                 }
                 else if (Architecture == TargetArchitecture.LoongArch64)
@@ -122,8 +124,8 @@ namespace Internal.TypeSystem
                     return 16;
                 }
 
-                // 256-bit vector is the type with the highest alignment we support
-                return 32;
+                // 512-bit vector is the type with the highest alignment we support
+                return 64;
             }
         }
 
@@ -136,8 +138,8 @@ namespace Internal.TypeSystem
         {
             get
             {
-                // We use default packing size of 32 irrespective of the platform.
-                return 32;
+                // We use default packing size of 64 irrespective of the platform.
+                return 64;
             }
         }
 
@@ -303,13 +305,16 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Returns True if compiling for OSX
+        /// Returns True if compiling for OSX family of operating systems.
+        /// Currently including OSX, iOS and iOSSimulator
         /// </summary>
-        public bool IsOSX
+        public bool IsOSXLike
         {
             get
             {
-                return OperatingSystem == TargetOS.OSX;
+                return OperatingSystem == TargetOS.OSX ||
+                    OperatingSystem == TargetOS.iOS ||
+                    OperatingSystem == TargetOS.iOSSimulator;
             }
         }
 

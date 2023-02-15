@@ -44,17 +44,20 @@ public:
     deps_resolver_t(
         const arguments_t& args,
         const fx_definition_vector_t& fx_definitions,
+        const pal::char_t* additional_deps_serialized,
+        const std::vector<pal::string_t>& shared_stores,
+        const std::vector<pal::string_t>& additional_probe_paths,
         const deps_json_t::rid_fallback_graph_t* root_framework_rid_fallback_graph,
         bool is_framework_dependent)
         : m_fx_definitions(fx_definitions)
         , m_app_dir(args.app_root)
         , m_host_mode(args.host_mode)
         , m_managed_app(args.managed_application)
-        , m_core_servicing(args.core_servicing)
         , m_is_framework_dependent(is_framework_dependent)
         , m_needs_file_existence_checks(false)
     {
         m_fx_deps.resize(m_fx_definitions.size());
+        pal::get_default_servicing_directory(&m_core_servicing);
 
         // Process from lowest (root) to highest (app) framework.
         // If we weren't explicitly given a rid fallback graph, that of
@@ -82,15 +85,9 @@ public:
             }
         }
 
-        resolve_additional_deps(args, root_framework_rid_fallback_graph);
+        resolve_additional_deps(additional_deps_serialized, root_framework_rid_fallback_graph);
 
-        setup_additional_probes(args.probe_paths);
-        setup_probe_config(args);
-
-        if (m_additional_deps.size() > 0)
-        {
-            m_needs_file_existence_checks = true;
-        }
+        setup_probe_config(shared_stores, additional_probe_paths);
     }
 
     bool valid(pal::string_t* errors)
@@ -127,34 +124,12 @@ public:
         return true;
     }
 
-    void setup_shared_store_probes(
-        const arguments_t& args);
-
     pal::string_t get_lookup_probe_directories();
-
-    void setup_probe_config(
-        const arguments_t& args);
-
-    void setup_additional_probes(
-        const std::vector<pal::string_t>& probe_paths);
 
     bool resolve_probe_paths(
         probe_paths_t* probe_paths,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies = false);
-
-    void init_known_entry_path(
-        const deps_entry_t& entry,
-        const pal::string_t& path);
-
-    void resolve_additional_deps(
-        const arguments_t& args,
-        const deps_json_t::rid_fallback_graph_t* rid_fallback_graph);
-
-    const deps_json_t& get_app_deps() const
-    {
-        return *m_fx_deps[0];
-    }
 
     const deps_json_t& get_root_deps() const
     {
@@ -166,11 +141,6 @@ public:
     bool is_framework_dependent() const
     {
         return m_is_framework_dependent;
-    }
-
-    bool needs_file_existence_checks() const
-    {
-        return m_needs_file_existence_checks;
     }
 
     void get_app_dir(pal::string_t *app_dir) const
@@ -204,6 +174,25 @@ public:
     }
 
 private:
+    void setup_shared_store_probes(
+        const std::vector<pal::string_t>& shared_stores);
+
+    void setup_probe_config(
+        const std::vector<pal::string_t>& shared_stores,
+        const std::vector<pal::string_t>& additional_probe_paths);
+
+    void init_known_entry_path(
+        const deps_entry_t& entry,
+        const pal::string_t& path);
+
+    void resolve_additional_deps(
+        const pal::char_t* additional_deps_serialized,
+        const deps_json_t::rid_fallback_graph_t* rid_fallback_graph);
+
+    const deps_json_t& get_app_deps() const
+    {
+        return *m_fx_deps[0];
+    }
 
     static pal::string_t get_fx_deps(const pal::string_t& fx_dir, const pal::string_t& fx_name)
     {
@@ -225,12 +214,6 @@ private:
         pal::string_t* output,
         std::unordered_set<pal::string_t>* breadcrumb);
 
-    // Populate assemblies from the directory.
-    void get_dir_assemblies(
-        const pal::string_t& dir,
-        const pal::string_t& dir_name,
-        name_to_resolved_asset_map_t* items);
-
     // Probe entry in probe configurations and deps dir.
     bool probe_deps_entry(
         const deps_entry_t& entry,
@@ -239,17 +222,13 @@ private:
         pal::string_t* candidate,
         bool &found_in_bundle);
 
+private:
     const fx_definition_vector_t& m_fx_definitions;
 
     // Resolved deps.json for each m_fx_definitions (corresponding indices)
     std::vector<std::unique_ptr<deps_json_t>> m_fx_deps;
 
     pal::string_t m_app_dir;
-
-    void add_tpa_asset(
-        const deps_asset_t& asset,
-        const pal::string_t& resolved_path,
-        name_to_resolved_asset_map_t* items);
 
     // Mode in which the host is being run. This can dictate how dependencies should be discovered.
     const host_mode_t m_host_mode;
@@ -263,17 +242,11 @@ private:
     // Special entry for coreclr path
     pal::string_t m_coreclr_path;
 
-    // The filepaths for the app custom deps
-    std::vector<pal::string_t> m_additional_deps_files;
-
     // Custom deps files for the app
     std::vector< std::unique_ptr<deps_json_t> > m_additional_deps;
 
     // Various probe configurations.
     std::vector<probe_config_t> m_probes;
-
-    // Fallback probe dir
-    std::vector<pal::string_t> m_additional_probes;
 
     // Is the deps file for an app using shared frameworks?
     const bool m_is_framework_dependent;

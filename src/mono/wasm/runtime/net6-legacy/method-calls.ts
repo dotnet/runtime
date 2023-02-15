@@ -3,7 +3,7 @@
 
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
 import { Module, runtimeHelpers, INTERNAL } from "../imports";
-import { wrap_error_root } from "../invoke-js";
+import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { _release_temp_frame } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
 import { find_entry_point } from "../run";
@@ -115,6 +115,7 @@ export function mono_wasm_invoke_js_with_args_ref(js_handle: JSHandle, method_na
             const res = m.apply(obj, js_args);
 
             js_to_mono_obj_root(res, resultRoot, true);
+            wrap_no_error_root(is_exception);
         } catch (ex) {
             wrap_error_root(is_exception, ex, resultRoot);
         }
@@ -143,6 +144,7 @@ export function mono_wasm_get_object_property_ref(js_handle: JSHandle, property_
 
         const m = obj[js_name];
         js_to_mono_obj_root(m, resultRoot, true);
+        wrap_no_error_root(is_exception);
     } catch (ex) {
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
@@ -169,34 +171,27 @@ export function mono_wasm_set_object_property_ref(js_handle: JSHandle, property_
             return;
         }
 
-        let result = false;
-
         const js_value = unbox_mono_obj_root(valueRoot);
 
         if (createIfNotExist) {
             js_obj[property] = js_value;
-            result = true;
         }
         else {
-            result = false;
             if (!createIfNotExist) {
                 if (!Object.prototype.hasOwnProperty.call(js_obj, property)) {
-                    js_to_mono_obj_root(false, resultRoot, false);
                     return;
                 }
             }
             if (hasOwnProperty === true) {
                 if (Object.prototype.hasOwnProperty.call(js_obj, property)) {
                     js_obj[property] = js_value;
-                    result = true;
                 }
             }
             else {
                 js_obj[property] = js_value;
-                result = true;
             }
         }
-        js_to_mono_obj_root(result, resultRoot, false);
+        wrap_no_error_root(is_exception, resultRoot);
     } catch (ex) {
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
@@ -217,6 +212,7 @@ export function mono_wasm_get_by_index_ref(js_handle: JSHandle, property_index: 
 
         const m = obj[property_index];
         js_to_mono_obj_root(m, resultRoot, true);
+        wrap_no_error_root(is_exception);
     } catch (ex) {
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
@@ -236,7 +232,7 @@ export function mono_wasm_set_by_index_ref(js_handle: JSHandle, property_index: 
 
         const js_value = unbox_mono_obj_root(valueRoot);
         obj[property_index] = js_value;
-        resultRoot.clear();
+        wrap_no_error_root(is_exception, resultRoot);
     } catch (ex) {
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {
@@ -273,6 +269,7 @@ export function mono_wasm_get_global_object_ref(global_name: MonoStringRef, is_e
         }
 
         js_to_mono_obj_root(globalObj, resultRoot, true);
+        wrap_no_error_root(is_exception);
     } catch (ex) {
         wrap_error_root(is_exception, ex, resultRoot);
     } finally {

@@ -24,7 +24,7 @@
         ret
     }
 
-    .method private static int32 Main(class [mscorlib]System.String[])
+    .method public static int32 Main()
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

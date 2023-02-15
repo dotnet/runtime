@@ -2273,6 +2273,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				int idx = first_field_idx + i;
 				guint32 offset;
 				mono_metadata_field_info (klass->image, idx, &offset, NULL, NULL);
+                                /* metadata-update: updates to explicit layout classes are not allowed. */
 				field_offsets [i] = offset + MONO_ABI_SIZEOF (MonoObject);
 			}
 			ftype = mono_type_get_underlying_type (field->type);
@@ -3586,6 +3587,11 @@ mono_class_setup_properties (MonoClass *klass)
 		first = ginfo->first;
 		count = ginfo->count;
 	} else {
+                /*
+                 * metadata-update: note this is only adding properties from the base image. new
+                 * properties added to an existing class won't be here since they're not in the
+                 * contiguous rows [first,last].
+                 */
 		first = mono_metadata_properties_from_typedef (klass->image, mono_metadata_token_index (klass->type_token) - 1, &last);
 		g_assert ((last - first) >= 0);
 		count = last - first;

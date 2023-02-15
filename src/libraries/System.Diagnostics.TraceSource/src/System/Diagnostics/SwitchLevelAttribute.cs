@@ -21,8 +21,7 @@ namespace System.Diagnostics
             [MemberNotNull(nameof(_type))]
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 _type = value;
             }

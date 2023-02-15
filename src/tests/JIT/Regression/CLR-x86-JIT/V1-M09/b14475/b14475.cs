@@ -32,7 +32,7 @@ namespace DefaultNamespace
             return true;
         }
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             Console.WriteLine("Character.IsWhitespace() -- Bug_Cb4270 runTest started.");
             (new Bug_Cb4270()).runTest();

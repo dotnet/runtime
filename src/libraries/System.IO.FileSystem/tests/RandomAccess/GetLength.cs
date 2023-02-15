@@ -37,7 +37,8 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsAndElevated))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         [MemberData(nameof(GetSyncAsyncOptions))]
         public void ReturnsActualLengthForDevices(FileOptions options)
         {

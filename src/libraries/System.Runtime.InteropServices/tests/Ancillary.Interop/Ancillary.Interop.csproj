@@ -12,5 +12,6 @@
 
   <ItemGroup>
     <Compile Include="../Common/MarshalDirection.cs" Link="Common/MarshalDirection.cs" />
+    <Compile Include="../Common/ExceptionMarshalling.cs" Link="Common/ExceptionMarshalling.cs" />
   </ItemGroup>
 </Project>

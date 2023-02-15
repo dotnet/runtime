@@ -7,10 +7,14 @@ set "__sourceDir=%~dp0"
 :: remove trailing slash
 if %__sourceDir:~-1%==\ set "__ProjectDir=%__sourceDir:~0,-1%"
 
-set __engNativeDir=%__sourceDir%\..\..\..\eng\native
+set "__RepoRootDir=%__sourceDir%\..\..\.."
+:: normalize
+for %%i in ("%__RepoRootDir%") do set "__RepoRootDir=%%~fi"
+set "__engNativeDir=%__RepoRootDir%\eng\native"
 set __CMakeBinDir=""
 set __IntermediatesDir=""
 set __BuildArch=x64
+set __TargetOS=windows
 set CMAKE_BUILD_TYPE=Debug
 set __PortableBuild=0
 set __ConfigureOnly=0
@@ -102,9 +106,9 @@ set __ExtraCmakeParams=%__ExtraCmakeParams% "-DRUNTIME_FLAVOR=%__RuntimeFlavor% 
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 :: Regenerate the native build files
-echo Calling "%__engNativeDir%\gen-buildsys.cmd "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__ExtraCmakeParams%"
+echo Calling "%__engNativeDir%\gen-buildsys.cmd "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%"
 
-call "%__engNativeDir%\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__ExtraCmakeParams%
+call "%__engNativeDir%\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
 popd
 

@@ -112,10 +112,10 @@ namespace System
 
         public static string GetFolderPath(SpecialFolder folder, SpecialFolderOption option)
         {
-            if (!Enum.IsDefined(typeof(SpecialFolder), folder))
+            if (!Enum.IsDefined(folder))
                 throw new ArgumentOutOfRangeException(nameof(folder), folder, SR.Format(SR.Arg_EnumIllegalVal, folder));
 
-            if (option != SpecialFolderOption.None && !Enum.IsDefined(typeof(SpecialFolderOption), option))
+            if (option != SpecialFolderOption.None && !Enum.IsDefined(option))
                 throw new ArgumentOutOfRangeException(nameof(option), option, SR.Format(SR.Arg_EnumIllegalVal, option));
 
             return GetFolderPathCore(folder, option);

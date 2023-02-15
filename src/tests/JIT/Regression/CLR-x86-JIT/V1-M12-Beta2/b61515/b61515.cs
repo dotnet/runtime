@@ -3,7 +3,7 @@
 //
 
 using System;
-class testout1
+public class testout1
 {
     public static int Main()
     {

@@ -25,7 +25,7 @@ public unsafe class Runtime_62692
     [MethodImpl(MethodImplOptions.NoInlining)]
     static uint Problem6(uint crc, float data) => Sse42.Crc32(crc, (uint)data);
 
-    static int Main()
+    public static int Main()
     {
         if (Sse42.IsSupported)
         {

@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
+# Also reset/set below
 set -x
 
 source_directory=$BUILD_SOURCESDIRECTORY
 core_root_directory=
 baseline_core_root_directory=
 architecture=x64
-framework=net5.0
+framework=
 compilation_mode=tiered
 repository=$BUILD_REPOSITORY_NAME
 branch=$BUILD_SOURCEBRANCH
@@ -192,7 +193,7 @@ while (($# > 0)); do
       echo ""
       echo "Advanced settings:"
       echo "  --framework <value>            The framework to run, if not running in master"
-      echo "  --compliationmode <value>      The compilation mode if not passing --configurations"
+      echo "  --compilationmode <value>      The compilation mode if not passing --configurations"
       echo "  --sourcedirectory <value>      The directory of the sources. Defaults to env:BUILD_SOURCESDIRECTORY"
       echo "  --repository <value>           The name of the repository in the <owner>/<repository name> format. Defaults to env:BUILD_REPOSITORY_NAME"
       echo "  --branch <value>               The name of the branch. Defaults to env:BUILD_SOURCEBRANCH"
@@ -345,6 +346,8 @@ else
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
+    (cd $performance_directory; git show -s HEAD)
+
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
 fi
@@ -434,6 +437,9 @@ ci=true
 _script_dir=$(pwd)/eng/common
 . "$_script_dir/pipeline-logging-functions.sh"
 
+# Prevent vso[task.setvariable to be erroneously processed
+set +x
+
 # Make sure all of our variables are available for future steps
 Write-PipelineSetVariable -name "UseCoreRun" -value "$use_core_run" -is_multi_job_variable false
 Write-PipelineSetVariable -name "UseBaselineCoreRun" -value "$use_baseline_core_run" -is_multi_job_variable false
@@ -458,3 +464,6 @@ Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
 Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false
+
+# Put it back to what was set on top of this script
+set -x

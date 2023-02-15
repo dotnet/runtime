@@ -199,5 +199,16 @@ namespace System.IO.Hashing.Tests
         {
             StaticVerifyTryOneShotDriver(testCase);
         }
+
+        [Theory]
+        [MemberData(nameof(TestCases))]
+        public void VerifyHashToUInt32(TestCase testCase)
+        {
+            var alg = new XxHash32(Seed);
+            alg.Append(testCase.Input);
+            AssertEqualHashNumber(testCase.OutputHex, alg.GetCurrentHashAsUInt32());
+
+            AssertEqualHashNumber(testCase.OutputHex, XxHash32.HashToUInt32(testCase.Input, Seed));
+        }
     }
 }

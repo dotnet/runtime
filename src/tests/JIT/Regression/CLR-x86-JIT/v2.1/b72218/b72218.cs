@@ -5,7 +5,7 @@
 using System;
 using System.Threading;
 
-class My
+public class My
 {
 
     static void Worker()
@@ -14,7 +14,7 @@ class My
         Thread.Sleep(5);
     }
 
-    static int Main()
+    public static int Main()
     {
 
         Thread t = new Thread(new ThreadStart(Worker));

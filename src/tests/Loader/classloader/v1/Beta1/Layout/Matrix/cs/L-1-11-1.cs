@@ -46,7 +46,7 @@ public int Test(B b){
 
   //@csharp - Note that C# will not compile an illegal access of b.FldPrivInst
   //So there is no negative test here, it should be covered elsewhere and
-  //should throw a FielAccessException within the runtime.  (IL sources is
+  //should throw a FieldAccessException within the runtime.  (IL sources is
   //the most logical, only?, choice)
 
   //@csharp - C# Won't compile illegal family access from non-family members
@@ -78,7 +78,7 @@ public int Test(B b){
     mi_RetCode = 0;
 
   /////////////////////////////////
-  // Test instance b.Method access  
+  // Test instance b.Method access
   if(b.MethPubInst() != 100)
     mi_RetCode = 0;
 
@@ -105,7 +105,7 @@ public int Test(B b){
     mi_RetCode = 0;
 
   if(B.MethFoaStat() != 100)
-    mi_RetCode = 0;  
+    mi_RetCode = 0;
 
   /////////////////////////////////
   // Test virtual b.Method access
@@ -120,7 +120,7 @@ public int Test(B b){
     mi_RetCode = 0;
 
   if(b.MethFoaVirt() != 100)
-    mi_RetCode = 0;  
+    mi_RetCode = 0;
 
   return mi_RetCode;
 }
@@ -132,7 +132,7 @@ private int FldPrivInst;
 protected int FldFamInst;          //Translates to "family"
 internal int FldAsmInst;           //Translates to "assembly"
 protected internal int FldFoaInst; //Translates to "famorassem"
-  
+
   //////////////////////////////
   // Static Fields
 public static int FldPubStat;
@@ -233,7 +233,7 @@ public int Test(A a){
 
   //@csharp - Note that C# will not compile an illegal access of a.FldPrivInst
   //So there is no negative test here, it should be covered elsewhere and
-  //should throw a FielAccessException within the runtime.  (IL sources is
+  //should throw a FieldAccessException within the runtime.  (IL sources is
   //the most logical, only?, choice)
 
   //@csharp - C# Won't compile illegal family access from non-family members
@@ -265,7 +265,7 @@ public int Test(A a){
     mi_RetCode = 0;
 
   /////////////////////////////////
-  // Test instance a.Method access  
+  // Test instance a.Method access
   if(a.MethPubInst() != 100)
     mi_RetCode = 0;
 
@@ -292,7 +292,7 @@ public int Test(A a){
     mi_RetCode = 0;
 
   if(A.MethFoaStat() != 100)
-    mi_RetCode = 0;  
+    mi_RetCode = 0;
 
   /////////////////////////////////
   // Test virtual a.Method access
@@ -307,7 +307,7 @@ public int Test(A a){
     mi_RetCode = 0;
 
   if(a.MethFoaVirt() != 100)
-    mi_RetCode = 0;  
+    mi_RetCode = 0;
 
   return mi_RetCode;
 }
@@ -320,7 +320,7 @@ private int FldPrivInst;
 protected int FldFamInst;          //Translates to "family"
 internal int FldAsmInst;           //Translates to "assembly"
 protected internal int FldFoaInst; //Translates to "famorassem"
-  
+
   //////////////////////////////
   // Static Fields
 public static int FldPubStat;

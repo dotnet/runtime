@@ -712,11 +712,7 @@ namespace System.Net
             return task;
         }
 
-        private static Exception CreateException(SocketError error, int nativeError)
-        {
-            SocketException e = new SocketException((int)error);
-            e.HResult = nativeError;
-            return e;
-        }
+        private static SocketException CreateException(SocketError error, int nativeError) =>
+            new SocketException((int)error) { HResult = nativeError };
     }
 }

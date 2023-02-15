@@ -13,7 +13,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 2:0:0:0
 }
-.assembly repro
+.assembly 'b450688'
 {
 }
 
@@ -48,6 +48,7 @@ catch_end:
 	.try try_begin to try_end catch [mscorlib]System.Exception handler catch_begin to catch_end
 }
 
+.class public auto ansi Test_b450688 extends [mscorlib] System.Object {
 .method public static int32 Main() cil managed
 {
 	.entrypoint
@@ -59,4 +60,5 @@ catch_end:
 	call void [System.Console]System.Console::WriteLine(string)
 	ldc.i4 100
 	ret
+}
 }

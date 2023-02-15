@@ -32,7 +32,9 @@
 #else
 #include <net/route.h>
 #endif
+#if HAVE_NET_IF_H
 #include <net/if.h>
+#endif
 
 #include <sys/types.h>
 #include <stdatomic.h>

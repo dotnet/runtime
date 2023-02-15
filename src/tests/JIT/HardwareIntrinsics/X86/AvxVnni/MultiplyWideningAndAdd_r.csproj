@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_AvxVnni_MultiplyWideningAndAdd_r</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- It takes a long time to complete (on a non-AVX machine) -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
@@ -16,7 +17,5 @@
     <Compile Include="MultiplyWideningAndAdd.Int16.cs" />
     <Compile Include="MultiplyWideningAndAddSaturate.Byte.cs" />
     <Compile Include="MultiplyWideningAndAddSaturate.Int16.cs" />
-    <Compile Include="Program.AvxVnni.cs" />
-    <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

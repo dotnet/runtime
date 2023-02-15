@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.module extern kernel32
 .assembly extern System.Console { auto }
 .assembly extern System.Threading.Thread { auto }
 .assembly extern mscorlib { auto }
@@ -14,7 +13,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module cs1.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .subsystem 0x0003
@@ -206,7 +204,7 @@
     IL_0007:  ret
   }
 
-  .method public hidebysig static int32 Main(string[] args) cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

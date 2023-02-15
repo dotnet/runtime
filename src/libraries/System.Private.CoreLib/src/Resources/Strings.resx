@@ -250,6 +250,9 @@
   <data name="Arg_COMPropSetPut" xml:space="preserve">
     <value>Only one of the following binding flags can be set: BindingFlags.SetProperty, BindingFlags.PutDispProperty,  BindingFlags.PutRefDispProperty.</value>
   </data>
+  <data name="Arg_ContainsNonAscii" xml:space="preserve">
+    <value>Text must not contain non-ASCII characters.</value>
+  </data>
   <data name="Arg_CreatInstAccess" xml:space="preserve">
     <value>Cannot specify both CreateInstance and another access type.</value>
   </data>
@@ -294,6 +297,9 @@
   </data>
   <data name="Arg_EmptyArray" xml:space="preserve">
     <value>Array may not be empty.</value>
+  </data>
+  <data name="Arg_EmptySpan" xml:space="preserve">
+    <value>Span may not be empty.</value>
   </data>
   <data name="Arg_EndOfStreamException" xml:space="preserve">
     <value>Attempted to read past the end of the stream.</value>
@@ -1053,7 +1059,7 @@
   <data name="Argument_GenericsInvalid" xml:space="preserve">
     <value>Generic types are not valid.</value>
   </data>
-  <data name="Argument_GlobalFunctionHasToBeStatic" xml:space="preserve">
+  <data name="Argument_GlobalMembersMustBeStatic" xml:space="preserve">
     <value>Global members must be static.</value>
   </data>
   <data name="Argument_HasToBeArrayClass" xml:space="preserve">
@@ -1110,7 +1116,7 @@
   <data name="Argument_InvalidArrayLength" xml:space="preserve">
     <value>Length of the array must be {0}.</value>
   </data>
-  <data name="Argument_InvalidArrayType" xml:space="preserve">
+  <data name="Argument_IncompatibleArrayType" xml:space="preserve">
     <value>Target array type is not compatible with the type of items in the collection.</value>
   </data>
   <data name="InvalidAssemblyName" xml:space="preserve">
@@ -1328,7 +1334,7 @@
     <value>Type must be a runtime Type object.</value>
   </data>
   <data name="Argument_MustBeTypeBuilder" xml:space="preserve">
-    <value>'type' must contain a TypeBuilder as a generic argument.</value>
+    <value>'type' must be or must contain a TypeBuilder as a generic argument.</value>
   </data>
   <data name="Argument_MustHaveAttributeBaseClass" xml:space="preserve">
     <value>Type passed in must be derived from System.Attribute or System.Attribute itself.</value>
@@ -1690,9 +1696,6 @@
   <data name="ArgumentOutOfRange_FileTimeInvalid" xml:space="preserve">
     <value>Not a valid Win32 FileTime.</value>
   </data>
-  <data name="ArgumentOutOfRange_GenericPositive" xml:space="preserve">
-    <value>Value must be positive.</value>
-  </data>
   <data name="ArgumentOutOfRange_GetByteCountOverflow" xml:space="preserve">
     <value>Too many characters. The resulting number of bytes is larger than what can be returned as an int.</value>
   </data>
@@ -1784,15 +1787,6 @@
   <data name="ArgumentOutOfRange_NeedValidId" xml:space="preserve">
     <value>The ID parameter must be in the range {0} through {1}.</value>
   </data>
-  <data name="ArgumentOutOfRange_NegativeCapacity" xml:space="preserve">
-    <value>Capacity must be positive.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NegativeCount" xml:space="preserve">
-    <value>Count cannot be less than zero.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NegativeLength" xml:space="preserve">
-    <value>Length cannot be less than zero.</value>
-  </data>
   <data name="ArgumentOutOfRange_OffsetLength" xml:space="preserve">
     <value>Offset and length must refer to a position in the string.</value>
   </data>
@@ -1804,9 +1798,6 @@
   </data>
   <data name="ArgumentOutOfRange_PartialWCHAR" xml:space="preserve">
     <value>Pointer startIndex and length do not refer to a valid string.</value>
-  </data>
-  <data name="ArgumentOutOfRange_PeriodTooLarge" xml:space="preserve">
-    <value>Period must be less than 2^32-1.</value>
   </data>
   <data name="ArgumentOutOfRange_PositionLessThanCapacityRequired" xml:space="preserve">
     <value>The position may not be greater or equal to the capacity of the accessor.</value>
@@ -1823,9 +1814,6 @@
   <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
     <value>capacity was less than the current size.</value>
   </data>
-  <data name="ArgumentOutOfRange_SmallMaxCapacity" xml:space="preserve">
-    <value>MaxCapacity must be one or greater.</value>
-  </data>
   <data name="ArgumentOutOfRange_StartIndex" xml:space="preserve">
     <value>StartIndex cannot be less than zero.</value>
   </data>
@@ -1834,9 +1822,6 @@
   </data>
   <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
     <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
-  </data>
-  <data name="ArgumentOutOfRange_TimeoutTooLarge" xml:space="preserve">
-    <value>Time-out interval must be less than 2^32-1.</value>
   </data>
   <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
@@ -1853,14 +1838,32 @@
   <data name="ArgumentOutOfRange_UtcOffsetAndDaylightDelta" xml:space="preserve">
     <value>The sum of the BaseUtcOffset and DaylightDelta properties must within plus or minus 14.0 hours.</value>
   </data>
-  <data name="ArgumentOutOfRange_Version" xml:space="preserve">
-    <value>Version's parameters must be greater than or equal to zero.</value>
-  </data>
   <data name="ArgumentOutOfRange_Week" xml:space="preserve">
     <value>The Week parameter must be in the range 1 through 5.</value>
   </data>
   <data name="ArgumentOutOfRange_Year" xml:space="preserve">
     <value>Year must be between 1 and 9999.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonZero" xml:space="preserve">
+    <value>'{0}' must be a non-zero value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegative" xml:space="preserve">
+    <value>'{0}' must be a non-negative value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
+    <value>'{0}' must be a non-negative and non-zero value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeLessOrEqual" xml:space="preserve">
+    <value>'{0}' must be less than or equal to '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeLess" xml:space="preserve">
+    <value>'{0}' must be less than '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeGreaterOrEqual" xml:space="preserve">
+    <value>'{0}' must be greater than or equal to '{1}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeGreater" xml:space="preserve">
+    <value>'{0}' must be greater than '{1}'.</value>
   </data>
   <data name="Arithmetic_NaN" xml:space="preserve">
     <value>Function does not accept floating point Not-a-Number values.</value>
@@ -2735,14 +2738,8 @@
   <data name="Lazy_Value_RecursiveCallsToValue" xml:space="preserve">
     <value>ValueFactory attempted to access the Value property of this instance.</value>
   </data>
-  <data name="ManualResetEventSlim_ctor_SpinCountOutOfRange" xml:space="preserve">
-    <value>The spinCount argument must be in the range 0 to {0}, inclusive.</value>
-  </data>
   <data name="ManualResetEventSlim_ctor_TooManyWaiters" xml:space="preserve">
     <value>There are too many threads currently waiting on the event. A maximum of {0} waiting threads are supported.</value>
-  </data>
-  <data name="ManualResetEventSlim_Disposed" xml:space="preserve">
-    <value>The event has been disposed.</value>
   </data>
   <data name="Marshaler_StringTooLong" xml:space="preserve">
     <value>Marshaler restriction: Excessively long string.</value>
@@ -3017,9 +3014,6 @@
   <data name="ObjectDisposed_ViewAccessorClosed" xml:space="preserve">
     <value>Cannot access a closed accessor.</value>
   </data>
-  <data name="ObjectDisposed_SafeHandleClosed" xml:space="preserve">
-    <value>Safe handle has been closed.</value>
-  </data>
   <data name="OperationCanceled" xml:space="preserve">
     <value>The operation was canceled.</value>
   </data>
@@ -3214,9 +3208,6 @@
   </data>
   <data name="SemaphoreSlim_ctor_MaxCountWrong" xml:space="preserve">
     <value>The maximumCount argument must be a positive number. If a maximum is not required, use the constructor without a maxCount parameter.</value>
-  </data>
-  <data name="SemaphoreSlim_Disposed" xml:space="preserve">
-    <value>The semaphore has been disposed.</value>
   </data>
   <data name="SemaphoreSlim_Release_CountWrong" xml:space="preserve">
     <value>The releaseCount argument must be greater than zero.</value>
@@ -3433,9 +3424,6 @@
   </data>
   <data name="Threading_ThreadInterrupted" xml:space="preserve">
     <value>Thread was interrupted from a waiting state.</value>
-  </data>
-  <data name="ThreadLocal_Disposed" xml:space="preserve">
-    <value>The ThreadLocal object has been disposed.</value>
   </data>
   <data name="ThreadLocal_Value_RecursiveCallsToValue" xml:space="preserve">
     <value>ValueFactory attempted to access the Value property of this instance.</value>

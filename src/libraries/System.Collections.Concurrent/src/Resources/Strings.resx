@@ -87,9 +87,6 @@
   <data name="Collection_CopyTo_TooManyElems" xml:space="preserve">
     <value>The number of elements in the collection is greater than the available space from index to the end of the destination array.</value>
   </data>
-  <data name="BlockingCollection_ctor_BoundedCapacityRange" xml:space="preserve">
-    <value>The boundedCapacity argument must be positive.</value>
-  </data>
   <data name="BlockingCollection_ctor_CountMoreThanCapacity" xml:space="preserve">
     <value>The collection argument contains more items than are allowed by the boundedCapacity.</value>
   </data>
@@ -111,9 +108,6 @@
   <data name="BlockingCollection_ValidateCollectionsArray_ZeroSize" xml:space="preserve">
     <value>The collections argument is a zero-length array.</value>
   </data>
-  <data name="Collection_CopyTo_ArgumentOutOfRangeException" xml:space="preserve">
-    <value>The index argument must be greater than or equal zero.</value>
-  </data>
   <data name="ConcurrentCollection_SyncRoot_NotSupported" xml:space="preserve">
     <value>The SyncRoot property may not be used for the synchronization of concurrent collections.</value>
   </data>
@@ -123,14 +117,8 @@
   <data name="ConcurrentDictionary_SourceContainsDuplicateKeys" xml:space="preserve">
     <value>The source argument contains duplicate keys.</value>
   </data>
-  <data name="ConcurrentDictionary_ConcurrencyLevelMustBePositive" xml:space="preserve">
-    <value>The concurrencyLevel argument must be positive.</value>
-  </data>
-  <data name="ConcurrentDictionary_CapacityMustNotBeNegative" xml:space="preserve">
-    <value>The capacity argument must be greater than or equal to zero.</value>
-  </data>
-  <data name="ConcurrentDictionary_IndexIsNegative" xml:space="preserve">
-    <value>The index argument is less than zero.</value>
+  <data name="ConcurrentDictionary_ConcurrencyLevelMustBePositiveOrNegativeOne" xml:space="preserve">
+    <value>The concurrencyLevel argument must be positive, or -1 to indicate a default level.</value>
   </data>
   <data name="ConcurrentDictionary_ArrayNotLargeEnough" xml:space="preserve">
     <value>The index is equal to or greater than the length of the array, or the number of elements in the dictionary is greater than the available space from index to the end of the destination array.</value>
@@ -147,20 +135,11 @@
   <data name="ConcurrentDictionary_TypeOfValueIncorrect" xml:space="preserve">
     <value>The value was of an incorrect type for this dictionary.</value>
   </data>
-  <data name="ConcurrentStack_PushPopRange_CountOutOfRange" xml:space="preserve">
-    <value>The count argument must be greater than or equal to zero.</value>
-  </data>
   <data name="ConcurrentStack_PushPopRange_InvalidCount" xml:space="preserve">
     <value>The sum of the startIndex and count arguments must be less than or equal to the collection's Count.</value>
   </data>
-  <data name="ConcurrentStack_PushPopRange_StartOutOfRange" xml:space="preserve">
-    <value>The startIndex argument must be greater than or equal to zero.</value>
-  </data>
   <data name="Partitioner_DynamicPartitionsNotSupported" xml:space="preserve">
     <value>Dynamic partitions are not supported by this partitioner.</value>
-  </data>
-  <data name="PartitionerStatic_CanNotCallGetEnumeratorAfterSourceHasBeenDisposed" xml:space="preserve">
-    <value>Can not call GetEnumerator on partitions after the source enumerable is disposed</value>
   </data>
   <data name="PartitionerStatic_CurrentCalledBeforeMoveNext" xml:space="preserve">
     <value>MoveNext must be called at least once before calling Current.</value>

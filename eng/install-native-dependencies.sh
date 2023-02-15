@@ -24,9 +24,12 @@ if [ "$os" = "linux" ] && { [ "$ID" = "debian" ] || [ "$ID_LIKE" = "debian" ]; }
 elif [ "$os" = "maccatalyst" ] || [ "$os" = "osx" ] || [ "$os" = "macos" ] || [ "$os" = "tvos" ] || [ "$os" = "ios" ]; then
     echo "Installed xcode version: $(xcode-select -p)"
 
-    brew update --preinstall
+    export HOMEBREW_NO_INSTALL_CLEANUP=1
+    export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+    # Skip brew update for now, see https://github.com/actions/setup-python/issues/577
+    # brew update --preinstall
     brew bundle --no-upgrade --no-lock --file "$(dirname "$0")/Brewfile"
 else
-    echo "Must pass 'Linux', 'macOS', 'maccatalyst', 'iOS' or 'tvOS' as first argument."
+    echo "Must pass 'linux', 'macos', 'maccatalyst', 'ios' or 'tvos' as first argument."
     exit 1
 fi

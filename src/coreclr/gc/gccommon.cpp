@@ -18,6 +18,7 @@ IGCHandleManager* g_theGCHandleManager;
 
 #ifdef BUILD_AS_STANDALONE
 IGCToCLR* g_theGCToCLR;
+VersionInfo g_runtimeSupportedVersion;
 #endif // BUILD_AS_STANDALONE
 
 #ifdef GC_CONFIG_DRIVEN

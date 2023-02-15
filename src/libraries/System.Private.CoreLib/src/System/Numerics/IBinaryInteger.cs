@@ -20,9 +20,9 @@ namespace System.Numerics
             return (quotient, (left - (quotient * right)));
         }
 
-        /// <summary>Computes the number of leading zeros in a value.</summary>
-        /// <param name="value">The value whose leading zeroes are to be counted.</param>
-        /// <returns>The number of leading zeros in <paramref name="value" />.</returns>
+        /// <summary>Computes the number of leading zero bits in a value.</summary>
+        /// <param name="value">The value whose leading zero bits are to be counted.</param>
+        /// <returns>The number of leading zero bits in <paramref name="value" />.</returns>
         static virtual TSelf LeadingZeroCount(TSelf value)
         {
             if (!typeof(TSelf).IsValueType)
@@ -161,9 +161,9 @@ namespace System.Numerics
             return (value >> rotateAmount) | (value << (bitCount - rotateAmount));
         }
 
-        /// <summary>Computes the number of trailing zeros in a value.</summary>
-        /// <param name="value">The value whose trailing zeroes are to be counted.</param>
-        /// <returns>The number of trailing zeros in <paramref name="value" />.</returns>
+        /// <summary>Computes the number of trailing zero bits in a value.</summary>
+        /// <param name="value">The value whose trailing zero bits are to be counted.</param>
+        /// <returns>The number of trailing zero bits in <paramref name="value" />.</returns>
         static abstract TSelf TrailingZeroCount(TSelf value);
 
         /// <summary>Tries to read a two's complement number from a span, in big-endian format, and convert it to an instance of the current type.</summary>

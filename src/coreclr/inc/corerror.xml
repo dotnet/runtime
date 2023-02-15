@@ -2133,6 +2133,12 @@
 	<Comment>During a GC initialization, GC large page support requires hard limit settings.</Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x8013200F">
+	<SymbolicName>CLR_E_GC_BAD_REGION_SIZE</SymbolicName>
+	<Message>"GC Region Size must be less than 2GB."</Message>
+	<Comment>During a GC initialization, GC Region Size must be less than 2GB.</Comment>
+</HRESULT>
+
 <HRESULT NumericValue="E_ACCESSDENIED">
 	<SymbolicName>COR_E_UNAUTHORIZEDACCESS</SymbolicName>
 	<Comment> 0x80070005 // Access is denied.</Comment>

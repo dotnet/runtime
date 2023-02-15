@@ -7,7 +7,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -168,7 +167,7 @@ namespace Microsoft.Interop
             return new SyntaxTokenList(strippedTokens);
         }
 
-        private static MemberDeclarationSyntax PrintGeneratedSource(
+        private static MethodDeclarationSyntax PrintGeneratedSource(
             ContainingSyntax userDeclaredMethod,
             SignatureContext stub,
             BlockSyntax stubCode)
@@ -181,7 +180,7 @@ namespace Microsoft.Interop
                 .WithBody(stubCode);
         }
 
-        private static LibraryImportData? ProcessLibraryImportAttribute(AttributeData attrData)
+        private static LibraryImportCompilationData? ProcessLibraryImportAttribute(AttributeData attrData)
         {
             // Found the LibraryImport, but it has an error so report the error.
             // This is most likely an issue with targeting an incorrect TFM.
@@ -198,7 +197,7 @@ namespace Microsoft.Interop
             ImmutableDictionary<string, TypedConstant> namedArguments = ImmutableDictionary.CreateRange(attrData.NamedArguments);
 
             string? entryPoint = null;
-            if (namedArguments.TryGetValue(nameof(LibraryImportData.EntryPoint), out TypedConstant entryPointValue))
+            if (namedArguments.TryGetValue(nameof(LibraryImportCompilationData.EntryPoint), out TypedConstant entryPointValue))
             {
                 if (entryPointValue.Value is not string)
                 {
@@ -207,7 +206,7 @@ namespace Microsoft.Interop
                 entryPoint = (string)entryPointValue.Value!;
             }
 
-            return new LibraryImportData(attrData.ConstructorArguments[0].Value!.ToString())
+            return new LibraryImportCompilationData(attrData.ConstructorArguments[0].Value!.ToString())
             {
                 EntryPoint = entryPoint,
             }.WithValuesFromNamedArguments(namedArguments);
@@ -261,9 +260,9 @@ namespace Microsoft.Interop
             var generatorDiagnostics = new GeneratorDiagnostics();
 
             // Process the LibraryImport attribute
-            LibraryImportData libraryImportData =
+            LibraryImportCompilationData libraryImportData =
                 ProcessLibraryImportAttribute(generatedDllImportAttr!) ??
-                new LibraryImportData("INVALID_CSHARP_SYNTAX");
+                new LibraryImportCompilationData("INVALID_CSHARP_SYNTAX");
 
             if (libraryImportData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
             {
@@ -302,7 +301,7 @@ namespace Microsoft.Interop
                 methodSyntaxTemplate,
                 new MethodSignatureDiagnosticLocations(originalSyntax),
                 new SequenceEqualImmutableArray<AttributeSyntax>(additionalAttributes.ToImmutableArray(), SyntaxEquivalentComparer.Instance),
-                libraryImportData,
+                LibraryImportData.From(libraryImportData),
                 LibraryImportGeneratorHelpers.CreateGeneratorFactory(environment, options),
                 new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray())
                 );

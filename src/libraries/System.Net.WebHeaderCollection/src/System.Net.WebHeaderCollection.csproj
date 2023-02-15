@@ -11,8 +11,6 @@
     <Compile Include="System\Net\HeaderInfoTable.cs" />
     <Compile Include="$(CommonPath)System\Net\CaseInsensitiveAscii.cs"
              Link="Common\System\Net\CaseInsensitiveAscii.cs" />
-    <Compile Include="$(CommonPath)System\StringExtensions.cs"
-             Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpValidationHelpers.cs"

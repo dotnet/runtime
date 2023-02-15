@@ -56,7 +56,7 @@ class P
         return Do(v1, v2);
     }
     
-    unsafe static int Main(string[] args)
+    unsafe static int Main()
     {
         byte* pDataBytes = stackalloc byte[VT.Size];
         VT* pVT = (VT*)pDataBytes;

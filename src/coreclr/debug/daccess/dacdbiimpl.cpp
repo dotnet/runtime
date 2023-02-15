@@ -1169,12 +1169,6 @@ void DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainAssembly vmDomainAssembly,
 
     *pLocalSigToken = GetILCodeAndSigHelper(pModule, pMethodDesc, functionToken, methodRVA, pCodeInfo);
 
-#ifdef LOGGING
-    else
-    {
-        LOG((LF_CORDB,LL_INFO100000, "DDI::GICAS: GetMethodImplProps failed!\n"));
-    }
-#endif
 } // GetILCodeAndSig
 
 //---------------------------------------------------------------------------------------
@@ -3617,7 +3611,7 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForLoaderAllocator(PTR_LoaderAllocat
     heapsToEnumerate.Push(pLoaderAllocator->GetStubHeap());
 
     // GetVirtualCallStubManager returns VirtualCallStubManager*, but it's really an address to target as
-    // pLoaderAllocator is DACized. Cast it so we don't try to to a Host to Target translation.
+    // pLoaderAllocator is DACized. Cast it so we don't try to a Host to Target translation.
     VirtualCallStubManager *pVcsMgr = pLoaderAllocator->GetVirtualCallStubManager();
     LOG((LF_CORDB, LL_INFO10000, "DDBII::EMRFLA: VirtualCallStubManager 0x%x\n", PTR_HOST_TO_TADDR(pVcsMgr)));
     if (pVcsMgr)
@@ -4484,6 +4478,11 @@ void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
     // in the domain. This is to enforce rules at code:IDacDbiInterface#Enumeration.
     // See comment in code:DacDbiInterfaceImpl::EnumerateModulesInAssembly code for details.
     AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
+
+    if (pAppDomain == nullptr)
+    {
+        return;
+    }
 
     // Pass the magical flags to the loader enumerator to get all Execution-only assemblies.
     iterator = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));

@@ -8,7 +8,7 @@ namespace Test
 
     public class Temp
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             int x = 10;
             switch (x)

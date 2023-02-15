@@ -11,7 +11,7 @@ using System.Threading;
 
 public class Program
 {
-    static int Main()
+    public static int Main()
     {
         return 100 +
             (Test1.Run() == 0 ? 0 : 1) +

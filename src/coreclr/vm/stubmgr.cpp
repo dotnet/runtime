@@ -53,7 +53,7 @@ void LogTraceDestination(const char * szHint, PCODE stubAddr, TraceDestination *
 #ifdef _DEBUG
 // Get a string representation of this TraceDestination
 // Uses the supplied buffer to store the memory (or may return a string literal).
-const WCHAR * TraceDestination::DbgToString(SString & buffer)
+const CHAR * TraceDestination::DbgToString(SString & buffer)
 {
     CONTRACTL
     {
@@ -63,12 +63,12 @@ const WCHAR * TraceDestination::DbgToString(SString & buffer)
     }
     CONTRACTL_END;
 
-    const WCHAR * pValue = W("unknown");
+    const CHAR * pValue = "unknown";
 
 #ifndef DACCESS_COMPILE
     if (!StubManager::IsStubLoggingEnabled())
     {
-        return W("<unavailable while native-debugging>");
+        return "<unavailable while native-debugging>";
     }
     // Now that we know we're not interop-debugging, we can safely call new.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
@@ -82,50 +82,50 @@ const WCHAR * TraceDestination::DbgToString(SString & buffer)
         {
             case TRACE_ENTRY_STUB:
                 buffer.Printf("TRACE_ENTRY_STUB(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_STUB:
                 buffer.Printf("TRACE_STUB(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_UNMANAGED:
                 buffer.Printf("TRACE_UNMANAGED(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_MANAGED:
                 buffer.Printf("TRACE_MANAGED(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_UNJITTED_METHOD:
             {
                 MethodDesc * md = this->GetMethodDesc();
                 buffer.Printf("TRACE_UNJITTED_METHOD(md=0x%p, %s::%s)", md, md->m_pszDebugClassName, md->m_pszDebugMethodName);
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
             }
                 break;
 
             case TRACE_FRAME_PUSH:
                 buffer.Printf("TRACE_FRAME_PUSH(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_MGR_PUSH:
                 buffer.Printf("TRACE_MGR_PUSH(addr=0x%p, sm=%s)", GetAddress(), this->GetStubManager()->DbgGetName());
-                pValue = buffer.GetUnicode();
+                pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_OTHER:
-                pValue = W("TRACE_OTHER");
+                pValue = "TRACE_OTHER";
                 break;
         }
     }
     EX_CATCH
     {
-        pValue = W("(OOM while printing TD)");
+        pValue = "(OOM while printing TD)";
     }
     EX_END_CATCH(SwallowAllExceptions);
 #endif
@@ -542,7 +542,7 @@ BOOL StubManager::TraceStub(PCODE stubStartAddress, TraceDestination *trace)
                 SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
                 FAULT_NOT_FATAL();
                 SString buffer;
-                DbgWriteLog("  td=%S\n", trace->DbgToString(buffer));
+                DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
             }
             else
             {

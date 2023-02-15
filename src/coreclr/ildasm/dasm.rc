@@ -127,7 +127,6 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    IDS_USAGE_40            L"  /ALL        Combination of /HEADER, /BYTES, /TOKENS\n\n"
     IDS_USAGE_41            L"\nOption key is '-' or '/', options are recognized by first 3 characters\n\n"
     IDS_USAGE_42            L"Example:  ildasm /tok /byt myfile.exe /out=myfile.il\n\n"
     IDS_USAGE_43            L"\n\nPress any key to close the console window..."
@@ -203,8 +202,6 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    IDS_E_MULTIPLEINPUT     L"MULTIPLE INPUT FILES SPECIFIED\n\n"
-    IDS_E_INVALIDOPTION     L"INVALID COMMAND LINE OPTION: %s\n\n"
     IDS_W_CREATEDW32RES     L"WARNING: Created Win32 resource file %s"
     IDS_E_CORRUPTW32RES     L"ERROR: Corrupt Win32 resources"
     IDS_E_CANTOPENW32RES    L"ERROR: Unable to open file %s"

@@ -12,7 +12,7 @@ namespace System.IO.Tests
     {
         static bool IsBindMountSupported => OperatingSystem.IsLinux() && !PlatformDetection.IsInContainer;
 
-        static bool IsBindMountSupportedAndOnUnixAndSuperUser => IsBindMountSupported && PlatformDetection.IsUnixAndSuperUser;
+        static bool IsBindMountSupportedAndPrivilegedProcess => IsBindMountSupported && PlatformDetection.IsPrivilegedProcess;
 
         static bool IsRemoteExecutorSupportedAndUsingNewNormalization => RemoteExecutor.IsSupported && UsingNewNormalization;
 
@@ -218,7 +218,7 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(testDir));
         }
 
-        [ConditionalFact(nameof(IsBindMountSupportedAndOnUnixAndSuperUser))]
+        [ConditionalFact(nameof(IsBindMountSupportedAndPrivilegedProcess))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void Unix_NotFoundDirectory_ReadOnlyVolume()

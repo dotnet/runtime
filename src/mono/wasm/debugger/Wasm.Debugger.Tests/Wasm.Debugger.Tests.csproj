@@ -6,7 +6,7 @@
     <IsPublishable>false</IsPublishable>
     <EnableCoverageSupport>false</EnableCoverageSupport>
     <EnableRunSettingsSupport>false</EnableRunSettingsSupport>
-    <IsWasmProject>false</IsWasmProject>
+    <IsBrowserWasmProject>false</IsBrowserWasmProject>
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
     <BundleXunitRunner>true</BundleXunitRunner>
     <TestFramework>xunit</TestFramework>
@@ -66,7 +66,9 @@
       <_DotnetCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</_DotnetCommand>
 
       <RunScriptCommand>$(_DotnetCommand) test DebuggerTestSuite/DebuggerTestSuite.dll</RunScriptCommand>
+      <RunScriptCommand Condition="'$(MonoWasmBuildVariant)' == 'multithread'">$(RunScriptCommand) /e:WASM_TESTS_USING_VARIANT=multithreaded</RunScriptCommand>
       <RunScriptCommand>$(RunScriptCommand) &quot;-l:trx%3BLogFileName=testResults.trx&quot;</RunScriptCommand>
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) &quot;-l:console%3BVerbosity=normal&quot;</RunScriptCommand>
 
       <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) --results-directory &quot;$TEST_LOG_PATH&quot;</RunScriptCommand>
       <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) --results-directory &quot;%TEST_LOG_PATH%&quot;</RunScriptCommand>

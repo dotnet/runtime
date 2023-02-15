@@ -5,7 +5,6 @@
 .assembly DevDiv_199169
 {
 }
-.module DevDiv_199169.exe
 
 .class public sequential ansi sealed beforefieldinit Blob
        extends [mscorlib]System.ValueType
@@ -27,7 +26,7 @@
   IL_000d:  ret
 }
 
-.method assembly static int32  main(string[] args) cil managed
+.method public assembly static int32  main() cil managed
 {
   .entrypoint
   .maxstack  6

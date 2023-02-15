@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace starg_ref
+{
 .class public _starg {
 
 .method public	void _starg() {
@@ -11,11 +14,14 @@
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-.locals	(class _starg)
-	newobj	instance	void _starg::_starg()
+.locals	(class starg_ref._starg)
+	newobj	instance	void starg_ref._starg::_starg()
 	dup
 	stloc		0
 
@@ -30,3 +36,4 @@ FAIL:
 }
 }
 .assembly starg_ref{}
+}

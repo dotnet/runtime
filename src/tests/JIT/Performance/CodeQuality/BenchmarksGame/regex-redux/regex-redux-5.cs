@@ -36,7 +36,7 @@ namespace BenchmarksGame
             return r + " " + c;
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
 

@@ -424,10 +424,7 @@ namespace System.Security.Cryptography
 
         private void ThrowIfDisposed()
         {
-            if (_lastKeySize < 0)
-            {
-                throw new ObjectDisposedException(nameof(RSA));
-            }
+            ObjectDisposedException.ThrowIf(_lastKeySize < 0, this);
         }
     }
 }

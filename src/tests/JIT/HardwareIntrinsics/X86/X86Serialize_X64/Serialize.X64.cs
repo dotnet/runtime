@@ -15,7 +15,7 @@ namespace IntelHardwareIntrinsicTest
         const int Pass = 100;
         const int Fail = 0;
 
-        static unsafe int Main(string[] args)
+        static unsafe int Main()
         {
             int testResult = X86Serialize.X64.IsSupported ? Pass : Fail;
 

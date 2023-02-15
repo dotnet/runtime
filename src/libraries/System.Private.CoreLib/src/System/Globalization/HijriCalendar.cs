@@ -48,7 +48,7 @@ namespace System.Globalization
         private const int MinAdvancedHijri = -2;
         private const int MaxAdvancedHijri = 2;
 
-        private static readonly int[] s_hijriMonthDays = { 0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355 };
+        private static ReadOnlySpan<int> HijriMonthDays => new int[] { 0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355 };
 
         private int _hijriAdvance = int.MinValue;
 
@@ -80,7 +80,7 @@ namespace System.Globalization
 
         private long GetAbsoluteDateHijri(int y, int m, int d)
         {
-            return (long)(DaysUpToHijriYear(y) + s_hijriMonthDays[m - 1] + d - 1 - HijriAdjustment);
+            return (long)(DaysUpToHijriYear(y) + HijriMonthDays[m - 1] + d - 1 - HijriAdjustment);
         }
 
         private long DaysUpToHijriYear(int HijriYear)
@@ -241,7 +241,7 @@ namespace System.Globalization
                 return (int)numDays;
             }
 
-            while ((hijriMonth <= 12) && (numDays > s_hijriMonthDays[hijriMonth - 1]))
+            while ((hijriMonth <= 12) && (numDays > HijriMonthDays[hijriMonth - 1]))
             {
                 hijriMonth++;
             }
@@ -253,7 +253,7 @@ namespace System.Globalization
             }
 
             // Calculate the Hijri Day.
-            int hijriDay = (int)(numDays - s_hijriMonthDays[hijriMonth - 1]);
+            int hijriDay = (int)(numDays - HijriMonthDays[hijriMonth - 1]);
 
             if (part == DatePartDay)
             {
@@ -446,10 +446,7 @@ namespace System.Globalization
 
         public override int ToFourDigitYear(int year)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year), year, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
 
             if (year < 100)
             {

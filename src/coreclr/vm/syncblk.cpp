@@ -1102,7 +1102,7 @@ void SyncBlockCache::GCWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintp
             syncTableShadow = new(nothrow) SyncTableEntry [m_FreeSyncTableIndex];
             if (syncTableShadow)
             {
-                memcpy (syncTableShadow, SyncTableEntry::GetSyncTableEntry(), m_FreeSyncTableIndex * sizeof (SyncTableEntry));
+                memcpy ((void*)syncTableShadow, SyncTableEntry::GetSyncTableEntry(), m_FreeSyncTableIndex * sizeof (SyncTableEntry));
             }
         }
 #endif //VERIFY_HEAP
@@ -1449,7 +1449,7 @@ void DumpSyncBlockCache()
 
     SyncBlockCache *pCache = SyncBlockCache::GetSyncBlockCache();
 
-    LogSpewAlways("Dumping SyncBlockCache size %d\n", pCache->m_FreeSyncTableIndex);
+    LogSpewAlways("Dumping SyncBlockCache size %u\n", pCache->m_FreeSyncTableIndex);
 
     static int dumpSBStyle = -1;
     if (dumpSBStyle == -1)
@@ -1457,14 +1457,12 @@ void DumpSyncBlockCache()
     if (dumpSBStyle == 0)
         return;
 
-    BOOL isString = FALSE;
     DWORD objectCount = 0;
     DWORD slotCount = 0;
 
     for (DWORD nb = 1; nb < pCache->m_FreeSyncTableIndex; nb++)
     {
-        isString = FALSE;
-        char buffer[1024], buffer2[1024];
+        char buffer[1024];
         LPCUTF8 descrip = "null";
         SyncTableEntry *pEntry = &SyncTableEntry::GetSyncTableEntry()[nb];
         Object *oref = (Object *) pEntry->m_Object;
@@ -1484,27 +1482,15 @@ void DumpSyncBlockCache()
                 {
                     LPCUTF8 descrip;
                     Object *oref;
-                    char *buffer2;
-                    UINT cch2;
-                    BOOL isString;
                 } param;
                 param.descrip = descrip;
                 param.oref = oref;
-                param.buffer2 = buffer2;
-                param.cch2 = ARRAY_SIZE(buffer2);
-                param.isString = isString;
 
                 PAL_TRY(Param *, pParam, &param)
                 {
                     pParam->descrip = pParam->oref->GetMethodTable()->GetDebugClassName();
                     if (strlen(pParam->descrip) == 0)
                         pParam->descrip = "<INVALID>";
-                    else if (pParam->oref->GetMethodTable() == g_pStringClass)
-                    {
-                        sprintf_s(pParam->buffer2, pParam->cch2, "%s (%S)", pParam->descrip, ObjectToSTRINGREF((StringObject*)pParam->oref)->GetBuffer());
-                        pParam->descrip = pParam->buffer2;
-                        pParam->isString = TRUE;
-                    }
                 }
                 PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
                     param.descrip = "<INVALID>";
@@ -1512,14 +1498,13 @@ void DumpSyncBlockCache()
                 PAL_ENDTRY
 
                 descrip = param.descrip;
-                isString = param.isString;
             }
             sprintf_s(buffer, ARRAY_SIZE(buffer), "%s", descrip);
             descrip = buffer;
         }
         if (dumpSBStyle < 2)
-            LogSpewAlways("[%4.4d]: %8.8x %s\n", nb, oref, descrip);
-        else if (dumpSBStyle == 2 && ! isString)
+            LogSpewAlways("[%4.4d]: %zx %s\n", nb, oref, descrip);
+        else if (dumpSBStyle == 2)
             LogSpewAlways("[%4.4d]: %s\n", nb, descrip);
     }
     LogSpewAlways("Done dumping SyncBlockCache used slots: %d, objects: %d\n", slotCount, objectCount);

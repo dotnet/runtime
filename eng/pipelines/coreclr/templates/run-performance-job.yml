@@ -71,7 +71,9 @@ jobs:
           curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash - &&
           sudo apt-get -y install nodejs &&
           npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g &&
-          $HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8,javascriptcore
+          $HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8 &&
+          find ~/.jsvu -ls &&
+          ~/.jsvu/v8 -e "console.log(`V8 version: ${this.version()}`)"
     - ${{ if ne(parameters.runtimeType, 'wasm') }}:
       - HelixPreCommandsWasmOnLinux: echo
     - HelixPreCommandStemWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install azure.storage.blob==12.0.0;py -3 -m pip install azure.storage.queue==12.0.0;set "PERFLAB_UPLOAD_TOKEN=$(HelixPerfUploadTokenValue)"'
@@ -90,7 +92,6 @@ jobs:
         sudo apt-get update &&
         sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates &&
         $(HelixPreCommandsWasmOnLinux) &&
-        export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1 &&
         export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"
         || export PERF_PREREQS_INSTALL_FAILED=1;
         test "x$PERF_PREREQS_INSTALL_FAILED" = "x1" && echo "** Error: Failed to install prerequites **"

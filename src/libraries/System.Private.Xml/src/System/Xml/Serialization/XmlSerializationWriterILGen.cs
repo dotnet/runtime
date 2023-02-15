@@ -2576,11 +2576,8 @@ namespace System.Xml.Serialization
             Type localType = (typeName == arrayTypeDesc.CSharpName) ? arrayTypeDesc.Type! : arrayTypeDesc.Type!.MakeArrayType();
             // This may need reused variable to get code compat?
             LocalBuilder local = initValue.ILG.DeclareOrGetLocal(localType, variableName);
-            if (initValue != null)
-            {
-                initValue.Load(local.LocalType);
-                initValue.ILG.Stloc(local);
-            }
+            initValue.Load(local.LocalType);
+            initValue.ILG.Stloc(local);
         }
         internal static void WriteTypeCompare(string variable, Type type, CodeGenerator ilg)
         {

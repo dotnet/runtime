@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly b11021 { }
+.class public auto ansi Test_b11021 extends [mscorlib] System.Object {
 .method public static int32 foo() {
 	.maxstack 20
 	.locals(float32)
@@ -16,4 +17,5 @@
 	stloc 0
 ldc.i4 100
     ret
+}
 }

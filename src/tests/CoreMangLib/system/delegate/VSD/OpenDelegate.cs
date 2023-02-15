@@ -28,7 +28,7 @@ class Program
         }
         return result;
     }
-    public static int Main(string[] args)
+    public static int Main()
     {
         Type typeTestClass = typeof(ClassA);
         ClassA TestClass = (ClassA)Activator.CreateInstance(typeTestClass);

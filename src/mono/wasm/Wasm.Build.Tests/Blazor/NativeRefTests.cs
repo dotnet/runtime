@@ -20,12 +20,15 @@ public class NativeRefTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
     public void WithNativeReference_AOTInProjectFile(string config)
     {
         string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";
         string projectFile = CreateProjectWithNativeReference(id);
-        AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
+        string extraProperties = config == "Debug"
+                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
+                                    : string.Empty;
+        AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>" + extraProperties);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
 
@@ -38,11 +41,15 @@ public class NativeRefTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
     public void WithNativeReference_AOTOnCommandLine(string config)
     {
         string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";
-        CreateProjectWithNativeReference(id);
+        string projectFile = CreateProjectWithNativeReference(id);
+        string extraProperties = config == "Debug"
+                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
+                                    : string.Empty;
+        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
 

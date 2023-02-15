@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static uint Method1(__arglist) { return 0; }
 
@@ -15,7 +15,7 @@ namespace Test
             Method1(__arglist(Method1(__arglist())));
         }
 
-        static int Main()
+        public static int Main()
         {
             uint u = 0;
             bool[] ab = null;

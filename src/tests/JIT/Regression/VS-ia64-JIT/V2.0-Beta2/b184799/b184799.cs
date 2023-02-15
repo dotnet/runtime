@@ -7,7 +7,7 @@ using System;
 public class foo
 {
 
-    static int Main(String[] args)
+    public static int Main()
     {
         Console.WriteLine("testTableSwitch:  ");
         int s = 2, r = 3;

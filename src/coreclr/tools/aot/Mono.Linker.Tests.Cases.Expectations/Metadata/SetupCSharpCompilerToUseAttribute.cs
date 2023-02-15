@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public SetupCSharpCompilerToUseAttribute (string name)
 		{
-			if (string.IsNullOrEmpty (name))
-				throw new ArgumentNullException (nameof (name));
+			ArgumentException.ThrowIfNullOrEmpty (name);
 		}
 	}
 }

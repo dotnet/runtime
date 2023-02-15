@@ -34,7 +34,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit DevDiv_278372
+.class public auto ansi beforefieldinit DevDiv_278372
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static bool  check(int32& dummy) cil managed noinlining

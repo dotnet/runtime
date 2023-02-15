@@ -49,6 +49,7 @@ public struct Marshaller
         {
             private static string In = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedOut, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -69,6 +70,7 @@ public static class Marshaller
 
             public static string InPinnable = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedOut, typeof(Marshaller))]
 public static unsafe class Marshaller
 {
     public static byte* ConvertToUnmanaged(S s) => default;
@@ -77,6 +79,7 @@ public static unsafe class Marshaller
 ";
             private static string Out = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedIn, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -86,6 +89,7 @@ public static class Marshaller
 ";
             private static string OutGuaranteed = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedIn, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -95,6 +99,7 @@ public static class Marshaller
 ";
             public static string Ref = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedRef, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedRef, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -116,6 +121,7 @@ public static class Marshaller
             public static string InOutBuffer = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedIn, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -147,7 +153,7 @@ public static class Marshaller
 }
 ";
             private static string DefaultOut = @"
-[CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller))]
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
 public static class Marshaller
 {
     public struct Native { }
@@ -183,6 +189,10 @@ public static class Marshaller
                 + NonBlittableUserDefinedType()
                 + Out;
 
+            public static string NativeToManagedFinallyOnlyInParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("in", "S")
+                + NonBlittableUserDefinedType()
+                + OutGuaranteed;
+
             public static string ParametersAndModifiers = TSignatureTestProvider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                 + NonBlittableUserDefinedType(defineNativeMarshalling: true)
                 + Default;
@@ -194,6 +204,10 @@ public static class Marshaller
             public static string ByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + In;
+
+            public static string ByValueOutParameter => TSignatureTestProvider.BasicParameterByValue("S")
+                + NonBlittableUserDefinedType()
+                + Out;
 
             public static string StackallocByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
@@ -232,6 +246,7 @@ public static class Marshaller
         {
             private static string In = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedOut, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -246,6 +261,7 @@ public static class Marshaller
 
             public static string InStatelessPinnable = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedOut, typeof(M))]
 public static class Marshaller
 {
     public unsafe struct M
@@ -288,6 +304,7 @@ public static class Marshaller
 ";
             private static string Out = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedIn, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -301,6 +318,7 @@ public static class Marshaller
 ";
             private static string OutGuaranteed = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedIn, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -314,6 +332,7 @@ public static class Marshaller
 ";
             public static string Ref = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedRef, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedRef, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -377,6 +396,7 @@ public static class Marshaller
             public static string InOutBuffer = @"
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedIn, typeof(M))]
 [CustomMarshaller(typeof(S), MarshalMode.ManagedToUnmanagedOut, typeof(M))]
+[CustomMarshaller(typeof(S), MarshalMode.UnmanagedToManagedIn, typeof(M))]
 public static class Marshaller
 {
     public struct Native { }
@@ -462,6 +482,10 @@ public static class Marshaller
                 + NonBlittableUserDefinedType()
                 + Out;
 
+            public static string NativeToManagedFinallyOnlyInParameter => TSignatureTestProvider.BasicParameterWithByRefModifier("in", "S")
+                + NonBlittableUserDefinedType()
+                + OutGuaranteed;
+
             public static string ParametersAndModifiers = TSignatureTestProvider.BasicParametersAndModifiers("S", UsingSystemRuntimeInteropServicesMarshalling)
                 + NonBlittableUserDefinedType(defineNativeMarshalling: true)
                 + Default;
@@ -481,6 +505,10 @@ public static class Marshaller
             public static string ByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()
                 + In;
+
+            public static string ByValueOutParameter => TSignatureTestProvider.BasicParameterByValue("S")
+                + NonBlittableUserDefinedType()
+                + Out;
 
             public static string StackallocByValueInParameter => TSignatureTestProvider.BasicParameterByValue("S")
                 + NonBlittableUserDefinedType()

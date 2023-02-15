@@ -4,7 +4,7 @@
 // Bitmap class testing unit
 //
 // Authors:
-//  Jordi Mas i Hern?ndez (jmas@softcatala.org>
+//  Jordi Mas i Hernandez (jordi@ximian.com)
 //  Jonathan Gilbert <logic@deltaq.org>
 //  Sebastien Pouliot  <sebastien@ximian.com>
 //

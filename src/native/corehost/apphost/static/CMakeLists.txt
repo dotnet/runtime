@@ -54,6 +54,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
+    add_definitions(-DUNICODE)
     list(APPEND SOURCES
         ../apphost.windows.cpp)
 
@@ -65,8 +66,8 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_linker_flag("/DEF:${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost.def")
 
 else()
-    if(CLR_CMAKE_TARGET_OSX)
-        set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_OSXexports.src)
+    if(CLR_CMAKE_TARGET_FREEBSD)
+        set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_freebsdexports.src)
     else()
         set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
     endif()

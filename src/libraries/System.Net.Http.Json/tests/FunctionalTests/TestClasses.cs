@@ -18,13 +18,13 @@ namespace System.Net.Http.Json.Functional.Tests
         {
             Assert.Equal("R. Daneel Olivaw", Name);
             Assert.Equal(19_230, Age);
-            Assert.Equal("Horní Dolní", PlaceOfBirth);
+            Assert.Equal("Horn\u00ED Doln\u00ED", PlaceOfBirth);
             Assert.Null(Parent);
         }
 
         public static Person Create()
         {
-            return new Person { Name = "R. Daneel Olivaw", Age = 19_230, PlaceOfBirth = "Horní Dolní"};
+            return new Person { Name = "R. Daneel Olivaw", Age = 19_230, PlaceOfBirth = "Horn\u00ED Doln\u00ED"};
         }
 
         public string Serialize(JsonSerializerOptions options = null)

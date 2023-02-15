@@ -54,10 +54,7 @@ function assert_int_in_range(value: Number, min: Number, max: Number) {
 }
 
 export function _zero_region(byteOffset: VoidPtr, sizeBytes: number): void {
-    if (((<any>byteOffset % 4) === 0) && ((sizeBytes % 4) === 0))
-        Module.HEAP32.fill(0, <any>byteOffset >>> 2, sizeBytes >>> 2);
-    else
-        Module.HEAP8.fill(0, <any>byteOffset, sizeBytes);
+    Module.HEAP8.fill(0, <any>byteOffset, sizeBytes);
 }
 
 export function setB32(offset: MemOffset, value: number | boolean): void {

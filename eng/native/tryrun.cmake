@@ -8,18 +8,24 @@ endmacro()
 
 if(EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv7-alpine-linux-musleabihf OR
    EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv6-alpine-linux-musleabihf OR
-   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/aarch64-alpine-linux-musl)
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/aarch64-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/s390x-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/ppc64le-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/i586-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/riscv64-alpine-linux-musl)
 
   set(ALPINE_LINUX 1)
 elseif(EXISTS ${CROSS_ROOTFS}/bin/freebsd-version)
   set(FREEBSD 1)
   set(CMAKE_SYSTEM_NAME FreeBSD)
-  set(CLR_CMAKE_TARGET_OS FreeBSD)
+  set(CLR_CMAKE_TARGET_OS freebsd)
 elseif(EXISTS ${CROSS_ROOTFS}/usr/platform/i86pc)
   set(ILLUMOS 1)
-  set(CLR_CMAKE_TARGET_OS SunOS)
+  set(CLR_CMAKE_TARGET_OS sunos)
 elseif(EXISTS /System/Library/CoreServices)
   set(DARWIN 1)
+elseif(EXISTS ${CROSS_ROOTFS}/etc/tizen-release)
+  set(TIZEN 1)
 endif()
 
 if(DARWIN)
@@ -68,7 +74,7 @@ if(DARWIN)
   else()
     message(FATAL_ERROR "Arch is ${TARGET_ARCH_NAME}. Only arm64 or x64 is supported for OSX cross build!")
   endif()
-elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s390x|ppc64le|x86)$" OR FREEBSD OR ILLUMOS)
+elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s390x|ppc64le|x86)$" OR FREEBSD OR ILLUMOS OR TIZEN)
   set_cache_value(FILE_OPS_CHECK_FERROR_OF_PREVIOUS_CALL_EXITCODE 1)
   set_cache_value(GETPWUID_R_SETS_ERRNO_EXITCODE 0)
   set_cache_value(HAS_POSIX_SEMAPHORES_EXITCODE 0)
@@ -100,6 +106,7 @@ elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s39
   set_cache_value(PTHREAD_CREATE_MODIFIES_ERRNO_EXITCODE 1)
   set_cache_value(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1)
   set_cache_value(SEM_INIT_MODIFIES_ERRNO_EXITCODE 1)
+  set_cache_value(HAVE_TERMIOS2_EXITCODE 0)
 
 
   if(ALPINE_LINUX)
@@ -126,6 +133,7 @@ elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s39
     set_cache_value(UNGETC_NOT_RETURN_EOF 0)
     set_cache_value(HAVE_COMPATIBLE_ILOGBNAN 1)
     set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
+    set_cache_value(HAVE_TERMIOS2_EXITCODE 1)
   elseif(ILLUMOS)
     set_cache_value(GETPWUID_R_SETS_ERRNO_EXITCODE 1)
     set_cache_value(HAVE_COMPATIBLE_ACOS_EXITCODE 1)
@@ -143,6 +151,9 @@ elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s39
     set_cache_value(COMPILER_SUPPORTS_W_CLASS_MEMACCESS 1)
     set_cache_value(HAVE_SET_MAX_VARIABLE 1)
     set_cache_value(HAVE_FULLY_FEATURED_PTHREAD_MUTEXES 1)
+    set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
+    set_cache_value(HAVE_TERMIOS2_EXITCODE 1)
+  elseif (TIZEN)
     set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
   endif()
 else()

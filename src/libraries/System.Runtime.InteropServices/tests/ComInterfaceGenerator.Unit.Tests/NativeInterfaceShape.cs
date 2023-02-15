@@ -19,17 +19,17 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Fact]
         public async Task NativeInterfaceNestedInUserInterface()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI
-{
-    public static readonly NoCasting TypeKey = default;
-    [VirtualMethodIndex(0)]
-    void Method();
-}";
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                {
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    [VirtualMethodIndex(0)]
+                    void Method();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
@@ -45,17 +45,17 @@ partial interface INativeAPI
         [Fact]
         public async Task NativeInterfaceInheritsFromUserInterface()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI
-{
-    public static readonly NoCasting TypeKey = default;
-    [VirtualMethodIndex(0)]
-    void Method();
-}";
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                {
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    [VirtualMethodIndex(0)]
+                    void Method();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
@@ -71,17 +71,17 @@ partial interface INativeAPI
         [Fact]
         public async Task NativeInterfaceHasDynamicInterfaceCastableImplementationAttribute()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI
-{
-    public static readonly NoCasting TypeKey = default;
-    [VirtualMethodIndex(0)]
-    void Method();
-}";
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                {
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    [VirtualMethodIndex(0)]
+                    void Method();
+                }
+                """;
             Compilation comp = await TestUtils.CreateCompilation(source);
             // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
@@ -96,6 +96,44 @@ partial interface INativeAPI
             Assert.Contains(
                 dynamicInterfaceCastableImplementationAttribute,
                 Assert.Single(userDefinedInterface.GetTypeMembers("Native")).GetAttributes().Select(attr => attr.AttributeClass),
+                SymbolEqualityComparer.Default);
+        }
+
+        [Fact]
+        public async Task NativeInterfaceHasStaticMethodWithSameNameWithExpectedPrefixWithUnmanagedCallersOnly()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
+                {
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
+                    [VirtualMethodIndex(0)]
+                    void Method();
+                }
+                """;
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            // Allow the Native nested type name to be missing in the pre-source-generator compilation
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
+
+            INamedTypeSymbol? userDefinedInterface = newComp.Assembly.GetTypeByMetadataName("INativeAPI");
+            Assert.NotNull(userDefinedInterface);
+
+            INamedTypeSymbol nativeInterface = Assert.Single(userDefinedInterface.GetTypeMembers("Native"));
+
+            IMethodSymbol abiMethod = Assert.IsAssignableFrom<IMethodSymbol>(Assert.Single(nativeInterface.GetMembers("ABI_Method")));
+
+            INamedTypeSymbol unmanagedCallersOnlyAttribute = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute")!;
+
+            Assert.True(abiMethod.IsStatic);
+            Assert.False(abiMethod.IsAbstract);
+
+            Assert.Contains(
+                unmanagedCallersOnlyAttribute,
+                abiMethod.GetAttributes().Select(attr => attr.AttributeClass),
                 SymbolEqualityComparer.Default);
         }
     }

@@ -2,23 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 .assembly 'initblk'{
 }
 
+.namespace initblk_
+{
 .class public _initblk {
 
 
 	.field public static int32 DATA
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
-	ldsflda		int32 _initblk::DATA
+	ldsflda		int32 initblk_._initblk::DATA
 	ldc.i4		0xAA
 	ldc.i4		4
 	initblk
-	ldsflda		int32 _initblk::DATA
+	ldsflda		int32 initblk_._initblk::DATA
 	ldind.i4
 	ldc.i4		0xAAAAAAAA
 	ceq
@@ -30,5 +36,6 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }
 }

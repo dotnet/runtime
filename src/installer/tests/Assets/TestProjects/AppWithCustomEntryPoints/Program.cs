@@ -2,12 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace AppWithCustomEntryPoints
 {
     public static class Program
     {
+        static Program()
+        {
+            Assembly asm = Assembly.GetExecutingAssembly();
+            Console.WriteLine($"{asm.GetName().Name}: AssemblyLoadContext = {AssemblyLoadContext.GetLoadContext(asm)}");
+        }
+
         public static void Main(string[] args)
         {
         }
@@ -19,7 +27,10 @@ namespace AppWithCustomEntryPoints
 
         private static void PrintFunctionPointerCallLog(string name, IntPtr arg, int size)
         {
-            Console.WriteLine($"Called {name}(0x{arg.ToString("x")}, {size}) - function pointer call count: {functionPointerCallCount}");
+            Console.WriteLine($"Called {name}(0x{arg.ToString("x")}, {size}) - call count: {functionPointerCallCount}");
+
+            Assembly asm = Assembly.GetExecutingAssembly();
+            Console.WriteLine($"{asm.GetName().Name}: AssemblyLoadContext = {AssemblyLoadContext.GetLoadContext(asm)}");
         }
 
         public static int FunctionPointerEntryPoint1(IntPtr arg, int size)

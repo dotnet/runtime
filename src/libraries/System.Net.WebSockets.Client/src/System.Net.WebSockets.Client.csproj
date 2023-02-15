@@ -1,25 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocketDeflateConstants.cs" />
-    <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" Condition="'$(TargetPlatformIdentifier)' != 'Browser'" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs" Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs" Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
     <Compile Include="System\Net\WebSockets\HttpResponseHeadersReadOnlyCollection.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
+    <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs" Link="Common\System\Net\HttpKnownHeaderNames.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Browser.cs" />
     <Compile Include="System\Net\WebSockets\BrowserWebSockets\BrowserInterop.cs" />
     <Compile Include="System\Net\WebSockets\BrowserWebSockets\BrowserWebSocket.cs" />
@@ -40,10 +40,10 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Threading.Channels" Condition="'$(TargetPlatformIdentifier)' == 'Browser'" />
+    <Reference Include="System.Threading.Channels" Condition="'$(TargetPlatformIdentifier)' == 'browser'" />
     <Reference Include="System.Memory" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <Reference Include="System.Runtime.InteropServices.JavaScript" />
   </ItemGroup>

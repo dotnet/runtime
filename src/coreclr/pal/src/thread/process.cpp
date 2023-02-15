@@ -2436,8 +2436,9 @@ PROCAbort(int signal)
 
     PROCCreateCrashDumpIfEnabled(signal);
 
-    // Restore the SIGABORT handler to prevent recursion
-    SEHCleanupAbort();
+    // Restore all signals; the SIGABORT handler to prevent recursion and
+    // the others to prevent multiple core dumps from being generated.
+    SEHCleanupSignals();
 
     // Abort the process after waiting for the core dump to complete
     abort();
@@ -3417,8 +3418,7 @@ getFileName(
                                             NULL, 0, NULL, NULL);
 
         /* if only a file name is specified, prefix it with "./" */
-        if ((*lpApplicationName != '.') && (*lpApplicationName != '/') &&
-            (*lpApplicationName != '\\'))
+        if ((*lpApplicationName != '.') && (*lpApplicationName != '/'))
         {
             length += 2;
             lpTemp = lpPathFileName.OpenStringBuffer(length);
@@ -3447,9 +3447,6 @@ getFileName(
         }
 
         lpPathFileName.CloseBuffer(length -1);
-
-        /* Replace '\' by '/' */
-        FILEDosToUnixPathA(lpTemp);
 
         return TRUE;
     }
@@ -3521,8 +3518,6 @@ getFileName(
         /* restore last character */
         *lpEnd = wcEnd;
 
-        /* Replace '\' by '/' */
-        FILEDosToUnixPathA(lpFileName);
         if (!getPath(lpFileNamePS, lpPathFileName))
         {
             /* file is not in the path */
@@ -3657,6 +3652,7 @@ buildArgv(
         (strcat_s(lpAsciiCmdLine, iLength, " ") != SAFECRT_SUCCESS))
     {
         ERROR("strcpy_s/strcat_s failed!\n");
+        free(lpAsciiCmdLine);
         return NULL;
     }
 

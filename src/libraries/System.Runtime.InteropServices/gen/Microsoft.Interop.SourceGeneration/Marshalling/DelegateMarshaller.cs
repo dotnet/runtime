@@ -14,9 +14,9 @@ namespace Microsoft.Interop
     {
         public bool IsSupported(TargetFramework target, Version version) => true;
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            return MarshallerHelpers.SystemIntPtrType;
+            return SpecialTypeInfo.IntPtr;
         }
 
         public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
@@ -31,15 +31,14 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
-            // [TODO] Handle byrefs in a more common place?
-            // This pattern will become very common (arrays and strings will also use it)
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, context);
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
                     break;
                 case StubCodeContext.Stage.Marshal:
-                    if (info.RefKind != RefKind.Out)
+                    if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                     {
                         // <nativeIdentifier> = <managedIdentifier> != null ? Marshal.GetFunctionPointerForDelegate(<managedIdentifier>) : default;
                         yield return ExpressionStatement(
@@ -62,7 +61,7 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Unmarshal:
-                    if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
+                    if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                     {
                         // <managedIdentifier> = <nativeIdentifier> != default : Marshal.GetDelegateForFunctionPointer<<managedType>>(<nativeIdentifier>) : null;
                         yield return ExpressionStatement(
@@ -88,7 +87,7 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.NotifyForSuccessfulInvoke:
-                    if (info.RefKind != RefKind.Out)
+                    if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                     {
                         yield return ExpressionStatement(
                             InvocationExpression(

@@ -5,7 +5,7 @@ namespace DefaultNamespace
 {
     using System;
 
-    internal class NStructTun
+    public class NStructTun
     {
         public static int Main()
         {

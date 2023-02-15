@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -13,9 +13,9 @@ namespace Runtime_54647
         Vector64<int> _fld2;
     }
 
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        public static int Main()
         {
             var val1 = new Vector64x2();
             var val2 = new Vector64x2();

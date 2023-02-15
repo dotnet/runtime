@@ -584,6 +584,40 @@ netcore_probe_for_module_nofail (MonoImage *image, const char *file_name, int fl
 	return result;
 }
 
+static MonoDl*
+netcore_lookup_self_native_handle (void)
+{
+	ERROR_DECL (load_error);
+	if (!internal_module)
+		internal_module = mono_dl_open_self (load_error);
+
+	if (!internal_module)
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '__Internal': '%s'.", mono_error_get_message_without_fields (load_error));
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via __Internal.");
+	mono_error_cleanup (load_error);
+
+	return internal_module;
+}
+
+static MonoDl* native_handle_lookup_wrapper (gpointer handle)
+{
+	MonoDl *result = NULL;
+
+	if (!internal_module)
+		netcore_lookup_self_native_handle ();
+
+	if (internal_module->handle == handle) {
+		result = internal_module;
+	} else {
+		native_library_lock ();
+		result = netcore_handle_lookup (handle);
+		native_library_unlock ();
+	}
+
+	return result;
+}
+
 static MonoDl *
 netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, const char *scope, guint32 flags, MonoError *error)
 {
@@ -631,9 +665,7 @@ netcore_resolve_with_dll_import_resolver (MonoAssemblyLoadContext *alc, MonoAsse
 	mono_runtime_invoke_checked (resolve, NULL, args, error);
 	goto_if_nok (error, leave);
 
-	native_library_lock ();
-	result = netcore_handle_lookup (lib);
-	native_library_unlock ();
+	result = native_handle_lookup_wrapper (lib);
 
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (result);
@@ -688,9 +720,7 @@ netcore_resolve_with_load (MonoAssemblyLoadContext *alc, const char *scope, Mono
 	mono_runtime_invoke_checked (resolve, NULL, args, error);
 	goto_if_nok (error, leave);
 
-	native_library_lock ();
-	result = netcore_handle_lookup (lib);
-	native_library_unlock ();
+	result = native_handle_lookup_wrapper (lib);
 
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (result);
@@ -755,9 +785,7 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 	mono_runtime_invoke_checked (resolve, NULL, args, error);
 	goto_if_nok (error, leave);
 
-	native_library_lock ();
-	result = netcore_handle_lookup (lib);
-	native_library_unlock ();
+	result = native_handle_lookup_wrapper (lib);
 
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (result);
@@ -800,22 +828,6 @@ netcore_check_alc_cache (MonoAssemblyLoadContext *alc, const char *scope)
 	}
 
 	return result;
-}
-
-static MonoDl*
-netcore_lookup_self_native_handle (void)
-{
-	ERROR_DECL (load_error);
-	if (!internal_module)
-		internal_module = mono_dl_open_self (load_error);
-
-	if (!internal_module)
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '__Internal': '%s'.", mono_error_get_message_without_fields (load_error));
-
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via __Internal.");
-	mono_error_cleanup (load_error);
-
-	return internal_module;
 }
 
 static MonoDl *

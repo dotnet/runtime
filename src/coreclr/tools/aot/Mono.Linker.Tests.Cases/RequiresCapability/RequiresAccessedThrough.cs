@@ -225,7 +225,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			// NativeAOT should produce diagnostics when using Func
 			// https://github.com/dotnet/runtime/issues/73321
 			[ExpectedWarning ("IL2026", "--PropertyWithLdToken.get--")]
-			[ExpectedWarning ("IL2026", "--PropertyWithLdToken.get--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--PropertyWithLdToken.get--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL3002", "--PropertyWithLdToken.get--", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3050", "--PropertyWithLdToken.get--", ProducedBy = ProducedBy.Analyzer)]
 			public static void Test ()

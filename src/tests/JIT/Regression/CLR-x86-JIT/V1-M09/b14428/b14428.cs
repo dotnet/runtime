@@ -11,7 +11,7 @@ namespace DefaultNamespace
     public class DateTimeCompare
     {
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             Object v1 = new DateTime(1952, 2, 19);
             Object v2 = new DateTime(1968, 12, 8);

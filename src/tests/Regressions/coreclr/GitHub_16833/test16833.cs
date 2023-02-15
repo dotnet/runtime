@@ -178,7 +178,7 @@ namespace TestShufflingThunk
             }
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             int exitCode = 100;
 

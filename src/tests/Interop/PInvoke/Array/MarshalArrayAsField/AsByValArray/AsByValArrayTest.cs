@@ -1176,7 +1176,7 @@ class Test
         Assert.True(TestStructEquals(InitStructArray(ARRAY_SIZE), retval13.arr));
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         try
         {

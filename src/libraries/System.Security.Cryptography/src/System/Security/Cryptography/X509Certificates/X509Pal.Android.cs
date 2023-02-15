@@ -160,7 +160,7 @@ namespace System.Security.Cryptography.X509Certificates
                 int written = writer.Encode(rented);
 
                 DSA dsa = DSA.Create();
-                IDisposable? toDispose = dsa;
+                DSA? toDispose = dsa;
 
                 try
                 {

@@ -3,7 +3,7 @@
 //
 
 using System;
-class test1
+public class test1
 {
     public struct VT
     {

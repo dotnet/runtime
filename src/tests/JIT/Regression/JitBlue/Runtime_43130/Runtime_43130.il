@@ -16,7 +16,7 @@
 }
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit Runtime_43130
+.class public auto ansi beforefieldinit Runtime_43130
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  Test1(int32 i1) cil managed noinlining

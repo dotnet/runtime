@@ -77,7 +77,7 @@ namespace ILCompiler.Dataflow
             _logger = logger;
             _factory = factory;
             _origin = origin;
-            _reflectionMarker = new ReflectionMarker(logger, factory, annotations, typeHierarchyDataFlow: false, enabled: false);
+            _reflectionMarker = new ReflectionMarker(logger, factory, annotations, typeHierarchyDataFlowOrigin: null, enabled: false);
             TrimAnalysisPatterns = new TrimAnalysisPatternStore(MultiValueLattice, logger);
         }
 
@@ -86,7 +86,7 @@ namespace ILCompiler.Dataflow
             base.InterproceduralScan(methodBody);
 
             // Replace the reflection marker with one which actually marks
-            _reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlow: false, enabled: true);
+            _reflectionMarker = new ReflectionMarker(_logger, _factory, _annotations, typeHierarchyDataFlowOrigin: null, enabled: true);
             TrimAnalysisPatterns.MarkAndProduceDiagnostics(_reflectionMarker);
         }
 
@@ -100,7 +100,7 @@ namespace ILCompiler.Dataflow
                 var method = methodBody.OwningMethod;
                 var methodReturnValue = _annotations.GetMethodReturnValue(method);
                 if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
-                    HandleAssignmentPattern(_origin, ReturnValue, methodReturnValue, new MethodOrigin(method));
+                    HandleAssignmentPattern(_origin, ReturnValue, methodReturnValue, method.GetDisplayName());
             }
         }
 
@@ -117,8 +117,8 @@ namespace ILCompiler.Dataflow
         {
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
             Debug.Assert(annotation != DynamicallyAccessedMemberTypes.None);
-            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlow: true, enabled: true);
-            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, new TypeOrigin(type));
+            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: type, enabled: true);
+            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, type.GetDisplayName());
             return reflectionMarker.Dependencies;
         }
 
@@ -141,24 +141,36 @@ namespace ILCompiler.Dataflow
 
         protected override MultiValue GetFieldValue(FieldDesc field) => _annotations.GetFieldValue(field);
 
-        private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, Origin memberWithRequirements)
+        private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, string reason)
         {
             // We must record all field accesses since we need to check RUC/RDC/RAF attributes on them regardless of annotations
             if (targetValue.DynamicallyAccessedMemberTypes != 0 || targetValue is FieldValue)
             {
                 _origin = _origin.WithInstructionOffset(methodBody, offset);
-                HandleAssignmentPattern(_origin, sourceValue, targetValue, memberWithRequirements);
+                HandleAssignmentPattern(_origin, sourceValue, targetValue, reason);
             }
         }
 
         protected override void HandleStoreField(MethodIL methodBody, int offset, FieldValue field, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, field, valueToStore, new FieldOrigin(field.Field));
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, field, valueToStore, field.Field.GetDisplayName());
 
         protected override void HandleStoreParameter(MethodIL methodBody, int offset, MethodParameterValue parameter, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, parameter, valueToStore, parameter.ParameterOrigin);
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, parameter, valueToStore, parameter.Parameter.Method.GetDisplayName());
 
         protected override void HandleStoreMethodReturnValue(MethodIL methodBody, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, new MethodOrigin(returnValue.Method));
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, returnValue.Method.GetDisplayName());
+
+        protected override void HandleMethodReflectionAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
+        {
+            _origin = _origin.WithInstructionOffset(methodBody, offset);
+            TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedMethod, _origin));
+        }
+
+        protected override void HandleFieldReflectionAccess(MethodIL methodBody, int offset, FieldDesc accessedField)
+        {
+            _origin = _origin.WithInstructionOffset(methodBody, offset);
+            TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedField, _origin));
+        }
 
         public override bool HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams, out MultiValue methodReturnValue)
         {
@@ -220,7 +232,7 @@ namespace ILCompiler.Dataflow
 
             MultiValue? maybeMethodReturnValue = null;
 
-            var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, reflectionMarker, diagnosticContext, callingMethodDefinition, new MethodOrigin(calledMethod));
+            var handleCallAction = new HandleCallAction(reflectionMarker.Annotations, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod.GetDisplayName());
 
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(calledMethod);
             switch (intrinsicId)
@@ -341,7 +353,7 @@ namespace ILCompiler.Dataflow
                             {
                                 if (systemTypeValue.RepresentedType.Type.IsEnum)
                                 {
-                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ConstructedTypeSymbol(systemTypeValue.RepresentedType.Type.MakeArrayType()), "Enum.GetValues");
+                                    reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedType(systemTypeValue.RepresentedType.Type.MakeArrayType()), "Enum.GetValues");
                                 }
                             }
                             else
@@ -381,7 +393,7 @@ namespace ILCompiler.Dataflow
                                         && systemTypeValue.RepresentedType.Type.GetParameterlessConstructor() is MethodDesc ctorMethod
                                         && !reflectionMarker.Factory.MetadataManager.IsReflectionBlocked(ctorMethod))
                                     {
-                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectableMethod(ctorMethod), "Marshal API");
+                                        reflectionMarker.Dependencies.Add(reflectionMarker.Factory.ReflectedMethod(ctorMethod), "Marshal API");
                                     }
                                 }
                             }
@@ -617,9 +629,9 @@ namespace ILCompiler.Dataflow
             in MessageOrigin origin,
             in MultiValue value,
             ValueWithDynamicallyAccessedMembers targetValue,
-            Origin memberWithRequirements)
+            string reason)
         {
-            TrimAnalysisPatterns.Add(new TrimAnalysisAssignmentPattern(value, targetValue, origin, memberWithRequirements));
+            TrimAnalysisPatterns.Add(new TrimAnalysisAssignmentPattern(value, targetValue, origin, reason));
         }
 
         private static bool IsPInvokeDangerous(MethodDesc calledMethod, out bool comDangerousMethod, out bool aotUnsafeDelegate)

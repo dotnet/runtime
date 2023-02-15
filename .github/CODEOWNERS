@@ -45,7 +45,7 @@
 /src/mono/mono/mini/*riscv* @vargaz @lambdageek
 /src/mono/mono/mini/*type-check* @lambdageek
 /src/mono/mono/mini/debugger-agent.c @vargaz @thaystg @lambdageek
-/src/mono/mono/mini/interp/* @BrzVlad @vargaz
+/src/mono/mono/mini/interp/* @BrzVlad @vargaz @kotlarmilos
 
 /src/mono/mono/profiler @BrzVlad @lambdageek
 /src/mono/mono/sgen @BrzVlad @lambdageek @naricc
@@ -82,6 +82,14 @@
 /src/tasks/WasmBuildTasks/ @radical
 
 /eng/pipelines/**/*wasm* @radical
+
+# ILLink codeowners
+/src/tools/illink/ @marek-safar
+/src/tools/illink/src/analyzer/ @radekdoulik
+/src/tools/illink/src/ILLink.Tasks/ @sbomer
+/src/tools/illink/src/ILLink.RoslynAnalyzer/ @sbomer
+/src/tools/illink/src/linker/ @marek-safar @mrvoorhe
+/src/tools/illink/test/ @marek-safar @mrvoorhe
 
 # Obsoletions / Custom Diagnostics
 

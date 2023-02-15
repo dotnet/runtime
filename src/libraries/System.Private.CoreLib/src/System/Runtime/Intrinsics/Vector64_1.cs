@@ -53,14 +53,16 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector64{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
-        public static int Count
+        public static unsafe int Count
         {
             [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
-                return Vector64.Size / Unsafe.SizeOf<T>();
+#pragma warning disable 8500 // sizeof of managed types
+                return Vector64.Size / sizeof(T);
+#pragma warning restore 8500
             }
         }
 
@@ -68,6 +70,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
         public static bool IsSupported
         {
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {

@@ -136,10 +136,7 @@ namespace System.Collections.Specialized
 
         private static Section CreateSectionHelper(short maxValue, short priorMask, short priorOffset)
         {
-            if (maxValue < 1)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidValue_TooSmall, nameof(maxValue), 1), nameof(maxValue));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxValue);
 
             short offset = (short)(priorOffset + BitOperations.PopCount((uint)(ushort)priorMask));
             if (offset >= 32)

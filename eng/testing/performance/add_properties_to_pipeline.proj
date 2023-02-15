@@ -1,0 +1,8 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\Versions.props" />
+
+  <Target Name="SetVariables">
+    <Exec Command="echo '##vso[task.setvariable variable=productVersion]$(ProductVersion)'"/>
+    <Exec Command="echo Writing $(ProductVersion) to productVersion"/>
+  </Target>
+</Project>

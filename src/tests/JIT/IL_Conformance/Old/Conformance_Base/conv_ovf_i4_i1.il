@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace conv_ovf_i4_i1
+{
 .class public		conv_ovf_i1 {
 
 
@@ -83,111 +86,114 @@ END2:
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 	ldc.i4			0x80000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i1::conv(int32,int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0xFFFFFFFF
-	call		int32 conv_ovf_i1::conv(int32,int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i1::conv(int32,int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i1::conv(int32,int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x7FFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i1::conv(int32,int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 
 	ldc.i4			0xFFFFFF80
 	ldc.i4			0xFFFFFF80
-	call		int32 conv_ovf_i1::conv(int32,int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0xFFFFFFFF
-	call		int32 conv_ovf_i1::conv(int32,int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i1::conv(int32,int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i1::conv(int32,int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x0000007F
 	ldc.i4			0x0000007F
-	call		int32 conv_ovf_i1::conv(int32,int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 
 	ldc.i4			0x80000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x7FFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i4			0x0000007F
 	ldc.i4			0x0000007F
-	call		int32 conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
+	call		int32 conv_ovf_i4_i1.conv_ovf_i1::conv_un(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -209,3 +215,4 @@ END:
 
 
 .assembly conv_ovf_i4_i1{}
+}

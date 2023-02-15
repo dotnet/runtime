@@ -6,7 +6,7 @@ using System.Runtime.Intrinsics.X86;
 
 public unsafe class ImageSharp_2117
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         if (Sse.IsSupported)
         {

@@ -11,7 +11,7 @@ namespace Test
         public static long[] m_alStatic1 = null;
     }
 
-    struct AA
+    public struct AA
     {
         bool Method1() { return false; }
 
@@ -24,7 +24,7 @@ namespace Test
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

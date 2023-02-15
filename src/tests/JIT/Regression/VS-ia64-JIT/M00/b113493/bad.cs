@@ -24,7 +24,7 @@ namespace DefaultNamespace
     {
         static int ExitCode = 0;
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             Thread mv_Thread;
             ExternalException ee = new ExternalException();

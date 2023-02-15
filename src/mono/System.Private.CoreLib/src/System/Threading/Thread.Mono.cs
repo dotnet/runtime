@@ -65,7 +65,7 @@ namespace System.Threading
         private StartHelper? _startHelper;
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
-#if TARGET_UNIX || TARGET_BROWSER
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
 #endif
 
@@ -138,7 +138,7 @@ namespace System.Threading
                 return 7;
             }
         }
-#if TARGET_UNIX || TARGET_BROWSER
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
         {
             get
@@ -181,22 +181,9 @@ namespace System.Threading
             // no-op
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int GetCurrentProcessorNumber();
-
-        public static int GetCurrentProcessorId()
-        {
-            int id = GetCurrentProcessorNumber();
-
-            if (id < 0)
-                id = Environment.CurrentManagedThreadId;
-
-            return id;
-        }
-
         public void Interrupt()
         {
-#if TARGET_UNIX || TARGET_BROWSER // TODO: https://github.com/dotnet/runtime/issues/49521
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI // TODO: https://github.com/dotnet/runtime/issues/49521
             WaitSubsystem.Interrupt(this);
 #endif
             InterruptInternal(this);
@@ -204,12 +191,11 @@ namespace System.Threading
 
         public bool Join(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < Timeout.Infinite)
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout, SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, Timeout.Infinite);
             return JoinInternal(this, millisecondsTimeout);
         }
 
-#if TARGET_UNIX || TARGET_BROWSER
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         [DynamicDependency(nameof(OnThreadExiting))]
 #endif
         private void Initialize()
@@ -301,7 +287,7 @@ namespace System.Threading
 
         private static void OnThreadExiting(Thread thread)
         {
-#if TARGET_UNIX || TARGET_BROWSER
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
             thread.WaitInfo.OnThreadExiting();
 #endif
         }

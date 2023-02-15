@@ -7,7 +7,7 @@ namespace RNG
 {
     internal class Test
     {
-        private static int Main(string[] args)
+        private static int Main()
         {
             return foo(10, 20, 30, 40, 50);
         }

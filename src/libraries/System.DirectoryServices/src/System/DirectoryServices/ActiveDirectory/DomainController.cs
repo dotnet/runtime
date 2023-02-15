@@ -410,7 +410,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // Increment the RIDAvailablePool by 30k.
                 if (role == ActiveDirectoryRole.RidRole)
                 {
-                    System.DirectoryServices.Interop.UnsafeNativeMethods.IADsLargeInteger ridPool = (System.DirectoryServices.Interop.UnsafeNativeMethods.IADsLargeInteger)roleObjectEntry.Properties[PropertyManager.RIDAvailablePool].Value!;
+                    System.DirectoryServices.UnsafeNativeMethods.IADsLargeInteger ridPool = (System.DirectoryServices.UnsafeNativeMethods.IADsLargeInteger)roleObjectEntry.Properties[PropertyManager.RIDAvailablePool].Value!;
 
                     // check the overflow of the low part
                     if (ridPool.LowPart + UpdateRidPoolSeizureValue < ridPool.LowPart)

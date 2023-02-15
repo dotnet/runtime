@@ -26,7 +26,7 @@ namespace Tracing.Tests
         private static MethodInfo s_EventActivityIdControl;
         private static bool s_FailureEncountered = false;
 
-        static int Main(string[] args)
+        static int Main()
         {
             if(!Initialize())
             {

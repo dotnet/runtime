@@ -31,7 +31,7 @@ namespace SimpleArg
             return arg.IntValue;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             int result = Method(Holder.RvaStatic);
             result += Method(Holder.NormalStatic);

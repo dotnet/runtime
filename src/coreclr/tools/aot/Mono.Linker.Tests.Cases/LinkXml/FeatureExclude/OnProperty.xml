@@ -1,0 +1,10 @@
+<linker>
+    <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.FeatureExclude.OnProperty/Foo">
+            <property signature="System.Int32 FeatureOne" accessors="all" feature="one"/>
+        </type>
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.FeatureExclude.OnProperty/Foo">
+            <property signature="System.Int32 FeatureTwo" accessors="all" feature="two"/>
+        </type>
+    </assembly>
+</linker>

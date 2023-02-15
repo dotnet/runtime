@@ -39,7 +39,7 @@ namespace System.Net.Mime
 
         private ReadStateInfo? _readState;
         private readonly WriteStateInfoBase _writeState;
-        private readonly IByteEncoder _encoder;
+        private readonly QEncoder _encoder;
 
         internal QEncodedStream(WriteStateInfoBase wsi) : base(new MemoryStream())
         {

@@ -835,6 +835,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_InlineCount(0)
     , m_MaxInlineSize(DEFAULT_MAX_INLINE_SIZE)
     , m_MaxInlineDepth(DEFAULT_MAX_INLINE_DEPTH)
+    , m_MaxForceInlineDepth(DEFAULT_MAX_FORCE_INLINE_DEPTH)
     , m_InitialTimeBudget(0)
     , m_InitialTimeEstimate(0)
     , m_CurrentTimeBudget(0)
@@ -885,6 +886,18 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     if (m_MaxInlineDepth > IMPLEMENTATION_MAX_INLINE_DEPTH)
     {
         m_MaxInlineDepth = IMPLEMENTATION_MAX_INLINE_DEPTH;
+    }
+
+    // Possibly modify the max force inline depth
+    //
+    // Default value of JitForceInlineDepth is the same as our default.
+    // So normally this next line does not change the size.
+    m_MaxForceInlineDepth = JitConfig.JitForceInlineDepth();
+
+    // But don't overdo it
+    if (m_MaxForceInlineDepth > m_MaxInlineDepth)
+    {
+        m_MaxForceInlineDepth = m_MaxInlineDepth;
     }
 
 #endif // DEBUG

@@ -371,13 +371,13 @@ namespace Microsoft.Interop
                 elementStatements.AddRange(_elementMarshaller.Generate(localElementInfo, elementSubContext));
             }
 
-            if (elementStatements.Any())
+            if (elementStatements.Count != 0)
             {
                 StatementSyntax marshallingStatement = Block(
                     List(_elementMarshaller.Generate(localElementInfo, elementSetupSubContext)
                         .Concat(elementStatements)));
 
-                if (_elementMarshaller.AsNativeType(_elementInfo) is PointerTypeSyntax elementNativeType)
+                if (_elementMarshaller.AsNativeType(_elementInfo).Syntax is PointerTypeSyntax elementNativeType)
                 {
                     PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(localElementInfo).native, elementNativeType);
                     marshallingStatement = (StatementSyntax)rewriter.Visit(marshallingStatement);

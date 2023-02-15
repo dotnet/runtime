@@ -923,7 +923,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     public static void Xml_DeserializeDateTimeOffsetType()
     {
         var now = new DateTimeOffset(DateTime.Now);
-        string xml = @"<?xml version=""1.0""?><dateTimeOffset>" + now.ToString("o") + "</dateTimeOffset>";
+        string xml = $@"<?xml version=""1.0""?><dateTimeOffset>{now:o}</dateTimeOffset>";
         XmlSerializer serializer = new XmlSerializer(typeof(DateTimeOffset));
 
         using (StringReader reader = new StringReader(xml))

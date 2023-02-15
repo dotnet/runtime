@@ -182,7 +182,29 @@
   <data name="InvalidAttributedMethodSignatureMessage" xml:space="preserve">
     <value>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</value>
   </data>
-  <data name="InvalidLibraryImportAttributeUsageTitle" xml:space="preserve">
-    <value>Invalid 'LibraryImportAttribute' usage</value>
+  <data name="InvalidVirtualMethodIndexAttributeUsage" xml:space="preserve">
+    <value>Invalid 'VirtualMethodIndexAttribute' usage</value>
+  </data>
+  <data name="InvalidExceptionMarshallingConfigurationDescription" xml:space="preserve">
+    <value>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' is invalid.</value>
+  </data>
+  <data name="InvalidExceptionMarshallingConfigurationMessage" xml:space="preserve">
+    <value>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' on method '{0}' is invalid. {1}</value>
+    <comment>{1} is a message containing additional details about what is not valid</comment>
+  </data>
+  <data name="InvalidExceptionMarshallingConfigurationMissingCustomType" xml:space="preserve">
+    <value>'ExceptionMarshallingCustomType' must be specified when 'ExceptionMarshalling' is set to 'ExceptionMarshalling.Custom'.</value>
+  </data>
+  <data name="InvalidExceptionMarshallingConfigurationNotCustom" xml:space="preserve">
+    <value>'ExceptionMarshalling' should be set to 'ExceptionMarshalling.Custom' when 'ExceptionMarshallingCustomType' is specified.</value>
+  </data>
+  <data name="InvalidExceptionMarshallingValue" xml:space="preserve">
+    <value>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</value>
+  </data>
+  <data name="InterfaceTypeNotSupportedTitle" xml:space="preserve">
+    <value>'GeneratedComInterfaceType' does not support the 'ComInterfaceType' value supplied to 'InterfaceTypeAttribute' on the same type.</value>
+  </data>
+  <data name="InterfaceTypeNotSupportedMessage" xml:space="preserve">
+    <value>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</value>
   </data>
 </root>

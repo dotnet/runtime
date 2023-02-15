@@ -12,6 +12,8 @@ import { mono_intern_string } from "./strings";
 import { mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { ws_wasm_create, ws_wasm_open, ws_wasm_send, ws_wasm_receive, ws_wasm_close, ws_wasm_abort } from "./web-socket";
 import { mono_wasm_get_loaded_files } from "./assets";
+import { jiterpreter_dump_stats } from "./jiterpreter";
+import { getOptions, applyOptions } from "./jiterpreter-support";
 
 export function export_internal(): any {
     return {
@@ -74,6 +76,11 @@ export function export_internal(): any {
         http_wasm_get_response_bytes,
         http_wasm_get_response_length,
         http_wasm_get_streamed_response_bytes,
+
+        // jiterpreter
+        jiterpreter_dump_stats,
+        jiterpreter_apply_options: applyOptions,
+        jiterpreter_get_options: getOptions
     };
 }
 

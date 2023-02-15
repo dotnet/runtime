@@ -6,7 +6,7 @@ using System;
 public class a
 {
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {

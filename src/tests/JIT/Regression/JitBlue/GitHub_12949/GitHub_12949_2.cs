@@ -30,7 +30,7 @@ public class X<K>
     int count;
 }
 
-class B
+public class B
 {
     public static int Main()
     {

@@ -96,7 +96,7 @@ public static class GitHub_18542
         s5.M();
     }
 
-    static int Main()
+    public static int Main()
     {
         ViaClass();
         ViaStruct1();

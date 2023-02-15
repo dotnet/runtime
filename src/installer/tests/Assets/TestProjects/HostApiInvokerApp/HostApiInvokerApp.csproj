@@ -5,10 +5,7 @@
     <OutputType>Exe</OutputType>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
     <DefineConstants Condition="'$(OS)' == 'Windows_NT'">WINDOWS;$(DefineConstants)</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-  </ItemGroup>
 
 </Project>

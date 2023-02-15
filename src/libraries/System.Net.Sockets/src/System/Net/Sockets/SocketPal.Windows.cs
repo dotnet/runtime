@@ -1049,7 +1049,7 @@ namespace System.Net.Sockets
         }
 
         [Conditional("unnecessary")]
-        public static void CheckDualModeReceiveSupport(Socket socket)
+        public static void CheckDualModePacketInfoSupport(Socket socket)
         {
             // Dual-mode sockets support received packet info on Windows.
         }

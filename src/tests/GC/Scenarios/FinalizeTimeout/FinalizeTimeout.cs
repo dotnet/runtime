@@ -7,7 +7,7 @@ using System.Threading;
 
 public class FinalizeTimeout
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         Console.WriteLine("Main start");
 

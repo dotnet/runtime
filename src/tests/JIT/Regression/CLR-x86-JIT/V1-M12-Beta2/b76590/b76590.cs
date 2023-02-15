@@ -23,7 +23,7 @@ public class Bug26518
         one = 1,
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         E1 e1 = E1.one;
         Object that = E1.one;

@@ -21,7 +21,6 @@ set(BINDER_COMMON_HEADERS
     inc/assembly.hpp
     inc/assembly.inl
     inc/assemblybindercommon.hpp
-    inc/assemblyentry.hpp
     inc/assemblyhashtraits.hpp
     inc/assemblyidentity.hpp
     inc/assemblyname.hpp
@@ -35,8 +34,6 @@ set(BINDER_COMMON_HEADERS
     inc/defaultassemblybinder.h
     inc/failurecache.hpp
     inc/failurecachehashtraits.hpp
-    inc/loadcontext.hpp
-    inc/loadcontext.inl
     inc/textualidentityparser.hpp
     inc/utils.hpp
 )
@@ -51,7 +48,6 @@ set(BINDER_HEADERS
     ${BINDER_COMMON_HEADERS}
     inc/activitytracker.h
     inc/customassemblybinder.h
-    inc/contextentry.hpp
 )
 
 if (CLR_CMAKE_TARGET_WIN32)

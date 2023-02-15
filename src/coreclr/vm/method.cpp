@@ -2014,9 +2014,8 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     if (IsWrapperStub() || IsEnCAddedMethod())
         return GetStableEntryPoint();
 
-
     // For EnC always just return the stable entrypoint so we can update the code
-    if (IsEnCMethod())
+    if (InEnCEnabledModule())
         return GetStableEntryPoint();
 
     // If the method has already been jitted, we can give out the direct address
@@ -2203,7 +2202,7 @@ void MethodDesc::Reset()
     // different pieces of data non-atomically.
     // Use this only if you can guarantee thread-safety somehow.
 
-    _ASSERTE(IsEnCMethod() || // The process is frozen by the debugger
+    _ASSERTE(InEnCEnabledModule() || // The process is frozen by the debugger
              IsDynamicMethod() || // These are used in a very restricted way
              GetLoaderModule()->IsReflection()); // Rental methods
 
@@ -2298,7 +2297,7 @@ BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
         return TRUE;
 
     // Create precodes for edit and continue to make methods updateable
-    if (IsEnCMethod() || IsEnCAddedMethod())
+    if (InEnCEnabledModule() || IsEnCAddedMethod())
         return TRUE;
 
     // Precreate precodes for LCG methods so we do not leak memory when the method descs are recycled
@@ -2391,8 +2390,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
             // First restore method table pointer in singleton chunk;
             // it might be out-of-module
             ClassLoader::EnsureLoaded(TypeHandle(GetMethodTable()), level);
-
-            pIMD->m_wFlags2 = pIMD->m_wFlags2 & ~InstantiatedMethodDesc::Unrestored;
 
             if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
             {

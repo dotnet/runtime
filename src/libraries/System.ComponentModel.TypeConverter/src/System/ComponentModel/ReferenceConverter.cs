@@ -147,7 +147,7 @@ namespace System.ComponentModel
                 else
                 {
                     // Now try IContainer.
-                    IContainer cont = context.Container;
+                    IContainer? cont = context.Container;
                     if (cont != null)
                     {
                         ComponentCollection objs = cont.Components;

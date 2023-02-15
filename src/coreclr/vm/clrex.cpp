@@ -1136,8 +1136,8 @@ void EEResourceException::GetMessage(SString &result)
     // since we don't want to call managed code here.
     //
 
-    result.Printf("%s (message resource %S)",
-                  CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUnicode());
+    result.Printf("%s (message resource %s)",
+                  CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUTF8());
 }
 
 BOOL EEResourceException::GetThrowableMessage(SString &result)
@@ -1554,10 +1554,7 @@ void EEFileLoadException::SetFileName(const SString &fileName, BOOL removePath)
     {
         SString::CIterator i = fileName.End();
 
-        if (fileName.FindBack(i, W('\\')))
-            i++;
-
-        if (fileName.FindBack(i, W('/')))
+        if (fileName.FindBack(i, DIRECTORY_SEPARATOR_CHAR_W))
             i++;
 
         m_name.Set(fileName, i, fileName.End());

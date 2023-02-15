@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -13,6 +14,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_ckfinite_r4
+{
 .class public		_ckfinite {
 
 //---- GLOBAL DATA ----------
@@ -326,61 +329,64 @@ FAIL:
 }
 
 //---- MAIN -----------------
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 //====== begin testing ======
 	//- 32 bit -inf
 	ldc.r4		float32(0xFF800000)
-	call	int32 _ckfinite::r4_0(float32)
+	call	int32 ldc_ckfinite_r4._ckfinite::r4_0(float32)
 	ldc.i4		0xEEEEEEEE
 	ceq
 	brfalse		FAIL
 	//- 32 bit -min
 	ldc.r4		float32(0xFF7FFFFF)
-	call	int32 _ckfinite::r4_1(float32)
+	call	int32 ldc_ckfinite_r4._ckfinite::r4_1(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit -1
 	ldc.r4		float32(0xBF800000)
-	call	int32 _ckfinite::r4_2(float32)
+	call	int32 ldc_ckfinite_r4._ckfinite::r4_2(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit -0
 	ldc.r4		float32(0x80000000)
-	call	int32 _ckfinite::r4_3(float32)
+	call	int32 ldc_ckfinite_r4._ckfinite::r4_3(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit +0
 	ldc.r4		float32(0x00000000)
-	call	int32 _ckfinite::r4_4(float32)
+	call	int32 ldc_ckfinite_r4._ckfinite::r4_4(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit +1
 	ldc.r4		float32(0x3F800000)
-	call	int32 _ckfinite::r4_5(float32)
+	call	int32 ldc_ckfinite_r4._ckfinite::r4_5(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit +max
 	ldc.r4		float32(0x7F7FFFFF)
-	call	int32 _ckfinite::r4_6(float32)
+	call	int32 ldc_ckfinite_r4._ckfinite::r4_6(float32)
 	ldc.i4		0x11111111
 	ceq
 	brfalse		FAIL
 	//- 32 bit +inf
 	ldc.r4		float32(0x7F800000)
-	call	int32 _ckfinite::r4_7(float32)
+	call	int32 ldc_ckfinite_r4._ckfinite::r4_7(float32)
 	ldc.i4		0xEEEEEEEE
 	ceq
 	brfalse		FAIL
 	//- 32 bit NaN
 	ldc.r4		float32(0x7FC00000)
-	call	int32 _ckfinite::r4_8(float32)
+	call	int32 ldc_ckfinite_r4._ckfinite::r4_8(float32)
 	ldc.i4		0xEEEEEEEE
 	ceq
 	brfalse		FAIL
@@ -406,3 +412,4 @@ END:
 
 .assembly ldc_ckfinite_r4{}
 
+}

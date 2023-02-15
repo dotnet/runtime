@@ -2,8 +2,9 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -28,6 +29,20 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs" Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="TestCommon\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
+  </ItemGroup>
+  <!-- Shared production code -->
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="..\..\src\System\Net\Quic\Internal\MsQuicApi.cs" Link="ProductionCode\System\Net\Quic\Internal\MsQuicApi.cs" />
+    <Compile Include="..\..\src\System\Net\Quic\Internal\MsQuicApi.NativeMethods.cs" Link="ProductionCode\System\Net\Quic\Internal\MsQuicApi.NativeMethods.cs" />
+    <Compile Include="..\..\src\System\Net\Quic\Internal\MsQuicSafeHandle.cs" Link="ProductionCode\System\Net\Quic\Internal\MsQuicSafeHandle.cs" />
+    <Compile Include="..\..\src\System\Net\Quic\Internal\ThrowHelper.cs" Link="ProductionCode\System\Net\Quic\Internal\ThrowHelper.cs" />
+    <Compile Include="..\..\src\System\Net\Quic\Interop\*.cs" Link="ProductionCode\System\Net\Quic\Interop\*.cs" />
+    <Compile Include="..\..\src\System\Net\Quic\NetEventSource.Quic.cs" Link="ProductionCode\System\Net\Quic\NetEventSource.Quic.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs" Link="Common\Interop\Linux\Interop.Libraries.cs" Condition="'$(TargetPlatformIdentifier)' == 'linux'" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs" Link="Common\Interop\OSX\Interop.Libraries.cs" Condition="'$(TargetPlatformIdentifier)' == 'osx'" />
+    <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs" Link="Common\System\Net\Security\TlsAlertMessage.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />

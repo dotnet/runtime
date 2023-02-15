@@ -234,7 +234,7 @@ sgen_has_critical_method (void)
 gboolean
 mono_gc_is_critical_method (MonoMethod *method)
 {
-#ifdef HOST_WASM
+#if defined(HOST_WASM) || defined(HOST_WASI)
 	//methods can't be critical under wasm due to the single thread'ness of it
 	return FALSE;
 #else
@@ -254,39 +254,11 @@ mono_install_sgen_mono_callbacks (MonoSgenMonoCallbacks *cb)
 	cb_inited = TRUE;
 }
 
-#if !ENABLE_ILGEN
-
-static void
-emit_nursery_check_noilgen (MonoMethodBuilder *mb, gboolean is_concurrent)
-{
-}
-
-static void
-emit_managed_allocator_noilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean profiler, int atype)
-{
-}
-
-static void
-install_noilgen (void)
-{
-	MonoSgenMonoCallbacks cb;
-	cb.version = MONO_SGEN_MONO_CALLBACKS_VERSION;
-	cb.emit_nursery_check = emit_nursery_check_noilgen;
-	cb.emit_managed_allocator = emit_managed_allocator_noilgen;
-	mono_install_sgen_mono_callbacks (&cb);
-}
-
-#endif
-
 static MonoSgenMonoCallbacks *
 get_sgen_mono_cb (void)
 {
 	if (G_UNLIKELY (!cb_inited)) {
-#ifdef ENABLE_ILGEN
 		mono_sgen_mono_ilgen_init ();
-#else
-		install_noilgen ();
-#endif
 	}
 	return &sgenmono_cb;
 }
@@ -2309,7 +2281,7 @@ pin_handle_stack_interior_ptrs (void **ptr_slot, void *user_data)
 	sgen_conservatively_pin_objects_from (ptr_slot, ptr_slot+1, ud->start_nursery, ud->end_nursery, PIN_TYPE_STACK);
 }
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) || defined(HOST_WASI)
 extern gboolean mono_wasm_enable_gc;
 #endif
 
@@ -2321,7 +2293,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 {
 	scan_area_arg_start = start_nursery;
 	scan_area_arg_end = end_nursery;
-#ifdef HOST_WASM
+#if defined(HOST_WASM) || defined(HOST_WASI)
 	//Under WASM we don't scan thread stacks and we can't trust the values we find there either.
 	if (!mono_wasm_enable_gc)
 		return;

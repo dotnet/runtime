@@ -24,7 +24,7 @@ namespace ConsoleApplication1
             public B[] b;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             try
             {

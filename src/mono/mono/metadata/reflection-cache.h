@@ -69,18 +69,32 @@ cache_object (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer item, M
 static inline MonoObjectHandle
 cache_object_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer item, MonoObjectHandle o)
 {
+	MonoObjectHandle obj;
 	ReflectedEntry pe;
 	pe.item = item;
 	pe.refclass = klass;
 
+	mono_mem_manager_init_reflection_hashes (mem_manager);
+
 	mono_mem_manager_lock (mem_manager);
-	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_conc_g_hash_table_lookup (mem_manager->refobject_hash, &pe));
-	if (MONO_HANDLE_IS_NULL (obj)) {
-		ReflectedEntry *e = alloc_reflected_entry (mem_manager);
-		e->item = item;
-		e->refclass = klass;
-		mono_conc_g_hash_table_insert (mem_manager->refobject_hash, e, MONO_HANDLE_RAW (o));
-		MONO_HANDLE_ASSIGN (obj, o);
+	if (!mem_manager->collectible) {
+		obj = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_conc_g_hash_table_lookup (mem_manager->refobject_hash, &pe));
+		if (MONO_HANDLE_IS_NULL (obj)) {
+			ReflectedEntry *e = alloc_reflected_entry (mem_manager);
+			e->item = item;
+			e->refclass = klass;
+			mono_conc_g_hash_table_insert (mem_manager->refobject_hash, e, MONO_HANDLE_RAW (o));
+			MONO_HANDLE_ASSIGN (obj, o);
+		}
+	} else {
+		obj = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_weak_hash_table_lookup (mem_manager->weak_refobject_hash, &pe));
+		if (MONO_HANDLE_IS_NULL (obj)) {
+			ReflectedEntry *e = alloc_reflected_entry (mem_manager);
+			e->item = item;
+			e->refclass = klass;
+			mono_weak_hash_table_insert (mem_manager->weak_refobject_hash, e, MONO_HANDLE_RAW (o));
+			MONO_HANDLE_ASSIGN (obj, o);
+		}
 	}
 	mono_mem_manager_unlock (mem_manager);
 	return obj;
@@ -99,9 +113,16 @@ check_object_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer 
 
 	// FIXME: May need a memory manager for item+klass ?
 
+	mono_mem_manager_init_reflection_hashes (mem_manager);
+
 	mono_mem_manager_lock (mem_manager);
-	MonoConcGHashTable *hash = mem_manager->refobject_hash;
-	obj_handle = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_conc_g_hash_table_lookup (hash, &e));
+	if (!mem_manager->collectible) {
+		MonoConcGHashTable *hash = mem_manager->refobject_hash;
+		obj_handle = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_conc_g_hash_table_lookup (hash, &e));
+	} else {
+		MonoWeakHashTable *hash = mem_manager->weak_refobject_hash;
+		obj_handle = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_weak_hash_table_lookup (hash, &e));
+	}
 	mono_mem_manager_unlock (mem_manager);
 
 	return obj_handle;

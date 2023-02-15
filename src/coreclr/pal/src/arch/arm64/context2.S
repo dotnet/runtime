@@ -212,3 +212,21 @@ LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
     ret
 
 LEAF_END RtlRestoreContext, _TEXT
+
+#ifdef __APPLE__
+
+// Incoming:
+//  x0: Context*
+//  x1: Exception*
+//
+LEAF_ENTRY RestoreCompleteContext, _TEXT
+    // We cannot restore all registers in the user mode code, so we rely on a help from kernel here. 
+    // The following instruction is an undefined instruction. In the hardware exception handler, we check
+    // if the faulting address is the RtlRestoreContext and in case it is, we update the context of
+    // the faulting thread using the CONTEXT pointed to by the x0 register.
+    // While this could be used for the full fidelity RtlRestoreContext implementation, it is too
+    // expensive for general usage of the RtlRestoreContext.
+    UDF #0
+LEAF_END RestoreCompleteContext, _TEXT
+
+#endif // __APPLE__

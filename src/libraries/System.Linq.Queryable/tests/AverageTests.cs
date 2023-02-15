@@ -432,140 +432,140 @@ namespace System.Linq.Tests
         [Fact]
         public void Average1()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Average();
+            var val = new[] { 0, 2, 1 }.AsQueryable().Average();
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average2()
         {
-            var val = (new int?[] { 0, 2, 1 }).AsQueryable().Average();
+            var val = new int?[] { 0, 2, 1 }.AsQueryable().Average();
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average3()
         {
-            var val = (new long[] { 0, 2, 1 }).AsQueryable().Average();
+            var val = new long[] { 0, 2, 1 }.AsQueryable().Average();
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average4()
         {
-            var val = (new long?[] { 0, 2, 1 }).AsQueryable().Average();
+            var val = new long?[] { 0, 2, 1 }.AsQueryable().Average();
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average5()
         {
-            var val = (new float[] { 0, 2, 1 }).AsQueryable().Average();
+            var val = new float[] { 0, 2, 1 }.AsQueryable().Average();
             Assert.Equal((float)1, val);
         }
 
         [Fact]
         public void Average6()
         {
-            var val = (new float?[] { 0, 2, 1 }).AsQueryable().Average();
+            var val = new float?[] { 0, 2, 1 }.AsQueryable().Average();
             Assert.Equal((float)1, val);
         }
 
         [Fact]
         public void Average7()
         {
-            var val = (new double[] { 0, 2, 1 }).AsQueryable().Average();
+            var val = new double[] { 0, 2, 1 }.AsQueryable().Average();
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average8()
         {
-            var val = (new double?[] { 0, 2, 1 }).AsQueryable().Average();
+            var val = new double?[] { 0, 2, 1 }.AsQueryable().Average();
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average9()
         {
-            var val = (new decimal[] { 0, 2, 1 }).AsQueryable().Average();
+            var val = new decimal[] { 0, 2, 1 }.AsQueryable().Average();
             Assert.Equal((decimal)1, val);
         }
 
         [Fact]
         public void Average10()
         {
-            var val = (new decimal?[] { 0, 2, 1 }).AsQueryable().Average();
+            var val = new decimal?[] { 0, 2, 1 }.AsQueryable().Average();
             Assert.Equal((decimal)1, val);
         }
 
         [Fact]
         public void Average11()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Average(n => n);
+            var val = new[] { 0, 2, 1 }.AsQueryable().Average(n => n);
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average12()
         {
-            var val = (new int?[] { 0, 2, 1 }).AsQueryable().Average(n => n);
+            var val = new int?[] { 0, 2, 1 }.AsQueryable().Average(n => n);
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average13()
         {
-            var val = (new long[] { 0, 2, 1 }).AsQueryable().Average(n => n);
+            var val = new long[] { 0, 2, 1 }.AsQueryable().Average(n => n);
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average14()
         {
-            var val = (new long?[] { 0, 2, 1 }).AsQueryable().Average(n => n);
+            var val = new long?[] { 0, 2, 1 }.AsQueryable().Average(n => n);
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average15()
         {
-            var val = (new float[] { 0, 2, 1 }).AsQueryable().Average(n => n);
+            var val = new float[] { 0, 2, 1 }.AsQueryable().Average(n => n);
             Assert.Equal((float)1, val);
         }
 
         [Fact]
         public void Average16()
         {
-            var val = (new float?[] { 0, 2, 1 }).AsQueryable().Average(n => n);
+            var val = new float?[] { 0, 2, 1 }.AsQueryable().Average(n => n);
             Assert.Equal((float)1, val);
         }
 
         [Fact]
         public void Average17()
         {
-            var val = (new double[] { 0, 2, 1 }).AsQueryable().Average(n => n);
+            var val = new double[] { 0, 2, 1 }.AsQueryable().Average(n => n);
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average18()
         {
-            var val = (new double?[] { 0, 2, 1 }).AsQueryable().Average(n => n);
+            var val = new double?[] { 0, 2, 1 }.AsQueryable().Average(n => n);
             Assert.Equal((double)1, val);
         }
 
         [Fact]
         public void Average19()
         {
-            var val = (new decimal[] { 0, 2, 1 }).AsQueryable().Average(n => n);
+            var val = new decimal[] { 0, 2, 1 }.AsQueryable().Average(n => n);
             Assert.Equal((decimal)1, val);
         }
 
         [Fact]
         public void Average20()
         {
-            var val = (new decimal?[] { 0, 2, 1 }).AsQueryable().Average(n => n);
+            var val = new decimal?[] { 0, 2, 1 }.AsQueryable().Average(n => n);
             Assert.Equal((decimal)1, val);
         }
     }

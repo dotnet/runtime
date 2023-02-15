@@ -1171,7 +1171,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void CanBindInitializedIReadOnlyDictionaryAndDoesNotMofifyTheOriginal()
+        public void CanBindInitializedIReadOnlyDictionaryAndDoesNotModifyTheOriginal()
         {
             // A field declared as IEnumerable<T> that is instantiated with a class
             // that indirectly implements IEnumerable<T> is still bound, but with
@@ -1672,11 +1672,195 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public bool TryGetValue(TKey key, out TValue value) => _dict.TryGetValue(key, out value);
 
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => _dict.GetEnumerator();
+
+            // The following are members which have the same names as the IDictionary<,> members.
+            // The following members test that there's no System.Reflection.AmbiguousMatchException when binding to the dictionary.
+            private string? v;
+            public string? this[string key] { get => v; set => v = value; }
+            public bool TryGetValue() { return true; }
         }
 
         public class ExtendedDictionary<TKey, TValue> : Dictionary<TKey, TValue>
         {
 
+        }
+
+        private class OptionsWithDifferentCollectionInterfaces
+        {
+            private static IEnumerable<string> s_instantiatedIEnumerable = new List<string> { "value1", "value2" };
+            public bool IsSameInstantiatedIEnumerable() => object.ReferenceEquals(s_instantiatedIEnumerable, InstantiatedIEnumerable);
+            public IEnumerable<string> InstantiatedIEnumerable { get; set; } = s_instantiatedIEnumerable;
+
+            private static IList<string> s_instantiatedIList = new List<string> { "value1", "value2" };
+            public bool IsSameInstantiatedIList() => object.ReferenceEquals(s_instantiatedIList, InstantiatedIList);
+            public IList<string> InstantiatedIList { get; set; } = s_instantiatedIList;
+
+            private static IReadOnlyList<string> s_instantiatedIReadOnlyList = new List<string> { "value1", "value2" };
+            public bool IsSameInstantiatedIReadOnlyList() => object.ReferenceEquals(s_instantiatedIReadOnlyList, InstantiatedIReadOnlyList);
+            public IReadOnlyList<string> InstantiatedIReadOnlyList { get; set; } = s_instantiatedIReadOnlyList;
+
+            private static IDictionary<string, string> s_instantiatedIDictionary = new Dictionary<string, string> { ["Key1"] = "value1", ["Key2"] = "value2" };
+            public IDictionary<string, string> InstantiatedIDictionary { get; set; } = s_instantiatedIDictionary;
+            public bool IsSameInstantiatedIDictionary() => object.ReferenceEquals(s_instantiatedIDictionary, InstantiatedIDictionary);
+
+            private static IReadOnlyDictionary<string, string> s_instantiatedIReadOnlyDictionary = new Dictionary<string, string> { ["Key1"] = "value1", ["Key2"] = "value2" };
+            public IReadOnlyDictionary<string, string> InstantiatedIReadOnlyDictionary { get; set; } = s_instantiatedIReadOnlyDictionary;
+            public bool IsSameInstantiatedIReadOnlyDictionary() => object.ReferenceEquals(s_instantiatedIReadOnlyDictionary, InstantiatedIReadOnlyDictionary);
+
+            private static ISet<string> s_instantiatedISet = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "A", "b" };
+            public ISet<string> InstantiatedISet { get; set; } = s_instantiatedISet;
+            public bool IsSameInstantiatedISet() => object.ReferenceEquals(s_instantiatedISet, InstantiatedISet);
+
+#if NETCOREAPP
+            private static IReadOnlySet<string> s_instantiatedIReadOnlySet = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "A", "b" };
+            public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = s_instantiatedIReadOnlySet;
+            public bool IsSameInstantiatedIReadOnlySet() => object.ReferenceEquals(s_instantiatedIReadOnlySet, InstantiatedIReadOnlySet);
+
+            public IReadOnlySet<string> UnInstantiatedIReadOnlySet { get; set; }
+#endif
+            private static ICollection<string> s_instantiatedICollection = new List<string> { "a", "b", "c" };
+            public ICollection<string> InstantiatedICollection { get; set; } = s_instantiatedICollection;
+            public bool IsSameInstantiatedICollection() => object.ReferenceEquals(s_instantiatedICollection, InstantiatedICollection);
+
+            private static IReadOnlyCollection<string> s_instantiatedIReadOnlyCollection = new List<string> { "a", "b", "c" };
+            public IReadOnlyCollection<string> InstantiatedIReadOnlyCollection { get; set; } = s_instantiatedIReadOnlyCollection;
+            public bool IsSameInstantiatedIReadOnlyCollection() => object.ReferenceEquals(s_instantiatedIReadOnlyCollection, InstantiatedIReadOnlyCollection);
+
+            public IReadOnlyCollection<string> UnInstantiatedIReadOnlyCollection { get; set; }
+            public ICollection<string> UnInstantiatedICollection { get; set; }
+            public ISet<string> UnInstantiatedISet { get; set; }
+            public IReadOnlyDictionary<string, string> UnInstantiatedIReadOnlyDictionary { get; set; }
+            public IEnumerable<string> UnInstantiatedIEnumerable { get; set; }
+            public IList<string> UnInstantiatedIList { get; set; }
+            public IReadOnlyList<string> UnInstantiatedIReadOnlyList { get; set; }
+        }
+
+        [Fact]
+        public void TestOptionsWithDifferentCollectionInterfaces()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"InstantiatedIEnumerable:0", "value3"},
+                {"UnInstantiatedIEnumerable:0", "value1"},
+                {"InstantiatedIList:0", "value3"},
+                {"InstantiatedIReadOnlyList:0", "value3"},
+                {"UnInstantiatedIReadOnlyList:0", "value"},
+                {"UnInstantiatedIList:0", "value"},
+                {"InstantiatedIDictionary:Key3", "value3"},
+                {"InstantiatedIReadOnlyDictionary:Key3", "value3"},
+                {"UnInstantiatedIReadOnlyDictionary:Key", "value"},
+                {"InstantiatedISet:0", "B"},
+                {"InstantiatedISet:1", "C"},
+                {"UnInstantiatedISet:0", "a"},
+                {"UnInstantiatedISet:1", "A"},
+                {"UnInstantiatedISet:2", "B"},
+                {"InstantiatedIReadOnlySet:0", "Z"},
+                {"UnInstantiatedIReadOnlySet:0", "y"},
+                {"UnInstantiatedIReadOnlySet:1", "z"},
+                {"InstantiatedICollection:0", "d"},
+                {"UnInstantiatedICollection:0", "t"},
+                {"UnInstantiatedICollection:1", "a"},
+                {"InstantiatedIReadOnlyCollection:0", "d"},
+                {"UnInstantiatedIReadOnlyCollection:0", "r"},
+                {"UnInstantiatedIReadOnlyCollection:1", "e"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDifferentCollectionInterfaces();
+            config.Bind(options);
+
+            Assert.True(3 == options.InstantiatedIEnumerable.Count(), $"InstantiatedIEnumerable count is {options.InstantiatedIEnumerable.Count()} .. {options.InstantiatedIEnumerable.ElementAt(options.InstantiatedIEnumerable.Count() - 1)}");
+            Assert.Equal("value1", options.InstantiatedIEnumerable.ElementAt(0));
+            Assert.Equal("value2", options.InstantiatedIEnumerable.ElementAt(1));
+            Assert.Equal("value3", options.InstantiatedIEnumerable.ElementAt(2));
+            Assert.False(options.IsSameInstantiatedIEnumerable());
+
+            Assert.Equal(1, options.UnInstantiatedIEnumerable.Count());
+            Assert.Equal("value1", options.UnInstantiatedIEnumerable.ElementAt(0));
+
+            Assert.True(3 == options.InstantiatedIList.Count(), $"InstantiatedIList count is {options.InstantiatedIList.Count()} .. {options.InstantiatedIList[options.InstantiatedIList.Count() - 1]}");
+            Assert.Equal("value1", options.InstantiatedIList[0]);
+            Assert.Equal("value2", options.InstantiatedIList[1]);
+            Assert.Equal("value3", options.InstantiatedIList[2]);
+            Assert.True(options.IsSameInstantiatedIList());
+
+            Assert.Equal(1, options.UnInstantiatedIList.Count());
+            Assert.Equal("value", options.UnInstantiatedIList[0]);
+
+            Assert.True(3 == options.InstantiatedIReadOnlyList.Count(), $"InstantiatedIReadOnlyList count is {options.InstantiatedIReadOnlyList.Count()} .. {options.InstantiatedIReadOnlyList[options.InstantiatedIReadOnlyList.Count() - 1]}");
+            Assert.Equal("value1", options.InstantiatedIReadOnlyList[0]);
+            Assert.Equal("value2", options.InstantiatedIReadOnlyList[1]);
+            Assert.Equal("value3", options.InstantiatedIReadOnlyList[2]);
+            Assert.False(options.IsSameInstantiatedIReadOnlyList());
+
+            Assert.Equal(1, options.UnInstantiatedIReadOnlyList.Count());
+            Assert.Equal("value", options.UnInstantiatedIReadOnlyList[0]);
+
+            Assert.True(3 == options.InstantiatedIReadOnlyList.Count(), $"InstantiatedIReadOnlyList count is {options.InstantiatedIReadOnlyList.Count()} .. {options.InstantiatedIReadOnlyList[options.InstantiatedIReadOnlyList.Count() - 1]}");
+            Assert.Equal(new string[] { "Key1", "Key2", "Key3" }, options.InstantiatedIDictionary.Keys);
+            Assert.Equal(new string[] { "value1", "value2", "value3" }, options.InstantiatedIDictionary.Values);
+            Assert.True(options.IsSameInstantiatedIDictionary());
+
+            Assert.True(3 == options.InstantiatedIReadOnlyDictionary.Count(), $"InstantiatedIReadOnlyDictionary count is {options.InstantiatedIReadOnlyDictionary.Count()} .. {options.InstantiatedIReadOnlyDictionary.ElementAt(options.InstantiatedIReadOnlyDictionary.Count() - 1)}");
+            Assert.Equal(new string[] { "Key1", "Key2", "Key3" }, options.InstantiatedIReadOnlyDictionary.Keys);
+            Assert.Equal(new string[] { "value1", "value2", "value3" }, options.InstantiatedIReadOnlyDictionary.Values);
+            Assert.False(options.IsSameInstantiatedIReadOnlyDictionary());
+
+            Assert.Equal(1, options.UnInstantiatedIReadOnlyDictionary.Count());
+            Assert.Equal(new string[] { "Key" }, options.UnInstantiatedIReadOnlyDictionary.Keys);
+            Assert.Equal(new string[] { "value" }, options.UnInstantiatedIReadOnlyDictionary.Values);
+
+            Assert.True(3 == options.InstantiatedISet.Count(), $"InstantiatedISet count is {options.InstantiatedISet.Count()} .. {string.Join(", ", options.InstantiatedISet)} .. {options.IsSameInstantiatedISet()}");
+            Assert.Equal(new string[] { "a", "b", "C" }, options.InstantiatedISet);
+            Assert.True(options.IsSameInstantiatedISet());
+
+            Assert.True(3 == options.UnInstantiatedISet.Count(), $"UnInstantiatedISet count is {options.UnInstantiatedISet.Count()} .. {options.UnInstantiatedISet.ElementAt(options.UnInstantiatedISet.Count() - 1)}");
+            Assert.Equal(new string[] { "a", "A", "B" }, options.UnInstantiatedISet);
+
+#if NETCOREAPP
+            Assert.True(3 == options.InstantiatedIReadOnlySet.Count(), $"InstantiatedIReadOnlySet count is {options.InstantiatedIReadOnlySet.Count()} .. {options.InstantiatedIReadOnlySet.ElementAt(options.InstantiatedIReadOnlySet.Count() - 1)}");
+            Assert.Equal(new string[] { "a", "b", "Z" }, options.InstantiatedIReadOnlySet);
+            Assert.False(options.IsSameInstantiatedIReadOnlySet());
+
+            Assert.Equal(2, options.UnInstantiatedIReadOnlySet.Count());
+            Assert.Equal(new string[] { "y", "z" }, options.UnInstantiatedIReadOnlySet);
+#endif
+            Assert.Equal(4, options.InstantiatedICollection.Count());
+            Assert.Equal(new string[] { "a", "b", "c", "d" }, options.InstantiatedICollection);
+            Assert.True(options.IsSameInstantiatedICollection());
+
+            Assert.Equal(2, options.UnInstantiatedICollection.Count());
+            Assert.Equal(new string[] { "t", "a" }, options.UnInstantiatedICollection);
+
+            Assert.Equal(4, options.InstantiatedIReadOnlyCollection.Count());
+            Assert.Equal(new string[] { "a", "b", "c", "d" }, options.InstantiatedIReadOnlyCollection);
+            Assert.False(options.IsSameInstantiatedIReadOnlyCollection());
+
+            Assert.Equal(2, options.UnInstantiatedIReadOnlyCollection.Count());
+            Assert.Equal(new string[] { "r", "e" }, options.UnInstantiatedIReadOnlyCollection);
+        }
+
+        [Fact]
+        public void TestMutatingDictionaryValues()
+        {
+            IConfiguration config = new ConfigurationBuilder()
+                .AddInMemoryCollection()
+                .Build();
+
+            config["Key:0"] = "NewValue";
+            var dict = new Dictionary<string, string[]>() { { "Key", new[] { "InitialValue" } } };
+
+            Assert.Equal(1, dict["Key"].Length);
+            Assert.Equal("InitialValue", dict["Key"][0]);
+
+            // Binding will accumulate to the values inside the dictionary.
+            config.Bind(dict);
+            Assert.Equal(2, dict["Key"].Length);
+            Assert.Equal("InitialValue", dict["Key"][0]);
+            Assert.Equal("NewValue", dict["Key"][1]);
         }
     }
 }

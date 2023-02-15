@@ -1,0 +1,8 @@
+<Project>
+  <ItemGroup>
+    <CompilerVisibleProperty Include="EnableAotAnalyzer"/>
+    <CompilerVisibleProperty Include="EnableSingleFileAnalyzer"/>
+    <CompilerVisibleProperty Include="EnableTrimAnalyzer"/>
+    <CompilerVisibleProperty Include="IncludeAllContentForSelfExtract"/>
+  </ItemGroup>
+</Project>

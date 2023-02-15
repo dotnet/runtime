@@ -25,7 +25,12 @@ namespace ILCompiler.DependencyAnalysis
         public GVMDependenciesNode(MethodDesc method)
         {
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
-            Debug.Assert(method.IsVirtual && method.HasInstantiation);
+            Debug.Assert(method.HasInstantiation);
+
+            // This is either a generic virtual method or a MethodImpl for a static interface method.
+            // We can't test for static MethodImpl so at least sanity check it's static and noninterface.
+            Debug.Assert(method.IsVirtual || (method.Signature.IsStatic && !method.OwningType.IsInterface));
+
             _method = method;
         }
 
@@ -56,7 +61,7 @@ namespace ILCompiler.DependencyAnalysis
                         return dependencies;
                     }
 
-                    bool getUnboxingStub = _method.OwningType.IsValueType;
+                    bool getUnboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
                     dependencies ??= new DependencyList();
                     dependencies.Add(context.MethodEntrypoint(_method, getUnboxingStub), "GVM Dependency - Canon method");
 
@@ -83,6 +88,14 @@ namespace ILCompiler.DependencyAnalysis
                 if (!methodOwningType.IsInterface &&
                     (methodOwningType.IsSealed() || _method.IsFinal))
                     return false;
+
+                // We model static (non-virtual) methods that are MethodImpls for a static interface method.
+                // But those cannot be overriden (they're not virtual to begin with).
+                if (!methodOwningType.IsInterface && _method.Signature.IsStatic)
+                {
+                    Debug.Assert(!_method.IsVirtual);
+                    return false;
+                }
 
                 return true;
             }
@@ -141,7 +154,9 @@ namespace ILCompiler.DependencyAnalysis
                                 interfaceMethod = context.GetMethodForInstantiatedType(
                                     _method.GetTypicalMethodDefinition(), (InstantiatedType)potentialDefinitionInterfaces[interfaceIndex]);
 
-                            MethodDesc slotDecl = potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodTarget(interfaceMethod);
+                            MethodDesc slotDecl = interfaceMethod.Signature.IsStatic ?
+                                potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod)
+                                : potentialOverrideDefinition.InstantiateAsOpen().ResolveInterfaceMethodTarget(interfaceMethod);
                             if (slotDecl == null)
                             {
                                 // The method might be implemented through a default interface method
@@ -159,6 +174,8 @@ namespace ILCompiler.DependencyAnalysis
                                     openInstantiation[instArg] = context.GetSignatureVariable(instArg, method: true);
                                 MethodDesc implementingMethodInstantiation = slotDecl.MakeInstantiatedMethod(openInstantiation).InstantiateSignature(potentialOverrideType.Instantiation, _method.Instantiation);
                                 dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific)), null, "ImplementingMethodInstantiation"));
+
+                                factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation);
                             }
                         }
                     }
@@ -206,8 +223,12 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc instantiatedTargetMethod = potentialOverrideType.FindVirtualFunctionTargetMethodOnObjectType(methodToResolve)
                         .GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (instantiatedTargetMethod != _method)
+                    {
                         dynamicDependencies.Add(new CombinedDependencyListEntry(
                             factory.GVMDependencies(instantiatedTargetMethod), null, "DerivedMethodInstantiation"));
+
+                        factory.MetadataManager.NoteOverridingMethod(_method, instantiatedTargetMethod);
+                    }
                 }
             }
 

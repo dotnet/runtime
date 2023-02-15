@@ -1,0 +1,6 @@
+<linker>
+    <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.FeatureExclude.OnType/FeatureOneClass" feature="one"/>
+        <type fullname="Mono.Linker.Tests.Cases.LinkXml.FeatureExclude.OnType/FeatureTwoClass" feature="two"/>
+    </assembly>
+</linker>

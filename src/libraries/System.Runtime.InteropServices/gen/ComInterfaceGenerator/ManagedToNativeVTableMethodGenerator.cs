@@ -75,34 +75,17 @@ namespace Microsoft.Interop
             }
 
             _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = new BoundGenerators(argTypes, CreateGenerator);
+            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingFailures);
+
+            foreach (var failure in bindingFailures)
+            {
+                marshallingNotSupportedCallback(failure.Info, failure.Exception);
+            }
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
                 _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
-            }
-
-            IMarshallingGenerator CreateGenerator(TypePositionInfo p)
-            {
-                try
-                {
-                    // TODO: Remove once helper types (like ArrayMarshaller) are part of the runtime
-                    // This check is to help with enabling the source generator for runtime libraries without making each
-                    // library directly reference System.Memory and System.Runtime.CompilerServices.Unsafe unless it needs to
-                    if (p.MarshallingAttributeInfo is MissingSupportMarshallingInfo
-                        && (targetFramework == TargetFramework.Net && targetFrameworkVersion.Major >= 7))
-                    {
-                        throw new MarshallingNotSupportedException(p, _context);
-                    }
-
-                    return generatorFactory.Create(p, _context);
-                }
-                catch (MarshallingNotSupportedException e)
-                {
-                    marshallingNotSupportedCallback(p, e);
-                    return new Forwarder();
-                }
             }
         }
 
@@ -114,11 +97,11 @@ namespace Microsoft.Interop
         /// <remarks>
         /// The generated code assumes it will be in an unsafe context.
         /// </remarks>
-        public BlockSyntax GenerateStubBody(int index, ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv, TypeSyntax containingTypeName, ManagedTypeInfo typeKeyType)
+        public BlockSyntax GenerateStubBody(int index, ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv, TypeSyntax containingTypeName)
         {
             var setupStatements = new List<StatementSyntax>
             {
-                // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider<<typeKeyType>>)this).GetVirtualMethodTableInfoForKey<<containingTypeName>>();
+                // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey<<containingTypeName>>();
                 ExpressionStatement(
                     AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
@@ -136,11 +119,7 @@ namespace Microsoft.Interop
                                 SyntaxKind.SimpleMemberAccessExpression,
                                 ParenthesizedExpression(
                                     CastExpression(
-                                        GenericName(
-                                            Identifier(TypeNames.IUnmanagedVirtualMethodTableProvider))
-                                        .WithTypeArgumentList(
-                                            TypeArgumentList(
-                                                SingletonSeparatedList(typeKeyType.Syntax))),
+                                        ParseTypeName(TypeNames.IUnmanagedVirtualMethodTableProvider),
                                         ThisExpression())),
                                 GenericName(
                                     Identifier("GetVirtualMethodTableInfoForKey"),
@@ -160,7 +139,7 @@ namespace Microsoft.Interop
                             Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(index)))))),
                     callConv));
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
-            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
+            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
 
             if (_setLastError)
@@ -243,12 +222,12 @@ namespace Microsoft.Interop
             return Block(allStatements);
         }
 
-        private ExpressionSyntax CreateFunctionPointerExpression(
+        private ParenthesizedExpressionSyntax CreateFunctionPointerExpression(
             ExpressionSyntax untypedFunctionPointerExpression,
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv)
         {
             List<FunctionPointerParameterSyntax> functionPointerParameters = new();
-            var (paramList, retType, _) = _marshallers.GenerateTargetMethodSignatureData();
+            var (paramList, retType, _) = _marshallers.GenerateTargetMethodSignatureData(_context);
             functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(p.Type)));
             functionPointerParameters.Add(FunctionPointerParameter(retType));
 

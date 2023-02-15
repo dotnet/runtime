@@ -6,9 +6,9 @@ using System.Collections.Generic;
 
 namespace GCHangCSharp
 {
-    internal class Program
+    public class Program
     {
-        private static int Main(string[] args)
+        public static int Main()
         {
             TestClass t = new TestClass();
             List<TestClass.LongStruct> x = t.Test();

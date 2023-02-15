@@ -4,17 +4,17 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using FluentAssertions;
-using ILCompiler;
 using ILCompiler.Logging;
 using Internal.TypeSystem;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Xunit;
 
@@ -45,16 +45,55 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			_linkedReaderParameters = linkedReaderParameters;
 		}
 
-		public virtual void Check (ILCompilerTestCaseResult trimmedResult)
+		private static bool ShouldValidateIL (AssemblyDefinition inputAssembly)
 		{
-			InitializeResolvers (trimmedResult);
+			if (HasAttribute (inputAssembly, nameof (SkipPeVerifyAttribute)))
+				return false;
+
+			var caaIsUnsafeFlag = (CustomAttributeArgument caa) =>
+				(caa.Type.Name == "String" && caa.Type.Namespace == "System")
+				&& (string) caa.Value == "/unsafe";
+			var customAttributeHasUnsafeFlag = (CustomAttribute ca) => ca.ConstructorArguments.Any (caaIsUnsafeFlag);
+			if (GetCustomAttributes (inputAssembly, nameof (SetupCompileArgumentAttribute))
+				.Any (customAttributeHasUnsafeFlag))
+				return false;
+
+			return true;
+		}
+
+		public virtual void Check (ILCompilerTestCaseResult testResult)
+		{
+			InitializeResolvers (testResult);
 
 			try {
-				var original = ResolveOriginalsAssembly (trimmedResult.ExpectationsAssemblyPath.FileNameWithoutExtension);
-				AdditionalChecking (trimmedResult, original);
+				var original = ResolveOriginalsAssembly (testResult.ExpectationsAssemblyPath.FileNameWithoutExtension);
+
+				if (!HasAttribute (original, nameof (NoLinkedOutputAttribute))) {
+					// TODO Validate presence of the main assembly - if it makes sense (reflection only somehow)
+
+					// IL verification is impossible for NativeAOT since there's no IL output
+					// if (ShouldValidateIL (original))
+					//   VerifyIL ();
+
+					InitialChecking (testResult, original);
+
+					PerformOutputAssemblyChecks (original, testResult);
+					PerformOutputSymbolChecks (original, testResult);
+
+					if (!HasAttribute (original.MainModule.GetType (testResult.TestCase.ReconstructedFullTypeName), nameof (SkipKeptItemsValidationAttribute))) {
+						CreateAssemblyChecker (original, testResult).Verify ();
+					}
+				}
+
+				AdditionalChecking (testResult, original);
 			} finally {
 				_originalsResolver.Dispose ();
 			}
+		}
+
+		protected virtual AssemblyChecker CreateAssemblyChecker (AssemblyDefinition original, ILCompilerTestCaseResult testResult)
+		{
+			return new AssemblyChecker (_originalsResolver, _originalReaderParameters, original, testResult);
 		}
 
 		private void InitializeResolvers (ILCompilerTestCaseResult linkedResult)
@@ -68,6 +107,56 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (assemblyName.EndsWith (".exe") || assemblyName.EndsWith (".dll"))
 				cleanAssemblyName = Path.GetFileNameWithoutExtension (assemblyName);
 			return _originalsResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _originalReaderParameters);
+		}
+
+		private static void PerformOutputAssemblyChecks (AssemblyDefinition original, ILCompilerTestCaseResult testResult)
+		{
+			var assembliesToCheck = original.MainModule.Types.SelectMany (t => t.CustomAttributes).Where (ExpectationsProvider.IsAssemblyAssertion);
+			var actionAssemblies = new HashSet<string> ();
+			//bool trimModeIsCopy = false;
+
+			foreach (var assemblyAttr in assembliesToCheck) {
+				var name = (string) assemblyAttr.ConstructorArguments.First ().Value;
+				name = Path.GetFileNameWithoutExtension (name);
+
+#if false
+				if (assemblyAttr.AttributeType.Name == nameof (RemovedAssemblyAttribute))
+					Assert.IsFalse (expectedPath.FileExists (), $"Expected the assembly {name} to not exist in {outputDirectory}, but it did");
+				else if (assemblyAttr.AttributeType.Name == nameof (KeptAssemblyAttribute))
+					Assert.IsTrue (expectedPath.FileExists (), $"Expected the assembly {name} to exist in {outputDirectory}, but it did not");
+				else if (assemblyAttr.AttributeType.Name == nameof (SetupLinkerActionAttribute)) {
+					string assemblyName = (string) assemblyAttr.ConstructorArguments[1].Value;
+					if ((string) assemblyAttr.ConstructorArguments[0].Value == "copy") {
+						VerifyCopyAssemblyIsKeptUnmodified (outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
+					}
+
+					actionAssemblies.Add (assemblyName);
+				} else if (assemblyAttr.AttributeType.Name == nameof (SetupLinkerTrimModeAttribute)) {
+					// We delay checking that everything was copied after processing all assemblies
+					// with a specific action, since assembly action wins over trim mode.
+					if ((string) assemblyAttr.ConstructorArguments[0].Value == "copy")
+						trimModeIsCopy = true;
+				} else
+					throw new NotImplementedException ($"Unknown assembly assertion of type {assemblyAttr.AttributeType}");
+#endif
+			}
+
+#if false
+			if (trimModeIsCopy) {
+				foreach (string assemblyName in Directory.GetFiles (Directory.GetParent (outputDirectory).ToString (), "input")) {
+					var fileInfo = new FileInfo (assemblyName);
+					if (fileInfo.Extension == ".dll" && !actionAssemblies.Contains (assemblyName))
+						VerifyCopyAssemblyIsKeptUnmodified (outputDirectory, assemblyName + (assemblyName == "test" ? ".exe" : ".dll"));
+				}
+			}
+#endif
+		}
+
+#pragma warning disable IDE0060 // Remove unused parameter
+		private static void PerformOutputSymbolChecks (AssemblyDefinition original, ILCompilerTestCaseResult testResult)
+#pragma warning restore IDE0060 // Remove unused parameter
+		{
+			// While NativeAOT has symbols, verifying them is rather difficult
 		}
 
 		protected virtual void AdditionalChecking (ILCompilerTestCaseResult linkResult, AssemblyDefinition original)
@@ -97,13 +186,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			yield return assembly;
 		}
 
+		protected virtual void InitialChecking (ILCompilerTestCaseResult testResult, AssemblyDefinition original)
+		{
+			// PE verifier is done here in ILLinker, but that's not possible with NativeAOT
+		}
+
 		private void VerifyLoggedMessages (AssemblyDefinition original, TestLogWriter logger, bool checkRemainingErrors)
 		{
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(IMemberDefinition, CustomAttribute)> expectedNoWarningsAttributes = new List<(IMemberDefinition, CustomAttribute)> ();
 			foreach (var attrProvider in GetAttributeProviders (original)) {
-				if (attrProvider.ToString () is string mystring && mystring.Contains ("RequiresInCompilerGeneratedCode/SuppressInLambda"))
-					Debug.WriteLine ("Print");
 				foreach (var attr in attrProvider.CustomAttributes) {
 					if (!IsProducedByNativeAOT (attr))
 						continue;
@@ -159,10 +251,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							bool expectedWarningFound = false;
 
 							foreach (var loggedMessage in loggedMessages) {
-								if (loggedMessage.ToString ().Contains ("RequiresInCompilerGeneratedCode.SuppressInLambda")) {
-									Debug.WriteLine ("Print 2");
-								}
-
 								if (loggedMessage.Category != MessageCategory.Warning || loggedMessage.Code != expectedWarningCodeNumber)
 									continue;
 
@@ -213,21 +301,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										if (attrProvider is not IMemberDefinition expectedMember)
 											continue;
 
-										string actualName = methodDesc.OwningType.ToString ().Replace ("+", ".") + "." + methodDesc.Name;
-										if (actualName.Contains (expectedMember.DeclaringType.FullName.Replace ("/", ".")) &&
-											actualName.Contains ("<" + expectedMember.Name + ">")) {
+										string? actualName = NameUtils.GetActualOriginDisplayName (methodDesc);
+										string expectedTypeName = NameUtils.GetExpectedOriginDisplayName (expectedMember.DeclaringType);
+										if (actualName?.Contains (expectedTypeName) == true &&
+											actualName?.Contains ("<" + expectedMember.Name + ">") == true) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
 										}
-										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
+										if (actualName?.StartsWith (expectedTypeName) == true &&
+											actualName?.Contains (".cctor") == true &&
+											(expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
 										}
 										if (methodDesc.Name == ".ctor" &&
-										methodDesc.OwningType.ToString () == expectedMember.FullName) {
+											methodDesc.OwningType.ToString () == expectedMember.FullName) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
@@ -249,7 +339,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							}
 
 							var expectedOriginString = fileName == null
-								? GetExpectedOriginDisplayName (attrProvider) + ": "
+								? NameUtils.GetExpectedOriginDisplayName (attrProvider) + ": "
 								: "";
 
 							Assert.True (expectedWarningFound,
@@ -308,7 +398,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				var origin = mc.Origin;
 				Debug.Assert (origin != null);
-				if (GetActualOriginDisplayName (origin?.MemberDefinition) == ConvertSignatureToIlcFormat (GetExpectedOriginDisplayName (expectedOriginProvider)))
+				if (NameUtils.GetActualOriginDisplayName (origin?.MemberDefinition) == NameUtils.GetExpectedOriginDisplayName (expectedOriginProvider))
 					return true;
 
 				var actualMember = origin!.Value.MemberDefinition;
@@ -335,86 +425,51 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				_ => null
 			};
 
-			static string? GetActualOriginDisplayName (TypeSystemEntity? entity) => entity switch {
-				DefType defType => TrimAssemblyNamePrefix (defType.ToString ()),
-				MethodDesc method => TrimAssemblyNamePrefix (method.GetDisplayName ()),
-				FieldDesc field => TrimAssemblyNamePrefix (field.ToString ()),
-				ModuleDesc module => module.Assembly.GetName ().Name,
-				_ => null
-			};
-
-			static string TrimAssemblyNamePrefix (string name)
-			{
-				if (name.StartsWith ('[')) {
-					int i = name.IndexOf (']');
-					if (i > 0) {
-						return name.Substring (i + 1);
-					}
-				}
-
-				return name;
-			}
-
-			static string GetExpectedOriginDisplayName (ICustomAttributeProvider provider) =>
-				provider switch {
-					MethodDefinition method => method.GetDisplayName (),
-					FieldDefinition field => field.GetDisplayName (),
-					IMemberDefinition member => member.FullName,
-					AssemblyDefinition asm => asm.Name.Name,
-					_ => throw new NotImplementedException ()
-				};
-
 			static bool MessageTextContains (string message, string value)
 			{
 				// This is a workaround for different formatting of methods between ilc and linker/analyzer
 				// Sometimes they're written with a space after comma and sometimes without
 				//    Method(String,String)   - ilc
 				//    Method(String, String)  - linker/analyzer
-				return message.Contains (value) || message.Contains (ConvertSignatureToIlcFormat (value));
-			}
-
-			static string ConvertSignatureToIlcFormat (string value)
-			{
-				if (value.Contains ('(') || value.Contains ('<')) {
-					value = value.Replace (", ", ",");
-				}
-
-				// Split it into . separated parts and if one is ending with > rewrite it to `1 format
-				// ILC folows the reflection format which doesn't actually use generic instantiations on anything but the last type
-				// in nested hierarchy - it's difficult to replicate this with Cecil as it has different representation so just strip that info
-				var parts = value.Split ('.');
-				StringBuilder sb = new StringBuilder ();
-				foreach (var part in parts) {
-					if (sb.Length > 0)
-						sb.Append ('.');
-
-					if (part.EndsWith ('>')) {
-						int i = part.LastIndexOf ('<');
-						if (i >= 0) {
-							sb.Append (part.AsSpan (0, i));
-							sb.Append ('`');
-							sb.Append (part.Substring (i + 1).Where (c => c == ',').Count () + 1);
-							continue;
-						}
-					}
-
-					sb.Append (part);
-				}
-
-				return sb.ToString ();
+				return message.Contains (value) || message.Contains (NameUtils.ConvertSignatureToIlcFormat (value));
 			}
 		}
 
 		private static bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
 		{
-			if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null)
-				return assembly.EntryPoint.DeclaringType.CustomAttributes
-					.Any (attr => attr.AttributeType.Name == attributeName);
+			return TryGetCustomAttribute (caProvider, attributeName, out var _);
+		}
 
-			if (caProvider is TypeDefinition type)
-				return type.CustomAttributes.Any (attr => attr.AttributeType.Name == attributeName);
+#nullable enable
+		private static bool TryGetCustomAttribute (ICustomAttributeProvider caProvider, string attributeName, [NotNullWhen (true)] out CustomAttribute? customAttribute)
+		{
+			if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null) {
+				customAttribute = assembly.EntryPoint.DeclaringType.CustomAttributes
+					.FirstOrDefault (attr => attr!.AttributeType.Name == attributeName, null);
+				return customAttribute is not null;
+			}
 
+			if (caProvider is TypeDefinition type) {
+				customAttribute = type.CustomAttributes
+					.FirstOrDefault (attr => attr!.AttributeType.Name == attributeName, null);
+				return customAttribute is not null;
+			}
+			customAttribute = null;
 			return false;
 		}
+
+		private static IEnumerable<CustomAttribute> GetCustomAttributes (ICustomAttributeProvider caProvider, string attributeName)
+		{
+			if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null)
+				return assembly.EntryPoint.DeclaringType.CustomAttributes
+					.Where (attr => attr!.AttributeType.Name == attributeName);
+
+			if (caProvider is TypeDefinition type)
+				return type.CustomAttributes
+					.Where (attr => attr!.AttributeType.Name == attributeName);
+
+			return Enumerable.Empty<CustomAttribute> ();
+		}
+#nullable restore
 	}
 }

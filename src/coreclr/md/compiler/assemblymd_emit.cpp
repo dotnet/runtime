@@ -41,10 +41,6 @@ STDMETHODIMP RegMeta::DefineAssembly(         // S_OK or error.
     if (szName == NULL || pMetaData == NULL || pma == NULL)
         return E_INVALIDARG;
 
-    LOG((LOGMD, "RegMeta::DefineAssembly(0x%08x, 0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        pbPublicKey, cbPublicKey, ulHashAlgId, MDSTR(szName), pMetaData,
-        dwAssemblyFlags, pma));
-
     LOCKWRITE();
 
     _ASSERTE(szName && pMetaData && pma);
@@ -114,10 +110,6 @@ STDMETHODIMP RegMeta::DefineAssemblyRef(      // S_OK or error.
 
     if (szName == NULL || pmar == NULL || pMetaData == NULL)
         return E_INVALIDARG;
-
-    LOG((LOGMD, "RegMeta::DefineAssemblyRef(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        pbPublicKeyOrToken, cbPublicKeyOrToken, MDSTR(szName), pMetaData, pbHashValue,
-        cbHashValue, dwAssemblyRefFlags, pmar));
 
     LOCKWRITE();
 
@@ -195,9 +187,6 @@ STDMETHODIMP RegMeta::DefineFile(             // S_OK or error.
     FileRec     *pRecord = NULL;
     RID         iRecord;
 
-    LOG((LOGMD, "RegMeta::DefineFile(%S, %#08x, %#08x, %#08x, %#08x)\n",
-        MDSTR(szName), pbHashValue, cbHashValue, dwFileFlags, pmf));
-
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -263,10 +252,6 @@ STDMETHODIMP RegMeta::DefineExportedType(     // S_OK or error.
     LPSTR       szNameUTF8;
     LPCSTR      szTypeNameUTF8;
     LPCSTR      szTypeNamespaceUTF8;
-
-    LOG((LOGMD, "RegMeta::DefineExportedType(%S, %#08x, %08x, %#08x, %#08x)\n",
-        MDSTR(szName), tkImplementation, tkTypeDef,
-         dwExportedTypeFlags, pmct));
 
     LOCKWRITE();
 
@@ -354,9 +339,6 @@ STDMETHODIMP RegMeta::DefineManifestResource( // S_OK or error.
     ManifestResourceRec *pRecord = NULL;
     RID       iRecord;
 
-    LOG((LOGMD, "RegMeta::DefineManifestResource(%S, %#08x, %#08x, %#08x, %#08x)\n",
-        MDSTR(szName), tkImplementation, dwOffset, dwResourceFlags, pmmr));
-
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -427,9 +409,6 @@ STDMETHODIMP RegMeta::SetAssemblyProps(       // S_OK or error.
 
     _ASSERTE(TypeFromToken(ma) == mdtAssembly && RidFromToken(ma));
 
-    LOG((LOGMD, "RegMeta::SetAssemblyProps(%#08x, %#08x, %#08x, %#08x %S, %#08x, %#08x)\n",
-        ma, pbPublicKey, cbPublicKey, ulHashAlgId, MDSTR(szName), pMetaData, dwAssemblyFlags));
-
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -456,10 +435,6 @@ STDMETHODIMP RegMeta::SetAssemblyRefProps(    // S_OK or error.
     HRESULT hr = S_OK;
 
     _ASSERTE(TypeFromToken(ar) == mdtAssemblyRef && RidFromToken(ar));
-
-    LOG((LOGMD, "RegMeta::SetAssemblyRefProps(0x%08x, 0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        ar, pbPublicKeyOrToken, cbPublicKeyOrToken, MDSTR(szName), pMetaData, pbHashValue, cbHashValue,
-        dwAssemblyRefFlags));
 
     LOCKWRITE();
 
@@ -492,8 +467,6 @@ STDMETHODIMP RegMeta::SetFileProps(           // S_OK or error.
 
     _ASSERTE(TypeFromToken(file) == mdtFile && RidFromToken(file));
 
-    LOG((LOGMD, "RegMeta::SetFileProps(%#08x, %#08x, %#08x, %#08x)\n",
-        file, pbHashValue, cbHashValue, dwFileFlags));
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -515,9 +488,6 @@ STDMETHODIMP RegMeta::SetExportedTypeProps(        // S_OK or error.
 {
     HRESULT     hr = S_OK;
 
-    LOG((LOGMD, "RegMeta::SetExportedTypeProps(%#08x, %#08x, %#08x, %#08x)\n",
-        ct, tkImplementation, tkTypeDef, dwExportedTypeFlags));
-
     LOCKWRITE();
 
     IfFailGo( _SetExportedTypeProps( ct, tkImplementation, tkTypeDef, dwExportedTypeFlags) );
@@ -536,10 +506,6 @@ STDMETHODIMP RegMeta::SetManifestResourceProps(// S_OK or error.
     DWORD       dwResourceFlags)        // [IN] Flags.
 {
     HRESULT     hr = S_OK;
-
-    LOG((LOGMD, "RegMeta::SetManifestResourceProps(%#08x, %#08x, %#08x, %#08x)\n",
-        mr, tkImplementation, dwOffset,
-        dwResourceFlags));
 
     _ASSERTE(TypeFromToken(tkImplementation) == mdtFile ||
               TypeFromToken(tkImplementation) == mdtAssemblyRef ||

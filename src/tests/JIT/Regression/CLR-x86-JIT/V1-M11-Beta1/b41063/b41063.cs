@@ -17,7 +17,7 @@ namespace Test
         { return null; }
     }
 
-    struct BB
+    public struct BB
     {
         static AA[] m_axStatic1;
         static int m_nForward5;
@@ -27,7 +27,7 @@ namespace Test
         int Method4(uint param1, double param2, long param3)
         { return new BB().Method1(); }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

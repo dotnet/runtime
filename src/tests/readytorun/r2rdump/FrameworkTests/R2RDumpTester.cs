@@ -56,7 +56,7 @@ namespace R2RDumpTests
                 UseShellExecute = false,
                 FileName = DotNetAbsolutePath,
                 // TODO, what flags do we like to test?
-                Arguments = string.Join(" ", new string[]{"exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile})
+                Arguments = string.Join(" ", new string[]{"exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile, "--val"})
             };
 
             Process process = Process.Start(processStartInfo);

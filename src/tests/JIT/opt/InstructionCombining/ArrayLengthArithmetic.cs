@@ -8,7 +8,7 @@ public class ArrayLengthArithmeticTests
 {
     private static int returnCode = 100;
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         for (int arrayLength = 0; arrayLength < 100; arrayLength++)
         {

@@ -6,7 +6,7 @@
 .assembly DevDiv_578214 {}
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit DevDiv_578214.Program
+.class public auto ansi beforefieldinit DevDiv_578214.Program
        extends [System.Runtime]System.Object
 {
 .method static int16 ILGEN_METHOD(unsigned int16, float32, native unsigned int, unsigned int16, unsigned int8, int16, unsigned int32)
@@ -104,8 +104,8 @@
 	IL_00bf: ret   
 }
 
-.method private hidebysig static int32 
-  Main(string[] args) cil managed
+.method public hidebysig static int32 
+  Main() cil managed
 {
 	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 	    01 00 00 00

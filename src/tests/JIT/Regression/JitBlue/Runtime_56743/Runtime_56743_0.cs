@@ -5,10 +5,10 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-class Runtime_56743_0
+public class Runtime_56743_0
 {
     [MethodImpl(MethodImplOptions.NoOptimization)]
-    static int Main()
+    public static int Main()
     {
         int result = Foo(default, default);
         return result == 0 ? 100 : -1;

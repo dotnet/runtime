@@ -182,7 +182,10 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             ReferenceEquals(this, obj) ||
-            (MetadataUpdater.IsSupported && CacheEquals(obj));
+            (MetadataUpdater.IsSupported && obj is RuntimePropertyInfo rpi &&
+                rpi.m_token == m_token &&
+                ReferenceEquals(rpi.m_declaringType, m_declaringType) &&
+                ReferenceEquals(rpi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
             HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());

@@ -42,8 +42,7 @@ namespace System.Collections.Generic
         // is used.
         public Queue(int capacity)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             _array = new T[capacity];
         }
 
@@ -164,7 +163,7 @@ namespace System.Collections.Generic
             }
             catch (ArrayTypeMismatchException)
             {
-                throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
             }
         }
 
@@ -377,10 +376,7 @@ namespace System.Collections.Generic
         /// <returns>The new capacity of this queue.</returns>
         public int EnsureCapacity(int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (_array.Length < capacity)
             {
@@ -457,12 +453,12 @@ namespace System.Collections.Generic
 
                 // Cache some fields in locals to decrease code size
                 T[] array = _q._array;
-                int capacity = array.Length;
+                uint capacity = (uint)array.Length;
 
                 // _index represents the 0-based index into the queue, however the queue
                 // doesn't have to start from 0 and it may not even be stored contiguously in memory.
 
-                int arrayIndex = _q._head + _index; // this is the actual index into the queue's backing array
+                uint arrayIndex = (uint)(_q._head + _index); // this is the actual index into the queue's backing array
                 if (arrayIndex >= capacity)
                 {
                     // NOTE: Originally we were using the modulo operator here, however

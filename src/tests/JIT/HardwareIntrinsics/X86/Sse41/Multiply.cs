@@ -7,15 +7,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._Sse41
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        public static unsafe void Multiply()
         {
             int testResult = Pass;
 
@@ -39,12 +37,12 @@ namespace IntelHardwareIntrinsicTest
                                 Console.Write(item + ", ");
                             }
                             Console.WriteLine();
-                            return Fail;
+                            Assert.Fail("");
                         }
                     }
                 }
             }
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
 
         public unsafe struct TestTable<T1, T2, T3> : IDisposable where T1 : struct where T2 : struct where T3 : struct

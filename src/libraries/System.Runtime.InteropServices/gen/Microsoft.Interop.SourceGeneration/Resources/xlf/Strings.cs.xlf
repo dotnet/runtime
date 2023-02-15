@@ -72,6 +72,11 @@
         <target state="translated">Typ vstupního bodu řadiče „{0}“ pro spravovaný typ „{1}“ musí mít aritu o jednu větší než spravovaný typ.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
+        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
+        <target state="translated">Všechny zařazovací moduly pro hodnoty, které jsou předány jako nespravovaná návratová hodnota, musí mít stejný nespravovaný typ.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
         <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
         <target state="translated">Typ zařazovače {0} pro spravovaný typ {1} musí být statický.</target>

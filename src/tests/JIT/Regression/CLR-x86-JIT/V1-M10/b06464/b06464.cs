@@ -4,7 +4,7 @@
 
 using System;
 
-class Test_b06464
+public class Test_b06464
 {
     static int[] a = new int[10];
 

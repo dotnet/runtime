@@ -171,6 +171,9 @@
 /* Define to 1 if you have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H 1
 
+/* Define to 1 if you have the <grp.h> header file. */
+#cmakedefine HAVE_GRP_H 1
+
 /* Define to 1 if you have the <sys/select.h> header file. */
 #cmakedefine HAVE_SYS_SELECT_H 1
 
@@ -259,9 +262,6 @@
 
 /* Disable the interpreter. */
 #cmakedefine DISABLE_INTERPRETER 1
-
-/* Some VES is available at runtime */
-#cmakedefine ENABLE_ILGEN 1
 
 /* Disable non-blittable marshalling */
 #cmakedefine DISABLE_NONBLITTABLE
@@ -376,9 +376,6 @@
 
 /* sched_setaffinity */
 #cmakedefine HAVE_SCHED_SETAFFINITY 1
-
-/* Define to 1 if you have the `sched_getcpu' function. */
-#cmakedefine HAVE_SCHED_GETCPU 1
 
 /* Define to 1 if you have the `chmod' function. */
 #cmakedefine HAVE_CHMOD 1
@@ -935,6 +932,9 @@
 
 /* Enable System.WeakAttribute support */
 #cmakedefine ENABLE_WEAK_ATTR 1
+
+/* Enable WebCIL image loader */
+#cmakedefine ENABLE_WEBCIL 1
 
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.

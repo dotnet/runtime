@@ -7,10 +7,10 @@ using System;
 namespace test
 {
 
-    class LargeArray114
+    public class LargeArray114
     {
 
-        static int Main()
+        public static int Main()
         {
 
             System.String[] array = new System.String[114];

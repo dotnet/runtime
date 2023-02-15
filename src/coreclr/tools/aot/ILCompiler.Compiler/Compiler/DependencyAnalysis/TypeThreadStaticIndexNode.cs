@@ -9,7 +9,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a node containing information necessary at runtime to locate type's thread static base.
     /// </summary>
-    public class TypeThreadStaticIndexNode : ObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
+    public class TypeThreadStaticIndexNode : DehydratableObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private MetadataType _type;
 
@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
         }
         public int Offset => 0;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-        public override ObjectNodeSection GetSection(NodeFactory factory)
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
             if (factory.Target.IsWindows)
                 return ObjectNodeSection.ReadOnlyDataSection;
@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
             };
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
 

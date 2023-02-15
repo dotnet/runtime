@@ -7,28 +7,23 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-
+using Xunit;
 namespace IntelHardwareIntrinsicTest
 {
-    class Program
+    public class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void Test()
         {
-            int testResult = X86Serialize.IsSupported ? Pass : Fail;
-
-            try
+            if (X86Serialize.IsSupported)
             {
+                // Should work without throwing
                 X86Serialize.Serialize();
             }
-            catch (Exception e)
+            else
             {
-                testResult = (X86Serialize.IsSupported || (e is not PlatformNotSupportedException)) ? Fail : Pass;
+                Assert.Throws<PlatformNotSupportedException>(X86Serialize.Serialize);
             }
-
-            return testResult;
         }
     }
 }

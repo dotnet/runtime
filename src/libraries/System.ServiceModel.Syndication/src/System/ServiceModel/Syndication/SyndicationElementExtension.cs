@@ -159,7 +159,7 @@ namespace System.ServiceModel.Syndication
         public XmlReader GetReader()
         {
             EnsureBuffer();
-            XmlReader reader = _buffer.GetReader(0);
+            XmlDictionaryReader reader = _buffer.GetReader(0);
             int index = 0;
             reader.ReadStartElement(Rss20Constants.ExtensionWrapperTag);
             while (reader.IsStartElement())

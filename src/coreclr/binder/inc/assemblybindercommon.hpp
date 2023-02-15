@@ -82,7 +82,7 @@ namespace BINDER_SPACE
 
         static HRESULT FindInExecutionContext(/* in */  ApplicationContext  *pApplicationContext,
                                               /* in */  AssemblyName        *pAssemblyName,
-                                              /* out */ ContextEntry       **ppContextEntry);
+                                              /* out */ Assembly           **ppAssembly);
 
         static HRESULT BindByTpaList(/* in */  ApplicationContext  *pApplicationContext,
                                      /* in */  AssemblyName        *pRequestedAssemblyName,

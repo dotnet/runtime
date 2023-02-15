@@ -24,14 +24,11 @@ namespace System.Reflection.Emit
         private IntPtr _referencedBy;
         private RuntimeType? _typeOwner;
 #endregion
-        // We want the creator of the DynamicMethod to control who has access to the
-        // DynamicMethod (just like we do for delegates). However, a user can get to
-        // the corresponding RTDynamicMethod using Exception.TargetSite, StackFrame.GetMethod, etc.
-        // If we allowed use of RTDynamicMethod, the creator of the DynamicMethod would
-        // not be able to bound access to the DynamicMethod. Hence, we need to ensure that
-        // we do not allow direct use of RTDynamicMethod.
-        private RTDynamicMethod _dynMethod;
 
+        private string _name;
+        private MethodAttributes _attributes;
+        private CallingConventions _callingConvention;
+        private RuntimeParameterInfo[]? _parameters;
         private Delegate? _deleg;
         private RuntimeMethodInfo? _method;
         private bool _creating;
@@ -140,8 +137,6 @@ namespace System.Reflection.Emit
             _nrefs += 2;
             return _nrefs - 1;
         }
-
-        internal override ParameterInfo[] GetParametersNoCopy() => _dynMethod.GetParametersNoCopy();
 
         internal override int GetParametersCount() => GetParametersNoCopy().Length;
 

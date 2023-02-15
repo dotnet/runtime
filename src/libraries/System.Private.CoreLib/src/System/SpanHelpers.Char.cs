@@ -40,7 +40,8 @@ namespace System
             while (remainingSearchSpaceLength > 0)
             {
                 // Do a quick search for the first element of "value".
-                int relativeIndex = IndexOfChar(ref Unsafe.Add(ref searchSpace, offset), valueHead, remainingSearchSpaceLength);
+                // Using the non-packed variant as the input is short and would not benefit from the packed implementation.
+                int relativeIndex = NonPackedIndexOfChar(ref Unsafe.Add(ref searchSpace, offset), valueHead, remainingSearchSpaceLength);
                 if (relativeIndex < 0)
                     break;
 
@@ -64,7 +65,7 @@ namespace System
             }
             return -1;
 
-            // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
+            // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Mula
             // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_CHARS:
             ref ushort ushortSearchSpace = ref Unsafe.As<char, ushort>(ref searchSpace);
@@ -250,7 +251,7 @@ namespace System
             }
             return -1;
 
-            // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
+            // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Mula
             // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_CHARS:
             ref ushort ushortSearchSpace = ref Unsafe.As<char, ushort>(ref searchSpace);
@@ -424,7 +425,7 @@ namespace System
         // IndexOfNullCharacter processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
         // This behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static unsafe int IndexOfNullCharacter(ref char searchSpace)
+        public static unsafe int IndexOfNullCharacter(char* searchSpace)
         {
             const char value = '\0';
             const int length = int.MaxValue;
@@ -432,7 +433,7 @@ namespace System
             nint offset = 0;
             nint lengthToExamine = length;
 
-            if (((int)Unsafe.AsPointer(ref searchSpace) & 1) != 0)
+            if (((int)searchSpace & 1) != 0)
             {
                 // Input isn't char aligned, we won't be able to align it to a Vector
             }
@@ -440,12 +441,12 @@ namespace System
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
                 // Needs to be double length to allow us to align the data first.
-                lengthToExamine = UnalignedCountVector128(ref searchSpace);
+                lengthToExamine = UnalignedCountVector128(searchSpace);
             }
             else if (Vector.IsHardwareAccelerated)
             {
                 // Needs to be double length to allow us to align the data first.
-                lengthToExamine = UnalignedCountVector(ref searchSpace);
+                lengthToExamine = UnalignedCountVector(searchSpace);
             }
 
         SequentialScan:
@@ -455,15 +456,13 @@ namespace System
             // remaining data that is shorter than a Vector length.
             while (lengthToExamine >= 4)
             {
-                ref char current = ref Unsafe.Add(ref searchSpace, offset);
-
-                if (value == current)
+                if (value == searchSpace[offset])
                     goto Found;
-                if (value == Unsafe.Add(ref current, 1))
+                if (value == searchSpace[offset + 1])
                     goto Found1;
-                if (value == Unsafe.Add(ref current, 2))
+                if (value == searchSpace[offset + 2])
                     goto Found2;
-                if (value == Unsafe.Add(ref current, 3))
+                if (value == searchSpace[offset + 3])
                     goto Found3;
 
                 offset += 4;
@@ -472,7 +471,7 @@ namespace System
 
             while (lengthToExamine > 0)
             {
-                if (value == Unsafe.Add(ref searchSpace, offset))
+                if (value == searchSpace[offset])
                     goto Found;
 
                 offset++;
@@ -486,25 +485,19 @@ namespace System
                 if (offset < length)
                 {
                     Debug.Assert(length - offset >= Vector128<ushort>.Count);
-                    ref ushort ushortSearchSpace = ref Unsafe.As<char, ushort>(ref searchSpace);
-                    if (((nint)Unsafe.AsPointer(ref Unsafe.Add(ref searchSpace, (nint)offset)) & (nint)(Vector256<byte>.Count - 1)) != 0)
+                    if (((nint)(searchSpace + (nint)offset) & (nint)(Vector256<byte>.Count - 1)) != 0)
                     {
                         // Not currently aligned to Vector256 (is aligned to Vector128); this can cause a problem for searches
                         // with no upper bound e.g. String.wcslen. Start with a check on Vector128 to align to Vector256,
                         // before moving to processing Vector256.
 
-                        // If the input searchSpan has been fixed or pinned, this ensures we do not fault across memory pages
+                        // This ensures we do not fault across memory pages
                         // while searching for an end of string. Specifically that this assumes that the length is either correct
                         // or that the data is pinned otherwise it may cause an AccessViolation from crossing a page boundary into an
                         // unowned page. If the search is unbounded (e.g. null terminator in wcslen) and the search value is not found,
                         // again this will likely cause an AccessViolation. However, correctly bounded searches will return -1 rather
                         // than ever causing an AV.
-
-                        // If the searchSpan has not been fixed or pinned the GC can relocate it during the execution of this
-                        // method, so the alignment only acts as best endeavour. The GC cost is likely to dominate over
-                        // the misalignment that may occur after; to we default to giving the GC a free hand to relocate and
-                        // its up to the caller whether they are operating over fixed data.
-                        Vector128<ushort> search = Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)offset);
+                        Vector128<ushort> search = *(Vector128<ushort>*)(searchSpace + (nuint)offset);
 
                         // Same method as below
                         uint matches = Vector128.Equals(Vector128<ushort>.Zero, search).AsByte().ExtractMostSignificantBits();
@@ -527,7 +520,7 @@ namespace System
                         {
                             Debug.Assert(lengthToExamine >= Vector256<ushort>.Count);
 
-                            Vector256<ushort> search = Vector256.LoadUnsafe(ref ushortSearchSpace, (nuint)offset);
+                            Vector256<ushort> search = *(Vector256<ushort>*)(searchSpace + (nuint)offset);
                             uint matches = Vector256.Equals(Vector256<ushort>.Zero, search).AsByte().ExtractMostSignificantBits();
                             // Note that MoveMask has converted the equal vector elements into a set of bit flags,
                             // So the bit position in 'matches' corresponds to the element offset.
@@ -550,7 +543,7 @@ namespace System
                     {
                         Debug.Assert(lengthToExamine >= Vector128<ushort>.Count);
 
-                        Vector128<ushort> search = Vector128.LoadUnsafe(ref ushortSearchSpace, (nuint)offset);
+                        Vector128<ushort> search = *(Vector128<ushort>*)(searchSpace + (nuint)offset);
 
                         // Same method as above
                         uint matches = Vector128.Equals(Vector128<ushort>.Zero, search).AsByte().ExtractMostSignificantBits();
@@ -580,7 +573,6 @@ namespace System
                 if (offset < length)
                 {
                     Debug.Assert(length - offset >= Vector128<ushort>.Count);
-                    ref ushort ushortSearchSpace = ref Unsafe.As<char, ushort>(ref searchSpace);
 
                     lengthToExamine = GetCharVector128SpanLength(offset, length);
                     if (lengthToExamine > 0)
@@ -589,7 +581,7 @@ namespace System
                         {
                             Debug.Assert(lengthToExamine >= Vector128<ushort>.Count);
 
-                            Vector128<ushort> search = Vector128.LoadUnsafe(ref ushortSearchSpace, (uint)offset);
+                            Vector128<ushort> search = *(Vector128<ushort>*)(searchSpace + (nuint)offset);
 
                             // Same method as above
                             Vector128<ushort> compareResult = Vector128.Equals(Vector128<ushort>.Zero, search);
@@ -629,7 +621,7 @@ namespace System
                         {
                             Debug.Assert(lengthToExamine >= Vector<ushort>.Count);
 
-                            var matches = Vector.Equals(Vector<ushort>.Zero, LoadVector(ref searchSpace, offset));
+                            var matches = Vector.Equals(Vector<ushort>.Zero, *(Vector<ushort>*)(searchSpace + (nuint)offset));
                             if (Vector<ushort>.Zero.Equals(matches))
                             {
                                 offset += Vector<ushort>.Count;
@@ -707,49 +699,41 @@ namespace System
             => (length - offset) & ~(Vector256<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nint UnalignedCountVector(ref char searchSpace)
+        private static unsafe nint UnalignedCountVector(char* searchSpace)
         {
             const int ElementsPerByte = sizeof(ushort) / sizeof(byte);
-            // Figure out how many characters to read sequentially until we are vector aligned
-            // This is equivalent to:
-            //         unaligned = ((int)pCh % Unsafe.SizeOf<Vector<ushort>>()) / ElementsPerByte
-            //         length = (Vector<ushort>.Count - unaligned) % Vector<ushort>.Count
-
-            // This alignment is only valid if the GC does not relocate; so we use ReadUnaligned to get the data.
-            // If a GC does occur and alignment is lost, the GC cost will outweigh any gains from alignment so it
-            // isn't too important to pin to maintain the alignment.
-            return (nint)(uint)(-(int)Unsafe.AsPointer(ref searchSpace) / ElementsPerByte) & (Vector<ushort>.Count - 1);
+            return (nint)(uint)(-(int)searchSpace / ElementsPerByte) & (Vector<ushort>.Count - 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nint UnalignedCountVector128(ref char searchSpace)
+        private static unsafe nint UnalignedCountVector128(char* searchSpace)
         {
             const int ElementsPerByte = sizeof(ushort) / sizeof(byte);
-            // This alignment is only valid if the GC does not relocate; so we use ReadUnaligned to get the data.
-            // If a GC does occur and alignment is lost, the GC cost will outweigh any gains from alignment so it
-            // isn't too important to pin to maintain the alignment.
-            return (nint)(uint)(-(int)Unsafe.AsPointer(ref searchSpace) / ElementsPerByte) & (Vector128<ushort>.Count - 1);
+            return (nint)(uint)(-(int)searchSpace / ElementsPerByte) & (Vector128<ushort>.Count - 1);
         }
 
         public static void Reverse(ref char buf, nuint length)
         {
-            if (Avx2.IsSupported && (nuint)Vector256<short>.Count * 2 <= length)
+            Debug.Assert(length > 1);
+
+            nint remainder = (nint)length;
+            nint offset = 0;
+
+            // overlapping has a positive performance benefit around 24 elements
+            if (Avx2.IsSupported && remainder >= (nint)(Vector256<ushort>.Count * 1.5))
             {
-                ref byte bufByte = ref Unsafe.As<char, byte>(ref buf);
-                nuint byteLength = length * sizeof(char);
                 Vector256<byte> reverseMask = Vector256.Create(
                     (byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1, // first 128-bit lane
                     14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1); // second 128-bit lane
-                nuint numElements = (nuint)Vector256<byte>.Count;
-                nuint numIters = (byteLength / numElements) / 2;
-                for (nuint i = 0; i < numIters; i++)
-                {
-                    nuint firstOffset = i * numElements;
-                    nuint lastOffset = byteLength - ((1 + i) * numElements);
 
-                    // Load in values from beginning and end of the array.
-                    Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref bufByte, firstOffset);
-                    Vector256<byte> tempLast = Vector256.LoadUnsafe(ref bufByte, lastOffset);
+                nint lastOffset = remainder - Vector256<ushort>.Count;
+                do
+                {
+                    ref byte first = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref buf, offset));
+                    ref byte last = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref buf, lastOffset));
+
+                    Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref first);
+                    Vector256<byte> tempLast = Vector256.LoadUnsafe(ref last);
 
                     // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
                     // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
@@ -770,27 +754,25 @@ namespace System
                     tempLast = Avx2.Permute2x128(tempLast, tempLast, 0b00_01);
 
                     // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref bufByte, firstOffset);
-                    tempFirst.StoreUnsafe(ref bufByte, lastOffset);
-                }
-                bufByte = ref Unsafe.Add(ref bufByte, numIters * numElements);
-                length -= numIters * (nuint)Vector256<short>.Count * 2;
-                // Store any remaining values one-by-one
-                buf = ref Unsafe.As<byte, char>(ref bufByte);
-            }
-            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<short>.Count * 2 <= length)
-            {
-                ref short bufShort = ref Unsafe.As<char, short>(ref buf);
-                nuint numElements = (nuint)Vector128<short>.Count;
-                nuint numIters = (length / numElements) / 2;
-                for (nuint i = 0; i < numIters; i++)
-                {
-                    nuint firstOffset = i * numElements;
-                    nuint lastOffset = length - ((1 + i) * numElements);
+                    tempLast.StoreUnsafe(ref first);
+                    tempFirst.StoreUnsafe(ref last);
 
-                    // Load in values from beginning and end of the array.
-                    Vector128<short> tempFirst = Vector128.LoadUnsafe(ref bufShort, firstOffset);
-                    Vector128<short> tempLast = Vector128.LoadUnsafe(ref bufShort, lastOffset);
+                    offset += Vector256<ushort>.Count;
+                    lastOffset -= Vector256<ushort>.Count;
+                } while (lastOffset >= offset);
+
+                remainder = (lastOffset + Vector256<ushort>.Count - offset);
+            }
+            else if (Vector128.IsHardwareAccelerated && remainder >= Vector128<ushort>.Count * 2)
+            {
+                nint lastOffset = remainder - Vector128<ushort>.Count;
+                do
+                {
+                    ref ushort first = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, offset));
+                    ref ushort last = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, lastOffset));
+
+                    Vector128<ushort> tempFirst = Vector128.LoadUnsafe(ref first);
+                    Vector128<ushort> tempLast = Vector128.LoadUnsafe(ref last);
 
                     // Shuffle to reverse each vector:
                     //     +-------------------------------+
@@ -800,19 +782,25 @@ namespace System
                     //     +-------------------------------+
                     //     | H | G | F | E | D | C | B | A |
                     //     +-------------------------------+
-                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0));
-                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0));
+                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
+                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
 
                     // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref bufShort, firstOffset);
-                    tempFirst.StoreUnsafe(ref bufShort, lastOffset);
-                }
-                bufShort = ref Unsafe.Add(ref bufShort, numIters * numElements);
-                length -= numIters * (nuint)Vector128<short>.Count * 2;
-                // Store any remaining values one-by-one
-                buf = ref Unsafe.As<short, char>(ref bufShort);
+                    tempLast.StoreUnsafe(ref first);
+                    tempFirst.StoreUnsafe(ref last);
+
+                    offset += Vector128<ushort>.Count;
+                    lastOffset -= Vector128<ushort>.Count;
+                } while (lastOffset >= offset);
+
+                remainder = (lastOffset + Vector128<ushort>.Count - offset);
             }
-            ReverseInner(ref buf, length);
+
+            // Store any remaining values one-by-one
+            if (remainder > 1)
+            {
+                ReverseInner(ref Unsafe.Add(ref buf, offset), (nuint)remainder);
+            }
         }
     }
 }

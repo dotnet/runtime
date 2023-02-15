@@ -10,9 +10,9 @@
 using System;
 namespace VTest
 {
-    class TestMain : refTest<TestMain>
+    public class TestMain : refTest<TestMain>
     {
-        static int Main(string[] args)
+        public static int Main()
         {
             int ret = 100;
             try
@@ -30,7 +30,7 @@ namespace VTest
 
     }
 
-    class refTest<type> where type : refTest<type>
+    public class refTest<type> where type : refTest<type>
     {
         public refTest()
         {
