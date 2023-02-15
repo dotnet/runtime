@@ -1,8 +1,10 @@
+project(metadata)
+
 #
 # This library contains the icall tables if the runtime was configured with DISABLE_ICALL_TABLES
 #
 if(DISABLE_ICALL_TABLES)
-add_library(mono-icall-table STATIC "../metadata/icall-table.c")
+add_library(mono-icall-table STATIC "icall-table.c")
 target_link_libraries(mono-icall-table monoapi)
 install(TARGETS mono-icall-table LIBRARY)
 else()
@@ -191,9 +193,15 @@ elseif(MONO_GC STREQUAL "boehm")
     set(metadata_compile_definitions "HAVE_BOEHM_GC")
 endif()
 
-addprefix(metadata_gc_dependent_real_sources ../metadata "${metadata_gc_dependent_sources}")
-addprefix(metadata_gc_real_sources ../metadata "${metadata_gc_sources}")
-addprefix(ilgen_real_sources ../metadata "${ilgen_sources}")
-set_source_files_properties(${metadata_gc_real_sources};${metadata_gc_dependent_real_sources};${ilgen_real_sources} PROPERTIES COMPILE_DEFINITIONS "${metadata_compile_definitions}")
+set(metadata_sources "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_gc_sources};${ilgen_sources}")
 
-addprefix(metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_gc_sources};${ilgen_sources}")
+add_library(metadata_objects OBJECT ${metadata_sources})
+target_compile_definitions(metadata_objects PRIVATE ${metadata_compile_definitions})
+target_link_libraries(metadata_objects PRIVATE monoapi eglib_objects utils_objects)
+# note: metadata_objects is an object library, so this doesn't force linking with sgen,
+# it just adds the relevant include directories - which we need even with Boehm
+target_link_libraries(metadata_objects PRIVATE sgen_objects)
+target_include_directories(metadata_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/..)
+
