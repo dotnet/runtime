@@ -1141,10 +1141,6 @@ private:
         GenTreeLclVarCommon* lclNode     = nullptr;
         bool                 isDef = (user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir);
 
-#ifdef DEBUG
-        bool removeIndir = false;
-#endif // DEBUG
-
         switch (transform)
         {
             case IndirTransform::None:
@@ -1253,18 +1249,11 @@ private:
             case IndirTransform::NarrowCast:
                 assert(varTypeIsIntegral(indir));
                 assert(varTypeIsIntegral(varDsc));
-                assert(*val.Use() == indir);
+                assert(genTypeSize(varDsc) >= genTypeSize(indir));
                 assert(!isDef);
 
                 lclNode    = BashToLclVar(indir->gtGetOp1(), lclNum);
                 *val.Use() = m_compiler->gtNewCastNode(genActualType(indir), lclNode, false, indir->TypeGet());
-
-                // Check to make sure this is narrow.
-                assert(genTypeSize(lclNode) >= genTypeSize(indir));
-
-#ifdef DEBUG
-                removeIndir = true;
-#endif // DEBUG
 
                 break;
 
@@ -1308,13 +1297,6 @@ private:
 
         lclNode->gtFlags = lclNodeFlags;
         m_stmtModified   = true;
-
-#ifdef DEBUG
-        if (removeIndir)
-        {
-            DEBUG_DESTROY_NODE(indir);
-        }
-#endif // DEBUG
     }
 
     //------------------------------------------------------------------------
@@ -1372,16 +1354,6 @@ private:
                 return IndirTransform::LclFld;
             }
 
-#ifdef TARGET_64BIT
-            if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
-#else  // TARGET_64BIT
-            // For non-64bit targets, do not do this for long types.
-            if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc) && !varTypeIsLong(varDsc))
-#endif // !TARGET_64BIT
-            {
-                return IndirTransform::NarrowCast;
-            }
-
 #ifdef FEATURE_HW_INTRINSICS
             if (varTypeIsSIMD(varDsc))
             {
@@ -1406,13 +1378,23 @@ private:
             }
 #endif // FEATURE_HW_INTRINSICS
 
-            // Turn this into a bitcast if we can.
-            if ((genTypeSize(indir) == genTypeSize(varDsc)) && (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
+            if (!isDef)
             {
-                // TODO-ADDR: enable this optimization for all users and all targets.
-                if (user->OperIs(GT_RETURN) && (genTypeSize(indir) <= TARGET_POINTER_SIZE))
+                // Turn this into a narrow-cast if we can.
+                if (varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
                 {
-                    return IndirTransform::BitCast;
+                    return IndirTransform::NarrowCast;
+                }
+
+                // Turn this into a bitcast if we can.
+                if ((genTypeSize(indir) == genTypeSize(varDsc)) &&
+                    (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
+                {
+                    // TODO-ADDR: enable this optimization for all users and all targets.
+                    if (user->OperIs(GT_RETURN) && (genTypeSize(indir) <= TARGET_POINTER_SIZE))
+                    {
+                        return IndirTransform::BitCast;
+                    }
                 }
             }
 
