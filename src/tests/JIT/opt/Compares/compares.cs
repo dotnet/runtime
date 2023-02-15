@@ -179,7 +179,7 @@ public class FullRangeComparisonTest
     public static void Lt_double_long_consume(double f1, double f2, long a1, long a2)
     {
         // ARM64-FULL-LINE:      fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        // ARM64-FULL-LINE-NEXT: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, {{le|gt}}
+        // ARM64-FULL-LINE-NEXT: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, {{hs|lo}}
         //
         // X64-FULL-LINE:        cmov{{be|a}} {{[a-z0-9]+}}, {{.*}}
 
