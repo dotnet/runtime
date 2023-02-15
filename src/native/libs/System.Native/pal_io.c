@@ -1327,7 +1327,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     {
 #if HAVE_IOCTL_WITH_INT_REQUEST
         while ((ret = ioctl(outFd, (int)FICLONE, inFd)) < 0 && errno == EINTR);
-#elif
+#else
         while ((ret = ioctl(outFd, FICLONE, inFd)) < 0 && errno == EINTR);
 #endif
         copied = ret == 0;
