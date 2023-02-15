@@ -110,7 +110,6 @@ namespace System.Tests.Types
             Assert.True(fcnPtr2.IsUnmanagedFunctionPointer);
 
             Assert.NotSame(fcnPtr1, fcnPtr2);
-            Assert.False(fcnPtr1.IsFunctionPointerEqual(fcnPtr2));
 
             Type retType = fcnPtr1.GetFunctionPointerReturnType();
             Assert.True(typeof(int).Project().IsFunctionPointerEqual(retType.UnderlyingSystemType));

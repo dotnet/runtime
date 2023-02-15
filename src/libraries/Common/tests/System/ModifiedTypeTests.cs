@@ -118,6 +118,9 @@ namespace System.Tests.Types
                 Assert.False(t.GetOptionalCustomModifiers().Any());
                 Assert.False(t.GetRequiredCustomModifiers().Any());
                 Assert.True(t.IsPrimitive);
+                Assert.True(((object)t).Equals(t));
+                Assert.True(t.Equals(t));
+                Assert.Equal(t.GetHashCode(), t.GetHashCode());
                 Assert.NotNull(t.BaseType);
                 Assert.Null(t.DeclaringType);
                 Assert.Null(t.ReflectedType);
@@ -132,6 +135,9 @@ namespace System.Tests.Types
                 Assert.False(t.GetOptionalCustomModifiers().Any());
                 Assert.True(t.GetRequiredCustomModifiers().Any()); // The volatile modifier.
                 Assert.True(t.IsPrimitive);
+                Assert.Throws<NotSupportedException>(() => ((object)t).Equals(t));
+                Assert.Throws<NotSupportedException>(() => t.Equals(t));
+                Assert.Throws<NotSupportedException>(() => t.GetHashCode());
                 Assert.Throws<NotSupportedException>(() => t.BaseType);
                 Assert.Throws<NotSupportedException>(() => t.DeclaringType);
                 Assert.Throws<NotSupportedException>(() => t.ReflectedType);

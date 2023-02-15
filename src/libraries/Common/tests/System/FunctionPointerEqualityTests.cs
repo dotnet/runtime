@@ -40,17 +40,12 @@ namespace System.Tests.Types
 
             MethodInfo m1 = holder.GetMethod(nameof(FunctionPointerHolder.MethodIntReturnValue1), Bindings);
             Type t1 = m1.ReturnParameter.GetModifiedParameterType();
+            Assert.NotSame(t1, t1.UnderlyingSystemType);
 
             MethodInfo m2 = holder.GetMethod(nameof(FunctionPointerHolder.MethodIntReturnValue2), Bindings);
             Type t2 = m2.ReturnParameter.GetModifiedParameterType();
 
-            Assert.False(ReferenceEquals(t1, t1.UnderlyingSystemType));
-
-            // Modified types do not support Equals other than when references are equal.
-            Assert.True(t1.Equals(t1));
-            Assert.False(t1.Equals(t2));
-            Assert.False(((object)t1).Equals(t2));
-            Assert.False(t1.Equals((object)t2));
+            Assert.NotSame(t1, t2);
         }
 
         [Fact]
@@ -64,11 +59,8 @@ namespace System.Tests.Types
             Type modifiedType = m1.ReturnParameter.GetModifiedParameterType();
             Type t = typeof(int).Project();
 
-            Assert.False(ReferenceEquals(modifiedType, modifiedType.UnderlyingSystemType));
-            Assert.False(ReferenceEquals(modifiedType, t));
-            Assert.False(modifiedType.Equals(t));
-            Assert.False(((object)modifiedType).Equals(t));
-            Assert.False(modifiedType.Equals((object)t));
+            Assert.NotSame(modifiedType, modifiedType.UnderlyingSystemType);
+            Assert.NotSame(modifiedType, t);
         }
 
         [Theory]
@@ -166,7 +158,8 @@ namespace System.Tests.Types
             Type fnPtrType1 = m1.GetParameters()[0].GetModifiedParameterType();
             Type fnPtrType2 = m2.GetParameters()[0].GetModifiedParameterType();
 
-            Assert.True(fnPtrType1.IsFunctionPointerNotEqual(fnPtrType2));
+            // Modified types don't support Equals, so just verify instance.
+            Assert.NotSame(fnPtrType1, fnPtrType2);
         }
 
         private unsafe class FunctionPointerHolder

@@ -36,7 +36,6 @@ namespace System.Tests.Types
             Assert.Equal(TypeAttributes.Public, t.Attributes);
             Assert.Null(t.BaseType);
             Assert.False(t.ContainsGenericParameters);
-            Assert.False(t.ContainsGenericParameters);
             Assert.False(t.DeclaredConstructors.Any());
             Assert.False(t.DeclaredEvents.Any());
             Assert.False(t.DeclaredFields.Any());
@@ -233,11 +232,11 @@ namespace System.Tests.Types
 
             Type fnPtrType = p.PropertyType;
             Assert.Equal(expectedToString, fnPtrType.ToString());
-            VerifyFieldOrProperty(fnPtrType, isModified: false);
+            VerifyFieldOrProperty(fnPtrType);
 
             fnPtrType = p.GetModifiedPropertyType();
             Assert.Equal(expectedToString, fnPtrType.ToString());
-            VerifyFieldOrProperty(fnPtrType, isModified: true);
+            VerifyFieldOrProperty(fnPtrType);
         }
 
         [Theory]
@@ -253,14 +252,14 @@ namespace System.Tests.Types
 
             Type fnPtrType = f.FieldType;
             Assert.Equal(expectedToString, fnPtrType.ToString());
-            VerifyFieldOrProperty(fnPtrType, isModified: false);
+            VerifyFieldOrProperty(fnPtrType);
 
             fnPtrType = f.GetModifiedFieldType();
             Assert.Equal(expectedToString, fnPtrType.ToString());
-            VerifyFieldOrProperty(fnPtrType, isModified: true);
+            VerifyFieldOrProperty(fnPtrType);
         }
 
-        private static void VerifyFieldOrProperty(Type fnPtrType, bool isModified)
+        private static void VerifyFieldOrProperty(Type fnPtrType)
         {
             Assert.Null(fnPtrType.FullName);
             Assert.Null(fnPtrType.AssemblyQualifiedName);

@@ -931,7 +931,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsUnmanagedFunctionPointer, ReflectClass
     if (typeHandle.IsFnPtrType())
     {
         FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
-        unmanaged = (fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_UNMANAGED) == IMAGE_CEE_CS_CALLCONV_UNMANAGED;
+        unmanaged = (fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_UNMANAGED;
     }
     
     FC_RETURN_BOOL(unmanaged);

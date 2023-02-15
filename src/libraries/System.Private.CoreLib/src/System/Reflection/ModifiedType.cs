@@ -65,27 +65,12 @@ namespace System.Reflection
             return GetCustomModifiers(required: false);
         }
 
-        // Modified types do not support Equals other than when references are equal.
+        // Modified types do not support Equals. That would need to include custom modifiers and any parameterized types recursively.
         // UnderlyingSystemType.Equals() should should be used if basic equality is necessary.
-        // Supporting Equals on a modified type would need to include custom modifiers and any parameterized types recursively.
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            if (!(obj is ModifiedType))
-                return false;
+        public override bool Equals([NotNullWhen(true)] object? obj) => throw new NotSupportedException(SR.NotSupported_ModifiedType);
+        public override bool Equals(Type? other) => throw new NotSupportedException(SR.NotSupported_ModifiedType);
+        public override int GetHashCode() => throw new NotSupportedException(SR.NotSupported_ModifiedType);
 
-            return ReferenceEquals(this, obj);
-        }
-
-        public override bool Equals(Type? other)
-        {
-            if (other is ModifiedType otherModifiedType)
-            {
-                return ReferenceEquals(this, otherModifiedType);
-            }
-
-            return false;
-        }
-        public override int GetHashCode() => _unmodifiedType.GetHashCode();
         public override string ToString() => _unmodifiedType.ToString();
         public override Type UnderlyingSystemType => _unmodifiedType;
 
