@@ -125,6 +125,8 @@
           TargetDir="crossgen2/" />
     </ItemGroup>
 
+    <WriteLinesToFile File="$(ArtifactsDir)\wasm\index.html" Lines="&lt;html&gt;&lt;body&gt;&lt;script type='module' src='test-main.js'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" Overwrite="True" Condition="'$(TargetArchitecture)' == 'wasm' and !Exists('$(WasmMainHtmlPath)')"/>
+
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
         <RunTimeDependencyCopyLocal
           Include="@(RuntimeFiles)"
@@ -162,6 +164,10 @@
 
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\test-main.js"
+          TargetDir="runtime-test/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsDir)\wasm\index.html"
           TargetDir="runtime-test/"/>
 
         <RunTimeDependencyCopyLocal
