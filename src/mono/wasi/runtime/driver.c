@@ -9,8 +9,6 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#define INVARIANT_GLOBALIZATION 1
-
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/class.h>
@@ -329,7 +327,7 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 	}
 }
 
-void mono_wasm_link_icu_shim (void);
+//void mono_wasm_link_icu_shim (void);
 
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -343,9 +341,9 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
 
-#ifndef INVARIANT_GLOBALIZATION
-	mono_wasm_link_icu_shim ();
-#else
+#ifdef INVARIANT_GLOBALIZATION
+	//mono_wasm_link_icu_shim ();
+//#else
 	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true", 1);
 #endif
 
