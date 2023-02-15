@@ -7005,6 +7005,13 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_value (((guint32 *)patch_info->data.target) [MINI_LS_WORD_IDX], p, &p);
 		encode_value (((guint32 *)patch_info->data.target) [MINI_MS_WORD_IDX], p, &p);
 		break;
+	case MONO_PATCH_INFO_X128:
+	case MONO_PATCH_INFO_X128_GOT:
+		encode_value (((guint32 *)patch_info->data.target) [(MINI_LS_WORD_IDX * 2) + MINI_LS_WORD_IDX], p, &p);
+		encode_value (((guint32 *)patch_info->data.target) [(MINI_LS_WORD_IDX * 2) + MINI_MS_WORD_IDX], p, &p);
+		encode_value (((guint32 *)patch_info->data.target) [(MINI_MS_WORD_IDX * 2) + MINI_LS_WORD_IDX], p, &p);
+		encode_value (((guint32 *)patch_info->data.target) [(MINI_MS_WORD_IDX * 2) + MINI_MS_WORD_IDX], p, &p);
+		break;
 	case MONO_PATCH_INFO_VTABLE:
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
