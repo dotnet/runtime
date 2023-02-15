@@ -2396,9 +2396,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			td->ip += 5;
 			return TRUE;
-		} else if (!strcmp (tm, "InternalGetHashCode")) {
+		} else if (!strcmp (tm, "GetHashCode") || !strcmp (tm, "InternalGetHashCode")) {
 			*op = MINT_INTRINS_GET_HASHCODE;
-		} else if (!strcmp (tm, "InternalTryGetHashCode")) {
+		} else if (!strcmp (tm, "TryGetHashCode") || !strcmp (tm, "InternalTryGetHashCode")) {
 			*op = MINT_INTRINS_TRY_GET_HASHCODE;
 		} else if (!strcmp (tm, "GetRawData")) {
 			interp_add_ins (td, MINT_LDFLDA_UNSAFE);
@@ -2555,6 +2555,14 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_MONO_MEMORY_BARRIER;
 		else if (!strcmp (tm, "Exchange") && csignature->param_count == 2 && csignature->params [0]->type == MONO_TYPE_I8 && csignature->params [1]->type == MONO_TYPE_I8)
 			*op = MINT_MONO_EXCHANGE_I8;
+		else if (!strcmp (tm, "CompareExchange") && csignature->param_count == 3 &&
+			 (csignature->params[1]->type == MONO_TYPE_I4 ||
+			  csignature->params[1]->type == MONO_TYPE_I8)) {
+			if (csignature->params[1]->type == MONO_TYPE_I4)
+				*op = MINT_MONO_CMPXCHG_I4;
+			else
+				*op = MINT_MONO_CMPXCHG_I8;
+		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Thread")) {
 		if (!strcmp (tm, "MemoryBarrier") && csignature->param_count == 0)
 			*op = MINT_MONO_MEMORY_BARRIER;
@@ -3486,7 +3494,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	target_method = interp_transform_internal_calls (method, target_method, csignature, is_virtual);
+	if (op == -1)
+		target_method = interp_transform_internal_calls (method, target_method, csignature, is_virtual);
 
 	if (csignature->call_convention == MONO_CALL_VARARG)
 		csignature = mono_method_get_signature_checked (target_method, image, token, generic_context, error);
@@ -7525,12 +7534,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				MonoJitICallInfo const * const info = mono_find_jit_icall_info (jit_icall_id);
 
 				if (info->sig->ret->type != MONO_TYPE_VOID) {
+					g_assert_checked (jit_icall_id == MONO_JIT_ICALL_mono_threads_enter_gc_safe_region_unbalanced);
 					// Push a dummy coop gc var
 					interp_add_ins (td, MINT_LDNULL);
 					push_simple_type (td, STACK_TYPE_I);
 					td->last_ins->dreg = td->sp [-1].local;
 					interp_add_ins (td, MINT_MONO_ENABLE_GCTRANS);
 				} else {
+					g_assert_checked (jit_icall_id == MONO_JIT_ICALL_mono_threads_exit_gc_safe_region_unbalanced);
 					// Pop the unused gc var
 					td->sp--;
 				}

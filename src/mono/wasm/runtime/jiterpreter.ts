@@ -260,6 +260,8 @@ function getTraceImports () {
         ["hasflag", "hasflag", getRawCwrap("mono_jiterp_enum_hasflag")],
         ["array_rank", "array_rank", getRawCwrap("mono_jiterp_get_array_rank")],
         ["stfld_o", "stfld_o", getRawCwrap("mono_jiterp_set_object_field")],
+        importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
+        importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -521,6 +523,21 @@ function initialize_builder (builder: WasmBuilder) {
         "notnull", {
             "ptr": WasmValtype.i32,
             "traceIp": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "cmpxchg_i32", {
+            "dest": WasmValtype.i32,
+            "newVal": WasmValtype.i32,
+            "expected": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "cmpxchg_i64", {
+            "dest": WasmValtype.i32,
+            "newVal": WasmValtype.i32,
+            "expected": WasmValtype.i32,
+            "oldVal": WasmValtype.i32,
         }, WasmValtype.void, true
     );
 }

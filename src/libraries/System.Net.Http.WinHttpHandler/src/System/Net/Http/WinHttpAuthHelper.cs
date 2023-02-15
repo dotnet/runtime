@@ -35,7 +35,7 @@ namespace System.Net.Http
             "Negotiate"
         };
 
-        private static readonly uint[] s_authSchemePriorityOrder =
+        private static ReadOnlySpan<uint> AuthSchemePriorityOrder => new uint[]
         {
             Interop.WinHttp.WINHTTP_AUTH_SCHEME_NEGOTIATE,
             Interop.WinHttp.WINHTTP_AUTH_SCHEME_NTLM,
@@ -247,7 +247,7 @@ namespace System.Net.Http
 
             lock (_credentialCacheLock)
             {
-                foreach (uint authScheme in s_authSchemePriorityOrder)
+                foreach (uint authScheme in AuthSchemePriorityOrder)
                 {
                     cred = _credentialCache.GetCredential(uri, s_authSchemeStringMapping[authScheme]!);
                     if (cred != null)
@@ -399,7 +399,7 @@ namespace System.Net.Http
 
             Debug.Assert(uri != null);
 
-            foreach (uint authScheme in s_authSchemePriorityOrder)
+            foreach (uint authScheme in AuthSchemePriorityOrder)
             {
                 if ((supportedSchemes & authScheme) != 0 && credentials.GetCredential(uri, s_authSchemeStringMapping[authScheme]!) != null)
                 {

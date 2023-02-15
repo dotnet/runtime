@@ -17,6 +17,17 @@
 #include "gc.h"
 #include "gcrecord.h"
 
+#ifdef MULTIPLE_HEAPS
+#define PER_HEAP_FIELD
+#define PER_HEAP_METHOD
+#else //MULTIPLE_HEAPS
+#define PER_HEAP_FIELD static
+#define PER_HEAP_METHOD static
+#endif // MULTIPLE_HEAPS
+
+#define PER_HEAP_ISOLATED_FIELD static
+#define PER_HEAP_ISOLATED_METHOD static
+
 #ifdef _MSC_VER
 #pragma warning(disable:4293)
 #pragma warning(disable:4477)
@@ -1285,14 +1296,12 @@ class gc_heap
 public:
 
 #ifdef TRACE_GC
-    PER_HEAP
-    void print_free_list (int gen, heap_segment* seg);
+    PER_HEAP_METHOD void print_free_list (int gen, heap_segment* seg);
 #endif // TRACE_GC
 
 #ifdef SYNCHRONIZATION_STATS
 
-    PER_HEAP_ISOLATED
-    void init_sync_stats()
+    PER_HEAP_ISOLATED_METHOD void init_sync_stats()
     {
 #ifdef MULTIPLE_HEAPS
         for (int i = 0; i < gc_heap::n_heaps; i++)
@@ -1304,8 +1313,7 @@ public:
 #endif  //MULTIPLE_HEAPS
     }
 
-    PER_HEAP_ISOLATED
-    void print_sync_stats(unsigned int gc_count_during_log)
+    PER_HEAP_ISOLATED_METHOD void print_sync_stats(unsigned int gc_count_during_log)
     {
         // bad/good gl acquire is accumulative during the log interval (because the numbers are too small)
         // min/max msl_acquire is the min/max during the log interval, not each GC.
@@ -1326,245 +1334,166 @@ public:
 
 #endif //SYNCHRONIZATION_STATS
 
-    PER_HEAP
-    void verify_soh_segment_list();
+    PER_HEAP_METHOD void verify_soh_segment_list();
 
 #ifdef VERIFY_HEAP
-    PER_HEAP
-    void verify_free_lists();
-    PER_HEAP
-    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail, size_t* p_total_committed = nullptr);
-    PER_HEAP
-    void verify_regions (bool can_verify_gen_num, bool concurrent_p);
-    PER_HEAP_ISOLATED
-    void enter_gc_lock_for_verify_heap();
-    PER_HEAP_ISOLATED
-    void leave_gc_lock_for_verify_heap();
-    PER_HEAP
-    void verify_heap (BOOL begin_gc_p);
-    PER_HEAP
-    BOOL check_need_card (uint8_t* child_obj, int gen_num_for_cards,
+    PER_HEAP_METHOD void verify_free_lists();
+    PER_HEAP_METHOD void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail, size_t* p_total_committed = nullptr);
+    PER_HEAP_METHOD void verify_regions (bool can_verify_gen_num, bool concurrent_p);
+    PER_HEAP_ISOLATED_METHOD void enter_gc_lock_for_verify_heap();
+    PER_HEAP_ISOLATED_METHOD void leave_gc_lock_for_verify_heap();
+    PER_HEAP_METHOD void verify_heap (BOOL begin_gc_p);
+    PER_HEAP_METHOD BOOL check_need_card (uint8_t* child_obj, int gen_num_for_cards,
                           uint8_t* low, uint8_t* high);
 #endif //VERIFY_HEAP
 
-    PER_HEAP_ISOLATED
-    void fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num);
+    PER_HEAP_ISOLATED_METHOD void fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num);
 
-    PER_HEAP_ISOLATED
-    void fire_pevents();
+    PER_HEAP_ISOLATED_METHOD void fire_pevents();
 
 #ifdef FEATURE_BASICFREEZE
-    static void walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef);
+    PER_HEAP_ISOLATED_METHOD void walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef);
 #endif
 
-    PER_HEAP_ISOLATED
-    int get_plan_gen_num (int gen_number);
+    PER_HEAP_ISOLATED_METHOD int get_plan_gen_num (int gen_number);
 
     // region is only needed for regions and gen is only needed otherwise for these
     // 2 methods.
     //
     // Skips the generation start object for non regions.
-    PER_HEAP
-    uint8_t* get_uoh_start_object (heap_segment* region, generation* gen);
+    PER_HEAP_METHOD uint8_t* get_uoh_start_object (heap_segment* region, generation* gen);
 
     // Does not skip the generation start object for non regions.
-    PER_HEAP
-    uint8_t* get_soh_start_object (heap_segment* region, generation* gen);
+    PER_HEAP_METHOD uint8_t* get_soh_start_object (heap_segment* region, generation* gen);
 
-    PER_HEAP
-    size_t get_soh_start_obj_len (uint8_t* start_obj);
+    PER_HEAP_METHOD size_t get_soh_start_obj_len (uint8_t* start_obj);
 
-    PER_HEAP
-    void clear_gen1_cards();
+    PER_HEAP_METHOD void clear_gen1_cards();
 
 #ifdef USE_REGIONS
-    PER_HEAP
-    bool sufficient_space_regions (size_t end_space, size_t end_space_required);
-    PER_HEAP
-    bool sufficient_space_regions_for_allocation (size_t end_space, size_t end_space_required);
-    PER_HEAP
-    bool initial_make_soh_regions (gc_heap* hp);
-    PER_HEAP
-    bool initial_make_uoh_regions (int gen, gc_heap* hp);
-    PER_HEAP
-    void return_free_region (heap_segment* region);
-    PER_HEAP
-    heap_segment* get_free_region (int gen_number, size_t size = 0);
-    PER_HEAP
-    void clear_region_info (heap_segment* region);
-    PER_HEAP_ISOLATED
-    heap_segment* region_of (uint8_t* obj);
-    PER_HEAP_ISOLATED
-    heap_segment* get_region_at_index (size_t index);
-    PER_HEAP_ISOLATED
-    int get_region_gen_num (heap_segment* region);
-    PER_HEAP
-    void check_seg_gen_num (heap_segment* seg);
-    PER_HEAP_ISOLATED
-    int get_region_gen_num (uint8_t* obj);
-    PER_HEAP_ISOLATED
-    void set_region_gen_num (heap_segment* region, int gen_num);
-    PER_HEAP_ISOLATED
-    int get_region_plan_gen_num (uint8_t* obj);
-    PER_HEAP_ISOLATED
-    bool is_region_demoted (uint8_t* obj);
-    PER_HEAP
-    void set_region_plan_gen_num (heap_segment* region, int plan_gen_num);
-    PER_HEAP
-    void set_region_plan_gen_num_sip (heap_segment* region, int plan_gen_num);
-    PER_HEAP
-    void set_region_sweep_in_plan (heap_segment* region);
-    PER_HEAP
-    void clear_region_sweep_in_plan (heap_segment* region);
-    PER_HEAP
-    void clear_region_demoted (heap_segment* region);
-    PER_HEAP
-    void decide_on_demotion_pin_surv (heap_segment* region);
-    PER_HEAP
-    void skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num);
-    PER_HEAP
-    void process_last_np_surv_region (generation* consing_gen,
+    PER_HEAP_METHOD bool sufficient_space_regions (size_t end_space, size_t end_space_required);
+    PER_HEAP_METHOD bool sufficient_space_regions_for_allocation (size_t end_space, size_t end_space_required);
+    PER_HEAP_METHOD bool initial_make_soh_regions (gc_heap* hp);
+    PER_HEAP_METHOD bool initial_make_uoh_regions (int gen, gc_heap* hp);
+    PER_HEAP_METHOD void return_free_region (heap_segment* region);
+    PER_HEAP_METHOD heap_segment* get_free_region (int gen_number, size_t size = 0);
+    PER_HEAP_METHOD void clear_region_info (heap_segment* region);
+    PER_HEAP_ISOLATED_METHOD heap_segment* region_of (uint8_t* obj);
+    PER_HEAP_ISOLATED_METHOD heap_segment* get_region_at_index (size_t index);
+    PER_HEAP_ISOLATED_METHOD int get_region_gen_num (heap_segment* region);
+    PER_HEAP_METHOD void check_seg_gen_num (heap_segment* seg);
+    PER_HEAP_ISOLATED_METHOD int get_region_gen_num (uint8_t* obj);
+    PER_HEAP_ISOLATED_METHOD void set_region_gen_num (heap_segment* region, int gen_num);
+    PER_HEAP_ISOLATED_METHOD int get_region_plan_gen_num (uint8_t* obj);
+    PER_HEAP_ISOLATED_METHOD bool is_region_demoted (uint8_t* obj);
+    PER_HEAP_METHOD void set_region_plan_gen_num (heap_segment* region, int plan_gen_num);
+    PER_HEAP_METHOD void set_region_plan_gen_num_sip (heap_segment* region, int plan_gen_num);
+    PER_HEAP_METHOD void set_region_sweep_in_plan (heap_segment* region);
+    PER_HEAP_METHOD void clear_region_sweep_in_plan (heap_segment* region);
+    PER_HEAP_METHOD void clear_region_demoted (heap_segment* region);
+    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region);
+    PER_HEAP_METHOD void skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num);
+    PER_HEAP_METHOD void process_last_np_surv_region (generation* consing_gen,
                                       int current_plan_gen_num,
                                       int next_plan_gen_num);
-    PER_HEAP
-    void process_remaining_regions (int current_plan_gen_num,
+    PER_HEAP_METHOD void process_remaining_regions (int current_plan_gen_num,
                                     generation* consing_gen);
 
-    PER_HEAP
-    void grow_mark_list_piece();
-    PER_HEAP
-    void save_current_survived();
-    PER_HEAP
-    void update_old_card_survived();
+    PER_HEAP_METHOD void grow_mark_list_piece();
+    PER_HEAP_METHOD void save_current_survived();
+    PER_HEAP_METHOD void update_old_card_survived();
 
     // Used as we discover free spaces before pins during plan.
     // the plug arg is only for logging.
-    PER_HEAP
-    void update_planned_gen0_free_space (size_t free_size, uint8_t* plug);
+    PER_HEAP_METHOD void update_planned_gen0_free_space (size_t free_size, uint8_t* plug);
     // used when deciding on expansion.
-    PER_HEAP
-    void get_gen0_end_plan_space();
-    PER_HEAP
-    size_t get_gen0_end_space(memory_type type);
-    PER_HEAP
-    bool decide_on_compaction_space();
-    PER_HEAP
-    bool try_get_new_free_region();
-    PER_HEAP
-    bool init_table_for_region (int gen_number, heap_segment* region);
-    PER_HEAP
-    heap_segment* find_first_valid_region (heap_segment* region, bool compact_p);
-    PER_HEAP
-    void thread_final_regions (bool compact_p);
-    PER_HEAP
-    void thread_start_region (generation* gen, heap_segment* region);
-    PER_HEAP
-    heap_segment* get_new_region (int gen_number, size_t size = 0);
+    PER_HEAP_METHOD void get_gen0_end_plan_space();
+    PER_HEAP_METHOD size_t get_gen0_end_space(memory_type type);
+    PER_HEAP_METHOD bool decide_on_compaction_space();
+    PER_HEAP_METHOD bool try_get_new_free_region();
+    PER_HEAP_METHOD bool init_table_for_region (int gen_number, heap_segment* region);
+    PER_HEAP_METHOD heap_segment* find_first_valid_region (heap_segment* region, bool compact_p);
+    PER_HEAP_METHOD void thread_final_regions (bool compact_p);
+    PER_HEAP_METHOD void thread_start_region (generation* gen, heap_segment* region);
+    PER_HEAP_METHOD heap_segment* get_new_region (int gen_number, size_t size = 0);
     // This allocates one from region allocator and commit the mark array if needed.
-    PER_HEAP_ISOLATED
-    heap_segment* allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p, size_t size = 0);
+    PER_HEAP_ISOLATED_METHOD heap_segment* allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p, size_t size = 0);
     // When we delete a region we need to update start and tail region
     // if needed.
-    PER_HEAP
-    void update_start_tail_regions (generation* gen,
+    PER_HEAP_METHOD void update_start_tail_regions (generation* gen,
                                     heap_segment* region_to_delete,
                                     heap_segment* prev_region,
                                     heap_segment* next_region);
-    PER_HEAP
-    bool should_sweep_in_plan (heap_segment* region);
+    PER_HEAP_METHOD bool should_sweep_in_plan (heap_segment* region);
 
-    PER_HEAP
-    void sweep_region_in_plan (heap_segment* region,
+    PER_HEAP_METHOD void sweep_region_in_plan (heap_segment* region,
                                BOOL use_mark_list,
                                uint8_t**& mark_list_next,
                                uint8_t** mark_list_index);
 
-    PER_HEAP
-    void check_demotion_helper_sip (uint8_t** pval,
+    PER_HEAP_METHOD void check_demotion_helper_sip (uint8_t** pval,
                                     int parent_gen_num,
                                     uint8_t* parent_loc);
     // This relocates the SIP regions and return the next non SIP region.
-    PER_HEAP
-    heap_segment* relocate_advance_to_non_sip (heap_segment* region);
+    PER_HEAP_METHOD heap_segment* relocate_advance_to_non_sip (heap_segment* region);
 
-    PER_HEAP_ISOLATED
-    void verify_region_to_generation_map();
+    PER_HEAP_ISOLATED_METHOD void verify_region_to_generation_map();
 
-    PER_HEAP_ISOLATED
-    void compute_gc_and_ephemeral_range (int condemned_gen_number, bool end_of_gc_p);
+    PER_HEAP_ISOLATED_METHOD void compute_gc_and_ephemeral_range (int condemned_gen_number, bool end_of_gc_p);
 #ifdef STRESS_REGIONS
-    PER_HEAP
-    void pin_by_gc (uint8_t* object);
+    PER_HEAP_METHOD void pin_by_gc (uint8_t* object);
 #endif //STRESS_REGIONS
 #endif //USE_REGIONS
 
-    static
-    heap_segment* make_heap_segment (uint8_t* new_pages,
-                                     size_t size,
-                                     gc_heap* hp,
-                                     int gen_num);
+    PER_HEAP_ISOLATED_METHOD heap_segment* make_heap_segment (uint8_t* new_pages,
+                                                              size_t size,
+                                                              gc_heap* hp,
+                                                              int gen_num);
 
-    static
-    gc_heap* make_gc_heap(
+    PER_HEAP_ISOLATED_METHOD gc_heap* make_gc_heap(
 #if defined (MULTIPLE_HEAPS)
-        GCHeap* vm_heap,
-        int heap_number
+                                                   GCHeap* vm_heap,
+                                                   int heap_number
 #endif //MULTIPLE_HEAPS
         );
 
-    static
-    void destroy_gc_heap(gc_heap* heap);
+    PER_HEAP_ISOLATED_METHOD void destroy_gc_heap(gc_heap* heap);
 
-    static
-    HRESULT initialize_gc  (size_t soh_segment_size,
-                            size_t loh_segment_size,
-                            size_t poh_segment_size
+    PER_HEAP_ISOLATED_METHOD HRESULT initialize_gc  (size_t soh_segment_size,
+                                                     size_t loh_segment_size,
+                                                     size_t poh_segment_size
 #ifdef MULTIPLE_HEAPS
-                            , int number_of_heaps
+                                                     , int number_of_heaps
 #endif //MULTIPLE_HEAPS
         );
 
-    static
-    void shutdown_gc();
+    PER_HEAP_ISOLATED_METHOD void shutdown_gc();
 
-    PER_HEAP_ISOLATED
-    uint32_t adjust_heaps_hard_limit (uint32_t nhp);
+    PER_HEAP_ISOLATED_METHOD uint32_t adjust_heaps_hard_limit (uint32_t nhp);
 
-    PER_HEAP_ISOLATED
-    size_t adjust_segment_size_hard_limit_va (size_t seg_size);
+    PER_HEAP_ISOLATED_METHOD size_t adjust_segment_size_hard_limit_va (size_t seg_size);
 
-    PER_HEAP_ISOLATED
-    size_t adjust_segment_size_hard_limit (size_t limit, uint32_t nhp);
+    PER_HEAP_ISOLATED_METHOD size_t adjust_segment_size_hard_limit (size_t limit, uint32_t nhp);
 
-    PER_HEAP_ISOLATED
-    bool should_retry_other_heap (int gen_number, size_t size);
+    PER_HEAP_ISOLATED_METHOD bool should_retry_other_heap (int gen_number, size_t size);
 
-    PER_HEAP
-    bool check_against_hard_limit (size_t space_required);
+    PER_HEAP_METHOD bool check_against_hard_limit (size_t space_required);
 
-    PER_HEAP
-    CObjectHeader* allocate (size_t jsize,
+    PER_HEAP_METHOD CObjectHeader* allocate (size_t jsize,
                              alloc_context* acontext,
                              uint32_t flags);
 
 #ifdef MULTIPLE_HEAPS
-    PER_HEAP_ISOLATED
-    void hb_log_new_allocation();
+    PER_HEAP_ISOLATED_METHOD void hb_log_new_allocation();
 
-    PER_HEAP_ISOLATED
-    void hb_log_balance_activities();
+    PER_HEAP_ISOLATED_METHOD void hb_log_balance_activities();
 
-    static
-    void balance_heaps (alloc_context* acontext);
-    PER_HEAP
-    ptrdiff_t get_balance_heaps_uoh_effective_budget (int generation_num);
-    static
-    gc_heap* balance_heaps_uoh (alloc_context* acontext, size_t size, int generation_num);
+    PER_HEAP_ISOLATED_METHOD void balance_heaps (alloc_context* acontext);
+    PER_HEAP_METHOD ptrdiff_t get_balance_heaps_uoh_effective_budget (int generation_num);
+    PER_HEAP_ISOLATED_METHOD gc_heap* balance_heaps_uoh (alloc_context* acontext, size_t size, int generation_num);
     // Unlike balance_heaps_uoh, this may return nullptr if we failed to change heaps.
-    static
-    gc_heap* balance_heaps_uoh_hard_limit_retry (alloc_context* acontext, size_t size, int generation_num);
-    static
-    void gc_thread_stub (void* arg);
+    PER_HEAP_ISOLATED_METHOD gc_heap* balance_heaps_uoh_hard_limit_retry (alloc_context* acontext, size_t size, int generation_num);
+    PER_HEAP_ISOLATED_METHOD void gc_thread_stub (void* arg);
 #endif //MULTIPLE_HEAPS
 
     // For UOH allocations we only update the alloc_bytes_uoh in allocation
@@ -1572,89 +1501,65 @@ public:
     // making this explicit by not passing in the alloc_context.
     // Note: This are instance methods, but the heap instance is only used for
     // lowest_address and highest_address, which are currently the same across all heaps.
-    PER_HEAP
-    CObjectHeader* allocate_uoh_object (size_t size, uint32_t flags, int gen_num, int64_t& alloc_bytes);
+    PER_HEAP_METHOD CObjectHeader* allocate_uoh_object (size_t size, uint32_t flags, int gen_num, int64_t& alloc_bytes);
 
 #ifdef FEATURE_STRUCTALIGN
-    PER_HEAP
-    uint8_t* pad_for_alignment_large (uint8_t* newAlloc, int requiredAlignment, size_t size);
+    PER_HEAP_METHOD uint8_t* pad_for_alignment_large (uint8_t* newAlloc, int requiredAlignment, size_t size);
 #endif // FEATURE_STRUCTALIGN
 
-    PER_HEAP_ISOLATED
-    void do_pre_gc();
+    PER_HEAP_ISOLATED_METHOD void do_pre_gc();
 
-    PER_HEAP_ISOLATED
-    void do_post_gc();
+    PER_HEAP_ISOLATED_METHOD void do_post_gc();
 
-    PER_HEAP_ISOLATED
-    void update_recorded_gen_data (last_recorded_gc_info* gc_info);
+    PER_HEAP_ISOLATED_METHOD void update_recorded_gen_data (last_recorded_gc_info* gc_info);
 
-    PER_HEAP
-    void update_end_gc_time_per_heap();
+    PER_HEAP_METHOD void update_end_gc_time_per_heap();
 
-    PER_HEAP_ISOLATED
-    void update_end_ngc_time();
+    PER_HEAP_ISOLATED_METHOD void update_end_ngc_time();
 
-    PER_HEAP
-    void add_to_history_per_heap();
+    PER_HEAP_METHOD void add_to_history_per_heap();
 
-    PER_HEAP_ISOLATED
-    void add_to_history();
+    PER_HEAP_ISOLATED_METHOD void add_to_history();
 
 #ifdef BGC_SERVO_TUNING
-    PER_HEAP_ISOLATED
-    void check_and_adjust_bgc_tuning (int gen_number, size_t physical_size, ptrdiff_t virtual_fl_size);
-    PER_HEAP_ISOLATED
-    void get_and_reset_loh_alloc_info();
+    PER_HEAP_ISOLATED_METHOD void check_and_adjust_bgc_tuning (int gen_number, size_t physical_size, ptrdiff_t virtual_fl_size);
+    PER_HEAP_ISOLATED_METHOD void get_and_reset_loh_alloc_info();
 #endif //BGC_SERVO_TUNING
 
 #ifndef USE_REGIONS
-    PER_HEAP
-    BOOL expand_soh_with_minimal_gc();
+    PER_HEAP_METHOD BOOL expand_soh_with_minimal_gc();
 #endif //!USE_REGIONS
 
     // EE is always suspended when this method is called.
     // returning FALSE means we actually didn't do a GC. This happens
     // when we figured that we needed to do a BGC.
-    PER_HEAP
-    void garbage_collect (int n);
+    PER_HEAP_METHOD void garbage_collect (int n);
 
     // Since we don't want to waste a join just to do this, I am doing
     // doing this at the last join in gc1.
-    PER_HEAP_ISOLATED
-    void pm_full_gc_init_or_clear();
+    PER_HEAP_ISOLATED_METHOD void pm_full_gc_init_or_clear();
 
     // This does a GC when pm_trigger_full_gc is set
-    PER_HEAP
-    void garbage_collect_pm_full_gc();
+    PER_HEAP_METHOD void garbage_collect_pm_full_gc();
 
-    PER_HEAP_ISOLATED
-    bool is_pm_ratio_exceeded();
+    PER_HEAP_ISOLATED_METHOD bool is_pm_ratio_exceeded();
 
-    PER_HEAP
-    void init_records();
+    PER_HEAP_METHOD void init_records();
 
-    static
-    uint32_t* make_card_table (uint8_t* start, uint8_t* end);
+    PER_HEAP_ISOLATED_METHOD uint32_t* make_card_table (uint8_t* start, uint8_t* end);
 
-    static
-    void get_card_table_element_layout (uint8_t* start, uint8_t* end, size_t layout[total_bookkeeping_elements + 1]);
+    PER_HEAP_ISOLATED_METHOD void get_card_table_element_layout (uint8_t* start, uint8_t* end, size_t layout[total_bookkeeping_elements + 1]);
 
-    static
-    void get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t bookkeeping_sizes[total_bookkeeping_elements]);
+    PER_HEAP_ISOLATED_METHOD void get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t bookkeeping_sizes[total_bookkeeping_elements]);
 
-    static
-    void set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p);
+    PER_HEAP_ISOLATED_METHOD void set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p);
 
 #ifdef USE_REGIONS
-    static
-    bool on_used_changed (uint8_t* left);
+    PER_HEAP_ISOLATED_METHOD bool on_used_changed (uint8_t* left);
 
-    static
-    bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
+    PER_HEAP_ISOLATED_METHOD bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
 #else //USE_REGIONS
-    static
-    int grow_brick_card_tables (uint8_t* start,
+    PER_HEAP_ISOLATED_METHOD int grow_brick_card_tables (uint8_t* start,
                                 uint8_t* end,
                                 size_t size,
                                 heap_segment* new_seg,
@@ -1662,26 +1567,20 @@ public:
                                 BOOL loh_p);
 #endif //USE_REGIONS
 
-    PER_HEAP_ISOLATED
-    BOOL is_mark_set (uint8_t* o);
+    PER_HEAP_ISOLATED_METHOD BOOL is_mark_set (uint8_t* o);
 
 #ifdef FEATURE_BASICFREEZE
-    PER_HEAP_ISOLATED
-    bool frozen_object_p(Object* obj);
+    PER_HEAP_ISOLATED_METHOD bool frozen_object_p(Object* obj);
 #endif // FEATURE_BASICFREEZE
 
 protected:
-    PER_HEAP_ISOLATED
-    BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p, bool separated_poh_p, uint16_t* heap_no_to_numa_node);
+    PER_HEAP_ISOLATED_METHOD BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t pinned_size, int num_heaps, bool use_large_pages_p, bool separated_poh_p, uint16_t* heap_no_to_numa_node);
 
-    PER_HEAP_ISOLATED
-    void destroy_initial_memory();
+    PER_HEAP_ISOLATED_METHOD void destroy_initial_memory();
 
-    PER_HEAP_ISOLATED
-    void walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p);
+    PER_HEAP_ISOLATED_METHOD void walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p);
 
-    PER_HEAP
-    void walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p);
+    PER_HEAP_METHOD void walk_heap_per_heap (walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p);
 
     struct walk_relocate_args
     {
@@ -1692,176 +1591,127 @@ protected:
         record_surv_fn fn;
     };
 
-    PER_HEAP
-    void walk_survivors (record_surv_fn fn, void* context, walk_surv_type type);
+    PER_HEAP_METHOD void walk_survivors (record_surv_fn fn, void* context, walk_surv_type type);
 
-    PER_HEAP
-    void walk_plug (uint8_t* plug, size_t size, BOOL check_last_object_p,
+    PER_HEAP_METHOD void walk_plug (uint8_t* plug, size_t size, BOOL check_last_object_p,
                     walk_relocate_args* args);
 
-    PER_HEAP
-    void walk_relocation (void* profiling_context, record_surv_fn fn);
+    PER_HEAP_METHOD void walk_relocation (void* profiling_context, record_surv_fn fn);
 #ifdef USE_REGIONS
-    PER_HEAP
-    heap_segment* walk_relocation_sip (heap_segment* current_heap_segment, void* profiling_context, record_surv_fn fn);
+    PER_HEAP_METHOD heap_segment* walk_relocation_sip (heap_segment* current_heap_segment, void* profiling_context, record_surv_fn fn);
 #endif // USE_REGIONS
-    PER_HEAP
-    void walk_relocation_in_brick (uint8_t* tree, walk_relocate_args* args);
+    PER_HEAP_METHOD void walk_relocation_in_brick (uint8_t* tree, walk_relocate_args* args);
 
-    PER_HEAP
-    void walk_finalize_queue (fq_walk_fn fn);
+    PER_HEAP_METHOD void walk_finalize_queue (fq_walk_fn fn);
 
 #if defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
-    PER_HEAP
-    void walk_survivors_for_bgc (void* profiling_context, record_surv_fn fn);
+    PER_HEAP_METHOD void walk_survivors_for_bgc (void* profiling_context, record_surv_fn fn);
 #endif // defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
 
     // used in blocking GCs after plan phase so this walks the plugs.
-    PER_HEAP
-    void walk_survivors_relocation (void* profiling_context, record_surv_fn fn);
-    PER_HEAP
-    void walk_survivors_for_uoh (void* profiling_context, record_surv_fn fn, int gen_number);
+    PER_HEAP_METHOD void walk_survivors_relocation (void* profiling_context, record_surv_fn fn);
+    PER_HEAP_METHOD void walk_survivors_for_uoh (void* profiling_context, record_surv_fn fn, int gen_number);
 
-    PER_HEAP
-    int generation_to_condemn (int n,
+    PER_HEAP_METHOD int generation_to_condemn (int n,
                                BOOL* blocking_collection_p,
                                BOOL* elevation_requested_p,
                                BOOL check_only_p);
 
-    PER_HEAP_ISOLATED
-    int joined_generation_to_condemn (BOOL should_evaluate_elevation,
+    PER_HEAP_ISOLATED_METHOD int joined_generation_to_condemn (BOOL should_evaluate_elevation,
                                       int initial_gen,
                                       int current_gen,
                                       BOOL* blocking_collection
                                       STRESS_HEAP_ARG(int n_original));
 
-    PER_HEAP
-    size_t min_reclaim_fragmentation_threshold (uint32_t num_heaps);
+    PER_HEAP_METHOD size_t min_reclaim_fragmentation_threshold (uint32_t num_heaps);
 
-    PER_HEAP_ISOLATED
-    uint64_t min_high_fragmentation_threshold (uint64_t available_mem, uint32_t num_heaps);
+    PER_HEAP_ISOLATED_METHOD uint64_t min_high_fragmentation_threshold (uint64_t available_mem, uint32_t num_heaps);
 
-    PER_HEAP
-    void concurrent_print_time_delta (const char* msg);
-    PER_HEAP
-    void free_list_info (int gen_num, const char* msg);
+    PER_HEAP_METHOD void concurrent_print_time_delta (const char* msg);
+    PER_HEAP_METHOD void free_list_info (int gen_num, const char* msg);
 
     // in svr GC on entry and exit of this method, the GC threads are not
     // synchronized
-    PER_HEAP
-    void gc1();
+    PER_HEAP_METHOD void gc1();
 
-    PER_HEAP_ISOLATED
-    void save_data_for_no_gc();
+    PER_HEAP_ISOLATED_METHOD void save_data_for_no_gc();
 
-    PER_HEAP_ISOLATED
-    void restore_data_for_no_gc();
+    PER_HEAP_ISOLATED_METHOD void restore_data_for_no_gc();
 
-    PER_HEAP_ISOLATED
-    void update_collection_counts_for_no_gc();
+    PER_HEAP_ISOLATED_METHOD void update_collection_counts_for_no_gc();
 
-    PER_HEAP_ISOLATED
-    BOOL should_proceed_with_gc();
+    PER_HEAP_ISOLATED_METHOD BOOL should_proceed_with_gc();
 
-    PER_HEAP_ISOLATED
-    void record_gcs_during_no_gc();
+    PER_HEAP_ISOLATED_METHOD void record_gcs_during_no_gc();
 
-    PER_HEAP
-    BOOL find_loh_free_for_no_gc();
+    PER_HEAP_METHOD BOOL find_loh_free_for_no_gc();
 
-    PER_HEAP
-    BOOL find_loh_space_for_no_gc();
+    PER_HEAP_METHOD BOOL find_loh_space_for_no_gc();
 
-    PER_HEAP
-    BOOL commit_loh_for_no_gc (heap_segment* seg);
+    PER_HEAP_METHOD BOOL commit_loh_for_no_gc (heap_segment* seg);
 
-    PER_HEAP_ISOLATED
-    start_no_gc_region_status prepare_for_no_gc_region (uint64_t total_size,
+    PER_HEAP_ISOLATED_METHOD start_no_gc_region_status prepare_for_no_gc_region (uint64_t total_size,
                                                         BOOL loh_size_known,
                                                         uint64_t loh_size,
                                                         BOOL disallow_full_blocking);
 
-    PER_HEAP
-    BOOL loh_allocated_for_no_gc();
+    PER_HEAP_METHOD BOOL loh_allocated_for_no_gc();
 
-    PER_HEAP_ISOLATED
-    void release_no_gc_loh_segments();
+    PER_HEAP_ISOLATED_METHOD void release_no_gc_loh_segments();
 
-    PER_HEAP_ISOLATED
-    void thread_no_gc_loh_segments();
+    PER_HEAP_ISOLATED_METHOD void thread_no_gc_loh_segments();
 
-    PER_HEAP
-    void check_and_set_no_gc_oom();
+    PER_HEAP_METHOD void check_and_set_no_gc_oom();
 
-    PER_HEAP
-    void allocate_for_no_gc_after_gc();
+    PER_HEAP_METHOD void allocate_for_no_gc_after_gc();
 
 #ifdef USE_REGIONS
-    PER_HEAP
-    bool extend_soh_for_no_gc();
+    PER_HEAP_METHOD bool extend_soh_for_no_gc();
 #endif //USE_REGIONS
 
-    PER_HEAP
-    void set_loh_allocations_for_no_gc();
+    PER_HEAP_METHOD void set_loh_allocations_for_no_gc();
 
-    PER_HEAP
-    void set_soh_allocations_for_no_gc();
+    PER_HEAP_METHOD void set_soh_allocations_for_no_gc();
 
-    PER_HEAP
-    void prepare_for_no_gc_after_gc();
+    PER_HEAP_METHOD void prepare_for_no_gc_after_gc();
 
-    PER_HEAP_ISOLATED
-    void set_allocations_for_no_gc();
+    PER_HEAP_ISOLATED_METHOD void set_allocations_for_no_gc();
 
-    PER_HEAP_ISOLATED
-    BOOL should_proceed_for_no_gc();
+    PER_HEAP_ISOLATED_METHOD BOOL should_proceed_for_no_gc();
 
-    PER_HEAP_ISOLATED
-    start_no_gc_region_status get_start_no_gc_region_status();
+    PER_HEAP_ISOLATED_METHOD start_no_gc_region_status get_start_no_gc_region_status();
 
-    PER_HEAP_ISOLATED
-    end_no_gc_region_status end_no_gc_region();
+    PER_HEAP_ISOLATED_METHOD end_no_gc_region_status end_no_gc_region();
 
-    PER_HEAP_ISOLATED
-    void handle_failure_for_no_gc();
+    PER_HEAP_ISOLATED_METHOD void handle_failure_for_no_gc();
 
-    PER_HEAP
-    void fire_mark_event (int root_type,
+    PER_HEAP_METHOD void fire_mark_event (int root_type,
                           size_t& current_promoted_bytes,
                           size_t& last_promoted_bytes);
 
-    PER_HEAP
-    size_t limit_from_size (size_t size, uint32_t flags, size_t room, int gen_number,
+    PER_HEAP_METHOD size_t limit_from_size (size_t size, uint32_t flags, size_t room, int gen_number,
                             int align_const);
-    PER_HEAP
-    allocation_state try_allocate_more_space (alloc_context* acontext, size_t jsize, uint32_t flags,
+    PER_HEAP_METHOD allocation_state try_allocate_more_space (alloc_context* acontext, size_t jsize, uint32_t flags,
                                               int alloc_generation_number);
-    PER_HEAP_ISOLATED
-    BOOL allocate_more_space (alloc_context* acontext, size_t jsize, uint32_t flags,
+    PER_HEAP_ISOLATED_METHOD BOOL allocate_more_space (alloc_context* acontext, size_t jsize, uint32_t flags,
                               int alloc_generation_number);
 
-    PER_HEAP
-    size_t get_full_compact_gc_count();
+    PER_HEAP_METHOD size_t get_full_compact_gc_count();
 
-    PER_HEAP
-    BOOL short_on_end_of_seg (heap_segment* seg);
+    PER_HEAP_METHOD BOOL short_on_end_of_seg (heap_segment* seg);
 
-    PER_HEAP
-    BOOL a_fit_free_list_p (int gen_number,
+    PER_HEAP_METHOD BOOL a_fit_free_list_p (int gen_number,
                             size_t size,
                             alloc_context* acontext,
                             uint32_t flags,
                             int align_const);
 
 #ifdef BACKGROUND_GC
-    PER_HEAP
-    void wait_for_background (alloc_wait_reason awr, bool loh_p);
+    PER_HEAP_METHOD void wait_for_background (alloc_wait_reason awr, bool loh_p);
 
-    PER_HEAP
-    bool wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p);
+    PER_HEAP_METHOD bool wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p);
 
-    PER_HEAP
-    void bgc_uoh_alloc_clr (uint8_t* alloc_start,
+    PER_HEAP_METHOD void bgc_uoh_alloc_clr (uint8_t* alloc_start,
                             size_t size,
                             alloc_context* acontext,
                             uint32_t flags,
@@ -1873,98 +1723,79 @@ protected:
 #endif //BACKGROUND_GC
 
 #ifdef BACKGROUND_GC
-    PER_HEAP
-    void bgc_track_uoh_alloc();
+    PER_HEAP_METHOD void bgc_track_uoh_alloc();
 
-    PER_HEAP
-    void bgc_untrack_uoh_alloc();
+    PER_HEAP_METHOD void bgc_untrack_uoh_alloc();
 
-    PER_HEAP
-    BOOL bgc_loh_allocate_spin();
+    PER_HEAP_METHOD BOOL bgc_loh_allocate_spin();
 
-    PER_HEAP
-    BOOL bgc_poh_allocate_spin();
+    PER_HEAP_METHOD BOOL bgc_poh_allocate_spin();
 #endif //BACKGROUND_GC
 
 #define max_saved_spinlock_info 48
 
 #ifdef SPINLOCK_HISTORY
-    PER_HEAP
-    int spinlock_info_index;
+    PER_HEAP_FIELD int spinlock_info_index;
 
-    PER_HEAP
-    spinlock_info last_spinlock_info[max_saved_spinlock_info + 8];
+    PER_HEAP_FIELD spinlock_info last_spinlock_info[max_saved_spinlock_info + 8];
 #endif //SPINLOCK_HISTORY
 
-    PER_HEAP
-    void add_saved_spinlock_info (
+    PER_HEAP_METHOD void add_saved_spinlock_info (
             bool loh_p,
             msl_enter_state enter_state,
             msl_take_state take_state);
 
-    PER_HEAP
-    void trigger_gc_for_alloc (int gen_number, gc_reason reason,
+    PER_HEAP_METHOD void trigger_gc_for_alloc (int gen_number, gc_reason reason,
                                GCSpinLock* spin_lock, bool loh_p,
                                msl_take_state take_state);
 
-    PER_HEAP
-    BOOL a_fit_free_list_uoh_p (size_t size,
+    PER_HEAP_METHOD BOOL a_fit_free_list_uoh_p (size_t size,
                                   alloc_context* acontext,
                                   uint32_t flags,
                                   int align_const,
                                   int gen_number);
 
-    PER_HEAP
-    BOOL a_fit_segment_end_p (int gen_number,
+    PER_HEAP_METHOD BOOL a_fit_segment_end_p (int gen_number,
                               heap_segment* seg,
                               size_t size,
                               alloc_context* acontext,
                               uint32_t flags,
                               int align_const,
                               BOOL* commit_failed_p);
-    PER_HEAP
-    BOOL uoh_a_fit_segment_end_p (int gen_number,
+    PER_HEAP_METHOD BOOL uoh_a_fit_segment_end_p (int gen_number,
                                   size_t size,
                                   alloc_context* acontext,
                                   uint32_t flags,
                                   int align_const,
                                   BOOL* commit_failed_p,
                                   oom_reason* oom_r);
-    PER_HEAP
-    BOOL uoh_get_new_seg (int gen_number,
+    PER_HEAP_METHOD BOOL uoh_get_new_seg (int gen_number,
                           size_t size,
                           BOOL* commit_failed_p,
                           oom_reason* oom_r);
 
-    PER_HEAP_ISOLATED
-    size_t get_uoh_seg_size (size_t size);
+    PER_HEAP_ISOLATED_METHOD size_t get_uoh_seg_size (size_t size);
 
-    PER_HEAP
-    BOOL retry_full_compact_gc (size_t size);
+    PER_HEAP_METHOD BOOL retry_full_compact_gc (size_t size);
 
-    PER_HEAP
-    BOOL check_and_wait_for_bgc (alloc_wait_reason awr,
+    PER_HEAP_METHOD BOOL check_and_wait_for_bgc (alloc_wait_reason awr,
                                  BOOL* did_full_compact_gc,
                                  bool loh_p);
 
-    PER_HEAP
-    BOOL trigger_full_compact_gc (gc_reason gr,
+    PER_HEAP_METHOD BOOL trigger_full_compact_gc (gc_reason gr,
                                   oom_reason* oom_r,
                                   bool loh_p);
 
-    PER_HEAP
-    BOOL trigger_ephemeral_gc (gc_reason gr);
+    PER_HEAP_METHOD BOOL trigger_ephemeral_gc (gc_reason gr);
 
-    PER_HEAP
-    BOOL soh_try_fit (int gen_number,
+    PER_HEAP_METHOD BOOL soh_try_fit (int gen_number,
                       size_t size,
                       alloc_context* acontext,
                       uint32_t flags,
                       int align_const,
                       BOOL* commit_failed_p,
                       BOOL* short_seg_end_p);
-    PER_HEAP
-    BOOL uoh_try_fit (int gen_number,
+    PER_HEAP_METHOD BOOL uoh_try_fit (int gen_number,
                       size_t size,
                       alloc_context* acontext,
                       uint32_t flags,
@@ -1972,8 +1803,7 @@ protected:
                       BOOL* commit_failed_p,
                       oom_reason* oom_r);
 
-    PER_HEAP
-    allocation_state allocate_soh (int gen_number,
+    PER_HEAP_METHOD allocation_state allocate_soh (int gen_number,
                                      size_t size,
                                      alloc_context* acontext,
                                      uint32_t flags,
@@ -1981,8 +1811,7 @@ protected:
 
 #ifdef RECORD_LOH_STATE
     #define max_saved_loh_states 12
-    PER_HEAP
-    int loh_state_index;
+    PER_HEAP_FIELD int loh_state_index;
 
     struct loh_state_info
     {
@@ -1990,331 +1819,212 @@ protected:
         EEThreadId thread_id;
     };
 
-    PER_HEAP
-    loh_state_info last_loh_states[max_saved_loh_states];
-    PER_HEAP
-    void add_saved_loh_state (allocation_state loh_state_to_save, EEThreadId thread_id);
+    PER_HEAP_FIELD loh_state_info last_loh_states[max_saved_loh_states];
+    PER_HEAP_METHOD void add_saved_loh_state (allocation_state loh_state_to_save, EEThreadId thread_id);
 #endif //RECORD_LOH_STATE
-    PER_HEAP
-    allocation_state allocate_uoh (int gen_number,
+    PER_HEAP_METHOD allocation_state allocate_uoh (int gen_number,
                                      size_t size,
                                      alloc_context* acontext,
                                      uint32_t flags,
                                      int align_const);
 
-    PER_HEAP_ISOLATED
-    int init_semi_shared();
-    PER_HEAP
-    int init_gc_heap (int heap_number);
-    PER_HEAP
-    void self_destroy();
-    PER_HEAP_ISOLATED
-    void destroy_semi_shared();
-    PER_HEAP
-    void repair_allocation_contexts (BOOL repair_p);
-    PER_HEAP
-    void fix_allocation_contexts (BOOL for_gc_p);
-    PER_HEAP
-    void fix_youngest_allocation_area();
-    PER_HEAP
-    void fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
+    PER_HEAP_ISOLATED_METHOD int init_semi_shared();
+    PER_HEAP_METHOD int init_gc_heap (int heap_number);
+    PER_HEAP_METHOD void self_destroy();
+    PER_HEAP_ISOLATED_METHOD void destroy_semi_shared();
+    PER_HEAP_METHOD void repair_allocation_contexts (BOOL repair_p);
+    PER_HEAP_METHOD void fix_allocation_contexts (BOOL for_gc_p);
+    PER_HEAP_METHOD void fix_youngest_allocation_area();
+    PER_HEAP_METHOD void fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
                                  BOOL record_ac_p);
-    PER_HEAP
-    void fix_older_allocation_area (generation* older_gen);
-    PER_HEAP
-    void set_allocation_heap_segment (generation* gen);
-    PER_HEAP
-    void reset_allocation_pointers (generation* gen, uint8_t* start);
-    PER_HEAP
-    int object_gennum (uint8_t* o);
-    PER_HEAP
-    int object_gennum_plan (uint8_t* o);
-    PER_HEAP_ISOLATED
-    void init_heap_segment (heap_segment* seg, gc_heap* hp
+    PER_HEAP_METHOD void fix_older_allocation_area (generation* older_gen);
+    PER_HEAP_METHOD void set_allocation_heap_segment (generation* gen);
+    PER_HEAP_METHOD void reset_allocation_pointers (generation* gen, uint8_t* start);
+    PER_HEAP_METHOD int object_gennum (uint8_t* o);
+    PER_HEAP_METHOD int object_gennum_plan (uint8_t* o);
+    PER_HEAP_ISOLATED_METHOD void init_heap_segment (heap_segment* seg, gc_heap* hp
 #ifdef USE_REGIONS
                             , uint8_t* start, size_t size, int gen_num, bool existing_region_p=false
 #endif //USE_REGIONS
                            );
-    PER_HEAP
-    void delete_heap_segment (heap_segment* seg, BOOL consider_hoarding=FALSE);
+    PER_HEAP_METHOD void delete_heap_segment (heap_segment* seg, BOOL consider_hoarding=FALSE);
 #ifdef FEATURE_BASICFREEZE
-    PER_HEAP
-    BOOL insert_ro_segment (heap_segment* seg);
-    PER_HEAP
-    void remove_ro_segment (heap_segment* seg);
+    PER_HEAP_METHOD BOOL insert_ro_segment (heap_segment* seg);
+    PER_HEAP_METHOD void remove_ro_segment (heap_segment* seg);
 #endif //FEATURE_BASICFREEZE
-    PER_HEAP
-    BOOL set_ro_segment_in_range (heap_segment* seg);
+    PER_HEAP_METHOD BOOL set_ro_segment_in_range (heap_segment* seg);
 #ifndef USE_REGIONS
-    PER_HEAP
-    heap_segment* soh_get_segment_to_expand();
-    PER_HEAP
-    heap_segment* get_segment (size_t size, gc_oh_num oh);
-    PER_HEAP_ISOLATED
-    void release_segment (heap_segment* sg);
+    PER_HEAP_METHOD heap_segment* soh_get_segment_to_expand();
+    PER_HEAP_METHOD heap_segment* get_segment (size_t size, gc_oh_num oh);
+    PER_HEAP_ISOLATED_METHOD void release_segment (heap_segment* sg);
 #endif //!USE_REGIONS
-    PER_HEAP_ISOLATED
-    void seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp);
-    PER_HEAP_ISOLATED
-    void seg_mapping_table_remove_segment (heap_segment* seg);
-    PER_HEAP
-    heap_segment* get_uoh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc);
-    PER_HEAP
-    void thread_uoh_segment (int gen_number, heap_segment* new_seg);
-    PER_HEAP_ISOLATED
-    heap_segment* get_segment_for_uoh (int gen_number, size_t size
+    PER_HEAP_ISOLATED_METHOD void seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp);
+    PER_HEAP_ISOLATED_METHOD void seg_mapping_table_remove_segment (heap_segment* seg);
+    PER_HEAP_METHOD heap_segment* get_uoh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc);
+    PER_HEAP_METHOD void thread_uoh_segment (int gen_number, heap_segment* new_seg);
+    PER_HEAP_ISOLATED_METHOD heap_segment* get_segment_for_uoh (int gen_number, size_t size
 #ifdef MULTIPLE_HEAPS
                                       , gc_heap* hp
 #endif //MULTIPLE_HEAPS
                                       );
-    PER_HEAP
-    void reset_heap_segment_pages (heap_segment* seg);
-    PER_HEAP
-    void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
+    PER_HEAP_METHOD void reset_heap_segment_pages (heap_segment* seg);
+    PER_HEAP_METHOD void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
 #if defined(MULTIPLE_HEAPS)
-    PER_HEAP
-    size_t decommit_ephemeral_segment_pages_step ();
+    PER_HEAP_METHOD size_t decommit_ephemeral_segment_pages_step ();
 #endif //MULTIPLE_HEAPS
-    PER_HEAP
-    size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
-    PER_HEAP_ISOLATED
-    bool decommit_step (uint64_t step_milliseconds);
+    PER_HEAP_METHOD size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
+    PER_HEAP_ISOLATED_METHOD bool decommit_step (uint64_t step_milliseconds);
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED
-    size_t decommit_region (heap_segment* region, int bucket, int h_number);
+    PER_HEAP_ISOLATED_METHOD size_t decommit_region (heap_segment* region, int bucket, int h_number);
 #endif //USE_REGIONS
-    PER_HEAP
-    void decommit_heap_segment (heap_segment* seg);
-    PER_HEAP_ISOLATED
-    bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
-    PER_HEAP_ISOLATED
-    bool virtual_commit (void* address, size_t size, int bucket, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
-    PER_HEAP_ISOLATED
-    bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1);
-    PER_HEAP_ISOLATED
-    void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
-    PER_HEAP
-    void clear_gen0_bricks();
-    PER_HEAP
-    void check_gen0_bricks();
+    PER_HEAP_METHOD void decommit_heap_segment (heap_segment* seg);
+    PER_HEAP_ISOLATED_METHOD bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
+    PER_HEAP_ISOLATED_METHOD bool virtual_commit (void* address, size_t size, int bucket, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
+    PER_HEAP_ISOLATED_METHOD bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1);
+    PER_HEAP_ISOLATED_METHOD void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
+    PER_HEAP_METHOD void clear_gen0_bricks();
+    PER_HEAP_METHOD void check_gen0_bricks();
 #ifdef BACKGROUND_GC
-    PER_HEAP
-    void rearrange_small_heap_segments();
+    PER_HEAP_METHOD void rearrange_small_heap_segments();
 #endif //BACKGROUND_GC
-    PER_HEAP
-    void rearrange_uoh_segments();
+    PER_HEAP_METHOD void rearrange_uoh_segments();
 #ifndef USE_REGIONS
-    PER_HEAP
-    void rearrange_heap_segments(BOOL compacting);
+    PER_HEAP_METHOD void rearrange_heap_segments(BOOL compacting);
 #endif //!USE_REGIONS
-    PER_HEAP_ISOLATED
-    void distribute_free_regions();
+    PER_HEAP_ISOLATED_METHOD void distribute_free_regions();
 #ifdef BACKGROUND_GC
-    PER_HEAP_ISOLATED
-    void reset_write_watch_for_gc_heap(void* base_address, size_t region_size);
-    PER_HEAP_ISOLATED
-    void get_write_watch_for_gc_heap(bool reset, void *base_address, size_t region_size, void** dirty_pages, uintptr_t* dirty_page_count_ref, bool is_runtime_suspended);
-    PER_HEAP
-    void switch_one_quantum();
-    PER_HEAP
-    void reset_ww_by_chunk (uint8_t* start_address, size_t total_reset_size);
-    PER_HEAP
-    void switch_on_reset (BOOL concurrent_p, size_t* current_total_reset_size, size_t last_reset_size);
-    PER_HEAP
-    void reset_write_watch (BOOL concurrent_p);
+    PER_HEAP_ISOLATED_METHOD void reset_write_watch_for_gc_heap(void* base_address, size_t region_size);
+    PER_HEAP_ISOLATED_METHOD void get_write_watch_for_gc_heap(bool reset, void *base_address, size_t region_size, void** dirty_pages, uintptr_t* dirty_page_count_ref, bool is_runtime_suspended);
+    PER_HEAP_METHOD void switch_one_quantum();
+    PER_HEAP_METHOD void reset_ww_by_chunk (uint8_t* start_address, size_t total_reset_size);
+    PER_HEAP_METHOD void switch_on_reset (BOOL concurrent_p, size_t* current_total_reset_size, size_t last_reset_size);
+    PER_HEAP_METHOD void reset_write_watch (BOOL concurrent_p);
 #endif //BACKGROUND_GC
-    PER_HEAP
-    void adjust_ephemeral_limits();
-    PER_HEAP
-    void make_generation (int gen_num, heap_segment* seg, uint8_t* start);
+    PER_HEAP_METHOD void adjust_ephemeral_limits();
+    PER_HEAP_METHOD void make_generation (int gen_num, heap_segment* seg, uint8_t* start);
 
 #define USE_PADDING_FRONT 1
 #define USE_PADDING_TAIL  2
 
-    PER_HEAP
-    BOOL size_fit_p (size_t size REQD_ALIGN_AND_OFFSET_DCL, uint8_t* alloc_pointer, uint8_t* alloc_limit,
+    PER_HEAP_METHOD BOOL size_fit_p (size_t size REQD_ALIGN_AND_OFFSET_DCL, uint8_t* alloc_pointer, uint8_t* alloc_limit,
                      uint8_t* old_loc=0, int use_padding=USE_PADDING_TAIL);
-    PER_HEAP
-    BOOL a_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_limit,
+    PER_HEAP_METHOD BOOL a_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_limit,
                        int align_const);
 
-    PER_HEAP
-    void handle_oom (oom_reason reason, size_t alloc_size,
+    PER_HEAP_METHOD void handle_oom (oom_reason reason, size_t alloc_size,
                      uint8_t* allocated, uint8_t* reserved);
 
-    PER_HEAP
-    size_t card_of ( uint8_t* object);
-    PER_HEAP
-    uint8_t* brick_address (size_t brick);
-    PER_HEAP
-    size_t brick_of (uint8_t* add);
-    PER_HEAP
-    uint8_t* card_address (size_t card);
-    PER_HEAP
-    void clear_card (size_t card);
-    PER_HEAP
-    void set_card (size_t card);
-    PER_HEAP
-    BOOL  card_set_p (size_t card);
-    PER_HEAP
-    void card_table_set_bit (uint8_t* location);
+    PER_HEAP_METHOD size_t card_of ( uint8_t* object);
+    PER_HEAP_METHOD uint8_t* brick_address (size_t brick);
+    PER_HEAP_METHOD size_t brick_of (uint8_t* add);
+    PER_HEAP_METHOD uint8_t* card_address (size_t card);
+    PER_HEAP_METHOD void clear_card (size_t card);
+    PER_HEAP_METHOD void set_card (size_t card);
+    PER_HEAP_METHOD BOOL  card_set_p (size_t card);
+    PER_HEAP_METHOD void card_table_set_bit (uint8_t* location);
 
 #ifdef CARD_BUNDLE
-    PER_HEAP
-    void update_card_table_bundle();
-    PER_HEAP
-    void reset_card_table_write_watch();
-    PER_HEAP
-    void card_bundle_clear(size_t cardb);
-    PER_HEAP
-    void card_bundle_set (size_t cardb);
-    PER_HEAP
-    void card_bundles_set (size_t start_cardb, size_t end_cardb);
-    PER_HEAP
-    void verify_card_bundle_bits_set(size_t first_card_word, size_t last_card_word);
-    PER_HEAP
-    void verify_card_bundles();
-    PER_HEAP
-    BOOL card_bundle_set_p (size_t cardb);
-    PER_HEAP
-    BOOL find_card_dword (size_t& cardw, size_t cardw_end);
-    PER_HEAP
-    void enable_card_bundles();
-    PER_HEAP_ISOLATED
-    BOOL card_bundles_enabled();
+    PER_HEAP_METHOD void update_card_table_bundle();
+    PER_HEAP_METHOD void reset_card_table_write_watch();
+    PER_HEAP_METHOD void card_bundle_clear(size_t cardb);
+    PER_HEAP_METHOD void card_bundle_set (size_t cardb);
+    PER_HEAP_METHOD void card_bundles_set (size_t start_cardb, size_t end_cardb);
+    PER_HEAP_METHOD void verify_card_bundle_bits_set(size_t first_card_word, size_t last_card_word);
+    PER_HEAP_METHOD void verify_card_bundles();
+    PER_HEAP_METHOD BOOL card_bundle_set_p (size_t cardb);
+    PER_HEAP_METHOD BOOL find_card_dword (size_t& cardw, size_t cardw_end);
+    PER_HEAP_METHOD void enable_card_bundles();
+    PER_HEAP_ISOLATED_METHOD BOOL card_bundles_enabled();
 
 #endif //CARD_BUNDLE
 
-    PER_HEAP
-    BOOL find_card (uint32_t* card_table, size_t& card,
+    PER_HEAP_METHOD BOOL find_card (uint32_t* card_table, size_t& card,
                     size_t card_word_end, size_t& end_card);
-    PER_HEAP
-    BOOL grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool* hard_limit_exceeded_p=NULL);
-    PER_HEAP
-    int grow_heap_segment (heap_segment* seg, uint8_t* high_address, uint8_t* old_loc, size_t size, BOOL pad_front_p REQD_ALIGN_AND_OFFSET_DCL);
-    PER_HEAP
-    void copy_brick_card_range (uint8_t* la, uint32_t* old_card_table,
+    PER_HEAP_METHOD BOOL grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool* hard_limit_exceeded_p=NULL);
+    PER_HEAP_METHOD int grow_heap_segment (heap_segment* seg, uint8_t* high_address, uint8_t* old_loc, size_t size, BOOL pad_front_p REQD_ALIGN_AND_OFFSET_DCL);
+    PER_HEAP_METHOD void copy_brick_card_range (uint8_t* la, uint32_t* old_card_table,
                                 short* old_brick_table,
                                 uint8_t* start, uint8_t* end);
-    PER_HEAP
-    void copy_brick_card_table();
-    PER_HEAP
-    void clear_brick_table (uint8_t* from, uint8_t* end);
-    PER_HEAP
-    void set_brick (size_t index, ptrdiff_t val);
-    PER_HEAP
-    int get_brick_entry (size_t index);
+    PER_HEAP_METHOD void copy_brick_card_table();
+    PER_HEAP_METHOD void clear_brick_table (uint8_t* from, uint8_t* end);
+    PER_HEAP_METHOD void set_brick (size_t index, ptrdiff_t val);
+    PER_HEAP_METHOD int get_brick_entry (size_t index);
 #ifdef BACKGROUND_GC
-    PER_HEAP
-    unsigned int mark_array_marked (uint8_t* add);
-    PER_HEAP
-    void mark_array_set_marked (uint8_t* add);
-    PER_HEAP
-    BOOL is_mark_bit_set (uint8_t* add);
-    PER_HEAP
-    void gmark_array_set_marked (uint8_t* add);
-    PER_HEAP
-    void set_mark_array_bit (size_t mark_bit);
-    PER_HEAP
-    BOOL mark_array_bit_set (size_t mark_bit);
-    PER_HEAP
-    void mark_array_clear_marked (uint8_t* add);
+    PER_HEAP_METHOD unsigned int mark_array_marked (uint8_t* add);
+    PER_HEAP_METHOD void mark_array_set_marked (uint8_t* add);
+    PER_HEAP_METHOD BOOL is_mark_bit_set (uint8_t* add);
+    PER_HEAP_METHOD void gmark_array_set_marked (uint8_t* add);
+    PER_HEAP_METHOD void set_mark_array_bit (size_t mark_bit);
+    PER_HEAP_METHOD BOOL mark_array_bit_set (size_t mark_bit);
+    PER_HEAP_METHOD void mark_array_clear_marked (uint8_t* add);
 
 #ifdef FEATURE_BASICFREEZE
-    PER_HEAP
-    void seg_set_mark_array_bits_soh (heap_segment* seg);
-    PER_HEAP
-    void clear_mark_array (uint8_t* from, uint8_t* end, BOOL read_only=FALSE);
-    PER_HEAP
-    void seg_clear_mark_array_bits_soh (heap_segment* seg);
+    PER_HEAP_METHOD void seg_set_mark_array_bits_soh (heap_segment* seg);
+    PER_HEAP_METHOD void clear_mark_array (uint8_t* from, uint8_t* end, BOOL read_only=FALSE);
+    PER_HEAP_METHOD void seg_clear_mark_array_bits_soh (heap_segment* seg);
 #endif // FEATURE_BASICFREEZE
 
-    PER_HEAP
-    void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
+    PER_HEAP_METHOD void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #ifdef VERIFY_HEAP
-    PER_HEAP
-    void set_batch_mark_array_bits (uint8_t* start, uint8_t* end);
-    PER_HEAP
-    void check_batch_mark_array_bits (uint8_t* start, uint8_t* end);
+    PER_HEAP_METHOD void set_batch_mark_array_bits (uint8_t* start, uint8_t* end);
+    PER_HEAP_METHOD void check_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #endif //VERIFY_HEAP
 #endif //BACKGROUND_GC
 
-    PER_HEAP
-    BOOL uoh_object_marked (uint8_t* o, BOOL clearp);
+    PER_HEAP_METHOD BOOL uoh_object_marked (uint8_t* o, BOOL clearp);
 
 #ifdef BACKGROUND_GC
-    PER_HEAP
-    BOOL background_allowed_p();
+    PER_HEAP_METHOD BOOL background_allowed_p();
 #endif //BACKGROUND_GC
 
-    PER_HEAP_ISOLATED
-    void send_full_gc_notification (int gen_num, BOOL due_to_alloc_p);
+    PER_HEAP_ISOLATED_METHOD void send_full_gc_notification (int gen_num, BOOL due_to_alloc_p);
 
-    PER_HEAP
-    void check_for_full_gc (int gen_num, size_t size);
+    PER_HEAP_METHOD void check_for_full_gc (int gen_num, size_t size);
 
-    PER_HEAP
-    void adjust_limit (uint8_t* start, size_t limit_size, generation* gen);
-    PER_HEAP
-    void adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
+    PER_HEAP_METHOD void adjust_limit (uint8_t* start, size_t limit_size, generation* gen);
+
+    PER_HEAP_METHOD void adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
                            alloc_context* acontext, uint32_t flags, heap_segment* seg,
                            int align_const, int gen_number);
-    PER_HEAP
-    void  leave_allocation_segment (generation* gen);
+    PER_HEAP_METHOD void  leave_allocation_segment (generation* gen);
 
-    PER_HEAP
-    void init_free_and_plug();
+    PER_HEAP_METHOD void init_free_and_plug();
 
-    PER_HEAP
-    void print_free_and_plug (const char* msg);
+    PER_HEAP_METHOD void print_free_and_plug (const char* msg);
 
-    PER_HEAP
-    void add_gen_plug (int gen_number, size_t plug_size);
+    PER_HEAP_METHOD void add_gen_plug (int gen_number, size_t plug_size);
 
-    PER_HEAP_ISOLATED
-    int find_bucket (size_t size);
+    PER_HEAP_ISOLATED_METHOD int find_bucket (size_t size);
 
-    PER_HEAP
-    void add_gen_free (int gen_number, size_t free_size);
+    PER_HEAP_METHOD void add_gen_free (int gen_number, size_t free_size);
 
-    PER_HEAP
-    void add_gen_plug_allocated_in_free (int gen_number, size_t plug_size);
+    PER_HEAP_METHOD void add_gen_plug_allocated_in_free (int gen_number, size_t plug_size);
 
-    PER_HEAP
-    void add_item_to_current_pinned_free (int gen_number, size_t free_size);
+    PER_HEAP_METHOD void add_item_to_current_pinned_free (int gen_number, size_t free_size);
 
-    PER_HEAP
-    void remove_gen_free (int gen_number, size_t free_size);
+    PER_HEAP_METHOD void remove_gen_free (int gen_number, size_t free_size);
 
-    PER_HEAP
-    void thread_free_item_front (generation* gen, uint8_t* free_start, size_t free_size);
+    PER_HEAP_METHOD void thread_free_item_front (generation* gen, uint8_t* free_start, size_t free_size);
 
 #ifdef DOUBLY_LINKED_FL
-    PER_HEAP
-    void thread_item_front_added (generation* gen, uint8_t* free_start, size_t free_size);
+    PER_HEAP_METHOD void thread_item_front_added (generation* gen, uint8_t* free_start, size_t free_size);
 #endif //DOUBLY_LINKED_FL
 
-    PER_HEAP
-    void make_free_obj (generation* gen, uint8_t* free_start, size_t free_size);
+    PER_HEAP_METHOD void make_free_obj (generation* gen, uint8_t* free_start, size_t free_size);
 
-    PER_HEAP
-    uint8_t* allocate_in_older_generation (generation* gen, size_t size,
+    PER_HEAP_METHOD uint8_t* allocate_in_older_generation (generation* gen, size_t size,
                                         int from_gen_number,
                                         uint8_t* old_loc=0
                                         REQD_ALIGN_AND_OFFSET_DEFAULT_DCL);
 
-    PER_HEAP
-    void init_alloc_info (generation* gen, heap_segment* seg);
+    PER_HEAP_METHOD void init_alloc_info (generation* gen, heap_segment* seg);
 
-    PER_HEAP
-    heap_segment* get_next_alloc_seg (generation* gen);
+    PER_HEAP_METHOD heap_segment* get_next_alloc_seg (generation* gen);
 
 #ifndef USE_REGIONS
-    PER_HEAP
-    generation*  ensure_ephemeral_heap_segment (generation* consing_gen);
+    PER_HEAP_METHOD generation*  ensure_ephemeral_heap_segment (generation* consing_gen);
 #endif //!USE_REGIONS
-    PER_HEAP
-    uint8_t* allocate_in_condemned_generations (generation* gen,
+    PER_HEAP_METHOD uint8_t* allocate_in_condemned_generations (generation* gen,
                                              size_t size,
                                              int from_gen_number,
 #ifdef SHORT_PLUGS
@@ -2326,236 +2036,153 @@ protected:
                                              REQD_ALIGN_AND_OFFSET_DEFAULT_DCL);
     // Verifies that interior is actually in the range of seg; otherwise
     // returns 0.
-    PER_HEAP_ISOLATED
-    heap_segment* find_segment (uint8_t* interior, BOOL small_segment_only_p);
+    PER_HEAP_ISOLATED_METHOD heap_segment* find_segment (uint8_t* interior, BOOL small_segment_only_p);
 
-    PER_HEAP_ISOLATED
-    gc_heap* heap_of (uint8_t* object);
+    PER_HEAP_ISOLATED_METHOD gc_heap* heap_of (uint8_t* object);
 
-    PER_HEAP_ISOLATED
-    gc_heap* heap_of_gc (uint8_t* object);
+    PER_HEAP_ISOLATED_METHOD gc_heap* heap_of_gc (uint8_t* object);
 
-    PER_HEAP
-    size_t get_promoted_bytes();
+    PER_HEAP_METHOD size_t get_promoted_bytes();
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED
-    void sync_promoted_bytes();
+    PER_HEAP_ISOLATED_METHOD void sync_promoted_bytes();
 
-    PER_HEAP
-    void set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp);
+    PER_HEAP_METHOD void set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp);
 
-    PER_HEAP
-    heap_segment* unlink_first_rw_region (int gen_idx);
+    PER_HEAP_METHOD heap_segment* unlink_first_rw_region (int gen_idx);
 
-    PER_HEAP
-    void thread_rw_region_front (int gen_idx, heap_segment* region);
+    PER_HEAP_METHOD void thread_rw_region_front (int gen_idx, heap_segment* region);
 
-    PER_HEAP_ISOLATED
-    void equalize_promoted_bytes();
+    PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes();
 #endif //USE_REGIONS
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)
-    PER_HEAP
-    void init_promoted_bytes();
-    PER_HEAP
-    size_t& promoted_bytes (int thread);
+    PER_HEAP_METHOD void init_promoted_bytes();
+    PER_HEAP_METHOD size_t& promoted_bytes (int thread);
 #endif //!USE_REGIONS || _DEBUG
 
     // Thread is only used by segments. It should really be the same as heap_number.
-    PER_HEAP
-    void add_to_promoted_bytes (uint8_t* object, int thread);
+    PER_HEAP_METHOD void add_to_promoted_bytes (uint8_t* object, int thread);
 
-    PER_HEAP
-    void add_to_promoted_bytes (uint8_t* object, size_t obj_size, int thread);
+    PER_HEAP_METHOD void add_to_promoted_bytes (uint8_t* object, size_t obj_size, int thread);
 
-    PER_HEAP
-    uint8_t* find_object (uint8_t* o);
+    PER_HEAP_METHOD uint8_t* find_object (uint8_t* o);
 
-    PER_HEAP
-    dynamic_data* dynamic_data_of (int gen_number);
-    PER_HEAP
-    ptrdiff_t  get_desired_allocation (int gen_number);
-    PER_HEAP
-    ptrdiff_t  get_new_allocation (int gen_number);
-    PER_HEAP
-    ptrdiff_t  get_allocation (int gen_number);
-    PER_HEAP
-    bool new_allocation_allowed (int gen_number);
+    PER_HEAP_METHOD dynamic_data* dynamic_data_of (int gen_number);
+    PER_HEAP_METHOD ptrdiff_t  get_desired_allocation (int gen_number);
+    PER_HEAP_METHOD ptrdiff_t  get_new_allocation (int gen_number);
+    PER_HEAP_METHOD ptrdiff_t  get_allocation (int gen_number);
+    PER_HEAP_METHOD bool new_allocation_allowed (int gen_number);
 #ifdef BACKGROUND_GC
-    PER_HEAP_ISOLATED
-    void allow_new_allocation (int gen_number);
-    PER_HEAP_ISOLATED
-    void disallow_new_allocation (int gen_number);
+    PER_HEAP_ISOLATED_METHOD void allow_new_allocation (int gen_number);
+    PER_HEAP_ISOLATED_METHOD void disallow_new_allocation (int gen_number);
 #endif //BACKGROUND_GC
-    PER_HEAP
-    void reset_pinned_queue();
-    PER_HEAP
-    void reset_pinned_queue_bos();
-    PER_HEAP
-    void set_allocator_next_pin (generation* gen);
-    PER_HEAP
-    void enque_pinned_plug (generation* gen, uint8_t* plug, size_t len);
-    PER_HEAP
-    void enque_pinned_plug (uint8_t* plug,
+    PER_HEAP_METHOD void reset_pinned_queue();
+    PER_HEAP_METHOD void reset_pinned_queue_bos();
+    PER_HEAP_METHOD void set_allocator_next_pin (generation* gen);
+    PER_HEAP_METHOD void enque_pinned_plug (generation* gen, uint8_t* plug, size_t len);
+    PER_HEAP_METHOD void enque_pinned_plug (uint8_t* plug,
                             BOOL save_pre_plug_info_p,
                             uint8_t* last_object_in_last_plug);
-    PER_HEAP
-    void merge_with_last_pinned_plug (uint8_t* last_pinned_plug, size_t plug_size);
-    PER_HEAP
-    void set_pinned_info (uint8_t* last_pinned_plug, size_t plug_len, generation* gen);
-    PER_HEAP
-    void save_post_plug_info (uint8_t* last_pinned_plug, uint8_t* last_object_in_last_plug, uint8_t* post_plug);
-    PER_HEAP
-    size_t deque_pinned_plug ();
-    PER_HEAP
-    mark* pinned_plug_of (size_t bos);
-    PER_HEAP
-    mark* oldest_pin ();
-    PER_HEAP
-    mark* before_oldest_pin();
-    PER_HEAP
-    BOOL pinned_plug_que_empty_p ();
-    PER_HEAP
-    void make_mark_stack (mark* arr);
+    PER_HEAP_METHOD void merge_with_last_pinned_plug (uint8_t* last_pinned_plug, size_t plug_size);
+    PER_HEAP_METHOD void set_pinned_info (uint8_t* last_pinned_plug, size_t plug_len, generation* gen);
+    PER_HEAP_METHOD void save_post_plug_info (uint8_t* last_pinned_plug, uint8_t* last_object_in_last_plug, uint8_t* post_plug);
+    PER_HEAP_METHOD size_t deque_pinned_plug ();
+    PER_HEAP_METHOD mark* pinned_plug_of (size_t bos);
+    PER_HEAP_METHOD mark* oldest_pin ();
+    PER_HEAP_METHOD mark* before_oldest_pin();
+    PER_HEAP_METHOD BOOL pinned_plug_que_empty_p ();
+    PER_HEAP_METHOD void make_mark_stack (mark* arr);
 #ifdef MH_SC_MARK
-    PER_HEAP
-    int& mark_stack_busy();
-    PER_HEAP
-    VOLATILE(uint8_t*)& ref_mark_stack (gc_heap* hp, int index);
+    PER_HEAP_METHOD int& mark_stack_busy();
+    PER_HEAP_METHOD VOLATILE(uint8_t*)& ref_mark_stack (gc_heap* hp, int index);
 #endif
 #ifdef BACKGROUND_GC
-    PER_HEAP_ISOLATED
-    size_t&  bpromoted_bytes (int);
-    PER_HEAP
-    void make_background_mark_stack (uint8_t** arr);
-    PER_HEAP
-    void make_c_mark_list (uint8_t** arr);
+    PER_HEAP_ISOLATED_METHOD size_t&  bpromoted_bytes (int);
+    PER_HEAP_METHOD void make_background_mark_stack (uint8_t** arr);
+    PER_HEAP_METHOD void make_c_mark_list (uint8_t** arr);
 #endif //BACKGROUND_GC
-    PER_HEAP
-    generation* generation_of (int  n);
-    PER_HEAP
-    BOOL gc_mark1 (uint8_t* o);
-    PER_HEAP
-    BOOL gc_mark (uint8_t* o, uint8_t* low, uint8_t* high, int condemned_gen);
-    PER_HEAP
-    void mark_object (uint8_t* o THREAD_NUMBER_DCL);
+    PER_HEAP_METHOD generation* generation_of (int  n);
+    PER_HEAP_METHOD BOOL gc_mark1 (uint8_t* o);
+    PER_HEAP_METHOD BOOL gc_mark (uint8_t* o, uint8_t* low, uint8_t* high, int condemned_gen);
+    PER_HEAP_METHOD void mark_object (uint8_t* o THREAD_NUMBER_DCL);
 #ifdef HEAP_ANALYZE
-    PER_HEAP
-    void ha_mark_object_simple (uint8_t** o THREAD_NUMBER_DCL);
+    PER_HEAP_METHOD void ha_mark_object_simple (uint8_t** o THREAD_NUMBER_DCL);
 #endif //HEAP_ANALYZE
-    PER_HEAP
-    void mark_object_simple (uint8_t** o THREAD_NUMBER_DCL);
-    PER_HEAP
-    void mark_object_simple1 (uint8_t* o, uint8_t* start THREAD_NUMBER_DCL);
+    PER_HEAP_METHOD void mark_object_simple (uint8_t** o THREAD_NUMBER_DCL);
+    PER_HEAP_METHOD void mark_object_simple1 (uint8_t* o, uint8_t* start THREAD_NUMBER_DCL);
 
-    PER_HEAP
-    void drain_mark_queue();
+    PER_HEAP_METHOD void drain_mark_queue();
 
 #ifdef MH_SC_MARK
-    PER_HEAP
-    void mark_steal ();
+    PER_HEAP_METHOD void mark_steal ();
 #endif //MH_SC_MARK
 
 #ifdef BACKGROUND_GC
-    PER_HEAP
-    BOOL background_marked (uint8_t* o);
-    PER_HEAP
-    BOOL background_mark1 (uint8_t* o);
-    PER_HEAP
-    BOOL background_mark (uint8_t* o, uint8_t* low, uint8_t* high);
-    PER_HEAP
-    uint8_t* background_mark_object (uint8_t* o THREAD_NUMBER_DCL);
-    PER_HEAP
-    void background_mark_simple (uint8_t* o THREAD_NUMBER_DCL);
-    PER_HEAP
-    void background_mark_simple1 (uint8_t* o THREAD_NUMBER_DCL);
-    PER_HEAP_ISOLATED
-    void background_promote (Object**, ScanContext* , uint32_t);
-    PER_HEAP
-    BOOL background_object_marked (uint8_t* o, BOOL clearp);
-    PER_HEAP
-    void init_background_gc();
-    PER_HEAP
-    uint8_t* background_next_end (heap_segment*, BOOL);
+    PER_HEAP_METHOD BOOL background_marked (uint8_t* o);
+    PER_HEAP_METHOD BOOL background_mark1 (uint8_t* o);
+    PER_HEAP_METHOD BOOL background_mark (uint8_t* o, uint8_t* low, uint8_t* high);
+    PER_HEAP_METHOD uint8_t* background_mark_object (uint8_t* o THREAD_NUMBER_DCL);
+    PER_HEAP_METHOD void background_mark_simple (uint8_t* o THREAD_NUMBER_DCL);
+    PER_HEAP_METHOD void background_mark_simple1 (uint8_t* o THREAD_NUMBER_DCL);
+    PER_HEAP_ISOLATED_METHOD void background_promote (Object**, ScanContext* , uint32_t);
+    PER_HEAP_METHOD BOOL background_object_marked (uint8_t* o, BOOL clearp);
+    PER_HEAP_METHOD void init_background_gc();
+    PER_HEAP_METHOD uint8_t* background_next_end (heap_segment*, BOOL);
     // while we are in LOH sweep we can't modify the segment list
     // there so we mark them as to be deleted and deleted them
     // at the next chance we get.
-    PER_HEAP
-    void background_delay_delete_uoh_segments();
-    PER_HEAP
-    void generation_delete_heap_segment (generation*,
+    PER_HEAP_METHOD void background_delay_delete_uoh_segments();
+    PER_HEAP_METHOD void generation_delete_heap_segment (generation*,
                                          heap_segment*, heap_segment*, heap_segment*);
-    PER_HEAP
-    void set_mem_verify (uint8_t*, uint8_t*, uint8_t);
-    PER_HEAP
-    void process_background_segment_end (heap_segment*, generation*, uint8_t*,
+    PER_HEAP_METHOD void set_mem_verify (uint8_t*, uint8_t*, uint8_t);
+    PER_HEAP_METHOD void process_background_segment_end (heap_segment*, generation*, uint8_t*,
                                          heap_segment*, BOOL* delete_p,
                                          size_t free_obj_size_last_gap);
 
-    PER_HEAP
-    BOOL fgc_should_consider_object (uint8_t* o,
+    PER_HEAP_METHOD BOOL fgc_should_consider_object (uint8_t* o,
                                      heap_segment* seg,
                                      BOOL consider_bgc_mark_p,
                                      BOOL check_current_sweep_p,
                                      BOOL check_saved_sweep_p);
-    PER_HEAP
-    void should_check_bgc_mark (heap_segment* seg,
+    PER_HEAP_METHOD void should_check_bgc_mark (heap_segment* seg,
                                 BOOL* consider_bgc_mark_p,
                                 BOOL* check_current_sweep_p,
                                 BOOL* check_saved_sweep_p);
 
 #ifdef DOUBLY_LINKED_FL
-    PER_HEAP
-    BOOL should_set_bgc_mark_bit (uint8_t* o);
+    PER_HEAP_METHOD BOOL should_set_bgc_mark_bit (uint8_t* o);
 #endif //DOUBLY_LINKED_FL
 
-    PER_HEAP
-    void background_ephemeral_sweep();
-    PER_HEAP
-    void background_sweep ();
+    PER_HEAP_METHOD void background_ephemeral_sweep();
+    PER_HEAP_METHOD void background_sweep ();
     // Check if we should grow the mark stack proactively to avoid mark stack
     // overflow and grow if necessary.
-    PER_HEAP
-    void check_bgc_mark_stack_length();
-    PER_HEAP
-    void grow_bgc_mark_stack (size_t new_size);
-    PER_HEAP
-    uint8_t* background_seg_end (heap_segment* seg, BOOL concurrent_p);
-    PER_HEAP
-    uint8_t* background_first_overflow (uint8_t* min_add,
+    PER_HEAP_METHOD void check_bgc_mark_stack_length();
+    PER_HEAP_METHOD void grow_bgc_mark_stack (size_t new_size);
+    PER_HEAP_METHOD uint8_t* background_seg_end (heap_segment* seg, BOOL concurrent_p);
+    PER_HEAP_METHOD uint8_t* background_first_overflow (uint8_t* min_add,
                                      heap_segment* seg,
                                      BOOL concurrent_p,
                                      BOOL small_object_p);
-    PER_HEAP
-    void background_process_mark_overflow_internal (uint8_t* min_add, uint8_t* max_add,
+    PER_HEAP_METHOD void background_process_mark_overflow_internal (uint8_t* min_add, uint8_t* max_add,
                                                     BOOL concurrent_p);
-    PER_HEAP
-    BOOL background_process_mark_overflow (BOOL concurrent_p);
+    PER_HEAP_METHOD BOOL background_process_mark_overflow (BOOL concurrent_p);
 
     // for foreground GC to get hold of background structures containing refs
-    PER_HEAP
-    void
-    scan_background_roots (promote_func* fn, int hn, ScanContext *pSC);
+    PER_HEAP_METHOD void scan_background_roots (promote_func* fn, int hn, ScanContext *pSC);
 
-    PER_HEAP
-    BOOL bgc_mark_array_range (heap_segment* seg,
+    PER_HEAP_METHOD BOOL bgc_mark_array_range (heap_segment* seg,
                                BOOL whole_seg_p,
                                uint8_t** range_beg,
                                uint8_t** range_end);
-    PER_HEAP
-    void bgc_verify_mark_array_cleared (heap_segment* seg, bool always_verify_p = false);
-    PER_HEAP
-    void verify_mark_array_cleared();
-    PER_HEAP
-    void verify_partial();
-    PER_HEAP
-    void verify_mark_bits_cleared (uint8_t* obj, size_t s);
-    PER_HEAP
-    void clear_all_mark_array();
+    PER_HEAP_METHOD void bgc_verify_mark_array_cleared (heap_segment* seg, bool always_verify_p = false);
+    PER_HEAP_METHOD void verify_mark_array_cleared();
+    PER_HEAP_METHOD void verify_partial();
+    PER_HEAP_METHOD void verify_mark_bits_cleared (uint8_t* obj, size_t s);
+    PER_HEAP_METHOD void clear_all_mark_array();
 #ifdef USE_REGIONS
-    PER_HEAP
-    void set_background_overflow_p (uint8_t* oo);
+    PER_HEAP_METHOD void set_background_overflow_p (uint8_t* oo);
 #endif
 
 #ifdef BGC_SERVO_TUNING
@@ -2804,102 +2431,74 @@ protected:
     };
 
     // This tells us why we chose to do a bgc in tuning.
-    PER_HEAP_ISOLATED
-    int saved_bgc_tuning_reason;
+    PER_HEAP_ISOLATED_FIELD int saved_bgc_tuning_reason;
 #endif //BGC_SERVO_TUNING
 
 #endif //BACKGROUND_GC
 
-    PER_HEAP
-    void mark_through_object (uint8_t* oo, BOOL mark_class_object_p THREAD_NUMBER_DCL);
-    PER_HEAP
-    BOOL process_mark_overflow (int condemned_gen_number);
-    PER_HEAP
-    void process_mark_overflow_internal (int condemned_gen_number,
+    PER_HEAP_METHOD void mark_through_object (uint8_t* oo, BOOL mark_class_object_p THREAD_NUMBER_DCL);
+    PER_HEAP_METHOD BOOL process_mark_overflow (int condemned_gen_number);
+    PER_HEAP_METHOD void process_mark_overflow_internal (int condemned_gen_number,
                                          uint8_t* min_address, uint8_t* max_address);
 
 #ifdef SNOOP_STATS
-    PER_HEAP
-    void print_snoop_stat();
+    PER_HEAP_METHOD void print_snoop_stat();
 #endif //SNOOP_STATS
 
 #ifdef MH_SC_MARK
-    PER_HEAP
-    BOOL check_next_mark_stack (gc_heap* next_heap);
+    PER_HEAP_METHOD BOOL check_next_mark_stack (gc_heap* next_heap);
 #endif //MH_SC_MARK
 
-    PER_HEAP
-    void scan_dependent_handles (int condemned_gen_number, ScanContext *sc, BOOL initial_scan_p);
+    PER_HEAP_METHOD void scan_dependent_handles (int condemned_gen_number, ScanContext *sc, BOOL initial_scan_p);
 
-    PER_HEAP
-    size_t get_generation_start_size (int gen_number);
+    PER_HEAP_METHOD size_t get_generation_start_size (int gen_number);
 
-    PER_HEAP_ISOLATED
-    int get_num_heaps();
+    PER_HEAP_ISOLATED_METHOD int get_num_heaps();
 
-    PER_HEAP
-    BOOL decide_on_promotion_surv (size_t threshold);
+    PER_HEAP_METHOD BOOL decide_on_promotion_surv (size_t threshold);
 
-    PER_HEAP
-    void mark_phase (int condemned_gen_number, BOOL mark_only_p);
+    PER_HEAP_METHOD void mark_phase (int condemned_gen_number, BOOL mark_only_p);
 
-    PER_HEAP
-    void pin_object (uint8_t* o, uint8_t** ppObject);
+    PER_HEAP_METHOD void pin_object (uint8_t* o, uint8_t** ppObject);
 
-    PER_HEAP_ISOLATED
-    size_t get_total_pinned_objects();
+    PER_HEAP_ISOLATED_METHOD size_t get_total_pinned_objects();
 
-    PER_HEAP_ISOLATED
-    void reinit_pinned_objects();
+    PER_HEAP_ISOLATED_METHOD void reinit_pinned_objects();
 
-    PER_HEAP
-    void reset_mark_stack ();
-    PER_HEAP
-    uint8_t* insert_node (uint8_t* new_node, size_t sequence_number,
+    PER_HEAP_METHOD void reset_mark_stack ();
+    PER_HEAP_METHOD uint8_t* insert_node (uint8_t* new_node, size_t sequence_number,
                        uint8_t* tree, uint8_t* last_node);
-    PER_HEAP
-    size_t update_brick_table (uint8_t* tree, size_t current_brick,
+    PER_HEAP_METHOD size_t update_brick_table (uint8_t* tree, size_t current_brick,
                                uint8_t* x, uint8_t* plug_end);
 
 #ifndef USE_REGIONS
-    PER_HEAP
-    void plan_generation_start (generation* gen, generation* consing_gen, uint8_t* next_plug_to_allocate);
+    PER_HEAP_METHOD void plan_generation_start (generation* gen, generation* consing_gen, uint8_t* next_plug_to_allocate);
 
-    PER_HEAP
-    void realloc_plan_generation_start (generation* gen, generation* consing_gen);
+    PER_HEAP_METHOD void realloc_plan_generation_start (generation* gen, generation* consing_gen);
 
-    PER_HEAP
-    void plan_generation_starts (generation*& consing_gen);
+    PER_HEAP_METHOD void plan_generation_starts (generation*& consing_gen);
 
-    PER_HEAP
-    void advance_pins_for_demotion (generation* gen);
+    PER_HEAP_METHOD void advance_pins_for_demotion (generation* gen);
 
-    PER_HEAP
-    void process_ephemeral_boundaries(uint8_t* x, int& active_new_gen_number,
+    PER_HEAP_METHOD void process_ephemeral_boundaries(uint8_t* x, int& active_new_gen_number,
                                       int& active_old_gen_number,
                                       generation*& consing_gen,
                                       BOOL& allocate_in_condemned);
 #endif //!USE_REGIONS
 
 #ifdef FEATURE_BASICFREEZE
-    PER_HEAP
-    void seg_set_mark_bits (heap_segment* seg);
-    PER_HEAP
-    void seg_clear_mark_bits (heap_segment* seg);
-    PER_HEAP
-    void mark_ro_segments();
-    PER_HEAP
-    void sweep_ro_segments();
+    PER_HEAP_METHOD void seg_set_mark_bits (heap_segment* seg);
+    PER_HEAP_METHOD void seg_clear_mark_bits (heap_segment* seg);
+    PER_HEAP_METHOD void mark_ro_segments();
+    PER_HEAP_METHOD void sweep_ro_segments();
 #endif // FEATURE_BASICFREEZE
 
-    PER_HEAP
-    void convert_to_pinned_plug (BOOL& last_npinned_plug_p,
+    PER_HEAP_METHOD void convert_to_pinned_plug (BOOL& last_npinned_plug_p,
                                  BOOL& last_pinned_plug_p,
                                  BOOL& pinned_plug_p,
                                  size_t ps,
                                  size_t& artificial_pinned_size);
-    PER_HEAP
-    void store_plug_gap_info (uint8_t* plug_start,
+    PER_HEAP_METHOD void store_plug_gap_info (uint8_t* plug_start,
                               uint8_t* plug_end,
                               BOOL& last_npinned_plug_p,
                               BOOL& last_pinned_plug_p,
@@ -2909,89 +2508,65 @@ protected:
                               BOOL& merge_with_last_pin_p,
                               // this is only for verification purpose
                               size_t last_plug_len);
-    PER_HEAP
-    void plan_phase (int condemned_gen_number);
+    PER_HEAP_METHOD void plan_phase (int condemned_gen_number);
 
-    PER_HEAP
-    void add_alloc_in_condemned_bucket (size_t plug_size);
+    PER_HEAP_METHOD void add_alloc_in_condemned_bucket (size_t plug_size);
 
-    PER_HEAP
-    uint8_t* find_next_marked (uint8_t* x, uint8_t* end,
+    PER_HEAP_METHOD uint8_t* find_next_marked (uint8_t* x, uint8_t* end,
                                BOOL use_mark_list,
                                uint8_t**& mark_list_next,
                                uint8_t** mark_list_index);
 
 
-    PER_HEAP
-    void record_interesting_data_point (interesting_data_point idp);
+    PER_HEAP_METHOD void record_interesting_data_point (interesting_data_point idp);
 
 #ifdef GC_CONFIG_DRIVEN
-    PER_HEAP
-    void record_interesting_info_per_heap();
-    PER_HEAP_ISOLATED
-    void record_global_mechanisms();
-    PER_HEAP_ISOLATED
-    BOOL should_do_sweeping_gc (BOOL compact_p);
+    PER_HEAP_METHOD void record_interesting_info_per_heap();
+    PER_HEAP_ISOLATED_METHOD void record_global_mechanisms();
+    PER_HEAP_ISOLATED_METHOD BOOL should_do_sweeping_gc (BOOL compact_p);
 #endif //GC_CONFIG_DRIVEN
 
 #ifdef FEATURE_LOH_COMPACTION
     // plan_loh can allocate memory so it can fail. If it fails, we will
     // fall back to sweeping.
-    PER_HEAP
-    BOOL plan_loh();
+    PER_HEAP_METHOD BOOL plan_loh();
 
-    PER_HEAP
-    void compact_loh();
+    PER_HEAP_METHOD void compact_loh();
 
-    PER_HEAP
-    void relocate_in_loh_compact();
+    PER_HEAP_METHOD void relocate_in_loh_compact();
 
-    PER_HEAP
-    void walk_relocation_for_loh (void* profiling_context, record_surv_fn fn);
+    PER_HEAP_METHOD void walk_relocation_for_loh (void* profiling_context, record_surv_fn fn);
 
-    PER_HEAP
-    BOOL loh_enque_pinned_plug (uint8_t* plug, size_t len);
+    PER_HEAP_METHOD BOOL loh_enque_pinned_plug (uint8_t* plug, size_t len);
 
-    PER_HEAP
-    void loh_set_allocator_next_pin();
+    PER_HEAP_METHOD void loh_set_allocator_next_pin();
 
-    PER_HEAP
-    BOOL loh_pinned_plug_que_empty_p();
+    PER_HEAP_METHOD BOOL loh_pinned_plug_que_empty_p();
 
-    PER_HEAP
-    size_t loh_deque_pinned_plug();
+    PER_HEAP_METHOD size_t loh_deque_pinned_plug();
 
-    PER_HEAP
-    mark* loh_pinned_plug_of (size_t bos);
+    PER_HEAP_METHOD mark* loh_pinned_plug_of (size_t bos);
 
-    PER_HEAP
-    mark* loh_oldest_pin();
+    PER_HEAP_METHOD mark* loh_oldest_pin();
 
-    PER_HEAP
-    BOOL loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_limit);
+    PER_HEAP_METHOD BOOL loh_size_fit_p (size_t size, uint8_t* alloc_pointer, uint8_t* alloc_limit);
 
-    PER_HEAP
-    uint8_t* loh_allocate_in_condemned (size_t size);
+    PER_HEAP_METHOD uint8_t* loh_allocate_in_condemned (size_t size);
 
-    PER_HEAP_ISOLATED
-    BOOL loh_object_p (uint8_t* o);
+    PER_HEAP_ISOLATED_METHOD BOOL loh_object_p (uint8_t* o);
 
-    PER_HEAP_ISOLATED
-    BOOL loh_compaction_requested();
+    PER_HEAP_ISOLATED_METHOD BOOL loh_compaction_requested();
 
     // If the LOH compaction mode is just to compact once,
     // we need to see if we should reset it back to not compact.
     // We would only reset if every heap's LOH was compacted.
-    PER_HEAP_ISOLATED
-    void check_loh_compact_mode  (BOOL all_heaps_compacted_p);
+    PER_HEAP_ISOLATED_METHOD void check_loh_compact_mode  (BOOL all_heaps_compacted_p);
 #endif //FEATURE_LOH_COMPACTION
 
-    PER_HEAP
-    void fix_generation_bounds (int condemned_gen_number,
+    PER_HEAP_METHOD void fix_generation_bounds (int condemned_gen_number,
                                 generation* consing_gen);
 #ifndef USE_REGIONS
-    PER_HEAP
-    uint8_t* generation_limit (int gen_number);
+    PER_HEAP_METHOD uint8_t* generation_limit (int gen_number);
 #endif //!USE_REGIONS
 
     struct make_free_args
@@ -3003,25 +2578,16 @@ protected:
         generation* free_list_gen;
         uint8_t* highest_plug;
     };
-    PER_HEAP
-    uint8_t* allocate_at_end (size_t size);
-    PER_HEAP
-    BOOL ensure_gap_allocation (int condemned_gen_number);
+    PER_HEAP_METHOD uint8_t* allocate_at_end (size_t size);
+    PER_HEAP_METHOD BOOL ensure_gap_allocation (int condemned_gen_number);
     // make_free_lists is only called by blocking GCs.
-    PER_HEAP
-    void make_free_lists (int condemned_gen_number);
-    PER_HEAP
-    void make_free_list_in_brick (uint8_t* tree, make_free_args* args);
-    PER_HEAP
-    void thread_gap (uint8_t* gap_start, size_t size, generation*  gen);
-    PER_HEAP
-    void uoh_thread_gap_front (uint8_t* gap_start, size_t size, generation*  gen);
-    PER_HEAP
-    void make_unused_array (uint8_t* x, size_t size, BOOL clearp=FALSE, BOOL resetp=FALSE);
-    PER_HEAP
-    void clear_unused_array (uint8_t* x, size_t size);
-    PER_HEAP
-    void relocate_address (uint8_t** old_address THREAD_NUMBER_DCL);
+    PER_HEAP_METHOD void make_free_lists (int condemned_gen_number);
+    PER_HEAP_METHOD void make_free_list_in_brick (uint8_t* tree, make_free_args* args);
+    PER_HEAP_METHOD void thread_gap (uint8_t* gap_start, size_t size, generation*  gen);
+    PER_HEAP_METHOD void uoh_thread_gap_front (uint8_t* gap_start, size_t size, generation*  gen);
+    PER_HEAP_METHOD void make_unused_array (uint8_t* x, size_t size, BOOL clearp=FALSE, BOOL resetp=FALSE);
+    PER_HEAP_METHOD void clear_unused_array (uint8_t* x, size_t size);
+    PER_HEAP_METHOD void relocate_address (uint8_t** old_address THREAD_NUMBER_DCL);
     struct relocate_args
     {
         uint8_t* last_plug;
@@ -3029,60 +2595,42 @@ protected:
         mark* pinned_plug_entry;
     };
 
-    PER_HEAP
-    void reloc_survivor_helper (uint8_t** pval);
-    PER_HEAP
-    void check_class_object_demotion (uint8_t* obj);
-    PER_HEAP
-    void check_class_object_demotion_internal (uint8_t* obj);
+    PER_HEAP_METHOD void reloc_survivor_helper (uint8_t** pval);
+    PER_HEAP_METHOD void check_class_object_demotion (uint8_t* obj);
+    PER_HEAP_METHOD void check_class_object_demotion_internal (uint8_t* obj);
 
-    PER_HEAP
-    void check_demotion_helper (uint8_t** pval, uint8_t* parent_obj);
+    PER_HEAP_METHOD void check_demotion_helper (uint8_t** pval, uint8_t* parent_obj);
 
-    PER_HEAP
-    void relocate_survivor_helper (uint8_t* plug, uint8_t* plug_end);
+    PER_HEAP_METHOD void relocate_survivor_helper (uint8_t* plug, uint8_t* plug_end);
 
-    PER_HEAP
-    void verify_pins_with_post_plug_info (const char* msg);
+    PER_HEAP_METHOD void verify_pins_with_post_plug_info (const char* msg);
 
 #ifdef COLLECTIBLE_CLASS
-    PER_HEAP
-    void unconditional_set_card_collectible (uint8_t* obj);
+    PER_HEAP_METHOD void unconditional_set_card_collectible (uint8_t* obj);
 #endif //COLLECTIBLE_CLASS
 
-    PER_HEAP
-    void relocate_shortened_survivor_helper (uint8_t* plug, uint8_t* plug_end, mark* pinned_plug_entry);
+    PER_HEAP_METHOD void relocate_shortened_survivor_helper (uint8_t* plug, uint8_t* plug_end, mark* pinned_plug_entry);
 
-    PER_HEAP
-    void relocate_obj_helper (uint8_t* x, size_t s);
+    PER_HEAP_METHOD void relocate_obj_helper (uint8_t* x, size_t s);
 
-    PER_HEAP
-    void reloc_ref_in_shortened_obj (uint8_t** address_to_set_card, uint8_t** address_to_reloc);
+    PER_HEAP_METHOD void reloc_ref_in_shortened_obj (uint8_t** address_to_set_card, uint8_t** address_to_reloc);
 
-    PER_HEAP
-    void relocate_pre_plug_info (mark* pinned_plug_entry);
+    PER_HEAP_METHOD void relocate_pre_plug_info (mark* pinned_plug_entry);
 
-    PER_HEAP
-    void relocate_shortened_obj_helper (uint8_t* x, size_t s, uint8_t* end, mark* pinned_plug_entry, BOOL is_pinned);
+    PER_HEAP_METHOD void relocate_shortened_obj_helper (uint8_t* x, size_t s, uint8_t* end, mark* pinned_plug_entry, BOOL is_pinned);
 
-    PER_HEAP
-    void relocate_survivors_in_plug (uint8_t* plug, uint8_t* plug_end,
+    PER_HEAP_METHOD void relocate_survivors_in_plug (uint8_t* plug, uint8_t* plug_end,
                                      BOOL check_last_object_p,
                                      mark* pinned_plug_entry);
-    PER_HEAP
-    void relocate_survivors_in_brick (uint8_t* tree, relocate_args* args);
+    PER_HEAP_METHOD void relocate_survivors_in_brick (uint8_t* tree, relocate_args* args);
 
-    PER_HEAP
-    void update_oldest_pinned_plug();
+    PER_HEAP_METHOD void update_oldest_pinned_plug();
 
-    PER_HEAP
-    heap_segment* get_start_segment (generation* gen);
+    PER_HEAP_METHOD heap_segment* get_start_segment (generation* gen);
 
-    PER_HEAP
-    void relocate_survivors (int condemned_gen_number,
+    PER_HEAP_METHOD void relocate_survivors (int condemned_gen_number,
                              uint8_t* first_condemned_address );
-    PER_HEAP
-    void relocate_phase (int condemned_gen_number,
+    PER_HEAP_METHOD void relocate_phase (int condemned_gen_number,
                          uint8_t* first_condemned_address);
 
     struct compact_args
@@ -3099,136 +2647,94 @@ protected:
 
         void print()
         {
-            dprintf (3, ("last plug: %p, last plug reloc: %zu, before last: %p, b: %zu",
+            dprintf (3, ("last plug: %Ix, last plug reloc: %Ix, before last: %Ix, b: %Ix",
                 last_plug, last_plug_relocation, before_last_plug, current_compacted_brick));
         }
     };
 
-    PER_HEAP
-    void copy_cards_range (uint8_t* dest, uint8_t* src, size_t len, BOOL copy_cards_p);
-    PER_HEAP
-    void  gcmemcopy (uint8_t* dest, uint8_t* src, size_t len, BOOL copy_cards_p);
-    PER_HEAP
-    void compact_plug (uint8_t* plug, size_t size, BOOL check_last_object_p, compact_args* args);
-    PER_HEAP
-    void compact_in_brick (uint8_t* tree, compact_args* args);
+    PER_HEAP_METHOD void copy_cards_range (uint8_t* dest, uint8_t* src, size_t len, BOOL copy_cards_p);
+    PER_HEAP_METHOD void  gcmemcopy (uint8_t* dest, uint8_t* src, size_t len, BOOL copy_cards_p);
+    PER_HEAP_METHOD void compact_plug (uint8_t* plug, size_t size, BOOL check_last_object_p, compact_args* args);
+    PER_HEAP_METHOD void compact_in_brick (uint8_t* tree, compact_args* args);
 
-    PER_HEAP
-    mark* get_next_pinned_entry (uint8_t* tree,
+    PER_HEAP_METHOD mark* get_next_pinned_entry (uint8_t* tree,
                                  BOOL* has_pre_plug_info_p,
                                  BOOL* has_post_plug_info_p,
                                  BOOL deque_p=TRUE);
 
-    PER_HEAP
-    mark* get_oldest_pinned_entry (BOOL* has_pre_plug_info_p, BOOL* has_post_plug_info_p);
+    PER_HEAP_METHOD mark* get_oldest_pinned_entry (BOOL* has_pre_plug_info_p, BOOL* has_post_plug_info_p);
 
-    PER_HEAP
-    size_t recover_saved_pinned_info();
+    PER_HEAP_METHOD size_t recover_saved_pinned_info();
 
-    PER_HEAP
-    void compact_phase (int condemned_gen_number, uint8_t*
+    PER_HEAP_METHOD void compact_phase (int condemned_gen_number, uint8_t*
                         first_condemned_address, BOOL clear_cards);
-    PER_HEAP
-    void clear_cards (size_t start_card, size_t end_card);
-    PER_HEAP
-    void clear_card_for_addresses (uint8_t* start_address, uint8_t* end_address);
-    PER_HEAP
-    void copy_cards (size_t dst_card, size_t src_card,
+    PER_HEAP_METHOD void clear_cards (size_t start_card, size_t end_card);
+    PER_HEAP_METHOD void clear_card_for_addresses (uint8_t* start_address, uint8_t* end_address);
+    PER_HEAP_METHOD void copy_cards (size_t dst_card, size_t src_card,
                      size_t end_card, BOOL nextp);
-    PER_HEAP
-    void copy_cards_for_addresses (uint8_t* dest, uint8_t* src, size_t len);
+    PER_HEAP_METHOD void copy_cards_for_addresses (uint8_t* dest, uint8_t* src, size_t len);
 
 #ifdef BACKGROUND_GC
-    PER_HEAP
-    void copy_mark_bits (size_t dst_mark_bit, size_t src_mark_bit, size_t end_mark_bit);
-    PER_HEAP
-    void copy_mark_bits_for_addresses (uint8_t* dest, uint8_t* src, size_t len);
+    PER_HEAP_METHOD void copy_mark_bits (size_t dst_mark_bit, size_t src_mark_bit, size_t end_mark_bit);
+    PER_HEAP_METHOD void copy_mark_bits_for_addresses (uint8_t* dest, uint8_t* src, size_t len);
 #endif //BACKGROUND_GC
 
-    PER_HEAP_ISOLATED
-    bool is_in_find_object_range (uint8_t* o);
+    PER_HEAP_ISOLATED bool is_in_find_object_range (uint8_t* o);
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED
-    bool is_in_gc_range (uint8_t* o);
+    PER_HEAP_ISOLATED_METHOD bool is_in_gc_range (uint8_t* o);
     // o is guaranteed to be in the heap range.
-    PER_HEAP_ISOLATED
-    bool is_in_condemned_gc (uint8_t* o);
-    PER_HEAP_ISOLATED
-    bool should_check_brick_for_reloc (uint8_t* o);
+    PER_HEAP_ISOLATED_METHOD bool is_in_condemned_gc (uint8_t* o);
+    PER_HEAP_ISOLATED_METHOD bool should_check_brick_for_reloc (uint8_t* o);
 #endif //USE_REGIONS
-    PER_HEAP
-    BOOL ephemeral_pointer_p (uint8_t* o);
-    PER_HEAP
-    void fix_brick_to_highest (uint8_t* o, uint8_t* next_o);
-    PER_HEAP
-    uint8_t* find_first_object (uint8_t* start_address, uint8_t* first_object);
+    PER_HEAP_METHOD BOOL ephemeral_pointer_p (uint8_t* o);
+    PER_HEAP_METHOD void fix_brick_to_highest (uint8_t* o, uint8_t* next_o);
+    PER_HEAP_METHOD uint8_t* find_first_object (uint8_t* start_address, uint8_t* first_object);
 #ifndef USE_REGIONS
-    PER_HEAP
-    uint8_t* compute_next_boundary (int gen_number, BOOL relocating);
+    PER_HEAP_METHOD uint8_t* compute_next_boundary (int gen_number, BOOL relocating);
 #endif //!USE_REGIONS
-    PER_HEAP
-    void mark_through_cards_helper (uint8_t** poo, size_t& ngen,
+    PER_HEAP_METHOD void mark_through_cards_helper (uint8_t** poo, size_t& ngen,
                                     size_t& cg_pointers_found,
                                     card_fn fn, uint8_t* nhigh,
                                     uint8_t* next_boundary,
                                     int condemned_gen,
                                     int current_gen
                                     CARD_MARKING_STEALING_ARG(gc_heap* hpt));
-    PER_HEAP
-    BOOL card_transition (uint8_t* po, uint8_t* end, size_t card_word_end,
+    PER_HEAP_METHOD BOOL card_transition (uint8_t* po, uint8_t* end, size_t card_word_end,
                           size_t& cg_pointers_found,
                           size_t& n_eph, size_t& n_card_set,
                           size_t& card, size_t& end_card,
                           BOOL& foundp, uint8_t*& start_address,
                           uint8_t*& limit, size_t& n_cards_cleared
                           CARD_MARKING_STEALING_ARGS(card_marking_enumerator& card_mark_enumerator, heap_segment* seg, size_t& card_word_end_out));
-    PER_HEAP
-    void mark_through_cards_for_segments(card_fn fn, BOOL relocating CARD_MARKING_STEALING_ARG(gc_heap* hpt));
+    PER_HEAP_METHOD void mark_through_cards_for_segments(card_fn fn, BOOL relocating CARD_MARKING_STEALING_ARG(gc_heap* hpt));
 
 #ifndef USE_REGIONS
-    PER_HEAP
-    void repair_allocation_in_expanded_heap (generation* gen);
-    PER_HEAP
-    BOOL can_fit_in_spaces_p (size_t* ordered_blocks, int small_index, size_t* ordered_spaces, int big_index);
-    PER_HEAP
-    BOOL can_fit_blocks_p (size_t* ordered_blocks, int block_index, size_t* ordered_spaces, int* space_index);
-    PER_HEAP
-    BOOL can_fit_all_blocks_p (size_t* ordered_blocks, size_t* ordered_spaces, int count);
+    PER_HEAP_METHOD void repair_allocation_in_expanded_heap (generation* gen);
+    PER_HEAP_METHOD BOOL can_fit_in_spaces_p (size_t* ordered_blocks, int small_index, size_t* ordered_spaces, int big_index);
+    PER_HEAP_METHOD BOOL can_fit_blocks_p (size_t* ordered_blocks, int block_index, size_t* ordered_spaces, int* space_index);
+    PER_HEAP_METHOD BOOL can_fit_all_blocks_p (size_t* ordered_blocks, size_t* ordered_spaces, int count);
 #ifdef SEG_REUSE_STATS
-    PER_HEAP
-    size_t dump_buckets (size_t* ordered_indices, int count, size_t* total_size);
+    PER_HEAP_METHOD size_t dump_buckets (size_t* ordered_indices, int count, size_t* total_size);
 #endif //SEG_REUSE_STATS
-    PER_HEAP
-    void build_ordered_free_spaces (heap_segment* seg);
-    PER_HEAP
-    void count_plug (size_t last_plug_size, uint8_t*& last_plug);
-    PER_HEAP
-    void count_plugs_in_brick (uint8_t* tree, uint8_t*& last_plug);
-    PER_HEAP
-    void build_ordered_plug_indices ();
-    PER_HEAP
-    void init_ordered_free_space_indices ();
-    PER_HEAP
-    void trim_free_spaces_indices ();
-    PER_HEAP
-    BOOL try_best_fit (BOOL end_of_segment_p);
-    PER_HEAP
-    BOOL best_fit (size_t free_space, size_t largest_free_space, size_t additional_space, BOOL* use_additional_space);
-    PER_HEAP
-    BOOL process_free_space (heap_segment* seg,
+    PER_HEAP_METHOD void build_ordered_free_spaces (heap_segment* seg);
+    PER_HEAP_METHOD void count_plug (size_t last_plug_size, uint8_t*& last_plug);
+    PER_HEAP_METHOD void count_plugs_in_brick (uint8_t* tree, uint8_t*& last_plug);
+    PER_HEAP_METHOD void build_ordered_plug_indices ();
+    PER_HEAP_METHOD void init_ordered_free_space_indices ();
+    PER_HEAP_METHOD void trim_free_spaces_indices ();
+    PER_HEAP_METHOD BOOL try_best_fit (BOOL end_of_segment_p);
+    PER_HEAP_METHOD BOOL best_fit (size_t free_space, size_t largest_free_space, size_t additional_space, BOOL* use_additional_space);
+    PER_HEAP_METHOD BOOL process_free_space (heap_segment* seg,
                              size_t free_space,
                              size_t min_free_size,
                              size_t min_cont_size,
                              size_t* total_free_space,
                              size_t* largest_free_space);
-    PER_HEAP
-    void compute_new_ephemeral_size();
-    PER_HEAP
-    BOOL can_expand_into_p (heap_segment* seg, size_t min_free_size,
+    PER_HEAP_METHOD void compute_new_ephemeral_size();
+    PER_HEAP_METHOD BOOL can_expand_into_p (heap_segment* seg, size_t min_free_size,
                             size_t min_cont_size, allocator* al);
-    PER_HEAP
-    uint8_t* allocate_in_expanded_heap (generation* gen, size_t size,
+    PER_HEAP_METHOD uint8_t* allocate_in_expanded_heap (generation* gen, size_t size,
                                      BOOL& adjacentp, uint8_t* old_loc,
 #ifdef SHORT_PLUGS
                                      BOOL set_padding_on_saved_p,
@@ -3236,8 +2742,7 @@ protected:
 #endif //SHORT_PLUGS
                                      BOOL consider_bestfit, int active_new_gen_number
                                      REQD_ALIGN_AND_OFFSET_DEFAULT_DCL);
-    PER_HEAP
-    void realloc_plug (size_t last_plug_size, uint8_t*& last_plug,
+    PER_HEAP_METHOD void realloc_plug (size_t last_plug_size, uint8_t*& last_plug,
                        generation* gen, uint8_t* start_address,
                        unsigned int& active_new_gen_number,
                        uint8_t*& last_pinned_gap, BOOL& leftp,
@@ -3246,408 +2751,274 @@ protected:
                        , mark* pinned_plug_entry
 #endif //SHORT_PLUGS
                        );
-    PER_HEAP
-    void realloc_in_brick (uint8_t* tree, uint8_t*& last_plug, uint8_t* start_address,
+    PER_HEAP_METHOD void realloc_in_brick (uint8_t* tree, uint8_t*& last_plug, uint8_t* start_address,
                            generation* gen,
                            unsigned int& active_new_gen_number,
                            uint8_t*& last_pinned_gap, BOOL& leftp);
-    PER_HEAP
-    void realloc_plugs (generation* consing_gen, heap_segment* seg,
+    PER_HEAP_METHOD void realloc_plugs (generation* consing_gen, heap_segment* seg,
                         uint8_t* start_address, uint8_t* end_address,
                         unsigned active_new_gen_number);
-    PER_HEAP
-    void set_expand_in_full_gc (int condemned_gen_number);
+    PER_HEAP_METHOD void set_expand_in_full_gc (int condemned_gen_number);
 
-    PER_HEAP
-    generation* expand_heap (int condemned_generation,
+    PER_HEAP_METHOD generation* expand_heap (int condemned_generation,
                              generation* consing_gen,
                              heap_segment* new_heap_segment);
 
-    PER_HEAP
-    void save_ephemeral_generation_starts();
+    PER_HEAP_METHOD void save_ephemeral_generation_starts();
 #endif //!USE_REGIONS
 
-    PER_HEAP
-    BOOL expand_reused_seg_p();
+    PER_HEAP_METHOD BOOL expand_reused_seg_p();
 
-    PER_HEAP
-    void verify_no_pins (uint8_t* start, uint8_t* end);
+    PER_HEAP_METHOD void verify_no_pins (uint8_t* start, uint8_t* end);
 
-    PER_HEAP_ISOLATED
-    size_t get_gen0_min_size();
+    PER_HEAP_ISOLATED_METHOD size_t get_gen0_min_size();
 
-    PER_HEAP
-    void set_static_data();
+    PER_HEAP_METHOD void set_static_data();
 
-    PER_HEAP_ISOLATED
-    void init_static_data();
+    PER_HEAP_ISOLATED_METHOD void init_static_data();
 
-    PER_HEAP
-    bool init_dynamic_data ();
-    PER_HEAP
-    float surv_to_growth (float cst, float limit, float max_limit);
-    PER_HEAP
-    size_t desired_new_allocation (dynamic_data* dd, size_t out,
+    PER_HEAP_METHOD bool init_dynamic_data ();
+    PER_HEAP_METHOD float surv_to_growth (float cst, float limit, float max_limit);
+    PER_HEAP_METHOD size_t desired_new_allocation (dynamic_data* dd, size_t out,
                                    int gen_number, int pass);
 
-    PER_HEAP
-    void trim_youngest_desired_low_memory();
+    PER_HEAP_METHOD void trim_youngest_desired_low_memory();
 
-    PER_HEAP
-    ptrdiff_t estimate_gen_growth (int gen);
+    PER_HEAP_METHOD ptrdiff_t estimate_gen_growth (int gen);
 
-    PER_HEAP
-    void decommit_ephemeral_segment_pages();
+    PER_HEAP_METHOD void decommit_ephemeral_segment_pages();
 
 #ifdef HOST_64BIT
-    PER_HEAP_ISOLATED
-    size_t trim_youngest_desired (uint32_t memory_load,
+    PER_HEAP_ISOLATED_METHOD size_t trim_youngest_desired (uint32_t memory_load,
                                   size_t total_new_allocation,
                                   size_t total_min_allocation);
-    PER_HEAP_ISOLATED
-    size_t joined_youngest_desired (size_t new_allocation);
+    PER_HEAP_ISOLATED_METHOD size_t joined_youngest_desired (size_t new_allocation);
 #endif // HOST_64BIT
-    PER_HEAP_ISOLATED
-    size_t get_total_heap_size ();
-    PER_HEAP_ISOLATED
-    size_t get_total_committed_size();
-    PER_HEAP_ISOLATED
-    size_t get_total_fragmentation();
-    PER_HEAP_ISOLATED
-    size_t get_total_gen_fragmentation (int gen_number);
-    PER_HEAP_ISOLATED
-    size_t get_total_gen_estimated_reclaim (int gen_number);
-    PER_HEAP_ISOLATED
-    size_t get_total_gen_size (int gen_number);
-    PER_HEAP_ISOLATED
-    void get_memory_info (uint32_t* memory_load,
+    PER_HEAP_ISOLATED_METHOD size_t get_total_heap_size ();
+    PER_HEAP_ISOLATED_METHOD size_t get_total_committed_size();
+    PER_HEAP_ISOLATED_METHOD size_t get_total_fragmentation();
+    PER_HEAP_ISOLATED_METHOD size_t get_total_gen_fragmentation (int gen_number);
+    PER_HEAP_ISOLATED_METHOD size_t get_total_gen_estimated_reclaim (int gen_number);
+    PER_HEAP_ISOLATED_METHOD size_t get_total_gen_size (int gen_number);
+    PER_HEAP_ISOLATED_METHOD void get_memory_info (uint32_t* memory_load,
                           uint64_t* available_physical=NULL,
                           uint64_t* available_page_file=NULL);
-    PER_HEAP
-    size_t generation_size (int gen_number);
-    PER_HEAP_ISOLATED
-    size_t get_total_survived_size();
-    PER_HEAP
-    bool update_alloc_info (int gen_number,
+    PER_HEAP_METHOD size_t generation_size (int gen_number);
+    PER_HEAP_ISOLATED_METHOD size_t get_total_survived_size();
+    PER_HEAP_METHOD bool update_alloc_info (int gen_number,
                             size_t allocated_size,
                             size_t* etw_allocation_amount);
     // this also resets allocated_since_last_gc
-    PER_HEAP_ISOLATED
-    size_t get_total_allocated_since_last_gc();
-    PER_HEAP
-    size_t get_current_allocated();
-    PER_HEAP_ISOLATED
-    size_t get_total_allocated();
-    PER_HEAP_ISOLATED
-    size_t get_total_promoted();
+    PER_HEAP_ISOLATED_METHOD size_t get_total_allocated_since_last_gc();
+    PER_HEAP_METHOD size_t get_current_allocated();
+    PER_HEAP_ISOLATED_METHOD size_t get_total_allocated();
+    PER_HEAP_ISOLATED_METHOD size_t get_total_promoted();
 #ifdef BGC_SERVO_TUNING
-    PER_HEAP_ISOLATED
-    size_t get_total_generation_size (int gen_number);
-    PER_HEAP_ISOLATED
-    size_t get_total_servo_alloc (int gen_number);
-    PER_HEAP_ISOLATED
-    size_t get_total_bgc_promoted();
-    PER_HEAP_ISOLATED
-    size_t get_total_surv_size (int gen_number);
-    PER_HEAP_ISOLATED
-    size_t get_total_begin_data_size (int gen_number);
-    PER_HEAP_ISOLATED
-    size_t get_total_generation_fl_size (int gen_number);
-    PER_HEAP_ISOLATED
-    size_t get_current_gc_index (int gen_number);
+    PER_HEAP_ISOLATED_METHOD size_t get_total_generation_size (int gen_number);
+    PER_HEAP_ISOLATED_METHOD size_t get_total_servo_alloc (int gen_number);
+    PER_HEAP_ISOLATED_METHOD size_t get_total_bgc_promoted();
+    PER_HEAP_ISOLATED_METHOD size_t get_total_surv_size (int gen_number);
+    PER_HEAP_ISOLATED_METHOD size_t get_total_begin_data_size (int gen_number);
+    PER_HEAP_ISOLATED_METHOD size_t get_total_generation_fl_size (int gen_number);
+    PER_HEAP_ISOLATED_METHOD size_t get_current_gc_index (int gen_number);
 #endif //BGC_SERVO_TUNING
-    PER_HEAP
-    size_t current_generation_size (int gen_number);
-    PER_HEAP
-    size_t generation_plan_size (int gen_number);
-    PER_HEAP
-    void  compute_promoted_allocation (int gen_number);
-    PER_HEAP
-    size_t  compute_in (int gen_number);
-    PER_HEAP
-    void compute_new_dynamic_data (int gen_number);
-    PER_HEAP_ISOLATED
-    gc_history_global* get_gc_data_global();
-    PER_HEAP
-    gc_history_per_heap* get_gc_data_per_heap();
-    PER_HEAP
-    size_t new_allocation_limit (size_t size, size_t free_size, int gen_number);
-    PER_HEAP
-    size_t generation_fragmentation (generation* gen,
+    PER_HEAP_METHOD size_t current_generation_size (int gen_number);
+    PER_HEAP_METHOD size_t generation_plan_size (int gen_number);
+    PER_HEAP_METHOD void  compute_promoted_allocation (int gen_number);
+    PER_HEAP_METHOD size_t  compute_in (int gen_number);
+    PER_HEAP_METHOD void compute_new_dynamic_data (int gen_number);
+    PER_HEAP_ISOLATED_METHOD gc_history_global* get_gc_data_global();
+    PER_HEAP_METHOD gc_history_per_heap* get_gc_data_per_heap();
+    PER_HEAP_METHOD size_t new_allocation_limit (size_t size, size_t free_size, int gen_number);
+    PER_HEAP_METHOD size_t generation_fragmentation (generation* gen,
                                      generation* consing_gen,
                                      uint8_t* end);
-    PER_HEAP
-    size_t generation_sizes (generation* gen, bool use_saved_p=FALSE);
-    PER_HEAP
-    size_t committed_size();
-    PER_HEAP
-    size_t uoh_committed_size (int gen_number, size_t* allocated);
-    PER_HEAP
-    size_t approximate_new_allocation();
-    PER_HEAP
-    size_t end_space_after_gc();
-    PER_HEAP
-    size_t estimated_reclaim (int gen_number);
-    PER_HEAP
-    bool is_full_compacting_gc_productive();
-    PER_HEAP
-    BOOL decide_on_compacting (int condemned_gen_number,
+    PER_HEAP_METHOD size_t generation_sizes (generation* gen, bool use_saved_p=FALSE);
+    PER_HEAP_METHOD size_t committed_size();
+    PER_HEAP_METHOD size_t uoh_committed_size (int gen_number, size_t* allocated);
+    PER_HEAP_METHOD size_t approximate_new_allocation();
+    PER_HEAP_METHOD size_t end_space_after_gc();
+    PER_HEAP_METHOD size_t estimated_reclaim (int gen_number);
+    PER_HEAP_METHOD bool is_full_compacting_gc_productive();
+    PER_HEAP_METHOD BOOL decide_on_compacting (int condemned_gen_number,
                                size_t fragmentation,
                                BOOL& should_expand);
 #ifndef USE_REGIONS
-    PER_HEAP
-    BOOL sufficient_space_end_seg (uint8_t* start, uint8_t* committed, uint8_t* reserved,
+    PER_HEAP_METHOD BOOL sufficient_space_end_seg (uint8_t* start, uint8_t* committed, uint8_t* reserved,
                                    size_t end_space_required);
 #endif //!USE_REGIONS
 
-    PER_HEAP
-    BOOL ephemeral_gen_fit_p (gc_tuning_point tp);
-    PER_HEAP
-    void sweep_uoh_objects (int gen_num);
-    PER_HEAP
-    void relocate_in_uoh_objects (int gen_num);
-    PER_HEAP
-    void mark_through_cards_for_uoh_objects(card_fn fn, int oldest_gen_num, BOOL relocating
+    PER_HEAP_METHOD BOOL ephemeral_gen_fit_p (gc_tuning_point tp);
+    PER_HEAP_METHOD void sweep_uoh_objects (int gen_num);
+    PER_HEAP_METHOD void relocate_in_uoh_objects (int gen_num);
+    PER_HEAP_METHOD void mark_through_cards_for_uoh_objects(card_fn fn, int oldest_gen_num, BOOL relocating
                                               CARD_MARKING_STEALING_ARG(gc_heap* hpt));
-    PER_HEAP
-    void descr_generations (const char* msg);
+    PER_HEAP_METHOD void descr_generations (const char* msg);
 
-    PER_HEAP_ISOLATED
-    void descr_generations_to_profiler (gen_walk_fn fn, void *context);
+    PER_HEAP_ISOLATED_METHOD void descr_generations_to_profiler (gen_walk_fn fn, void *context);
 
     /*------------ Multiple non isolated heaps ----------------*/
 #ifdef MULTIPLE_HEAPS
-    PER_HEAP_ISOLATED
-    BOOL   create_thread_support (int number_of_heaps);
-    PER_HEAP_ISOLATED
-    void destroy_thread_support ();
-    PER_HEAP
-    bool create_gc_thread();
-    PER_HEAP
-    void gc_thread_function();
-    PER_HEAP
-    size_t sort_mark_list();
-    PER_HEAP
-    uint8_t** equalize_mark_lists(size_t total_mark_list_size);
-    PER_HEAP
-    void merge_mark_lists(size_t total_mark_list_size);
-    PER_HEAP
-    void append_to_mark_list(uint8_t **start, uint8_t **end);
+    PER_HEAP_ISOLATED_METHOD BOOL   create_thread_support (int number_of_heaps);
+    PER_HEAP_ISOLATED_METHOD void destroy_thread_support ();
+    PER_HEAP_METHOD bool create_gc_thread();
+    PER_HEAP_METHOD void gc_thread_function();
+    PER_HEAP_METHOD size_t sort_mark_list();
+    PER_HEAP_METHOD uint8_t** equalize_mark_lists(size_t total_mark_list_size);
+    PER_HEAP_METHOD void merge_mark_lists(size_t total_mark_list_size);
+    PER_HEAP_METHOD void append_to_mark_list(uint8_t **start, uint8_t **end);
 #endif //MULTIPLE_HEAPS
 
-    PER_HEAP_ISOLATED
-    void grow_mark_list();
+    PER_HEAP_ISOLATED_METHOD void grow_mark_list();
 
 #ifdef USE_REGIONS
-    PER_HEAP
-    uint8_t** get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
+    PER_HEAP_METHOD uint8_t** get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
 #endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
 
-    PER_HEAP
-    uint8_t* high_page (heap_segment* seg, BOOL concurrent_p);
+    PER_HEAP_METHOD uint8_t* high_page (heap_segment* seg, BOOL concurrent_p);
 
-    PER_HEAP
-    void revisit_written_page (uint8_t* page, uint8_t* end,
+    PER_HEAP_METHOD void revisit_written_page (uint8_t* page, uint8_t* end,
                                BOOL concurrent_p, uint8_t*& last_page,
                                uint8_t*& last_object, BOOL large_objects_p,
                                size_t& num_marked_objects);
-    PER_HEAP
-    void revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p=FALSE);
+    PER_HEAP_METHOD void revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p=FALSE);
 
-    PER_HEAP
-    void concurrent_scan_dependent_handles (ScanContext *sc);
+    PER_HEAP_METHOD void concurrent_scan_dependent_handles (ScanContext *sc);
 
-    PER_HEAP_ISOLATED
-    void suspend_EE ();
+    PER_HEAP_ISOLATED_METHOD void suspend_EE ();
 
-    PER_HEAP_ISOLATED
-    void bgc_suspend_EE ();
+    PER_HEAP_ISOLATED_METHOD void bgc_suspend_EE ();
 
-    PER_HEAP_ISOLATED
-    void restart_EE ();
+    PER_HEAP_ISOLATED_METHOD void restart_EE ();
 
-    PER_HEAP
-    void background_scan_dependent_handles (ScanContext *sc);
+    PER_HEAP_METHOD void background_scan_dependent_handles (ScanContext *sc);
 
-    PER_HEAP
-    void allow_fgc();
+    PER_HEAP_METHOD void allow_fgc();
 
     // Restores BGC settings if necessary.
-    PER_HEAP_ISOLATED
-    void recover_bgc_settings();
+    PER_HEAP_ISOLATED_METHOD void recover_bgc_settings();
 
-    PER_HEAP
-    BOOL is_bgc_in_progress();
+    PER_HEAP_METHOD BOOL is_bgc_in_progress();
 
-    PER_HEAP
-    void clear_commit_flag();
+    PER_HEAP_METHOD void clear_commit_flag();
 
-    PER_HEAP_ISOLATED
-    void clear_commit_flag_global();
+    PER_HEAP_ISOLATED_METHOD void clear_commit_flag_global();
 
-    PER_HEAP_ISOLATED
-    void verify_mark_array_cleared (uint8_t* begin, uint8_t* end, uint32_t* mark_array_addr);
+    PER_HEAP_ISOLATED_METHOD void verify_mark_array_cleared (uint8_t* begin, uint8_t* end, uint32_t* mark_array_addr);
 
-    PER_HEAP_ISOLATED
-    uint8_t* get_start_address (heap_segment* seg);
+    PER_HEAP_ISOLATED_METHOD uint8_t* get_start_address (heap_segment* seg);
 
-    PER_HEAP_ISOLATED
-    BOOL commit_mark_array_by_range (uint8_t* begin,
+    PER_HEAP_ISOLATED_METHOD BOOL commit_mark_array_by_range (uint8_t* begin,
                                      uint8_t* end,
                                      uint32_t* mark_array_addr);
 
-    PER_HEAP_ISOLATED
-    BOOL commit_mark_array_new_seg (gc_heap* hp,
+    PER_HEAP_ISOLATED_METHOD BOOL commit_mark_array_new_seg (gc_heap* hp,
                                     heap_segment* seg,
                                     uint32_t* new_card_table = 0,
                                     uint8_t* new_lowest_address = 0);
 
-    PER_HEAP_ISOLATED
-    BOOL commit_mark_array_with_check (heap_segment* seg, uint32_t* mark_array_addr);
+    PER_HEAP_ISOLATED_METHOD BOOL commit_mark_array_with_check (heap_segment* seg, uint32_t* mark_array_addr);
 
     // commit the portion of the mark array that corresponds to
     // this segment (from beginning to reserved).
     // seg and heap_segment_reserved (seg) are guaranteed to be
     // page aligned.
-    PER_HEAP_ISOLATED
-    BOOL commit_mark_array_by_seg (heap_segment* seg, uint32_t* mark_array_addr);
+    PER_HEAP_ISOLATED_METHOD BOOL commit_mark_array_by_seg (heap_segment* seg, uint32_t* mark_array_addr);
 
     // During BGC init, we commit the mark array for all in range
     // segments whose mark array hasn't been committed or fully
     // committed. All rw segments are in range, only ro segments
     // can be partial in range.
-    PER_HEAP
-    BOOL commit_mark_array_bgc_init();
+    PER_HEAP_METHOD BOOL commit_mark_array_bgc_init();
 
-    PER_HEAP
-    BOOL commit_new_mark_array (uint32_t* new_mark_array);
+    PER_HEAP_METHOD BOOL commit_new_mark_array (uint32_t* new_mark_array);
 
     // We need to commit all segments that intersect with the bgc
     // range. If a segment is only partially in range, we still
     // should commit the mark array for the whole segment as
     // we will set the mark array commit flag for this segment.
-    PER_HEAP_ISOLATED
-    BOOL commit_new_mark_array_global (uint32_t* new_mark_array);
+    PER_HEAP_ISOLATED_METHOD BOOL commit_new_mark_array_global (uint32_t* new_mark_array);
 
     // We can't decommit the first and the last page in the mark array
     // if the beginning and ending don't happen to be page aligned.
-    PER_HEAP
-    void decommit_mark_array_by_seg (heap_segment* seg);
+    PER_HEAP_METHOD void decommit_mark_array_by_seg (heap_segment* seg);
 
-    PER_HEAP_ISOLATED
-    bool should_update_end_mark_size();
+    PER_HEAP_ISOLATED_METHOD bool should_update_end_mark_size();
 
-    PER_HEAP
-    void background_mark_phase();
+    PER_HEAP_METHOD void background_mark_phase();
 
-    PER_HEAP
-    void background_drain_mark_list (int thread);
+    PER_HEAP_METHOD void background_drain_mark_list (int thread);
 
-    PER_HEAP
-    void background_grow_c_mark_list();
+    PER_HEAP_METHOD void background_grow_c_mark_list();
 
-    PER_HEAP_ISOLATED
-    void background_promote_callback(Object** object, ScanContext* sc, uint32_t flags);
+    PER_HEAP_ISOLATED_METHOD void background_promote_callback(Object** object, ScanContext* sc, uint32_t flags);
 
-    PER_HEAP
-    void mark_absorb_new_alloc();
+    PER_HEAP_METHOD void mark_absorb_new_alloc();
 
-    PER_HEAP
-    void restart_vm();
+    PER_HEAP_METHOD void restart_vm();
 
-    PER_HEAP
-    BOOL prepare_bgc_thread(gc_heap* gh);
-    PER_HEAP
-    BOOL create_bgc_thread(gc_heap* gh);
-    PER_HEAP_ISOLATED
-    BOOL create_bgc_threads_support (int number_of_heaps);
-    PER_HEAP
-    BOOL create_bgc_thread_support();
-    PER_HEAP_ISOLATED
-    int check_for_ephemeral_alloc();
-    PER_HEAP_ISOLATED
-    void wait_to_proceed();
-    PER_HEAP_ISOLATED
-    void fire_alloc_wait_event_begin (alloc_wait_reason awr);
-    PER_HEAP_ISOLATED
-    void fire_alloc_wait_event_end (alloc_wait_reason awr);
-    PER_HEAP
-    uint32_t background_gc_wait (alloc_wait_reason awr = awr_ignored, int time_out_ms = INFINITE);
-    PER_HEAP_ISOLATED
-    BOOL background_running_p() { return gc_background_running; }
-    PER_HEAP_ISOLATED
-    void start_c_gc();
-    PER_HEAP
-    void kill_gc_thread();
-    PER_HEAP
-    void bgc_thread_function();
-    PER_HEAP_ISOLATED
-    void do_background_gc();
-    static
-    void bgc_thread_stub (void* arg);
+    PER_HEAP_METHOD BOOL prepare_bgc_thread(gc_heap* gh);
+    PER_HEAP_METHOD BOOL create_bgc_thread(gc_heap* gh);
+    PER_HEAP_ISOLATED_METHOD BOOL create_bgc_threads_support (int number_of_heaps);
+    PER_HEAP_METHOD BOOL create_bgc_thread_support();
+    PER_HEAP_ISOLATED_METHOD int check_for_ephemeral_alloc();
+    PER_HEAP_ISOLATED_METHOD void wait_to_proceed();
+    PER_HEAP_ISOLATED_METHOD void fire_alloc_wait_event_begin (alloc_wait_reason awr);
+    PER_HEAP_ISOLATED_METHOD void fire_alloc_wait_event_end (alloc_wait_reason awr);
+    PER_HEAP_METHOD uint32_t background_gc_wait (alloc_wait_reason awr = awr_ignored, int time_out_ms = INFINITE);
+    PER_HEAP_ISOLATED_METHOD BOOL background_running_p() { return gc_background_running; }
+    PER_HEAP_ISOLATED_METHOD void start_c_gc();
+    PER_HEAP_METHOD void kill_gc_thread();
+    PER_HEAP_METHOD void bgc_thread_function();
+    PER_HEAP_ISOLATED_METHOD void do_background_gc();
+    PER_HEAP_ISOLATED_METHOD void bgc_thread_stub (void* arg);
 #endif //BACKGROUND_GC
 
 public:
 
-    PER_HEAP_ISOLATED
-    VOLATILE(bool) internal_gc_done;
+    PER_HEAP_ISOLATED_METHOD VOLATILE(bool) internal_gc_done;
 
 #ifdef BACKGROUND_GC
-    PER_HEAP_ISOLATED
-    uint32_t cm_in_progress;
+    PER_HEAP_ISOLATED_FIELD uint32_t cm_in_progress;
 
     // normally this is FALSE; we set it to TRUE at the end of the gen1 GC
     // we do right before the bgc starts.
-    PER_HEAP_ISOLATED
-    BOOL     dont_restart_ee_p;
+    PER_HEAP_ISOLATED_FIELD BOOL     dont_restart_ee_p;
 
-    PER_HEAP_ISOLATED
-    GCEvent bgc_start_event;
+    PER_HEAP_ISOLATED_FIELD GCEvent bgc_start_event;
 #endif //BACKGROUND_GC
 
     // Keeps track of the highest address allocated by Alloc
-    PER_HEAP
-    uint8_t* alloc_allocated;
+    PER_HEAP_FIELD uint8_t* alloc_allocated;
 
     // The ephemeral heap segment
     // For regions this is the region we currently allocate in.
-    PER_HEAP
-    heap_segment* ephemeral_heap_segment;
+    PER_HEAP_FIELD heap_segment* ephemeral_heap_segment;
 
     // The finalize queue.
-    PER_HEAP
-    CFinalize* finalize_queue;
+    PER_HEAP_FIELD CFinalize* finalize_queue;
 
     // OOM info.
-    PER_HEAP
-    oom_history oom_info;
+    PER_HEAP_FIELD oom_history oom_info;
 
     // Interesting data, recorded per-heap.
-    PER_HEAP
-    size_t interesting_data_per_heap[max_idp_count];
+    PER_HEAP_FIELD size_t interesting_data_per_heap[max_idp_count];
 
-    PER_HEAP
-    size_t compact_reasons_per_heap[max_compact_reasons_count];
+    PER_HEAP_FIELD size_t compact_reasons_per_heap[max_compact_reasons_count];
 
-    PER_HEAP
-    size_t expand_mechanisms_per_heap[max_expand_mechanisms_count];
+    PER_HEAP_FIELD size_t expand_mechanisms_per_heap[max_expand_mechanisms_count];
 
-    PER_HEAP
-    size_t interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_count];
+    PER_HEAP_FIELD size_t interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_count];
 
-    PER_HEAP
-    uint8_t** internal_root_array;
+    PER_HEAP_FIELD uint8_t** internal_root_array;
 
-    PER_HEAP
-    size_t internal_root_array_index;
+    PER_HEAP_FIELD size_t internal_root_array_index;
 
-    PER_HEAP
-    BOOL heap_analyze_success;
+    PER_HEAP_FIELD BOOL heap_analyze_success;
 
-    PER_HEAP
-    generation generation_table [total_generation_count];
+    PER_HEAP_FIELD generation generation_table [total_generation_count];
 
 #ifdef USE_REGIONS
 #ifdef STRESS_REGIONS
@@ -3656,62 +3027,44 @@ public:
     // For each gen0 region, pin an object somewhere near the beginning and middle.
     // When we run out start replacing objects pinned by the earlier handles.
 #define PINNING_HANDLE_INITIAL_LENGTH 128
-    PER_HEAP
-    OBJECTHANDLE* pinning_handles_for_alloc;
-    PER_HEAP
-    int ph_index_per_heap;
-    PER_HEAP
-    int pinning_seg_interval;
-    PER_HEAP
-    size_t num_gen0_regions;
-    PER_HEAP
-    int sip_seg_interval;
-    PER_HEAP
-    int sip_seg_maxgen_interval;
-    PER_HEAP
-    size_t num_condemned_regions;
+    PER_HEAP_FIELD OBJECTHANDLE* pinning_handles_for_alloc;
+    PER_HEAP_FIELD int ph_index_per_heap;
+    PER_HEAP_FIELD int pinning_seg_interval;
+    PER_HEAP_FIELD size_t num_gen0_regions;
+    PER_HEAP_FIELD int sip_seg_interval;
+    PER_HEAP_FIELD int sip_seg_maxgen_interval;
+    PER_HEAP_FIELD size_t num_condemned_regions;
 #endif //STRESS_REGIONS
 
-    PER_HEAP
-    region_free_list free_regions[count_free_region_kinds];
+    PER_HEAP_FIELD region_free_list free_regions[count_free_region_kinds];
 
     // This is the number of regions we would free up if we sweep.
     // It's used in the decision for compaction so we calculate it in plan.
-    PER_HEAP
-    int num_regions_freed_in_sweep;
+    PER_HEAP_FIELD int num_regions_freed_in_sweep;
 
-    PER_HEAP
-    int regions_per_gen[max_generation + 1];
+    PER_HEAP_FIELD int regions_per_gen[max_generation + 1];
 
-    PER_HEAP
-    int sip_maxgen_regions_per_gen[max_generation + 1];
+    PER_HEAP_FIELD int sip_maxgen_regions_per_gen[max_generation + 1];
 
-    PER_HEAP
-    heap_segment* reserved_free_regions_sip[max_generation];
+    PER_HEAP_FIELD heap_segment* reserved_free_regions_sip[max_generation];
 
-    PER_HEAP
-    int num_sip_regions;
+    PER_HEAP_FIELD int num_sip_regions;
 
-    PER_HEAP
     // After plan we calculate this as the planned end gen0 space;
     // but if we end up sweeping, we recalculate it at the end of
     // sweep.
-    size_t end_gen0_region_space;
+    PER_HEAP_FIELD size_t end_gen0_region_space;
 
-    PER_HEAP
     // After GC we calculate this
-    size_t end_gen0_region_committed_space;
+    PER_HEAP_FIELD size_t end_gen0_region_committed_space;
 
     // These are updated as we plan and will be used to make compaction
     // decision.
-    PER_HEAP
-    size_t gen0_pinned_free_space;
+    PER_HEAP_FIELD size_t gen0_pinned_free_space;
 
-    PER_HEAP
-    bool gen0_large_chunk_found;
+    PER_HEAP_FIELD bool gen0_large_chunk_found;
 
-    PER_HEAP_ISOLATED
-    size_t regions_range;
+    PER_HEAP_ISOLATED_FIELD size_t regions_range;
 
     // Each GC thread maintains its own record of survived/survived due to
     // old gen cards pointing into that region. These allow us to make the
@@ -3736,12 +3089,9 @@ public:
     // REGIONS TODO: currently we only make use of SOH's promoted bytes to
     // make decisions whether we want to compact or sweep a region. We
     // should also enable this for LOH compaction.
-    PER_HEAP
-    size_t* survived_per_region;
-    PER_HEAP
-    size_t* old_card_survived_per_region;
-    PER_HEAP_ISOLATED
-    size_t region_count;
+    PER_HEAP_FIELD size_t* survived_per_region;
+    PER_HEAP_FIELD size_t* old_card_survived_per_region;
+    PER_HEAP_ISOLATED_FIELD size_t region_count;
 
     // table mapping region number to generation
     // there are actually two generation numbers per entry:
@@ -3769,210 +3119,151 @@ public:
         RI_PLAN_GEN_2   = 0x80,
         RI_PLAN_GEN_MASK= 0xC0,
     };
-    PER_HEAP_ISOLATED
-    region_info* map_region_to_generation;
+    PER_HEAP_ISOLATED_FIELD region_info* map_region_to_generation;
     // same table as above, but skewed so that we can index
     // directly with address >> min_segment_size_shr
-    PER_HEAP_ISOLATED
-    region_info* map_region_to_generation_skewed;
+    PER_HEAP_ISOLATED_FIELD region_info* map_region_to_generation_skewed;
 #endif //USE_REGIONS
 
 #define max_oom_history_count 4
 
-    PER_HEAP
-    int oomhist_index_per_heap;
+    PER_HEAP_FIELD int oomhist_index_per_heap;
 
-    PER_HEAP
-    oom_history oomhist_per_heap[max_oom_history_count];
+    PER_HEAP_FIELD oom_history oomhist_per_heap[max_oom_history_count];
 
-    PER_HEAP
-    void add_to_oom_history_per_heap();
+    PER_HEAP_METHOD void add_to_oom_history_per_heap();
 
-    PER_HEAP_ISOLATED
-    uint32_t wait_for_gc_done(int32_t timeOut = INFINITE);
+    PER_HEAP_ISOLATED_METHOD uint32_t wait_for_gc_done(int32_t timeOut = INFINITE);
 
     // Returns TRUE if the current thread used to be in cooperative mode
     // before calling this function.
-    PER_HEAP_ISOLATED
-    bool enable_preemptive ();
-    PER_HEAP_ISOLATED
-    void disable_preemptive (bool restore_cooperative);
+    PER_HEAP_ISOLATED_METHOD bool enable_preemptive ();
+    PER_HEAP_ISOLATED_METHOD void disable_preemptive (bool restore_cooperative);
 
     /* ------------------- per heap members --------------------------*/
 
-    PER_HEAP
-#ifndef MULTIPLE_HEAPS
-    GCEvent gc_done_event;
-#else // MULTIPLE_HEAPS
-    GCEvent gc_done_event;
-#endif // MULTIPLE_HEAPS
+    PER_HEAP_FIELD GCEvent gc_done_event;
 
-    PER_HEAP
-    VOLATILE(int32_t) gc_done_event_lock;
+    PER_HEAP_METHOD VOLATILE(int32_t) gc_done_event_lock;
 
-    PER_HEAP
-    VOLATILE(bool) gc_done_event_set;
+    PER_HEAP_METHOD VOLATILE(bool) gc_done_event_set;
 
-    PER_HEAP
-    void set_gc_done();
+    PER_HEAP_METHOD void set_gc_done();
 
-    PER_HEAP
-    void reset_gc_done();
+    PER_HEAP_METHOD void reset_gc_done();
 
-    PER_HEAP
-    void enter_gc_done_event_lock();
+    PER_HEAP_METHOD void enter_gc_done_event_lock();
 
-    PER_HEAP
-    void exit_gc_done_event_lock();
+    PER_HEAP_METHOD void exit_gc_done_event_lock();
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED
-    VOLATILE(uint8_t*)  ephemeral_low;      //lowest ephemeral address
+    PER_HEAP_ISOLATED_METHOD VOLATILE(uint8_t*)  ephemeral_low;      //lowest ephemeral address
 
-    PER_HEAP_ISOLATED
-    VOLATILE(uint8_t*)  ephemeral_high;     //highest ephemeral address
+    PER_HEAP_ISOLATED_METHOD VOLATILE(uint8_t*)  ephemeral_high;     //highest ephemeral address
 #else //!USE_REGIONS
-    PER_HEAP
-    uint8_t*  ephemeral_low;      //lowest ephemeral address
+    PER_HEAP_FIELD uint8_t*  ephemeral_low;      //lowest ephemeral address
 
-    PER_HEAP
-    uint8_t*  ephemeral_high;     //highest ephemeral address
+    PER_HEAP_FIELD uint8_t*  ephemeral_high;     //highest ephemeral address
 #endif //!USE_REGIONS
 
-    PER_HEAP
-    uint32_t* card_table;
+    PER_HEAP_FIELD uint32_t* card_table;
 
-    PER_HEAP
-    short* brick_table;
+    PER_HEAP_FIELD short* brick_table;
 
 #ifdef BACKGROUND_GC
-    PER_HEAP
-    uint32_t* mark_array;
+    PER_HEAP_FIELD uint32_t* mark_array;
 #endif //BACKGROUND_GC
 
 #ifdef CARD_BUNDLE
-    PER_HEAP
-    uint32_t* card_bundle_table;
+    PER_HEAP_FIELD uint32_t* card_bundle_table;
 #endif //CARD_BUNDLE
 
 #ifdef FEATURE_BASICFREEZE
-    PER_HEAP_ISOLATED
-    sorted_table* seg_table;
+    PER_HEAP_ISOLATED_FIELD sorted_table* seg_table;
 #endif //FEATURE_BASICFREEZE
 
-    PER_HEAP_ISOLATED
-    VOLATILE(BOOL) gc_started;
+    PER_HEAP_ISOLATED_METHOD VOLATILE(BOOL) gc_started;
 
     // The following 2 events are there to support the gen2
     // notification feature which is only enabled if concurrent
     // GC is disabled.
-    PER_HEAP_ISOLATED
-    GCEvent full_gc_approach_event;
+    PER_HEAP_ISOLATED_FIELD GCEvent full_gc_approach_event;
 
-    PER_HEAP_ISOLATED
-    GCEvent full_gc_end_event;
+    PER_HEAP_ISOLATED_FIELD GCEvent full_gc_end_event;
 
     // Full GC Notification percentages.
-    PER_HEAP
-    uint32_t fgn_maxgen_percent;
+    PER_HEAP_FIELD uint32_t fgn_maxgen_percent;
 
-    PER_HEAP_ISOLATED
-    uint32_t fgn_loh_percent;
+    PER_HEAP_ISOLATED_FIELD uint32_t fgn_loh_percent;
 
-    PER_HEAP_ISOLATED
-    VOLATILE(bool) full_gc_approach_event_set;
+    PER_HEAP_ISOLATED_METHOD VOLATILE(bool) full_gc_approach_event_set;
 
 #ifdef USE_REGIONS
-    PER_HEAP
-    bool special_sweep_p;
+    PER_HEAP_FIELD bool special_sweep_p;
 #endif
 
 #ifdef BACKGROUND_GC
-    PER_HEAP_ISOLATED
-    BOOL fgn_last_gc_was_concurrent;
+    PER_HEAP_ISOLATED_FIELD BOOL fgn_last_gc_was_concurrent;
 #endif //BACKGROUND_GC
 
-    PER_HEAP
-    size_t fgn_last_alloc;
+    PER_HEAP_FIELD size_t fgn_last_alloc;
 
-    static uint32_t user_thread_wait (GCEvent *event, BOOL no_mode_change, int time_out_ms=INFINITE);
+    PER_HEAP_ISOLATED_METHOD uint32_t user_thread_wait (GCEvent *event, BOOL no_mode_change, int time_out_ms=INFINITE);
 
-    static wait_full_gc_status full_gc_wait (GCEvent *event, int time_out_ms);
+    PER_HEAP_ISOLATED_METHOD wait_full_gc_status full_gc_wait (GCEvent *event, int time_out_ms);
 
 #ifndef USE_REGIONS
-    PER_HEAP
-    uint8_t* demotion_low;
+    PER_HEAP_FIELD uint8_t* demotion_low;
 
-    PER_HEAP
-    uint8_t* demotion_high;
+    PER_HEAP_FIELD uint8_t* demotion_high;
 #endif //!USE_REGIONS
 
-    PER_HEAP
-    BOOL demote_gen1_p;
+    PER_HEAP_FIELD BOOL demote_gen1_p;
 
-    PER_HEAP
-    uint8_t* last_gen1_pin_end;
+    PER_HEAP_FIELD uint8_t* last_gen1_pin_end;
 
-    PER_HEAP
-    gen_to_condemn_tuning gen_to_condemn_reasons;
+    PER_HEAP_FIELD gen_to_condemn_tuning gen_to_condemn_reasons;
 
-    PER_HEAP
-    size_t etw_allocation_running_amount[total_oh_count];
+    PER_HEAP_FIELD size_t etw_allocation_running_amount[total_oh_count];
 
-    PER_HEAP
-    uint64_t total_alloc_bytes_soh;
+    PER_HEAP_FIELD uint64_t total_alloc_bytes_soh;
 
-    PER_HEAP
-    uint64_t total_alloc_bytes_uoh;
+    PER_HEAP_FIELD uint64_t total_alloc_bytes_uoh;
 
-    PER_HEAP
-    int gc_policy;  //sweep, compact, expand
+    PER_HEAP_FIELD int gc_policy;  //sweep, compact, expand
 
 #ifdef MULTIPLE_HEAPS
-    PER_HEAP_ISOLATED
-    bool gc_thread_no_affinitize_p;
+    PER_HEAP_ISOLATED_FIELD bool gc_thread_no_affinitize_p;
 
-    PER_HEAP_ISOLATED
-    GCEvent gc_start_event;
+    PER_HEAP_ISOLATED_FIELD GCEvent gc_start_event;
 
-    PER_HEAP_ISOLATED
-    GCEvent ee_suspend_event;
+    PER_HEAP_ISOLATED_FIELD GCEvent ee_suspend_event;
 
-    PER_HEAP
-    heap_segment* new_heap_segment;
+    PER_HEAP_FIELD heap_segment* new_heap_segment;
 
-    PER_HEAP_ISOLATED
-    size_t min_gen0_balance_delta;
+    PER_HEAP_ISOLATED_FIELD size_t min_gen0_balance_delta;
 
 #define alloc_quantum_balance_units (16)
 
-    PER_HEAP_ISOLATED
-    size_t min_balance_threshold;
+    PER_HEAP_ISOLATED_FIELD size_t min_balance_threshold;
 #else //MULTIPLE_HEAPS
 
-    PER_HEAP
-    uint64_t allocation_running_time;
+    PER_HEAP_FIELD uint64_t allocation_running_time;
 
-    PER_HEAP
-    size_t allocation_running_amount;
+    PER_HEAP_FIELD size_t allocation_running_amount;
 
 #endif //MULTIPLE_HEAPS
 
-    PER_HEAP_ISOLATED
-    gc_latency_level latency_level;
+    PER_HEAP_ISOLATED_FIELD gc_latency_level latency_level;
 
-    PER_HEAP_ISOLATED
-    gc_mechanisms settings;
+    PER_HEAP_ISOLATED_FIELD gc_mechanisms settings;
 
-    PER_HEAP_ISOLATED
-    gc_history_global gc_data_global;
+    PER_HEAP_ISOLATED_FIELD gc_history_global gc_data_global;
 
-    PER_HEAP_ISOLATED
-    uint64_t gc_last_ephemeral_decommit_time;
+    PER_HEAP_ISOLATED_FIELD uint64_t gc_last_ephemeral_decommit_time;
 
 #ifdef SHORT_PLUGS
-    PER_HEAP_ISOLATED
-    double short_plugs_pad_ratio;
+    PER_HEAP_ISOLATED_FIELD double short_plugs_pad_ratio;
 #endif //SHORT_PLUGS
 
     // We record the time GC work is done while EE is suspended.
@@ -3988,23 +3279,17 @@ public:
     // the SuspendEE was for. The ephemeral GC we might trigger
     // at the beginning of a BGC and the PM triggered full GCs
     // fall into this case.
-    PER_HEAP_ISOLATED
-    uint64_t suspended_start_time;
+    PER_HEAP_ISOLATED_FIELD uint64_t suspended_start_time;
 
-    PER_HEAP_ISOLATED
-    uint64_t end_gc_time;
+    PER_HEAP_ISOLATED_FIELD uint64_t end_gc_time;
 
-    PER_HEAP_ISOLATED
-    uint64_t total_suspended_time;
+    PER_HEAP_ISOLATED_FIELD uint64_t total_suspended_time;
 
-    PER_HEAP_ISOLATED
-    uint64_t process_start_time;
+    PER_HEAP_ISOLATED_FIELD uint64_t process_start_time;
 
-    PER_HEAP_ISOLATED
-    last_recorded_gc_info last_ephemeral_gc_info;
+    PER_HEAP_ISOLATED_FIELD last_recorded_gc_info last_ephemeral_gc_info;
 
-    PER_HEAP_ISOLATED
-    last_recorded_gc_info last_full_blocking_gc_info;
+    PER_HEAP_ISOLATED_FIELD last_recorded_gc_info last_full_blocking_gc_info;
 
 #ifdef BACKGROUND_GC
     // If the user didn't specify which kind of GC info to return, we need
@@ -4014,52 +3299,39 @@ public:
     // to return the last BGC info otherwise if we only did BGCs we could frequently
     // return nothing). So we maintain 2 of these for BGC and the older one is
     // guaranteed to be consistent.
-    PER_HEAP_ISOLATED
-    last_recorded_gc_info last_bgc_info[2];
+    PER_HEAP_ISOLATED_FIELD last_recorded_gc_info last_bgc_info[2];
     // This is either 0 or 1.
-    PER_HEAP_ISOLATED
-    VOLATILE(int) last_bgc_info_index;
+    PER_HEAP_ISOLATED_METHOD VOLATILE(int) last_bgc_info_index;
     // Since a BGC can finish later than blocking GCs with larger indices,
     // we can't just compare the index recorded in the GC info. We use this
     // to know whether we should be looking for a bgc info or a blocking GC,
     // if the user asks for the latest GC info of any kind.
     // This can only go from false to true concurrently so if it is true,
     // it means the bgc info is ready.
-    PER_HEAP_ISOLATED
-    VOLATILE(bool) is_last_recorded_bgc;
+    PER_HEAP_ISOLATED_METHOD VOLATILE(bool) is_last_recorded_bgc;
 
-    PER_HEAP_ISOLATED
-    void add_bgc_pause_duration_0();
+    PER_HEAP_ISOLATED_METHOD void add_bgc_pause_duration_0();
 
-    PER_HEAP_ISOLATED
-    last_recorded_gc_info* get_completed_bgc_info();
+    PER_HEAP_ISOLATED_METHOD last_recorded_gc_info* get_completed_bgc_info();
 #endif //BACKGROUND_GC
 
 #ifdef HOST_64BIT
-    PER_HEAP_ISOLATED
-        size_t youngest_gen_desired_th;
+    PER_HEAP_ISOLATED_FIELD size_t youngest_gen_desired_th;
 #endif //HOST_64BIT
 
-    PER_HEAP_ISOLATED
-    uint32_t high_memory_load_th;
+    PER_HEAP_ISOLATED_FIELD uint32_t high_memory_load_th;
 
-    PER_HEAP_ISOLATED
-    uint32_t m_high_memory_load_th;
+    PER_HEAP_ISOLATED_FIELD uint32_t m_high_memory_load_th;
 
-    PER_HEAP_ISOLATED
-    uint32_t v_high_memory_load_th;
+    PER_HEAP_ISOLATED_FIELD uint32_t v_high_memory_load_th;
 
-    PER_HEAP_ISOLATED
-    bool is_restricted_physical_mem;
+    PER_HEAP_ISOLATED_FIELD bool is_restricted_physical_mem;
 
-    PER_HEAP_ISOLATED
-    uint64_t mem_one_percent;
+    PER_HEAP_ISOLATED_FIELD uint64_t mem_one_percent;
 
-    PER_HEAP_ISOLATED
-    uint64_t total_physical_mem;
+    PER_HEAP_ISOLATED_FIELD uint64_t total_physical_mem;
 
-    PER_HEAP_ISOLATED
-    uint64_t entry_available_physical_mem;
+    PER_HEAP_ISOLATED_FIELD uint64_t entry_available_physical_mem;
 
     // Hard limit for the heap, only supported on 64-bit.
     //
@@ -4117,191 +3389,139 @@ public:
     // TODO: some of the logic here applies to the general case as well
     // such as LOH automatic compaction. However it will require more
     //testing to change the general case.
-    PER_HEAP_ISOLATED
-    size_t heap_hard_limit;
+    PER_HEAP_ISOLATED_FIELD size_t heap_hard_limit;
 
-    PER_HEAP_ISOLATED
-    size_t heap_hard_limit_oh[total_oh_count];
+    PER_HEAP_ISOLATED_FIELD size_t heap_hard_limit_oh[total_oh_count];
 
-    PER_HEAP_ISOLATED
-    CLRCriticalSection check_commit_cs;
+    PER_HEAP_ISOLATED_FIELD CLRCriticalSection check_commit_cs;
 
-    PER_HEAP_ISOLATED
-    size_t current_total_committed;
+    PER_HEAP_ISOLATED_FIELD size_t current_total_committed;
 
-    PER_HEAP_ISOLATED
-    size_t committed_by_oh[recorded_committed_bucket_counts];
+    PER_HEAP_ISOLATED_FIELD size_t committed_by_oh[recorded_committed_bucket_counts];
 
 #if defined (_DEBUG) && defined (MULTIPLE_HEAPS)
-    PER_HEAP
-    size_t committed_by_oh_per_heap[total_oh_count];
+    PER_HEAP_FIELD size_t committed_by_oh_per_heap[total_oh_count];
 #endif // _DEBUG && MULTIPLE_HEAPS
 
     // This is what GC uses for its own bookkeeping.
-    PER_HEAP_ISOLATED
-    size_t current_total_committed_bookkeeping;
+    PER_HEAP_ISOLATED_FIELD size_t current_total_committed_bookkeeping;
 
     // This is if large pages should be used.
-    PER_HEAP_ISOLATED
-    bool use_large_pages_p;
+    PER_HEAP_ISOLATED_FIELD bool use_large_pages_p;
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
-    PER_HEAP_ISOLATED
-    size_t last_gc_end_time_us;
+    PER_HEAP_ISOLATED_FIELD size_t last_gc_end_time_us;
 #endif //HEAP_BALANCE_INSTRUMENTATION
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED
-    bool enable_special_regions_p;
+    PER_HEAP_ISOLATED_FIELD bool enable_special_regions_p;
 #else //USE_REGIONS
-    PER_HEAP_ISOLATED
-    size_t min_segment_size;
+    PER_HEAP_ISOLATED_FIELD size_t min_segment_size;
 
-    PER_HEAP_ISOLATED
-    size_t min_uoh_segment_size;
+    PER_HEAP_ISOLATED_FIELD size_t min_uoh_segment_size;
 #endif //!USE_REGIONS
 
     // For regions this is for region size.
-    PER_HEAP_ISOLATED
-    size_t min_segment_size_shr;
+    PER_HEAP_ISOLATED_FIELD size_t min_segment_size_shr;
 
     // For SOH we always allocate segments of the same
     // size unless no_gc_region requires larger ones.
-    PER_HEAP_ISOLATED
-    size_t soh_segment_size;
+    PER_HEAP_ISOLATED_FIELD size_t soh_segment_size;
 
-    PER_HEAP_ISOLATED
-    size_t segment_info_size;
+    PER_HEAP_ISOLATED_FIELD size_t segment_info_size;
 
-    PER_HEAP
-    uint8_t* lowest_address;
+    PER_HEAP_FIELD uint8_t* lowest_address;
 
-    PER_HEAP
-    uint8_t* highest_address;
+    PER_HEAP_FIELD uint8_t* highest_address;
 
-    PER_HEAP
-    BOOL ephemeral_promotion;
-    PER_HEAP
-    uint8_t* saved_ephemeral_plan_start[ephemeral_generation_count];
-    PER_HEAP
-    size_t saved_ephemeral_plan_start_size[ephemeral_generation_count];
+    PER_HEAP_FIELD BOOL ephemeral_promotion;
+    PER_HEAP_FIELD uint8_t* saved_ephemeral_plan_start[ephemeral_generation_count];
+    PER_HEAP_FIELD size_t saved_ephemeral_plan_start_size[ephemeral_generation_count];
 
 protected:
 #ifdef MULTIPLE_HEAPS
-    PER_HEAP
-    GCHeap* vm_heap;
-    PER_HEAP
-    int heap_number;
-    PER_HEAP
-    VOLATILE(int) alloc_context_count;
+    PER_HEAP_FIELD GCHeap* vm_heap;
+    PER_HEAP_FIELD int heap_number;
+    PER_HEAP_METHOD VOLATILE(int) alloc_context_count;
 #else //MULTIPLE_HEAPS
 #define vm_heap ((GCHeap*) g_theGCHeap)
 #define heap_number (0)
 #endif //MULTIPLE_HEAPS
 
-    PER_HEAP
-    uint64_t time_bgc_last;
+    PER_HEAP_FIELD uint64_t time_bgc_last;
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED
-    uint8_t*       gc_low; // low end of the lowest region being condemned
+    PER_HEAP_ISOLATED_FIELD uint8_t*       gc_low; // low end of the lowest region being condemned
 
-    PER_HEAP_ISOLATED
-    uint8_t*       gc_high; // high end of the highest region being condemned
+    PER_HEAP_ISOLATED_FIELD uint8_t*       gc_high; // high end of the highest region being condemned
 #else // USE_REGIONS
-    PER_HEAP
-    uint8_t*       gc_low; // lowest address being condemned
+    PER_HEAP_FIELD uint8_t*       gc_low; // lowest address being condemned
 
-    PER_HEAP
-    uint8_t*       gc_high; // highest address being condemned
+    PER_HEAP_FIELD uint8_t*       gc_high; // highest address being condemned
 #endif //USE_REGIONS
 
-    PER_HEAP
-    size_t      mark_stack_tos;
+    PER_HEAP_FIELD size_t      mark_stack_tos;
 
-    PER_HEAP
-    size_t      mark_stack_bos;
+    PER_HEAP_FIELD size_t      mark_stack_bos;
 
-    PER_HEAP
-    size_t      mark_stack_array_length;
+    PER_HEAP_FIELD size_t      mark_stack_array_length;
 
-    PER_HEAP
-    mark*       mark_stack_array;
+    PER_HEAP_FIELD mark*       mark_stack_array;
 
 #if defined (_DEBUG) && defined (VERIFY_HEAP)
-    PER_HEAP
-    BOOL       verify_pinned_queue_p;
+    PER_HEAP_FIELD BOOL       verify_pinned_queue_p;
 #endif // _DEBUG && VERIFY_HEAP
 
-    PER_HEAP
-    uint8_t*    oldest_pinned_plug;
+    PER_HEAP_FIELD uint8_t*    oldest_pinned_plug;
 
-    PER_HEAP
-    size_t      num_pinned_objects;
+    PER_HEAP_FIELD size_t      num_pinned_objects;
 
 #ifdef FEATURE_LOH_COMPACTION
-    PER_HEAP
-    size_t      loh_pinned_queue_tos;
+    PER_HEAP_FIELD size_t      loh_pinned_queue_tos;
 
-    PER_HEAP
-    size_t      loh_pinned_queue_bos;
+    PER_HEAP_FIELD size_t      loh_pinned_queue_bos;
 
-    PER_HEAP
-    size_t      loh_pinned_queue_length;
+    PER_HEAP_FIELD size_t      loh_pinned_queue_length;
 
-    PER_HEAP
-    int         loh_pinned_queue_decay;
+    PER_HEAP_FIELD int         loh_pinned_queue_decay;
 
-    PER_HEAP
-    mark*       loh_pinned_queue;
+    PER_HEAP_FIELD mark*       loh_pinned_queue;
 
     // This is for forced LOH compaction via the complus env var
-    PER_HEAP_ISOLATED
-    BOOL        loh_compaction_always_p;
+    PER_HEAP_ISOLATED_FIELD BOOL        loh_compaction_always_p;
 
     // This is set by the user.
-    PER_HEAP_ISOLATED
-    gc_loh_compaction_mode loh_compaction_mode;
+    PER_HEAP_ISOLATED_FIELD gc_loh_compaction_mode loh_compaction_mode;
 
     // We may not compact LOH on every heap if we can't
     // grow the pinned queue. This is to indicate whether
     // this heap's LOH is compacted or not. So even if
     // settings.loh_compaction is TRUE this may not be TRUE.
-    PER_HEAP
-    BOOL        loh_compacted_p;
+    PER_HEAP_FIELD BOOL        loh_compacted_p;
 #endif //FEATURE_LOH_COMPACTION
 
 #ifdef BACKGROUND_GC
 
-    PER_HEAP
-    EEThreadId bgc_thread_id;
+    PER_HEAP_FIELD EEThreadId bgc_thread_id;
 
 #ifdef WRITE_WATCH
-    PER_HEAP
-    uint8_t* background_written_addresses [array_size+2];
+    PER_HEAP_FIELD uint8_t* background_written_addresses [array_size+2];
 #endif //WRITE_WATCH
 
-    PER_HEAP_ISOLATED
-    VOLATILE(c_gc_state) current_c_gc_state;     //tells the large object allocator to
+    PER_HEAP_ISOLATED_METHOD VOLATILE(c_gc_state) current_c_gc_state;     //tells the large object allocator to
     //mark the object as new since the start of gc.
 
-    PER_HEAP_ISOLATED
-    gc_mechanisms saved_bgc_settings;
+    PER_HEAP_ISOLATED_FIELD gc_mechanisms saved_bgc_settings;
 
-    PER_HEAP_ISOLATED
-    gc_history_global bgc_data_global;
+    PER_HEAP_ISOLATED_FIELD gc_history_global bgc_data_global;
 
-    PER_HEAP_ISOLATED
-    VOLATILE(BOOL) gc_background_running;
+    PER_HEAP_ISOLATED_METHOD VOLATILE(BOOL) gc_background_running;
 
-    PER_HEAP
-    gc_history_per_heap bgc_data_per_heap;
+    PER_HEAP_FIELD gc_history_per_heap bgc_data_per_heap;
 
-    PER_HEAP
-    BOOL bgc_thread_running; // gc thread is its main loop
+    PER_HEAP_FIELD BOOL bgc_thread_running; // gc thread is its main loop
 
-    PER_HEAP_ISOLATED
-    BOOL keep_bgc_threads_p;
+    PER_HEAP_ISOLATED_FIELD BOOL keep_bgc_threads_p;
 
     // This event is used by BGC threads to do something on
     // one specific thread while other BGC threads have to
@@ -4311,35 +3531,25 @@ protected:
     // For example, to make the BGC threads managed threads
     // we need to create them on the thread that called
     // SuspendEE which is heap 0.
-    PER_HEAP_ISOLATED
-    GCEvent bgc_threads_sync_event;
+    PER_HEAP_ISOLATED_FIELD GCEvent bgc_threads_sync_event;
 
-    PER_HEAP
-    Thread* bgc_thread;
+    PER_HEAP_FIELD Thread* bgc_thread;
 
-    PER_HEAP
-    CLRCriticalSection bgc_threads_timeout_cs;
+    PER_HEAP_FIELD CLRCriticalSection bgc_threads_timeout_cs;
 
-    PER_HEAP_ISOLATED
-    GCEvent background_gc_done_event;
+    PER_HEAP_ISOLATED_FIELD GCEvent background_gc_done_event;
 
-    PER_HEAP_ISOLATED
-    GCEvent ee_proceed_event;
+    PER_HEAP_ISOLATED_FIELD GCEvent ee_proceed_event;
 
-    PER_HEAP_ISOLATED
-    bool gc_can_use_concurrent;
+    PER_HEAP_ISOLATED_FIELD bool gc_can_use_concurrent;
 
-    PER_HEAP_ISOLATED
-    bool temp_disable_concurrent_p;
+    PER_HEAP_ISOLATED_FIELD bool temp_disable_concurrent_p;
 
-    PER_HEAP_ISOLATED
-    BOOL do_ephemeral_gc_p;
+    PER_HEAP_ISOLATED_FIELD BOOL do_ephemeral_gc_p;
 
-    PER_HEAP_ISOLATED
-    BOOL do_concurrent_p;
+    PER_HEAP_ISOLATED_FIELD BOOL do_concurrent_p;
 
-    PER_HEAP
-    VOLATILE(bgc_state) current_bgc_state;
+    PER_HEAP_METHOD VOLATILE(bgc_state) current_bgc_state;
 
     struct gc_history
     {
@@ -4364,47 +3574,33 @@ protected:
 
 #define max_history_count 64
 
-    PER_HEAP
-    int gchist_index_per_heap;
+    PER_HEAP_FIELD int gchist_index_per_heap;
 
-    PER_HEAP
-    gc_history gchist_per_heap[max_history_count];
+    PER_HEAP_FIELD gc_history gchist_per_heap[max_history_count];
 
-    PER_HEAP_ISOLATED
-    int gchist_index;
+    PER_HEAP_ISOLATED_FIELD int gchist_index;
 
-    PER_HEAP_ISOLATED
-    gc_mechanisms_store gchist[max_history_count];
+    PER_HEAP_ISOLATED_FIELD gc_mechanisms_store gchist[max_history_count];
 
-    PER_HEAP
-    size_t     bgc_overflow_count;
+    PER_HEAP_FIELD size_t     bgc_overflow_count;
 
-    PER_HEAP
-    size_t     bgc_begin_loh_size;
-    PER_HEAP
-    size_t     bgc_begin_poh_size;
-    PER_HEAP
-    size_t     end_loh_size;
-    PER_HEAP
-    size_t     end_poh_size;
+    PER_HEAP_FIELD size_t     bgc_begin_loh_size;
+    PER_HEAP_FIELD size_t     bgc_begin_poh_size;
+    PER_HEAP_FIELD size_t     end_loh_size;
+    PER_HEAP_FIELD size_t     end_poh_size;
 
 #ifdef BGC_SERVO_TUNING
-    PER_HEAP
-    uint64_t   loh_a_no_bgc;
+    PER_HEAP_FIELD uint64_t   loh_a_no_bgc;
 
-    PER_HEAP
-    uint64_t   loh_a_bgc_marking;
+    PER_HEAP_FIELD uint64_t   loh_a_bgc_marking;
 
-    PER_HEAP
-    uint64_t   loh_a_bgc_planning;
+    PER_HEAP_FIELD uint64_t   loh_a_bgc_planning;
 
     // Total allocated last BGC's plan + between last and this bgc +
     // this bgc's mark
-    PER_HEAP_ISOLATED
-    uint64_t   total_loh_a_last_bgc;
+    PER_HEAP_ISOLATED_FIELD uint64_t   total_loh_a_last_bgc;
 
-    PER_HEAP
-    size_t     bgc_maxgen_end_fl_size;
+    PER_HEAP_FIELD size_t     bgc_maxgen_end_fl_size;
 #endif //BGC_SERVO_TUNING
 
     // We need to throttle the LOH allocations during BGC since we can't
@@ -4413,172 +3609,121 @@ protected:
     // 10% increase we will have the LOH allocating thread sleep for one more
     // ms. So we are already 30% over the original heap size the thread will
     // sleep for 3ms.
-    PER_HEAP
-    uint32_t   bgc_alloc_spin_uoh;
+    PER_HEAP_FIELD uint32_t   bgc_alloc_spin_uoh;
 
     // This includes what we allocate at the end of segment - allocating
     // in free list doesn't increase the heap size.
-    PER_HEAP
-    size_t     bgc_loh_size_increased;
-    PER_HEAP
-    size_t     bgc_poh_size_increased;
+    PER_HEAP_FIELD size_t     bgc_loh_size_increased;
+    PER_HEAP_FIELD size_t     bgc_poh_size_increased;
 
-    PER_HEAP
-    size_t     background_soh_size_end_mark;
+    PER_HEAP_FIELD size_t     background_soh_size_end_mark;
 
-    PER_HEAP
-    size_t     background_soh_alloc_count;
+    PER_HEAP_FIELD size_t     background_soh_alloc_count;
 
-    PER_HEAP
-    size_t     background_uoh_alloc_count;
+    PER_HEAP_FIELD size_t     background_uoh_alloc_count;
 
-    PER_HEAP
-    VOLATILE(int32_t) uoh_alloc_thread_count;
+    PER_HEAP_METHOD VOLATILE(int32_t) uoh_alloc_thread_count;
 
-    PER_HEAP
-    uint8_t**  background_mark_stack_tos;
+    PER_HEAP_FIELD uint8_t**  background_mark_stack_tos;
 
-    PER_HEAP
-    uint8_t**  background_mark_stack_array;
+    PER_HEAP_FIELD uint8_t**  background_mark_stack_array;
 
-    PER_HEAP
-    size_t    background_mark_stack_array_length;
+    PER_HEAP_FIELD size_t    background_mark_stack_array_length;
 
     // We can't process the ephemeral range concurrently so we
     // wait till final mark to process it.
-    PER_HEAP
-    BOOL      processed_eph_overflow_p;
+    PER_HEAP_FIELD BOOL      processed_eph_overflow_p;
 
 #ifdef USE_REGIONS
-    PER_HEAP
-    BOOL      background_overflow_p;
+    PER_HEAP_FIELD BOOL      background_overflow_p;
 #else
-    PER_HEAP
-    uint8_t*  background_min_overflow_address;
+    PER_HEAP_FIELD uint8_t*  background_min_overflow_address;
 
-    PER_HEAP
-    uint8_t*  background_max_overflow_address;
+    PER_HEAP_FIELD uint8_t*  background_max_overflow_address;
 
-    PER_HEAP
-    uint8_t*  background_min_soh_overflow_address;
+    PER_HEAP_FIELD uint8_t*  background_min_soh_overflow_address;
 
-    PER_HEAP
-    uint8_t*  background_max_soh_overflow_address;
+    PER_HEAP_FIELD uint8_t*  background_max_soh_overflow_address;
 
-    PER_HEAP
-    heap_segment* saved_overflow_ephemeral_seg;
+    PER_HEAP_FIELD heap_segment* saved_overflow_ephemeral_seg;
 
-    PER_HEAP
-    heap_segment* saved_sweep_ephemeral_seg;
+    PER_HEAP_FIELD heap_segment* saved_sweep_ephemeral_seg;
 
-    PER_HEAP
-    uint8_t* saved_sweep_ephemeral_start;
+    PER_HEAP_FIELD uint8_t* saved_sweep_ephemeral_start;
 #endif //!USE_REGIONS
 
-    PER_HEAP
-    uint8_t* background_saved_lowest_address;
+    PER_HEAP_FIELD uint8_t* background_saved_lowest_address;
 
-    PER_HEAP
-    uint8_t* background_saved_highest_address;
+    PER_HEAP_FIELD uint8_t* background_saved_highest_address;
 
     // This is used for synchronization between the bgc thread
     // for this heap and the user threads allocating on this
     // heap.
-    PER_HEAP
-    exclusive_sync* bgc_alloc_lock;
+    PER_HEAP_FIELD exclusive_sync* bgc_alloc_lock;
 
 #ifdef SNOOP_STATS
-    PER_HEAP
-    snoop_stats_data snoop_stat;
+    PER_HEAP_FIELD snoop_stats_data snoop_stat;
 #endif //SNOOP_STATS
 
 
-    PER_HEAP
-    uint8_t**          c_mark_list;
+    PER_HEAP_FIELD uint8_t**          c_mark_list;
 
-    PER_HEAP
-    size_t          c_mark_list_length;
+    PER_HEAP_FIELD size_t          c_mark_list_length;
 
-    PER_HEAP
-    size_t          c_mark_list_index;
+    PER_HEAP_FIELD size_t          c_mark_list_index;
 #endif //BACKGROUND_GC
 
-    PER_HEAP
-    uint8_t** mark_list;
+    PER_HEAP_FIELD uint8_t** mark_list;
 
-    PER_HEAP_ISOLATED
-    size_t mark_list_size;
+    PER_HEAP_ISOLATED_FIELD size_t mark_list_size;
 
-    PER_HEAP_ISOLATED
-    bool mark_list_overflow;
+    PER_HEAP_ISOLATED_FIELD bool mark_list_overflow;
 
-    PER_HEAP
-    uint8_t** mark_list_end;
+    PER_HEAP_FIELD uint8_t** mark_list_end;
 
-    PER_HEAP
-    uint8_t** mark_list_index;
+    PER_HEAP_FIELD uint8_t** mark_list_index;
 
-    PER_HEAP_ISOLATED
-    uint8_t** g_mark_list;
-    PER_HEAP_ISOLATED
-    uint8_t** g_mark_list_copy;
-    PER_HEAP
-    uint8_t*** mark_list_piece_start;
-    PER_HEAP
-    uint8_t*** mark_list_piece_end;
+    PER_HEAP_ISOLATED_FIELD uint8_t** g_mark_list;
+    PER_HEAP_ISOLATED_FIELD uint8_t** g_mark_list_copy;
+    PER_HEAP_FIELD uint8_t*** mark_list_piece_start;
+    PER_HEAP_FIELD uint8_t*** mark_list_piece_end;
 #ifdef USE_REGIONS
     // REGIONS TODO: these are allocated separately but should really be part
     // of GC's book keeping datastructures.
-    PER_HEAP_ISOLATED
-    size_t g_mark_list_piece_size;
-    PER_HEAP_ISOLATED
-    uint8_t*** g_mark_list_piece;
+    PER_HEAP_ISOLATED_FIELD size_t g_mark_list_piece_size;
+    PER_HEAP_ISOLATED_FIELD uint8_t*** g_mark_list_piece;
 #endif //USE_REGIONS
 
-    PER_HEAP
-    uint8_t*  min_overflow_address;
+    PER_HEAP_FIELD uint8_t*  min_overflow_address;
 
-    PER_HEAP
-    uint8_t*  max_overflow_address;
+    PER_HEAP_FIELD uint8_t*  max_overflow_address;
 
 #ifndef MULTIPLE_HEAPS
-    PER_HEAP
-    uint8_t*  shigh; //keeps track of the highest marked object
+    PER_HEAP_FIELD uint8_t*  shigh; //keeps track of the highest marked object
 
-    PER_HEAP
-    uint8_t*  slow; //keeps track of the lowest marked object
+    PER_HEAP_FIELD uint8_t*  slow; //keeps track of the lowest marked object
 #endif //MULTIPLE_HEAPS
 
-    PER_HEAP
-    size_t allocation_quantum;
+    PER_HEAP_FIELD size_t allocation_quantum;
 
-    PER_HEAP
-    size_t alloc_contexts_used;
+    PER_HEAP_FIELD size_t alloc_contexts_used;
 
-    PER_HEAP_ISOLATED
-    no_gc_region_info current_no_gc_region_info;
+    PER_HEAP_ISOLATED_FIELD no_gc_region_info current_no_gc_region_info;
 
-    PER_HEAP
-    size_t soh_allocation_no_gc;
+    PER_HEAP_FIELD size_t soh_allocation_no_gc;
 
-    PER_HEAP
-    size_t loh_allocation_no_gc;
+    PER_HEAP_FIELD size_t loh_allocation_no_gc;
 
-    PER_HEAP
-    bool no_gc_oom_p;
+    PER_HEAP_FIELD bool no_gc_oom_p;
 
-    PER_HEAP
-    heap_segment* saved_loh_segment_no_gc;
+    PER_HEAP_FIELD heap_segment* saved_loh_segment_no_gc;
 
-    PER_HEAP_ISOLATED
-    BOOL proceed_with_gc_p;
+    PER_HEAP_ISOLATED_FIELD BOOL proceed_with_gc_p;
 
 #ifdef MULTIPLE_HEAPS
-    PER_HEAP_ISOLATED
-    BOOL gradual_decommit_in_progress_p;
+    PER_HEAP_ISOLATED_FIELD BOOL gradual_decommit_in_progress_p;
 
-    PER_HEAP_ISOLATED
-    size_t max_decommit_step_size;
+    PER_HEAP_ISOLATED_FIELD size_t max_decommit_step_size;
 #endif //MULTIPLE_HEAPS
 
 #define youngest_generation (generation_of (0))
@@ -4591,41 +3736,31 @@ protected:
     // 2) to synchronize allocations of large objects (more_space_lock_uoh)
     // 3) to synchronize the GC itself (gc_lock)
     //
-    PER_HEAP_ISOLATED
-    GCSpinLock gc_lock; //lock while doing GC
+    PER_HEAP_ISOLATED_FIELD GCSpinLock gc_lock; //lock while doing GC
 
-    PER_HEAP
-    GCSpinLock more_space_lock_soh; //lock while allocating more space for soh
+    PER_HEAP_FIELD GCSpinLock more_space_lock_soh; //lock while allocating more space for soh
 
-    PER_HEAP
-    GCSpinLock more_space_lock_uoh;
+    PER_HEAP_FIELD GCSpinLock more_space_lock_uoh;
 
 #ifdef SYNCHRONIZATION_STATS
 
-    PER_HEAP
-    unsigned int good_suspension;
+    PER_HEAP_FIELD unsigned int good_suspension;
 
-    PER_HEAP
-    unsigned int bad_suspension;
+    PER_HEAP_FIELD unsigned int bad_suspension;
 
     // Number of times when msl_acquire is > 200 cycles.
-    PER_HEAP
-    unsigned int num_high_msl_acquire;
+    PER_HEAP_FIELD unsigned int num_high_msl_acquire;
 
     // Number of times when msl_acquire is < 200 cycles.
-    PER_HEAP
-    unsigned int num_low_msl_acquire;
+    PER_HEAP_FIELD unsigned int num_low_msl_acquire;
 
     // Number of times the more_space_lock is acquired.
-    PER_HEAP
-    unsigned int num_msl_acquired;
+    PER_HEAP_FIELD unsigned int num_msl_acquired;
 
     // Total cycles it takes to acquire the more_space_lock.
-    PER_HEAP
-    uint64_t total_msl_acquire;
+    PER_HEAP_FIELD uint64_t total_msl_acquire;
 
-    PER_HEAP
-    void init_heap_sync_stats()
+    PER_HEAP_METHOD void init_heap_sync_stats()
     {
         good_suspension = 0;
         bad_suspension = 0;
@@ -4637,8 +3772,7 @@ protected:
         gc_lock.init();
     }
 
-    PER_HEAP
-    void print_heap_sync_stats(unsigned int heap_num, unsigned int gc_count_during_log)
+    PER_HEAP_METHOD void print_heap_sync_stats(unsigned int heap_num, unsigned int gc_count_during_log)
     {
         printf("%2d%2d%10u%10u%12u%6u%4u%8u(%4u,%4u,%4u,%4u)\n",
             heap_num,
@@ -4662,8 +3796,7 @@ protected:
     // the "BITS" number here is the highest bit in 64*1024 - 1, zero-based as in BitScanReverse.
     // see first_suitable_bucket(size_t size) for details.
 #define BASE_LOH_ALIST_BITS (15)
-    PER_HEAP
-    alloc_list loh_alloc_list[NUM_LOH_ALIST-1];
+    PER_HEAP_FIELD alloc_list loh_alloc_list[NUM_LOH_ALIST-1];
 
 #define NUM_GEN2_ALIST (12)
 #ifdef HOST_64BIT
@@ -4673,14 +3806,12 @@ protected:
     // bucket 0 contains sizes less than 128
 #define BASE_GEN2_ALIST_BITS (6)
 #endif // HOST_64BIT
-    PER_HEAP
-    alloc_list gen2_alloc_list[NUM_GEN2_ALIST-1];
+    PER_HEAP_FIELD alloc_list gen2_alloc_list[NUM_GEN2_ALIST-1];
 
 #define NUM_POH_ALIST (19)
     // bucket 0 contains sizes less than 256
 #define BASE_POH_ALIST_BITS (7)
-    PER_HEAP
-    alloc_list poh_alloc_list[NUM_POH_ALIST-1];
+    PER_HEAP_FIELD alloc_list poh_alloc_list[NUM_POH_ALIST-1];
 
 #ifdef DOUBLY_LINKED_FL
     // For bucket 0 added list, we don't want to have to go through
@@ -4689,18 +3820,15 @@ protected:
     // need to deduct the size from free_list_space.
     // Note that we should really move this and the free_list_space
     // accounting into the alloc_list class.
-    PER_HEAP
-    size_t gen2_removed_no_undo;
+    PER_HEAP_FIELD size_t gen2_removed_no_undo;
 
 #define INVALID_SAVED_PINNED_PLUG_INDEX ((size_t)~0)
 
-    PER_HEAP
-    size_t saved_pinned_plug_index;
+    PER_HEAP_FIELD size_t saved_pinned_plug_index;
 #endif //DOUBLY_LINKED_FL
 
 #ifdef FEATURE_EVENT_TRACE
-    PER_HEAP_ISOLATED
-    bool informational_event_enabled_p;
+    PER_HEAP_ISOLATED_FIELD bool informational_event_enabled_p;
 
     // Time is all in microseconds here. These are times recorded during STW.
     //
@@ -4725,16 +3853,13 @@ protected:
         max_compact_time_type = 8
     };
 
-    PER_HEAP_ISOLATED
-    uint64_t* gc_time_info;
+    PER_HEAP_ISOLATED_FIELD uint64_t* gc_time_info;
 
 #ifdef BACKGROUND_GC
-    PER_HEAP_ISOLATED
-    uint64_t* bgc_time_info;
+    PER_HEAP_ISOLATED_FIELD uint64_t* bgc_time_info;
 #endif //BACKGROUND_GC
 
-    PER_HEAP_ISOLATED
-    void record_mark_time (uint64_t& mark_time,
+    PER_HEAP_ISOLATED_METHOD void record_mark_time (uint64_t& mark_time,
                            uint64_t& current_mark_time,
                            uint64_t& last_mark_time);
 
@@ -4750,42 +3875,31 @@ protected:
     // This event is only to give us a rough idea of the largest gen2 fl
     // items or plugs that we had to allocate in condemned. We only fire
     // these events on verbose level and stop at max_etw_item_count items.
-    PER_HEAP
-    etw_bucket_info bucket_info[NUM_GEN2_ALIST];
+    PER_HEAP_FIELD etw_bucket_info bucket_info[NUM_GEN2_ALIST];
 
-    PER_HEAP
-    void init_bucket_info();
+    PER_HEAP_METHOD void init_bucket_info();
 
-    PER_HEAP
-    void add_plug_in_condemned_info (generation* gen, size_t plug_size);
+    PER_HEAP_METHOD void add_plug_in_condemned_info (generation* gen, size_t plug_size);
 
-    PER_HEAP
-    void fire_etw_allocation_event (size_t allocation_amount,
+    PER_HEAP_METHOD void fire_etw_allocation_event (size_t allocation_amount,
                                     int gen_number,
                                     uint8_t* object_address,
                                     size_t object_size);
 
-    PER_HEAP
-    void fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject);
+    PER_HEAP_METHOD void fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject);
 
     // config stuff
-    PER_HEAP_ISOLATED
-    size_t physical_memory_from_config;
+    PER_HEAP_ISOLATED_FIELD size_t physical_memory_from_config;
 
-    PER_HEAP_ISOLATED
-    size_t gen0_min_budget_from_config;
+    PER_HEAP_ISOLATED_FIELD size_t gen0_min_budget_from_config;
 
-    PER_HEAP_ISOLATED
-    size_t gen0_max_budget_from_config;
+    PER_HEAP_ISOLATED_FIELD size_t gen0_max_budget_from_config;
 
-    PER_HEAP_ISOLATED
-    int high_mem_percent_from_config;
+    PER_HEAP_ISOLATED_FIELD int high_mem_percent_from_config;
 
-    PER_HEAP_ISOLATED
-    bool use_frozen_segments_p;
+    PER_HEAP_ISOLATED_FIELD bool use_frozen_segments_p;
 
-    PER_HEAP_ISOLATED
-    bool hard_limit_config_p;
+    PER_HEAP_ISOLATED_FIELD bool hard_limit_config_p;
 
 #ifdef FEATURE_LOH_COMPACTION
     // This records the LOH compaction info -
@@ -4805,104 +3919,74 @@ protected:
         size_t zero_refs;
     };
 
-    PER_HEAP_ISOLATED
-    etw_loh_compact_info* loh_compact_info;
+    PER_HEAP_ISOLATED_FIELD etw_loh_compact_info* loh_compact_info;
 
-    PER_HEAP
-    void loh_reloc_survivor_helper (uint8_t** pval,
+    PER_HEAP_METHOD void loh_reloc_survivor_helper (uint8_t** pval,
                                     size_t& total_refs,
                                     size_t& zero_refs);
 #endif //FEATURE_LOH_COMPACTION
 #endif //FEATURE_EVENT_TRACE
 
-    PER_HEAP
-    dynamic_data dynamic_data_table [total_generation_count];
+    PER_HEAP_FIELD dynamic_data dynamic_data_table [total_generation_count];
 
-    PER_HEAP
-    gc_history_per_heap gc_data_per_heap;
+    PER_HEAP_FIELD gc_history_per_heap gc_data_per_heap;
 
-    PER_HEAP
-    size_t total_promoted_bytes;
+    PER_HEAP_FIELD size_t total_promoted_bytes;
 
-    PER_HEAP
-    size_t finalization_promoted_bytes;
+    PER_HEAP_FIELD size_t finalization_promoted_bytes;
 
-    PER_HEAP
-    size_t maxgen_pinned_compact_before_advance;
+    PER_HEAP_FIELD size_t maxgen_pinned_compact_before_advance;
 
     // dynamic tuning.
-    PER_HEAP
-    BOOL dt_low_ephemeral_space_p (gc_tuning_point tp);
+    PER_HEAP_METHOD BOOL dt_low_ephemeral_space_p (gc_tuning_point tp);
     // if elevate_p is FALSE, it means we are determining fragmentation for a generation
     // to see if we should condemn this gen; otherwise it means we are determining if
     // we should elevate to doing max_gen from an ephemeral gen.
-    PER_HEAP
-    BOOL dt_high_frag_p (gc_tuning_point tp, int gen_number, BOOL elevate_p=FALSE);
-    PER_HEAP
-    BOOL
-    dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number);
-    PER_HEAP
-    BOOL dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t available_mem);
-    PER_HEAP
-    BOOL dt_low_card_table_efficiency_p (gc_tuning_point tp);
+    PER_HEAP_METHOD BOOL dt_high_frag_p (gc_tuning_point tp, int gen_number, BOOL elevate_p=FALSE);
+    PER_HEAP_METHOD BOOL dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number);
+    PER_HEAP_METHOD BOOL dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t available_mem);
+    PER_HEAP_METHOD BOOL dt_low_card_table_efficiency_p (gc_tuning_point tp);
 
-    PER_HEAP
-    int generation_skip_ratio;//in %
+    PER_HEAP_FIELD int generation_skip_ratio;//in %
 
 #ifdef FEATURE_CARD_MARKING_STEALING
-    PER_HEAP
-    VOLATILE(size_t) n_eph_soh;
-    PER_HEAP
-    VOLATILE(size_t) n_gen_soh;
-    PER_HEAP
-    VOLATILE(size_t) n_eph_loh;
-    PER_HEAP
-    VOLATILE(size_t) n_gen_loh;
+    PER_HEAP_METHOD VOLATILE(size_t) n_eph_soh;
+    PER_HEAP_METHOD VOLATILE(size_t) n_gen_soh;
+    PER_HEAP_METHOD VOLATILE(size_t) n_eph_loh;
+    PER_HEAP_METHOD VOLATILE(size_t) n_gen_loh;
 #endif //FEATURE_CARD_MARKING_STEALING
 
-    PER_HEAP_ISOLATED
-    int generation_skip_ratio_threshold;
+    PER_HEAP_ISOLATED_FIELD int generation_skip_ratio_threshold;
 
-    PER_HEAP_ISOLATED
-    int conserve_mem_setting;
+    PER_HEAP_ISOLATED_FIELD int conserve_mem_setting;
 
-    PER_HEAP
-    BOOL gen0_bricks_cleared;
-    PER_HEAP
-    int gen0_must_clear_bricks;
+    PER_HEAP_FIELD BOOL gen0_bricks_cleared;
+    PER_HEAP_FIELD int gen0_must_clear_bricks;
 
-    PER_HEAP_ISOLATED
-    bool maxgen_size_inc_p;
+    PER_HEAP_ISOLATED_FIELD bool maxgen_size_inc_p;
 
-    PER_HEAP_ISOLATED
-    size_t full_gc_counts[gc_type_max];
+    PER_HEAP_ISOLATED_FIELD size_t full_gc_counts[gc_type_max];
 
     // the # of bytes allocates since the last full compacting GC.
-    PER_HEAP
-    uint64_t loh_alloc_since_cg;
+    PER_HEAP_FIELD uint64_t loh_alloc_since_cg;
 
-    PER_HEAP
-    BOOL elevation_requested;
+    PER_HEAP_FIELD BOOL elevation_requested;
 
     // if this is TRUE, we should always guarantee that we do a
     // full compacting GC before we OOM.
-    PER_HEAP
-    BOOL last_gc_before_oom;
+    PER_HEAP_FIELD BOOL last_gc_before_oom;
 
-    PER_HEAP_ISOLATED
-    BOOL should_expand_in_full_gc;
+    PER_HEAP_ISOLATED_FIELD BOOL should_expand_in_full_gc;
 
     // When we decide if we should expand the heap or not, we are
     // fine NOT to expand if we find enough free space in gen0's free
     // list or end of seg and we check this in decide_on_compacting.
     // This is an expensive check so we just record the fact and not
     // need to check in the allocator again.
-    PER_HEAP
-    BOOL sufficient_gen0_space_p;
+    PER_HEAP_FIELD BOOL sufficient_gen0_space_p;
 
 #ifdef MULTIPLE_HEAPS
-    PER_HEAP
-    bool gen0_allocated_after_gc_p;
+    PER_HEAP_FIELD bool gen0_allocated_after_gc_p;
 #endif //MULTIPLE_HEAPS
 
     // A provisional mode means we could change our mind in the middle of a GC
@@ -4920,11 +4004,9 @@ protected:
     // gen1 needs to increase the gen2 size, in which case we finish up
     // the current gen1 as a sweeping GC and immediately do a compacting
     // full GC instead (without restarting EE).
-    PER_HEAP_ISOLATED
-    bool provisional_mode_triggered;
+    PER_HEAP_ISOLATED_FIELD bool provisional_mode_triggered;
 
-    PER_HEAP_ISOLATED
-    bool pm_trigger_full_gc;
+    PER_HEAP_ISOLATED_FIELD bool pm_trigger_full_gc;
 
     // For testing only BEG
     // pm_stress_on currently means (since we just have one mode) we
@@ -4932,125 +4014,89 @@ protected:
     // turn it off.
     // NOTE that this means concurrent will be disabled so we can
     // simulate what this mode is supposed to be used.
-    PER_HEAP_ISOLATED
-    bool pm_stress_on;
+    PER_HEAP_ISOLATED_FIELD bool pm_stress_on;
 
-    PER_HEAP_ISOLATED
-    size_t provisional_triggered_gc_count;
+    PER_HEAP_ISOLATED_FIELD size_t provisional_triggered_gc_count;
 
-    PER_HEAP_ISOLATED
-    size_t provisional_off_gc_count;
+    PER_HEAP_ISOLATED_FIELD size_t provisional_off_gc_count;
     // For testing only END
 
-    PER_HEAP_ISOLATED
-    size_t num_provisional_triggered;
+    PER_HEAP_ISOLATED_FIELD size_t num_provisional_triggered;
 
-    PER_HEAP
-    size_t allocated_since_last_gc[total_oh_count];
+    PER_HEAP_FIELD size_t allocated_since_last_gc[total_oh_count];
 
 #ifdef BACKGROUND_GC
-    PER_HEAP_ISOLATED
-    size_t ephemeral_fgc_counts[max_generation];
+    PER_HEAP_ISOLATED_FIELD size_t ephemeral_fgc_counts[max_generation];
 
-    PER_HEAP_ISOLATED
-    BOOL alloc_wait_event_p;
+    PER_HEAP_ISOLATED_FIELD BOOL alloc_wait_event_p;
 
-    PER_HEAP
-    uint8_t* next_sweep_obj;
+    PER_HEAP_FIELD uint8_t* next_sweep_obj;
 
-    PER_HEAP
-    uint8_t* current_sweep_pos;
+    PER_HEAP_FIELD uint8_t* current_sweep_pos;
 
 #ifdef DOUBLY_LINKED_FL
-    PER_HEAP
-    heap_segment* current_sweep_seg;
+    PER_HEAP_FIELD heap_segment* current_sweep_seg;
 #endif //DOUBLY_LINKED_FL
 #endif //BACKGROUND_GC
 
-    PER_HEAP
-    fgm_history fgm_result;
+    PER_HEAP_FIELD fgm_history fgm_result;
 
-    PER_HEAP_ISOLATED
-    size_t eph_gen_starts_size;
+    PER_HEAP_ISOLATED_FIELD size_t eph_gen_starts_size;
 
 #ifdef GC_CONFIG_DRIVEN
     // 0 stores compacting GCs;
     // 1 stores sweeping GCs;
-    PER_HEAP_ISOLATED
-    size_t compact_or_sweep_gcs[2];
+    PER_HEAP_ISOLATED_FIELD size_t compact_or_sweep_gcs[2];
 
-    PER_HEAP
-    size_t interesting_data_per_gc[max_idp_count];
+    PER_HEAP_FIELD size_t interesting_data_per_gc[max_idp_count];
 #endif //GC_CONFIG_DRIVEN
 
-    PER_HEAP
-    BOOL        ro_segments_in_range;
+    PER_HEAP_FIELD BOOL        ro_segments_in_range;
 
 #ifdef BACKGROUND_GC
-    PER_HEAP
-    heap_segment* freeable_soh_segment;
+    PER_HEAP_FIELD heap_segment* freeable_soh_segment;
 #endif //BACKGROUND_GC
 
-    PER_HEAP
-    heap_segment* freeable_uoh_segment;
+    PER_HEAP_FIELD heap_segment* freeable_uoh_segment;
 
-#ifndef USE_REGIONS
-    PER_HEAP_ISOLATED
-    heap_segment* segment_standby_list;
-#endif
+    PER_HEAP_ISOLATED_FIELD heap_segment* segment_standby_list;
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED
-    region_free_list global_regions_to_decommit[count_free_region_kinds];
+    PER_HEAP_ISOLATED_FIELD region_free_list global_regions_to_decommit[count_free_region_kinds];
 
-    PER_HEAP_ISOLATED
-    region_free_list global_free_huge_regions;
+    PER_HEAP_ISOLATED_FIELD region_free_list global_free_huge_regions;
 #endif //USE_REGIONS
 
-    PER_HEAP
-    size_t ordered_free_space_indices[MAX_NUM_BUCKETS];
+    PER_HEAP_FIELD size_t ordered_free_space_indices[MAX_NUM_BUCKETS];
 
-    PER_HEAP
-    size_t saved_ordered_free_space_indices[MAX_NUM_BUCKETS];
+    PER_HEAP_FIELD size_t saved_ordered_free_space_indices[MAX_NUM_BUCKETS];
 
-    PER_HEAP
-    size_t ordered_plug_indices[MAX_NUM_BUCKETS];
+    PER_HEAP_FIELD size_t ordered_plug_indices[MAX_NUM_BUCKETS];
 
-    PER_HEAP
-    size_t saved_ordered_plug_indices[MAX_NUM_BUCKETS];
+    PER_HEAP_FIELD size_t saved_ordered_plug_indices[MAX_NUM_BUCKETS];
 
-    PER_HEAP
-    BOOL ordered_plug_indices_init;
+    PER_HEAP_FIELD BOOL ordered_plug_indices_init;
 
-    PER_HEAP
-    BOOL use_bestfit;
+    PER_HEAP_FIELD BOOL use_bestfit;
 
-    PER_HEAP
-    uint8_t* bestfit_first_pin;
+    PER_HEAP_FIELD uint8_t* bestfit_first_pin;
 
-    PER_HEAP
-    BOOL commit_end_of_seg;
+    PER_HEAP_FIELD BOOL commit_end_of_seg;
 
-    PER_HEAP
-    size_t max_free_space_items; // dynamically adjusted.
+    PER_HEAP_FIELD size_t max_free_space_items; // dynamically adjusted.
 
-    PER_HEAP
-    size_t free_space_buckets;
+    PER_HEAP_FIELD size_t free_space_buckets;
 
-    PER_HEAP
-    size_t free_space_items;
+    PER_HEAP_FIELD size_t free_space_items;
 
     // -1 means we are using all the free
     // spaces we have (not including
     // end of seg space).
-    PER_HEAP
-    int trimmed_free_space_index;
+    PER_HEAP_FIELD int trimmed_free_space_index;
 
-    PER_HEAP
-    size_t total_ephemeral_plugs;
+    PER_HEAP_FIELD size_t total_ephemeral_plugs;
 
-    PER_HEAP
-    seg_free_spaces* bestfit_seg;
+    PER_HEAP_FIELD seg_free_spaces* bestfit_seg;
 
     // Note: we know this from the plan phase.
     // total_ephemeral_plugs actually has the same value
@@ -5058,93 +4104,70 @@ protected:
     // info on how big the plugs are for best fit which we
     // don't do in plan phase.
     // TODO: get rid of total_ephemeral_plugs.
-    PER_HEAP
-    size_t total_ephemeral_size;
+    PER_HEAP_FIELD size_t total_ephemeral_size;
 
 public:
 
 #ifdef HEAP_ANALYZE
 
-    PER_HEAP_ISOLATED
-    BOOL heap_analyze_enabled;
+    PER_HEAP_ISOLATED_FIELD BOOL heap_analyze_enabled;
 
-    PER_HEAP
-    size_t internal_root_array_length;
+    PER_HEAP_FIELD size_t internal_root_array_length;
 
     // next two fields are used to optimize the search for the object
     // enclosing the current reference handled by ha_mark_object_simple.
-    PER_HEAP
-    uint8_t*  current_obj;
+    PER_HEAP_FIELD uint8_t*  current_obj;
 
-    PER_HEAP
-    size_t current_obj_size;
+    PER_HEAP_FIELD size_t current_obj_size;
 
 #endif //HEAP_ANALYZE
 
 public:
 
-    PER_HEAP
-    int         condemned_generation_num;
+    PER_HEAP_FIELD int         condemned_generation_num;
 
-    PER_HEAP
-    BOOL        blocking_collection;
+    PER_HEAP_FIELD BOOL        blocking_collection;
 
 #ifdef MULTIPLE_HEAPS
-    static
-    int n_heaps;
+    PER_HEAP_ISOLATED_FIELD int n_heaps;
 
-    static
-    gc_heap** g_heaps;
+    PER_HEAP_ISOLATED_FIELD gc_heap** g_heaps;
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)
-    static
-    size_t*   g_promoted;
+    PER_HEAP_ISOLATED_FIELD size_t*   g_promoted;
 #endif //!USE_REGIONS || _DEBUG
 
 #ifdef BACKGROUND_GC
-    static
-    size_t*   g_bpromoted;
+    PER_HEAP_ISOLATED_FIELD size_t*   g_bpromoted;
 #endif //BACKGROUND_GC
 #ifdef MH_SC_MARK
-    PER_HEAP_ISOLATED
-    int*  g_mark_stack_busy;
+    PER_HEAP_ISOLATED_FIELD int*  g_mark_stack_busy;
 #endif //MH_SC_MARK
 #else
 #if !defined(USE_REGIONS) || defined(_DEBUG)
-    static
-    size_t    g_promoted;
+    PER_HEAP_ISOLATED_FIELD size_t    g_promoted;
 #endif //!USE_REGIONS || _DEBUG
 #ifdef BACKGROUND_GC
-    static
-    size_t    g_bpromoted;
+    PER_HEAP_ISOLATED_FIELD size_t    g_bpromoted;
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
 
-    static
-    size_t reserved_memory;
-    static
-    size_t reserved_memory_limit;
-    static
-    BOOL      g_low_memory_status;
+    PER_HEAP_ISOLATED_FIELD size_t reserved_memory;
+    PER_HEAP_ISOLATED_FIELD size_t reserved_memory_limit;
+    PER_HEAP_ISOLATED_FIELD BOOL      g_low_memory_status;
 
 #ifdef FEATURE_CARD_MARKING_STEALING
-    PER_HEAP
-    VOLATILE(uint32_t)    card_mark_chunk_index_soh;
+    PER_HEAP_METHOD VOLATILE(uint32_t)    card_mark_chunk_index_soh;
 
-    PER_HEAP
-    VOLATILE(bool)        card_mark_done_soh;
+    PER_HEAP_METHOD VOLATILE(bool)        card_mark_done_soh;
 
-    PER_HEAP
-    VOLATILE(uint32_t)    card_mark_chunk_index_loh;
+    PER_HEAP_METHOD VOLATILE(uint32_t)    card_mark_chunk_index_loh;
 
-    PER_HEAP
-    VOLATILE(uint32_t)    card_mark_chunk_index_poh;
+    PER_HEAP_METHOD VOLATILE(uint32_t)    card_mark_chunk_index_poh;
 
-    PER_HEAP
-    VOLATILE(bool)        card_mark_done_uoh;
+    PER_HEAP_METHOD VOLATILE(bool)        card_mark_done_uoh;
 
-    PER_HEAP
-    void reset_card_marking_enumerators()
+    PER_HEAP_METHOD void reset_card_marking_enumerators()
     {
         // set chunk index to all 1 bits so that incrementing it yields 0 as the first index
         card_mark_chunk_index_soh = ~0;
@@ -5155,40 +4178,30 @@ public:
         card_mark_done_uoh = false;
     }
 
-    PER_HEAP
-    bool find_next_chunk(card_marking_enumerator& card_mark_enumerator, heap_segment* seg,
+    PER_HEAP_METHOD bool find_next_chunk(card_marking_enumerator& card_mark_enumerator, heap_segment* seg,
                          size_t& n_card_set, uint8_t*& start_address, uint8_t*& limit,
                          size_t& card, size_t& end_card, size_t& card_word_end);
 #endif //FEATURE_CARD_MARKING_STEALING
 
-    PER_HEAP_ISOLATED
-    size_t smoothed_desired_per_heap[total_generation_count];
+    PER_HEAP_ISOLATED_FIELD size_t smoothed_desired_per_heap[total_generation_count];
 
-    PER_HEAP_ISOLATED
-    size_t exponential_smoothing (int gen, size_t collection_count, size_t desired_per_heap);
+    PER_HEAP_ISOLATED_METHOD size_t exponential_smoothing (int gen, size_t collection_count, size_t desired_per_heap);
 
-    PER_HEAP_ISOLATED
-    BOOL dt_high_memory_load_p();
+    PER_HEAP_ISOLATED_METHOD BOOL dt_high_memory_load_p();
 
 protected:
-    PER_HEAP
-    void update_collection_counts ();
+    PER_HEAP_METHOD void update_collection_counts ();
 
-    PER_HEAP_ISOLATED
-    size_t card_table_element_layout[total_bookkeeping_elements + 1];
+    PER_HEAP_ISOLATED_FIELD size_t card_table_element_layout[total_bookkeeping_elements + 1];
 
 #ifdef USE_REGIONS
-    PER_HEAP_ISOLATED
-    uint8_t* bookkeeping_covered_start;
+    PER_HEAP_ISOLATED_FIELD uint8_t* bookkeeping_covered_start;
 
-    PER_HEAP_ISOLATED
-    uint8_t* bookkeeping_covered_committed;
+    PER_HEAP_ISOLATED_FIELD uint8_t* bookkeeping_covered_committed;
 
-    PER_HEAP_ISOLATED
-    size_t bookkeeping_sizes[total_bookkeeping_elements];
+    PER_HEAP_ISOLATED_FIELD size_t bookkeeping_sizes[total_bookkeeping_elements];
 #endif //USE_REGIONS
-    PER_HEAP
-    mark_queue_t mark_queue;
+    PER_HEAP_FIELD mark_queue_t mark_queue;
 }; // class gc_heap
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION

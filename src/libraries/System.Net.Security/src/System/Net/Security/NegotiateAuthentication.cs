@@ -18,11 +18,11 @@ namespace System.Net.Security
         private readonly NTAuthentication? _ntAuthentication;
         private readonly string _requestedPackage;
         private readonly bool _isServer;
+        private readonly TokenImpersonationLevel _requiredImpersonationLevel;
+        private readonly ProtectionLevel _requiredProtectionLevel;
+        private readonly ExtendedProtectionPolicy? _extendedProtectionPolicy;
+        private readonly bool _isSecureConnection;
         private IIdentity? _remoteIdentity;
-        private TokenImpersonationLevel _requiredImpersonationLevel;
-        private ProtectionLevel _requiredProtectionLevel;
-        private ExtendedProtectionPolicy? _extendedProtectionPolicy;
-        private bool _isSecureConnection;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NegotiateAuthentication"/>
