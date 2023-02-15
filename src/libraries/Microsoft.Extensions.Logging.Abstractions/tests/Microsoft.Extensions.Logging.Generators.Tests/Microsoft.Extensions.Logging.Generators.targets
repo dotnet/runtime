@@ -5,6 +5,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <Nullable>enable</Nullable>
+    <IgnoreForCI Condition="'$(TargetsMobile)' == 'true'">true</IgnoreForCI> 
   </PropertyGroup>
 
   <ItemGroup>

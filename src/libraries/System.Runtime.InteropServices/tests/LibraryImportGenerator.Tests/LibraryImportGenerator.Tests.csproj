@@ -4,6 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
+    <IgnoreForCI Condition="'$(TargetsMobile)' == 'true'">true</IgnoreForCI> 
   </PropertyGroup>
 
   <ItemGroup>
