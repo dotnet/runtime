@@ -9,7 +9,7 @@ namespace System.Net.Http
     {
         public HttpRequestError HttpRequestError { get; }
 
-        public HttpResponseReadException(HttpRequestError httpRequestError, string message, Exception? innerException = null)
+        public HttpResponseReadException(HttpRequestError httpRequestError, string? message, Exception? innerException = null)
             : base(message, innerException)
         {
             HttpRequestError = httpRequestError;

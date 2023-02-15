@@ -24,7 +24,17 @@ namespace System.Net.Http
             if (inner != null)
             {
                 HResult = inner.HResult;
+                if (inner is HttpResponseReadException responseReadException)
+                {
+                    HttpRequestError = responseReadException.HttpRequestError;
+                }
             }
+        }
+
+        public HttpRequestException(string? message, Exception? inner, HttpRequestError httpRequestError)
+            : this(message, inner)
+        {
+            HttpRequestError = httpRequestError;
         }
 
         /// <summary>

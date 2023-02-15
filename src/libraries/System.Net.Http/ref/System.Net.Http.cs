@@ -240,9 +240,9 @@ namespace System.Net.Http
         public static bool operator !=(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed class HttpProtocolException : System.IO.IOException
+    public sealed class HttpProtocolException : HttpResponseReadException
     {
-        public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) { }
+        public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) : base(HttpRequestError.HttpProtocolError, message, innerException) { }
         public long ErrorCode { get { throw null; } }
     }
     public partial class HttpRequestException : System.Exception
@@ -250,6 +250,7 @@ namespace System.Net.Http
         public HttpRequestException() { }
         public HttpRequestException(string? message) { }
         public HttpRequestException(string? message, System.Exception? inner) { }
+        public HttpRequestException(string? message, Exception? inner, HttpRequestError httpRequestError) { }
         public HttpRequestException(string? message, System.Exception? inner, System.Net.HttpStatusCode? statusCode) { }
         public HttpRequestException(string? message, Exception? inner, HttpStatusCode? statusCode, HttpRequestError httpRequestError) { }
         public System.Net.HttpStatusCode? StatusCode { get { throw null; } }
@@ -473,7 +474,7 @@ namespace System.Net.Http
     public class HttpResponseReadException : IOException
     {
         public HttpRequestError HttpRequestError { get { throw null; } }
-        public HttpResponseReadException(HttpRequestError httpRequestError, string message, Exception? innerException = null) { }
+        public HttpResponseReadException(HttpRequestError httpRequestError, string? message, Exception? innerException = null) { }
     }
 }
 namespace System.Net.Http.Headers

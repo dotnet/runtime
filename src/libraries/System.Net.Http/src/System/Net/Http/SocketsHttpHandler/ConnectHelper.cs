@@ -88,7 +88,7 @@ namespace System.Net.Http
                     throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
                 }
 
-                HttpRequestException ex = new HttpRequestException(SR.net_http_ssl_connection_failed, e);
+                HttpRequestException ex = new HttpRequestException(SR.net_http_ssl_connection_failed, e, HttpRequestError.SecureConnectionError);
                 if (request.IsExtendedConnectRequest)
                 {
                     // Extended connect request is negotiating strictly for ALPN = "h2" because HttpClient is unaware of a possible downgrade.
@@ -140,25 +140,14 @@ namespace System.Net.Http
                 CancellationHelper.CreateOperationCanceledException(exception, cancellationToken) :
                 new HttpRequestException($"{exception.Message} ({host}:{port})", exception, RequestRetryType.RetryOnNextProxy, DeduceError(exception));
 
-            static HttpRequestError? DeduceError(Exception ex)
+            static HttpRequestError DeduceError(Exception ex)
             {
-                if (ex is SocketException socketEx)
+                if (ex is SocketException socketEx && socketEx.SocketErrorCode == SocketError.HostNotFound)
                 {
-                    return socketEx.SocketErrorCode switch
-                    {
-                        SocketError.HostNotFound => HttpRequestError.NameResolutionError,
-
-                        SocketError.ConnectionAborted or
-                        SocketError.ConnectionRefused or
-                        SocketError.ConnectionReset or
-                        SocketError.NetworkDown or
-                        SocketError.NetworkReset or
-                        SocketError.NetworkUnreachable => HttpRequestError.ConnectionError,
-
-                        _ => HttpRequestError.TransportError,
-                    };
+                    return HttpRequestError.NameResolutionError;
                 }
-                return null;
+
+                return HttpRequestError.ConnectionError;
             }
         }
     }

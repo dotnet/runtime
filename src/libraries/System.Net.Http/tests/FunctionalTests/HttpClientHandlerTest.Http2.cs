@@ -307,6 +307,22 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_IncorrectServerPreface_RequestFailsWithAppropriateHttpProtocolException()
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                Http2LoopbackConnection connection = await server.AcceptConnectionAsync();
+                await connection.ReadSettingsAsync();
+                await connection.SendGoAway(0, ProtocolErrors.INTERNAL_ERROR);
+
+                await AssertProtocolErrorAsync(sendTask, ProtocolErrors.INTERNAL_ERROR);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_StreamResetByServerAfterHeadersSent_RequestFails()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())

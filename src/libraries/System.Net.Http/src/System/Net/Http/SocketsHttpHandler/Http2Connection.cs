@@ -259,6 +259,7 @@ namespace System.Net.Http
                     throw;
                 }
 
+                // TODO: Review this case!
                 throw new IOException(SR.net_http_http2_connection_not_established, e);
             }
 
@@ -494,10 +495,10 @@ namespace System.Net.Http
             return frameHeader;
 
             void ThrowPrematureEOF(int requiredBytes) =>
-                throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
+                throw new HttpResponseReadException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
 
             void ThrowMissingFrame() =>
-                throw new IOException(SR.net_http_invalid_response_missing_frame);
+                throw new HttpResponseReadException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_missing_frame);
         }
 
         private async Task ProcessIncomingFramesAsync()
@@ -529,10 +530,17 @@ namespace System.Net.Http
 
                     Debug.Assert(InitialSettingsReceived.Task.IsCompleted);
                 }
+                catch (HttpProtocolException e)
+                {
+                    // Fix https://github.com/dotnet/runtime/issues/82168
+                    InitialSettingsReceived.TrySetException(e);
+                    throw;
+                }
                 catch (Exception e)
                 {
-                    InitialSettingsReceived.TrySetException(new IOException(SR.net_http_http2_connection_not_established, e));
-                    throw new IOException(SR.net_http_http2_connection_not_established, e);
+                    var ex = new HttpResponseReadException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e);
+                    InitialSettingsReceived.TrySetException(ex);
+                    throw ex;
                 }
 
                 // Keep processing frames as they arrive.

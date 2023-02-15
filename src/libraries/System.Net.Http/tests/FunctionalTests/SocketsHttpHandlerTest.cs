@@ -4277,9 +4277,23 @@ namespace System.Net.Http.Functional.Tests
         public async Task NameResolutionError()
         {
             using HttpClient client = CreateHttpClient();
-            
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, new Uri("http://no-such-host.rly.doesnt.exist"))));
-            Assert.Equal(HttpRequestError.NameResolutionError, ex.HttpRequestError);
+            using HttpRequestMessage message = new(HttpMethod.Get, new Uri("https://no-such-host.rly.doesnt.exist"))
+            {
+                Version = UseVersion,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(message));
+
+            if (UseVersion.Major < 3)
+            {
+                Assert.Equal(HttpRequestError.NameResolutionError, ex.HttpRequestError);
+            }
+            else
+            {
+                // Quic (msquic?) does not report DNS resolution errors
+                Assert.Equal(HttpRequestError.ConnectionError, ex.HttpRequestError);
+            }
         }
     }
 
