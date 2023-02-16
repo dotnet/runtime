@@ -159,6 +159,11 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
         return true;
     }
 
+    if (node->OperConsumesFlags())
+    {
+        return false;
+    }
+
     m_scratchSideEffects.Clear();
     m_scratchSideEffects.AddNode(comp, node);
 
@@ -192,6 +197,21 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const
 {
     assert((node != nullptr) && (endExclusive != nullptr));
+
+    if (ignoreNode == nullptr)
+    {
+        return IsInvariantInRange(node, endExclusive);
+    }
+
+    if ((node->gtNext == endExclusive) || ((node->gtNext == ignoreNode) && (node->gtNext->gtNext == endExclusive)))
+    {
+        return true;
+    }
+
+    if (node->OperConsumesFlags())
+    {
+        return false;
+    }
 
     m_scratchSideEffects.Clear();
     m_scratchSideEffects.AddNode(comp, node);
@@ -3373,7 +3393,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
 //----------------------------------------------------------------------------------------------
 // TryLowerCompareToFlagsNode: Given a node 'parent' that is able to consume
 // conditions from CPU flags, try to transform 'condition' into a node that
-// that produces CPU flags, and reorder it to happen right before 'parent'
+// produces CPU flags, and reorder it to happen right before 'parent'.
 //
 // Arguments:
 //     parent - The parent node that can consume from CPU flags.
@@ -3465,7 +3485,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
     {
         assert((condition->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
         GenTree* flagsProducer = condition->gtPrev;
-        if (!IsInvariantInRange(flagsProducer, parent))
+        if (!IsInvariantInRange(flagsProducer, parent, condition))
         {
             return false;
         }

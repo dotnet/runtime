@@ -1683,7 +1683,16 @@ public:
 
     bool OperIsConditionalJump() const
     {
-        return (gtOper == GT_JTRUE) || (gtOper == GT_JCMP) || (gtOper == GT_JCC);
+        return OperIs(GT_JTRUE, GT_JCMP, GT_JCC);
+    }
+
+    bool OperConsumesFlags() const
+    {
+#if !defined(TARGET_64BIT)
+        if (OperIs(GT_ADD_HI, GT_SUB_HI))
+            return true;
+#endif
+        return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
     }
 
 #ifdef DEBUG

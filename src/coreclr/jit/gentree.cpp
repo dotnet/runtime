@@ -12146,6 +12146,10 @@ void Compiler::gtDispTree(GenTree*     tree,
                     break;
             }
         }
+        else if (tree->OperIs(GT_SELECTCC))
+        {
+            printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
+        }
 
         gtDispCommonEndLine(tree);
 
