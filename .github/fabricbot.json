@@ -1,835 +1,5 @@
 [
   {
-    "taskType": "scheduledAndTrigger",
-    "capabilityId": "IssueRouting",
-    "subCapability": "@Mention",
-    "version": "1.0",
-    "config": {
-      "taskName": "Area-owners",
-      "labelsAndMentions": [
-        {
-          "labels": [
-            "area-System.Security"
-          ],
-          "mentionees": [
-            "dotnet/area-system-security",
-            "vcsjones"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Diagnostics.Tracing"
-          ],
-          "mentionees": [
-            "tarekgh",
-            "tommcdon",
-            "pjanotti"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Linq.Parallel"
-          ],
-          "mentionees": [
-            "dotnet/area-system-linq-parallel"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Text.Encoding"
-          ],
-          "mentionees": [
-            "dotnet/area-system-text-encoding"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Text.Encodings.Web"
-          ],
-          "mentionees": [
-            "dotnet/area-system-text-encodings-web"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Threading.Channels"
-          ],
-          "mentionees": [
-            "dotnet/area-system-threading-channels"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Threading.Tasks"
-          ],
-          "mentionees": [
-            "dotnet/area-system-threading-tasks"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Text.RegularExpressions"
-          ],
-          "mentionees": [
-            "dotnet/area-system-text-regularexpressions"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Transactions"
-          ],
-          "mentionees": [
-            "roji"
-          ]
-        },
-        {
-          "labels": [
-            "area-GC-mono"
-          ],
-          "mentionees": [
-            "brzvlad"
-          ]
-        },
-        {
-          "labels": [
-            "area-Codegen-Interpreter-mono"
-          ],
-          "mentionees": [
-            "brzvlad",
-            "kotlarmilos"
-          ]
-        },
-        {
-          "labels": [
-            "area-Infrastructure-mono"
-          ],
-          "mentionees": [
-            "directhex"
-          ]
-        },
-        {
-          "labels": [
-            "area-AssemblyLoader-mono"
-          ],
-          "mentionees": []
-        },
-        {
-          "labels": [
-            "area-Debugger-mono"
-          ],
-          "mentionees": [
-            "thaystg"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Collections"
-          ],
-          "mentionees": [
-            "dotnet/area-system-collections"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Linq"
-          ],
-          "mentionees": [
-            "dotnet/area-system-linq"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Numerics.Tensors"
-          ],
-          "mentionees": [
-            "dotnet/area-system-numerics-tensors"
-          ]
-        },
-        {
-          "labels": [
-            "area-Host"
-          ],
-          "mentionees": [
-            "vitek-karas",
-            "agocke",
-            "vsadov"
-          ]
-        },
-        {
-          "labels": [
-            "area-HostModel"
-          ],
-          "mentionees": [
-            "vitek-karas",
-            "agocke"
-          ]
-        },
-        {
-          "labels": [
-            "area-Single-File"
-          ],
-          "mentionees": [
-            "agocke",
-            "vitek-karas",
-            "vsadov"
-          ]
-        },
-        {
-          "labels": [
-            "area-Tools-ILLink"
-          ],
-          "mentionees": [
-            "agocke",
-            "sbomer",
-            "vitek-karas"
-          ]
-        },
-        {
-          "labels": [
-            "area-NativeAOT-coreclr"
-          ],
-          "mentionees": [
-            "agocke",
-            "MichalStrehovsky",
-            "jkotas"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Buffers"
-          ],
-          "mentionees": [
-            "dotnet/area-system-buffers"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Numerics"
-          ],
-          "mentionees": [
-            "dotnet/area-system-numerics"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Runtime.Intrinsics"
-          ],
-          "mentionees": [
-            "dotnet/area-system-runtime-intrinsics"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Runtime.InteropServices"
-          ],
-          "mentionees": [
-            "dotnet/interop-contrib"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.CodeDom"
-          ],
-          "mentionees": [
-            "dotnet/area-system-codedom"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Xml"
-          ],
-          "mentionees": [
-            "dotnet/area-system-xml"
-          ]
-        },
-        {
-          "labels": [
-            "area-AssemblyLoader-coreclr"
-          ],
-          "mentionees": [
-            "vitek-karas",
-            "agocke",
-            "vsadov"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Dynamic.Runtime"
-          ],
-          "mentionees": [
-            "cston"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Linq.Expressions"
-          ],
-          "mentionees": [
-            "cston"
-          ]
-        },
-        {
-          "labels": [
-            "area-Microsoft.CSharp"
-          ],
-          "mentionees": [
-            "cston"
-          ]
-        },
-        {
-          "labels": [
-            "area-Microsoft.VisualBasic"
-          ],
-          "mentionees": [
-            "cston"
-          ]
-        },
-        {
-          "labels": [
-            "area-Infrastructure-libraries"
-          ],
-          "mentionees": [
-            "dotnet/area-infrastructure-libraries"
-          ]
-        },
-        {
-          "labels": [
-            "area-Infrastructure"
-          ],
-          "mentionees": [
-            "dotnet/runtime-infrastructure"
-          ]
-        },
-        {
-          "labels": [
-            "area-GC-coreclr"
-          ],
-          "mentionees": [
-            "dotnet/gc"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Net"
-          ],
-          "mentionees": [
-            "dotnet/ncl"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Net.Http"
-          ],
-          "mentionees": [
-            "dotnet/ncl"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Net.Security"
-          ],
-          "mentionees": [
-            "dotnet/ncl",
-            "vcsjones"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Net.Sockets"
-          ],
-          "mentionees": [
-            "dotnet/ncl"
-          ]
-        },
-        {
-          "labels": [
-            "area-Diagnostics-coreclr"
-          ],
-          "mentionees": [
-            "tommcdon"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Diagnostics"
-          ],
-          "mentionees": [
-            "tommcdon"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Data"
-          ],
-          "mentionees": [
-            "roji",
-            "ajcvickers"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Data.OleDB"
-          ],
-          "mentionees": [
-            "roji",
-            "ajcvickers"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Data.Odbc"
-          ],
-          "mentionees": [
-            "roji",
-            "ajcvickers"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Data.SqlClient"
-          ],
-          "mentionees": [
-            "davoudeshtehari",
-            "david-engel",
-            "jrahnama"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.ComponentModel.DataAnnotations"
-          ],
-          "mentionees": [
-            "ajcvickers",
-            "bricelam",
-            "roji"
-          ]
-        },
-        {
-          "labels": [
-            "area-Extensions-FileSystem"
-          ],
-          "mentionees": [
-            "dotnet/area-extensions-filesystem"
-          ]
-        },
-        {
-          "labels": [
-            "area-Extensions-HttpClientFactory"
-          ],
-          "mentionees": [
-            "dotnet/ncl"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Net.Quic"
-          ],
-          "mentionees": [
-            "dotnet/ncl"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Formats.Cbor"
-          ],
-          "mentionees": [
-            "dotnet/area-system-formats-cbor",
-            "vcsjones"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Formats.Asn1"
-          ],
-          "mentionees": [
-            "dotnet/area-system-formats-asn1",
-            "vcsjones"
-          ]
-        },
-        {
-          "labels": [
-            "area-Codegen-JIT-Mono"
-          ],
-          "mentionees": [
-            "SamMonoRT",
-            "vargaz"
-          ]
-        },
-        {
-          "labels": [
-            "area-CodeGen-LLVM-Mono"
-          ],
-          "mentionees": [
-            "SamMonoRT",
-            "vargaz"
-          ]
-        },
-        {
-          "labels": [
-            "area-CodeGen-meta-Mono"
-          ],
-          "mentionees": [
-            "SamMonoRT",
-            "vargaz",
-            "lambdageek"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Text.Json"
-          ],
-          "mentionees": [
-            "dotnet/area-system-text-json",
-            "gregsdennis"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Memory"
-          ],
-          "mentionees": [
-            "dotnet/area-system-memory"
-          ]
-        },
-        {
-          "labels": [
-            "area-Infrastructure-coreclr"
-          ],
-          "mentionees": [
-            "hoyosjs"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.IO"
-          ],
-          "mentionees": [
-            "dotnet/area-system-io"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.IO.Compression"
-          ],
-          "mentionees": [
-            "dotnet/area-system-io-compression"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Diagnostics.Process"
-          ],
-          "mentionees": [
-            "dotnet/area-system-diagnostics-process"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Console"
-          ],
-          "mentionees": [
-            "dotnet/area-system-console"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Runtime"
-          ],
-          "mentionees": [
-            "dotnet/area-system-runtime"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Threading"
-          ],
-          "mentionees": [
-            "mangod9"
-          ]
-        },
-        {
-          "labels": [
-            "area-vm-coreclr"
-          ],
-          "mentionees": [
-            "mangod9"
-          ]
-        },
-        {
-          "labels": [
-            "area-CodeGen-coreclr"
-          ],
-          "mentionees": [
-            "JulieLeeMSFT",
-            "jakobbotsch",
-            "kunalspathak"
-          ]
-        },
-        {
-          "labels": [
-            "area-ILTools-coreclr"
-          ],
-          "mentionees": [
-            "JulieLeeMSFT"
-          ]
-        },
-        {
-          "labels": [
-            "area-ILVerification"
-          ],
-          "mentionees": [
-            "JulieLeeMSFT"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.DirectoryServices"
-          ],
-          "mentionees": [
-            "dotnet/area-system-directoryservices",
-            "jay98014"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Speech"
-          ],
-          "mentionees": [
-            "ericstj",
-            "jeffhandley"
-          ]
-        },
-        {
-          "labels": [
-            "area-Meta"
-          ],
-          "mentionees": [
-            "dotnet/area-meta"
-          ]
-        },
-        {
-          "labels": [
-            "area-DependencyModel"
-          ],
-          "mentionees": [
-            "dotnet/area-dependencymodel"
-          ]
-        },
-        {
-          "labels": [
-            "area-Extensions-Caching"
-          ],
-          "mentionees": [
-            "dotnet/area-extensions-caching"
-          ]
-        },
-        {
-          "labels": [
-            "area-Extensions-Configuration"
-          ],
-          "mentionees": [
-            "dotnet/area-extensions-configuration"
-          ]
-        },
-        {
-          "labels": [
-            "area-Extensions-DependencyInjection"
-          ],
-          "mentionees": [
-            "dotnet/area-extensions-dependencyinjection"
-          ]
-        },
-        {
-          "labels": [
-            "area-Extensions-Hosting"
-          ],
-          "mentionees": [
-            "dotnet/area-extensions-hosting"
-          ]
-        },
-        {
-          "labels": [
-            "area-Extensions-Logging"
-          ],
-          "mentionees": [
-            "dotnet/area-extensions-logging"
-          ]
-        },
-        {
-          "labels": [
-            "area-Extensions-Options"
-          ],
-          "mentionees": [
-            "dotnet/area-extensions-options"
-          ]
-        },
-        {
-          "labels": [
-            "area-Extensions-Primitives"
-          ],
-          "mentionees": [
-            "dotnet/area-extensions-primitives"
-          ]
-        },
-        {
-          "labels": [
-            "area-Microsoft.Extensions"
-          ],
-          "mentionees": [
-            "dotnet/area-microsoft-extensions"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.ComponentModel"
-          ],
-          "mentionees": [
-            "dotnet/area-system-componentmodel"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.ComponentModel.Composition"
-          ],
-          "mentionees": [
-            "dotnet/area-system-componentmodel-composition"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Composition"
-          ],
-          "mentionees": [
-            "dotnet/area-system-composition"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Diagnostics.Activity"
-          ],
-          "mentionees": [
-            "dotnet/area-system-diagnostics-activity"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Globalization"
-          ],
-          "mentionees": [
-            "dotnet/area-system-globalization"
-          ]
-        },
-        {
-          "labels": [
-            "area-Microsoft.Win32"
-          ],
-          "mentionees": [
-            "dotnet/area-microsoft-win32"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Diagnostics.EventLog"
-          ],
-          "mentionees": [
-            "dotnet/area-system-diagnostics-eventlog"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Diagnostics.PerformanceCounter"
-          ],
-          "mentionees": [
-            "dotnet/area-system-diagnostics-performancecounter"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Diagnostics.TraceSource"
-          ],
-          "mentionees": [
-            "dotnet/area-system-diagnostics-tracesource"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Drawing"
-          ],
-          "mentionees": [
-            "dotnet/area-system-drawing"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Management"
-          ],
-          "mentionees": [
-            "dotnet/area-system-management"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.ServiceProcess"
-          ],
-          "mentionees": [
-            "dotnet/area-system-serviceprocess"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Configuration"
-          ],
-          "mentionees": [
-            "dotnet/area-system-configuration"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Reflection"
-          ],
-          "mentionees": [
-            "dotnet/area-system-reflection"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Reflection.Emit"
-          ],
-          "mentionees": [
-            "dotnet/area-system-reflection-emit"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Reflection.Metadata"
-          ],
-          "mentionees": [
-            "dotnet/area-system-reflection-metadata"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Resources"
-          ],
-          "mentionees": [
-            "dotnet/area-system-resources"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Runtime.CompilerServices"
-          ],
-          "mentionees": [
-            "dotnet/area-system-runtime-compilerservices"
-          ]
-        }
-      ],
-      "replyTemplate": "Tagging subscribers to this area: ${mentionees}\nSee info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.",
-      "enableForPullRequests": true
-    },
-    "disabled": false
-  },
-  {
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
@@ -918,119 +88,6 @@
       "taskName": "Add breaking change doc label to PR"
     },
     "disabled": false
-  },
-  {
-    "taskType": "scheduledAndTrigger",
-    "capabilityId": "IssueRouting",
-    "subCapability": "@Mention",
-    "version": "1.0",
-    "config": {
-      "taskName": "@Mention for linkable-framework",
-      "labelsAndMentions": [
-        {
-          "labels": [
-            "linkable-framework"
-          ],
-          "mentionees": [
-            "eerhardt",
-            "vitek-karas",
-            "LakshanF",
-            "sbomer",
-            "joperezr"
-          ]
-        }
-      ],
-      "replyTemplate": "Tagging subscribers to 'linkable-framework': ${mentionees}\nSee info in area-owners.md if you want to be subscribed.",
-      "enableForPullRequests": true
-    }
-  },
-  {
-    "taskType": "scheduledAndTrigger",
-    "capabilityId": "IssueRouting",
-    "subCapability": "@Mention",
-    "version": "1.0",
-    "config": {
-      "taskName": "@Mention for size-reduction",
-      "replyTemplate": "Tagging subscribers to 'size-reduction': ${mentionees}\nSee info in area-owners.md if you want to be subscribed.",
-      "labelsAndMentions": [
-        {
-          "labels": [
-            "size-reduction"
-          ],
-          "mentionees": [
-            "eerhardt",
-            "SamMonoRT",
-            "marek-safar"
-          ]
-        }
-      ],
-      "enableForPullRequests": true
-    }
-  },
-  {
-    "taskType": "scheduledAndTrigger",
-    "capabilityId": "IssueRouting",
-    "subCapability": "@Mention",
-    "version": "1.0",
-    "config": {
-      "taskName": "@Mention for wasm",
-      "labelsAndMentions": [
-        {
-          "labels": [
-            "arch-wasm"
-          ],
-          "mentionees": [
-            "lewing"
-          ]
-        }
-      ],
-      "replyTemplate": "Tagging subscribers to 'arch-wasm': ${mentionees}\nSee info in area-owners.md if you want to be subscribed.",
-      "enableForPullRequests": true
-    }
-  },
-  {
-    "taskType": "scheduledAndTrigger",
-    "capabilityId": "IssueRouting",
-    "subCapability": "@Mention",
-    "version": "1.0",
-    "config": {
-      "taskName": "@Mention for ios",
-      "labelsAndMentions": [
-        {
-          "labels": [
-            "os-ios"
-          ],
-          "mentionees": [
-            "steveisok",
-            "akoeplinger"
-          ]
-        }
-      ],
-      "enableForPullRequests": true,
-      "replyTemplate": "Tagging subscribers to 'os-ios': ${mentionees}\nSee info in area-owners.md if you want to be subscribed."
-    }
-  },
-  {
-    "taskType": "scheduledAndTrigger",
-    "capabilityId": "IssueRouting",
-    "subCapability": "@Mention",
-    "version": "1.0",
-    "config": {
-      "taskName": "@Mention for android",
-      "labelsAndMentions": [
-        {
-          "labels": [
-            "os-android"
-          ],
-          "mentionees": [
-            "steveisok",
-            "akoeplinger"
-          ]
-        }
-      ],
-      "enableForPullRequests": true,
-      "replyTemplate": "Tagging subscribers to 'arch-android': ${mentionees}\nSee info in area-owners.md if you want to be subscribed."
-    }
   },
   {
     "taskType": "trigger",
@@ -1473,50 +530,6 @@
           }
         }
       ]
-    }
-  },
-  {
-    "taskType": "scheduledAndTrigger",
-    "capabilityId": "IssueRouting",
-    "subCapability": "@Mention",
-    "version": "1.0",
-    "config": {
-      "taskName": "@Mention for tvos",
-      "labelsAndMentions": [
-        {
-          "labels": [
-            "os-tvos"
-          ],
-          "mentionees": [
-            "steveisok",
-            "akoeplinger"
-          ]
-        }
-      ],
-      "enableForPullRequests": true,
-      "replyTemplate": "Tagging subscribers to 'os-tvos': ${mentionees}\nSee info in area-owners.md if you want to be subscribed."
-    }
-  },
-  {
-    "taskType": "scheduledAndTrigger",
-    "capabilityId": "IssueRouting",
-    "subCapability": "@Mention",
-    "version": "1.0",
-    "config": {
-      "labelsAndMentions": [
-        {
-          "labels": [
-            "os-maccatalyst"
-          ],
-          "mentionees": [
-            "steveisok",
-            "akoeplinger"
-          ]
-        }
-      ],
-      "replyTemplate": "Tagging subscribers to 'os-maccatalyst': ${mentionees}\nSee info in area-owners.md if you want to be subscribed.",
-      "enableForPullRequests": true,
-      "taskName": "@Mention for maccatalyst"
     }
   },
   {
@@ -3697,6 +2710,1710 @@
         }
       ]
     }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "scheduledAndTrigger",
+    "capabilityId": "IssueRouting",
+    "subCapability": "@Mention",
+    "version": "1.0",
+    "config": {
+      "taskName": "Notify subscribers for Area labels",
+      "labelsAndMentions": [
+        {
+          "labels": [
+            "area-AssemblyLoader-coreclr"
+          ],
+          "mentionees": [
+            "agocke",
+            "vitek-karas",
+            "vsadov"
+          ]
+        },
+        {
+          "labels": [
+            "area-AssemblyLoader-mono"
+          ],
+          "mentionees": [
+            "lambdageek"
+          ]
+        },
+        {
+          "labels": [
+            "area-Build-mono"
+          ],
+          "mentionees": [
+            "akoeplinger"
+          ]
+        },
+        {
+          "labels": [
+            "area-Codeflow"
+          ],
+          "mentionees": [
+            "dotnet/dnr-codeflow",
+            "danmoseley",
+            "jeffschwMSFT",
+            "marek-safar"
+          ]
+        },
+        {
+          "labels": [
+            "area-Codegen-AOT-mono"
+          ],
+          "mentionees": [
+            "vargaz"
+          ]
+        },
+        {
+          "labels": [
+            "area-CodeGen-coreclr"
+          ],
+          "mentionees": [
+            "dotnet/jit-contrib",
+            "AndyAyersMS",
+            "BruceForstall",
+            "EgorBo",
+            "erozenfeld",
+            "jakobbotsch",
+            "JulieLeeMSFT",
+            "kunalspathak",
+            "markples",
+            "SingleAccretion",
+            "tannergooding",
+            "TIHan"
+          ]
+        },
+        {
+          "labels": [
+            "area-Codegen-Interpreter-mono"
+          ],
+          "mentionees": [
+            "BrzVlad",
+            "kotlarmilos"
+          ]
+        },
+        {
+          "labels": [
+            "area-Codegen-Intrinsics-mono"
+          ],
+          "mentionees": [
+            "fanyang-mono"
+          ]
+        },
+        {
+          "labels": [
+            "area-Codegen-JIT-mono"
+          ],
+          "mentionees": [
+            "vargaz"
+          ]
+        },
+        {
+          "labels": [
+            "area-Codegen-Jiterpreter-mono"
+          ],
+          "mentionees": [
+            "kg"
+          ]
+        },
+        {
+          "labels": [
+            "area-Codegen-LLVM-mono"
+          ],
+          "mentionees": [
+            "vargaz"
+          ]
+        },
+        {
+          "labels": [
+            "area-Codegen-meta-mono"
+          ],
+          "mentionees": [
+            "vargaz"
+          ]
+        },
+        {
+          "labels": [
+            "area-CoreLib-mono"
+          ],
+          "mentionees": [
+            "vargaz"
+          ]
+        },
+        {
+          "labels": [
+            "area-CrossGen/NGEN-coreclr"
+          ],
+          "mentionees": [
+            "dotnet/crossgen-contrib",
+            "cshung",
+            "davidwrighton",
+            "ivdiazsa",
+            "jakobbotsch",
+            "janvorli",
+            "jkotas",
+            "mangod9",
+            "MichalStrehovsky",
+            "trylek"
+          ]
+        },
+        {
+          "labels": [
+            "area-crossgen2-coreclr"
+          ],
+          "mentionees": [
+            "trylek",
+            "dotnet/crossgen-contrib",
+            "cshung",
+            "davidwrighton",
+            "ivdiazsa",
+            "jakobbotsch",
+            "janvorli",
+            "jkotas",
+            "mangod9",
+            "MichalStrehovsky"
+          ]
+        },
+        {
+          "labels": [
+            "area-Debugger-mono"
+          ],
+          "mentionees": [
+            "thaystg",
+            "radical"
+          ]
+        },
+        {
+          "labels": [
+            "area-DependencyModel"
+          ],
+          "mentionees": [
+            "dotnet/area-dependencymodel",
+            "carlossanlop",
+            "ericstj",
+            "jeffhandley",
+            "smasher164",
+            "ViktorHofer"
+          ]
+        },
+        {
+          "labels": [
+            "area-Diagnostics-coreclr"
+          ],
+          "mentionees": [
+            "tommcdon"
+          ]
+        },
+        {
+          "labels": [
+            "area-Diagnostics-mono"
+          ],
+          "mentionees": [
+            "lateralusX",
+            "mdh1418"
+          ]
+        },
+        {
+          "labels": [
+            "area-EnC-mono"
+          ],
+          "mentionees": [
+            "lambdageek"
+          ]
+        },
+        {
+          "labels": [
+            "area-ExceptionHandling-coreclr"
+          ],
+          "mentionees": [
+            "janvorli"
+          ]
+        },
+        {
+          "labels": [
+            "area-Extensions-Caching"
+          ],
+          "mentionees": [
+            "dotnet/area-extensions-caching",
+            "adamsitnik",
+            "bartonjs",
+            "ericstj",
+            "jeffhandley",
+            "Jozkee"
+          ]
+        },
+        {
+          "labels": [
+            "area-Extensions-Configuration"
+          ],
+          "mentionees": [
+            "dotnet/area-extensions-configuration",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-Extensions-DependencyInjection"
+          ],
+          "mentionees": [
+            "dotnet/area-extensions-dependencyinjection",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter"
+          ]
+        },
+        {
+          "labels": [
+            "area-Extensions-FileSystem"
+          ],
+          "mentionees": [
+            "dotnet/area-extensions-filesystem",
+            "adamsitnik",
+            "bartonjs",
+            "ericstj",
+            "jeffhandley",
+            "Jozkee"
+          ]
+        },
+        {
+          "labels": [
+            "area-Extensions-Hosting"
+          ],
+          "mentionees": [
+            "dotnet/area-extensions-hosting",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter"
+          ]
+        },
+        {
+          "labels": [
+            "area-Extensions-HttpClientFactory"
+          ],
+          "mentionees": [
+            "dotnet/ncl",
+            "antonfirsov",
+            "CarnaViire",
+            "greenEkatherine",
+            "halter73",
+            "karelz",
+            "liveans",
+            "ManickaP",
+            "MihaZupan",
+            "rzikm",
+            "wfurt"
+          ]
+        },
+        {
+          "labels": [
+            "area-Extensions-Logging"
+          ],
+          "mentionees": [
+            "dotnet/area-extensions-logging",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-Extensions-Options"
+          ],
+          "mentionees": [
+            "dotnet/area-extensions-options",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-Extensions-Primitives"
+          ],
+          "mentionees": [
+            "dotnet/area-extensions-primitives",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-GC-coreclr"
+          ],
+          "mentionees": [
+            "Maoni0"
+          ]
+        },
+        {
+          "labels": [
+            "area-GC-mono"
+          ],
+          "mentionees": [
+            "BrzVlad"
+          ]
+        },
+        {
+          "labels": [
+            "area-Host"
+          ],
+          "mentionees": [
+            "jeffschwMSFT",
+            "vitek-karas",
+            "vsadov"
+          ]
+        },
+        {
+          "labels": [
+            "area-HostModel"
+          ],
+          "mentionees": [
+            "vitek-karas"
+          ]
+        },
+        {
+          "labels": [
+            "area-ILTools-coreclr"
+          ],
+          "mentionees": [
+            "dotnet/jit-contrib",
+            "AndyAyersMS",
+            "BruceForstall",
+            "EgorBo",
+            "erozenfeld",
+            "jakobbotsch",
+            "JulieLeeMSFT",
+            "kunalspathak",
+            "markples",
+            "SingleAccretion",
+            "tannergooding",
+            "TIHan"
+          ]
+        },
+        {
+          "labels": [
+            "area-Infrastructure"
+          ],
+          "mentionees": [
+            "jeffschwMSFT",
+            "MichaelSimons"
+          ]
+        },
+        {
+          "labels": [
+            "area-Infrastructure-coreclr"
+          ],
+          "mentionees": [
+            "jeffschwMSFT",
+            "trylek"
+          ]
+        },
+        {
+          "labels": [
+            "area-Infrastructure-installer"
+          ],
+          "mentionees": [
+            "NikolaMilosavljevic"
+          ]
+        },
+        {
+          "labels": [
+            "area-Infrastructure-libraries"
+          ],
+          "mentionees": [
+            "dotnet/area-infrastructure-libraries",
+            "bartonjs",
+            "carlossanlop",
+            "ericstj",
+            "jeffhandley",
+            "smasher164",
+            "ViktorHofer"
+          ]
+        },
+        {
+          "labels": [
+            "area-Infrastructure-mono"
+          ],
+          "mentionees": [
+            "directhex"
+          ]
+        },
+        {
+          "labels": [
+            "area-Interop-coreclr"
+          ],
+          "mentionees": [
+            "AaronRobinsonMSFT",
+            "jkoritzinsky"
+          ]
+        },
+        {
+          "labels": [
+            "area-Interop-mono"
+          ],
+          "mentionees": [
+            "lambdageek"
+          ]
+        },
+        {
+          "labels": [
+            "area-Meta"
+          ],
+          "mentionees": [
+            "dotnet/area-meta",
+            "ericstj",
+            "jeffhandley"
+          ]
+        },
+        {
+          "labels": [
+            "area-Microsoft.CSharp"
+          ],
+          "mentionees": [
+            "cston",
+            "333fred"
+          ]
+        },
+        {
+          "labels": [
+            "area-Microsoft.VisualBasic"
+          ],
+          "mentionees": [
+            "cston",
+            "333fred"
+          ]
+        },
+        {
+          "labels": [
+            "area-Microsoft.Win32"
+          ],
+          "mentionees": [
+            "dotnet/area-microsoft-win32",
+            "carlossanlop",
+            "ericstj",
+            "jeffhandley",
+            "smasher164",
+            "ViktorHofer"
+          ]
+        },
+        {
+          "labels": [
+            "area-NativeAOT-coreclr"
+          ],
+          "mentionees": [
+            "dotnet/ilc-contrib"
+          ]
+        },
+        {
+          "labels": [
+            "area-PAL-coreclr"
+          ],
+          "mentionees": [
+            "janvorli"
+          ]
+        },
+        {
+          "labels": [
+            "area-R2RDump-coreclr"
+          ],
+          "mentionees": [
+            "trylek"
+          ]
+        },
+        {
+          "labels": [
+            "area-ReadyToRun-coreclr"
+          ],
+          "mentionees": [
+            "trylek"
+          ]
+        },
+        {
+          "labels": [
+            "area-Serialization"
+          ],
+          "mentionees": [
+            "StephenMolloy",
+            "HongGit"
+          ]
+        },
+        {
+          "labels": [
+            "area-Setup"
+          ],
+          "mentionees": [
+            "NikolaMilosavljevic"
+          ]
+        },
+        {
+          "labels": [
+            "area-Single-File"
+          ],
+          "mentionees": [
+            "vitek-karas",
+            "vsadov"
+          ]
+        },
+        {
+          "labels": [
+            "area-Snap"
+          ],
+          "mentionees": [
+            "MichaelSimons",
+            "leecow",
+            "NikolaMilosavljevic"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Buffers"
+          ],
+          "mentionees": [
+            "dotnet/area-system-buffers",
+            "dakersnar",
+            "ericstj",
+            "GrabYourPitchforks",
+            "jeffhandley",
+            "michaelgsharp",
+            "tannergooding"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.CodeDom"
+          ],
+          "mentionees": [
+            "dotnet/area-system-codedom",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Collections"
+          ],
+          "mentionees": [
+            "dotnet/area-system-collections",
+            "eiriktsarpalis",
+            "ericstj",
+            "GrabYourPitchforks",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.ComponentModel"
+          ],
+          "mentionees": [
+            "dotnet/area-system-componentmodel",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.ComponentModel.Composition"
+          ],
+          "mentionees": [
+            "dotnet/area-system-componentmodel-composition",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.ComponentModel.DataAnnotations"
+          ],
+          "mentionees": [
+            "dotnet/area-system-componentmodel-dataannotations",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Composition"
+          ],
+          "mentionees": [
+            "dotnet/area-system-composition",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Configuration"
+          ],
+          "mentionees": [
+            "dotnet/area-system-configuration",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Console"
+          ],
+          "mentionees": [
+            "dotnet/area-system-console",
+            "adamsitnik",
+            "bartonjs",
+            "ericstj",
+            "jeffhandley",
+            "Jozkee"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Data"
+          ],
+          "mentionees": [
+            "ajcvickers",
+            "davoudeshtehari",
+            "david-engel"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Data.Odbc"
+          ],
+          "mentionees": [
+            "ajcvickers"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Data.OleDB"
+          ],
+          "mentionees": [
+            "ajcvickers"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Data.SqlClient"
+          ],
+          "mentionees": [
+            "davoudeshtehari",
+            "david-engel",
+            "jrahnama"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.DateTime"
+          ],
+          "mentionees": [
+            "dotnet/area-system-datetime",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics"
+          ],
+          "mentionees": [
+            "tommcdon"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics-coreclr"
+          ],
+          "mentionees": [
+            "tommcdon"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics-mono"
+          ],
+          "mentionees": [
+            "thaystg",
+            "radical"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics.Activity"
+          ],
+          "mentionees": [
+            "dotnet/area-system-diagnostics-activity",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh",
+            "tommcdon"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics.EventLog"
+          ],
+          "mentionees": [
+            "dotnet/area-system-diagnostics-eventlog",
+            "carlossanlop",
+            "ericstj",
+            "jeffhandley",
+            "smasher164",
+            "ViktorHofer"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics.Metric"
+          ],
+          "mentionees": [
+            "noahfalk"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics.PerformanceCounter"
+          ],
+          "mentionees": [
+            "dotnet/area-system-diagnostics-performancecounter",
+            "carlossanlop",
+            "ericstj",
+            "jeffhandley",
+            "smasher164",
+            "ViktorHofer"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics.Process"
+          ],
+          "mentionees": [
+            "dotnet/area-system-diagnostics-process",
+            "adamsitnik",
+            "bartonjs",
+            "ericstj",
+            "jeffhandley",
+            "Jozkee"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics.TraceSource"
+          ],
+          "mentionees": [
+            "dotnet/area-system-diagnostics-tracesource",
+            "carlossanlop",
+            "ericstj",
+            "jeffhandley",
+            "smasher164",
+            "ViktorHofer"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics.Tracing"
+          ],
+          "mentionees": [
+            "noahfalk",
+            "tommcdon",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.DirectoryServices"
+          ],
+          "mentionees": [
+            "dotnet/area-system-directoryservices",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Drawing"
+          ],
+          "mentionees": [
+            "dotnet/area-system-drawing",
+            "carlossanlop",
+            "ericstj",
+            "jeffhandley",
+            "smasher164",
+            "ViktorHofer"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Dynamic.Runtime"
+          ],
+          "mentionees": [
+            "cston",
+            "333fred"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Formats.Asn1"
+          ],
+          "mentionees": [
+            "dotnet/area-system-formats-asn1",
+            "adamsitnik",
+            "bartonjs",
+            "ericstj",
+            "GrabYourPitchforks",
+            "jeffhandley",
+            "Jozkee",
+            "vcsjones"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Formats.Cbor"
+          ],
+          "mentionees": [
+            "dotnet/area-system-formats-cbor",
+            "adamsitnik",
+            "bartonjs",
+            "eiriktsarpalis",
+            "ericstj",
+            "GrabYourPitchforks",
+            "jeffhandley",
+            "Jozkee",
+            "vcsjones"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Formats.Tar"
+          ],
+          "mentionees": [
+            "dotnet/area-system-formats-tar",
+            "carlossanlop",
+            "ericstj",
+            "jeffhandley",
+            "smasher164",
+            "ViktorHofer"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Globalization"
+          ],
+          "mentionees": [
+            "dotnet/area-system-globalization",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.IO"
+          ],
+          "mentionees": [
+            "dotnet/area-system-io",
+            "adamsitnik",
+            "bartonjs",
+            "ericstj",
+            "jeffhandley",
+            "Jozkee"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.IO.Compression"
+          ],
+          "mentionees": [
+            "dotnet/area-system-io-compression",
+            "carlossanlop",
+            "ericstj",
+            "jeffhandley",
+            "smasher164",
+            "ViktorHofer"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.IO.Hashing"
+          ],
+          "mentionees": [
+            "dotnet/area-system-io-hashing",
+            "adamsitnik",
+            "bartonjs",
+            "ericstj",
+            "jeffhandley",
+            "Jozkee"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.IO.Pipelines"
+          ],
+          "mentionees": [
+            "davidfowl",
+            "halter73"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.IO.Ports"
+          ],
+          "mentionees": [
+            "dotnet/area-system-io-ports",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Linq"
+          ],
+          "mentionees": [
+            "dotnet/area-system-linq",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Linq.Expressions"
+          ],
+          "mentionees": [
+            "cston",
+            "333fred"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Linq.Parallel"
+          ],
+          "mentionees": [
+            "dotnet/area-system-linq-parallel",
+            "adamsitnik",
+            "bartonjs",
+            "ericstj",
+            "jeffhandley",
+            "Jozkee",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Management"
+          ],
+          "mentionees": [
+            "dotnet/area-system-management",
+            "carlossanlop",
+            "ericstj",
+            "jeffhandley",
+            "smasher164",
+            "ViktorHofer"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Memory"
+          ],
+          "mentionees": [
+            "dotnet/area-system-memory",
+            "adamsitnik",
+            "dakersnar",
+            "ericstj",
+            "GrabYourPitchforks",
+            "jeffhandley",
+            "michaelgsharp",
+            "tannergooding"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Net"
+          ],
+          "mentionees": [
+            "dotnet/ncl",
+            "antonfirsov",
+            "CarnaViire",
+            "greenEkatherine",
+            "halter73",
+            "karelz",
+            "liveans",
+            "ManickaP",
+            "MihaZupan",
+            "rzikm",
+            "wfurt"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Net.Http"
+          ],
+          "mentionees": [
+            "dotnet/ncl",
+            "antonfirsov",
+            "CarnaViire",
+            "greenEkatherine",
+            "halter73",
+            "karelz",
+            "liveans",
+            "ManickaP",
+            "MihaZupan",
+            "rzikm",
+            "wfurt"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Net.Quic"
+          ],
+          "mentionees": [
+            "dotnet/ncl",
+            "antonfirsov",
+            "CarnaViire",
+            "greenEkatherine",
+            "halter73",
+            "karelz",
+            "liveans",
+            "ManickaP",
+            "MihaZupan",
+            "rzikm",
+            "wfurt"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Net.Security"
+          ],
+          "mentionees": [
+            "dotnet/ncl",
+            "antonfirsov",
+            "CarnaViire",
+            "greenEkatherine",
+            "halter73",
+            "karelz",
+            "liveans",
+            "ManickaP",
+            "MihaZupan",
+            "rzikm",
+            "wfurt"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Net.Sockets"
+          ],
+          "mentionees": [
+            "dotnet/ncl",
+            "antonfirsov",
+            "CarnaViire",
+            "greenEkatherine",
+            "halter73",
+            "karelz",
+            "liveans",
+            "ManickaP",
+            "MihaZupan",
+            "rzikm",
+            "wfurt"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Numerics"
+          ],
+          "mentionees": [
+            "dotnet/area-system-numerics",
+            "dakersnar",
+            "ericstj",
+            "jeffhandley",
+            "michaelgsharp",
+            "tannergooding"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Numerics.Tensors"
+          ],
+          "mentionees": [
+            "dotnet/area-system-numerics-tensors",
+            "dakersnar",
+            "ericstj",
+            "jeffhandley",
+            "michaelgsharp",
+            "tannergooding"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Reflection"
+          ],
+          "mentionees": [
+            "dotnet/area-system-reflection",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Reflection.Emit"
+          ],
+          "mentionees": [
+            "dotnet/area-system-reflection-emit",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Reflection.Metadata"
+          ],
+          "mentionees": [
+            "dotnet/area-system-reflection-metadata",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Resources"
+          ],
+          "mentionees": [
+            "dotnet/area-system-resources",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Runtime"
+          ],
+          "mentionees": [
+            "dotnet/area-system-runtime",
+            "dakersnar",
+            "ericstj",
+            "jeffhandley",
+            "michaelgsharp",
+            "tannergooding"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Runtime.Caching"
+          ],
+          "mentionees": [
+            "StephenMolloy",
+            "HongGit"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Runtime.CompilerServices"
+          ],
+          "mentionees": [
+            "dotnet/area-system-runtime-compilerservices",
+            "dakersnar",
+            "ericstj",
+            "jeffhandley",
+            "michaelgsharp",
+            "tannergooding"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Runtime.InteropServices"
+          ],
+          "mentionees": [
+            "AaronRobinsonMSFT",
+            "jkoritzinsky"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Runtime.InteropServices.JavaScript"
+          ],
+          "mentionees": [
+            "pavelsavara"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Runtime.Intrinsics"
+          ],
+          "mentionees": [
+            "dotnet/area-system-runtime-intrinsics",
+            "dakersnar",
+            "ericstj",
+            "jeffhandley",
+            "michaelgsharp",
+            "tannergooding"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Security"
+          ],
+          "mentionees": [
+            "dotnet/area-system-security",
+            "adamsitnik",
+            "bartonjs",
+            "ericstj",
+            "GrabYourPitchforks",
+            "jeffhandley",
+            "Jozkee",
+            "krwq"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.ServiceModel"
+          ],
+          "mentionees": [
+            "HongGit",
+            "mconnew"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.ServiceModel.Syndication"
+          ],
+          "mentionees": [
+            "StephenMolloy",
+            "HongGit"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.ServiceProcess"
+          ],
+          "mentionees": [
+            "dotnet/area-system-serviceprocess",
+            "carlossanlop",
+            "ericstj",
+            "jeffhandley",
+            "smasher164",
+            "ViktorHofer"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Speech"
+          ],
+          "mentionees": [
+            "ericstj",
+            "jeffhandley"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Text.Encoding"
+          ],
+          "mentionees": [
+            "dotnet/area-system-text-encoding",
+            "eiriktsarpalis",
+            "ericstj",
+            "GrabYourPitchforks",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Text.Encodings.Web"
+          ],
+          "mentionees": [
+            "dotnet/area-system-text-encodings-web",
+            "eiriktsarpalis",
+            "ericstj",
+            "GrabYourPitchforks",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Text.Json"
+          ],
+          "mentionees": [
+            "dotnet/area-system-text-json",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "steveharter",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Text.RegularExpressions"
+          ],
+          "mentionees": [
+            "dotnet/area-system-text-regularexpressions",
+            "buyaa-n",
+            "ericstj",
+            "jeffhandley",
+            "steveharter",
+            "stephentoub"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Threading"
+          ],
+          "mentionees": [
+            "kouvel"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Threading.Channels"
+          ],
+          "mentionees": [
+            "dotnet/area-system-threading-channels",
+            "dakersnar",
+            "ericstj",
+            "jeffhandley",
+            "michaelgsharp",
+            "stephentoub",
+            "tannergooding"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Threading.Tasks"
+          ],
+          "mentionees": [
+            "dotnet/area-system-threading-tasks",
+            "dakersnar",
+            "ericstj",
+            "jeffhandley",
+            "michaelgsharp",
+            "stephentoub",
+            "tannergooding"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Transactions"
+          ],
+          "mentionees": [
+            "roji"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Xml"
+          ],
+          "mentionees": [
+            "dotnet/area-system-xml",
+            "eiriktsarpalis",
+            "ericstj",
+            "jeffhandley",
+            "krwq",
+            "layomia",
+            "tarekgh"
+          ]
+        },
+        {
+          "labels": [
+            "area-TieredCompilation-coreclr"
+          ],
+          "mentionees": [
+            "kouvel"
+          ]
+        },
+        {
+          "labels": [
+            "area-Tools-ILLink"
+          ],
+          "mentionees": [
+            "dotnet/illink"
+          ]
+        },
+        {
+          "labels": [
+            "area-Tools-ILVerification"
+          ],
+          "mentionees": [
+            "dotnet/jit-contrib",
+            "AndyAyersMS",
+            "BruceForstall",
+            "EgorBo",
+            "erozenfeld",
+            "jakobbotsch",
+            "JulieLeeMSFT",
+            "kunalspathak",
+            "markples",
+            "SingleAccretion",
+            "tannergooding",
+            "TIHan"
+          ]
+        },
+        {
+          "labels": [
+            "area-Tracing-coreclr"
+          ],
+          "mentionees": [
+            "sywhang",
+            "josalem"
+          ]
+        },
+        {
+          "labels": [
+            "area-Tracing-mono"
+          ],
+          "mentionees": [
+            "lateralusX"
+          ]
+        },
+        {
+          "labels": [
+            "area-TypeSystem-coreclr"
+          ],
+          "mentionees": [
+            "davidwrighton",
+            "MichalStrehovsky",
+            "janvorli",
+            "mangod9"
+          ]
+        },
+        {
+          "labels": [
+            "area-UWP"
+          ],
+          "mentionees": [
+            "jashook"
+          ]
+        },
+        {
+          "labels": [
+            "area-VM-coreclr"
+          ],
+          "mentionees": [
+            "mangod9"
+          ]
+        },
+        {
+          "labels": [
+            "area-VM-meta-mono"
+          ],
+          "mentionees": [
+            "lambdageek"
+          ]
+        },
+        {
+          "labels": [
+            "area-VM-reflection-mono"
+          ],
+          "mentionees": [
+            "lambdageek"
+          ]
+        },
+        {
+          "labels": [
+            "area-VM-threading-mono"
+          ],
+          "mentionees": [
+            "lambdageek"
+          ]
+        },
+        {
+          "labels": [
+            "area-Workloads"
+          ],
+          "mentionees": [
+            "dotnet/net-sdk-workload-contributors"
+          ]
+        }
+      ],
+      "replyTemplate": "Tagging subscribers to this area: ${mentionees}\nSee info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.",
+      "enableForPullRequests": true
+    },
+    "disabled": false
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "scheduledAndTrigger",
+    "capabilityId": "IssueRouting",
+    "subCapability": "@Mention",
+    "version": "1.0",
+    "config": {
+      "taskName": "Notify subscribers for Operating System labels",
+      "labelsAndMentions": [
+        {
+          "labels": [
+            "os-android"
+          ],
+          "mentionees": [
+            "akoeplinger"
+          ]
+        },
+        {
+          "labels": [
+            "os-ios"
+          ],
+          "mentionees": [
+            "vargaz"
+          ]
+        },
+        {
+          "labels": [
+            "os-tizen"
+          ],
+          "mentionees": [
+            "clamp03",
+            "gbalykov",
+            "hjleee",
+            "JongHeonChoi",
+            "wscho77"
+          ]
+        },
+        {
+          "labels": [
+            "os-tvos"
+          ],
+          "mentionees": [
+            "vargaz"
+          ]
+        },
+        {
+          "labels": [
+            "os-wasi"
+          ],
+          "mentionees": [
+            "pavelsavara"
+          ]
+        }
+      ],
+      "replyTemplate": "Tagging subscribers to this area: ${mentionees}\nSee info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.",
+      "enableForPullRequests": true
+    },
+    "disabled": false
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "scheduledAndTrigger",
+    "capabilityId": "IssueRouting",
+    "subCapability": "@Mention",
+    "version": "1.0",
+    "config": {
+      "taskName": "Notify subscribers for Architecture labels",
+      "labelsAndMentions": [
+        {
+          "labels": [
+            "arch-wasm"
+          ],
+          "mentionees": [
+            "BrzVlad",
+            "lewing"
+          ]
+        }
+      ],
+      "replyTemplate": "Tagging subscribers to this area: ${mentionees}\nSee info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.",
+      "enableForPullRequests": true
+    },
+    "disabled": false
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "scheduledAndTrigger",
+    "capabilityId": "IssueRouting",
+    "subCapability": "@Mention",
+    "version": "1.0",
+    "config": {
+      "taskName": "Notify subscribers for Trimming Label labels",
+      "labelsAndMentions": [
+        {
+          "labels": [
+            "linkable-framework"
+          ],
+          "mentionees": [
+            "eerhardt",
+            "vitek-karas",
+            "LakshanF",
+            "sbomer",
+            "joperezr",
+            "marek-safar"
+          ]
+        },
+        {
+          "labels": [
+            "size-reduction"
+          ],
+          "mentionees": [
+            "eerhardt",
+            "SamMonoRT",
+            "marek-safar"
+          ]
+        }
+      ],
+      "replyTemplate": "Tagging subscribers to this area: ${mentionees}\nSee info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.",
+      "enableForPullRequests": true
+    },
+    "disabled": false
   },
   {
     "taskSource": "fabricbot-config",

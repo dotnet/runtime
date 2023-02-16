@@ -127,11 +127,14 @@
     },
     {
       "lead": "dotnet/dnr-codeflow",
+      "notes": "Used for automated PRs that ingest code from other repos",
       "owners": [
+        "dotnet/dnr-codeflow"
+      ],
+      "mentionees": [
         "danmoseley",
         "jeffschwMSFT",
-        "marek-safar",
-        "dotnet/dnr-codeflow"
+        "marek-safar"
       ],
       "label": "area-Codeflow"
     },
@@ -145,6 +148,9 @@
     {
       "lead": "JulieLeeMSFT",
       "owners": [
+        "dotnet/jit-contrib"
+      ],
+      "mentionees": [
         "AndyAyersMS",
         "BruceForstall",
         "EgorBo",
@@ -155,15 +161,15 @@
         "markples",
         "SingleAccretion",
         "tannergooding",
-        "TIHan",
-        "dotnet/jit-contrib"
+        "TIHan"
       ],
       "label": "area-CodeGen-coreclr"
     },
     {
       "lead": "SamMonoRT",
       "owners": [
-        "BrzVlad"
+        "BrzVlad",
+        "kotlarmilos"
       ],
       "label": "area-Codegen-Interpreter-mono"
     },
@@ -172,7 +178,7 @@
       "owners": [
         "fanyang-mono"
       ],
-      "label": "area-Codegen-Intrinsic-mono"
+      "label": "area-Codegen-Intrinsics-mono"
     },
     {
       "lead": "SamMonoRT",
@@ -191,6 +197,13 @@
     {
       "lead": "SamMonoRT",
       "owners": [
+        "kg"
+      ],
+      "label": "area-Codegen-Jiterpreter-mono"
+    },
+    {
+      "lead": "SamMonoRT",
+      "owners": [
         "vargaz"
       ],
       "label": "area-Codegen-meta-mono"
@@ -205,6 +218,9 @@
     {
       "lead": "mangod9",
       "owners": [
+        "dotnet/crossgen-contrib"
+      ],
+      "mentionees": [
         "cshung",
         "davidwrighton",
         "ivdiazsa",
@@ -213,14 +229,17 @@
         "jkotas",
         "mangod9",
         "MichalStrehovsky",
-        "trylek",
-        "dotnet/crossgen-contrib"
+        "trylek"
       ],
       "label": "area-CrossGen/NGEN-coreclr"
     },
     {
       "lead": "mangod9",
       "owners": [
+        "trylek",
+        "dotnet/crossgen-contrib"
+      ],
+      "mentionees": [
         "cshung",
         "davidwrighton",
         "ivdiazsa",
@@ -228,30 +247,31 @@
         "janvorli",
         "jkotas",
         "mangod9",
-        "MichalStrehovsky",
-        "trylek",
-        "dotnet/crossgen-contrib"
+        "MichalStrehovsky"
       ],
       "label": "area-crossgen2-coreclr"
     },
     {
       "lead": "lewing",
       "owners": [
-        "radical",
-        "thaystg"
+        "thaystg",
+        "radical"
       ],
       "label": "area-Debugger-mono"
     },
     {
       "lead": "ericstj",
+      "notes": "Included:<ul><li>Microsoft.Extensions.DependencyModel</li></ul>",
       "pod": "akhil-carlos-viktor",
       "owners": [
+        "dotnet/area-dependencymodel"
+      ],
+      "mentionees": [
         "carlossanlop",
         "ericstj",
         "jeffhandley",
         "smasher164",
-        "ViktorHofer",
-        "dotnet/area-dependencymodel"
+        "ViktorHofer"
       ],
       "label": "area-DependencyModel"
     },
@@ -272,6 +292,7 @@
     },
     {
       "lead": "marek-safar",
+      "notes": "Hot Reload on WebAssembly, Android, iOS, etc.",
       "owners": [
         "lambdageek"
       ],
@@ -288,12 +309,14 @@
       "lead": "ericstj",
       "pod": "adam-david-jeremy",
       "owners": [
+        "dotnet/area-extensions-caching"
+      ],
+      "mentionees": [
         "adamsitnik",
         "bartonjs",
         "ericstj",
         "jeffhandley",
-        "Jozkee",
-        "dotnet/area-extensions-caching"
+        "Jozkee"
       ],
       "label": "area-Extensions-Caching"
     },
@@ -301,13 +324,15 @@
       "lead": "ericstj",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-extensions-configuration"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-extensions-configuration"
+        "tarekgh"
       ],
       "label": "area-Extensions-Configuration"
     },
@@ -315,11 +340,13 @@
       "lead": "ericstj",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-extensions-dependencyinjection"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "steveharter",
-        "dotnet/area-extensions-dependencyinjection"
+        "steveharter"
       ],
       "label": "area-Extensions-DependencyInjection"
     },
@@ -327,12 +354,14 @@
       "lead": "jeffhandley",
       "pod": "adam-david-jeremy",
       "owners": [
+        "dotnet/area-extensions-filesystem"
+      ],
+      "mentionees": [
         "adamsitnik",
         "bartonjs",
         "ericstj",
         "jeffhandley",
-        "Jozkee",
-        "dotnet/area-extensions-filesystem"
+        "Jozkee"
       ],
       "label": "area-Extensions-FileSystem"
     },
@@ -340,11 +369,13 @@
       "lead": "ericstj",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-extensions-hosting"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "steveharter",
-        "dotnet/area-extensions-hosting"
+        "steveharter"
       ],
       "label": "area-Extensions-Hosting"
     },
@@ -352,6 +383,9 @@
       "lead": "karelz",
       "pod": "networking",
       "owners": [
+        "dotnet/ncl"
+      ],
+      "mentionees": [
         "antonfirsov",
         "CarnaViire",
         "greenEkatherine",
@@ -361,8 +395,7 @@
         "ManickaP",
         "MihaZupan",
         "rzikm",
-        "wfurt",
-        "dotnet/ncl"
+        "wfurt"
       ],
       "label": "area-Extensions-HttpClientFactory"
     },
@@ -370,13 +403,15 @@
       "lead": "ericstj",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-extensions-logging"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-extensions-logging"
+        "tarekgh"
       ],
       "label": "area-Extensions-Logging"
     },
@@ -384,13 +419,15 @@
       "lead": "ericstj",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-extensions-options"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-extensions-options"
+        "tarekgh"
       ],
       "label": "area-Extensions-Options"
     },
@@ -398,13 +435,15 @@
       "lead": "ericstj",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-extensions-primitives"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-extensions-primitives"
+        "tarekgh"
       ],
       "label": "area-Extensions-Primitives"
     },
@@ -424,8 +463,8 @@
     },
     {
       "lead": "agocke",
+      "notes": "Issues with dotnet.exe including bootstrapping, framework detection, hostfxr.dll and hostpolicy.dll",
       "owners": [
-        "",
         "jeffschwMSFT",
         "vitek-karas",
         "vsadov"
@@ -442,6 +481,9 @@
     {
       "lead": "JulieLeeMSFT",
       "owners": [
+        "dotnet/jit-contrib"
+      ],
+      "mentionees": [
         "AndyAyersMS",
         "BruceForstall",
         "EgorBo",
@@ -452,14 +494,16 @@
         "markples",
         "SingleAccretion",
         "tannergooding",
-        "TIHan",
-        "dotnet/jit-contrib"
+        "TIHan"
       ],
       "label": "area-ILTools-coreclr"
     },
     {
       "lead": "JulieLeeMSFT",
       "owners": [
+        "dotnet/jit-contrib"
+      ],
+      "mentionees": [
         "AndyAyersMS",
         "BruceForstall",
         "EgorBo",
@@ -470,8 +514,7 @@
         "markples",
         "SingleAccretion",
         "tannergooding",
-        "TIHan",
-        "dotnet/jit-contrib"
+        "TIHan"
       ],
       "label": "area-Tools-ILVerification"
     },
@@ -500,15 +543,18 @@
     },
     {
       "lead": "ericstj",
+      "notes": "Covers:<ul><li>Packaging</li><li>Build and test infra for libraries in dotnet/runtime repo</li><li>VS integration</li></ul><br/>",
       "pod": "akhil-carlos-viktor",
       "owners": [
+        "dotnet/area-infrastructure-libraries"
+      ],
+      "mentionees": [
         "bartonjs",
         "carlossanlop",
         "ericstj",
         "jeffhandley",
         "smasher164",
-        "ViktorHofer",
-        "dotnet/area-infrastructure-libraries"
+        "ViktorHofer"
       ],
       "label": "area-Infrastructure-libraries"
     },
@@ -536,48 +582,54 @@
     },
     {
       "lead": "jeffhandley",
+      "notes": "Cross-cutting concerns that span many or all areas, including project-wide code/test patterns and documentation.",
       "pod": "eric-jeff",
       "owners": [
-        "ericstj",
-        "jeffhandley",
         "dotnet/area-meta"
+      ],
+      "mentionees": [
+        "ericstj",
+        "jeffhandley"
       ],
       "label": "area-Meta"
     },
     {
       "lead": "jaredpar",
+      "notes": "Archived component - limited churn/contributions (see [#27790](https://github.com/dotnet/runtime/issues/27790))",
       "owners": [
-        "333fred",
-        "cston"
+        "cston",
+        "333fred"
       ],
       "label": "area-Microsoft.CSharp"
     },
     {
       "lead": "jaredpar",
+      "notes": "Archived component - limited churn/contributions (see [#27790](https://github.com/dotnet/runtime/issues/27790))",
       "owners": [
-        "333fred",
-        "cston"
+        "cston",
+        "333fred"
       ],
       "label": "area-Microsoft.VisualBasic"
     },
     {
       "lead": "ericstj",
+      "notes": "Included:<ul><li>System.Windows.Extensions</li></ul>",
       "pod": "akhil-carlos-viktor",
       "owners": [
+        "dotnet/area-microsoft-win32"
+      ],
+      "mentionees": [
         "carlossanlop",
         "ericstj",
         "jeffhandley",
         "smasher164",
-        "ViktorHofer",
-        "dotnet/area-microsoft-win32"
+        "ViktorHofer"
       ],
       "label": "area-Microsoft.Win32"
     },
     {
       "lead": "agocke",
       "owners": [
-        "jkotas",
-        "MichalStrehovsky",
         "dotnet/ilc-contrib"
       ],
       "label": "area-NativeAOT-coreclr"
@@ -588,13 +640,6 @@
         "janvorli"
       ],
       "label": "area-PAL-coreclr"
-    },
-    {
-      "lead": "SamMonoRT",
-      "owners": [
-        "SamMonoRT"
-      ],
-      "label": "area-Performance-mono"
     },
     {
       "lead": "mangod9",
@@ -612,14 +657,16 @@
     },
     {
       "lead": "HongGit",
+      "notes": "Packages:<ul><li>System.Runtime.Serialization.Xml</li><li>System.Runtime.Serialization.Json</li><li>System.Private.DataContractSerialization</li><li>System.Xml.XmlSerializer</li></ul> Excluded:<ul><li>System.Runtime.Serialization.Formatters</li></ul>",
       "owners": [
-        "HongGit",
-        "StephenMolloy"
+        "StephenMolloy",
+        "HongGit"
       ],
       "label": "area-Serialization"
     },
     {
       "lead": "MichaelSimons",
+      "notes": "Distro-specific (Linux, Mac and Windows) setup packages and msi files",
       "owners": [
         "NikolaMilosavljevic"
       ],
@@ -636,8 +683,8 @@
     {
       "lead": "MichaelSimons",
       "owners": [
-        "leecow",
         "MichaelSimons",
+        "leecow",
         "NikolaMilosavljevic"
       ],
       "label": "area-Snap"
@@ -646,13 +693,15 @@
       "lead": "jeffhandley",
       "pod": "drew-michael-tanner",
       "owners": [
+        "dotnet/area-system-buffers"
+      ],
+      "mentionees": [
         "dakersnar",
         "ericstj",
         "GrabYourPitchforks",
         "jeffhandley",
         "michaelgsharp",
-        "tannergooding",
-        "dotnet/area-system-buffers"
+        "tannergooding"
       ],
       "label": "area-System.Buffers"
     },
@@ -660,26 +709,31 @@
       "lead": "ericstj",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-system-codedom"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "steveharter",
-        "dotnet/area-system-codedom"
+        "steveharter"
       ],
       "label": "area-System.CodeDom"
     },
     {
       "lead": "jeffhandley",
+      "notes": "Excluded:<ul><li>System.Array -> System.Runtime</li></ul>",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-system-collections"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "GrabYourPitchforks",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-system-collections"
+        "tarekgh"
       ],
       "label": "area-System.Collections"
     },
@@ -687,11 +741,13 @@
       "lead": "ericstj",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-system-componentmodel"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "steveharter",
-        "dotnet/area-system-componentmodel"
+        "steveharter"
       ],
       "label": "area-System.ComponentModel"
     },
@@ -699,25 +755,30 @@
       "lead": "ericstj",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-system-componentmodel-composition"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "steveharter",
-        "dotnet/area-system-componentmodel-composition"
+        "steveharter"
       ],
       "label": "area-System.ComponentModel.Composition"
     },
     {
       "lead": "jeffhandley",
+      "notes": "Included:<ul><li>System.ComponentModel.Annotations</li></ul>",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-system-componentmodel-dataannotations"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-system-componentmodel-dataannotations"
+        "tarekgh"
       ],
       "label": "area-System.ComponentModel.DataAnnotations"
     },
@@ -725,11 +786,13 @@
       "lead": "ericstj",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-system-composition"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "steveharter",
-        "dotnet/area-system-composition"
+        "steveharter"
       ],
       "label": "area-System.Composition"
     },
@@ -737,11 +800,13 @@
       "lead": "ericstj",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-system-configuration"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "steveharter",
-        "dotnet/area-system-configuration"
+        "steveharter"
       ],
       "label": "area-System.Configuration"
     },
@@ -749,21 +814,24 @@
       "lead": "jeffhandley",
       "pod": "adam-david-jeremy",
       "owners": [
+        "dotnet/area-system-console"
+      ],
+      "mentionees": [
         "adamsitnik",
         "bartonjs",
         "ericstj",
         "jeffhandley",
-        "Jozkee",
-        "dotnet/area-system-console"
+        "Jozkee"
       ],
       "label": "area-System.Console"
     },
     {
       "lead": "ajcvickers",
+      "notes": "<ul><li>Odbc, OleDb - @saurabh500</li></ul>",
       "owners": [
         "ajcvickers",
-        "david-engel",
-        "davoudeshtehari"
+        "davoudeshtehari",
+        "david-engel"
       ],
       "label": "area-System.Data"
     },
@@ -783,24 +851,28 @@
     },
     {
       "lead": "David-Engel",
+      "notes": "Archived component - limited churn/contributions (see https://devblogs.microsoft.com/dotnet/introducing-the-new-microsoftdatasqlclient/)",
       "owners": [
-        "david-engel",
         "davoudeshtehari",
+        "david-engel",
         "jrahnama"
       ],
       "label": "area-System.Data.SqlClient"
     },
     {
       "lead": "ericstj",
+      "notes": "System namespace APIs related to dates and times, including DateOnly, DateTime, DateTimeKind, DateTimeOffset, DayOfWeek, TimeOnly, TimeSpan, TimeZone, and TimeZoneInfo",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-system-datetime"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-system-datetime"
+        "tarekgh"
       ],
       "label": "area-System.DateTime"
     },
@@ -821,8 +893,8 @@
     {
       "lead": "lewing",
       "owners": [
-        "radical",
-        "thaystg"
+        "thaystg",
+        "radical"
       ],
       "label": "area-System.Diagnostics-mono"
     },
@@ -830,14 +902,16 @@
       "lead": "tommcdon",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-system-diagnostics-activity"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
         "tarekgh",
-        "tommcdon",
-        "dotnet/area-system-diagnostics-activity"
+        "tommcdon"
       ],
       "label": "area-System.Diagnostics.Activity"
     },
@@ -845,12 +919,14 @@
       "lead": "ericstj",
       "pod": "akhil-carlos-viktor",
       "owners": [
+        "dotnet/area-system-diagnostics-eventlog"
+      ],
+      "mentionees": [
         "carlossanlop",
         "ericstj",
         "jeffhandley",
         "smasher164",
-        "ViktorHofer",
-        "dotnet/area-system-diagnostics-eventlog"
+        "ViktorHofer"
       ],
       "label": "area-System.Diagnostics.EventLog"
     },
@@ -865,12 +941,14 @@
       "lead": "ericstj",
       "pod": "akhil-carlos-viktor",
       "owners": [
+        "dotnet/area-system-diagnostics-performancecounter"
+      ],
+      "mentionees": [
         "carlossanlop",
         "ericstj",
         "jeffhandley",
         "smasher164",
-        "ViktorHofer",
-        "dotnet/area-system-diagnostics-performancecounter"
+        "ViktorHofer"
       ],
       "label": "area-System.Diagnostics.PerformanceCounter"
     },
@@ -878,21 +956,24 @@
       "lead": "jeffhandley",
       "pod": "adam-david-jeremy",
       "owners": [
+        "dotnet/area-system-diagnostics-process"
+      ],
+      "mentionees": [
         "adamsitnik",
         "bartonjs",
         "ericstj",
         "jeffhandley",
-        "Jozkee",
-        "dotnet/area-system-diagnostics-process"
+        "Jozkee"
       ],
       "label": "area-System.Diagnostics.Process"
     },
     {
       "lead": "tommcdon",
+      "notes": "Included:<ul><li>System.Diagnostics.DiagnosticSource</li></ul>",
       "owners": [
         "noahfalk",
-        "tarekgh",
-        "tommcdon"
+        "tommcdon",
+        "tarekgh"
       ],
       "label": "area-System.Diagnostics.Tracing"
     },
@@ -900,24 +981,29 @@
       "lead": "ericstj",
       "pod": "akhil-carlos-viktor",
       "owners": [
+        "dotnet/area-system-diagnostics-tracesource"
+      ],
+      "mentionees": [
         "carlossanlop",
         "ericstj",
         "jeffhandley",
         "smasher164",
-        "ViktorHofer",
-        "dotnet/area-system-diagnostics-tracesource"
+        "ViktorHofer"
       ],
       "label": "area-System.Diagnostics.TraceSource"
     },
     {
       "lead": "ericstj",
+      "notes": "Consultants: @BRDPM @grubioe @jay98014",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-system-directoryservices"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "steveharter",
-        "dotnet/area-system-directoryservices"
+        "steveharter"
       ],
       "label": "area-System.DirectoryServices"
     },
@@ -925,20 +1011,23 @@
       "lead": "ericstj",
       "pod": "akhil-carlos-viktor",
       "owners": [
+        "dotnet/area-system-drawing"
+      ],
+      "mentionees": [
         "carlossanlop",
         "ericstj",
         "jeffhandley",
         "smasher164",
-        "ViktorHofer",
-        "dotnet/area-system-drawing"
+        "ViktorHofer"
       ],
       "label": "area-System.Drawing"
     },
     {
       "lead": "jaredpar",
+      "notes": "Archived component - limited churn/contributions (see [#27790](https://github.com/dotnet/runtime/issues/27790))",
       "owners": [
-        "333fred",
-        "cston"
+        "cston",
+        "333fred"
       ],
       "label": "area-System.Dynamic.Runtime"
     },
@@ -946,13 +1035,16 @@
       "lead": "jeffhandley",
       "pod": "adam-david-jeremy",
       "owners": [
+        "dotnet/area-system-formats-asn1"
+      ],
+      "mentionees": [
         "adamsitnik",
         "bartonjs",
         "ericstj",
         "GrabYourPitchforks",
         "jeffhandley",
         "Jozkee",
-        "dotnet/area-system-formats-asn1"
+        "vcsjones"
       ],
       "label": "area-System.Formats.Asn1"
     },
@@ -960,6 +1052,9 @@
       "lead": "jeffhandley",
       "pod": "adam-david-jeremy",
       "owners": [
+        "dotnet/area-system-formats-cbor"
+      ],
+      "mentionees": [
         "adamsitnik",
         "bartonjs",
         "eiriktsarpalis",
@@ -967,20 +1062,23 @@
         "GrabYourPitchforks",
         "jeffhandley",
         "Jozkee",
-        "dotnet/area-system-formats-cbor"
+        "vcsjones"
       ],
       "label": "area-System.Formats.Cbor"
     },
     {
       "lead": "jeffhandley",
+      "notes": "Consultants: @bartonjs @jozkee",
       "pod": "akhil-carlos-viktor",
       "owners": [
+        "dotnet/area-system-formats-tar"
+      ],
+      "mentionees": [
         "carlossanlop",
         "ericstj",
         "jeffhandley",
         "smasher164",
-        "ViktorHofer",
-        "dotnet/area-system-formats-tar"
+        "ViktorHofer"
       ],
       "label": "area-System.Formats.Tar"
     },
@@ -988,13 +1086,15 @@
       "lead": "ericstj",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-system-globalization"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-system-globalization"
+        "tarekgh"
       ],
       "label": "area-System.Globalization"
     },
@@ -1002,38 +1102,46 @@
       "lead": "jeffhandley",
       "pod": "adam-david-jeremy",
       "owners": [
+        "dotnet/area-system-io"
+      ],
+      "mentionees": [
         "adamsitnik",
         "bartonjs",
         "ericstj",
         "jeffhandley",
-        "Jozkee",
-        "dotnet/area-system-io"
+        "Jozkee"
       ],
       "label": "area-System.IO"
     },
     {
       "lead": "jeffhandley",
+      "notes": "Included:<ul><li>System.Formats.Tar</li><li>System.IO.Packaging</li></ul>",
       "pod": "akhil-carlos-viktor",
       "owners": [
+        "dotnet/area-system-io-compression"
+      ],
+      "mentionees": [
         "carlossanlop",
         "ericstj",
         "jeffhandley",
         "smasher164",
-        "ViktorHofer",
-        "dotnet/area-system-io-compression"
+        "ViktorHofer"
       ],
       "label": "area-System.IO.Compression"
     },
     {
       "lead": "jeffhandley",
+      "notes": "APIs within the System.IO.Hashing namespace, which align more with cryptography than with I/O",
       "pod": "adam-david-jeremy",
       "owners": [
+        "dotnet/area-system-io-hashing"
+      ],
+      "mentionees": [
         "adamsitnik",
         "bartonjs",
         "ericstj",
         "jeffhandley",
-        "Jozkee",
-        "dotnet/area-system-io-hashing"
+        "Jozkee"
       ],
       "label": "area-System.IO.Hashing"
     },
@@ -1049,13 +1157,15 @@
       "lead": "jeffhandley",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-system-io-ports"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-system-io-ports"
+        "tarekgh"
       ],
       "label": "area-System.IO.Ports"
     },
@@ -1063,21 +1173,24 @@
       "lead": "jeffhandley",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-system-linq"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-system-linq"
+        "tarekgh"
       ],
       "label": "area-System.Linq"
     },
     {
       "lead": "jaredpar",
+      "notes": "Archived component - limited churn/contributions (see [#27790](https://github.com/dotnet/runtime/issues/27790))",
       "owners": [
-        "333fred",
-        "cston"
+        "cston",
+        "333fred"
       ],
       "label": "area-System.Linq.Expressions"
     },
@@ -1085,26 +1198,31 @@
       "lead": "jeffhandley",
       "pod": "adam-david-jeremy",
       "owners": [
+        "dotnet/area-system-linq-parallel"
+      ],
+      "mentionees": [
         "adamsitnik",
         "bartonjs",
         "ericstj",
         "jeffhandley",
         "Jozkee",
-        "tarekgh",
-        "dotnet/area-system-linq-parallel"
+        "tarekgh"
       ],
       "label": "area-System.Linq.Parallel"
     },
     {
       "lead": "ericstj",
+      "notes": "WMI",
       "pod": "akhil-carlos-viktor",
       "owners": [
+        "dotnet/area-system-management"
+      ],
+      "mentionees": [
         "carlossanlop",
         "ericstj",
         "jeffhandley",
         "smasher164",
-        "ViktorHofer",
-        "dotnet/area-system-management"
+        "ViktorHofer"
       ],
       "label": "area-System.Management"
     },
@@ -1112,21 +1230,27 @@
       "lead": "jeffhandley",
       "pod": "adam-david-jeremy",
       "owners": [
+        "dotnet/area-system-memory"
+      ],
+      "mentionees": [
         "adamsitnik",
         "dakersnar",
         "ericstj",
         "GrabYourPitchforks",
         "jeffhandley",
         "michaelgsharp",
-        "tannergooding",
-        "dotnet/area-system-memory"
+        "tannergooding"
       ],
       "label": "area-System.Memory"
     },
     {
       "lead": "karelz",
+      "notes": "Included:<ul><li>System.Uri</li></ul>",
       "pod": "networking",
       "owners": [
+        "dotnet/ncl"
+      ],
+      "mentionees": [
         "antonfirsov",
         "CarnaViire",
         "greenEkatherine",
@@ -1136,8 +1260,7 @@
         "ManickaP",
         "MihaZupan",
         "rzikm",
-        "wfurt",
-        "dotnet/ncl"
+        "wfurt"
       ],
       "label": "area-System.Net"
     },
@@ -1145,6 +1268,9 @@
       "lead": "karelz",
       "pod": "networking",
       "owners": [
+        "dotnet/ncl"
+      ],
+      "mentionees": [
         "antonfirsov",
         "CarnaViire",
         "greenEkatherine",
@@ -1154,8 +1280,7 @@
         "ManickaP",
         "MihaZupan",
         "rzikm",
-        "wfurt",
-        "dotnet/ncl"
+        "wfurt"
       ],
       "label": "area-System.Net.Http"
     },
@@ -1163,6 +1288,9 @@
       "lead": "karelz",
       "pod": "networking",
       "owners": [
+        "dotnet/ncl"
+      ],
+      "mentionees": [
         "antonfirsov",
         "CarnaViire",
         "greenEkatherine",
@@ -1172,8 +1300,7 @@
         "ManickaP",
         "MihaZupan",
         "rzikm",
-        "wfurt",
-        "dotnet/ncl"
+        "wfurt"
       ],
       "label": "area-System.Net.Quic"
     },
@@ -1181,6 +1308,9 @@
       "lead": "karelz",
       "pod": "networking",
       "owners": [
+        "dotnet/ncl"
+      ],
+      "mentionees": [
         "antonfirsov",
         "CarnaViire",
         "greenEkatherine",
@@ -1190,8 +1320,7 @@
         "ManickaP",
         "MihaZupan",
         "rzikm",
-        "wfurt",
-        "dotnet/ncl"
+        "wfurt"
       ],
       "label": "area-System.Net.Security"
     },
@@ -1199,6 +1328,9 @@
       "lead": "karelz",
       "pod": "networking",
       "owners": [
+        "dotnet/ncl"
+      ],
+      "mentionees": [
         "antonfirsov",
         "CarnaViire",
         "greenEkatherine",
@@ -1208,8 +1340,7 @@
         "ManickaP",
         "MihaZupan",
         "rzikm",
-        "wfurt",
-        "dotnet/ncl"
+        "wfurt"
       ],
       "label": "area-System.Net.Sockets"
     },
@@ -1217,12 +1348,14 @@
       "lead": "jeffhandley",
       "pod": "drew-michael-tanner",
       "owners": [
+        "dotnet/area-system-numerics"
+      ],
+      "mentionees": [
         "dakersnar",
         "ericstj",
         "jeffhandley",
         "michaelgsharp",
-        "tannergooding",
-        "dotnet/area-system-numerics"
+        "tannergooding"
       ],
       "label": "area-System.Numerics"
     },
@@ -1230,12 +1363,14 @@
       "lead": "jeffhandley",
       "pod": "drew-michael-tanner",
       "owners": [
+        "dotnet/area-system-numerics-tensors"
+      ],
+      "mentionees": [
         "dakersnar",
         "ericstj",
         "jeffhandley",
         "michaelgsharp",
-        "tannergooding",
-        "dotnet/area-system-numerics-tensors"
+        "tannergooding"
       ],
       "label": "area-System.Numerics.Tensors"
     },
@@ -1243,16 +1378,19 @@
       "lead": "ericstj",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-system-reflection"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "steveharter",
-        "dotnet/area-system-reflection"
+        "steveharter"
       ],
       "label": "area-System.Reflection"
     },
     {
       "lead": "SamMonoRT",
+      "notes": "MonoVM-specific reflection and reflection-emit issues",
       "owners": [
         "lambdageek"
       ],
@@ -1262,23 +1400,28 @@
       "lead": "ericstj",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-system-reflection-emit"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "steveharter",
-        "dotnet/area-system-reflection-emit"
+        "steveharter"
       ],
       "label": "area-System.Reflection.Emit"
     },
     {
       "lead": "ericstj",
+      "notes": "Consultants: @tmat",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-system-reflection-metadata"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
-        "steveharter",
-        "dotnet/area-system-reflection-metadata"
+        "steveharter"
       ],
       "label": "area-System.Reflection.Metadata"
     },
@@ -1286,33 +1429,38 @@
       "lead": "ericstj",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-system-resources"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
         "steveharter",
-        "tarekgh",
-        "dotnet/area-system-resources"
+        "tarekgh"
       ],
       "label": "area-System.Resources"
     },
     {
       "lead": "jeffhandley",
+      "notes": "Included:<ul><li>System.Runtime.Serialization.Formatters</li><li>System.Runtime.InteropServices.RuntimeInfo</li><li>System.Array</li></ul>Excluded:<ul><li>Path -> System.IO</li><li>StopWatch -> System.Diagnostics</li><li>Uri -> System.Net</li><li>WebUtility -> System.Net</li></ul>",
       "pod": "drew-michael-tanner",
       "owners": [
+        "dotnet/area-system-runtime"
+      ],
+      "mentionees": [
         "dakersnar",
         "ericstj",
         "jeffhandley",
         "michaelgsharp",
-        "tannergooding",
-        "dotnet/area-system-runtime"
+        "tannergooding"
       ],
       "label": "area-System.Runtime"
     },
     {
       "lead": "HongGit",
       "owners": [
-        "HongGit",
-        "StephenMolloy"
+        "StephenMolloy",
+        "HongGit"
       ],
       "label": "area-System.Runtime.Caching"
     },
@@ -1320,17 +1468,20 @@
       "lead": "ericstj",
       "pod": "drew-michael-tanner",
       "owners": [
+        "dotnet/area-system-runtime-compilerservices"
+      ],
+      "mentionees": [
         "dakersnar",
         "ericstj",
         "jeffhandley",
         "michaelgsharp",
-        "tannergooding",
-        "dotnet/area-system-runtime-compilerservices"
+        "tannergooding"
       ],
       "label": "area-System.Runtime.CompilerServices"
     },
     {
       "lead": "agocke",
+      "notes": "Excluded:<ul><li>System.Runtime.InteropServices.RuntimeInfo</li></ul>",
       "owners": [
         "AaronRobinsonMSFT",
         "jkoritzinsky"
@@ -1346,14 +1497,17 @@
     },
     {
       "lead": "jeffhandley",
+      "notes": "Consultants: @echesakovMSFT @kunalspathak",
       "pod": "drew-michael-tanner",
       "owners": [
+        "dotnet/area-system-runtime-intrinsics"
+      ],
+      "mentionees": [
         "dakersnar",
         "ericstj",
         "jeffhandley",
         "michaelgsharp",
-        "tannergooding",
-        "dotnet/area-system-runtime-intrinsics"
+        "tannergooding"
       ],
       "label": "area-System.Runtime.Intrinsics"
     },
@@ -1361,19 +1515,22 @@
       "lead": "jeffhandley",
       "pod": "adam-david-jeremy",
       "owners": [
+        "dotnet/area-system-security"
+      ],
+      "mentionees": [
         "adamsitnik",
         "bartonjs",
         "ericstj",
         "GrabYourPitchforks",
         "jeffhandley",
         "Jozkee",
-        "krwq",
-        "dotnet/area-system-security"
+        "krwq"
       ],
       "label": "area-System.Security"
     },
     {
       "lead": "HongGit",
+      "notes": "Repo: https://github.com/dotnet/WCF<br>Packages:<ul><li>System.ServiceModel.Primitives</li><li>System.ServiceModel.Http</li><li>System.ServiceModel.NetTcp</li><li>System.ServiceModel.Duplex</li><li>System.ServiceModel.Security</li></ul>",
       "owners": [
         "HongGit",
         "mconnew"
@@ -1383,8 +1540,8 @@
     {
       "lead": "HongGit",
       "owners": [
-        "HongGit",
-        "StephenMolloy"
+        "StephenMolloy",
+        "HongGit"
       ],
       "label": "area-System.ServiceModel.Syndication"
     },
@@ -1392,12 +1549,14 @@
       "lead": "ericstj",
       "pod": "akhil-carlos-viktor",
       "owners": [
+        "dotnet/area-system-serviceprocess"
+      ],
+      "mentionees": [
         "carlossanlop",
         "ericstj",
         "jeffhandley",
         "smasher164",
-        "ViktorHofer",
-        "dotnet/area-system-serviceprocess"
+        "ViktorHofer"
       ],
       "label": "area-System.ServiceProcess"
     },
@@ -1414,14 +1573,16 @@
       "lead": "jeffhandley",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-system-text-encoding"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "GrabYourPitchforks",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-system-text-encoding"
+        "tarekgh"
       ],
       "label": "area-System.Text.Encoding"
     },
@@ -1429,14 +1590,16 @@
       "lead": "jeffhandley",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-system-text-encodings-web"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "GrabYourPitchforks",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-system-text-encodings-web"
+        "tarekgh"
       ],
       "label": "area-System.Text.Encodings.Web"
     },
@@ -1444,14 +1607,16 @@
       "lead": "jeffhandley",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-system-text-json"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
         "steveharter",
-        "tarekgh",
-        "dotnet/area-system-text-json"
+        "tarekgh"
       ],
       "label": "area-System.Text.Json"
     },
@@ -1459,11 +1624,14 @@
       "lead": "ericstj",
       "pod": "buyaa-steve",
       "owners": [
+        "dotnet/area-system-text-regularexpressions"
+      ],
+      "mentionees": [
         "buyaa-n",
         "ericstj",
         "jeffhandley",
         "steveharter",
-        "dotnet/area-system-text-regularexpressions"
+        "stephentoub"
       ],
       "label": "area-System.Text.RegularExpressions"
     },
@@ -1478,35 +1646,31 @@
       "lead": "ericstj",
       "pod": "drew-michael-tanner",
       "owners": [
+        "dotnet/area-system-threading-channels"
+      ],
+      "mentionees": [
         "dakersnar",
         "ericstj",
         "jeffhandley",
         "michaelgsharp",
         "stephentoub",
-        "tannergooding",
-        "dotnet/area-system-threading-channels"
+        "tannergooding"
       ],
       "label": "area-System.Threading.Channels"
-    },
-    {
-      "lead": "rafikiassumani-msft",
-      "owners": [
-        "BrennanConroy",
-        "halter73"
-      ],
-      "label": "area-System.Threading.RateLimiting"
     },
     {
       "lead": "ericstj",
       "pod": "drew-michael-tanner",
       "owners": [
+        "dotnet/area-system-threading-tasks"
+      ],
+      "mentionees": [
         "dakersnar",
         "ericstj",
         "jeffhandley",
         "michaelgsharp",
         "stephentoub",
-        "tannergooding",
-        "dotnet/area-system-threading-tasks"
+        "tannergooding"
       ],
       "label": "area-System.Threading.Tasks"
     },
@@ -1521,13 +1685,15 @@
       "lead": "jeffhandley",
       "pod": "eirik-krzysztof-layomi-tarek",
       "owners": [
+        "dotnet/area-system-xml"
+      ],
+      "mentionees": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
         "layomia",
-        "tarekgh",
-        "dotnet/area-system-xml"
+        "tarekgh"
       ],
       "label": "area-System.Xml"
     },
@@ -1555,8 +1721,8 @@
     {
       "lead": "tommcdon",
       "owners": [
-        "josalem",
-        "sywhang"
+        "sywhang",
+        "josalem"
       ],
       "label": "area-Tracing-coreclr"
     },
@@ -1571,14 +1737,15 @@
       "lead": "mangod9",
       "owners": [
         "davidwrighton",
+        "MichalStrehovsky",
         "janvorli",
-        "mangod9",
-        "MichalStrehovsky"
+        "mangod9"
       ],
       "label": "area-TypeSystem-coreclr"
     },
     {
       "lead": "tommcdon",
+      "notes": "UWP-specific issues including Microsoft.NETCore.UniversalWindowsPlatform and Microsoft.Net.UWPCoreRuntimeSdk",
       "owners": [
         "jashook"
       ],
