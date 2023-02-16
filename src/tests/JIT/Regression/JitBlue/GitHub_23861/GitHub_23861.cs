@@ -32,14 +32,14 @@ namespace GitHub_23861
             T[] values1 = new T[Vector<T>.Count];
             for (int g = 0; g < Vector<T>.Count; g++)
             {
-                values1[g] = T.CreateChecked<int>(g);
+                values1[g] = T.CreateTruncating<int>(g);
             }
             Vector<T> vec1 = new Vector<T>(values1);
 
             T[] values2 = new T[Vector<T>.Count];
             for (int g = 0; g < Vector<T>.Count; g++)
             {
-                values2[g] = T.CreateChecked<int>(g + 25);
+                values2[g] = T.CreateTruncating<int>(g + 25);
             }
             Vector<T> vec2 = new Vector<T>(values2);
 
