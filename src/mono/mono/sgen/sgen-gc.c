@@ -4122,13 +4122,15 @@ static gboolean pressure_check_heuristic (guint64 new_mem_value)
 	guint64 add = 0;
 	guint64 rem = 0;
 
+	guint p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
 	for (gint i = 0; i < MEM_PRESSURE_COUNT; i++) {
 		add += memory_pressure_adds[i];
 		rem += memory_pressure_removes[i];
 	} 
 
 	add -= memory_pressure_adds[p];
-	rem -= memory_pressure_removes[p]
+	rem -= memory_pressure_removes[p];
 
 	if (new_mem_value >= min_memorypressure_budget) {
 		guint64 budget = min_memorypressure_budget;
