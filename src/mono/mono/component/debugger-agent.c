@@ -7952,7 +7952,11 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		// PRINT_DEBUG_MSG(1, "MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE_ADDRESS - [%p] - %d\n", module_handle, image->raw_data_len);
 		buffer_add_long (buf, (gssize)image->raw_data);
 		buffer_add_int (buf, image->raw_data_len);
-        break;
+        	break;
+	}
+	case case MDBGPROT_CMD_ASSEMBLY_GET_PEIMAGE: {
+		m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) image->raw_data, image->raw_data_len);
+		break;
 	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
