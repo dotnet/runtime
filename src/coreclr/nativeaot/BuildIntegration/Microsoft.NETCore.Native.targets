@@ -35,7 +35,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
     <RunILLink>false</RunILLink>
-    <_IsApplePlatform Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or $(TargetOS.StartsWith('ios')) or $(TargetOS.StartsWith('tvos'))">true</_IsApplePlatform>
+    <_IsiOSLikePlatform Condition="'$(TargetOS)' == 'maccatalyst' or $(TargetOS.StartsWith('ios')) or $(TargetOS.StartsWith('tvos'))">true</_IsiOSLikePlatform>
+    <_IsApplePlatform Condition="'$(TargetOS)' == 'osx' or '$(_IsiOSLikePlatform)' == 'true'">true</_IsApplePlatform>
   </PropertyGroup>
 
   <!-- Set up the defaults for the compatibility mode -->
