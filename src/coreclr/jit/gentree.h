@@ -8518,12 +8518,11 @@ public:
 };
 
 // Represents a GT_JCC or GT_SETCC node.
-
 struct GenTreeCC final : public GenTree
 {
     GenCondition gtCondition;
 
-    GenTreeCC(genTreeOps oper, GenCondition condition, var_types type = TYP_VOID)
+    GenTreeCC(genTreeOps oper, var_types type, GenCondition condition)
         : GenTree(oper, type DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
     {
         assert(OperIs(GT_JCC, GT_SETCC));
@@ -8531,6 +8530,24 @@ struct GenTreeCC final : public GenTree
 
 #if DEBUGGABLE_GENTREE
     GenTreeCC() : GenTree()
+    {
+    }
+#endif // DEBUGGABLE_GENTREE
+};
+
+// Represents a node with two operands and a condition.
+struct GenTreeOpCC final : public GenTreeOp
+{
+    GenCondition gtCondition;
+
+    GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree* op1 = nullptr, GenTree* op2 = nullptr)
+        : GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
+    {
+        assert(OperIs(GT_SELECTCC));
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeOpCC() : GenTreeOp()
     {
     }
 #endif // DEBUGGABLE_GENTREE

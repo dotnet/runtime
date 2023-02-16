@@ -6943,6 +6943,18 @@ GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, 
     return node;
 }
 
+GenTreeCC* Compiler::gtNewCC(genTreeOps oper, var_types type, GenCondition cond)
+{
+    GenTreeCC* node = new (this, oper) GenTreeCC(oper, type, cond);
+    return node;
+}
+
+GenTreeOpCC* Compiler::gtNewOperCC(genTreeOps oper, var_types type, GenCondition cond, GenTree* op1, GenTree* op2)
+{
+    GenTreeOpCC* node = new (this, oper) GenTreeOpCC(oper, type, cond, op1, op2);
+    return node;
+}
+
 GenTreeColon* Compiler::gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode)
 {
     return new (this, GT_COLON) GenTreeColon(TYP_INT, elseNode, thenNode);
