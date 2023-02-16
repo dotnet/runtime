@@ -17,44 +17,73 @@ public class IcuShardingTests : BuildTestBase
     public IcuShardingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
+    // custom file contains only locales "cy-GB", "is-IS", "bs-BA", "lb-LU" and fallback locale: "en-US":
     private static string customIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
-    private static string[] customIcuExpectedLocales = new string[] { "cy-GB", "is-IS", "bs-BA", "lb-LU" }; // there is no en-US inside!
-    private static string[] customIcuMissingLocales = new string[] { "fr-FR", "hr-HR", "ko-KR" };
-
-    public static IEnumerable<object?[]> IcuExpectedAndMissingAutomaticShardTestData(bool aot)
-        => ConfigWithAOTData(aot)
-            .Multiply(
-                new object[] { "fr-FR", new string[] { "en-US", "fr-FR", "es-ES" }, new string[] { "pl-PL", "ko-KR", "cs-CZ" } },   // "icudt_EFIGS.dat"
-                new object[] { "ja-JP", new string[] { "en-GB", "zh-CN", "ja-JP" }, new string[] { "fr-FR", "hr-HR", "it-IT" } },   // icudt_CJK.dat
-                new object[] { "cz-CS", new string[] { "en-AU", "fr-FR", "sk-SK" }, new string[] { "ja-JP", "ko-KR", "zh-CN" } })   // "icudt_no_CJK.dat"
-            .WithRunHosts(BuildTestBase.hostsForOSLocaleSensitiveTests)
-            .UnwrapItemsAsArrays();
+    public record SundayNames {
+        public static string French = "dimanche";
+        public static string Spanish = "domingo";
+        public static string Chinese = "星期日";
+        public static string Japanese = "日曜日";
+        public static string Slovak = "nedeľa";
+    }
+    private static string customIcuTestedLocales = $@"new Locale[] {{
+        new Locale(""cy-GB"",  ""Dydd Sul""), new Locale(""is-IS"",  ""sunnudagur""), new Locale(""bs-BA"",  ""nedjelja""), new Locale(""lb-LU"",  ""Sonndeg""),
+        new Locale(""fr-FR""), new Locale(""hr-HR""), new Locale(""ko-KR"")
+    }}";
+    private static string GetEfigsTestedLocales(string fallbackSundayName="Sunday") =>  $@"new Locale[] {{
+        new Locale(""en-US""), new Locale(""fr-FR"", ""{SundayNames.French}""), new Locale(""es-ES"", ""{SundayNames.Spanish}""),
+        new Locale(""pl-PL"", ""{fallbackSundayName}""), new Locale(""ko-KR"", ""{fallbackSundayName}""), new Locale(""cs-CZ"", ""{fallbackSundayName}"")
+    }}";
+    private static string GetCjkTestedLocales(string fallbackSundayName="Sunday") =>  $@"new Locale[] {{
+        new Locale(""en-GB""), new Locale(""zh-CN"", ""{SundayNames.Chinese}""), new Locale(""ja-JP"", ""{SundayNames.Japanese}""),
+        new Locale(""fr-FR"", ""{fallbackSundayName}""), new Locale(""hr-HR"", ""{fallbackSundayName}""), new Locale(""it-IT"", ""{fallbackSundayName}"")
+    }}";
+    private static string GetNocjkTestedLocales(string fallbackSundayName="Sunday") =>  $@"new Locale[] {{
+        new Locale(""en-AU""), new Locale(""fr-FR"", ""{SundayNames.French}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""),
+        new Locale(""ja-JP"", ""{fallbackSundayName}""), new Locale(""ko-KR"", ""{fallbackSundayName}""), new Locale(""zh-CN"", ""{fallbackSundayName}"")
+    }}";
+    private static string fullIcuTestedLocales = $@"new Locale[] {{
+        new Locale(""en-GB""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""), new Locale(""zh-CN"", ""{SundayNames.Chinese}"")
+    }}";
 
     public static IEnumerable<object?[]> IcuExpectedAndMissingCustomShardTestData(bool aot, RunHost host)
         => ConfigWithAOTData(aot)
             .Multiply(
-                // custom file contains only 4 locales, nothing else:
-                new object[] { customIcuPath, customIcuExpectedLocales, customIcuMissingLocales })
+                new object[] { customIcuPath, customIcuTestedLocales, false },
+                new object[] { customIcuPath, customIcuTestedLocales, true })
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
     public static IEnumerable<object?[]> IcuExpectedAndMissingShardFromRuntimePackTestData(bool aot, RunHost host)
         => ConfigWithAOTData(aot)
             .Multiply(
-                new object[] { "icudt.dat", new string[] { "en-GB", "zh-CN", "hr-HR" }, new string[] { "xx-yy" } },
-                new object[] { "icudt_EFIGS.dat", new string[] { "en-US", "fr-FR", "es-ES" }, new string[] { "pl-PL", "ko-KR", "cs-CZ" } },
-                new object[] { "icudt_CJK.dat", new string[] { "en-GB", "zh-CN", "ja-JP" }, new string[] { "fr-FR", "hr-HR", "it-IT" } },
-                new object[] { "icudt_no_CJK.dat", new string[] { "en-AU", "fr-FR", "sk-SK" }, new string[] { "ja-JP", "ko-KR", "zh-CN"} })
+                new object[] { "icudt.dat",
+                                $@"new Locale[] {{
+                                    new Locale(""en-GB""), new Locale(""zh-CN"", ""{SundayNames.Chinese}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""),
+                                    new Locale(""xx-yy"") }}" },
+                new object[] { "icudt_EFIGS.dat", GetEfigsTestedLocales() },
+                new object[] { "icudt_CJK.dat", GetCjkTestedLocales() },
+                new object[] { "icudt_no_CJK.dat", GetNocjkTestedLocales() })
             .WithRunHosts(host)
+            .UnwrapItemsAsArrays();
+
+    public static IEnumerable<object?[]> IcuExpectedAndMissingAutomaticShardTestData(bool aot)
+        => ConfigWithAOTData(aot)
+            .Multiply(
+                new object[] { "fr-FR", GetEfigsTestedLocales(SundayNames.French)},
+                new object[] { "ja-JP", GetCjkTestedLocales(SundayNames.Japanese) },
+                new object[] { "sk-SK", GetNocjkTestedLocales(SundayNames.Slovak) })
+            .WithRunHosts(BuildTestBase.hostsForOSLocaleSensitiveTests)
             .UnwrapItemsAsArrays();
 
     public static IEnumerable<object?[]> FullIcuWithInvariantTestData(bool aot, RunHost host)
         => ConfigWithAOTData(aot)
             .Multiply(
-                new object[] { true, true, new string[] { "en-GB", "pl-PL", "ko-KR" } },
-                new object[] { true, false, new string[] { "en-GB", "pl-PL", "ko-KR" } },
-                new object[] { false, false, new string[] { "en-GB", "fr-FR", "it-IT" } }, // default mode, only "icudt_EFIGS.dat" loaded
-                new object[] { false, true, new string[] { "en-GB", "pl-PL", "ko-KR" } })
+                // in invariant mode, all locales should be missing
+                new object[] { true, true, "Array.Empty<Locale>()" },
+                new object[] { true, false, "Array.Empty<Locale>()" },
+                new object[] { false, false, GetEfigsTestedLocales() },
+                new object[] { false, true,  fullIcuTestedLocales})
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
@@ -66,91 +95,55 @@ public class IcuShardingTests : BuildTestBase
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
-    private static string GetLocalesStrArr(string[] locales) => locales.Length == 0 ? "Array.Empty<string>()" : $@"new string[] {{ ""{string.Join("\", \"", locales)}"" }}";
-
-    private static string GetProgramText(string[] expectedLocales, string[] missingLocales) => $@"
+    private static string GetProgramText(string testedLocales, bool onlyPredefinedCultures=false) => $@"
         using System;
         using System.Globalization;
 
-        string[] expectedLocales = {GetLocalesStrArr(expectedLocales)};
-        string[] missingLocales =  {GetLocalesStrArr(missingLocales)};
-        foreach (var loc in expectedLocales)
-        {{
-            var culture = new CultureInfo(loc);
-            Console.WriteLine($""Found expected locale: {{loc}} - {{culture.Name}}"");
-        }}
-        foreach (var loc in missingLocales)
+        bool onlyPredefinedCultures = {onlyPredefinedCultures.ToString().ToLower()};
+        Locale[] locales = {testedLocales};
+        foreach (var loc in locales)
         {{
             try
             {{
-                var culture = new CultureInfo(loc);
+                var culture = new CultureInfo(loc.Code);
+                var localizedSundayName = culture.DateTimeFormat.GetDayName(new DateTime(2000,01,02).DayOfWeek);
+                if (loc.SundayName != localizedSundayName)
+                {{
+                    Console.WriteLine($""Error: incorrect localized value for Sunday in locale {{loc.Code}}. Expected {{loc.SundayName}} but got {{localizedSundayName}}."");
+                    return -1;
+                }}
             }}
-            catch(Exception)
+            catch(Exception ex)
             {{
-                Console.WriteLine($""Missing locale as planned: {{loc}}"");
+                if (!onlyPredefinedCultures)
+                {{
+                    Console.WriteLine($""Error: for locale {{loc.Code}} encountered an exception. This is expected only when OnlyPredefinedCultures=true. Ex: {{ex}}."");
+                    return -1;
+                }}
+                if (!ex.Message.Contains(""Culture is not supported""))
+                {{
+                    Console.WriteLine($""Error: for locale {{loc.Code}} encountered an exception from different reason than expected. Ex: {{ex}}."");
+                    return -1;
+                }}
             }}
         }}
         return 42;
+
+        public record Locale(string Code, string SundayName=""Sunday"");
         ";
 
-    private void CheckExpectedLocales(string[] expectedLocales, string runOutput)
-    {
-        foreach (var loc in expectedLocales)
-            Assert.Contains($"Found expected locale: {loc} - {loc}", runOutput);
-    }
-
-    private void CheckMissingLocales(string[] missingLocales, string runOutput)
-    {
-        foreach (var loc in missingLocales)
-            Assert.Contains($"Missing locale as planned: {loc}", runOutput);
-    }
-
-    [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })]
-    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
-    public void DefaultAvailableIcuShardsFromRuntimePack(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id) =>
-        TestIcuShards(buildArgs, shardName, expectedLocales, missingLocales, host, id);
-
-    [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })]
-    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
-    public void CustomIcuShard(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id) =>
-        TestIcuShards(buildArgs, shardName, expectedLocales, missingLocales, host, id);
-
-    [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { false })]
-    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { true })]
-    public void AutomaticShardSelectionDependingOnEnvLocale(BuildArgs buildArgs, string environmentLocale, string[] expectedLocales, string[] missingLocales, RunHost host, string id)
-    {
-        string projectName = $"automatic_shard_{environmentLocale}_{buildArgs.Config}_{buildArgs.AOT}";
-        bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
-
-        buildArgs = buildArgs with { ProjectName = projectName };
-        buildArgs = ExpandBuildArgs(buildArgs);
-
-        string programText = GetProgramText(expectedLocales, missingLocales);
-        (_, string output) = BuildProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                            DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
-        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id, environmentLocale: environmentLocale);
-
-        CheckExpectedLocales(expectedLocales, runOutput);
-        CheckMissingLocales(missingLocales, runOutput);
-    }
-
-    // on Chrome: when loading only EFIGS or only CJK, CoreLib's failure on culture not found cannot be easily caught:
-    // Encountered infinite recursion while looking up resource 'Argument_CultureNotSupported' in System.Private.CoreLib.
-    private void TestIcuShards(BuildArgs buildArgs, string shardName, string[] expectedLocales, string[] missingLocales, RunHost host, string id)
+    private void TestIcuShards(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id, bool onlyPredefinedCultures=false)
     {
         string projectName = $"shard_{Path.GetFileName(shardName)}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName };
-        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName>");
+        string extraProperties = onlyPredefinedCultures ?
+            $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName><PredefinedCulturesOnly>true</PredefinedCulturesOnly>" :
+            $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName>";
+        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: extraProperties);
 
-        string programText = GetProgramText(expectedLocales, missingLocales);
+        string programText = GetProgramText(testedLocales, onlyPredefinedCultures);
         (_, string output) = BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
@@ -160,15 +153,44 @@ public class IcuShardingTests : BuildTestBase
                             PredefinedIcudt: shardName));
 
         string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+    }
 
-        CheckExpectedLocales(expectedLocales, runOutput);
-        CheckMissingLocales(missingLocales, runOutput);
+    [Theory]
+    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })]
+    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
+    public void CustomIcuShard(BuildArgs buildArgs, string shardName, string testedLocales, bool onlyPredefinedCultures, RunHost host, string id) =>
+        TestIcuShards(buildArgs, shardName, testedLocales, host, id, onlyPredefinedCultures);
+
+    [Theory]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { false,RunHost.NodeJS | RunHost.Chrome })]
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
+    public void DefaultAvailableIcuShardsFromRuntimePack(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id) =>
+        TestIcuShards(buildArgs, shardName, testedLocales, host, id);
+
+    [Theory]
+    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { false })]
+    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { true })]
+    public void AutomaticShardSelectionDependingOnEnvLocale(BuildArgs buildArgs, string environmentLocale, string testedLocales, RunHost host, string id)
+    {
+        string projectName = $"automatic_shard_{environmentLocale}_{buildArgs.Config}_{buildArgs.AOT}";
+        bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+
+        buildArgs = buildArgs with { ProjectName = projectName };
+        buildArgs = ExpandBuildArgs(buildArgs);
+
+        string programText = GetProgramText(testedLocales);
+        (_, string output) = BuildProject(buildArgs,
+                        id: id,
+                        new BuildProjectOptions(
+                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                            DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
+        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id, environmentLocale: environmentLocale);
     }
 
     [Theory]
     [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })]
     [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
-    public void FullIcuFromRuntimePackWithInvariant(BuildArgs buildArgs, bool invariant, bool fullIcu, string[] testedLocales, RunHost host, string id)
+    public void FullIcuFromRuntimePackWithInvariant(BuildArgs buildArgs, bool invariant, bool fullIcu, string testedLocales, RunHost host, string id)
     {
         string projectName = $"fullIcuInvariant_{fullIcu}_{invariant}_{buildArgs.Config}_{buildArgs.AOT}";
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
@@ -176,10 +198,7 @@ public class IcuShardingTests : BuildTestBase
         buildArgs = buildArgs with { ProjectName = projectName };
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<InvariantGlobalization>{invariant}</InvariantGlobalization><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
-        // in invariant mode, all locales should be missing
-        string[] expectedLocales = invariant ? Array.Empty<string>() : testedLocales;
-        string[] missingLocales = invariant ? testedLocales : Array.Empty<string>();
-        string programText = GetProgramText(expectedLocales, missingLocales);
+        string programText = GetProgramText(testedLocales);
         (_, string output) = BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
@@ -188,9 +207,6 @@ public class IcuShardingTests : BuildTestBase
                             GlobalizationMode: invariant ? GlobalizationMode.Invariant : fullIcu ? GlobalizationMode.FullIcu : null));
 
         string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-
-        CheckExpectedLocales(expectedLocales, runOutput);
-        CheckMissingLocales(missingLocales, runOutput);
     }
 
     [Theory]
@@ -204,10 +220,8 @@ public class IcuShardingTests : BuildTestBase
         buildArgs = buildArgs with { ProjectName = projectName };
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{customIcuPath}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
-        // custom icu has locales that are not present in full icu data and the other way around
-        string[] expectedLocales = fullIcu ? customIcuMissingLocales : customIcuExpectedLocales;
-        string[] missingLocales = fullIcu ? customIcuExpectedLocales : customIcuMissingLocales;
-        string programText = GetProgramText(expectedLocales, missingLocales);
+        string testedLocales = fullIcu ? fullIcuTestedLocales : customIcuTestedLocales;
+        string programText = GetProgramText(testedLocales);
         (_, string output) = BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
@@ -219,8 +233,6 @@ public class IcuShardingTests : BuildTestBase
             Assert.Contains("$(WasmIcuDataFileName) has no effect when $(WasmIncludeFullIcuData) is set to true.", output);
 
         string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        CheckExpectedLocales(expectedLocales, runOutput);
-        CheckMissingLocales(missingLocales, runOutput);
     }
 
     [Theory]
