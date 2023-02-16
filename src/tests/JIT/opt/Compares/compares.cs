@@ -303,7 +303,7 @@ public class FullRangeComparisonTest
     public static void Lt_else_float_int_consume(float f1, float f2, int a1, int a2)
     {
         // ARM64-FULL-LINE:      fcmp {{s[0-9]+}}, {{s[0-9]+}}
-        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{lt|ge}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{hs|lo}}
         //
         // X64-FULL-LINE:        cmov{{be|a}} {{[a-z0-9]+}}, {{.*}}
 
