@@ -242,7 +242,7 @@ GTNODE(JCMP             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR
 GTNODE(JCC              , GenTreeCC          ,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and produces 1 if the condition specified by GenTreeCC::gtCondition is true and 0 otherwise.
 GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF|DBK_NOTHIR)
-// Variant of SELECT that reuses flags computed by a previous SELECT.
+// Variant of SELECT that reuses flags computed by a previous node with the specified condition.
 GTNODE(SELECTCC         , GenTreeCC          ,0,GTK_BINOP|DBK_NOTHIR)
 
 
