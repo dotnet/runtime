@@ -157,7 +157,6 @@ const char* CodeGen::genSizeStr(emitAttr attr)
     static
     const char * const sizes[] =
     {
-        "",
         "byte  ptr ",
         "word  ptr ",
         "dword ptr ",

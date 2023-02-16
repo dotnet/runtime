@@ -2280,11 +2280,17 @@ void Compiler::compSetProcessor()
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ))
     {
         if (!DoJitStressEvexEncoding())
         {
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
             instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
         }
         else
