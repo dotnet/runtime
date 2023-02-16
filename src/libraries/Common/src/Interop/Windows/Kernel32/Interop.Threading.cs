@@ -71,5 +71,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.Kernel32)]
         internal static extern bool SetThreadPriority(SafeWaitHandle hThread, int nPriority);
+
+        [DllImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetThreadIOPendingFlag(nint hThread, out BOOL lpIOIsPending);
     }
 }
