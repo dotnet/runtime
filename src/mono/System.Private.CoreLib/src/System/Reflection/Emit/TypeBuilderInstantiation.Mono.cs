@@ -42,27 +42,27 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     internal partial class TypeBuilderInstantiation
     {
-        // _genericType and _typeArguments fields defined in shared TypeBuilderInstantiation should kept in sync with MonoReflectionGenericClass in object-internals.h
+        // generic_type and type_arguments fields defined in shared TypeBuilderInstantiation should kept in sync with MonoReflectionGenericClass in object-internals.h
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]
         internal override Type InternalResolve()
         {
-            Type gtd = _genericType.InternalResolve();
-            Type[] args = new Type[_typeArguments.Length];
-            for (int i = 0; i < _typeArguments.Length; ++i)
-                args[i] = _typeArguments[i].InternalResolve();
+            Type gtd = generic_type.InternalResolve();
+            Type[] args = new Type[type_arguments.Length];
+            for (int i = 0; i < type_arguments.Length; ++i)
+                args[i] = type_arguments[i].InternalResolve();
             return gtd.MakeGenericType(args);
         }
 
         // Called from the runtime to return the corresponding finished Type object
         internal override Type RuntimeResolve()
         {
-            if (_genericType is TypeBuilder tb && !tb.IsCreated())
+            if (generic_type is TypeBuilder tb && !tb.IsCreated())
                 throw new NotImplementedException();
-            for (int i = 0; i < _typeArguments.Length; ++i)
+            for (int i = 0; i < type_arguments.Length; ++i)
             {
-                Type t = _typeArguments[i];
+                Type t = type_arguments[i];
                 if (t is TypeBuilder ttb && !ttb.IsCreated())
                     throw new NotImplementedException();
             }
@@ -73,7 +73,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                foreach (Type t in _typeArguments)
+                foreach (Type t in type_arguments)
                 {
                     if (t.IsUserType)
                         return true;

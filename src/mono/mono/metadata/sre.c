@@ -1562,7 +1562,7 @@ reflection_instance_handle_mono_type (MonoReflectionGenericClassHandle ref_gclas
 	MonoType *result = NULL;
 	MonoType **types = NULL;
 
-	MonoArrayHandle typeargs = MONO_HANDLE_NEW_GET (MonoArray, ref_gclass, _typeArguments);
+	MonoArrayHandle typeargs = MONO_HANDLE_NEW_GET (MonoArray, ref_gclass, type_arguments);
 	int count = GUINTPTR_TO_INT (mono_array_handle_length (typeargs));
 	types = g_new0 (MonoType*, count);
 	MonoReflectionTypeHandle t = MONO_HANDLE_NEW (MonoReflectionType, NULL);
@@ -1573,9 +1573,9 @@ reflection_instance_handle_mono_type (MonoReflectionGenericClassHandle ref_gclas
 			goto leave;
 		}
 	}
-	/* Need to resolve the _genericType in order for it to create its generic context. */
+	/* Need to resolve the generic_type in order for it to create its generic context. */
 	MonoReflectionTypeHandle ref_gtd;
-	ref_gtd = MONO_HANDLE_NEW_GET (MonoReflectionType, ref_gclass, _genericType);
+	ref_gtd = MONO_HANDLE_NEW_GET (MonoReflectionType, ref_gclass, generic_type);
 	MonoType *gtd;
 	gtd = mono_reflection_type_handle_mono_type (ref_gtd, error);
 	goto_if_nok (error, leave);
@@ -1697,18 +1697,18 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 
 	if (is_sre_symboltype (klass)) {
 		MonoReflectionSymbolTypeHandle sre_symbol = MONO_HANDLE_CAST (MonoReflectionSymbolType, ref);
-		MonoReflectionTypeHandle ref_element = MONO_HANDLE_NEW_GET (MonoReflectionType, sre_symbol, _baseType);
+		MonoReflectionTypeHandle ref_element = MONO_HANDLE_NEW_GET (MonoReflectionType, sre_symbol, element_type);
 		MonoType *base = mono_reflection_type_handle_mono_type (ref_element, error);
 		goto_if_nok (error, leave);
 		g_assert (base);
-		uint8_t _typeKind = GINT32_TO_UINT8 (MONO_HANDLE_GETVAL (sre_symbol, _typeKind));
-		switch (_typeKind)
+		uint8_t type_kind = GINT32_TO_UINT8 (MONO_HANDLE_GETVAL (sre_symbol, type_kind));
+		switch (type_kind)
 		{
 			case 1 : {
-				uint8_t _rank = GINT32_TO_UINT8 (MONO_HANDLE_GETVAL (sre_symbol, _rank));
+				uint8_t rank = GINT32_TO_UINT8 (MONO_HANDLE_GETVAL (sre_symbol, rank));
 				MonoClass *eclass = mono_class_from_mono_type_internal (base);
 				result = mono_image_new0 (eclass->image, MonoType, 1);
-				if (_rank == 0)  {
+				if (rank == 0)  {
 					result->type = MONO_TYPE_SZARRAY;
 					result->data.klass = eclass;
 				} else {
@@ -1716,7 +1716,7 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 					result->type = MONO_TYPE_ARRAY;
 					result->data.array = at;
 					at->eklass = eclass;
-					at->rank = _rank;
+					at->rank = rank;
 				}
 			}
 			break;
