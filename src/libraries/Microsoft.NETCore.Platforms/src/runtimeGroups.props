@@ -184,6 +184,7 @@
     <RuntimeGroup Include="freebsd">
       <Parent>unix</Parent>
       <Architectures>x64;arm64</Architectures>
+      <Versions>12;13</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="solaris">

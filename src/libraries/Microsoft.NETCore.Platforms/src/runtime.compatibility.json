@@ -2712,6 +2712,65 @@
     "any",
     "base"
   ],
+  "freebsd.12": [
+    "freebsd.12",
+    "freebsd",
+    "unix",
+    "any",
+    "base"
+  ],
+  "freebsd.12-arm64": [
+    "freebsd.12-arm64",
+    "freebsd.12",
+    "freebsd-arm64",
+    "freebsd",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "freebsd.12-x64": [
+    "freebsd.12-x64",
+    "freebsd.12",
+    "freebsd-x64",
+    "freebsd",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "freebsd.13": [
+    "freebsd.13",
+    "freebsd.12",
+    "freebsd",
+    "unix",
+    "any",
+    "base"
+  ],
+  "freebsd.13-arm64": [
+    "freebsd.13-arm64",
+    "freebsd.13",
+    "freebsd.12-arm64",
+    "freebsd.12",
+    "freebsd-arm64",
+    "freebsd",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "freebsd.13-x64": [
+    "freebsd.13-x64",
+    "freebsd.13",
+    "freebsd.12-x64",
+    "freebsd.12",
+    "freebsd-x64",
+    "freebsd",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "gentoo": [
     "gentoo",
     "linux",
