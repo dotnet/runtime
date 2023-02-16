@@ -187,6 +187,7 @@
       <_WasmPropertyNames Include="DisableParallelEmccCompile" />
       <_WasmPropertyNames Include="EmccCompileOptimizationFlag" />
       <_WasmPropertyNames Include="EmccLinkOptimizationFlag" />
+      <_WasmPropertyNames Include="WasmIncludeFullIcuData" />
     </ItemGroup>
   </Target>
 
