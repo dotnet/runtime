@@ -16,8 +16,9 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 			B.SameContext ();
 			B.Broken ();
 			B.Conditional ();
-
+#if NATIVEAOT
 			ReferenceViaReflection.Test ();
+#endif
 		}
 
 		[KeptMember (".ctor()")]
@@ -179,7 +180,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		{
 		}
 	}
-
+#if NATIVEAOT
 	abstract class ReferenceViaReflection
 	{
 		[Kept]
@@ -217,4 +218,5 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 			public override void SourceAbstractViaReflection () { }
 		}
 	}
+#endif
 }

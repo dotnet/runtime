@@ -11,6 +11,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("This test is still not enabled by NativeAOT", IgnoredBy = ProducedBy.NativeAot)]
 	[SkipKeptItemsValidation]
 	[SetupLinkAttributesFile ("XmlAnnotations.xml")]
 	[ExpectedWarning ("IL2031", "Attribute type 'System.DoesNotExistAttribute' could not be found", FileName = "XmlAnnotations.xml")]

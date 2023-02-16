@@ -9,6 +9,7 @@ using Mono.Linker.Tests.Cases.RequiresCapability.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
+	[IgnoreTestCase ("This test is still not enabled by NativeAOT", IgnoredBy = ProducedBy.NativeAot)]
 	[SetupLinkerAction ("link", "test.exe")]
 	[SetupCompileBefore ("RequiresOnAttributeCtor.dll", new[] { "Dependencies/RequiresOnAttributeCtorAttribute.cs" })]
 	[SkipKeptItemsValidation]

@@ -7,6 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
+	[IgnoreTestCase ("This test is still not enabled by NativeAOT", IgnoredBy = ProducedBy.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	[SetupLinkAttributesFile ("SuppressWarningsViaXml.xml")]

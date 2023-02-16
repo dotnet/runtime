@@ -6,6 +6,8 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("This test is still not enabled by NativeAOT", IgnoredBy = ProducedBy.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = ProducedBy.Trimmer)]
 	// Hits what appears to be a bug in the tool
 	// Could not initialize vtable of class(0x02000007) .MyReflect due to VTable setup of type Mono.Linker.Tests.Cases.DataFlow.IReflectDataflow+MyReflect failed assembly:/tmp/linker_tests/output/test.exe type:MyReflect member:(null)
 	[SkipPeVerify]

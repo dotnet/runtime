@@ -9,6 +9,8 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("This test is still not enabled by NativeAOT", IgnoredBy = ProducedBy.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = ProducedBy.Trimmer)]
 	public class StaticInterfaceMethodDataflow
 	{
 		[Kept]

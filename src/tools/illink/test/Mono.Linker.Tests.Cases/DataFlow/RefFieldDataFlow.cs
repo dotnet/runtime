@@ -11,6 +11,7 @@ using DAMT = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("This test is still not enabled by NativeAOT", IgnoredBy = ProducedBy.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	class RefFieldDataFlow

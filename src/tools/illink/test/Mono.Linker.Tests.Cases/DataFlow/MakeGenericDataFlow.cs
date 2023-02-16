@@ -7,6 +7,7 @@ using BindingFlags = System.Reflection.BindingFlags;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("This test is still not enabled by NativeAOT", IgnoredBy = ProducedBy.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targetted at AOT scenarios")]

@@ -12,6 +12,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("This test is still not enabled by NativeAOT", IgnoredBy = ProducedBy.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = ProducedBy.Trimmer)]
 	// NativeAOT will not compile a method with unresolved types in it - it will instead replace it with a throwing method body
 	// So it doesn't produce any of these warnings - which is also correct, because the code at runtime would never get there
 	// it would fail to JIT/run anyway.

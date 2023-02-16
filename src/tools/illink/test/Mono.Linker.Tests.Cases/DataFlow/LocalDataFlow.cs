@@ -8,6 +8,7 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("This test is still not enabled by NativeAOT", IgnoredBy = ProducedBy.NativeAot)]
 	// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
 	//   - so the main validation is done by the ExpectedWarning attributes.
 	[SkipKeptItemsValidation]
