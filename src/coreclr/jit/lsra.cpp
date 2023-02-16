@@ -5498,15 +5498,6 @@ void LinearScan::allocateRegisters()
                     // no need to find register to assign.
                     allocate = false;
                 }
-                //else if (lastAllocatedRefPosition->needsConsecutive &&
-                //         lastAllocatedRefPosition->refType == RefTypeUpperVectorRestore)
-                //{
-                //    // If previous refposition was part of the series and it was UpperVectorRestore,
-                //    // we have already assigned the same register to this refposition as well.
-                //    // No need to allocate.
-                //    assert(lastAllocatedRefPosition->registerAssignment == currentRefPosition.registerAssignment);
-                //    allocate = false;
-                //}
                 else
                 {
                     // If the subsequent refPosition is not assigned to the consecutive register, then reassign the
@@ -12172,7 +12163,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 #ifdef TARGET_ARM64
     freeCandidates = linearScan->getFreeCandidates(candidates, refPosition);
 #else
-    freeCandidates = linearScan->getFreeCandidates(candidates ARM_ARG(regType));
+    freeCandidates     = linearScan->getFreeCandidates(candidates ARM_ARG(regType));
 #endif // TARGET_ARM64
 
     // If no free candidates, then double check if refPosition is an actual ref.

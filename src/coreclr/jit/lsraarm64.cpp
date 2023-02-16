@@ -69,41 +69,23 @@ bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     // are part of the range.
 
     if (!areNextConsecutiveRegistersFree(firstRegAssigned, firstRefPosition->regCount,
-                                        firstRefPosition->getInterval()->registerType))
+                                         firstRefPosition->getInterval()->registerType))
     {
         return false;
     }
-    
-//    RefPosition* consecutiveRefPosition = firstRefPosition;
-//    regNumber    regToAssign            = firstRegAssigned;
-//    while (consecutiveRefPosition != nullptr)
-//    {
-//        if (isRegInUse(regToAssign, consecutiveRefPosition->getInterval()->registerType))
-//        {
-//            return false;
-//        }
-//
-//#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-//        if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
-//        {
-//            consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
-//            
-//            assert(consecutiveRefPosition->refType == RefTypeUse);
-//            assert(!isRegInUse(regToAssign, consecutiveRefPosition->getInterval()->registerType));
-//        }
-//#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-//
-//        consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
-//        regToAssign            = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
-//    }
 
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
     regNumber    regToAssign            = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
-    INDEBUG(int refPosCount = 0);
+
+    // First refposition should always start with RefTypeUse
+    assert(firstRefPosition->refType != RefTypeUpperVectorRestore);
+
+    INDEBUG(int refPosCount = 1);
     regMaskTP busyConsecutiveRegMask = ~(((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
 
     while (consecutiveRefPosition != nullptr)
     {
+        assert(consecutiveRefPosition->regCount == 0);
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         if ((consecutiveRefPosition->refType == RefTypeUpperVectorRestore))
         {
@@ -111,38 +93,25 @@ bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
             {
                 // Make sure that restore doesn't get one of the registers that are part of series we are trying to set
                 // currently.
+                // TODO-CQ: We could technically assign RefTypeUpperVectorRestore and its RefTypeUse same register, but
+                // during register selection, it might get tricky to know which of the busy registers are assigned to
+                // RefTypeUpperVectorRestore positions of corresponding variables for which (another criteria)
+                // we are trying to find consecutive registers.
+
                 consecutiveRefPosition->registerAssignment &= ~busyConsecutiveRegMask;
             }
             consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
         }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        INDEBUG(refPosCount++);
+        assert(consecutiveRefPosition->refType == RefTypeUse);
         consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
         consecutiveRefPosition                     = getNextConsecutiveRefPosition(consecutiveRefPosition);
         regToAssign                                = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
-
-        INDEBUG(refPosCount++);
     }
 
-//    while (consecutiveRefPosition != nullptr)
-//    {
-//        consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
-//#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-//        if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
-//        {
-//            // For restore refPosition, make sure to have same assignment for it and the next one
-//            // which is the use of the variable.
-//            consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
-//            consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
-//        }
-//#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-//        consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
-//        regToAssign            = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
-//
-//        INDEBUG(refPosCount++);
-//    }
-
     assert(refPosCount == firstRefPosition->regCount);
-    
+
     return true;
 }
 
@@ -182,7 +151,7 @@ regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPo
         return result;
     }
 
-    unsigned int registersNeeded = refPosition->regCount;
+    unsigned int registersNeeded   = refPosition->regCount;
     regMaskTP    currAvailableRegs = result;
     if (BitOperations::PopCount(currAvailableRegs) < registersNeeded)
     {
@@ -194,19 +163,19 @@ regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPo
 // At this point, for 'n' registers requirement, if Rm+1, Rm+2, Rm+3, ..., Rm+k are
 // available, create the mask only for Rm+1, Rm+2, ..., Rm+(k-n+1) to convey that it
 // is safe to assign any of those registers, but not beyond that.
-#define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                     \
-    regMaskTP selectionStartMask     = (1ULL << regAvailableStartIndex) - 1;                    \
-    regMaskTP selectionEndMask    = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1; \
-    consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);     \
+#define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                            \
+    regMaskTP selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                               \
+    regMaskTP selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                         \
+    consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
     overallResult |= availableRegistersMask;
 
     regMaskTP overallResult          = RBM_NONE;
     regMaskTP consecutiveResult      = RBM_NONE;
-    uint32_t regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    uint32_t  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
     do
     {
         // From LSB, find the first available register (bit `1`)
-        regAvailableStartIndex  = BitOperations::_BitScanForward(currAvailableRegs);
+        regAvailableStartIndex = BitOperations::_BitScanForward(currAvailableRegs);
         regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
 
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
@@ -1446,7 +1415,10 @@ int LinearScan::BuildConsecutiveRegisters(GenTree* treeNode, GenTree* rmwNode)
                 restoreRefPos->regCount         = 0;
                 if (firstRefPos == nullptr)
                 {
-                    firstRefPos = restoreRefPos;
+                    // Always set the non  UpperVectorRestore. UpperVectorRestore can be assigned
+                    // different independent register.
+                    // See TODO-CQ in setNextConsecutiveRegisterAssignment().
+                    firstRefPos = currRefPos;
                 }
                 refPositionMap->Set(lastRefPos, restoreRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
                 refPositionMap->Set(restoreRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
@@ -1465,20 +1437,6 @@ int LinearScan::BuildConsecutiveRegisters(GenTree* treeNode, GenTree* rmwNode)
 
             lastRefPos = currRefPos;
             regCount++;
-            if (rmwNode != nullptr)
-            {
-                // If we have rmwNode, determine if the currRefPos should be set to delay-free.
-                if ((currRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !currRefPos->lastUse))
-                {
-                    setDelayFree(currRefPos);
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                    if (restoreRefPos != nullptr)
-                    {
-                        setDelayFree(restoreRefPos);
-                    }
-#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                }
-            }
         }
 
         // Just `regCount` to actual registers count for first ref-position.

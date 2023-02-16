@@ -548,8 +548,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_VectorTableLookupExtension:
             {
                 assert(isRMW);
-                assert(targetReg != op2Reg);
-                assert(targetReg != op3Reg);
                 unsigned regCount = 0;
                 op1Reg            = intrin.op1->GetRegNum();
                 op3Reg            = intrin.op3->GetRegNum();
