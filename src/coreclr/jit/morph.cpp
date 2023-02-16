@@ -7802,6 +7802,25 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 #endif
     }
 
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0 &&
+        (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR)
+#ifdef FEATURE_READYTORUN
+         || call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
+#endif
+             ) &&
+        (call == fgMorphStmt->GetRootNode()))
+    {
+        // This is call to CORINFO_HELP_VIRTUAL_FUNC_PTR with ignored result.
+        // Transform it into a null check.
+
+        assert(call->gtArgs.CountArgs() >= 1);
+        GenTree* objPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
+
+        GenTree* nullCheck = gtNewNullCheck(objPtr, compCurBB);
+
+        return fgMorphTree(nullCheck);
+    }
+
     noway_assert(call->gtOper == GT_CALL);
 
     //
