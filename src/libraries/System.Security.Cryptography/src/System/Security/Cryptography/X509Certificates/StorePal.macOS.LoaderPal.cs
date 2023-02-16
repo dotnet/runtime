@@ -119,6 +119,11 @@ namespace System.Security.Cryptography.X509Certificates
 
                         X509Certificate2 cert = new X509Certificate2(newPal);
                         collection.Add(cert);
+
+                        if (newPal != pal)
+                        {
+                            pal.Dispose();
+                        }
                     }
                 }
             }
