@@ -156,7 +156,7 @@
     <RuntimeGroup Include="ol.7">
       <Parent>rhel.7</Parent>
       <Architectures>x64</Architectures>
-      <Versions>0;1;2;3;4;6;6</Versions>
+      <Versions>0;1;2;3;4;5;6</Versions>
       <ApplyVersionsToParent>false</ApplyVersionsToParent>
       <OmitRIDDefinitions>ol;ol.7;ol.7-x64</OmitRIDDefinitions>
     </RuntimeGroup>
