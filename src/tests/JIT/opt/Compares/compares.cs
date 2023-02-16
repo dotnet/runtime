@@ -315,7 +315,7 @@ public class FullRangeComparisonTest
     public static void Le_else_double_int_consume(double f1, double f2, int a1, int a2)
     {
         // ARM64-FULL-LINE:      fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{le|gt}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, hi
         //
         // X64-FULL-LINE:        cmov{{b|ae}} {{[a-z0-9]+}}, {{.*}}
 
