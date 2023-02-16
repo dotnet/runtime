@@ -477,6 +477,7 @@ void CodeGen::genHWIntrinsic_R_RM(
             {
                 if (varTypeIsIntegral(rmOp) && ((node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector128) ||
                                                 (node->GetHWIntrinsicId() == NI_AVX512F_BroadcastScalarToVector512) ||
+                                                (node->GetHWIntrinsicId() == NI_AVX512BW_BroadcastScalarToVector512) ||
                                                 (node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector256)))
                 {
                     // In lowering we had the special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))

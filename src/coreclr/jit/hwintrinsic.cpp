@@ -430,9 +430,12 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
     else if (isa == InstructionSet_Vector512)
     {
-        if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+        // We support some Vector512 intrinsics when AVX512F, AVX512BW, AVX512CD, AVX512DQ are available.
+        if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
+            !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512BW) &&
+            !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512CD) &&
+            !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
         {
-            // TODO-XArch-AVX512: Add checks for CD, DQ, BW
             return NI_Illegal;
         }
     }
@@ -1161,6 +1164,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_AVX2_BroadcastScalarToVector128:
                     case NI_AVX2_BroadcastScalarToVector256:
                     case NI_AVX512F_BroadcastScalarToVector512:
+                    case NI_AVX512BW_BroadcastScalarToVector512:
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:
