@@ -395,7 +395,7 @@ public class FullRangeComparisonTest
     public static ulong Lt_else_ulong_return(ulong a1, ulong a2)
     {
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
-        // ARM64-FULL-LINE-NEXT: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{lt|ge}}
+        // ARM64-FULL-LINE-NEXT: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{hs|lo}}
         //
         // X64-FULL-LINE:        cmov{{b|ae}} {{[a-z0-9]+}}, {{.*}}
 
