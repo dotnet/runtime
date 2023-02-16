@@ -30,14 +30,14 @@ namespace Microsoft.Extensions.Logging
         {
             ConsoleFormatterConfigureOptions.Bind(_configuration, options);
 
-            if (_configuration["ColorBehavior"] is string colorBehavior)
+            if (ConsoleLoggerConfigureOptions.ParseEnum(_configuration, "ColorBehavior", out LoggerColorBehavior colorBehavior))
             {
-                options.ColorBehavior = ConsoleLoggerConfigureOptions.ParseEnum<LoggerColorBehavior>(colorBehavior);
+                options.ColorBehavior = colorBehavior;
             }
 
-            if (_configuration["SingleLine"] is string singleLine)
+            if (ConsoleLoggerConfigureOptions.ParseBool(_configuration, "SingleLine", out bool singleLine))
             {
-                options.SingleLine = bool.Parse(singleLine);
+                options.SingleLine = singleLine;
             }
         }
     }

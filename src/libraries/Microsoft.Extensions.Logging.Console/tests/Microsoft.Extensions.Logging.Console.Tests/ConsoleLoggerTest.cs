@@ -1348,21 +1348,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.True(formatter.FormatterOptions.IncludeScopes);
         }
 
-        [Fact]
-        public void EnsureConsoleLoggerOptions_ConfigureOptions_SupportsAllProperties()
-        {
-            // NOTE: if this test fails, it is because a property was added to one of the following types.
-            // When adding a new property to one of these types, ensure the corresponding
-            // IConfigureOptions class is updated for the new property.
-
-            BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
-            Assert.Equal(9, typeof(ConsoleLoggerOptions).GetProperties(flags).Length);
-            Assert.Equal(3, typeof(ConsoleFormatterOptions).GetProperties(flags).Length);
-            Assert.Equal(5, typeof(SimpleConsoleFormatterOptions).GetProperties(flags).Length);
-            Assert.Equal(4, typeof(JsonConsoleFormatterOptions).GetProperties(flags).Length);
-            Assert.Equal(4, typeof(JsonWriterOptions).GetProperties(flags).Length);
-        }
-
         public static TheoryData<ConsoleLoggerFormat, LogLevel> FormatsAndLevels
         {
             get

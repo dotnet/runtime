@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
@@ -36,19 +35,19 @@ namespace Microsoft.Extensions.Logging
             {
                 JsonWriterOptions jsonWriterOptions = options.JsonWriterOptions;
 
-                if (jsonWriterOptionsConfig["Indented"] is string indented)
+                if (ConsoleLoggerConfigureOptions.ParseBool(jsonWriterOptionsConfig, "Indented", out bool indented))
                 {
-                    jsonWriterOptions.Indented = bool.Parse(indented);
+                    jsonWriterOptions.Indented = indented;
                 }
 
-                if (jsonWriterOptionsConfig["MaxDepth"] is string maxDepth)
+                if (ConsoleLoggerConfigureOptions.ParseInt(jsonWriterOptionsConfig, "MaxDepth", out int maxDepth))
                 {
-                    jsonWriterOptions.MaxDepth = int.Parse(maxDepth, NumberStyles.Integer, NumberFormatInfo.InvariantInfo);
+                    jsonWriterOptions.MaxDepth = maxDepth;
                 }
 
-                if (jsonWriterOptionsConfig["SkipValidation"] is string skipValidation)
+                if (ConsoleLoggerConfigureOptions.ParseBool(jsonWriterOptionsConfig, "SkipValidation", out bool skipValidation))
                 {
-                    jsonWriterOptions.SkipValidation = bool.Parse(skipValidation);
+                    jsonWriterOptions.SkipValidation = skipValidation;
                 }
 
                 options.JsonWriterOptions = jsonWriterOptions;

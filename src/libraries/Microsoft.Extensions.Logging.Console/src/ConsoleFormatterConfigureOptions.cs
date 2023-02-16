@@ -30,9 +30,9 @@ namespace Microsoft.Extensions.Logging
 
         public static void Bind(IConfiguration configuration, ConsoleFormatterOptions options)
         {
-            if (configuration["IncludeScopes"] is string includeScopes)
+            if (ConsoleLoggerConfigureOptions.ParseBool(configuration, "IncludeScopes", out bool includeScopes))
             {
-                options.IncludeScopes = bool.Parse(includeScopes);
+                options.IncludeScopes = includeScopes;
             }
 
             if (configuration["TimestampFormat"] is string timestampFormat)
@@ -40,9 +40,9 @@ namespace Microsoft.Extensions.Logging
                 options.TimestampFormat = timestampFormat;
             }
 
-            if (configuration["UseUtcTimestamp"] is string useUtcTimestamp)
+            if (ConsoleLoggerConfigureOptions.ParseBool(configuration, "UseUtcTimestamp", out bool useUtcTimestamp))
             {
-                options.UseUtcTimestamp = bool.Parse(useUtcTimestamp);
+                options.UseUtcTimestamp = useUtcTimestamp;
             }
         }
     }
