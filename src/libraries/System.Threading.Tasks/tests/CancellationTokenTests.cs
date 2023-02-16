@@ -1787,7 +1787,9 @@ namespace System.Threading.Tasks.Tests
             Task t = cts.CancelAsync();
             Assert.True(cts.IsCancellationRequested);
 
-            t.Wait(); // synchronously block to ensure this thread isn't reused
+            ((IAsyncResult)t).AsyncWaitHandle.WaitOne(); // synchronously block without inlining to ensure this thread isn't reused
+            t.Wait(); // propagate any exceptions
+
             Assert.Equal(Iters * (Iters + 1) / 2, sum);
         }
 

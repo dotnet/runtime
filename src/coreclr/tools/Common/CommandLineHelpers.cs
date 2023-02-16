@@ -77,8 +77,11 @@ namespace System.CommandLine
                     "linux" => TargetOS.Linux,
                     "freebsd" => TargetOS.FreeBSD,
                     "osx" => TargetOS.OSX,
+                    "maccatalyst" => TargetOS.MacCatalyst,
                     "ios" => TargetOS.iOS,
                     "iossimulator" => TargetOS.iOSSimulator,
+                    "tvos" => TargetOS.tvOS,
+                    "tvossimulator" => TargetOS.tvOSSimulator,
                     _ => throw new CommandLineException($"Target OS '{token}' is not supported")
                 };
             }

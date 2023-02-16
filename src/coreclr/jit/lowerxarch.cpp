@@ -5111,7 +5111,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 GenTree* Lowering::PreferredRegOptionalOperand(GenTree* tree)
 {
     assert(GenTree::OperIsBinary(tree->OperGet()));
-    assert(tree->OperIsCommutative() || tree->OperIsCompare() || tree->OperIs(GT_CMP));
+    assert(tree->OperIsCommutative() || tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST));
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
@@ -5791,7 +5791,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    assert(cmp->OperIsCompare() || cmp->OperIs(GT_CMP));
+    assert(cmp->OperIsCompare() || cmp->OperIs(GT_CMP, GT_TEST));
 
     GenTree*  op1     = cmp->AsOp()->gtOp1;
     GenTree*  op2     = cmp->AsOp()->gtOp2;
@@ -7368,6 +7368,20 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 else if (supportsRegOptional)
                                 {
                                     MakeSrcRegOptional(node, op2);
+                                }
+                                break;
+                            }
+                            case NI_X86Base_DivRem:
+                            case NI_X86Base_X64_DivRem:
+                            {
+                                // DIV only allows divisor (op3) in memory
+                                if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op3);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    MakeSrcRegOptional(node, op3);
                                 }
                                 break;
                             }
