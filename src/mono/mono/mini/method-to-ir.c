@@ -11743,7 +11743,7 @@ mono_ldptr:
 				MonoGCHandle target_handle = 0;
 				ERROR_DECL (wrapper_error);
 				MonoMethod *wrapped_cmethod;
-				wrapped_cmethod = mono_marshal_get_managed_wrapper (cmethod, delegate_klass, target_handle, wrapper_error);
+				wrapped_cmethod = mono_marshal_get_managed_wrapper (cmethod, delegate_klass, target_handle, FALSE, wrapper_error);
 				if (!is_ok (wrapper_error)) {
 					/* if we couldn't create a wrapper because cmethod isn't supposed to have an
 					UnmanagedCallersOnly attribute, follow CoreCLR behavior and throw when the

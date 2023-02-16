@@ -3178,8 +3178,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->jit_mm = jit_mm_for_method (cfg->method);
 	cfg->mem_manager = m_method_get_mem_manager (cfg->method);
 
-	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {
-		/* We can't have seq points inside gc critical regions */
+	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC || cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		/* We can't have seq points inside gc critical regions or native-to-managed wrapper */
 		cfg->gen_seq_points = FALSE;
 		cfg->gen_sdb_seq_points = FALSE;
 	}

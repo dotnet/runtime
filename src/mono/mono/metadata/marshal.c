@@ -403,7 +403,7 @@ mono_delegate_to_ftnptr_impl (MonoDelegateHandle delegate, MonoError *error)
 		target_handle = mono_gchandle_new_weakref_from_handle (delegate_target);
 	}
 
-	wrapper = mono_marshal_get_managed_wrapper (method, klass, target_handle, error);
+	wrapper = mono_marshal_get_managed_wrapper (method, klass, target_handle, FALSE, error);
 	goto_if_nok (error, leave);
 
 	MONO_HANDLE_SETVAL (delegate, delegate_trampoline, gpointer, mono_compile_method_checked (wrapper, error));
@@ -3916,9 +3916,9 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
  * THIS_LOC is the memory location where the target of the delegate is stored.
  */
 void
-mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
+mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
-	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle, error);
+	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle, runtime_init_callback, error);
 }
 
 static gboolean
@@ -4026,7 +4026,7 @@ method_signature_is_usable_when_marshalling_disabled (MonoMethodSignature *sig)
  * UnamangedCallersOnlyAttribute.
  */
 MonoMethod *
-mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, MonoError *error)
+mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig, *invoke_sig;
 	MonoMethodBuilder *mb;
@@ -4192,7 +4192,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			mono_custom_attrs_free (cinfo);
 	}
 
-	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle, error);
+	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle, runtime_init_callback, error);
 
 	res = NULL;
 	if (is_ok (error)) {
@@ -4273,7 +4273,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 
 		/* FIXME: Implement VTFIXUP_TYPE_FROM_UNMANAGED_RETAIN_APPDOMAIN. */
 
-		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0, error);
+		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0, FALSE, error);
 		mono_error_assert_ok (error);
 
 		get_marshal_cb ()->mb_set_dynamic (mb);

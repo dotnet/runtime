@@ -368,7 +368,7 @@ monovm_create_delegate_impl (const char* assemblyName, const char* typeName, con
 
 	MonoClass *delegate_klass = NULL;
 	MonoGCHandle target_handle = 0;
-	MonoMethod *wrapper = mono_marshal_get_managed_wrapper (method, delegate_klass, target_handle, error);
+	MonoMethod *wrapper = mono_marshal_get_managed_wrapper (method, delegate_klass, target_handle, FALSE, error);
 	goto_if_nok (error, fail);
 
 	gpointer addr = mono_compile_method_checked (wrapper, error);
