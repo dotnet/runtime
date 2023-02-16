@@ -153,7 +153,7 @@ namespace System.Security.Cryptography
             // Too little data to decode: save data to _inputBuffer, so it can be transformed later
             if (bytesToTransform < InputBlockSize)
             {
-                transformBuffer.CopyTo(_inputBuffer.AsSpan(_inputIndex));
+                transformBuffer.CopyTo(_inputBuffer);
 
                 _inputIndex = bytesToTransform;
 
