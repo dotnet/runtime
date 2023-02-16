@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class ConstructorOnTypeBuilderInstantiation : ConstructorInfo
+    internal sealed partial class ConstructorOnTypeBuilderInstantiation : ConstructorInfo
     {
         #region Private Static Members
         internal static ConstructorInfo GetConstructor(ConstructorInfo Constructor, TypeBuilderInstantiation type)
@@ -36,23 +35,7 @@ namespace System.Reflection.Emit
         {
             return _ctor.GetParameterTypes();
         }
-
-#if MONO
-        // Called from the runtime to return the corresponding finished ConstructorInfo object
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Reflection.Emit is not subject to trimming")]
-        internal ConstructorInfo RuntimeResolve()
-        {
-            Type type = _type.InternalResolve();
-            return type.GetConstructor(_ctor);
-        }
-
-        internal override int GetParametersCount()
-        {
-            return _ctor.GetParametersCount();
-        }
-#endif
-#endregion
+        #endregion
 
         #region MemberInfo Overrides
         public override MemberTypes MemberType => _ctor.MemberType;
@@ -69,7 +52,9 @@ namespace System.Reflection.Emit
                 ConstructorBuilder? cb = _ctor as ConstructorBuilder;
 
                 if (cb != null)
+                {
                     return cb.MetadataToken;
+                }
                 else
                 {
                     Debug.Assert(_ctor is RuntimeConstructorInfo);

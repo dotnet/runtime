@@ -16,17 +16,12 @@ namespace System.Reflection.Emit
     }
 
     // This is a kind of Type object that will represent the compound expression of a parameter type or field type.
-#if MONO
-    [StructLayout(LayoutKind.Sequential)]
-#endif
-    internal sealed class SymbolType : TypeInfo
+    internal sealed partial class SymbolType : TypeInfo
     {
         #region Data Members
-        #region Sync with MonoReflectionDerivedType in object-internals.h
         internal Type _baseType = null!;
         internal TypeKind _typeKind;
         internal int _rank;        // count of dimension
-        #endregion
         // If LowerBound and UpperBound is equal, that means one element.
         // If UpperBound is less than LowerBound, then the size is not specified.
         internal int[] _iaLowerBound;
@@ -532,43 +527,5 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
         #endregion
-
-    #region Mono Specific Overrides
-#if MONO
-        // Called from the runtime to return the corresponding finished Type object
-        internal override Type RuntimeResolve()
-        {
-            if (_typeKind == TypeKind.IsArray)
-            {
-                Type et = _baseType.RuntimeResolve();
-                if (_rank == 1)
-                {
-                    return et.MakeArrayType();
-                }
-
-                return et.MakeArrayType(_rank);
-            }
-
-            return InternalResolve();
-        }
-        internal override Type InternalResolve()
-        {
-            switch (_typeKind)
-            {
-                case TypeKind.IsArray :
-                    {
-                        Type et = _baseType.InternalResolve();
-                        if (_rank == 1)
-                            return et.MakeArrayType();
-                        return et.MakeArrayType(_rank);
-                    }
-                case TypeKind.IsByRef : return _baseType.InternalResolve().MakeByRefType();
-                case TypeKind.IsPointer : return _baseType.InternalResolve().MakePointerType();
-            }
-
-            throw new NotSupportedException();
-        }
-#endif
-    #endregion
     }
 }

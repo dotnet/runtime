@@ -121,7 +121,6 @@ namespace System.Reflection
             }
         }
 
-        // helper method to construct the string representation of the parameter list
         internal virtual Type[] GetParameterTypes()
         {
             ParameterInfo[] paramInfo = GetParametersNoCopy();

@@ -218,11 +218,14 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeExceptionHandlingClause.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorOnTypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldOnTypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodOnTypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MonoArrayMethod.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeAssemblyBuilder.Mono.cs" />
@@ -236,6 +239,8 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimePropertyBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeTypeBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolType.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\UnmanagedMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
@@ -301,8 +306,8 @@
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
     <Copy SourceFiles="$(RuntimeBinDir)/IL/System.Private.CoreLib.dll;$(RuntimeBinDir)/IL/System.Private.CoreLib.pdb"
-        DestinationFolder="$(RuntimeBinDir)"
-        SkipUnchangedFiles="true" />
+          DestinationFolder="$(RuntimeBinDir)"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!-- Setup eventing file generation -->

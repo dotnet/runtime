@@ -5,22 +5,16 @@ using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
     /*
      * TypeBuilderInstantiation represents an instantiation of a generic TypeBuilder.
      */
-#if MONO
-    [StructLayout(LayoutKind.Sequential)]
-#endif
     internal sealed partial class TypeBuilderInstantiation : TypeInfo
     {
-        #region Keep in sync with object-internals.h MonoReflectionGenericClass
         private Type _genericType;
         private Type[] _typeArguments;
-        #endregion
         private string? _strFullQualName;
         internal Hashtable _hashtable;
 
@@ -262,62 +256,7 @@ namespace System.Reflection.Emit
         {
             throw new NotSupportedException();
         }
-
-#if MONO
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-            Justification = "Reflection.Emit is not subject to trimming")]
-        internal override Type InternalResolve()
-        {
-            Type gtd = _genericType.InternalResolve();
-            Type[] args = new Type[_typeArguments.Length];
-            for (int i = 0; i < _typeArguments.Length; ++i)
-                args[i] = _typeArguments[i].InternalResolve();
-            return gtd.MakeGenericType(args);
-        }
-
-        // Called from the runtime to return the corresponding finished Type object
-        internal override Type RuntimeResolve()
-        {
-            if (_genericType is TypeBuilder tb && !tb.IsCreated())
-                throw new NotImplementedException();
-            for (int i = 0; i < _typeArguments.Length; ++i)
-            {
-                Type t = _typeArguments[i];
-                if (t is TypeBuilder ttb && !ttb.IsCreated())
-                    throw new NotImplementedException();
-            }
-            return InternalResolve();
-        }
-
-        internal override bool IsUserType
-        {
-            get
-            {
-                foreach (Type t in _typeArguments)
-                {
-                    if (t.IsUserType)
-                        return true;
-                }
-                return false;
-            }
-        }
-
-        internal override MethodInfo GetMethod(MethodInfo fromNoninstanciated)
-        {
-            return new MethodOnTypeBuilderInstantiation(fromNoninstanciated, this);
-        }
-
-        internal override ConstructorInfo GetConstructor(ConstructorInfo fromNoninstanciated)
-        {
-            return new ConstructorOnTypeBuilderInstantiation(fromNoninstanciated, this);
-        }
-
-        internal override FieldInfo GetField(FieldInfo fromNoninstanciated)
-        {
-            return FieldOnTypeBuilderInstantiation.GetField(fromNoninstanciated, this);
-        }
-#endif
-#endregion
+        #endregion
 
         #region ICustomAttributeProvider Implementation
         public override object[] GetCustomAttributes(bool inherit) { throw new NotSupportedException(); }

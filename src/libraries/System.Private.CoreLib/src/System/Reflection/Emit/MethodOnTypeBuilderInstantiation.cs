@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class MethodOnTypeBuilderInstantiation : MethodInfo
+    internal sealed partial class MethodOnTypeBuilderInstantiation : MethodInfo
     {
         #region Internal Static Members
         internal static MethodInfo GetMethod(MethodInfo method, TypeBuilderInstantiation type)
@@ -19,9 +19,6 @@ namespace System.Reflection.Emit
         #region Private Data Members
         internal MethodInfo _method;
         private Type _type;
-        // Below fields only used for mono
-        private Type[]? _typeArguments;
-        private MethodInfo? _genericMethodDefinition;
         #endregion
 
         #region Constructor
@@ -31,23 +28,6 @@ namespace System.Reflection.Emit
 
             _method = method;
             _type = type;
-        }
-
-        internal MethodOnTypeBuilderInstantiation(MethodOnTypeBuilderInstantiation gmd, Type[] typeArguments)
-            : this(gmd._method, gmd._type)
-        {
-            _typeArguments = new Type[typeArguments.Length];
-            typeArguments.CopyTo(_typeArguments, 0);
-            _genericMethodDefinition = gmd;
-        }
-
-        internal MethodOnTypeBuilderInstantiation(MethodInfo method, Type[] typeArguments)
-            : this(ExtractBaseMethod(method), method.DeclaringType!)
-        {
-            _typeArguments = new Type[typeArguments.Length];
-            typeArguments.CopyTo(_typeArguments, 0);
-            if (_method != method)
-                _genericMethodDefinition = method;
         }
         #endregion
 
@@ -91,73 +71,38 @@ namespace System.Reflection.Emit
             throw new NotSupportedException();
         }
         public override CallingConventions CallingConvention => _method.CallingConvention;
+#if !MONO
+        public override MethodInfo GetGenericMethodDefinition() { return _method; }
+        public override bool IsGenericMethodDefinition => _method.IsGenericMethodDefinition;
         public override Type[] GetGenericArguments()
         {
-#if MONO
-            if (!_method.IsGenericMethodDefinition)
-                return Type.EmptyTypes;
-            Type[] source = _typeArguments ?? _method.GetGenericArguments();
-            Type[] result = new Type[source.Length];
-            source.CopyTo(result, 0);
-            return result;
-#else
             return _method.GetGenericArguments();
-#endif
         }
-        public override MethodInfo GetGenericMethodDefinition() { return _genericMethodDefinition ?? _method; }
-        public override bool IsGenericMethodDefinition => _method.IsGenericMethodDefinition && _typeArguments == null;
         public override bool ContainsGenericParameters
         {
             get
             {
-#if MONO
                 if (_method.ContainsGenericParameters)
                     return true;
                 if (!_method.IsGenericMethodDefinition)
                     throw new NotSupportedException();
-                if (_typeArguments == null)
-                    return true;
-                foreach (Type t in _typeArguments)
-                {
-                    if (t.ContainsGenericParameters)
-                        return true;
-                }
-                return false;
-#else
+
                 return _method.ContainsGenericParameters;
-#endif
             }
         }
-
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArgs)
         {
-#if MONO
-            if (!_method.IsGenericMethodDefinition || (_typeArguments != null))
-                throw new InvalidOperationException("Method is not a generic method definition");
-
-            ArgumentNullException.ThrowIfNull(typeArgs);
-
-            if (_method.GetGenericArguments().Length != typeArgs.Length)
-                throw new ArgumentException("Incorrect length", nameof(typeArgs));
-
-            foreach (Type type in typeArgs)
+            if (!IsGenericMethodDefinition)
             {
-                ArgumentNullException.ThrowIfNull(type, nameof(typeArgs));
+                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
             }
 
-            return new MethodOnTypeBuilderInstantiation(this, typeArgs);
-#else
-            if (!IsGenericMethodDefinition)
-                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
-
             return MethodBuilderInstantiation.MakeGenericMethod(this, typeArgs);
-#endif
         }
-
+#endif
         public override bool IsGenericMethod => _method.IsGenericMethod;
-
-#endregion
+        #endregion
 
         #region Public Abstract\Virtual Members
         public override Type ReturnType => _method.ReturnType;
@@ -171,32 +116,6 @@ namespace System.Reflection.Emit
         {
             return _method.GetParameterTypes();
         }
-
-#if MONO
-        // Called from the runtime to return the corresponding finished MethodInfo object
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-            Justification = "MethodOnTypeBuilderInst is Reflection.Emit's underlying implementation of MakeGenericMethod. " +
-                "Callers of the outer calls to MakeGenericMethod will be warned as appropriate.")]
-        internal MethodInfo RuntimeResolve()
-        {
-            Type type = _type.InternalResolve();
-            MethodInfo m = type.GetMethod(_method);
-            if (_typeArguments != null)
-            {
-                var args = new Type[_typeArguments.Length];
-                for (int i = 0; i < _typeArguments.Length; ++i)
-                    args[i] = _typeArguments[i].InternalResolve();
-                m = m.MakeGenericMethod(args);
-            }
-            return m;
-        }
-
-        internal override int GetParametersCount()
-        {
-            return _method.GetParametersCount();
-        }
-#endif
         #endregion
-
     }
 }
