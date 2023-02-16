@@ -902,6 +902,10 @@ protected:
 
     void genCompareFloat(GenTree* treeNode);
     void genCompareInt(GenTree* treeNode);
+#ifdef TARGET_XARCH
+    bool genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    GenTreeCC* genTryFindFlagsConsumer(GenTree* flagsProducer);
+#endif
 
 #ifdef FEATURE_SIMD
 #ifdef TARGET_ARM64
@@ -1077,7 +1081,6 @@ protected:
 
 #ifdef TARGET_XARCH
     void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
-    void genCodeForBT(GenTreeOp* bt);
 #endif // TARGET_XARCH
 
     void genCodeForCast(GenTreeOp* tree);
@@ -1192,7 +1195,6 @@ protected:
     void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
-    void genCodeForJumpTrue(GenTreeOp* jtrue);
 #if defined(TARGET_LOONGARCH64)
     // TODO: refactor for LA.
     void genCodeForJumpCompare(GenTreeOp* tree);
@@ -1532,9 +1534,11 @@ public:
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
 #endif // TARGET_XARCH
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
     static insCflags InsCflagsForCcmp(GenCondition cond);
     static insCond JumpKindToInsCond(emitJumpKind condition);
+#elif defined(TARGET_XARCH)
+    static instruction JumpKindToCmov(emitJumpKind condition);
 #endif
 
 #ifndef TARGET_LOONGARCH64

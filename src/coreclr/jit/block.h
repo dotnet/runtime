@@ -1800,12 +1800,25 @@ private:
     weight_t m_edgeWeightMin;
     weight_t m_edgeWeightMax;
 
+    // Likelihood that m_sourceBlock transfers control along this edge.
+    // Values in range [0..1]
+    weight_t m_likelihood;
+
     // The count of duplicate "edges" (used for switch stmts or degenerate branches)
     unsigned m_dupCount;
 
+#ifdef DEBUG
+    bool m_likelihoodSet;
+#endif
+
 public:
     FlowEdge(BasicBlock* block, FlowEdge* rest)
-        : m_nextPredEdge(rest), m_sourceBlock(block), m_edgeWeightMin(0), m_edgeWeightMax(0), m_dupCount(0)
+        : m_nextPredEdge(rest)
+        , m_sourceBlock(block)
+        , m_edgeWeightMin(0)
+        , m_edgeWeightMax(0)
+        , m_likelihood(0)
+        , m_dupCount(0) DEBUGARG(m_likelihoodSet(false))
     {
     }
 
@@ -1851,6 +1864,32 @@ public:
     bool setEdgeWeightMinChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
     bool setEdgeWeightMaxChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
     void setEdgeWeights(weight_t newMinWeight, weight_t newMaxWeight, BasicBlock* bDst);
+
+    weight_t getLikelihood() const
+    {
+        return m_likelihood;
+    }
+
+    void setLikelihood(weight_t likelihood)
+    {
+        assert(likelihood >= 0.0);
+        assert(likelihood <= 1.0);
+        INDEBUG(m_likelihoodSet = true);
+        m_likelihood = likelihood;
+    }
+
+#ifdef DEBUG
+    bool hasLikelihood() const
+    {
+        return m_likelihoodSet;
+    }
+#endif
+
+    weight_t getLikelyWeight() const
+    {
+        assert(m_likelihoodSet);
+        return m_likelihood * m_sourceBlock->bbWeight;
+    }
 
     unsigned getDupCount() const
     {

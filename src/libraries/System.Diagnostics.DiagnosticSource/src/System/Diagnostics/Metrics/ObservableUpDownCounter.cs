@@ -15,7 +15,7 @@ namespace System.Diagnostics.Metrics
     /// </remarks>
     public sealed class ObservableUpDownCounter<T> : ObservableInstrument<T> where T : struct
     {
-        private object _callback;
+        private readonly object _callback;
 
         internal ObservableUpDownCounter(Meter meter, string name, Func<T> observeValue, string? unit, string? description) : base(meter, name, unit, description)
         {

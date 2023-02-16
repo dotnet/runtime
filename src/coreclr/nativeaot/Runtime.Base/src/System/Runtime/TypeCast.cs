@@ -756,11 +756,11 @@ namespace System.Runtime
             {
                 // TODO: If both array and obj are null, we're likely going to throw Redhawk's NullReferenceException.
                 //       This should blame the caller.
-                throw obj.MethodTable->GetClasslibException(ExceptionIDs.NullReference);
+                throw obj.GetMethodTable()->GetClasslibException(ExceptionIDs.NullReference);
             }
             if ((uint)index >= (uint)array.Length)
             {
-                throw array.MethodTable->GetClasslibException(ExceptionIDs.IndexOutOfRange);
+                throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.IndexOutOfRange);
             }
             ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
             ref object element = ref Unsafe.Add(ref rawData, index);
@@ -813,24 +813,44 @@ assigningNull:
             }
         }
 
+        // This weird structure is for parity with CoreCLR - allows potentially to be tailcalled
+        private static unsafe ref object ThrowArrayMismatchException(Array array)
+        {
+            // Throw the array type mismatch exception defined by the classlib, using the input array's MethodTable*
+            // to find the correct classlib.
+            throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
+        }
+
         [RuntimeExport("RhpLdelemaRef")]
         public static unsafe ref object LdelemaRef(Array array, nint index, IntPtr elementType)
         {
-            Debug.Assert(array.GetMethodTable()->IsArray, "first argument must be an array");
+            Debug.Assert(array is null || array.GetMethodTable()->IsArray, "first argument must be an array");
+
+#if INPLACE_RUNTIME
+            // this will throw appropriate exceptions if array is null or access is out of range.
+            ref object element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
+#else
+            if (array is null)
+            {
+                throw ((MethodTable*)elementType)->GetClasslibException(ExceptionIDs.NullReference);
+            }
+            if ((uint)index >= (uint)array.Length)
+            {
+                throw ((MethodTable*)elementType)->GetClasslibException(ExceptionIDs.IndexOutOfRange);
+            }
+            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
+            ref object element = ref Unsafe.Add(ref rawData, index);
+#endif
 
             MethodTable* elemType = (MethodTable*)elementType;
             MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
 
-            if (!AreTypesEquivalent(elemType, arrayElemType))
+            if (AreTypesEquivalent(elemType, arrayElemType))
             {
-                // Throw the array type mismatch exception defined by the classlib, using the input array's MethodTable*
-                // to find the correct classlib.
-
-                throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
+                return ref element;
             }
 
-            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
-            return ref Unsafe.Add(ref rawData, index);
+            return ref ThrowArrayMismatchException(array);
         }
 
         internal static unsafe bool IsDerived(MethodTable* pDerivedType, MethodTable* pBaseType)

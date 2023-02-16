@@ -12,9 +12,9 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
 {
     public class RuntimeGroupCollection
     {
-        private ICollection<RuntimeGroup> allRuntimeGroups;
-        private Dictionary<string, List<RuntimeGroup>> runtimeGroupsByBaseRID;
-        private HashSet<RID> knownRIDs;
+        private readonly ICollection<RuntimeGroup> allRuntimeGroups;
+        private readonly Dictionary<string, List<RuntimeGroup>> runtimeGroupsByBaseRID;
+        private readonly HashSet<RID> knownRIDs;
 
         public RuntimeGroupCollection(ICollection<RuntimeGroup> runtimeGroups)
         {
