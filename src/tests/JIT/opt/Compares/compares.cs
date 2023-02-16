@@ -406,7 +406,7 @@ public class FullRangeComparisonTest
     public static int Le_else_float_int_return(float a1, float a2)
     {
         // ARM64-FULL-LINE:      fcmp {{s[0-9]+}}, {{s[0-9]+}}
-        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{le|gt}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ls
         //
         // X64-FULL-LINE:        cmov{{b|ae}} {{[a-z0-9]+}}, {{.*}}
 
