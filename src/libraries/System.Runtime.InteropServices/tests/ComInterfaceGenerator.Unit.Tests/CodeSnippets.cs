@@ -10,26 +10,25 @@ namespace ComInterfaceGenerator.Unit.Tests
     {
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
-        public const string INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl = $$"""
+        public const string INativeAPI_IUnmanagedInterfaceTypeImpl = $$"""
             partial interface INativeAPI
             {
-                {{INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                {{INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
             }
             """;
 
-        public const string INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl = """
-                static int IUnmanagedInterfaceType<INativeAPI, NoCasting>.VirtualMethodTableLength => 1;
-                static unsafe void* IUnmanagedInterfaceType<INativeAPI, NoCasting>.VirtualMethodTableManagedImplementation => null;
-                static unsafe void* IUnmanagedInterfaceType<INativeAPI, NoCasting>.GetUnmanagedWrapperForObject(INativeAPI obj) => null;
-                static unsafe INativeAPI IUnmanagedInterfaceType<INativeAPI, NoCasting>.GetObjectForUnmanagedWrapper(void* ptr) => null;
-                static NoCasting IUnmanagedInterfaceType<INativeAPI, NoCasting>.TypeKey => default;
+        public const string INativeAPI_IUnmanagedInterfaceTypeMethodImpl = """
+                static int IUnmanagedInterfaceType<INativeAPI>.VirtualMethodTableLength => 1;
+                static unsafe void* IUnmanagedInterfaceType<INativeAPI>.VirtualMethodTableManagedImplementation => null;
+                static unsafe void* IUnmanagedInterfaceType<INativeAPI>.GetUnmanagedWrapperForObject(INativeAPI obj) => null;
+                static unsafe INativeAPI IUnmanagedInterfaceType<INativeAPI>.GetObjectForUnmanagedWrapper(void* ptr) => null;
             """;
 
         public static string NativeInterfaceUsage() => @"
 // Try using the generated native interface
-sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativeAPI.Native
+sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider, INativeAPI.Native
 {
-    public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => throw null;
+    public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(System.Type type) => throw null;
 }
 ";
 
@@ -37,31 +36,28 @@ sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativ
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 {
     [VirtualMethodIndex(0)]
     void Method();
-}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public static readonly string SpecifiedMethodIndexNoExplicitParametersNoImplicitThis = @"
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 {
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
     void Method();
-}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public static readonly string SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 {
 
     [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
@@ -84,7 +80,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
     [SuppressGCTransition]
     [VirtualMethodIndex(4)]
     void Method4();
-}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         public static string BasicParametersAndModifiers(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -93,12 +89,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 {{
     [VirtualMethodIndex(0)]
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         public static string BasicParametersAndModifiersManagedToUnmanaged(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -107,12 +102,11 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 {{
     [VirtualMethodIndex(0, Direction = MarshalDirection.ManagedToUnmanaged)]
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         public static string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).FullName!);
         public static string BasicParametersAndModifiersNoRef(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -122,23 +116,21 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 {{
     [VirtualMethodIndex(0)]
     {typeName} Method({typeName} value, in {typeName} inValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         public static string BasicParametersAndModifiersNoImplicitThis(string typeName) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = false)]
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public static string BasicParametersAndModifiersNoImplicitThis<T>() => BasicParametersAndModifiersNoImplicitThis(typeof(T).FullName!);
         public static string MarshalUsingCollectionCountInfoParametersAndModifiers<T>() => MarshalUsingCollectionCountInfoParametersAndModifiers(typeof(T).ToString());
@@ -148,8 +140,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 {{
     [VirtualMethodIndex(0)]
     [return:MarshalUsing(ConstantElementCount=10)]
@@ -160,7 +151,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
         [MarshalUsing(CountElementName = ""pRefSize"")] ref {collectionType} pRef,
         [MarshalUsing(CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize);
-}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public static string BasicReturnTypeComExceptionHandling(string typeName, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -168,12 +159,11 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 {{
     [VirtualMethodIndex(0, ExceptionMarshalling = ExceptionMarshalling.Com)]
     {typeName} Method();
-}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public static string BasicReturnTypeCustomExceptionHandling(string typeName, string customExceptionType, string preDeclaration = "") => $@"
 using System.Runtime.CompilerServices;
@@ -181,12 +171,11 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
 {{
     [VirtualMethodIndex(0, CustomExceptionMarshallingType = typeof({customExceptionType}))]
     {typeName} Method();
-}}" + NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider<ManagedToUnmanaged>
         {
@@ -211,7 +200,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
             public static bool ImplicitThisParameter => true;
 
             // Unmanaged-to-managed-only stubs don't provide implementations for the interface, so we don't want to try to use the generated nested interface
-            // since it won't have managed implementations for the meth
+            // since it won't have managed implementations for the methods
             public static string NativeInterfaceUsage() => string.Empty;
         }
         public class Bidirectional : IVirtualMethodIndexSignatureProvider<Bidirectional>

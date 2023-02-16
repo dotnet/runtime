@@ -346,12 +346,12 @@ namespace System.Net.Http
             return stream.WriteAsync(new ReadOnlyMemory<byte>(buffer), cancellationToken);
         }
 
-        private static Stream EncodeStringToNewStream(string input)
+        private static MemoryStream EncodeStringToNewStream(string input)
         {
             return new MemoryStream(HttpRuleParser.DefaultHttpEncoding.GetBytes(input), writable: false);
         }
 
-        private Stream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
+        private MemoryStream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
         {
             var stream = new MemoryStream();
             SerializeHeadersToStream(stream, content, writeDivider);

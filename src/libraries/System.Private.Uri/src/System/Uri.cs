@@ -1372,10 +1372,7 @@ namespace System
         /// Transforms a character into its hexadecimal representation.
         public static string HexEscape(char character)
         {
-            if (character > '\xff')
-            {
-                throw new ArgumentOutOfRangeException(nameof(character));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(character, '\xff');
 
             return string.Create(3, (byte)character, (Span<char> chars, byte b) =>
             {
@@ -1414,10 +1411,9 @@ namespace System
 
         public static char HexUnescape(string pattern, ref int index)
         {
-            if ((index < 0) || (index >= pattern.Length))
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, pattern.Length);
+
             if ((pattern[index] == '%')
                 && (pattern.Length - index >= 3))
             {

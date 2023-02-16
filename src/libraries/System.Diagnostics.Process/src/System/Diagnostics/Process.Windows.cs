@@ -651,7 +651,7 @@ namespace System.Diagnostics
             return true;
         }
 
-        private static Encoding GetEncoding(int codePage)
+        private static ConsoleEncoding GetEncoding(int codePage)
         {
             Encoding enc = EncodingHelper.GetSupportedConsoleEncoding(codePage);
             return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble

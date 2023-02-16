@@ -32,13 +32,6 @@ namespace System.Diagnostics.Tracing
         Disable = -3,
     }
 
-    internal unsafe delegate void EventEnableCallback(
-        int isEnabled,
-        byte level,
-        long matchAnyKeywords,
-        long matchAllKeywords,
-        Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData);
-
     /// <summary>
     /// Only here because System.Diagnostics.EventProvider needs one more extensibility hook (when it gets a
     /// controller callback)
@@ -72,7 +65,7 @@ namespace System.Diagnostics.Tracing
             { sessionIdBit = sessionIdBit_; etwSessionId = etwSessionId_; }
         }
 
-        internal IEventProvider m_eventProvider;         // The interface that implements the specific logging mechanism functions.
+        internal EventProviderImpl m_eventProvider;      // The implementation of the specific logging mechanism functions.
         private byte m_level;                            // Tracing Level
         private long m_anyKeywordMask;                   // Trace Enable Flags
         private long m_allKeywordMask;                   // Match all keyword
@@ -113,12 +106,12 @@ namespace System.Diagnostics.Tracing
             m_eventProvider = providerType switch
             {
 #if TARGET_WINDOWS
-                EventProviderType.ETW => new EtwEventProvider(),
+                EventProviderType.ETW => new EtwEventProvider(this),
 #endif
 #if FEATURE_PERFTRACING
-                EventProviderType.EventPipe => new EventPipeEventProvider(),
+                EventProviderType.EventPipe => new EventPipeEventProvider(this),
 #endif
-                _ => new NoOpEventProvider(),
+                _ => new EventProviderImpl(),
             };
         }
 
@@ -132,7 +125,7 @@ namespace System.Diagnostics.Tracing
             m_providerName = eventSource.Name;
             m_providerId = eventSource.Guid;
 
-            m_eventProvider.EventRegister(eventSource, new EventEnableCallback(EnableCallBack));
+            m_eventProvider.Register(eventSource);
         }
 
         //
@@ -185,7 +178,7 @@ namespace System.Diagnostics.Tracing
             //
             // We solve by Unregistering after releasing the EventListenerLock.
             Debug.Assert(!Monitor.IsEntered(EventListener.EventListenersLock));
-            m_eventProvider.EventUnregister();
+            m_eventProvider.Unregister();
         }
 
         /// <summary>
@@ -202,7 +195,7 @@ namespace System.Diagnostics.Tracing
             Dispose(false);
         }
 
-        private unsafe void EnableCallBack(
+        internal unsafe void EnableCallback(
                         int controlCode,
                         byte setLevel,
                         long anyKeyword,
@@ -1129,27 +1122,30 @@ namespace System.Diagnostics.Tracing
 
 #if TARGET_WINDOWS
     // A wrapper around the ETW-specific API calls.
-    internal sealed class EtwEventProvider : IEventProvider
+    internal sealed class EtwEventProvider : EventProviderImpl
     {
-        private EventEnableCallback? _enableCallback;
+        private readonly WeakReference<EventProvider> _eventProvider;
         private long _registrationHandle;
         private GCHandle _gcHandle;
+
+        internal EtwEventProvider(EventProvider eventProvider)
+        {
+            _eventProvider = new WeakReference<EventProvider>(eventProvider);
+        }
 
         [UnmanagedCallersOnly]
         private static unsafe void Callback(Guid* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
-            ((EtwEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!)._enableCallback!(
-                isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+            EtwEventProvider _this = (EtwEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
+
+            if (_this._eventProvider.TryGetTarget(out EventProvider? target))
+                target.EnableCallback(isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
         }
 
         // Register an event provider.
-        unsafe void IEventProvider.EventRegister(
-            EventSource eventSource,
-            EventEnableCallback enableCallback)
+        internal override unsafe void Register(EventSource eventSource)
         {
-            _enableCallback = enableCallback;
-
             Debug.Assert(!_gcHandle.IsAllocated);
             _gcHandle = GCHandle.Alloc(this);
 
@@ -1170,7 +1166,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Unregister an event provider.
-        void IEventProvider.EventUnregister()
+        internal override void Unregister()
         {
             if (_registrationHandle != 0)
             {
@@ -1184,7 +1180,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Write an event.
-        unsafe EventProvider.WriteEventErrorCode IEventProvider.EventWriteTransfer(
+        internal override unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
             Guid* activityId,
@@ -1213,7 +1209,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Get or set the per-thread activity ID.
-        int IEventProvider.EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
+        internal override int ActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
         {
             return Interop.Advapi32.EventActivityIdControl(
                 ControlCode,
@@ -1221,7 +1217,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
+        internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
             throw new System.NotSupportedException();
@@ -1258,19 +1254,19 @@ namespace System.Diagnostics.Tracing
     }
 #endif
 
-    internal sealed class NoOpEventProvider : IEventProvider
+#pragma warning disable CA1852 // EventProviderImpl is not derived from in all targets
+
+    internal class EventProviderImpl
     {
-        void IEventProvider.EventRegister(
-            EventSource eventSource,
-            EventEnableCallback enableCallback)
+        internal virtual void Register(EventSource eventSource)
         {
         }
 
-        void IEventProvider.EventUnregister()
+        internal virtual void Unregister()
         {
         }
 
-        unsafe EventProvider.WriteEventErrorCode IEventProvider.EventWriteTransfer(
+        internal virtual unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
             Guid* activityId,
@@ -1281,16 +1277,19 @@ namespace System.Diagnostics.Tracing
             return EventProvider.WriteEventErrorCode.NoError;
         }
 
-        int IEventProvider.EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
+        internal virtual int ActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
         {
             return 0;
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
+        internal virtual unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
             return IntPtr.Zero;
         }
     }
+
+#pragma warning restore CA1852
+
 }

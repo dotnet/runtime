@@ -179,6 +179,11 @@
         $(LibrariesNativeArtifactsPath)*.pdb"
         IsNative="true"
         Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'android'"
+                             Include="
+        $(LibrariesNativeArtifactsPath)*.dex;
+        $(LibrariesNativeArtifactsPath)*.jar;"
+        IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
@@ -211,6 +216,18 @@
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="
+        $(LibrariesNativeArtifactsPath)include\wasm\*.h;"
+        NativeSubDirectory="include\wasm"
+        IsNative="true" />
+    </ItemGroup>
+
+    <ItemGroup Label="Wasi" Condition="'$(TargetOS)' == 'wasi'">
+      <LibrariesRuntimeFiles Include="
+        $(LibrariesNativeArtifactsPath)src\*.c"
+        NativeSubDirectory="src"
+        IsNative="true" />
+
+      <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)include\wasm\*.h;"
         NativeSubDirectory="include\wasm"
         IsNative="true" />

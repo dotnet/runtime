@@ -9,7 +9,10 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal sealed record NativeThisInfo(ManagedTypeInfo TypeKeyType) : MarshallingInfo;
+    internal sealed record NativeThisInfo : MarshallingInfo
+    {
+        public static readonly NativeThisInfo Instance = new();
+    }
 
     internal sealed class NativeToManagedThisMarshallerFactory : IMarshallingGeneratorFactory
     {
@@ -20,14 +23,10 @@ namespace Microsoft.Interop
         }
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
-            => info.MarshallingAttributeInfo is NativeThisInfo(ManagedTypeInfo typeKeyType) ? new Marshaller(typeKeyType) : _inner.Create(info, context);
+            => info.MarshallingAttributeInfo is NativeThisInfo ? new Marshaller() : _inner.Create(info, context);
 
         private sealed class Marshaller : IMarshallingGenerator
         {
-            private readonly ManagedTypeInfo _typeKeyType;
-
-            public Marshaller(ManagedTypeInfo typeKeyType) => _typeKeyType = typeKeyType;
-
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => new PointerTypeInfo("void*", "void*", false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
@@ -44,10 +43,7 @@ namespace Microsoft.Interop
                     IdentifierName(managedIdentifier),
                         InvocationExpression(
                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                GenericName(Identifier(TypeNames.IUnmanagedVirtualMethodTableProvider),
-                                    TypeArgumentList(
-                                        SingletonSeparatedList(
-                                            _typeKeyType.Syntax))),
+                               ParseTypeName(TypeNames.IUnmanagedVirtualMethodTableProvider),
                                 GenericName(Identifier("GetObjectForUnmanagedWrapper"),
                                     TypeArgumentList(
                                         SingletonSeparatedList(

@@ -89,8 +89,6 @@ set(utils_common_sources
     mono-stdlib.c
     mono-property-hash.h
     mono-property-hash.c
-    mono-value-hash.h
-    mono-value-hash.c
     freebsd-dwarf.h
     dtrace.h
     mono-error.c
@@ -224,6 +222,8 @@ elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
+elseif(TARGET_WASI)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c")
 elseif(TARGET_POWERPC OR TARGET_POWERPC64)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-ppc.c")
 else()

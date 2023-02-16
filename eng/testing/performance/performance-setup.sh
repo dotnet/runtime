@@ -346,6 +346,8 @@ else
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
+    (cd $performance_directory; git show -s HEAD)
+
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
 fi

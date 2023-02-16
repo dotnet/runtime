@@ -20,8 +20,7 @@ namespace System.Collections.Frozen
         private readonly TKey[] _keys;
         private readonly TValue[] _values;
 
-        internal SmallFrozenDictionary(Dictionary<TKey, TValue> source, IEqualityComparer<TKey> comparer)
-            : base(comparer)
+        internal SmallFrozenDictionary(Dictionary<TKey, TValue> source) : base(source.Comparer)
         {
             Debug.Assert(source.Count != 0);
 
@@ -36,10 +35,11 @@ namespace System.Collections.Frozen
 
         private protected override ref readonly TValue GetValueRefOrNullRefCore(TKey key)
         {
+            IEqualityComparer<TKey> comparer = Comparer;
             TKey[] keys = _keys;
             for (int i = 0; i < keys.Length; i++)
             {
-                if (Comparer.Equals(keys[i], key))
+                if (comparer.Equals(keys[i], key))
                 {
                     return ref _values[i];
                 }

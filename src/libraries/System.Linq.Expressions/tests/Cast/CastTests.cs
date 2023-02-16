@@ -2376,7 +2376,6 @@ namespace System.Linq.Expressions.Tests
             if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 yield return NonCSharpTypes.CharEnumType;
-                yield return NonCSharpTypes.BoolEnumType;
             }
         }
 

@@ -2423,8 +2423,7 @@ namespace System.ComponentModel
         {
             ArgumentNullException.ThrowIfNull(primary);
 
-            Hashtable assocTable = AssociationTable;
-            assocTable?.Remove(primary);
+            AssociationTable?.Remove(primary);
         }
 
         /// <summary>

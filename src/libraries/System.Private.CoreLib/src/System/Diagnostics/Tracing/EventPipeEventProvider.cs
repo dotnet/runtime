@@ -5,27 +5,29 @@ using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Tracing
 {
-    internal sealed class EventPipeEventProvider : IEventProvider
+    internal sealed class EventPipeEventProvider : EventProviderImpl
     {
-        private EventEnableCallback? _enableCallback;
+        private readonly WeakReference<EventProvider> _eventProvider;
         private IntPtr _provHandle;
         private GCHandle _gcHandle;
+
+        internal EventPipeEventProvider(EventProvider eventProvider)
+        {
+            _eventProvider = new WeakReference<EventProvider>(eventProvider);
+        }
 
         [UnmanagedCallersOnly]
         private static unsafe void Callback(byte* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
-            ((EventPipeEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!)._enableCallback!(
-                isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+            EventPipeEventProvider _this = (EventPipeEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
+            if (_this._eventProvider.TryGetTarget(out EventProvider? target))
+                target.EnableCallback(isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
         }
 
         // Register an event provider.
-        unsafe void IEventProvider.EventRegister(
-            EventSource eventSource,
-            EventEnableCallback enableCallback)
+        internal override unsafe void Register(EventSource eventSource)
         {
-            _enableCallback = enableCallback;
-
             Debug.Assert(!_gcHandle.IsAllocated);
             _gcHandle = GCHandle.Alloc(this);
 
@@ -39,7 +41,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Unregister an event provider.
-        void IEventProvider.EventUnregister()
+        internal override void Unregister()
         {
             if (_provHandle != 0)
             {
@@ -53,7 +55,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Write an event.
-        unsafe EventProvider.WriteEventErrorCode IEventProvider.EventWriteTransfer(
+        internal override unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
             Guid* activityId,
@@ -85,13 +87,13 @@ namespace System.Diagnostics.Tracing
         }
 
         // Get or set the per-thread activity ID.
-        int IEventProvider.EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
+        internal override int ActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
         {
             return EventActivityIdControl(controlCode, ref activityId);
         }
 
         // Define an EventPipeEvent handle.
-        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
+        internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
             byte *pMetadata, uint metadataLength)
         {
             return EventPipeInternal.DefineEvent(_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);

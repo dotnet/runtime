@@ -93,6 +93,7 @@ namespace System
             }
         }
 
+#pragma warning disable CA1859 // https://github.com/dotnet/roslyn-analyzers/issues/6451
         private static void ValidateElementType(Type elementType)
         {
             while (elementType.IsArray)
@@ -106,6 +107,7 @@ namespace System
             if (elementType.ContainsGenericParameters)
                 throw new NotSupportedException(SR.NotSupported_OpenType);
         }
+#pragma warning restore CA1859
 
         public unsafe void Initialize()
         {
@@ -220,8 +222,7 @@ namespace System
             if (sourceArray.GetType() != destinationArray.GetType() && sourceArray.Rank != destinationArray.Rank)
                 throw new RankException(SR.Rank_MustMatch);
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             const int srcLB = 0;
             if (sourceIndex < srcLB || sourceIndex - srcLB < 0)

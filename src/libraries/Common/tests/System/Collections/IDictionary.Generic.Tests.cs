@@ -190,7 +190,7 @@ namespace System.Collections.Tests
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
                     if (casted.Count() > 0)
                     {
-                        var keys = casted.Keys.GetEnumerator();
+                        IEnumerator<TKey> keys = casted.Keys.GetEnumerator();
                         keys.MoveNext();
                         casted[keys.Current] = CreateTValue(12);
                         return true;
@@ -205,7 +205,7 @@ namespace System.Collections.Tests
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
                     if (casted.Count() > 0)
                     {
-                        var keys = casted.Keys.GetEnumerator();
+                        IEnumerator<TKey> keys = casted.Keys.GetEnumerator();
                         keys.MoveNext();
                         casted.Remove(keys.Current);
                         return true;
@@ -455,7 +455,7 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TKey> keys = dictionary.Keys;
-            var enumerator = keys.GetEnumerator();
+            IEnumerator<TKey> enumerator = keys.GetEnumerator();
             if (IDictionary_Generic_Keys_Values_Enumeration_ResetImplemented)
                 enumerator.Reset();
             else
@@ -562,7 +562,7 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TValue> values = dictionary.Values;
-            var enumerator = values.GetEnumerator();
+            IEnumerator<TValue> enumerator = values.GetEnumerator();
             if (IDictionary_Generic_Keys_Values_Enumeration_ResetImplemented)
                 enumerator.Reset();
             else

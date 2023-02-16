@@ -23,9 +23,9 @@ Android SDK and NDK can be automatically installed via the following script:
 set -e
 
 NDK_VER=r23c
-SDK_VER=6200805_latest
-SDK_API_LEVEL=29
-SDK_BUILD_TOOLS=29.0.3
+SDK_VER=9123335_latest
+SDK_API_LEVEL=33
+SDK_BUILD_TOOLS=33.0.1
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     HOST_OS=darwin
@@ -63,7 +63,7 @@ Android Studio offers a convenient UI:
 Before running a build you might want to set the Android SDK and NDK environment variables:
 ```
 export ANDROID_SDK_ROOT=<PATH-TO-ANDROID-SDK>
-export ANDROID_NDK_ROOT=<PATH-TO-ANDROID-NDK>  
+export ANDROID_NDK_ROOT=<PATH-TO-ANDROID-NDK>
 ```
 
 Now we're ready to build everything for Android:

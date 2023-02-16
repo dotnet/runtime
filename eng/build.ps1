@@ -130,7 +130,9 @@ if ($subset -eq 'help') {
 }
 
 # Lower-case the passed in OS string.
-$os = $os.ToLowerInvariant()
+if ($os) {
+  $os = $os.ToLowerInvariant()
+}
 
 if ($vs) {
   $archToOpen = $arch[0]
@@ -263,6 +265,10 @@ foreach ($argument in $PSBoundParameters.Keys)
     "arch"                   {}
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
+}
+
+if ($env:TreatWarningsAsErrors -eq 'false') {
+  $arguments += " -warnAsError 0"
 }
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.

@@ -78,6 +78,8 @@ set(metadata_common_sources
     icall-eventpipe.c
     image.c
     image-internals.h
+    webcil-loader.h
+    webcil-loader.c
     jit-info.h
     jit-info.c
     loader.c

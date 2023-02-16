@@ -170,12 +170,17 @@
       <!-- Filter static lib files for Windows -->
       <NativeProjectBinariesStaticLibFilter Condition="'%(Extension)' == '.lib'" Include="@(NativeProjectBinariesMatched)" />
 
+      <!-- Filter .dex and .jar files for Android -->
+      <NativeProjectBinariesJavaLibFilter Condition="'%(Extension)' == '.dex'" Include="@(NativeProjectBinariesMatched)" />
+      <NativeProjectBinariesJavaLibFilter Condition="'%(Extension)' == '.jar'" Include="@(NativeProjectBinariesMatched)" />
+
       <!-- Merge the filtered lists -->
       <NativeProjectBinaries Include="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
       <NativeProjectBinaries Include="@(NativeProjectBinariesDyLibFilter)" />
       <NativeProjectBinaries Include="@(NativeProjectBinariesStaticLibFilter)" />
       <NativeProjectBinaries Include="@(NativeProjectsBinariesSymbolsFilter)" />
       <NativeProjectBinaries Include="@(NativeProjectBinariesManifestFilter)" />
+      <NativeProjectBinaries Include="@(NativeProjectBinariesJavaLibFilter)" />
     </ItemGroup>
 
      <!-- There are currently no native project binaries on wasm or Android -->
@@ -653,15 +658,16 @@
     <BuildNativeAotFrameworkObjects Condition="'$(IlcMultiModule)' == 'true'">true</BuildNativeAotFrameworkObjects>
     <DisableFrameworkLibGeneration Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">true</DisableFrameworkLibGeneration>
     <FrameworkLibPath Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(IlcSdkPath)</FrameworkLibPath>
-
-    <!-- Forced by ILLink targets; we should fix the SDK -->
-    <SelfContained>true</SelfContained>
-    <HasRuntimeOutput>false</HasRuntimeOutput>
-    <_UsingDefaultForHasRuntimeOutput>false</_UsingDefaultForHasRuntimeOutput>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
     <IlcReference Include="$(TargetingPackPath)/*.dll" />
+
+    <!-- xunit calls MakeGenericType to check if something is IEquatable -->
+    <IlcArg Condition="'$(EagerlyValidateTypeConstruction)' != 'false'" Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
+
+    <!-- Bump the generic cycle tolerance. There's at least one test with a cycle that is reachable at runtime to depth 6 -->
+    <IlcArg Include="--maxgenericcycle:7" />
   </ItemGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />

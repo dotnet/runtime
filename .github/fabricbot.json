@@ -95,7 +95,8 @@
             "area-Codegen-Interpreter-mono"
           ],
           "mentionees": [
-            "brzvlad"
+            "brzvlad",
+            "kotlarmilos"
           ]
         },
         {
@@ -388,8 +389,9 @@
             "area-System.Data.SqlClient"
           ],
           "mentionees": [
-            "cheenamalhotra",
-            "david-engel"
+            "davoudeshtehari",
+            "david-engel",
+            "jrahnama"
           ]
         },
         {

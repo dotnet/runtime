@@ -108,7 +108,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static IPAddressCollection? GetDnsAddresses()
+        private static InternalIPAddressCollection? GetDnsAddresses()
         {
             try
             {

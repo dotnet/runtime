@@ -77,7 +77,7 @@ namespace System.Speech.Internal
         /// Download data from the web.
         /// Set the redirectUri as the location of the file could be redirected in ASP pages.
         /// </summary>
-        private static Stream DownloadData(Uri uri, out Uri redirectedUri)
+        private static MemoryStream DownloadData(Uri uri, out Uri redirectedUri)
         {
 #pragma warning disable SYSLIB0014
             // Create a request for the URL.

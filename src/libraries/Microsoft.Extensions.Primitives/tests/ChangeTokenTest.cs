@@ -180,6 +180,28 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void DisposingChangeTokenRegistrationDoesNotRaiseConsumerIfTokenProviderReturnsCancelledToken()
+        {
+            var provider = new ResettableChangeTokenProvider();
+            Func<Func<IChangeToken>> changeTokenProviderFactory = () =>
+            {
+                int n = 0;
+                return () =>
+                {
+                    var token = provider.GetChangeToken();
+                    if (n++ is 0) provider.Changed();
+                    return token;
+                };
+            };
+            int count = 0;
+            var reg = ChangeToken.OnChange(changeTokenProviderFactory(), () => count++);
+            reg.Dispose();
+            provider.Changed();
+
+            Assert.Equal(1, count);
+        }
+
+        [Fact]
         public void DisposingChangeTokenRegistrationDuringCallbackWorks()
         {
             var provider = new ResettableChangeTokenProvider();

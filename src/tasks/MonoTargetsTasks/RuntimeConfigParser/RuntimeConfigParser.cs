@@ -106,7 +106,7 @@ public class RuntimeConfigParserTask : Task
 
     /// Just write the dictionary out to a blob as a count followed by
     /// a length-prefixed UTF8 encoding of each key and value
-    private static void ConvertDictionaryToBlob(IReadOnlyDictionary<string, string> properties, BlobBuilder builder)
+    private static void ConvertDictionaryToBlob(Dictionary<string, string> properties, BlobBuilder builder)
     {
         int count = properties.Count;
 
@@ -118,7 +118,7 @@ public class RuntimeConfigParserTask : Task
         }
     }
 
-    private bool CheckReservedProperties(IReadOnlyDictionary<string, string> properties, ITaskItem[] keys)
+    private bool CheckReservedProperties(Dictionary<string, string> properties, ITaskItem[] keys)
     {
         var succeed = true;
 

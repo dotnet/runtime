@@ -141,9 +141,6 @@
   <data name="ReaderWriterLock_Timeout" xml:space="preserve">
     <value>The operation has timed out. {0}</value>
   </data>
-  <data name="ArgumentOutOfRange_TimeoutMilliseconds" xml:space="preserve">
-    <value>Timeout value in milliseconds must be nonnegative and less than or equal to Int32.MaxValue, or -1 for an infinite timeout.</value>
-  </data>
   <data name="ReaderWriterLock_NotOwner" xml:space="preserve">
     <value>Attempt to release a lock that is not owned by the calling thread. {0}</value>
   </data>

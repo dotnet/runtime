@@ -68,7 +68,7 @@
     <HelixWorkItem Include="@(SPMI_Partition)">
       <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>superpmi_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_download_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_diff_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md;superpmi_tpdiff_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md;Asmdiffs_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).zip</DownloadFilesFromResults>
+      <DownloadFilesFromResults>superpmi_asmdiffs_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_tpdiff_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_download_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_diff_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md;superpmi_tpdiff_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md;Asmdiffs_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).zip</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
   </Project>

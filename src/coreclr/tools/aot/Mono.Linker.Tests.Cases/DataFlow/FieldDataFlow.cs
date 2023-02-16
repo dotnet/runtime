@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
@@ -42,6 +43,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			WriteArrayField.Test ();
 			AccessReturnedInstanceField.Test ();
+
+			FieldLdTokenOnGenericType<string>.Test ();
 		}
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
@@ -311,6 +314,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				TestAssignment ();
 				TestCoalescingAssignment ();
+			}
+		}
+
+		/// <summary>
+		/// This doesn't actually test any data flow as such. This is a regression test for a problem found in NativeAOT
+		/// where the combination of a generic type with an ldtoken leads to interesting code paths in the compiler.
+		/// </summary>
+		class FieldLdTokenOnGenericType<T>
+		{
+			static T FieldOne;
+
+			static void TestField(T value)
+			{
+				FieldOne = value;
+
+				Expression<Func<T>> e = () => FieldOne;
+				e.Compile () ();
+			}
+
+			public static void Test ()
+			{
+				TestField (default (T));
 			}
 		}
 	}

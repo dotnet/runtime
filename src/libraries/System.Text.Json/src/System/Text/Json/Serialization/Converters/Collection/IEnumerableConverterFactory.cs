@@ -45,7 +45,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Verify that we don't have a multidimensional array.
                 if (typeToConvert.GetArrayRank() > 1)
                 {
-                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(typeToConvert);
+                    return UnsupportedTypeConverterFactory.CreateUnsupportedConverterForType(typeToConvert);
                 }
 
                 converterType = typeof(ArrayConverter<,>);

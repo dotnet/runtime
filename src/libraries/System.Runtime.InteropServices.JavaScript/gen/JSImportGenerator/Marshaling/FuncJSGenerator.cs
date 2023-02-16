@@ -13,8 +13,9 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class FuncJSGenerator : BaseJSGenerator
     {
-        private bool _isAction;
-        private MarshalerType[] _argumentMarshalerTypes;
+        private readonly bool _isAction;
+        private readonly MarshalerType[] _argumentMarshalerTypes;
+
         public FuncJSGenerator(bool isAction, MarshalerType[] argumentMarshalerTypes)
             : base(isAction ? MarshalerType.Action : MarshalerType.Function, new Forwarder())
         {
@@ -79,7 +80,7 @@ namespace Microsoft.Interop.JavaScript
             }
         }
 
-        private StatementSyntax ToManagedMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
+        private ExpressionStatementSyntax ToManagedMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
         {
             List<ArgumentSyntax> arguments = new List<ArgumentSyntax>();
             arguments.Add(source.WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword)));
@@ -101,7 +102,7 @@ namespace Microsoft.Interop.JavaScript
                 .WithArgumentList(ArgumentList(SeparatedList(arguments))));
         }
 
-        private StatementSyntax ToJSMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
+        private ExpressionStatementSyntax ToJSMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
         {
             List<ArgumentSyntax> arguments = new List<ArgumentSyntax>();
             arguments.Add(source);

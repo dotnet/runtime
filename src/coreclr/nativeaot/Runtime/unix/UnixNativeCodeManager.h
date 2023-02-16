@@ -45,6 +45,7 @@ public:
                     bool            isActiveStackFrame);
 
     bool UnwindStackFrame(MethodInfo *    pMethodInfo,
+                          uint32_t        flags,
                           REGDISPLAY *    pRegisterSet,                 // in/out
                           PInvokeTransitionFrame**      ppPreviousTransitionFrame);   // out
 

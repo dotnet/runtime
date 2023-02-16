@@ -88,7 +88,7 @@ namespace Microsoft.Interop
             return statementsToUpdate.ToImmutable();
         }
 
-        private static StatementSyntax GenerateStatementForNativeInvoke(BoundGenerators marshallers, StubCodeContext context, ExpressionSyntax expressionToInvoke)
+        private static ExpressionStatementSyntax GenerateStatementForNativeInvoke(BoundGenerators marshallers, StubCodeContext context, ExpressionSyntax expressionToInvoke)
         {
             if (context.CurrentStage != StubCodeContext.Stage.Invoke)
             {
@@ -116,7 +116,7 @@ namespace Microsoft.Interop
         }
 
 
-        private static StatementSyntax GenerateStatementForManagedInvoke(BoundGenerators marshallers, StubCodeContext context, ExpressionSyntax expressionToInvoke)
+        private static ExpressionStatementSyntax GenerateStatementForManagedInvoke(BoundGenerators marshallers, StubCodeContext context, ExpressionSyntax expressionToInvoke)
         {
             if (context.CurrentStage != StubCodeContext.Stage.Invoke)
             {

@@ -227,8 +227,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             // If no ApplicationCertPolicies extension is provided then it uses the EKU
             // OIDS.
-            ISet<string>? applicationCertPolicies = null;
-            ISet<string>? ekus = null;
+            HashSet<string>? applicationCertPolicies = null;
+            HashSet<string>? ekus = null;
             CertificatePolicy policy = new CertificatePolicy();
 
             PolicyData policyData = cert.Pal.GetPolicyData();
@@ -311,7 +311,7 @@ namespace System.Security.Cryptography.X509Certificates
             policy.InhibitMappingDepth = constraints.InhibitMappingDepth;
         }
 
-        private static ISet<string> ReadExtendedKeyUsageExtension(byte[] rawData)
+        private static HashSet<string> ReadExtendedKeyUsageExtension(byte[] rawData)
         {
             HashSet<string> oids = new HashSet<string>();
 
@@ -335,7 +335,7 @@ namespace System.Security.Cryptography.X509Certificates
             return oids;
         }
 
-        internal static ISet<string> ReadCertPolicyExtension(byte[] rawData)
+        internal static HashSet<string> ReadCertPolicyExtension(byte[] rawData)
         {
             try
             {

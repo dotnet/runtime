@@ -6,7 +6,8 @@
     <AssemblyName>.NET Runtime</AssemblyName>
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
-    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture) -os $(_BuildNativeTargetOS)</_BuildNativeArgs>
+    <_BuildNativeOutConfig>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</_BuildNativeOutConfig>
+    <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(_BuildNativeOutConfig) -os $(_BuildNativeTargetOS)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
   </PropertyGroup>
 
@@ -52,5 +53,18 @@
     <!-- Run script that uses CMake to generate and build the native files. -->
     <Message Text="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" Importance="High"/>
     <Exec Command="&quot;$(MSBuildThisFileDirectory)build-native.cmd&quot; $(_BuildNativeArgs)" />
+  </Target>
+
+  <UsingTask TaskName="AndroidLibBuilderTask"
+             AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
+  <Target Name="BuildNativeAndroid"
+          BeforeTargets="BuildNativeUnix"
+          Condition="'$(TargetOS)' == 'android'">
+    <AndroidLibBuilderTask
+      JavaSourceDirectory="$(MSBuildThisFileDirectory)System.Security.Cryptography.Native.Android"
+      DexFileName="libSystem.Security.Cryptography.Native.Android.dex"
+      JarFileName="libSystem.Security.Cryptography.Native.Android.jar"
+      OutputDir="$(ArtifactsBinDir)native/$(_BuildNativeOutConfig)">
+    </AndroidLibBuilderTask>
   </Target>
 </Project>

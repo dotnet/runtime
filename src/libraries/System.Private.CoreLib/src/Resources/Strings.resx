@@ -298,6 +298,9 @@
   <data name="Arg_EmptyArray" xml:space="preserve">
     <value>Array may not be empty.</value>
   </data>
+  <data name="Arg_EmptySpan" xml:space="preserve">
+    <value>Span may not be empty.</value>
+  </data>
   <data name="Arg_EndOfStreamException" xml:space="preserve">
     <value>Attempted to read past the end of the stream.</value>
   </data>
@@ -1331,7 +1334,7 @@
     <value>Type must be a runtime Type object.</value>
   </data>
   <data name="Argument_MustBeTypeBuilder" xml:space="preserve">
-    <value>'type' must contain a TypeBuilder as a generic argument.</value>
+    <value>'type' must be or must contain a TypeBuilder as a generic argument.</value>
   </data>
   <data name="Argument_MustHaveAttributeBaseClass" xml:space="preserve">
     <value>Type passed in must be derived from System.Attribute or System.Attribute itself.</value>
@@ -3988,5 +3991,14 @@
   </data>
   <data name="Argument_DirectorySeparatorInvalid" xml:space="preserve">
     <value>The value may not contain directory separator characters.</value>
+  </data>
+  <data name="InvalidOperation_NotFunctionPointer" xml:space="preserve">
+    <value>Method may only be called on a Type for which Type.IsFunctionPointer is true.</value>
+  </data>
+  <data name="NotSupported_ModifiedType" xml:space="preserve">
+    <value>Modified types do not support this member. Use the UnderlyingSystemType property to call this member.</value>
+  </data>
+  <data name="Argument_UnexpectedStateForKnownCallback" xml:space="preserve">
+    <value>An unexpected state object was encountered. This is usually a sign of a bug in async method custom infrastructure, such as a custom awaiter or IValueTaskSource implementation.</value>
   </data>
 </root>

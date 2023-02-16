@@ -199,10 +199,12 @@ namespace System.Net
             }
             set
             {
-                if (value <= 0 || (value > m_maxCookies && value != int.MaxValue))
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+                if (value != int.MaxValue)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, m_maxCookies);
                 }
+
                 if (value < m_maxCookiesPerDomain)
                 {
                     m_maxCookiesPerDomain = value;

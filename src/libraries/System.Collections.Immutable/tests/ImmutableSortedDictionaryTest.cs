@@ -26,7 +26,7 @@ namespace System.Collections.Immutable.Tests
         {
             int operationCount = this.RandomOperationsCount;
             var expected = new SortedDictionary<int, bool>();
-            var actual = ImmutableSortedDictionary<int, bool>.Empty;
+            ImmutableSortedDictionary<int, bool> actual = ImmutableSortedDictionary<int, bool>.Empty;
 
             int seed = unchecked((int)DateTime.Now.Ticks);
             Debug.WriteLine("Using random seed {0}", seed);
@@ -104,8 +104,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void ToUnorderedTest()
         {
-            var sortedMap = Empty<int, GenericParameterHelper>().AddRange(Enumerable.Range(1, 100).Select(n => new KeyValuePair<int, GenericParameterHelper>(n, new GenericParameterHelper(n))));
-            var unsortedMap = sortedMap.ToImmutableDictionary();
+            IImmutableDictionary<int, GenericParameterHelper> sortedMap = Empty<int, GenericParameterHelper>().AddRange(Enumerable.Range(1, 100).Select(n => new KeyValuePair<int, GenericParameterHelper>(n, new GenericParameterHelper(n))));
+            ImmutableDictionary<int, GenericParameterHelper> unsortedMap = sortedMap.ToImmutableDictionary();
             Assert.IsAssignableFrom<ImmutableDictionary<int, GenericParameterHelper>>(unsortedMap);
             Assert.Equal(sortedMap.Count, unsortedMap.Count);
             Assert.Equal<KeyValuePair<int, GenericParameterHelper>>(sortedMap.ToList(), unsortedMap.ToList());
@@ -114,13 +114,13 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void SortChangeTest()
         {
-            var map = Empty<string, string>(StringComparer.Ordinal)
+            IImmutableDictionary<string, string> map = Empty<string, string>(StringComparer.Ordinal)
                 .Add("Johnny", "Appleseed")
                 .Add("JOHNNY", "Appleseed");
             Assert.Equal(2, map.Count);
             Assert.True(map.ContainsKey("Johnny"));
             Assert.False(map.ContainsKey("johnny"));
-            var newMap = map.ToImmutableSortedDictionary(StringComparer.OrdinalIgnoreCase);
+            ImmutableSortedDictionary<string, string> newMap = map.ToImmutableSortedDictionary(StringComparer.OrdinalIgnoreCase);
             Assert.Equal(1, newMap.Count);
             Assert.True(newMap.ContainsKey("Johnny"));
             Assert.True(newMap.ContainsKey("johnny")); // because it's case insensitive
@@ -135,8 +135,8 @@ namespace System.Collections.Immutable.Tests
                 new KeyValuePair<string,string>("c", "d"),
             };
 
-            var map = Empty<string, string>(StringComparer.Ordinal, StringComparer.Ordinal);
-            var actual = map.AddRange(uniqueEntries);
+            IImmutableDictionary<string, string> map = Empty<string, string>(StringComparer.Ordinal, StringComparer.Ordinal);
+            IImmutableDictionary<string, string> actual = map.AddRange(uniqueEntries);
             Assert.Equal(2, actual.Count);
         }
 
@@ -149,8 +149,8 @@ namespace System.Collections.Immutable.Tests
                 new KeyValuePair<string,string>("a", "b"),
             };
 
-            var map = Empty<string, string>(StringComparer.Ordinal, StringComparer.Ordinal);
-            var actual = map.AddRange(uniqueEntries);
+            IImmutableDictionary<string, string> map = Empty<string, string>(StringComparer.Ordinal, StringComparer.Ordinal);
+            IImmutableDictionary<string, string> actual = map.AddRange(uniqueEntries);
             Assert.Equal(1, actual.Count);
         }
 
@@ -169,7 +169,7 @@ namespace System.Collections.Immutable.Tests
                 new KeyValuePair<string,string>("a", "d"),
             };
 
-            var map = Empty<string, string>(StringComparer.Ordinal, StringComparer.Ordinal);
+            IImmutableDictionary<string, string> map = Empty<string, string>(StringComparer.Ordinal, StringComparer.Ordinal);
             AssertExtensions.Throws<ArgumentException>(null, () => map.AddRange(uniqueEntries));
         }
 
@@ -177,10 +177,10 @@ namespace System.Collections.Immutable.Tests
         public void Create()
         {
             IEnumerable<KeyValuePair<string, string>> pairs = new Dictionary<string, string> { { "a", "b" } };
-            var keyComparer = StringComparer.OrdinalIgnoreCase;
-            var valueComparer = StringComparer.CurrentCulture;
+            StringComparer keyComparer = StringComparer.OrdinalIgnoreCase;
+            StringComparer valueComparer = StringComparer.CurrentCulture;
 
-            var dictionary = ImmutableSortedDictionary.Create<string, string>();
+            ImmutableSortedDictionary<string, string> dictionary = ImmutableSortedDictionary.Create<string, string>();
             Assert.Equal(0, dictionary.Count);
             Assert.Same(Comparer<string>.Default, dictionary.KeyComparer);
             Assert.Same(EqualityComparer<string>.Default, dictionary.ValueComparer);
@@ -215,8 +215,8 @@ namespace System.Collections.Immutable.Tests
         public void ToImmutableSortedDictionary()
         {
             IEnumerable<KeyValuePair<string, string>> pairs = new Dictionary<string, string> { { "a", "B" } };
-            var keyComparer = StringComparer.OrdinalIgnoreCase;
-            var valueComparer = StringComparer.CurrentCulture;
+            StringComparer keyComparer = StringComparer.OrdinalIgnoreCase;
+            StringComparer valueComparer = StringComparer.CurrentCulture;
 
             ImmutableSortedDictionary<string, string> dictionary = pairs.ToImmutableSortedDictionary();
             Assert.Equal(1, dictionary.Count);
@@ -258,7 +258,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void WithComparers()
         {
-            var map = ImmutableSortedDictionary.Create<string, string>().Add("a", "1").Add("B", "1");
+            ImmutableSortedDictionary<string, string> map = ImmutableSortedDictionary.Create<string, string>().Add("a", "1").Add("B", "1");
             Assert.Same(Comparer<string>.Default, map.KeyComparer);
             Assert.True(map.ContainsKey("a"));
             Assert.False(map.ContainsKey("A"));
@@ -270,7 +270,7 @@ namespace System.Collections.Immutable.Tests
             Assert.True(map.ContainsKey("A"));
             Assert.True(map.ContainsKey("b"));
 
-            var cultureComparer = StringComparer.CurrentCulture;
+            StringComparer cultureComparer = StringComparer.CurrentCulture;
             map = map.WithComparers(StringComparer.OrdinalIgnoreCase, cultureComparer);
             Assert.Same(StringComparer.OrdinalIgnoreCase, map.KeyComparer);
             Assert.Same(cultureComparer, map.ValueComparer);
@@ -284,7 +284,7 @@ namespace System.Collections.Immutable.Tests
         public void WithComparersCollisions()
         {
             // First check where collisions have matching values.
-            var map = ImmutableSortedDictionary.Create<string, string>()
+            ImmutableSortedDictionary<string, string> map = ImmutableSortedDictionary.Create<string, string>()
                 .Add("a", "1").Add("A", "1");
             map = map.WithComparers(StringComparer.OrdinalIgnoreCase);
             Assert.Same(StringComparer.OrdinalIgnoreCase, map.KeyComparer);
@@ -309,16 +309,16 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CollisionExceptionMessageContainsKey()
         {
-            var map = ImmutableSortedDictionary.Create<string, string>()
+            ImmutableSortedDictionary<string, string> map = ImmutableSortedDictionary.Create<string, string>()
                 .Add("firstKey", "1").Add("secondKey", "2");
-            var exception = AssertExtensions.Throws<ArgumentException>(null, () => map.Add("firstKey", "3"));
+            ArgumentException exception = AssertExtensions.Throws<ArgumentException>(null, () => map.Add("firstKey", "3"));
             Assert.Contains("firstKey", exception.Message);
         }
 
         [Fact]
         public void WithComparersEmptyCollection()
         {
-            var map = ImmutableSortedDictionary.Create<string, string>();
+            ImmutableSortedDictionary<string, string> map = ImmutableSortedDictionary.Create<string, string>();
             Assert.Same(Comparer<string>.Default, map.KeyComparer);
             map = map.WithComparers(StringComparer.OrdinalIgnoreCase);
             Assert.Same(StringComparer.OrdinalIgnoreCase, map.KeyComparer);
@@ -327,9 +327,9 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void EnumeratorRecyclingMisuse()
         {
-            var collection = ImmutableSortedDictionary.Create<int, int>().Add(3, 5);
-            var enumerator = collection.GetEnumerator();
-            var enumeratorCopy = enumerator;
+            ImmutableSortedDictionary<int, int> collection = ImmutableSortedDictionary.Create<int, int>().Add(3, 5);
+            ImmutableSortedDictionary<int, int>.Enumerator enumerator = collection.GetEnumerator();
+            ImmutableSortedDictionary<int, int>.Enumerator enumeratorCopy = enumerator;
             Assert.True(enumerator.MoveNext());
             Assert.False(enumerator.MoveNext());
             enumerator.Dispose();
@@ -407,7 +407,7 @@ namespace System.Collections.Immutable.Tests
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableSortedDictionary.Create<string, int>());
             ImmutableSortedDictionary<int, int> dict = ImmutableSortedDictionary.Create<int, int>().Add(1, 2).Add(2, 3).Add(3, 4);
-            var info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(dict);
+            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(dict);
 
             object rootNode = DebuggerAttributes.GetFieldValue(ImmutableSortedDictionary.Create<string, string>(), "_root");
             DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
@@ -433,8 +433,8 @@ namespace System.Collections.Immutable.Tests
                 { "b", 2 }
             }.ToImmutableSortedDictionary();
 
-            ref readonly var safeRef = ref dictionary.ValueRef("a");
-            ref var unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref readonly int safeRef = ref dictionary.ValueRef("a");
+            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
 
             Assert.Equal(1, dictionary.ValueRef("a"));
 
@@ -458,9 +458,9 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Indexer_KeyNotFoundException_ContainsKeyInMessage()
         {
-            var map = ImmutableSortedDictionary.Create<string, string>()
+            ImmutableSortedDictionary<string, string> map = ImmutableSortedDictionary.Create<string, string>()
                 .Add("a", "1").Add("b", "2");
-            var exception = Assert.Throws<KeyNotFoundException>(() => map["c"]);
+            KeyNotFoundException exception = Assert.Throws<KeyNotFoundException>(() => map["c"]);
             Assert.Contains("'c'", exception.Message);
         }
 

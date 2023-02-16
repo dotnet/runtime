@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -51,7 +52,7 @@ namespace System.Net.Security
         private const int InitialHandshakeBufferSize = 4096 + FrameOverhead; // try to fit at least 4K ServerCertificate
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
 
-        private SslBuffer _buffer;
+        private SslBuffer _buffer = new();
 
         // internal buffer for storing incoming data. Wrapper around ArrayBuffer which adds
         // separation between decrypted and still encrypted part of the active region.
@@ -65,14 +66,15 @@ namespace System.Net.Security
             // padding between decrypted part of the active memory and following undecrypted TLS frame.
             private int _decryptedPadding;
 
+            // Indicates whether the _buffer currently holds a rented buffer.
             private bool _isValid;
 
-            public SslBuffer(int initialSize)
+            public SslBuffer()
             {
-                _buffer = new ArrayBuffer(initialSize, true);
+                _buffer = new ArrayBuffer(initialSize: 0, usePool: true);
                 _decryptedLength = 0;
                 _decryptedPadding = 0;
-                _isValid = true;
+                _isValid = false;
             }
 
             public bool IsValid => _isValid;
@@ -105,15 +107,8 @@ namespace System.Net.Security
 
             public void EnsureAvailableSpace(int byteCount)
             {
-                if (_isValid)
-                {
-                    _buffer.EnsureAvailableSpace(byteCount);
-                }
-                else
-                {
-                    _isValid = true;
-                    _buffer = new ArrayBuffer(byteCount, true);
-                }
+                _isValid = true;
+                _buffer.EnsureAvailableSpace(byteCount);
             }
 
             public void Discard(int byteCount)
@@ -163,7 +158,7 @@ namespace System.Net.Security
 
             public void ReturnBuffer()
             {
-                _buffer.Dispose();
+                _buffer.ClearAndReturnBuffer();
                 _decryptedLength = 0;
                 _decryptedPadding = 0;
                 _isValid = false;
@@ -213,6 +208,10 @@ namespace System.Net.Security
             _sslAuthenticationOptions.EncryptionPolicy = encryptionPolicy;
             _sslAuthenticationOptions.CertValidationDelegate = userCertificateValidationCallback;
             _sslAuthenticationOptions.CertSelectionDelegate = userCertificateSelectionCallback;
+
+#if TARGET_ANDROID
+            _sslAuthenticationOptions.SslStreamProxy = new SslStream.JavaProxy(sslStream: this);
+#endif
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);
         }
@@ -670,6 +669,9 @@ namespace System.Net.Security
 
         public override Task FlushAsync(CancellationToken cancellationToken) => InnerStream.FlushAsync(cancellationToken);
 
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("freebsd")]
         public virtual Task NegotiateClientCertificateAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfExceptionalOrNotAuthenticated();

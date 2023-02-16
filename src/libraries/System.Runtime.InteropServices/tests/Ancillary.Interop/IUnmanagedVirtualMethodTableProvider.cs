@@ -48,17 +48,17 @@ namespace System.Runtime.InteropServices
     }
 
     /// <summary>
-    /// This interface allows an object to provide information about a virtual method table for a managed interface that implements <see cref="IUnmanagedInterfaceType{TInterface, T}"/> to enable invoking methods in the virtual method table.
+    /// This interface allows an object to provide information about a virtual method table for a managed interface that implements <see cref="IUnmanagedInterfaceType{TInterface}"/> to enable invoking methods in the virtual method table.
     /// </summary>
     /// <typeparam name="T">The type to use to represent the the identity of the unmanaged type.</typeparam>
-    public unsafe interface IUnmanagedVirtualMethodTableProvider<T> where T : IEquatable<T>
+    public unsafe interface IUnmanagedVirtualMethodTableProvider
     {
         /// <summary>
-        /// Get the information about the virtual method table for a given unmanaged interface type represented by <paramref name="typeKey"/>.
+        /// Get the information about the virtual method table for a given unmanaged interface type represented by <paramref name="type"/>.
         /// </summary>
-        /// <param name="typeKey">The object that represents the identity of the unmanaged interface.</param>
+        /// <param name="type">The managed type for the unmanaged interface.</param>
         /// <returns>The virtual method table information for the unmanaged interface.</returns>
-        protected VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(T typeKey);
+        protected VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(Type type);
 
         /// <summary>
         /// Get the information about the virtual method table for the given unmanaged interface type.
@@ -66,9 +66,9 @@ namespace System.Runtime.InteropServices
         /// <typeparam name="TUnmanagedInterfaceType">The managed interface type that represents the unmanaged interface.</typeparam>
         /// <returns>The virtual method table information for the unmanaged interface.</returns>
         public sealed VirtualMethodTableInfo GetVirtualMethodTableInfoForKey<TUnmanagedInterfaceType>()
-            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType, T>
+            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType>
         {
-            return GetVirtualMethodTableInfoForKey(TUnmanagedInterfaceType.TypeKey);
+            return GetVirtualMethodTableInfoForKey(typeof(TUnmanagedInterfaceType));
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace System.Runtime.InteropServices
         /// <typeparam name="TUnmanagedInterfaceType">The managed interface type that represents the unmanaged interface.</typeparam>
         /// <returns>The length of the virtual method table for the unmanaged interface.</returns>
         public static int GetVirtualMethodTableLength<TUnmanagedInterfaceType>()
-            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType, T>
+            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType>
         {
             return TUnmanagedInterfaceType.VirtualMethodTableLength;
         }
@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices
         /// <typeparam name="TUnmanagedInterfaceType">The managed interface type that represents the unmanaged interface.</typeparam>
         /// <returns>A pointer to the virtual method table  of managed implementations of the unmanaged interface type</returns>
         public static void* GetVirtualMethodTableManagedImplementation<TUnmanagedInterfaceType>()
-            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType, T>
+            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType>
         {
             return TUnmanagedInterfaceType.VirtualMethodTableManagedImplementation;
         }
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices
         /// <param name="obj">The managed object that implements the unmanaged interface.</param>
         /// <returns>A pointer-sized value that can be passed to unmanaged code that represents <paramref name="obj"/></returns>
         public static void* GetUnmanagedWrapperForObject<TUnmanagedInterfaceType>(TUnmanagedInterfaceType obj)
-            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType, T>
+            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType>
         {
             return TUnmanagedInterfaceType.GetUnmanagedWrapperForObject(obj);
         }
@@ -112,7 +112,7 @@ namespace System.Runtime.InteropServices
         /// <param name="ptr">A pointer-sized value returned by <see cref="GetUnmanagedWrapperForObject{TUnmanagedInterfaceType}(TUnmanagedInterfaceType)"/> or <see cref="IUnmanagedInterfaceType{TInterface, TKey}.GetUnmanagedWrapperForObject(TInterface)"/>.</param>
         /// <returns>The object wrapped by <paramref name="ptr"/>.</returns>
         public static TUnmanagedInterfaceType GetObjectForUnmanagedWrapper<TUnmanagedInterfaceType>(void* ptr)
-            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType, T>
+            where TUnmanagedInterfaceType : IUnmanagedInterfaceType<TUnmanagedInterfaceType>
         {
             return TUnmanagedInterfaceType.GetObjectForUnmanagedWrapper(ptr);
         }
@@ -123,9 +123,8 @@ namespace System.Runtime.InteropServices
     /// </summary>
     /// <typeparam name="TInterface">The managed interface.</typeparam>
     /// <typeparam name="TKey">The type of a value that can represent types from the corresponding unmanaged type system.</typeparam>
-    public unsafe interface IUnmanagedInterfaceType<TInterface, TKey>
-        where TInterface : IUnmanagedInterfaceType<TInterface, TKey>
-        where TKey : IEquatable<TKey>
+    public unsafe interface IUnmanagedInterfaceType<TInterface>
+        where TInterface : IUnmanagedInterfaceType<TInterface>
     {
         /// <summary>
         /// Get the length of the virtual method table for the given unmanaged interface type.
@@ -152,10 +151,5 @@ namespace System.Runtime.InteropServices
         /// <param name="ptr">A pointer-sized value returned by <see cref="IUnmanagedVirtualMethodTableProvider{TKey}.GetUnmanagedWrapperForObject{IUnmanagedInterfaceType{TInterface, TKey}}(IUnmanagedInterfaceType{TInterface, TKey})"/> or <see cref="GetUnmanagedWrapperForObject(TInterface)"/>.</param>
         /// <returns>The object wrapped by <paramref name="ptr"/>.</returns>
         public static abstract TInterface GetObjectForUnmanagedWrapper(void* ptr);
-
-        /// <summary>
-        /// The value that represents the unmanaged type's identity in the corresponding unmanaged type system.
-        /// </summary>
-        public static abstract TKey TypeKey { get; }
     }
 }

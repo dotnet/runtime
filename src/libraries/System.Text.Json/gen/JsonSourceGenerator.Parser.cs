@@ -38,6 +38,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonIncludeAttributeFullName = "System.Text.Json.Serialization.JsonIncludeAttribute";
             private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
+            private const string JsonUnmappedMemberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute";
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
             private const string JsonRequiredAttributeFullName = "System.Text.Json.Serialization.JsonRequiredAttribute";
@@ -706,6 +707,7 @@ namespace System.Text.Json.SourceGeneration
                 List<PropertyInitializerGenerationSpec>? propertyInitializerSpecList = null;
                 CollectionType collectionType = CollectionType.NotApplicable;
                 JsonNumberHandling? numberHandling = null;
+                JsonUnmappedMemberHandling? unmappedMemberHandling = null;
                 bool foundDesignTimeCustomConverter = false;
                 string? converterInstatiationLogic = null;
                 bool implementsIJsonOnSerialized = false;
@@ -725,6 +727,12 @@ namespace System.Text.Json.SourceGeneration
                     {
                         IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
                         numberHandling = (JsonNumberHandling)ctorArgs[0].Value!;
+                        continue;
+                    }
+                    else if (attributeTypeFullName == JsonUnmappedMemberHandlingAttributeFullName)
+                    {
+                        IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
+                        unmappedMemberHandling = (JsonUnmappedMemberHandling)ctorArgs[0].Value!;
                         continue;
                     }
                     else if (!foundDesignTimeCustomConverter && attributeType.GetCompatibleBaseClass(JsonConverterAttributeFullName) != null)
@@ -763,6 +771,14 @@ namespace System.Text.Json.SourceGeneration
                 else if (_knownTypes.Contains(type))
                 {
                     classType = ClassType.KnownType;
+                }
+                else if (
+                    _knownUnsupportedTypes.Contains(type) ||
+                    _memberInfoType?.IsAssignableFrom(type) == true ||
+                    _delegateType?.IsAssignableFrom(type) == true ||
+                    (type.IsArray && type.GetArrayRank() > 1))
+                {
+                    classType = ClassType.KnownUnsupportedType;
                 }
                 else if (type.IsNullableValueType(_nullableOfTType, out Type? nullableUnderlyingType))
                 {
@@ -803,9 +819,8 @@ namespace System.Text.Json.SourceGeneration
 
                     if (type.IsArray)
                     {
-                        classType = type.GetArrayRank() > 1
-                            ? ClassType.TypeUnsupportedBySourceGen // Multi-dimentional arrays are not supported in STJ.
-                            : ClassType.Enumerable;
+                        Debug.Assert(type.GetArrayRank() == 1, "multi-dimensional arrays should have been handled earlier.");
+                        classType = ClassType.Enumerable;
                         collectionType = CollectionType.Array;
                         valueType = type.GetElementType()!;
                     }
@@ -954,13 +969,6 @@ namespace System.Text.Json.SourceGeneration
                             runtimeTypeRef = GetDictionaryTypeRef(collectionKeyTypeSpec, collectionValueTypeSpec);
                         }
                     }
-                }
-                else if (
-                    _knownUnsupportedTypes.Contains(type) ||
-                    _memberInfoType?.IsAssignableFrom(type) == true ||
-                    _delegateType?.IsAssignableFrom(type) == true)
-                {
-                    classType = ClassType.KnownUnsupportedType;
                 }
                 else
                 {
@@ -1130,6 +1138,7 @@ namespace System.Text.Json.SourceGeneration
                     generationMode,
                     classType,
                     numberHandling,
+                    unmappedMemberHandling,
                     propGenSpecList,
                     paramGenSpecArray,
                     propertyInitializerSpecList,

@@ -7,6 +7,8 @@
 enum class SimdAsHWIntrinsicClassId
 {
     Unknown,
+    Plane,
+    Quaternion,
     Vector2,
     Vector3,
     Vector4,

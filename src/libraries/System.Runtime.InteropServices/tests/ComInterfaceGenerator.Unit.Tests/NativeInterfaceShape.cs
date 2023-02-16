@@ -23,10 +23,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -50,10 +49,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -77,10 +75,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -109,10 +106,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                readonly record struct NoCasting {}
-                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+                partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI>
                 {
-                    {{CodeSnippets.INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                    {{CodeSnippets.INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
                     [VirtualMethodIndex(0)]
                     void Method();
                 }

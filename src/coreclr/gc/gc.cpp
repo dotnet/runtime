@@ -7699,7 +7699,7 @@ BOOL grow_mark_stack (mark*& m, size_t& len, size_t init_len)
     if (tmp)
     {
         memcpy (tmp, m, len * sizeof (mark));
-        delete m;
+        delete[] m;
         m = tmp;
         len = new_size;
         return TRUE;
@@ -14728,7 +14728,7 @@ gc_heap::self_destroy()
     release_card_table (card_table);
 
     // destroy the mark stack
-    delete mark_stack_array;
+    delete[] mark_stack_array;
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
     if (finalize_queue)
@@ -24072,9 +24072,9 @@ inline void Prefetch(void* addr)
     __prefetch((const char*)addr);
 #endif //defined(TARGET_AMD64) || defined(TARGET_X86)
 
-#elif defined(TARGET_UNIX) || defined(TARGET_OSX)
+#elif defined(TARGET_UNIX)
     __builtin_prefetch(addr);
-#else //!(TARGET_WINDOWS || TARGET_UNIX || TARGET_OSX)
+#else //!(TARGET_WINDOWS || TARGET_UNIX)
     UNREFERENCED_PARAMETER(addr);
 #endif //TARGET_WINDOWS
 }
@@ -41125,10 +41125,14 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
             size));
     }
 
+    // Under USE_REGIONS, mark array is never partially committed. So we are only checking for this
+    // flag here.
     if ((region->flags & heap_segment_flags_ma_committed) != 0)
     {
 #ifdef MULTIPLE_HEAPS
-        gc_heap* hp = heap_segment_heap (region);
+        // In return_free_region, we set heap_segment_heap (region) to nullptr so we cannot use it here.
+        // but since all heaps share the same mark array we simply pick the 0th heap to use. 
+        gc_heap* hp = g_heaps [0];
 #else
         gc_heap* hp = pGenGCHeap;
 #endif

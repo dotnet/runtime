@@ -25,7 +25,7 @@ namespace System.Net.Http.Headers
         private const string publicString = "public";
         private const string sharedMaxAgeString = "s-maxage";
 
-        private static readonly HttpHeaderParser s_nameValueListParser = GenericHeaderParser.MultipleValueNameValueParser;
+        private static readonly GenericHeaderParser s_nameValueListParser = GenericHeaderParser.MultipleValueNameValueParser;
 
         private bool _noCache;
         private TokenObjectCollection? _noCacheHeaders;
@@ -404,6 +404,7 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
+                Debug.Assert(nameValue is not null);
                 nameValueList.Add((NameValueHeaderValue)nameValue);
             }
 

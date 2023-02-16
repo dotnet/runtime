@@ -26,7 +26,7 @@ namespace System.Configuration
 
         // Offset from where the reader reports the LinePosition of an Xml Node to
         // the start of that representation in text.
-        private static readonly int[] s_positionOffset =
+        private static ReadOnlySpan<int> PositionOffset => new int[]
         {
             0,  // None,
             1,  // Element,                 <elem
@@ -126,7 +126,7 @@ namespace System.Configuration
 
         private static int GetPositionOffset(XmlNodeType nodeType)
         {
-            return s_positionOffset[(int)nodeType];
+            return PositionOffset[(int)nodeType];
         }
 
         private void ReleaseResources()

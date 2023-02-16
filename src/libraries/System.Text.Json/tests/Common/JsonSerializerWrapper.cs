@@ -11,6 +11,9 @@ namespace System.Text.Json.Serialization.Tests
     /// </summary>
     public abstract partial class JsonSerializerWrapper
     {
+        /// <summary>
+        /// Either JsonSerializerOptions.Default for reflection or the JsonSerializerContext.Options for source gen.
+        /// </summary>
         public abstract JsonSerializerOptions DefaultOptions { get; }
 
         /// <summary>
@@ -38,6 +41,17 @@ namespace System.Text.Json.Serialization.Tests
         public abstract Task<object> DeserializeWrapper(string value, JsonTypeInfo jsonTypeInfo);
 
         public abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context);
+
+
+        public JsonTypeInfo GetTypeInfo(Type type, bool mutable = false)
+        {
+            JsonSerializerOptions defaultOptions = DefaultOptions;
+            // return a fresh mutable instance or the cached readonly metadata
+            return mutable ? defaultOptions.TypeInfoResolver.GetTypeInfo(type, defaultOptions) : defaultOptions.GetTypeInfo(type);
+        }
+
+        public JsonTypeInfo<T> GetTypeInfo<T>(bool mutable = false)
+            => (JsonTypeInfo<T>)GetTypeInfo(typeof(T), mutable);
 
         public JsonSerializerOptions GetDefaultOptionsWithMetadataModifier(Action<JsonTypeInfo> modifier)
         {

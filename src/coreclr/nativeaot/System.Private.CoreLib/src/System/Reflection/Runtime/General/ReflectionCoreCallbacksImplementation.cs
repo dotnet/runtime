@@ -146,20 +146,20 @@ namespace System.Reflection.Runtime.General
 
         public sealed override EventInfo GetImplicitlyOverriddenBaseClassEvent(EventInfo e)
         {
-            return e.GetImplicitlyOverriddenBaseClassMember();
+            return e.GetImplicitlyOverriddenBaseClassMember(EventPolicies.Instance);
         }
 
         public sealed override MethodInfo GetImplicitlyOverriddenBaseClassMethod(MethodInfo m)
         {
-            return m.GetImplicitlyOverriddenBaseClassMember();
+            return m.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
         }
 
         public sealed override PropertyInfo GetImplicitlyOverriddenBaseClassProperty(PropertyInfo p)
         {
-            return p.GetImplicitlyOverriddenBaseClassMember();
+            return p.GetImplicitlyOverriddenBaseClassMember(PropertyPolicies.Instance);
         }
 
-        private static FieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
+        private static RuntimeFieldInfo GetFieldInfo(RuntimeTypeHandle declaringTypeHandle, FieldHandle fieldHandle)
         {
             RuntimeTypeInfo contextTypeInfo = declaringTypeHandle.GetTypeForRuntimeTypeHandle();
             NativeFormatRuntimeNamedTypeInfo definingTypeInfo = contextTypeInfo.AnchoringTypeDefinitionForDeclaredMembers.CastToNativeFormatRuntimeNamedTypeInfo();

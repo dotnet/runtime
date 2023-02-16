@@ -24,7 +24,7 @@ class MethodTable;
 // Currently we set this to the packing size of the largest supported
 // fundamental type and let the field marshaller downsize where needed.
 //=======================================================================
-#define DEFAULT_PACKING_SIZE 32
+#define DEFAULT_PACKING_SIZE 64
 
 //=======================================================================
 // This structure contains information about where a field is placed in a structure, as well as it's size and alignment.

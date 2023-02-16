@@ -456,10 +456,7 @@ namespace System.IO
 
         public virtual byte[] ReadBytes(int count)
         {
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             ThrowIfDisposed();
 
             if (count == 0)

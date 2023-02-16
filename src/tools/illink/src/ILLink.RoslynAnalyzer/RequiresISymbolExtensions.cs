@@ -39,7 +39,7 @@ namespace ILLink.RoslynAnalyzer
 		/// Doesn't check the associated symbol for overrides and virtual methods because the analyzer should warn on mismatched between the property AND the accessors
 		/// </summary>
 		/// <param name="member">
-		///	Symbol that is either an overriding member or an overriden/virtual member
+		/// Symbol that is either an overriding member or an overriden/virtual member
 		/// </param>
 		public static bool IsOverrideInRequiresScope (this ISymbol member, string requiresAttribute)
 		{

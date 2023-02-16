@@ -46,7 +46,7 @@ size_t StressLog::reading_base_address;
 
 bool s_showAllMessages = false;
 BOOL g_bDacBroken;
-WCHAR g_mdName[1];
+char g_mdName[1];
 SYMBOLS* g_ExtSymbols;
 SOS* g_sos;
 
@@ -1173,7 +1173,7 @@ static double FindLatestTime(StressLog::StressLogHeader* hdr)
 static void PrintFriendlyNumber(LONGLONG n)
 {
     if (n < 1000)
-        printf("%lld", n);
+        printf("%d", (int32_t)n);
     else if (n < 1000 * 1000)
         printf("%5.3f thousand", n / 1000.0);
     else if (n < 1000 * 1000 * 1000)
@@ -1486,7 +1486,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         (double)usedSize / (1024 * 1024 * 1024), (double)availSize/ (1024 * 1024 * 1024),
         s_threadStressLogCount, (int)s_wrappedWriteThreadCount);
     if (hdr->threadsWithNoLog != 0)
-        printf("%lld threads did not get a log!\n", hdr->threadsWithNoLog);
+        printf("%u threads did not get a log!\n", hdr->threadsWithNoLog);
     printf("Number of messages examined: "); PrintFriendlyNumber(s_totalMsgCount); printf(", printed: "); PrintFriendlyNumber(s_msgCount); printf("\n");
 
     delete[] s_threadMsgBuf;

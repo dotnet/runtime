@@ -155,12 +155,12 @@ namespace System.Linq.Parallel
             }
         }
 
-        private static IComparer<Pair<bool, TRightKey>> CreateComparer<TRightKey>(IComparer<TRightKey> comparer)
+        private static PairComparer<bool, TRightKey> CreateComparer<TRightKey>(IComparer<TRightKey> comparer)
         {
             return CreateComparer(Comparer<bool>.Default, comparer);
         }
 
-        private static IComparer<Pair<TLeftKey, TRightKey>> CreateComparer<TLeftKey, TRightKey>(IComparer<TLeftKey> leftKeyComparer, IComparer<TRightKey> rightKeyComparer)
+        private static PairComparer<TLeftKey, TRightKey> CreateComparer<TLeftKey, TRightKey>(IComparer<TLeftKey> leftKeyComparer, IComparer<TRightKey> rightKeyComparer)
         {
             return new PairComparer<TLeftKey, TRightKey>(leftKeyComparer, rightKeyComparer);
         }

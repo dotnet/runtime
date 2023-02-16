@@ -79,7 +79,7 @@ namespace System.Reflection
         {
             // @Asymmetry - Legacy policy is to remove duplicate properties, including hidden properties.
             //             The comparison is done by name and by sig. The EqualsSig comparison is expensive
-            //             but forutnetly it is only called when an inherited property is hidden by name or
+            //             but fortunately it is only called when an inherited property is hidden by name or
             //             when an interfaces declare properies with the same signature.
             //             Note that we intentionally don't resolve generic arguments so that we don't treat
             //             signatures that only match in certain instantiations as duplicates. This has the
@@ -204,6 +204,8 @@ namespace System.Reflection
         {
             return Signature.GetCustomModifiers(0, false);
         }
+
+        public override Type GetModifiedPropertyType() => ModifiedType.Create(PropertyType, Signature);
 
         internal object GetConstantValue(bool raw)
         {

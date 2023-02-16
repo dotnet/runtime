@@ -2453,33 +2453,33 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 			g_free (type_name);
 			goto leave;
 		}
-	} else if (strcmp ("AssemblyBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_assembly_builder (klass)) {
 		MonoReflectionAssemblyBuilderHandle assemblyb = MONO_HANDLE_CAST (MonoReflectionAssemblyBuilder, obj);
 		MonoReflectionAssemblyHandle assembly = MONO_HANDLE_CAST (MonoReflectionAssembly, assemblyb);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, assemblyb, cattrs);
 		MonoImage * image = MONO_HANDLE_GETVAL (assembly, assembly)->image;
 		g_assert (image);
 		cinfo = mono_custom_attrs_from_builders_handle (NULL, image, cattrs);
-	} else if (strcmp ("TypeBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_type_builder (klass)) {
 		MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, obj);
 		MonoReflectionModuleBuilderHandle module = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, tb, module);
 		MonoDynamicImage *dynamic_image = MONO_HANDLE_GETVAL (module, dynamic_image);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, tb, cattrs);
 		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs);
-	} else if (strcmp ("ModuleBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_module_builder (klass)) {
 		MonoReflectionModuleBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionModuleBuilder, obj);
 		MonoDynamicImage *dynamic_image = MONO_HANDLE_GETVAL (mb, dynamic_image);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, mb, cattrs);
 		cinfo = mono_custom_attrs_from_builders_handle (NULL, &dynamic_image->image, cattrs);
-	} else if (strcmp ("ConstructorBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_ctor_builder (klass)) {
 		mono_error_set_not_supported (error, "");
 		goto leave;
-	} else if (strcmp ("MethodBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_method_builder (klass)) {
 		MonoReflectionMethodBuilderHandle mb = MONO_HANDLE_CAST (MonoReflectionMethodBuilder, obj);
 		MonoMethod *mhandle = MONO_HANDLE_GETVAL (mb, mhandle);
 		MonoArrayHandle cattrs = MONO_HANDLE_NEW_GET (MonoArray, mb, cattrs);
 		cinfo = mono_custom_attrs_from_builders_handle (NULL, m_class_get_image (mhandle->klass), cattrs);
-	} else if (strcmp ("FieldBuilder", klass_name) == 0) {
+	} else if (mono_is_sre_field_builder (klass)) {
 		MonoReflectionFieldBuilderHandle fb = MONO_HANDLE_CAST (MonoReflectionFieldBuilder, obj);
 		MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, MONO_HANDLE_NEW_GET (MonoReflectionType, fb, typeb));
 		MonoReflectionModuleBuilderHandle mb = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, tb, module);

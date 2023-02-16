@@ -19,12 +19,16 @@
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .mjs=text/javascript</_ServeMimeTypes>
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .cjs=text/javascript</_ServeMimeTypes>
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .js=text/javascript</_ServeMimeTypes>
+    <_ServeMimeTypes>$(_ServeMimeTypes) --mime .webcil=application/octet-stream</_ServeMimeTypes>
   </PropertyGroup>
 
   <Target Name="BuildSampleInTree"
       Inputs="
       Program.cs;
       $(_WasmMainJSFileName);
+      $(_SampleProject);
+      $(MSBuildProjectFile)
+      $(TargetFileName)
       "
       Outputs="
       bin/$(Configuration)/AppBundle/dotnet.wasm;
@@ -37,6 +41,8 @@
       <_Dotnet>$(RepoRoot)dotnet$(_ScriptExt)</_Dotnet>
       <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
       <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
+      <_SampleProject Condition="'$(_SampleProject)' == ''">$(MSBuildProjectFile)</_SampleProject>
+      <_SampleAssembly Condition="'$(_SampleAssembly)' == ''">$(TargetFileName)</_SampleAssembly>
       <BuildAdditionalArgs Condition="'$(MonoDiagnosticsMock)' != ''">$(BuildAdditionalArgs) /p:MonoDiagnosticsMock=$(MonoDiagnosticsMock) </BuildAdditionalArgs>
     </PropertyGroup>
     <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser $(_AOTFlag) $(_SampleProject) $(BuildAdditionalArgs)" />

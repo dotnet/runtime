@@ -33,6 +33,7 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 extern const std::string GetFileName(const std::string& fileName);
 extern const std::string GetDirectory(const std::string& fileName);
 extern std::string FormatString(const char* format, ...);
+extern std::string ConvertString(const WCHAR* str);
 extern std::string FormatGuid(const GUID* guid);
 
 class CrashInfo : public ICLRDataEnumMemoryRegionsCallback, public ICLRDataLoggingCallback,

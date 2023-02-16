@@ -23,7 +23,7 @@
 
   <PropertyGroup>
     <_NetCoreAppCurrent>net8.0</_NetCoreAppCurrent>
-    <_NetCoreAppToolCurrent>net7.0</_NetCoreAppToolCurrent>
+    <_NetCoreAppToolCurrent>net8.0</_NetCoreAppToolCurrent>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
   </PropertyGroup>
 
