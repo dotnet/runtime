@@ -17,7 +17,7 @@
     <RuntimeGroup Include="alpine">
       <Parent>linux-musl</Parent>
       <Architectures>x64;x86;arm;armv6;arm64;s390x;ppc64le</Architectures>
-      <Versions>3.6;3.7;3.8;3.9;3.10;3.11;3.12;3.13;3.14;3.15;3.16;3.17</Versions>
+      <Versions>3.14;3.15;3.16;3.17</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="linux-bionic">
@@ -86,7 +86,7 @@
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>23;24;25;26;27;28;29;30;31;32;33;34;35;36;37;38</Versions>
+      <Versions>36;37;38</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -130,16 +130,6 @@
     </RuntimeGroup>
 
     <!-- linux mint includes major version in Include because Parent is different for each major -->
-    <RuntimeGroup Include="linuxmint.17">
-      <Parent>ubuntu.14.04</Parent>
-      <Architectures>x64</Architectures>
-      <Versions>1;2;3</Versions>
-    </RuntimeGroup>
-    <RuntimeGroup Include="linuxmint.18">
-      <Parent>ubuntu.16.04</Parent>
-      <Architectures>x64</Architectures>
-      <Versions>1;2;3</Versions>
-    </RuntimeGroup>
     <RuntimeGroup Include="linuxmint.19">
       <Parent>ubuntu.18.04</Parent>
       <Architectures>x64</Architectures>
@@ -157,21 +147,31 @@
     <RuntimeGroup Include="ol">
       <Parent>rhel</Parent>
       <Architectures>x64</Architectures>
-      <Versions>7;7.0;7.1;7.2;7.3;7.4;7.5;7.6</Versions>
+      <Versions>7;8</Versions>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
       <ApplyVersionsToParent>true</ApplyVersionsToParent>
     </RuntimeGroup>
-    <RuntimeGroup Include="ol">
-      <Parent>rhel</Parent>
+    <!-- The host doesn't strip minors for Oracle Linux.
+         We map them here to the major version or Oracle Linux and RHEL. -->
+    <RuntimeGroup Include="ol.7">
+      <Parent>rhel.7</Parent>
       <Architectures>x64</Architectures>
-      <Versions>8;8.0</Versions>
-      <ApplyVersionsToParent>true</ApplyVersionsToParent>
+      <Versions>0;1;2;3;4;6;6</Versions>
+      <ApplyVersionsToParent>false</ApplyVersionsToParent>
+      <OmitRIDDefinitions>ol;ol.7;ol.7-x64</OmitRIDDefinitions>
+    </RuntimeGroup>
+    <RuntimeGroup Include="ol.8">
+      <Parent>rhel.8</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>0</Versions>
+      <ApplyVersionsToParent>false</ApplyVersionsToParent>
+      <OmitRIDDefinitions>ol;ol.8;ol.8-x64</OmitRIDDefinitions>
     </RuntimeGroup>
 
     <!-- all opensuse releases are independent -->
     <RuntimeGroup Include="opensuse">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>13.2;15.0;15.1;42.1;42.2;42.3</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -184,7 +184,6 @@
     <RuntimeGroup Include="freebsd">
       <Parent>unix</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>12;13</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="solaris">
@@ -225,17 +224,13 @@
     <RuntimeGroup Include="rhel">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>7;7.0;7.1;7.2;7.3;7.4;7.5;7.6</Versions>
+      <Versions>7</Versions>
     </RuntimeGroup>
     <RuntimeGroup Include="rhel">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>8;8.0;8.1</Versions>
-    </RuntimeGroup>
-    <RuntimeGroup Include="rhel">
-      <Parent>linux</Parent>
-      <Architectures>x64;arm64</Architectures>
-      <Versions>9</Versions>
+      <Versions>8;9</Versions>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
     <RuntimeGroup Include="rocky">
@@ -261,13 +256,13 @@
     <RuntimeGroup Include="ubuntu">
       <Parent>debian</Parent>
       <Architectures>x64;x86;arm</Architectures>
-      <Versions>14.04;14.10;15.04;15.10</Versions>
+      <Versions>14.04</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
     <RuntimeGroup Include="ubuntu">
       <Parent>debian</Parent>
       <Architectures>x64;x86;arm;arm64</Architectures>
-      <Versions>16.04;16.10;17.04;17.10;18.04;18.10;19.04;19.10;20.04;20.10;21.04;21.10;22.04</Versions>
+      <Versions>16.04;18.04;20.04;22.04</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
