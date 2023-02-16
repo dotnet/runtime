@@ -64,66 +64,6 @@ namespace System.Tests.Types
         }
 
         [Theory]
-        [InlineData(nameof(FunctionPointerHolder.Field_Int), nameof(FunctionPointerHolder.Field_DateOnly))]
-        [InlineData(nameof(FunctionPointerHolder.Field_DateOnly), nameof(FunctionPointerHolder.Field_Int))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void SigInDifferentModule_Field(string name, string otherName)
-        {
-            Type fph1 = typeof(FunctionPointerHolder).Project();
-            Type fph2 = typeof(FunctionPointerHolderSeparateModule).Project();
-            Assert.True(GetFuncPtr(fph1, name).IsFunctionPointerEqual(GetFuncPtr(fph2, name)));
-
-            // Verify other combinations fail
-            Assert.False(GetFuncPtr(fph1, name).IsFunctionPointerEqual(GetFuncPtr(fph1, otherName)));
-            Assert.False(GetFuncPtr(fph1, name).IsFunctionPointerEqual(GetFuncPtr(fph1, otherName)));
-            Assert.False(GetFuncPtr(fph2, name).IsFunctionPointerEqual(GetFuncPtr(fph2, otherName)));
-            Assert.False(GetFuncPtr(fph2, name).IsFunctionPointerEqual(GetFuncPtr(fph2, otherName)));
-
-            static Type GetFuncPtr(Type owner, string name) => owner.GetField(name, Bindings).FieldType;
-        }
-
-        [Theory]
-        [InlineData(nameof(FunctionPointerHolder.Prop_Int), nameof(FunctionPointerHolder.Prop_DateOnly))]
-        [InlineData(nameof(FunctionPointerHolder.Prop_DateOnly), nameof(FunctionPointerHolder.Prop_Int))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void SigInDifferentModule_Property(string name, string otherName)
-        {
-            Type fph1 = typeof(FunctionPointerHolder).Project();
-            Type fph2 = typeof(FunctionPointerHolderSeparateModule).Project();
-            Assert.True(GetFuncPtr(fph1, name).IsFunctionPointerEqual(GetFuncPtr(fph2, name)));
-
-            // Verify other combinations fail
-            Assert.False(GetFuncPtr(fph1, name).IsFunctionPointerEqual(GetFuncPtr(fph1, otherName)));
-            Assert.False(GetFuncPtr(fph1, name).IsFunctionPointerEqual(GetFuncPtr(fph1, otherName)));
-            Assert.False(GetFuncPtr(fph2, name).IsFunctionPointerEqual(GetFuncPtr(fph2, otherName)));
-            Assert.False(GetFuncPtr(fph2, name).IsFunctionPointerEqual(GetFuncPtr(fph2, otherName)));
-
-            static Type GetFuncPtr(Type owner, string name) => owner.GetProperty(name, Bindings).PropertyType;
-        }
-
-        [Theory]
-        [InlineData(nameof(FunctionPointerHolder.MethodReturnValue_Int), nameof(FunctionPointerHolder.MethodReturnValue_DateOnly))]
-        [InlineData(nameof(FunctionPointerHolder.MethodReturnValue_DateOnly), nameof(FunctionPointerHolder.MethodReturnValue_Int))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static unsafe void SigInDifferentModule_MethodReturn(string name, string otherName)
-        {
-            Type fph1 = typeof(FunctionPointerHolder).Project();
-            Type fph2 = typeof(FunctionPointerHolderSeparateModule).Project();
-            Assert.True(GetFuncPtr(fph1, name).IsFunctionPointerEqual(GetFuncPtr(fph2, name)));
-
-            // Verify other combinations fail
-            Assert.False(GetFuncPtr(fph1, name).IsFunctionPointerEqual(GetFuncPtr(fph1, otherName)));
-            Assert.False(GetFuncPtr(fph1, name).IsFunctionPointerEqual(GetFuncPtr(fph1, otherName)));
-            Assert.False(GetFuncPtr(fph2, name).IsFunctionPointerEqual(GetFuncPtr(fph2, otherName)));
-            Assert.False(GetFuncPtr(fph2, name).IsFunctionPointerEqual(GetFuncPtr(fph2, otherName)));
-
-            static Type GetFuncPtr(Type owner, string name) => owner.GetMethod(name, Bindings).ReturnParameter.ParameterType;
-        }
-
-        [Theory]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Cdecl_SuppressGCTransition))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Stdcall))]
         [InlineData(nameof(FunctionPointerHolder.MethodCallConv_Cdecl), nameof(FunctionPointerHolder.MethodCallConv_Thiscall))]

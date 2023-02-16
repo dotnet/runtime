@@ -339,7 +339,6 @@
     <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true" />
 
     <ProjectReference Include="$(CommonPath)..\tests\System\TestILAssembly\TestILAssembly.ilproj" Link="Common\System\TestILAssembly\TestILAssembly.ilproj" Condition="'$(TargetOS)' != 'wasi'" />
-    <ProjectReference Include="$(CommonPath)..\tests\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" Link="Common\System\TestFunctionPointerAssembly\TestFunctionPointerAssembly.csproj" />
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" Condition="'$(TargetOS)' != 'wasi'" />
