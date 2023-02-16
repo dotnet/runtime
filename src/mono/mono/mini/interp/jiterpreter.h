@@ -124,8 +124,11 @@ typedef struct {
 	JiterpEntryDataCache cache;
 } JiterpEntryData;
 
+volatile size_t *
+mono_jiterp_get_polling_required_address (void);
+
 void
-mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip);
+mono_jiterp_do_safepoint (InterpFrame *frame, guint16 *ip);
 
 void
 mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);

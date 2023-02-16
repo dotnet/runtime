@@ -6785,11 +6785,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDTOKEN)
-			// FIXME same as MINT_MONO_LDPTR
-			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
-			ip += 3;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_OVF_I4) {
 			gint32 i1 = LOCAL_VAR (ip [2], gint32);
 			gint32 i2 = LOCAL_VAR (ip [3], gint32);
@@ -6966,7 +6961,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			CHECK_RESUME_STATE (context);
 			ip += 4;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_LDPTR)
+		MINT_IN_CASE(MINT_LDPTR)
 			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
 			ip += 3;
 			MINT_IN_BREAK;
@@ -8750,11 +8745,16 @@ mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res)
 		mono_jiterp_stackval_to_data (type, frame.stack, res);
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip)
+EMSCRIPTEN_KEEPALIVE volatile size_t *
+mono_jiterp_get_polling_required_address ()
 {
-	if (G_UNLIKELY (mono_polling_required))
-		do_safepoint (frame, get_context(), ip);
+	return &mono_polling_required;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_do_safepoint (InterpFrame *frame, guint16 *ip)
+{
+	do_safepoint (frame, get_context(), ip);
 }
 
 EMSCRIPTEN_KEEPALIVE gpointer
