@@ -1629,7 +1629,7 @@ void Compiler::compShutdown()
 
     fprintf(fout, "\n");
     fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "BasicBlock and flowList/BasicBlockList allocation stats\n");
+    fprintf(fout, "BasicBlock and FlowEdge/BasicBlockList allocation stats\n");
     fprintf(fout, "---------------------------------------------------\n");
 
     fprintf(fout, "Allocated %6u basic blocks (%7u bytes total, avg %4u bytes per method)\n", BasicBlock::s_Count,
@@ -2385,6 +2385,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // The following flags are lost when inlining. (They are removed in
         // Compiler::fgInvokeInlineeCompiler().)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
+        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE));
@@ -3328,6 +3329,21 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters();
     }
 #endif // defined(DEBUG) && defined(TARGET_ARM64)
+
+#if defined(TARGET_AMD64)
+    rbmAllFloat         = RBM_ALLFLOAT_INIT;
+    rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
+    cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
+
+    if (DoJitStressEvexEncoding())
+    {
+        rbmAllFloat |= RBM_HIGHFLOAT;
+        rbmFltCalleeTrash |= RBM_HIGHFLOAT;
+        cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
+    }
+
+    codeGen->CopyRegisterInfo();
+#endif // TARGET_AMD64
 }
 
 #ifdef DEBUG
@@ -3531,6 +3547,37 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
     return rejectThisPromo;
 }
 
+//------------------------------------------------------------------------
+// dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
+// a potentially large number of registers.
+//
+// Arguments:
+//   regs - The set of registers to display
+//
+void Compiler::dumpRegMask(regMaskTP regs) const
+{
+    if (regs == RBM_ALLINT)
+    {
+        printf("[allInt]");
+    }
+    else if (regs == (RBM_ALLINT & ~RBM_FPBASE))
+    {
+        printf("[allIntButFP]");
+    }
+    else if (regs == RBM_ALLFLOAT)
+    {
+        printf("[allFloat]");
+    }
+    else if (regs == RBM_ALLDOUBLE)
+    {
+        printf("[allDouble]");
+    }
+    else
+    {
+        dspRegMask(regs);
+    }
+}
+
 #endif // DEBUG
 
 void Compiler::compInitDebuggingInfo()
@@ -3575,7 +3622,6 @@ void Compiler::compInitDebuggingInfo()
 
         JITDUMP("Debuggable code - Add new %s to perform initialization of variables\n", fgFirstBB->dspToString());
     }
-
     /*-------------------------------------------------------------------------
      *
      * Read the stmt-offsets table and the line-number table
@@ -3730,31 +3776,15 @@ void Compiler::compSetOptimizationLevel()
         }
     }
 
-#if 0
-    // The code in this #if can be used to debug optimization issues according to method hash.
-    // To use, uncomment, rebuild and set environment variables minoptshashlo and minoptshashhi.
 #ifdef DEBUG
-    unsigned methHash = info.compMethodHash();
-    char* lostr = getenv("minoptshashlo");
-    unsigned methHashLo = 0;
-    if (lostr != nullptr)
+    static ConfigMethodRange s_onlyOptimizeRange;
+    s_onlyOptimizeRange.EnsureInit(JitConfig.JitOnlyOptimizeRange());
+
+    if (!theMinOptsValue && !s_onlyOptimizeRange.IsEmpty())
     {
-        sscanf_s(lostr, "%x", &methHashLo);
-        char* histr = getenv("minoptshashhi");
-        unsigned methHashHi = UINT32_MAX;
-        if (histr != nullptr)
-        {
-            sscanf_s(histr, "%x", &methHashHi);
-            if (methHash >= methHashLo && methHash <= methHashHi)
-            {
-                printf("MinOpts for method %s, hash = %08x.\n",
-                    info.compFullName, methHash);
-                printf("");         // in our logic this causes a flush
-                theMinOptsValue = true;
-            }
-        }
+        unsigned methHash = info.compMethodHash();
+        theMinOptsValue   = !s_onlyOptimizeRange.Contains(methHash);
     }
-#endif
 #endif
 
     if (compStressCompile(STRESS_MIN_OPTS, 5))
@@ -3903,9 +3933,9 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 #endif
 
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            // The JIT doesn't currently support loop alignment for prejitted images.
+            // The JIT doesn't currently support loop alignment for prejitted images outside NativeAOT.
             // (The JIT doesn't know the final address of the code, hence
             // it can't align code based on unknown addresses.)
 
@@ -4347,6 +4377,11 @@ void Compiler::EndPhase(Phases phase)
 //
 void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFlags* compileFlags)
 {
+    compFunctionTraceStart();
+
+    // Enable flow graph checks
+    activePhaseChecks |= PhaseChecks::CHECK_FG;
+
     // Prepare for importation
     //
     auto preImportPhase = [this]() {
@@ -4375,14 +4410,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
-    compFunctionTraceStart();
-
     // Incorporate profile data.
     //
     // Note: the importer is sensitive to block weights, so this has
     // to happen before importation.
     //
+    activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // If we're going to instrument code, we may need to prepare before
     // we import.
@@ -4401,8 +4436,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Enable the post-phase checks that use internal logic to decide when checking makes sense.
     //
-    activePhaseChecks = PhaseChecks::CHECK_EH | PhaseChecks::CHECK_LOOPS | PhaseChecks::CHECK_UNIQUE |
-                        PhaseChecks::CHECK_PROFILE | PhaseChecks::CHECK_LINKED_LOCALS;
+    activePhaseChecks |=
+        PhaseChecks::CHECK_EH | PhaseChecks::CHECK_LOOPS | PhaseChecks::CHECK_UNIQUE | PhaseChecks::CHECK_LINKED_LOCALS;
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
@@ -4431,23 +4466,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         DoPhase(this, PHASE_IBCINSTR, &Compiler::fgInstrumentMethod);
     }
-
-    // Compute bbNum, bbRefs and bbPreds
-    //
-    // This is the first time full (not cheap) preds will be computed.
-    // And, if we have profile data, we can now check integrity.
-    //
-    // From this point on the flowgraph information such as bbNum,
-    // bbRefs or bbPreds has to be kept updated.
-    //
-    auto computePredsPhase = [this]() {
-        JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
-        fgRenumberBlocks();
-        fgComputePreds();
-        // Enable flow graph checks
-        activePhaseChecks |= PhaseChecks::CHECK_FG;
-    };
-    DoPhase(this, PHASE_COMPUTE_PREDS, computePredsPhase);
 
     // Expand any patchpoints
     //
@@ -4668,15 +4686,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fgMarkDemotedImplicitByRefArgs();
         lvaRefCountState       = RCS_INVALID;
         fgLocalVarLivenessDone = false;
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        if (fgNeedToAddFinallyTargetBits)
-        {
-            // We previously wiped out the BBF_FINALLY_TARGET bits due to some morphing; add them back.
-            fgAddFinallyTargetFlags();
-            fgNeedToAddFinallyTargetBits = false;
-        }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
         // Decide the kind of code we want to generate
         fgSetOptions();
@@ -6687,6 +6696,13 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             if (canEscapeViaOSR)
             {
                 JITDUMP("\nOSR enabled for this method\n");
+                if (compHasBackwardJump && !compTailPrefixSeen &&
+                    opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS) && opts.IsTier0())
+                {
+                    assert((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) == 0);
+                    opts.jitFlags->Set(JitFlags::JIT_FLAG_BBINSTR);
+                    JITDUMP("\nEnabling instrumentation for this method so OSR'd version will have a profile.\n");
+                }
             }
             else
             {
@@ -8875,7 +8891,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cVarDsc,     dVarDsc        : Display a local variable given a LclVarDsc* (call lvaDumpEntry()).
  *      cVars,       dVars          : Display the local variable table (call lvaTableDump()).
  *      cVarsFinal,  dVarsFinal     : Display the local variable table (call lvaTableDump(FINAL_FRAME_LAYOUT)).
- *      cBlockCheapPreds, dBlockCheapPreds : Display a block's cheap predecessors (call block->dspCheapPreds()).
  *      cBlockPreds, dBlockPreds    : Display a block's predecessors (call block->dspPreds()).
  *      cBlockSuccs, dBlockSuccs    : Display a block's successors (call block->dspSuccs(compiler)).
  *      cReach,      dReach         : Display all block reachability (call fgDispReach()).
@@ -8975,14 +8990,6 @@ void cVarsFinal(Compiler* comp)
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Vars %u\n", sequenceNumber++);
     comp->lvaTableDump(Compiler::FINAL_FRAME_LAYOUT);
-}
-
-void cBlockCheapPreds(Compiler* comp, BasicBlock* block)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *BlockCheapPreds %u\n",
-           sequenceNumber++);
-    block->dspCheapPreds();
 }
 
 void cBlockPreds(Compiler* comp, BasicBlock* block)
@@ -9128,11 +9135,6 @@ void dVarsFinal()
 void dBlockPreds(BasicBlock* block)
 {
     cBlockPreds(JitTls::GetCompiler(), block);
-}
-
-void dBlockCheapPreds(BasicBlock* block)
-{
-    cBlockCheapPreds(JitTls::GetCompiler(), block);
 }
 
 void dBlockSuccs(BasicBlock* block)

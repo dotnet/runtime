@@ -275,7 +275,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         result.AddRange(baseType.GetInterfaces());
                     foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
                     {
-                        Type ifc = directlyImplementedInterface.Resolve(typeContext);
+                        RuntimeTypeInfo ifc = directlyImplementedInterface.Resolve(typeContext);
                         if (result.Contains(ifc))
                             continue;
                         result.Add(ifc);

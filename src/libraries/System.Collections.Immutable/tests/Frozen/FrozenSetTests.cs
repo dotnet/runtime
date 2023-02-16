@@ -31,6 +31,8 @@ namespace System.Collections.Frozen.Tests
         protected override ISet<T> GenericISetFactory(int count) =>
             GenericISetFactory(count, optimizeForReading: true);
 
+        protected virtual bool TestLargeSizes => true;
+
         protected virtual ISet<T> GenericISetFactory(int count, bool optimizeForReading)
         {
             var s = new HashSet<T>();
@@ -48,7 +50,10 @@ namespace System.Collections.Frozen.Tests
         [InlineData(100_000, true)]
         public void CreateVeryLargeSet_Success(int largeCount, bool optimizeForReading)
         {
-            GenericISetFactory(largeCount, optimizeForReading);
+            if (TestLargeSizes)
+            {
+                GenericISetFactory(largeCount, optimizeForReading);
+            }
         }
 
         [Fact]
@@ -221,6 +226,11 @@ namespace System.Collections.Frozen.Tests
         [InlineData(5000, false)]
         public void ComparingWithOtherSets(int size, bool optimizeForReading)
         {
+            if (size > 10 && !TestLargeSizes)
+            {
+                return;
+            }
+
             foreach (IEqualityComparer<T> comparer in new IEqualityComparer<T>[] { EqualityComparer<T>.Default })//, NonDefaultEqualityComparer<T>.Instance })
             {
                 IEqualityComparer<T> otherComparer = ReferenceEquals(comparer, EqualityComparer<T>.Default) ? NonDefaultEqualityComparer<T>.Instance : EqualityComparer<T>.Default;
@@ -421,6 +431,13 @@ namespace System.Collections.Frozen.Tests
             rand.NextBytes(bytes1);
             return new SimpleClass { Value = Convert.ToBase64String(bytes1) };
         }
+    }
+
+    public class FrozenSet_Generic_Tests_SimpleStruct : FrozenSet_Generic_Tests<SimpleStruct>
+    {
+        protected override SimpleStruct CreateT(int seed) => new SimpleStruct { Value = seed + 1 };
+
+        protected override bool TestLargeSizes => false; // hash code contention leads to longer running times
     }
 
     public class FrozenSet_NonGeneric_Tests : ICollection_NonGeneric_Tests

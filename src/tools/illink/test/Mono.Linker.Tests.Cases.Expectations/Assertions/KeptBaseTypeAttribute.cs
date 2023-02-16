@@ -10,16 +10,13 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public KeptBaseTypeAttribute (Type baseType)
 		{
-			if (baseType == null)
-				throw new ArgumentNullException (nameof (baseType));
+			ArgumentNullException.ThrowIfNull (baseType);
 		}
 
 		public KeptBaseTypeAttribute (Type baseType, params object[] typeArguments)
 		{
-			if (baseType == null)
-				throw new ArgumentNullException (nameof (baseType));
-			if (typeArguments == null)
-				throw new ArgumentNullException (nameof (typeArguments));
+			ArgumentNullException.ThrowIfNull (baseType);
+			ArgumentNullException.ThrowIfNull (typeArguments);
 		}
 	}
 }

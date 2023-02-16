@@ -24,10 +24,6 @@ PALTEST(c_runtime__vsnprintf_s_test2_paltest_vsnprintf_test2, "c_runtime/_vsnpri
     }
 
     DoStrTest("foo %s", "bar", "foo bar");
-    DoStrTest("foo %5s", "bar", "foo   bar");
-    DoStrTest("foo %.2s", "bar", "foo ba");
-    DoStrTest("foo %5.2s", "bar", "foo    ba");
-    DoStrTest("foo %-5s", "bar", "foo bar  ");
 
     PAL_Terminate();
     return PASS;

@@ -513,7 +513,7 @@ namespace ILCompiler
             }
 
             // Normalize to the slot defining method
-            MethodDesc slotNormalizedMethod = TypeSystemContext.GetInstantiatedMethod(
+            InstantiatedMethod slotNormalizedMethod = TypeSystemContext.GetInstantiatedMethod(
                 slotNormalizedMethodDefinition,
                 targetMethod.Instantiation);
 
@@ -541,7 +541,7 @@ namespace ILCompiler
 
                 while (!slotNormalizedMethod.OwningType.HasSameTypeDefinition(runtimeDeterminedOwningType))
                 {
-                    TypeDesc runtimeDeterminedBaseTypeDefinition = runtimeDeterminedOwningType.GetTypeDefinition().BaseType;
+                    DefType runtimeDeterminedBaseTypeDefinition = runtimeDeterminedOwningType.GetTypeDefinition().BaseType;
                     if (runtimeDeterminedBaseTypeDefinition.HasInstantiation)
                     {
                         runtimeDeterminedOwningType = runtimeDeterminedBaseTypeDefinition.InstantiateSignature(runtimeDeterminedOwningType.Instantiation, default);
@@ -685,6 +685,20 @@ namespace ILCompiler
                 foreach (var node in MarkedNodes)
                 {
                     if (node is ConstructedEETypeNode || node is CanonicalEETypeNode)
+                    {
+                        yield return ((IEETypeNode)node).Type;
+                    }
+                }
+            }
+        }
+
+        public IEnumerable<TypeDesc> AllEETypes
+        {
+            get
+            {
+                foreach (var node in MarkedNodes)
+                {
+                    if (node is IEETypeNode)
                     {
                         yield return ((IEETypeNode)node).Type;
                     }

@@ -2010,10 +2010,10 @@ VOID ClassLoader::Init(AllocMemTracker *pamTracker)
     // type in one of the modules governed by the loader.
     // The process of creating these types may be reentrant.  The ordering has
     // not yet been sorted out, and when we sort it out we should also modify the
-    // ordering for m_AvailableTypesLock in BaseDomain.
+    // ordering for m_AvailableTypesLock below.
     m_AvailableClassLock.Init(
                              CrstAvailableClass,
-                             CRST_REENTRANCY);
+                             CrstFlags(CRST_REENTRANCY | CRST_DEBUGGER_THREAD));
 
     // This lock is taken within the classloader whenever we have to insert a new param. type into the table.
     m_AvailableTypesLock.Init(

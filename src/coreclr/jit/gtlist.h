@@ -137,15 +137,15 @@ GTNODE(LE               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(GE               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(GT               , GenTreeOp          ,0,GTK_BINOP)
 
-// These are similar to GT_EQ/GT_NE but they generate "test" instead of "cmp" instructions.
-// Currently these are generated during lowering for code like ((x & y) eq|ne 0) only on
-// XArch but ARM could too use these for the same purpose as there is a "tst" instruction.
-// Note that the general case of comparing a register against 0 is handled directly by
-// codegen which emits a "test reg, reg" instruction, that would be more difficult to do
-// during lowering because the source operand is used twice so it has to be a lclvar.
-// Because of this there is no need to also add GT_TEST_LT/LE/GE/GT opers.
+// These implement EQ/NE(AND(x, y), 0). They always produce a value (GT_TEST is the version that does not).
 GTNODE(TEST_EQ          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(TEST_NE          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+
+#ifdef TARGET_XARCH
+// BITTEST_EQ/NE(a, n) == EQ/NE(AND(a, LSH(1, n)), 0), but only used in xarch that has the BT instruction
+GTNODE(BITTEST_EQ       , GenTreeOp          ,0,(GTK_BINOP|DBK_NOTHIR))
+GTNODE(BITTEST_NE       , GenTreeOp          ,0,(GTK_BINOP|DBK_NOTHIR))
+#endif
 
 // Conditional select with 3 operands: condition, true value, false value
 GTNODE(SELECT           , GenTreeConditional ,0,GTK_SPECIAL)
@@ -232,6 +232,8 @@ GTNODE(CNEG_LT          , GenTreeOp          ,0,GTK_UNOP|DBK_NOTHIR)  // Conditi
 
 // Sets the condition flags according to the compare result. N.B. Not a relop, it does not produce a value and it cannot be reversed.
 GTNODE(CMP              , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+// Generate a test instruction; sets the CPU flags according to (a & b) and does not produce a value.
+GTNODE(TEST             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 // Makes a comparison and jump if the condition specified.  Does not set flags.
 GTNODE(JCMP             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and branch if the condition specified by GenTreeCC::gtCondition is true.

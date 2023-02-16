@@ -45,7 +45,7 @@ namespace Internal.JitInterface
             _compilation = compilation;
         }
 
-        private MethodDesc getUnboxingThunk(MethodDesc method)
+        private UnboxingMethodDesc getUnboxingThunk(MethodDesc method)
         {
             return _unboxingThunkFactory.GetUnboxingMethod(method);
         }

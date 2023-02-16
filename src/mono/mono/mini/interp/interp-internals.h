@@ -29,6 +29,7 @@
 #define MINT_STACK_SLOT_SIZE (sizeof (stackval))
 // This alignment provides us with straight forward support for Vector128
 #define MINT_STACK_ALIGNMENT (2 * MINT_STACK_SLOT_SIZE)
+#define MINT_SIMD_ALIGNMENT (MINT_STACK_ALIGNMENT)
 
 #define INTERP_STACK_SIZE (1024*1024)
 #define INTERP_REDZONE_SIZE (8*1024)

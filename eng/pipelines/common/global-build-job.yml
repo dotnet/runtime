@@ -171,13 +171,12 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
-    - ${{ if eq(parameters.platform, 'browser_wasm_win') }}:
+    - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
       # Update machine certs
       - task: PowerShell@2
         displayName: Update machine certs
         inputs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
-
 
     # Build
     - ${{ if eq(parameters.isSourceBuild, false) }}:

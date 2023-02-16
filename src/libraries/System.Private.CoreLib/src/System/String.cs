@@ -575,9 +575,9 @@ namespace System
             return new StringRuneEnumerator(this);
         }
 
-        internal static unsafe int wcslen(char* ptr) => SpanHelpers.IndexOfNullCharacter(ref *ptr);
+        internal static unsafe int wcslen(char* ptr) => SpanHelpers.IndexOfNullCharacter(ptr);
 
-        internal static unsafe int strlen(byte* ptr) => SpanHelpers.IndexOfNullByte(ref *ptr);
+        internal static unsafe int strlen(byte* ptr) => SpanHelpers.IndexOfNullByte(ptr);
 
         //
         // IConvertible implementation

@@ -2983,8 +2983,7 @@ Module::GetAssemblyIfLoaded(
                 AssemblySpec spec;
                 if (FAILED(spec.InitializeSpecInternal(kAssemblyRef,
                                                        pMDImport,
-                                                       pCurAssemblyInExamineDomain,
-                                                       FALSE /*fAllowAllocation*/)))
+                                                       pCurAssemblyInExamineDomain)))
                 {
                     continue;
                 }

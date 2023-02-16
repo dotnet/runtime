@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Security.Policy;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
@@ -25,7 +26,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class TypeInheritance
 		{
 			class BaseWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
-			{ }
+			{
+				public static void GetMethods ()
+				{
+					typeof (TPublicMethods).GetMethods ();
+				}
+			}
 
 			class BaseWithTwo<
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
@@ -61,6 +67,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				: BaseWithTwo<TPublicMethods, TPublicFields>
 			{ }
 
+			[ExpectedWarning ("IL2091")]
+			class DerivedWithOnlyStaticMethodReference<TUnknown> : BaseWithPublicMethods<TUnknown>
+			{
+				// The method body in this case looks like:
+				//     BaseWithPublicMethods<TUnknown>.GetMethods ()
+				// The type instantiation needs to be validated and in this case it produces a warning.
+				// This is no different from the same code being part of a completely unrelated method/class.
+				// So the fact that this is in derived class has no impact on the validation in this case.
+				[ExpectedWarning ("IL2091")]
+				public static void GetDerivedMethods () => GetMethods ();
+			}
+
 			public static void Test ()
 			{
 				Type t;
@@ -70,6 +88,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				t = typeof (DerivedWithMismatchAnnotation<>);
 				t = typeof (DerivedWithOneMismatch<>);
 				t = typeof (DerivedWithTwoMatching<,>);
+
+				DerivedWithOnlyStaticMethodReference<TestType>.GetDerivedMethods ();
 			}
 		}
 
@@ -115,6 +135,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		// Method parameter instantiation doesn't technically need to be validated on its own
+		// Especially in AOT compiler the type of the method parameter won't even exist in the compilation
+		// unless something passes a real value to it, in which case that value creation will do all the necessary
+		// validations. So the declaration of the parameter type alone doesn't create an analysis hole
+		// it only becomes one if something tries to create an instance of such type.
+		// Similarly for statics - since we do validate accesses to static members, the static .ctor is covered through
+		// those as well.
 		class MethodParametersAndReturn
 		{
 			class TypeWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -127,11 +154,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static void MethodWithSpecificType (TypeWithPublicMethods<TestType> one, IWithTwo<TestType, TestType> two) { }
 
-			[ExpectedWarning ("IL2091")]
+			[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 			static void MethodWithOneMismatch<TUnknown> (TypeWithPublicMethods<TUnknown> one) { }
 
-			[ExpectedWarning ("IL2091", nameof (IWithTwo<TestType, TestType>))]
-			[ExpectedWarning ("IL2091", nameof (TypeWithPublicMethods<TestType>))]
+			[ExpectedWarning ("IL2091", nameof (IWithTwo<TestType, TestType>), ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2091", nameof (TypeWithPublicMethods<TestType>), ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 			static void MethodWithTwoMismatches<
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -142,11 +169,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static TypeWithPublicMethods<TPublicMethods> MethodWithMatchingReturn<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods> () => null;
 
-			[ExpectedWarning ("IL2091")]
+			[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 			static TypeWithPublicMethods<TUnknown> MethodWithOneMismatchReturn<TUnknown> () => null;
 
-			[ExpectedWarning ("IL2091")]
-			[ExpectedWarning ("IL2091")]
+			[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 			static IWithTwo<TPublicFields, TPublicMethods> MethodWithTwoMismatchesInReturn<
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -165,6 +192,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		// Same as for method parameters - declaring a field with a specific type in itself is not problematic
+		// for the field to be "dangerous" it would need to have a non-null value and thus the instance has to be created somewhere
+		// and that point of creation is the place where the validation happens.
 		class FieldDefinition
 		{
 			class TypeWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
@@ -197,10 +227,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class MultipleReferencesToTheSameType<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods, TUnknown>
 			{
-				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				static TypeWithPublicMethods<TUnknown> _field1;
 				static TypeWithPublicMethods<TPublicMethods> _field2;
-				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				static TypeWithPublicMethods<TUnknown> _field3;
 
 				public static void Test ()
@@ -215,8 +245,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
 			{
-				[ExpectedWarning ("IL2091")]
-				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				static IWithTwo<TPublicFields, TPublicMethods> _field;
 
 				public static void Test ()
@@ -267,12 +297,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			class MultipleReferencesToTheSameType<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods, TUnknown>
 			{
 				// The warning is generated on the backing field
-				[ExpectedWarning ("IL2091", CompilerGeneratedCode = true)]
+				[ExpectedWarning ("IL2091", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				static TypeWithPublicMethods<TUnknown> Property1 {
-					[ExpectedWarning ("IL2091")]
+					[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 					get;
 
-					[ExpectedWarning ("IL2091")]
+					[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 					set;
 				}
 
@@ -282,12 +312,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				// The warning is generated on the backing field
-				[ExpectedWarning ("IL2091", CompilerGeneratedCode = true)]
+				[ExpectedWarning ("IL2091", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				static TypeWithPublicMethods<TUnknown> Property3 {
-					[ExpectedWarning ("IL2091")]
+					[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 					get;
 
-					[ExpectedWarning ("IL2091")]
+					[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 					set;
 				}
 
@@ -304,14 +334,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
 			{
 				// The warnings are generated on the backing field
-				[ExpectedWarning ("IL2091", CompilerGeneratedCode = true)]
-				[ExpectedWarning ("IL2091", CompilerGeneratedCode = true)]
+				[ExpectedWarning ("IL2091", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL2091", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 				static IWithTwo<TPublicFields, TPublicMethods> Property {
 					// Getter is trimmed and doesn't produce any warning
 					get;
 
-					[ExpectedWarning ("IL2091")]
-					[ExpectedWarning ("IL2091")]
+					[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
+					[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
 					set;
 				}
 
@@ -335,6 +365,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			class TypeWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods> : Exception
 			{
 				public static void Method () { }
+
+				public static string Field;
+
+				public static string Property { get; set; }
 			}
 
 			interface IWithTwo<
@@ -342,6 +376,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields>
 			{
 				public static void Method () { }
+
+				public static string Field;
+
+				public static string Property { get; set; }
 			}
 
 			class TypeWithTwo<
@@ -358,6 +396,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class TypeOf
 			{
+				static void AccessOpenTypeDefinition ()
+				{
+					// Accessing the open type definition should not do anything on its own - just validating that it doesn't break anything
+					Type t = typeof (TypeWithPublicMethods<>);
+					t = typeof (IWithTwo<,>);
+				}
+
 				static void SpecificType ()
 				{
 					Type t = typeof (TypeWithPublicMethods<TestType>);
@@ -392,6 +437,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 				public static void Test ()
 				{
+					AccessOpenTypeDefinition ();
 					SpecificType ();
 					OneMatchingAnnotation<TestType> ();
 					MultipleReferencesToTheSameType<TestType, TestType> ();
@@ -481,6 +527,49 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					SpecificType ();
 					OneMatchingAnnotation<TestType> ();
 					MultipleReferencesToTheSameMethod<TestType, TestType> ();
+					TwoMismatchesInOneStatement<TestType, TestType> ();
+				}
+			}
+
+			class FieldAccessOnGenericType
+			{
+				static void SpecificType ()
+				{
+					_ = TypeWithPublicMethods<TestType>.Field;
+					IWithTwo<TestType, TestType>.Field = "";
+				}
+
+				static void OneMatchingAnnotation<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods> ()
+				{
+					_ = TypeWithPublicMethods<TPublicMethods>.Field;
+				}
+
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091")]
+				static void MultipleReferencesToTheSameField<
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
+					TUnknown> ()
+				{
+					_ = TypeWithPublicMethods<TUnknown>.Field; // Warn
+					TypeWithPublicMethods<TPublicMethods>.Field = ""; // No warn
+					TypeWithPublicMethods<TUnknown>.Field = ""; // Warn
+				}
+
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091")]
+				static void TwoMismatchesInOneStatement<
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
+					()
+				{
+					_ = IWithTwo<TPublicFields, TPublicMethods>.Field;
+				}
+
+				public static void Test ()
+				{
+					SpecificType ();
+					OneMatchingAnnotation<TestType> ();
+					MultipleReferencesToTheSameField<TestType, TestType> ();
 					TwoMismatchesInOneStatement<TestType, TestType> ();
 				}
 			}
@@ -608,6 +697,210 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					SpecificType ();
 					OneMatchingAnnotation<TestType> ();
 					MultipleReferencesToTheSameMethod<TestType, TestType> ();
+					TwoMismatchesInOneStatement<TestType, TestType> ();
+				}
+			}
+
+			class LdTokenOnGenericMethod
+			{
+				static void SpecificType ()
+				{
+					Expression<Action> a = () => MethodWithPublicMethods<TestType> ();
+				}
+
+				static void OneMatchingAnnotation<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods> ()
+				{
+					Expression<Action> a = () => MethodWithPublicMethods<TPublicMethods> ();
+				}
+
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091")]
+				static void MultipleReferencesToTheSameMethod<
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
+					TUnknown> ()
+				{
+					Expression<Action> a = () => MethodWithPublicMethods<TUnknown> (); // Warn
+					a = () => MethodWithPublicMethods<TPublicMethods> (); // No warn
+					a = () => MethodWithPublicMethods<TUnknown> (); // Warn
+				}
+
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091")]
+				static void TwoMismatchesInOneStatement<
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
+					()
+				{
+					Expression<Action> a = () => MethodWithTwo<TPublicFields, TPublicMethods> ();
+				}
+
+				public static void Test ()
+				{
+					SpecificType ();
+					OneMatchingAnnotation<TestType> ();
+					MultipleReferencesToTheSameMethod<TestType, TestType> ();
+					TwoMismatchesInOneStatement<TestType, TestType> ();
+				}
+			}
+
+			class LdTokenOfMethodOnGenericType
+			{
+				static void SpecificType ()
+				{
+					Expression<Action> a = () => TypeWithPublicMethods<TestType>.Method ();
+				}
+
+				static void OneMatchingAnnotation<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods> ()
+				{
+					Expression<Action> a = () => TypeWithPublicMethods<TPublicMethods>.Method ();
+				}
+
+				// There are two warnings per "callsite" in this case because the generated IL does
+				//    ldtoken method
+				//    ldtoken owningtype
+				// In order to call the right Expression APIs.
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				static void MultipleReferencesToTheSameMethod<
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
+					TUnknown> ()
+				{
+					Expression<Action> a = () => TypeWithPublicMethods<TUnknown>.Method (); // Warn
+					a = () => TypeWithPublicMethods<TPublicMethods>.Method (); // No warn
+					a = () => TypeWithPublicMethods<TUnknown>.Method (); // Warn
+				}
+
+				// There are two warnings per "callsite" in this case because the generated IL does
+				//    ldtoken method
+				//    ldtoken owningtype
+				// In order to call the right Expression APIs.
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				static void TwoMismatchesInOneStatement<
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
+					()
+				{
+					Expression<Action> a = () => IWithTwo<TPublicFields, TPublicMethods>.Method ();
+				}
+
+				public static void Test ()
+				{
+					SpecificType ();
+					OneMatchingAnnotation<TestType> ();
+					MultipleReferencesToTheSameMethod<TestType, TestType> ();
+					TwoMismatchesInOneStatement<TestType, TestType> ();
+				}
+			}
+
+			class LdTokenOfFieldOnGenericType
+			{
+				static void SpecificType ()
+				{
+					Expression<Func<string>> a = () => TypeWithPublicMethods<TestType>.Field;
+				}
+
+				static void OneMatchingAnnotation<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods> ()
+				{
+					Expression<Func<string>> a = () => TypeWithPublicMethods<TPublicMethods>.Field;
+				}
+
+				// There are two warnings per "callsite" in this case because the generated IL does
+				//    ldtoken field
+				//    ldtoken owningtype
+				// In order to call the right Expression APIs.
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				static void MultipleReferencesToTheSameField<
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
+					TUnknown> ()
+				{
+					Expression<Func<string>> a = () => TypeWithPublicMethods<TUnknown>.Field; // Warn
+					a = () => TypeWithPublicMethods<TPublicMethods>.Field; // No warn
+					a = () => TypeWithPublicMethods<TUnknown>.Field; // Warn
+				}
+
+				// There are two warnings per "callsite" in this case because the generated IL does
+				//    ldtoken field
+				//    ldtoken owningtype
+				// In order to call the right Expression APIs.
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				static void TwoMismatchesInOneStatement<
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
+					()
+				{
+					Expression<Func<string>> a = () => IWithTwo<TPublicFields, TPublicMethods>.Field;
+				}
+
+				public static void Test ()
+				{
+					SpecificType ();
+					OneMatchingAnnotation<TestType> ();
+					MultipleReferencesToTheSameField<TestType, TestType> ();
+					TwoMismatchesInOneStatement<TestType, TestType> ();
+				}
+			}
+
+			class LdTokenOfPropertyOnGenericType
+			{
+				static void SpecificType ()
+				{
+					Expression<Func<string>> a = () => TypeWithPublicMethods<TestType>.Property;
+				}
+
+				static void OneMatchingAnnotation<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods> ()
+				{
+					Expression<Func<string>> a = () => TypeWithPublicMethods<TPublicMethods>.Property;
+				}
+
+				// There are two warnings per "callsite" in this case because the generated IL does
+				//    ldtoken method (getter)
+				//    ldtoken owningtype
+				// In order to call the right Expression APIs.
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				static void MultipleReferencesToTheSameProperty<
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods,
+					TUnknown> ()
+				{
+					Expression<Func<string>> a = () => TypeWithPublicMethods<TUnknown>.Property; // Warn
+					a = () => TypeWithPublicMethods<TPublicMethods>.Property; // No warn
+					a = () => TypeWithPublicMethods<TUnknown>.Property; // Warn
+				}
+
+				// There are two warnings per "callsite" in this case because the generated IL does
+				//    ldtoken method (getter)
+				//    ldtoken owningtype
+				// In order to call the right Expression APIs.
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL2091")]
+				[ExpectedWarning ("IL2091", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				static void TwoMismatchesInOneStatement<
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TPublicFields,
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TPublicMethods>
+					()
+				{
+					Expression<Func<string>> a = () => IWithTwo<TPublicFields, TPublicMethods>.Property;
+				}
+
+				public static void Test ()
+				{
+					SpecificType ();
+					OneMatchingAnnotation<TestType> ();
+					MultipleReferencesToTheSameProperty<TestType, TestType> ();
 					TwoMismatchesInOneStatement<TestType, TestType> ();
 				}
 			}
@@ -871,9 +1164,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TypeOf.Test ();
 				MethodCallOnGenericMethod.Test ();
 				MethodCallOnGenericType.Test ();
+				FieldAccessOnGenericType.Test ();
 				LocalVariable.Test ();
 				DelegateUsageOnGenericMethod.Test ();
 				DelegateUsageOnGenericType.Test ();
+				LdTokenOnGenericMethod.Test ();
+				LdTokenOfMethodOnGenericType.Test ();
+				LdTokenOfFieldOnGenericType.Test ();
+				LdTokenOfPropertyOnGenericType.Test ();
 				CreateInstance.Test ();
 				IsInstance.Test ();
 				AsType.Test ();

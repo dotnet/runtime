@@ -365,7 +365,7 @@ namespace Wasm.Build.Tests
 
                 // use this test's id for the run logs
                 _logPath = Path.Combine(s_buildEnv.LogRootPath, id);
-                return (_projectDir, "FIXME");
+                return (_projectDir, product.BuildOutput);
             }
 
             if (options.CreateProject)
@@ -435,14 +435,14 @@ namespace Wasm.Build.Tests
                 }
 
                 if (options.UseCache)
-                    _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, true));
+                    _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, true, result.buildOutput));
 
                 return (_projectDir, result.buildOutput);
             }
-            catch
+            catch (Exception ex)
             {
                 if (options.UseCache)
-                    _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, false));
+                    _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, false, $"The build attempt resulted in exception: {ex}."));
                 throw;
             }
         }
@@ -493,10 +493,14 @@ namespace Wasm.Build.Tests
                     .EnsureSuccessful();
 
             string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
+            string extraProperties = string.Empty;
+            extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
             if (runAnalyzers)
-                AddItemsPropertiesToProject(projectfile, "<RunAnalyzers>true</RunAnalyzers>");
+                extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
             if (UseWebcil)
-                AddItemsPropertiesToProject(projectfile, "<WasmEnableWebcil>true</WasmEnableWebcil>");
+                extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>";
+            AddItemsPropertiesToProject(projectfile, extraProperties);
+
             return projectfile;
         }
 
@@ -1096,7 +1100,7 @@ namespace Wasm.Build.Tests
                             bool AOT,
                             string ProjectFileContents,
                             string? ExtraBuildArgs);
-    public record BuildProduct(string ProjectDir, string LogFile, bool Result);
+    public record BuildProduct(string ProjectDir, string LogFile, bool Result, string BuildOutput);
     internal record FileStat (bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
     internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
 

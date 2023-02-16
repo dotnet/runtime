@@ -5,10 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Dataflow;
 using ILCompiler.Logging;
@@ -22,6 +20,7 @@ namespace ILCompiler
     {
         private readonly ILogWriter _logWriter;
         private readonly CompilerGeneratedState _compilerGeneratedState;
+        private readonly UnconditionalSuppressMessageAttributeState _unconditionalSuppressMessageAttributeState;
 
         private readonly HashSet<int> _suppressedWarnings;
         private readonly HashSet<string> _suppressedCategories;
@@ -47,13 +46,14 @@ namespace ILCompiler
             IEnumerable<string> suppressedCategories)
         {
             _logWriter = writer;
-            _compilerGeneratedState = ilProvider == null ? null : new CompilerGeneratedState(ilProvider, this);
             IsVerbose = isVerbose;
             _suppressedWarnings = new HashSet<int>(suppressedWarnings);
             _isSingleWarn = singleWarn;
             _singleWarnEnabledAssemblies = new HashSet<string>(singleWarnEnabledModules, StringComparer.OrdinalIgnoreCase);
             _singleWarnDisabledAssemblies = new HashSet<string>(singleWarnDisabledModules, StringComparer.OrdinalIgnoreCase);
             _suppressedCategories = new HashSet<string>(suppressedCategories, StringComparer.Ordinal);
+            _compilerGeneratedState = ilProvider == null ? null : new CompilerGeneratedState(ilProvider, this);
+            _unconditionalSuppressMessageAttributeState = new UnconditionalSuppressMessageAttributeState(_compilerGeneratedState, this);
         }
 
         public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules, IEnumerable<string> suppressedCategories)
@@ -154,86 +154,7 @@ namespace ILCompiler
             if (_suppressedWarnings.Contains(code))
                 return true;
 
-            // TODO: Suppressions with different scopes
-
-            TypeSystemEntity member = origin.MemberDefinition;
-            if (IsSuppressed(code, member))
-                return true;
-
-            MethodDesc owningMethod;
-            if (_compilerGeneratedState != null)
-            {
-                while (_compilerGeneratedState?.TryGetOwningMethodForCompilerGeneratedMember(member, out owningMethod) == true)
-                {
-                    Debug.Assert(owningMethod != member);
-                    if (IsSuppressed(code, owningMethod))
-                        return true;
-                    member = owningMethod;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool IsSuppressed(int id, TypeSystemEntity warningOrigin)
-        {
-            TypeSystemEntity warningOriginMember = warningOrigin;
-            while (warningOriginMember != null)
-            {
-                if (IsSuppressedOnElement(id, warningOriginMember))
-                    return true;
-
-                warningOriginMember = warningOriginMember.GetOwningType();
-            }
-
-            // TODO: Assembly-level suppressions
-
-            return false;
-        }
-
-        private static bool IsSuppressedOnElement(int id, TypeSystemEntity provider)
-        {
-            if (provider == null)
-                return false;
-
-            // TODO: Assembly-level suppressions
-
-            IEnumerable<CustomAttributeValue<TypeDesc>> suppressions = null;
-
-            if (provider is TypeDesc type)
-            {
-                var ecmaType = type.GetTypeDefinition() as EcmaType;
-                suppressions = ecmaType?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
-            }
-
-            if (provider is MethodDesc method)
-            {
-                var ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
-                suppressions = ecmaMethod?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
-            }
-
-            if (suppressions != null)
-            {
-                foreach (CustomAttributeValue<TypeDesc> suppression in suppressions)
-                {
-                    if (suppression.FixedArguments.Length != 2
-                        || suppression.FixedArguments[1].Value is not string warningId
-                        || warningId.Length < 6
-                        || !warningId.StartsWith("IL")
-                        || (warningId.Length > 6 && warningId[6] != ':')
-                        || !int.TryParse(warningId.AsSpan(2, 4), out int suppressedCode))
-                    {
-                        continue;
-                    }
-
-                    if (id == suppressedCode)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return _unconditionalSuppressMessageAttributeState.IsSuppressed(code, origin);
         }
 
         internal static bool IsWarningAsError(int _/*code*/)

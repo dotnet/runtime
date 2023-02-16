@@ -618,7 +618,6 @@ FCFuncStart(gMngdRefCustomMarshalerFuncs)
 FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)
-    FCFuncElement("GetNDirectTarget", StubHelpers::GetNDirectTarget)
     FCFuncElement("GetDelegateTarget", StubHelpers::GetDelegateTarget)
     FCFuncElement("SetLastError", StubHelpers::SetLastError)
     FCFuncElement("ClearLastError", StubHelpers::ClearLastError)

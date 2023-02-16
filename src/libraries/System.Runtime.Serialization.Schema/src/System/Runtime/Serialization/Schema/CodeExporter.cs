@@ -32,11 +32,11 @@ namespace System.Runtime.Serialization
         private static readonly object s_codeUserDataActualTypeKey = new object();
         private static readonly object s_surrogateDataKey = typeof(ISerializationSurrogateProvider2);
 
-        private DataContractSet _dataContractSet;
-        private CodeCompileUnit _codeCompileUnit;
-        private ImportOptions? _options;
-        private Dictionary<string, string> _namespaces;
-        private Dictionary<string, string?> _clrNamespaces;
+        private readonly DataContractSet _dataContractSet;
+        private readonly CodeCompileUnit _codeCompileUnit;
+        private readonly ImportOptions? _options;
+        private readonly Dictionary<string, string> _namespaces;
+        private readonly Dictionary<string, string?> _clrNamespaces;
 
         internal CodeExporter(DataContractSet dataContractSet, ImportOptions? options, CodeCompileUnit codeCompileUnit)
         {

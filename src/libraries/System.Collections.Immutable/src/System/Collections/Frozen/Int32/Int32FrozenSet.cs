@@ -1,13 +1,17 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace System.Collections.Frozen
 {
     /// <summary>Provides a frozen set to use when the value is an <see cref="int"/> and the default comparer is used.</summary>
+    /// <remarks>
+    /// This set type is specialized as a memory optimization, as the frozen hash table already contains the array of all
+    /// int values, and we can thus use its array as the items rather than maintaining a duplicate copy.
+    /// </remarks>
     internal sealed class Int32FrozenSet : FrozenSetInternalBase<int, Int32FrozenSet.GSW>
     {
         private readonly FrozenHashTable _hashTable;
@@ -17,10 +21,16 @@ namespace System.Collections.Frozen
             Debug.Assert(source.Count != 0);
             Debug.Assert(ReferenceEquals(source.Comparer, EqualityComparer<int>.Default));
 
+            int count = source.Count;
+            int[] entries = ArrayPool<int>.Shared.Rent(count);
+            source.CopyTo(entries);
+
             _hashTable = FrozenHashTable.Create(
-                source.ToArray(),
-                item => item,
-                (_, _) => { });
+                count,
+                index => entries[index],
+                delegate { });
+
+            ArrayPool<int>.Shared.Return(entries);
         }
 
         /// <inheritdoc />
