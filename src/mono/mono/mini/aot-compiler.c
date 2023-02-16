@@ -6589,8 +6589,8 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						direct_call_target = symbol;
 						patch_info->type = MONO_PATCH_INFO_NONE;
 					} else if ((m_class_get_image (patch_info->data.method->klass) == acfg->image) && !got_only && is_direct_callable (acfg, method, patch_info)) {
-						// FIXME: Currently it only works for wasm. On other platforms it fails as some callees require initialization.
-#ifdef TARGET_WASM
+						// FIXME: Currently not used. It fails as some callees require initialization.
+#if 0
 						MonoCompile *callee_cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, cmethod);
 
 						// Don't compile inflated methods if we're doing dedup
