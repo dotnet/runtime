@@ -33,7 +33,7 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
     return DbgDllMain(hInstance, dwReason, lpReserved);
 }
 
-#if defined(HOST_LINUX) && defined(TARGET_LINUX)
+#if defined(TARGET_LINUX) && !defined(HOST_WINDOWS)
 PALIMPORT HINSTANCE PALAPI DAC_PAL_RegisterModule(IN LPCSTR lpLibFileName);
 PALIMPORT VOID PALAPI DAC_PAL_UnregisterModule(IN HINSTANCE hInstance);
 

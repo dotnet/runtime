@@ -71,6 +71,9 @@ namespace Microsoft.Workload.Build.Tasks
                 if (OnlyUpdateManifests)
                     return !Log.HasLoggedErrors;
 
+                if (InstallTargets.Length == 0)
+                    throw new LogAsErrorException($"No install targets specified.");
+
                 InstallWorkloadRequest[] selectedRequests = InstallTargets
                     .SelectMany(workloadToInstall =>
                     {

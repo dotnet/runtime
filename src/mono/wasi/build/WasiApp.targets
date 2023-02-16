@@ -117,7 +117,7 @@
     <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
     <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
 
-    <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">true</WasmSingleFileBundle>
+    <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmSingleFileBundle)' == 'true'">true</WasmBuildNative>
 
     <WasiBundleAssemblies Condition="'$(WasiBundleAssemblies)' == ''">true</WasiBundleAssemblies>
@@ -317,29 +317,18 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_GetWasmGenerateAppBundleDependencies" />
-
-  <Target Name="_GetBrowserWasmGenerateAppBundleDependencies">
+  <Target Name="_GetWasiGenerateAppBundleDependencies">
     <PropertyGroup>
-      <WasmIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>
+      <!--<WasmIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>-->
 
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
-      <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.worker.js'">true</_HasDotnetJsWorker>
-      <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'">true</_HasDotnetJsSymbols>
-      <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
     </PropertyGroup>
 
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.worker.js" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.worker.js')" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols"
-                       Condition="'$(WasmEmitSymbolMap)' == 'true' and
-                                  '$(_HasDotnetJsSymbols)' != 'true' and
-                                  Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols')" />
 
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <!--<WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />-->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
 
       <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
@@ -350,72 +339,32 @@
           Inputs="@(_WasmAssembliesInternal);$(WasmIcuDataFileName);@(WasmNativeAsset)"
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
-          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies" />
+          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasiGenerateAppBundleDependencies;_WasiDefaultGenerateAppBundle;_GenerateRunWasmtimeScript" />
 
-  <Target Name="_BrowserWasmGenerateAppBundle"
-          Inputs="@(_WasmAssembliesInternal);$(WasmMainJSPath);$(WasmIcuDataFileName);@(WasmNativeAsset)"
-          Outputs="$(WasmAppDir)\.stamp"
-          Condition="'$(WasmGenerateAppBundle)' == 'true'"
-          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetBrowserWasmGenerateAppBundleDependencies">
-    <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
-
-    <PropertyGroup>
-      <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</_WasmAppIncludeThreadsWorker>
-      <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.js -->
-      <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == '' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">-1</_WasmPThreadPoolSize>
-    </PropertyGroup>
-
-    <RemoveDir Directories="$(WasmAppDir)" />
-    <WasmAppBuilder
-      AppDir="$(WasmAppDir)"
-      MainJS="$(WasmMainJSPath)"
-      MainHTMLPath="$(WasmMainHTMLPath)"
-      Assemblies="@(_WasmAssembliesInternal)"
-      MainAssemblyName="$(WasmMainAssemblyFileName)"
-      HostConfigs="@(HostConfig)"
-      RuntimeArgsForHost="@(WasmMonoRuntimeArgs)"
-      DefaultHostConfig="$(DefaultWasmHostConfig)"
-      InvariantGlobalization="$(InvariantGlobalization)"
-      SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
-      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
-      IcuDataFileName="$(WasmIcuDataFileName)"
-      RemoteSources="@(WasmRemoteSources)"
-      ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
-      ExtraConfig="@(WasmExtraConfig)"
-      NativeAssets="@(WasmNativeAsset)"
-      DebugLevel="$(WasmDebugLevel)"
-      IncludeThreadsWorker="$(_WasmAppIncludeThreadsWorker)"
-      PThreadPoolSize="$(_WasmPThreadPoolSize)"
-      >
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </WasmAppBuilder>
-
-    <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunV8Script)' == 'true'" />
-    <Message Text="Generated app bundle at $(WasmAppDir)" Importance="High" />
-
-    <Copy SourceFiles="@(_WasmAppHostFiles)" DestinationFiles="@(_WasmAppHostFiles->'$(WasmAppDir)\WasmAppHost\%(RecursiveDir)%(FileName)%(Extension)')" />
-
-    <WriteLinesToFile File="$(WasmAppDir)\.stamp" Lines="" Overwrite="true" />
+  <Target Name="_WasiDefaultGenerateAppBundle" Condition="'$(WasmSingleFileBundle)' != 'true'">
+    <!-- placeholder bundle generator -->
+    <Copy SourceFiles="@(_WasmAssembliesInternal)" DestinationFolder="$(WasmAppDir)\managed" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(WasmNativeAsset)" DestinationFolder="$(WasmAppDir)" SkipUnchangedFiles="true" />
   </Target>
 
-  <Target Name="_GenerateRunV8Script">
+  <Target Name="_GenerateRunWasmtimeScript">
     <PropertyGroup>
-      <WasmRunV8ScriptPath Condition="'$(WasmRunV8ScriptPath)' == ''">$(WasmAppDir)run-v8.sh</WasmRunV8ScriptPath>
-      <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
+      <WasmRunWasmtimeScriptPath Condition="'$(WasmRunWasmtimeScriptPath)' == ''">$(WasmAppDir)run-wasmtime.sh</WasmRunWasmtimeScriptPath>
+      <_ScriptContent Condition="'$(WasmSingleFileBundle)' == 'true'">wasmtime run $([System.IO.Path]::GetFileNameWithoutExtension($(WasmMainAssemblyFileName))).wasm $*</_ScriptContent>
+      <_ScriptContent Condition="'$(WasmSingleFileBundle)' != 'true'">wasmtime run --dir . dotnet.wasm $([System.IO.Path]::GetFileNameWithoutExtension($(WasmMainAssemblyFileName))) $*</_ScriptContent>
     </PropertyGroup>
 
-    <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunV8ScriptPath)." />
+    <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunWasmtimeScriptPath)." />
     <WriteLinesToFile
-      File="$(WasmRunV8ScriptPath)"
-      Lines="v8 --expose_wasm $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
-      Overwrite="true">
-    </WriteLinesToFile>
+      File="$(WasmRunWasmtimeScriptPath)"
+      Lines="$(_ScriptContent)"
+      Overwrite="true" />
 
     <ItemGroup>
-      <FileWrites Include="$(WasmRunV8ScriptPath)" />
+      <FileWrites Include="$(WasmRunWasmtimeScriptPath)" />
     </ItemGroup>
 
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunV8ScriptPath)" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunWasmtimeScriptPath)" />
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">

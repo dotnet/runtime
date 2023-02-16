@@ -2103,7 +2103,7 @@ namespace Mono.Linker.Steps
 
 				if (property.Name == "TargetTypeName") {
 					string targetTypeName = (string) property.Argument.Value;
-					TypeName typeName = TypeParser.ParseTypeName (targetTypeName);
+					TypeName? typeName = TypeParser.ParseTypeName (targetTypeName);
 					if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
 						AssemblyDefinition? assembly = Context.TryResolve (assemblyQualifiedTypeName.AssemblyName.Name);
 						return assembly == null ? null : Context.TryResolve (assembly, targetTypeName);

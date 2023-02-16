@@ -1209,6 +1209,14 @@ private:
                     assert(elementType == TYP_SIMD12);
                     assert(varDsc->TypeGet() == TYP_SIMD16);
 
+                    // If we are not doing struct promotion and we have zero-initialization,
+                    // then we need to produce a VecCon(0).
+                    if (elementNode->IsIntegralConst(0))
+                    {
+                        DEBUG_DESTROY_NODE(elementNode);
+                        elementNode = m_compiler->gtNewZeroConNode(TYP_SIMD12);
+                    }
+
                     // We inverse the operands here and take elementNode as the main value and simdLclNode[3] as the
                     // new value. This gives us a new TYP_SIMD16 with all elements in the right spots
 
@@ -1565,40 +1573,42 @@ public:
         // handled in fgCanFastTailCall and fgMakeOutgoingStructArgCopy.
         //
         // CALL(OBJ(LCL_VAR_ADDR...))
-        bool isArgToCall   = false;
-        bool keepSearching = true;
-        for (int i = 0; i < m_ancestors.Height() && keepSearching; i++)
+        // -or-
+        // CALL(LCL_VAR)
+
+        // TODO-1stClassStructs: We've removed most, but not all, cases where OBJ(LCL_VAR_ADDR)
+        // is introduced (it was primarily from impNormStructVal). But until all cases are gone
+        // we still want to handle it as well.
+
+        if (m_ancestors.Height() < 2)
         {
-            GenTree* node = m_ancestors.Top(i);
-            switch (i)
-            {
-                case 0:
-                {
-                    keepSearching = node->OperIs(GT_LCL_VAR_ADDR);
-                }
-                break;
-
-                case 1:
-                {
-                    keepSearching = node->OperIs(GT_OBJ);
-                }
-                break;
-
-                case 2:
-                {
-                    keepSearching = false;
-                    isArgToCall   = node->IsCall();
-                }
-                break;
-                default:
-                {
-                    keepSearching = false;
-                }
-                break;
-            }
+            return;
         }
 
-        if (isArgToCall)
+        GenTree* node = m_ancestors.Top(0);
+
+        if (node->OperIs(GT_LCL_VAR))
+        {
+            node = m_ancestors.Top(1);
+        }
+        else if (node->OperIs(GT_LCL_VAR_ADDR))
+        {
+            if (m_ancestors.Height() < 3)
+            {
+                return;
+            }
+
+            node = m_ancestors.Top(1);
+
+            if (!node->OperIs(GT_OBJ))
+            {
+                return;
+            }
+
+            node = m_ancestors.Top(2);
+        }
+
+        if (node->IsCall())
         {
             JITDUMP("LocalAddressVisitor incrementing weighted ref count from " FMT_WT " to " FMT_WT
                     " for implicit by-ref V%02d arg passed to call\n",

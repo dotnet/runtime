@@ -1631,7 +1631,7 @@ public:
         {
             size_t size = bucketCount()+CALL_STUB_FIRST_INDEX;
             for(size_t ix = CALL_STUB_FIRST_INDEX; ix < size; ix++) delete (FastTable*)(buckets[ix]);
-            delete buckets;
+            delete[] buckets;
         }
     }
 

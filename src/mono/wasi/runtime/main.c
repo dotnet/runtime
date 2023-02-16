@@ -22,10 +22,6 @@ int main(int argc, char * argv[]) {
 	// This is supplied from the MSBuild itemgroup @(WasiAfterRuntimeLoaded)
 	WASI_AFTER_RUNTIME_LOADED_CALLS
 #endif
-	// Assume the runtime pack has been copied into the output directory as 'runtime'
-	// Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
-	// AJ: not needed right now as we are bundling all the assemblies in the .wasm
-	/*mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");*/
 	mono_wasm_load_runtime("", 0);
 
 	const char* assembly_name = dotnet_wasi_getentrypointassemblyname();
@@ -44,5 +40,5 @@ int main(int argc, char * argv[]) {
 		mono_print_unhandled_exception(out_exc);
 		exit(1);
 	}
-	return ret;
+	return ret < 0 ? -ret : ret;
 }

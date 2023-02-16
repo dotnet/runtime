@@ -105,13 +105,11 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 
 		class Complex
 		{
-			// NativeAOT currently only validates runtime type information, in this case ilc only keeps metadata, but no runtime info
-			// since the type is never instantiated or used anywhere else, just in the method signature.
-			[Kept (By = ProducedBy.Trimmer)]
+			[Kept]
 			public struct S<T> { }
 			[Kept]
 			public class A { }
-			[Kept (By = ProducedBy.Trimmer)]
+			[Kept]
 			public class G<T, U> { }
 
 			[Kept]
