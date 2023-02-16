@@ -47,9 +47,6 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-
-static int32_t load_icu_data(const void* pData);
-
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
 
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
@@ -70,16 +67,24 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)
  * its not, meaning the EMSCRIPTEN_KEEPALIVE functions above
  * are not kept.
  */
+#endif
+
+static int32_t load_icu_data(const void* pData);
+
 void mono_wasm_link_icu_shim(void);
 
 void mono_wasm_link_icu_shim(void)
 {
 }
 
-#endif
-
+/*int32_t mono_wasm_load_icu(const void* pData);
+int32_t mono_wasm_load_icu(const void* pData)
+{
+    return load_icu_data(pData);
+}*/
 static int32_t load_icu_data(const void* pData)
 {
+	printf ("pal_icushim_static load_icu_data is called from wasi \n");
 
     UErrorCode status = 0;
     udata_setCommonData(pData, &status);

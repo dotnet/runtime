@@ -327,7 +327,8 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 	}
 }
 
-//void mono_wasm_link_icu_shim (void);
+void mono_wasm_link_icu_shim (void);
+//int32_t load_icu_data(const void* pData);
 
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -341,9 +342,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
 
-#ifdef INVARIANT_GLOBALIZATION
-	//mono_wasm_link_icu_shim ();
-//#else
+#ifndef INVARIANT_GLOBALIZATION
+		mono_wasm_link_icu_shim();
+		printf("mono_wasm_load_icu result");
+#else
 	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true", 1);
 #endif
 
@@ -471,6 +473,14 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	root_domain = mono_jit_init_version ("mono", NULL);
 	mono_thread_set_main (mono_thread_current ());
+}
+
+void mono_wasm_load_icu_data(const void* pData)
+{
+	printf ("mono_wasm_load_icu_data implementation is called \n");
+	// pal_icushim_static.c
+	int32_t result = load_icu_data(pData);
+	//implement loading icu for wasi
 }
 
 MonoAssembly*
