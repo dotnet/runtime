@@ -117,18 +117,61 @@ namespace System
                 }
             }
 
+            // NextInt64 in Xoshiro128 has not been implemented with the Lemire algorithm like the related methods.
+            // Benchmarking showed that on 32-bit changing implementation could cause regression.
+
             public override long NextInt64(long maxValue)
             {
-                Debug.Assert(maxValue >= 0);
+                if (maxValue <= int.MaxValue)
+                {
+                    return Next((int)maxValue);
+                }
 
-                return (long)NextUInt64((ulong)maxValue, this);
+                if (maxValue > 1)
+                {
+                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
+                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
+                    int bits = BitOperations.Log2Ceiling((ulong)maxValue);
+                    while (true)
+                    {
+                        ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);
+                        if (result < (ulong)maxValue)
+                        {
+                            return (long)result;
+                        }
+                    }
+                }
+
+                Debug.Assert(maxValue == 0 || maxValue == 1);
+                return 0;
             }
 
             public override long NextInt64(long minValue, long maxValue)
             {
-                Debug.Assert(minValue <= maxValue);
+                ulong exclusiveRange = (ulong)(maxValue - minValue);
 
-                return (long)NextUInt64((ulong)(maxValue - minValue), this) + minValue;
+                if (exclusiveRange <= int.MaxValue)
+                {
+                    return Next((int)exclusiveRange) + minValue;
+                }
+
+                if (exclusiveRange > 1)
+                {
+                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
+                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
+                    int bits = BitOperations.Log2Ceiling(exclusiveRange);
+                    while (true)
+                    {
+                        ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);
+                        if (result < exclusiveRange)
+                        {
+                            return (long)result + minValue;
+                        }
+                    }
+                }
+
+                Debug.Assert(minValue == maxValue || minValue + 1 == maxValue);
+                return minValue;
             }
 
             public override void NextBytes(byte[] buffer) => NextBytes((Span<byte>)buffer);
