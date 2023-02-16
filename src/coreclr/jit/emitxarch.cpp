@@ -51,7 +51,7 @@ bool emitter::IsKInstruction(instruction ins)
 bool emitter::IsAvx512OrPriorInstruction(instruction ins)
 {
     // TODO-XArch-AVX512: Fix check once AVX512 instructions are added.
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION) || IsKInstruction(ins);
+    return ((ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION)) || IsKInstruction(ins);
 }
 
 bool emitter::IsAVXOnlyInstruction(instruction ins)
