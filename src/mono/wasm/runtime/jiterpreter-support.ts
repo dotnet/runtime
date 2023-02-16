@@ -539,12 +539,15 @@ export class BlobBuilder {
     size: number;
     capacity: number;
     encoder?: TextEncoder;
+    textBuf = new Uint8Array(1024);
 
     constructor () {
         this.capacity = 32000;
         this.buffer = <any>Module._malloc(this.capacity);
         this.size = 0;
         this.clear();
+        if (typeof (TextEncoder) === "function")
+            this.encoder = new TextEncoder();
     }
 
     // It is necessary for you to call this before using the builder so that the DataView
@@ -651,8 +654,10 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    appendBytes (bytes: Uint8Array) {
+    appendBytes (bytes: Uint8Array, count?: number) {
         const result = this.size;
+        if (typeof (count) === "number")
+            bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, count);
         const av = this.getArrayView(true);
         av.set(bytes, this.size);
         this.size += bytes.length;
@@ -660,24 +665,34 @@ export class BlobBuilder {
     }
 
     appendName (text: string) {
-        let bytes: any = null;
+        let count = text.length;
+        // TextEncoder overhead is significant for short strings, and lots of our strings
+        //  are single-character import names, so add a fast path for single characters
+        let singleChar = text.length === 1 ? text.charCodeAt(0) : -1;
+        if (singleChar > 0x7F)
+            singleChar = -1;
 
-        if (typeof (TextEncoder) === "function") {
-            if (!this.encoder)
-                this.encoder = new TextEncoder();
-            bytes = this.encoder.encode(text);
-        } else {
-            bytes = new Uint8Array(text.length);
-            for (let i = 0; i < text.length; i++) {
-                const ch = text.charCodeAt(i);
-                if (ch > 0x7F)
-                    throw new Error("Out of range character and no TextEncoder available");
-                else
-                    bytes[i] = ch;
+        // Also don't bother running the encode path for empty strings
+        if (count && (singleChar < 0)) {
+            if (this.encoder) {
+                const temp = this.encoder.encodeInto(text, this.textBuf);
+                count = temp.written || 0;
+            } else {
+                for (let i = 0; i < count; i++) {
+                    const ch = text.charCodeAt(i);
+                    if (ch > 0x7F)
+                        throw new Error("Out of range character and no TextEncoder available");
+                    else
+                        this.textBuf[i] = ch;
+                }
             }
         }
-        this.appendULeb(bytes.length);
-        this.appendBytes(bytes);
+
+        this.appendULeb(count);
+        if (singleChar >= 0)
+            this.appendU8(singleChar);
+        else if (count > 1)
+            this.appendBytes(this.textBuf, count);
     }
 
     getArrayView (fullCapacity?: boolean) {
