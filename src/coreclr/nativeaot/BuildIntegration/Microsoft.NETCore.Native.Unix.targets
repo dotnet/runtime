@@ -105,7 +105,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeFramework Include="CryptoKit" />
       <NativeFramework Include="Foundation" />
       <NativeFramework Include="Security" />
-      <NativeFramework Include="GSS" />
+      <!-- The library builds don't reference the GSS API on tvOS builds. -->
+      <NativeFramework Condition="'$(TargetOS.StartsWith('tvos'))' != 'true'" Include="GSS" />
     </ItemGroup>
 
     <ItemGroup>
