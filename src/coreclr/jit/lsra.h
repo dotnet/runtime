@@ -1097,9 +1097,9 @@ private:
     RefPosition* defineNewInternalTemp(GenTree* tree, RegisterType regType, regMaskTP candidates);
     RefPosition* buildInternalIntRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
     RefPosition* buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
-    #if defined(FEATURE_SIMD)
+#if defined(FEATURE_SIMD)
     RefPosition* buildInternalOpmaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
-    #endif
+#endif
     void buildInternalRegisterUses();
 
     void writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumber reg);

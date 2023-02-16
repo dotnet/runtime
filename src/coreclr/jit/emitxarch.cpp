@@ -1198,8 +1198,7 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
     // so we never need it
     if ((ins != INS_push) && (ins != INS_pop) && (ins != INS_movq) && (ins != INS_movzx) && (ins != INS_push_hide) &&
         (ins != INS_pop_hide) && (ins != INS_ret) && (ins != INS_call) && (ins != INS_tail_i_jmp) &&
-        !((ins >= INS_i_jmp) && (ins <= INS_l_jg)) &&
-        (ins != INS_kmovb) && (ins != INS_kmovw) && (ins != INS_kmovd))
+        !((ins >= INS_i_jmp) && (ins <= INS_l_jg)) && (ins != INS_kmovb) && (ins != INS_kmovw) && (ins != INS_kmovd))
     {
         return true;
     }
@@ -3379,7 +3378,6 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     {
         code = insCodeRM(ins);
     }
-    
 
     UNATIVE_OFFSET sz = emitGetAdjustedSize(id, code);
 

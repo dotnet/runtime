@@ -1359,9 +1359,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector512_ExtractMostSignificantBits:
         {
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F) && 
-                compOpportunisticallyDependsOn(InstructionSet_AVX512BW) && 
-                compOpportunisticallyDependsOn(InstructionSet_AVX512DQ)) 
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
+                compOpportunisticallyDependsOn(InstructionSet_AVX512BW) &&
+                compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 

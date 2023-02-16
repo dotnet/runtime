@@ -739,7 +739,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
         {
             availableRegs[i] = &availableDoubleRegs;
         }
-        else if ((thisType == TYP_OPMASK))
+        else if (thisType == TYP_OPMASK)
         {
             availableRegs[i] = &availableMaskRegs;
         }
