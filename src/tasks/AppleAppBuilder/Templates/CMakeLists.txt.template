@@ -20,6 +20,12 @@ if(NOT %UseNativeAOTRuntime%)
         %AotModulesSource%
         runtime.h
         runtime.m)
+else()
+    target_sources(
+        %ProjectName%
+        PRIVATE
+        util.h
+        util.m)
 endif()
 
 %AotSources%
@@ -73,5 +79,6 @@ target_link_libraries(
     "-lz"
     "-lc++"
     "-liconv"
+    "-Wl,-u,_NativeAOT_StaticInitialization"
 %NativeLibrariesToLink%
 )

@@ -171,6 +171,11 @@ public class AppleAppBuilderTask : Task
     /// </summary>
     public bool UseNativeAOTRuntime { get; set; }
 
+    /// <summary>
+    /// List of static libraries to link with the program.
+    /// </summary>
+    public ITaskItem[] NativeLibraries { get; set; } = Array.Empty<ITaskItem>();
+
     public void ValidateRuntimeSelection()
     {
         if (UseNativeAOTRuntime)
@@ -264,6 +269,15 @@ public class AppleAppBuilderTask : Task
             if (!string.IsNullOrEmpty(llvmObj))
             {
                 assemblerFilesToLink.Add(llvmObj);
+            }
+        }
+
+        foreach (ITaskItem nativeLibrary in NativeLibraries)
+        {
+            string nativeLibraryFile = nativeLibrary.GetMetadata("Identity");
+            if (!string.IsNullOrEmpty(nativeLibraryFile))
+            {
+                assemblerFilesToLink.Add(nativeLibraryFile);
             }
         }
 
