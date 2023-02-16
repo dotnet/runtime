@@ -230,8 +230,12 @@
     <RuntimeGroup Include="rhel">
       <Parent>linux</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>8;9</Versions>
-      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
+      <Versions>8</Versions>
+    </RuntimeGroup>
+    <RuntimeGroup Include="rhel">
+      <Parent>linux</Parent>
+      <Architectures>x64;arm64</Architectures>
+      <Versions>9</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="rocky">

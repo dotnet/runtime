@@ -164,9 +164,9 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
                 new RuntimeDescription("centos.9.2-arm64", new[] { "centos.9.2", "centos-arm64", "rhel.9.2-arm64" }),
 
                 // rhel RIDs are implicitly created since centos imports versioned RHEL RIDs
-                new RuntimeDescription("rhel.9.2", new[] { "rhel" }),
-                new RuntimeDescription("rhel.9.2-x64", new[] { "rhel.9.2", "rhel-x64" }),
-                new RuntimeDescription("rhel.9.2-arm64", new[] { "rhel.9.2", "rhel-arm64" })
+                new RuntimeDescription("rhel.9.2", new[] { "rhel.9" }),
+                new RuntimeDescription("rhel.9.2-x64", new[] { "rhel.9.2", "rhel.9-x64" }),
+                new RuntimeDescription("rhel.9.2-arm64", new[] { "rhel.9.2", "rhel.9-arm64" })
             };
 
             AssertRuntimeGraphAdditions(additionalRIDs, expectedAdditions);
@@ -180,9 +180,11 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
             var additionalRIDs = new[] { "rhel.10-x64" };
             var expectedAdditions = new[]
             {
-                new RuntimeDescription("rhel.10", new[] { "rhel" }),
-                new RuntimeDescription("rhel.10-x64", new[] { "rhel.10", "rhel-x64" }),
-                new RuntimeDescription("rhel.10-arm64", new[] { "rhel.10", "rhel-arm64" })
+                // Note that rhel doesn't treat major versions as compatible, however we do since it's closest and we don't represent this policy in the RuntimeGroups explicitly.
+                // We could add a rule that wouldn't insert a new major version if we see existing groups are split by major version.
+                new RuntimeDescription("rhel.10", new[] { "rhel.9" }),
+                new RuntimeDescription("rhel.10-x64", new[] { "rhel.10", "rhel.9-x64" }),
+                new RuntimeDescription("rhel.10-arm64", new[] { "rhel.10", "rhel.9-arm64" })
             };
 
             AssertRuntimeGraphAdditions(additionalRIDs, expectedAdditions);
