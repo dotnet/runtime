@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.Tracing;
 
 namespace System.Threading
@@ -11,7 +10,7 @@ namespace System.Threading
         /// <summary>
         /// The worker thread infastructure for the CLR thread pool.
         /// </summary>
-        private static class WorkerThread
+        private static partial class WorkerThread
         {
             // This value represents an assumption of how much uncommited stack space a worker thread may use in the future.
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of
@@ -103,12 +102,7 @@ namespace System.Threading
                     }
 
                     // The thread cannot exit if it has IO pending, otherwise the IO may be canceled
-                    bool success =
-                        Interop.Kernel32.GetThreadIOPendingFlag(
-                            Interop.Kernel32.GetCurrentThread(),
-                            out Interop.BOOL isIOPending);
-                    Debug.Assert(success);
-                    if (!success || isIOPending != Interop.BOOL.FALSE)
+                    if (IsIOPending)
                     {
                         continue;
                     }
