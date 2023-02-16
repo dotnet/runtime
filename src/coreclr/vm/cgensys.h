@@ -104,11 +104,6 @@ extern "C" DWORD __stdcall xmmYmmStateSupport();
 extern "C" DWORD __stdcall avx512StateSupport();
 #endif
 
-const int CPUID_EAX = 0;
-const int CPUID_EBX = 1;
-const int CPUID_ECX = 2;
-const int CPUID_EDX = 3;
-
 inline bool TargetHasAVXSupport()
 {
 #if (defined(TARGET_X86) || defined(TARGET_AMD64))
