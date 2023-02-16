@@ -8,6 +8,6 @@
     <EagerlyValidateTypeConstruction>false</EagerlyValidateTypeConstruction>
 
     <!-- We expect trimming to be fully enabled in these tests -->
-    <AggressiveTrimming>true</AggressiveTrimming>
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
   </PropertyGroup>
 </Project>
