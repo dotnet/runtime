@@ -5915,8 +5915,6 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
 {
     assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
-    // Disallow containing compares if the flags may be used by follow-up
-    // nodes, in which case those nodes expect zero/non-zero in the flags.
     if (select->OperIs(GT_SELECTCC))
     {
         GenCondition cc = select->AsOpCC()->gtCondition;
