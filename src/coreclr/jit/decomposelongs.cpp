@@ -1548,7 +1548,7 @@ GenTree* DecomposeLongs::DecomposeSelect(LIR::Use& use)
     // other flag producing nodes and reuse them. GT_SELECTCC is the variant
     // that uses existing flags and has no condition as part of it.
     select->gtFlags |= GTF_SET_FLAGS;
-    GenTree* hiSelect = m_compiler->gtNewCC(GT_SELECTCC, TYP_INT, GenCondition::NE, hiOp1, hiOp2);
+    GenTree* hiSelect = m_compiler->gtNewOperCC(GT_SELECTCC, TYP_INT, GenCondition::NE, hiOp1, hiOp2);
 
     Range().InsertAfter(select, hiSelect);
 
