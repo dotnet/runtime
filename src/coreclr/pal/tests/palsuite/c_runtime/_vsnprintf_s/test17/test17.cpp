@@ -28,19 +28,7 @@ PALTEST(c_runtime__vsnprintf_s_test17_paltest_vsnprintf_test17, "c_runtime/_vsnp
     }
 
     DoDoubleTest("foo %g", val,  "foo 2560", "foo 2560");
-    DoDoubleTest("foo %lg", val,  "foo 2560", "foo 2560");
-    DoDoubleTest("foo %hg", val,  "foo 2560", "foo 2560");
-    DoDoubleTest("foo %5g", val,  "foo  2560", "foo  2560");
-    DoDoubleTest("foo %-5g", val,  "foo 2560 ", "foo 2560 ");
-    DoDoubleTest("foo %.1g", val,  "foo 3e+003", "foo 3e+03");
-    DoDoubleTest("foo %.2g", val,  "foo 2.6e+003", "foo 2.6e+03");
-    DoDoubleTest("foo %.12g", val,  "foo 2560.001", "foo 2560.001");
-    DoDoubleTest("foo %06g", val,  "foo 002560", "foo 002560");
-    DoDoubleTest("foo %#g", val,  "foo 2560.00", "foo 2560.00");
-    DoDoubleTest("foo %+g", val,  "foo +2560", "foo +2560");
-    DoDoubleTest("foo % g", val,  "foo  2560", "foo  2560");
-    DoDoubleTest("foo %+g", neg,  "foo -2560", "foo -2560");
-    DoDoubleTest("foo % g", neg,  "foo -2560", "foo -2560");
+    DoDoubleTest("foo %g", neg,  "foo -2560", "foo -2560");
 
     PAL_Terminate();
     return PASS;

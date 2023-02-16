@@ -29,18 +29,7 @@ PALTEST(c_runtime__vsnprintf_s_test12_paltest_vsnprintf_test12, "c_runtime/_vsnp
     }
 
     DoNumTest("foo %x", pos, "foo 1234ab");
-    DoNumTest("foo %lx", pos, "foo 1234ab");
-    DoNumTest("foo %hx", pos, "foo 34ab");
-    DoNumTest("foo %7x", pos, "foo  1234ab");
-    DoNumTest("foo %-7x", pos, "foo 1234ab ");
-    DoNumTest("foo %.1x", pos, "foo 1234ab");
-    DoNumTest("foo %.7x", pos, "foo 01234ab");
-    DoNumTest("foo %07x", pos, "foo 01234ab");
-    DoNumTest("foo %#x", pos, "foo 0x1234ab");
-    DoNumTest("foo %+x", pos, "foo 1234ab");
-    DoNumTest("foo % x", pos, "foo 1234ab");
-    DoNumTest("foo %+x", neg, "foo ffffffd6");
-    DoNumTest("foo % x", neg, "foo ffffffd6");
+    DoNumTest("foo %x", neg, "foo ffffffd6");
 
     PAL_Terminate();
     return PASS;

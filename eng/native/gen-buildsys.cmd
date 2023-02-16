@@ -66,7 +66,7 @@ if /i "%__Arch%" == "wasm" (
                 exit /B 1
             )
 
-            set "WASI_SDK_PATH=%__repoRoot%src\mono\wasi\wasi-sdk"
+            set "WASI_SDK_PATH=%__repoRoot%\src\mono\wasi\wasi-sdk"
         )
         :: replace backslash with forward slash and append last slash
         set "WASI_SDK_PATH=!WASI_SDK_PATH:\=/!"

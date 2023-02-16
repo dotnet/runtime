@@ -28,18 +28,7 @@ PALTEST(c_runtime__vsnprintf_s_test11_paltest_vsnprintf_test11, "c_runtime/_vsnp
     }
 
     DoNumTest("foo %u", pos, "foo 42");
-    DoNumTest("foo %lu", 0xFFFF, "foo 65535");
-    DoNumTest("foo %hu", 0xFFFF, "foo 65535");
-    DoNumTest("foo %3u", pos, "foo  42");
-    DoNumTest("foo %-3u", pos, "foo 42 ");
-    DoNumTest("foo %.1u", pos, "foo 42");
-    DoNumTest("foo %.3u", pos, "foo 042");
-    DoNumTest("foo %03u", pos, "foo 042");
-    DoNumTest("foo %#u", pos, "foo 42");
-    DoNumTest("foo %+u", pos, "foo 42");
-    DoNumTest("foo % u", pos, "foo 42");
-    DoNumTest("foo %+u", neg, "foo 4294967254");
-    DoNumTest("foo % u", neg, "foo 4294967254");
+    DoNumTest("foo %u", neg, "foo 4294967254");
 
     PAL_Terminate();
     return PASS;

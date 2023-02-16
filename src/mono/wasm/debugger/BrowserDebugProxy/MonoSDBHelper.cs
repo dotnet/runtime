@@ -839,6 +839,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             ResetStore(null);
         }
 
+        public MonoSDBHelper Clone(SessionId sessionId)
+            => new MonoSDBHelper(proxy, logger, sessionId)
+            {
+                VmMajorVersion = VmMajorVersion,
+                VmMinorVersion = VmMinorVersion,
+                store = store,
+            };
+
         public void ResetStore(DebugStore store)
         {
             this.store = store;

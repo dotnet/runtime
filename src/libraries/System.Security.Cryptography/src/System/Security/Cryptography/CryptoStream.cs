@@ -18,10 +18,10 @@ namespace System.Security.Cryptography
         private readonly ICryptoTransform _transform;
         private byte[] _inputBuffer;  // read from _stream before _Transform
         private int _inputBufferIndex;
-        private int _inputBlockSize;
+        private readonly int _inputBlockSize;
         private byte[] _outputBuffer; // buffered output of _Transform
         private int _outputBufferIndex;
-        private int _outputBlockSize;
+        private readonly int _outputBlockSize;
         private bool _canRead;
         private bool _canWrite;
         private bool _finalBlockTransformed;

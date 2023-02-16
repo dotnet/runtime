@@ -61,6 +61,7 @@
       <DotNetPgoCmd>$(DotNetPgoCmd) -o:$(MergedMibcPath)</DotNetPgoCmd>
       <DotNetPgoCmd>$(DotNetPgoCmd) @(OptimizationMibcFiles->'-i:%(Identity)', ' ')</DotNetPgoCmd>
       <DotNetPgoCmd>$(DotNetPgoCmd) --inherit-timestamp</DotNetPgoCmd> <!-- For incremental builds, otherwise timestamp is too far in the future -->
+      <DotNetPgoCmd>$(DotNetPgoCmd) --compressed false</DotNetPgoCmd> <!-- Signing service doesn't handle compressed mibc signing correctly. -->
     </PropertyGroup>
 
     <Message Condition="'$(DotNetBuildFromSource)' != 'true'" Importance="High" Text="$(DotNetPgoCmd)"/>

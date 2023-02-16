@@ -82,13 +82,6 @@ steps:
   #      overwriteExistingFiles: true
   #      cleanDestinationFolder: false
   #- task: ExtractFiles@1
-  #  displayName: Extract ios-arm runtime
-  #  inputs:
-  #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm.*.zip
-  #      destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm
-  #      overwriteExistingFiles: true
-  #      cleanDestinationFolder: false
-  #- task: ExtractFiles@1
   #  displayName: Extract ios-arm64 runtime
   #  inputs:
   #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm64.*.zip
@@ -149,26 +142,6 @@ steps:
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
-  - script: |
-      set -x
-      pwd
-      git clone https://github.com/microsoft/dotnet-podcasts.git -b net7.0 --single-branch
-      cd dotnet-podcasts
-      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
-      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
-    displayName:  Clone podcast app
-    workingDirectory: $(Build.SourcesDirectory)
-
-  - script: |
-      set -x
-      pwd
-      chmod -R a+r .
-      ../../../dotnet restore Microsoft.NetConf2021.Maui.csproj
-      ../../../dotnet publish Microsoft.NetConf2021.Maui.csproj -bl:MauiPodcastAndroid.binlog -r android-arm64 --self-contained --no-restore -f net7.0-android -c Release
-      mv ./bin/Release/net7.0-android/android-arm64/com.Microsoft.NetConf2021.Maui-Signed.apk $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcast.apk
-    displayName: Build MAUI Podcast Android
-    workingDirectory:  $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile
-
     # This step pulls the product version from the used Microsoft.Maui.dll file properties and saves it for upload with the maui test counter.
     # We pull from this file as we did not find another place to reliably get the version information pre or post build.
   - powershell: |
@@ -178,6 +151,16 @@ steps:
     name: getMauiVersion
     displayName: Get and Save MAUI Version
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+
+  - script: |
+      set -x
+      pwd
+      git clone https://github.com/microsoft/dotnet-podcasts.git -b net7.0 --single-branch
+      cd dotnet-podcasts
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+    displayName:  Clone podcast app
+    workingDirectory: $(Build.SourcesDirectory)
 
   - script: |
       chmod -R a+r .
@@ -250,15 +233,6 @@ steps:
 
   - script: |
       chmod -R a+r .
-      # Restore is split out because of https://github.com/dotnet/sdk/issues/21877, can be removed with --no-restore once fixed
-      ../dotnet restore
-      ../dotnet publish -bl:MauiBlazorAndroid.binlog -f net7.0-android -c Release -r android-arm64 --no-restore --self-contained
-      mv ./bin/Release/net7.0-android/android-arm64/com.companyname.mauiblazortesting-Signed.apk ./MauiBlazorAndroidDefault.apk
-    displayName: Build MAUI Blazor Android
-    workingDirectory: $(Build.SourcesDirectory)/MauiBlazorTesting
-
-  - script: |
-      chmod -R a+r .
       # remove net7.0-maccatalyst to work around https://github.com/dotnet/sdk/issues/21877
       cp MauiBlazorTesting.csproj MauiBlazorTesting.csproj.bak
       sed -i'' -e 's/net7.0-ios;net7.0-maccatalyst/net7.0-ios/g' MauiBlazorTesting.csproj
@@ -299,13 +273,6 @@ steps:
       artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
-    displayName: 'Publish MauiBlazorAndroid binlog'
-    condition: always()
-    inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorAndroid.binlog
-      artifactName:  ${{ parameters.artifactName }}
-
-  - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiiOS binlog'
     condition: always()
     inputs:
@@ -317,13 +284,6 @@ steps:
     condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog
-      artifactName:  ${{ parameters.artifactName }}
-
-  - task: PublishBuildArtifacts@1
-    displayName: 'Publish MauiBlazorAndroid binlog'
-    condition: always()
-    inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorAndroid.binlog
       artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
@@ -346,36 +306,6 @@ steps:
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/dotnet-podcasts/src/Mobile/MauiiOSPodcast.binlog
       artifactName:  ${{ parameters.artifactName }}
-
-  - template: /eng/pipelines/common/upload-artifact-step.yml
-    parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
-        includeRootFolder: true
-        displayName: Maui Android App
-        artifactName: MauiAndroidApp
-        archiveExtension: '.tar.gz'
-        archiveType: tar
-        tarCompression: gz
-
-  - template: /eng/pipelines/common/upload-artifact-step.yml
-    parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorAndroidDefault.apk
-        includeRootFolder: true
-        displayName: Maui Blazor Android App
-        artifactName: MauiBlazorAndroidApp
-        archiveExtension: '.tar.gz'
-        archiveType: tar
-        tarCompression: gz
-
-  - template: /eng/pipelines/common/upload-artifact-step.yml
-    parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidPodcast.apk
-        includeRootFolder: true
-        displayName: Maui Android Podcast
-        artifactName: MauiAndroidPodcast
-        archiveExtension: '.tar.gz'
-        archiveType: tar
-        tarCompression: gz
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:

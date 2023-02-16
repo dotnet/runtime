@@ -67,7 +67,7 @@ DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assem
 //  and wasm modules between threads. before these can be enabled we need to implement all that
 #ifdef DISABLE_THREADS
 // traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
-DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", FALSE, "JIT interpreter opcode traces into WASM")
+DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", TRUE, "JIT interpreter opcode traces into WASM")
 // interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
 DEFINE_BOOL(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", TRUE, "JIT specialized WASM interp_entry wrappers")
 // jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
@@ -106,6 +106,8 @@ DEFINE_BOOL(jiterpreter_dump_traces, "jiterpreter-dump-traces", FALSE, "Dump the
 // Use runtime imports for pointer constants
 // Currently reduces performance significantly :(
 DEFINE_BOOL(jiterpreter_use_constants, "jiterpreter-use-constants", FALSE, "Use runtime imports for pointer constants")
+// Attempt to eliminate redundant null checks in compiled traces
+DEFINE_BOOL(jiterpreter_eliminate_null_checks, "jiterpreter-eliminate-null-checks", TRUE, "Attempt to eliminate redundant null checks in traces")
 // When compiling a jit_call wrapper, bypass sharedvt wrappers if possible by inlining their
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
 DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")

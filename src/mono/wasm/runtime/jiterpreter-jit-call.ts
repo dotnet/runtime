@@ -265,7 +265,6 @@ export function mono_jiterp_do_jit_call_indirect (
         try {
             jitCallCb(_cb_data);
         } catch (exc) {
-            console.error("uncaught in jit_call_cb", exc);
             setU32_unchecked(_thrown, 1);
         }
     };
@@ -310,25 +309,23 @@ export function mono_jiterp_do_jit_call_indirect (
     do_jit_call_indirect_js(jit_call_cb, cb_data, thrown);
 }
 
-const wrapperNames : string[] = [];
-
-export function mono_jiterp_trace_wrapper_entry (nameIndex: number, expected: number, actual: number) {
-    if (actual === expected)
-        return;
-    const actualFn = getWasmTableEntry(actual),
-        expectedFn = getWasmTableEntry(expected);
-    console.error(`Wrapper '${wrapperNames[nameIndex]}' compiled for call target #${expected}`, expectedFn, `but got call target #${actual}`, actualFn);
-    // throw new Error("Wrapper call target mismatch");
-}
-
 export function mono_interp_flush_jitcall_queue () : void {
     if (jitQueue.length === 0)
         return;
 
     let builder = trampBuilder;
-    if (!builder)
+    if (!builder) {
         trampBuilder = builder = new WasmBuilder(0);
-    else
+        // Function type for compiled trampolines
+        builder.defineType(
+            "trampoline", {
+                "ret_sp": WasmValtype.i32,
+                "sp": WasmValtype.i32,
+                "ftndesc": WasmValtype.i32,
+                "thrown": WasmValtype.i32,
+            }, WasmValtype.void, true
+        );
+    } else
         builder.clear(0);
 
     if (builder.options.wasmBytesLimit <= counters.bytesGenerated) {
@@ -359,16 +356,6 @@ export function mono_interp_flush_jitcall_queue () : void {
         builder.appendU32(0x6d736100);
         builder.appendU32(1);
 
-        // Function type for compiled trampolines
-        builder.defineType(
-            "trampoline", {
-                "ret_sp": WasmValtype.i32,
-                "sp": WasmValtype.i32,
-                "ftndesc": WasmValtype.i32,
-                "thrown": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
 
@@ -393,7 +380,7 @@ export function mono_interp_flush_jitcall_queue () : void {
             }
 
             builder.defineType(
-                info.name, sig, info.enableDirect ? info.wasmNativeReturnType : WasmValtype.void
+                info.name, sig, info.enableDirect ? info.wasmNativeReturnType : WasmValtype.void, false
             );
 
             const callTarget = getWasmTableEntry(info.target);

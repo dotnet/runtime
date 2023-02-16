@@ -15,8 +15,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 
 		public KeptInitializerData (int occurrenceIndexInBody)
 		{
-			if (occurrenceIndexInBody < 0)
-				throw new ArgumentOutOfRangeException (nameof (occurrenceIndexInBody));
+			ArgumentOutOfRangeException.ThrowIfNegative (occurrenceIndexInBody);
 		}
 	}
 }

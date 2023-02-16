@@ -4,8 +4,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <NoWarn>$(NoWarn);CA2249</NoWarn>
-    <NoWarn>$(NoWarn);IDE0059;IDE0060;CA1822</NoWarn>
+    <NoWarn>$(NoWarn);IDE0059;IDE0060;CA1822;CA1859</NoWarn>
     <Nullable>annotations</Nullable>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>

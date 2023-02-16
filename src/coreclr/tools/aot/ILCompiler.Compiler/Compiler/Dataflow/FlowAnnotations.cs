@@ -330,7 +330,7 @@ namespace ILLink.Shared.TrimAnalysis
                 try
                 {
                     // Also inherit annotation from bases
-                    TypeDesc baseType = key.BaseType;
+                    DefType baseType = key.BaseType;
                     while (baseType != null)
                     {
                         var ecmaBaseType = (EcmaType)baseType.GetTypeDefinition();

@@ -302,7 +302,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static async Task<IList<JObject>> Resolve<T>(IList<T> collectionToResolve, MemberReferenceResolver resolver,
                                 Func<T, MemberReferenceResolver, CancellationToken, Task<JObject>> resolutionFunc, CancellationToken token)
         {
-            IList<JObject> values = new List<JObject>();
+            var values = new List<JObject>();
             foreach (T element in collectionToResolve)
                 values.Add(await resolutionFunc(element, resolver, token));
             return values;
@@ -395,7 +395,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(expression + @";", cancellationToken: token);
 
-            SyntaxNode expressionTree = syntaxTree.GetCompilationUnitRoot(token);
+            CompilationUnitSyntax expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
             ExpressionSyntaxReplacer replacer = new ExpressionSyntaxReplacer();
@@ -482,7 +482,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             get
             {
-                _error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
                 return _error;
             }
             set { }
@@ -506,8 +505,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     result = result,
                     exceptionDetails = new
                     {
-                        exception = result,
-                        stackTrace = StackTrace
+                        exception = result
                     }
                 }));
         }

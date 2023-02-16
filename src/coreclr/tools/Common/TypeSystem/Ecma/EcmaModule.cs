@@ -170,7 +170,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private object ResolveModuleReference(ModuleReferenceHandle handle)
+        private ModuleDesc ResolveModuleReference(ModuleReferenceHandle handle)
         {
             ModuleReference moduleReference = _metadataReader.GetModuleReference(handle);
             string fileName = _metadataReader.GetString(moduleReference.Name);
