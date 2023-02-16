@@ -29,9 +29,9 @@ if (CLR_CMAKE_TARGET_UNIX)
 
 endif(CLR_CMAKE_TARGET_UNIX)
 
-if (CLR_CMAKE_TARGET_OSX AND CLR_CMAKE_TARGET_ARCH_ARM64)
+if (CLR_CMAKE_TARGET_APPLE AND CLR_CMAKE_TARGET_ARCH_ARM64)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:OSX_ARM64_ABI>)
-endif(CLR_CMAKE_TARGET_OSX AND CLR_CMAKE_TARGET_ARCH_ARM64)
+endif(CLR_CMAKE_TARGET_APPLE AND CLR_CMAKE_TARGET_ARCH_ARM64)
 
 if(CLR_CMAKE_TARGET_ALPINE_LINUX)
   # Alpine Linux doesn't have fixed stack limit, this define disables some stack pointer
@@ -249,9 +249,11 @@ function(set_target_definitions_to_custom_os_and_arch)
     elseif (TARGETDETAILS_ARCH STREQUAL "loongarch64")
     endif()
     if ((TARGETDETAILS_ARCH STREQUAL "arm64") AND (TARGETDETAILS_OS STREQUAL "unix_osx"))
+      target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_APPLE)
       target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE OSX_ARM64_ABI)
     endif()
     if (TARGETDETAILS_OS STREQUAL "unix_osx")
+      target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_APPLE)
       target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE TARGET_OSX)
     endif()
   elseif (TARGETDETAILS_OS STREQUAL "win")

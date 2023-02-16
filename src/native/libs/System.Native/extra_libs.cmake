@@ -10,7 +10,7 @@ macro(append_extra_system_libs NativeLibsExtra)
         list(APPEND ${NativeLibsExtra} socket)
     endif ()
 
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR  CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE)
         include(CMakeFindFrameworks)
         find_library(FOUNDATION Foundation REQUIRED)
         list(APPEND ${NativeLibsExtra} ${FOUNDATION})
