@@ -20,20 +20,6 @@ namespace Microsoft.Interop
     [Generator]
     public sealed class VtableIndexStubGenerator : IIncrementalGenerator
     {
-        internal sealed record IncrementalStubGenerationContext(
-            SignatureContext SignatureContext,
-            ContainingSyntaxContext ContainingSyntaxContext,
-            ContainingSyntax StubMethodSyntaxTemplate,
-            MethodSignatureDiagnosticLocations DiagnosticLocation,
-            SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
-            VirtualMethodIndexData VtableIndexData,
-            MarshallingInfo ExceptionMarshallingInfo,
-            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> ManagedToUnmanagedGeneratorFactory,
-            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
-            ManagedTypeInfo TypeKeyOwner,
-            SequenceEqualImmutableArray<Diagnostic> Diagnostics,
-            TypeSyntax UnwrapperType);
-
         public static class StepNames
         {
             public const string CalculateStubInformation = nameof(CalculateStubInformation);
@@ -519,7 +505,7 @@ namespace Microsoft.Interop
 
             var elements = ImmutableArray.CreateBuilder<TypePositionInfo>(originalElements.Length + 2);
 
-            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, new NativeThisInfo(methodStub.UnwrapperType))
+            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, new NativeThisInfo(methodStub.UnwrapperSyntax))
             {
                 InstanceIdentifier = ThisParameterIdentifier,
                 NativeIndex = 0,

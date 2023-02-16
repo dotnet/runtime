@@ -52,7 +52,12 @@
         <target state="translated">La méthode « {0} » est contenue dans un type « {1} » qui n’est pas marqué comme étant « partial ». La génération source P/Invoke ignore la méthode « {0} ».</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute">
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
+        <source>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </source>
+        <target state="new">Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeTitle">
         <source>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </source>
         <target state="new">Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </target>
         <note />

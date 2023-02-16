@@ -22,7 +22,7 @@ namespace Microsoft.Interop
         /// }
         /// </code>
         /// </summary>
-        public static ClassDeclarationSyntax ComWrappersUnwrapper { get; }
+        public static ClassDeclarationSyntax ComWrappersUnwrapper { get; } = GetComWrappersUnwrapper();
 
         public static ClassDeclarationSyntax GetComWrappersUnwrapper()
         {

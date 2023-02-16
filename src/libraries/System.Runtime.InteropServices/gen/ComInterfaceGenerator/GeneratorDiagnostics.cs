@@ -49,7 +49,7 @@ namespace Microsoft.Interop
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(SR.InvalidVirtualMethodIndexAttributeUsage)),
-            GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute)),
+            GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage)),
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
