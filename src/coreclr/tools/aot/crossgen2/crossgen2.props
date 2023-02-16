@@ -15,7 +15,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <EventSourceSupport>true</EventSourceSupport>
-    <EnableNativeEventPipe Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</EnableNativeEventPipe>
+    <EnableNativeEventPipe Condition="'$(TargetOS)' == 'windows'">true</EnableNativeEventPipe>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
