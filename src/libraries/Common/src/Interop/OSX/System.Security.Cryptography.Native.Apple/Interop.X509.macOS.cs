@@ -297,7 +297,7 @@ internal static partial class Interop
             {
                 // AppleCryptoNative_X509MoveToKeychain can change the keychain of the input
                 // certificate, so we need to reflect that change.
-                SafeTemporaryKeychainHandle.UntrackItem(cert);
+                SafeTemporaryKeychainHandle.UntrackItem(cert.DangerousGetHandle());
 
                 result = AppleCryptoNative_X509MoveToKeychain(
                     cert,
