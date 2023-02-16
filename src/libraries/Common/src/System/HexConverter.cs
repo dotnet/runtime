@@ -95,9 +95,9 @@ namespace System
             // The algorithm is simple: a single srcVec (contains the whole 16b Guid) is converted
             // into nibbles and then, via hexMap, converted into a HEX representation via
             // Shuffle(nibbles, srcVec). ASCII is then expanded to UTF-16.
-            Vector128<byte> nibbles = Vector128.ShiftRightLogical(src.AsUInt64(), 4).AsByte();
-            Vector128<byte> lowNibbles = Vector128.UnpackLow(nibbles, src);
-            Vector128<byte> highNibbles = Vector128.UnpackHigh(nibbles, src);
+            Vector128<byte> shiftedSrc = Vector128.ShiftRightLogical(src.AsUInt64(), 4).AsByte();
+            Vector128<byte> lowNibbles = Vector128.UnpackLow(shiftedSrc, src);
+            Vector128<byte> highNibbles = Vector128.UnpackHigh(shiftedSrc, src);
 
             return (ShuffleUnsafe(hexMap, lowNibbles & Vector128.Create((byte)0xF)),
                 ShuffleUnsafe(hexMap, highNibbles & Vector128.Create((byte)0xF)));
