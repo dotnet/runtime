@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.Logging
         private static void ThrowInvalidConfigurationException(IConfiguration configuration, string key, Type valueType, Exception innerException)
         {
             IConfigurationSection section = configuration.GetSection(key);
-            throw new InvalidOperationException(string.Format(SR.InvalidConfigurationData, section.Path, valueType), innerException);
+            throw new InvalidOperationException(SR.Format(SR.InvalidConfigurationData, section.Path, valueType), innerException);
         }
     }
 }
