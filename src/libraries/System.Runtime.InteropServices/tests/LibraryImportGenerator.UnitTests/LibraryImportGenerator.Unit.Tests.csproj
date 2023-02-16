@@ -4,7 +4,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
-    <IgnoreForCI Condition="'$(TargetsMobile)' == 'true'">true</IgnoreForCI> 
   </PropertyGroup>
 
   <ItemGroup>
