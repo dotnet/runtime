@@ -800,11 +800,6 @@ namespace System.Diagnostics.Tracing
             // change that needs more careful staging.
             List<KeyValuePair<SessionInfo, bool>> sessionsChanged = GetChangedSessions();
 
-            if (sessionsChanged.Count == 0)
-            {
-                sessionsChanged.Add(new KeyValuePair<SessionInfo, bool>(new SessionInfo(0, 0), true));
-            }
-
             foreach (KeyValuePair<SessionInfo, bool> session in sessionsChanged)
             {
                 int sessionChanged = session.Key.sessionIdBit;
@@ -858,7 +853,8 @@ namespace System.Diagnostics.Tracing
             _gcHandle = GCHandle.Alloc(this);
 
             long registrationHandle = 0;
-            Guid providerId = eventSource.Guid;
+            _providerId = eventSource.Guid;
+            Guid providerId = _providerId;
             uint status = Interop.Advapi32.EventRegister(
                 &providerId,
                 &Callback,
@@ -872,7 +868,6 @@ namespace System.Diagnostics.Tracing
 
             Debug.Assert(_registrationHandle == 0);
             _registrationHandle = registrationHandle;
-            _providerId = providerId;
         }
 
         // Unregister an event provider.
