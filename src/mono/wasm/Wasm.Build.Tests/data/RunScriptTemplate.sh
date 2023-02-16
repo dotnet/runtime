@@ -24,11 +24,11 @@ echo XHARNESS_CLI_PATH=$XHARNESS_CLI_PATH
 
 function set_env_vars()
 {
-    if [ "x$TEST_USING_WORKLOADS" = "xtrue" ]; then
-        export SDK_HAS_WORKLOAD_INSTALLED=true
-    else
-        export SDK_HAS_WORKLOAD_INSTALLED=false
-    fi
+    #if [ "x$TEST_USING_WORKLOADS" = "xtrue" ]; then
+        #export SDK_HAS_WORKLOAD_INSTALLED=true
+    #else
+        #export SDK_HAS_WORKLOAD_INSTALLED=false
+    #fi
 
     if [ "x$TEST_USING_WEBCIL" = "xtrue" ]; then
         export USE_WEBCIL_FOR_TESTS=true
@@ -44,16 +44,17 @@ function set_env_vars()
         _SDK_DIR=$BASE_DIR/$SDK_DIR_NAME
     fi
 
-    export PATH=$_SDK_DIR:$PATH
-    export SDK_FOR_WORKLOAD_TESTING_PATH=$_SDK_DIR
+    # export PATH=$_SDK_DIR:$PATH
+    # export SDK_FOR=$_SDK_DIR
+    # export AppRefDir=$BASE_DIR/microsoft.netcore.app.ref
 }
 
 export TEST_LOG_PATH=${XHARNESS_OUT}/logs
 
 pushd $EXECUTION_DIR
 
-# ========================= BEGIN Test Execution ============================= 
-echo ----- start $(date) ===============  To repro directly: ===================================================== 
+# ========================= BEGIN Test Execution =============================
+echo ----- start $(date) ===============  To repro directly: =====================================================
 echo pushd $EXECUTION_DIR
 # RunCommands defined in eng\testing\tests.wasm.targets
 [[RunCommandsEcho]]

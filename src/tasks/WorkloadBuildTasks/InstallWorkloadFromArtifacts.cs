@@ -41,6 +41,7 @@ namespace Microsoft.Workload.Build.Tasks
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
         public bool           OnlyUpdateManifests{ get; set; }
+        public string?        ManifestForTestingPath { get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
@@ -101,8 +102,11 @@ namespace Microsoft.Workload.Build.Tasks
                         Log.LogMessage(MessageImportance.Low, $"Deleting directory {req.TargetPath}");
                         Directory.Delete(req.TargetPath, recursive: true);
                     }
+
+                    // sdksTableForTesting[req.TargetPath] = new DotnetSdk(req.Variant, req.Version, req.TargetPath, Array.Empty<Workload>());
                 }
 
+                List<InstallWorkloadRequest> successfullyInstalledRequests = new();
                 string lastTargetPath = string.Empty;
                 foreach (InstallWorkloadRequest req in selectedRequests)
                 {
@@ -114,12 +118,23 @@ namespace Microsoft.Workload.Build.Tasks
                     if (!req.Validate(Log))
                         return false;
 
-                    if (!ExecuteInternal(req) && !req.IgnoreErrors)
-                        return false;
+                    if (!ExecuteInternal(req))
+                    {
+                        if (!req.IgnoreErrors)
+                            return false;
+                    }
+                    else
+                    {
+                        successfullyInstalledRequests.Add(req);
+                    }
 
                     File.WriteAllText(req.StampPath, string.Empty);
                 }
 
+                if (!string.IsNullOrEmpty(ManifestForTestingPath))
+                    GenerateManifestForTesting(successfullyInstalledRequests, ManifestForTestingPath);
+
+                // Generate manifest for testing
                 return !Log.HasLoggedErrors;
             }
             catch (LogAsErrorException laee)
@@ -150,7 +165,6 @@ namespace Microsoft.Workload.Build.Tasks
                 return false;
 
             UpdateAppRef(req.TargetPath, req.Version);
-
             return !Log.HasLoggedErrors;
         }
 
@@ -370,6 +384,58 @@ namespace Microsoft.Workload.Build.Tasks
             return true;
         }
 
+        private static void GenerateManifestForTesting(IList<InstallWorkloadRequest> requests, string outFilePath)
+        {
+            Dictionary<string, DotnetSdk> sdksTableForTesting = new();
+            foreach (InstallWorkloadRequest req in requests)
+            {
+                sdksTableForTesting[req.TargetPath] = new DotnetSdk(req.Variant, req.Version, req.TargetPath, Array.Empty<Workload>());
+            }
+
+            Dictionary<string, List<Workload>> workloadsTableForTesting = new();
+            foreach (InstallWorkloadRequest req in requests)
+            {
+                if (!workloadsTableForTesting.TryGetValue(req.TargetPath, out List<Workload>? wlist))
+                    workloadsTableForTesting[req.TargetPath] = wlist = new();
+
+                // FIXME: tfm
+                // FIXME: is runtime pack version correct here?
+                wlist.Add(new Workload(req.WorkloadId, req.Version, "net8.0", req.Version));
+            }
+
+            foreach (KeyValuePair<string, DotnetSdk> kvp in sdksTableForTesting)
+            {
+                if (!workloadsTableForTesting.TryGetValue(kvp.Key, out List<Workload>? wlist))
+                    throw new LogAsErrorException($"Failed to generate the sdk manifest for workloads testing. Unknown workload id: {kvp.Key}.");
+
+                sdksTableForTesting[kvp.Key] = kvp.Value with { Workloads = wlist.ToArray() };
+            }
+
+            // if (workload is not null)
+            // {
+            //     // FIXME: need the relative path here
+            //     if (!workloadsTableForTesting.TryGetValue(req.TargetPath, out List<Workload>? wlist))
+            //         workloadsTableForTesting[req.TargetPath] = wlist = new();
+            //     wlist.Add(workload);
+            // }
+            // foreach (KeyValuePair<string, DotnetSdk> kvp in sdksTableForTesting)
+            // {
+            //     if (!workloadsTableForTesting.TryGetValue(kvp.Key, out List<Workload>? wlist))
+            //         throw new LogAsErrorException($"Failed to generate the sdk manifest for workloads testing. Unknown workload id: {kvp.Key}.");
+
+            //     sdksTableForTesting[kvp.Key] = kvp.Value with { Workloads = wlist.ToArray() };
+            // }
+
+            var writer = new Utf8JsonWriter(new FileStream(outFilePath, FileMode.OpenOrCreate));
+            JsonSerializer.Serialize(writer,
+                                        new DotnetSdks(sdksTableForTesting.Values.ToArray()),
+                                        new JsonSerializerOptions
+                                        {
+                                            WriteIndented = true,
+                                            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create()
+                                        });
+        }
+
         private static bool HasMetadata(ITaskItem item, string itemName, string metadataName, TaskLoggingHelper log)
         {
             if (!string.IsNullOrEmpty(item.GetMetadata(metadataName)))
@@ -435,6 +501,7 @@ namespace Microsoft.Workload.Build.Tasks
             public string Version => Workload.GetMetadata("Version");
             public string TargetPath => Target.GetMetadata("InstallPath");
             public string StampPath => Target.GetMetadata("StampPath");
+            public string Variant => Workload.GetMetadata("Variant");
             public bool IgnoreErrors => Workload.GetMetadata("IgnoreErrors").ToLowerInvariant() == "true";
             public string WorkloadId => Workload.ItemSpec;
 
@@ -462,4 +529,18 @@ namespace Microsoft.Workload.Build.Tasks
                                      string Version,
                                      string OutputDir,
                                      string relativeSourceDir = "");
+
+    internal sealed record Workload(
+        string Id,
+        string Version,
+        string TargetFrameworkVersion,
+        string RuntimePackVersion);
+
+    internal sealed record DotnetSdk(
+        string Id,
+        string Version,
+        string RelativePath,
+        Workload[] Workloads);
+
+    internal sealed record DotnetSdks(DotnetSdk[] sdks);
 }

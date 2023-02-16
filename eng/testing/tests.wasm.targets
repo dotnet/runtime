@@ -17,6 +17,7 @@
     <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
     <_XHarnessTestsTimeout>00:30:00</_XHarnessTestsTimeout>
+    <WorkloadManifestForTestingPath>$(ArtifactsBinDir)/sdks-for-testing.manifest.json</WorkloadManifestForTestingPath>
     <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>
   </PropertyGroup>
 

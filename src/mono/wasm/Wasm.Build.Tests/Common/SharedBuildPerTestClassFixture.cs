@@ -48,7 +48,7 @@ namespace Wasm.Build.Tests
 
         private void RemoveDirectory(string path)
         {
-            if (EnvironmentVariables.SkipProjectCleanup == "1")
+            if (TestConfiguration.Instance.SkipProjectCleanup)
                 return;
 
             try

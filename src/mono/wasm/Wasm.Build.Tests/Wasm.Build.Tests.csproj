@@ -5,6 +5,7 @@
     <IsTestProject>true</IsTestProject>
     <BundleXunitRunner>true</BundleXunitRunner>
     <TestFramework>xunit</TestFramework>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
@@ -33,6 +34,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Playwright" Version="1.21.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0-rc.1.22426.10" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0-rc.1.22426.10" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="7.0.0-rc.1.22426.10" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.0-rc.1.22426.10" />
+
     <Compile Include="$(MonoProjectRoot)wasm\debugger\DebuggerTestSuite\BrowserLocator.cs" />
 
     <None Include="$(RepoRoot)\src\mono\wasm\test-main.js" CopyToOutputDirectory="PreserveNewest" />
@@ -56,8 +62,8 @@
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
       <!-- TEST_USING_WORKLOADS - this is set per helix job, in sendtohelixhelp.proj -->
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDKS_FOR_TESTING_ROOT_PATH=%24{HELIX_CORRELATION_PAYLOAD}" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SDKS_FOR_TESTING_ROOT_PATH=%HELIX_CORRELATION_PAYLOAD%" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName)/$(ChromeBinaryName)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)\$(ChromeBinaryName)" />
@@ -72,9 +78,6 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
-
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDK_DIR_NAME=$(_SdkWithWorkloadForTestingDirName)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SDK_DIR_NAME=$(_SdkWithWorkloadForTestingDirName)" />
 
@@ -84,25 +87,13 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
-
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
-
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
+      <TestSettings Include="DEFAULT_DOTNET_ID=latest" />
+      <TestSettings Include="DEFAULT_TARGET_FRAMEWORK=net8.0" />
+      <TestSettings Include="SDKS_FOR_TESTING_ROOT_PATH=$(ArtifactsBinDir)" />
+      <TestSettings Include="BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
     </ItemGroup>
 
     <ItemGroup>
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" />
-      <_RuntimePackVersions Include="$(PackageVersionNet7)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' != ''"/>
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' == ''"/>
-      <_RuntimePackVersions Include="$(PackageVersionNet6)" EnvVarName="RUNTIME_PACK_VER6" />
-
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export %(_RuntimePackVersions.EnvVarName)=&quot;%(_RuntimePackVersions.Identity)&quot;" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;%(_RuntimePackVersions.EnvVarName)=%(_RuntimePackVersions.Identity)&quot;" />
-
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="set_env_vars" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="CALL :SetEnvVars" />
     </ItemGroup>
@@ -127,5 +118,7 @@
       <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) %XUnitTraitArg%</RunScriptCommand>
       <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24XUnitTraitArg</RunScriptCommand>
     </PropertyGroup>
+
+    <WriteLinesToFile Lines="@(TestSettings)" File="$(OutDir)testsettings.txt" Overwrite="true" />
   </Target>
 </Project>
