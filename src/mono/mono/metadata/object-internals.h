@@ -1236,9 +1236,9 @@ struct _MonoReflectionTypeBuilder {
 
 typedef struct {
 	MonoReflectionType type;
-	MonoReflectionType *element_type;
-	gint32 type_kind;
-	gint32 rank;
+	MonoReflectionType *_baseType;
+	gint32 _typeKind;
+	gint32 _rank;
 } MonoReflectionSymbolType;
 
 /* Safely access System.Reflection.Emit.SymbolType from native code */
@@ -1270,8 +1270,8 @@ TYPED_HANDLE_DECL (MonoReflectionEnumBuilder);
 typedef struct _MonoReflectionGenericClass MonoReflectionGenericClass;
 struct _MonoReflectionGenericClass {
 	MonoReflectionType type;
-	MonoReflectionType *generic_type; /*Can be either a MonoType or a TypeBuilder*/
-	MonoArray *type_arguments;
+	MonoReflectionType *_genericType; /*Can be either a MonoType or a TypeBuilder*/
+	MonoArray *_typeArguments;
 };
 
 /* Safely access System.Reflection.Emit.TypeBuilderInstantiation from native code */

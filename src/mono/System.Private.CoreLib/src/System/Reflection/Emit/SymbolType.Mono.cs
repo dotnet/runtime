@@ -37,21 +37,21 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     internal partial class SymbolType
     {
-        // element_type, type_kind and rank fields defined in shared SymbolType should kept in sync with MonoReflectionSymbolType in object-internals.h
+        // _baseType, _typeKind and _rank fields defined in shared SymbolType should kept in sync with MonoReflectionSymbolType in object-internals.h
 
         internal override Type InternalResolve()
         {
-            switch (type_kind)
+            switch (_typeKind)
             {
                 case TypeKind.IsArray:
                     {
-                        Type et = element_type.InternalResolve();
-                        if (rank == 1)
+                        Type et = _baseType.InternalResolve();
+                        if (_rank == 1)
                             return et.MakeArrayType();
-                        return et.MakeArrayType(rank);
+                        return et.MakeArrayType(_rank);
                     }
-                case TypeKind.IsByRef: return element_type.InternalResolve().MakeByRefType();
-                case TypeKind.IsPointer: return element_type.InternalResolve().MakePointerType();
+                case TypeKind.IsByRef: return _baseType.InternalResolve().MakeByRefType();
+                case TypeKind.IsPointer: return _baseType.InternalResolve().MakePointerType();
             }
 
             throw new NotSupportedException();
@@ -60,15 +60,15 @@ namespace System.Reflection.Emit
         // Called from the runtime to return the corresponding finished Type object
         internal override Type RuntimeResolve()
         {
-            if (type_kind == TypeKind.IsArray)
+            if (_typeKind == TypeKind.IsArray)
             {
-                Type et = element_type.RuntimeResolve();
-                if (rank == 1)
+                Type et = _baseType.RuntimeResolve();
+                if (_rank == 1)
                 {
                     return et.MakeArrayType();
                 }
 
-                return et.MakeArrayType(rank);
+                return et.MakeArrayType(_rank);
             }
 
             return InternalResolve();

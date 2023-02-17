@@ -2600,7 +2600,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionTypeHandle reftype, int t
 		/* Does this ever make sense?  what does instantiating a generic instance even mean? */
 		g_assert_not_reached ();
 		MonoReflectionGenericClassHandle rgi = MONO_HANDLE_CAST (MonoReflectionGenericClass, reftype);
-		MonoReflectionTypeHandle gtd = MONO_HANDLE_NEW_GET (MonoReflectionType, rgi, generic_type);
+		MonoReflectionTypeHandle gtd = MONO_HANDLE_NEW_GET (MonoReflectionType, rgi, _genericType);
 
 		if (mono_is_sre_type_builder (mono_handle_class (gtd)))
 			is_dynamic = TRUE;

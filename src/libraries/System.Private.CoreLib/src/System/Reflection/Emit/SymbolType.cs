@@ -19,9 +19,9 @@ namespace System.Reflection.Emit
     internal sealed partial class SymbolType : TypeInfo
     {
         #region Data Members
-        internal Type element_type = null!;
-        internal TypeKind type_kind;
-        internal int rank;        // count of dimension
+        internal Type _baseType = null!;
+        internal TypeKind _typeKind;
+        internal int _rank;        // count of dimension
         // If LowerBound and UpperBound is equal, that means one element.
         // If UpperBound is less than LowerBound, then the size is not specified.
         internal int[] _iaLowerBound;
@@ -213,8 +213,8 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(baseType);
 
-            element_type = baseType;
-            type_kind = typeKind;
+            _baseType = baseType;
+            _typeKind = typeKind;
             _iaLowerBound = new int[4];
             _iaUpperBound = new int[4];
         }
@@ -229,19 +229,19 @@ namespace System.Reflection.Emit
             if (lower != 0 || upper != -1)
                 _isSzArray = false;
 
-            if (_iaLowerBound.Length <= rank)
+            if (_iaLowerBound.Length <= _rank)
             {
                 // resize the bound array
-                int[] iaTemp = new int[rank * 2];
-                Array.Copy(_iaLowerBound, iaTemp, rank);
+                int[] iaTemp = new int[_rank * 2];
+                Array.Copy(_iaLowerBound, iaTemp, _rank);
                 _iaLowerBound = iaTemp;
-                Array.Copy(_iaUpperBound, iaTemp, rank);
+                Array.Copy(_iaUpperBound, iaTemp, _rank);
                 _iaUpperBound = iaTemp;
             }
 
-            _iaLowerBound[rank] = lower;
-            _iaUpperBound[rank] = upper;
-            rank++;
+            _iaLowerBound[_rank] = lower;
+            _iaUpperBound[_rank] = upper;
+            _rank++;
         }
 
         internal void SetFormat(string format, int curIndex, int length)
@@ -256,27 +256,27 @@ namespace System.Reflection.Emit
 
         public override bool IsTypeDefinition => false;
 
-        public override bool IsSZArray => rank <= 1 && _isSzArray;
+        public override bool IsSZArray => _rank <= 1 && _isSzArray;
 
         public override Type MakePointerType()
         {
-            return FormCompoundType(_format + "*", element_type, 0)!;
+            return FormCompoundType(_format + "*", _baseType, 0)!;
         }
 
         public override Type MakeByRefType()
         {
-            return FormCompoundType(_format + "&", element_type, 0)!;
+            return FormCompoundType(_format + "&", _baseType, 0)!;
         }
 
         public override Type MakeArrayType()
         {
-            return FormCompoundType(_format + "[]", element_type, 0)!;
+            return FormCompoundType(_format + "[]", _baseType, 0)!;
         }
 
         public override Type MakeArrayType(int rank)
         {
             string s = GetRankString(rank);
-            SymbolType? st = FormCompoundType(_format + s, element_type, 0) as SymbolType;
+            SymbolType? st = FormCompoundType(_format + s, _baseType, 0) as SymbolType;
             return st!;
         }
 
@@ -285,7 +285,7 @@ namespace System.Reflection.Emit
             if (!IsArray)
                 throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
-            return rank;
+            return _rank;
         }
 
         public override Guid GUID => throw new NotSupportedException(SR.NotSupported_NonReflectedType);
@@ -303,7 +303,7 @@ namespace System.Reflection.Emit
             {
                 Type baseType;
 
-                for (baseType = element_type; baseType is SymbolType; baseType = ((SymbolType)baseType).element_type) ;
+                for (baseType = _baseType; baseType is SymbolType; baseType = ((SymbolType)baseType)._baseType) ;
 
                 return baseType.Module;
             }
@@ -314,7 +314,7 @@ namespace System.Reflection.Emit
             {
                 Type baseType;
 
-                for (baseType = element_type; baseType is SymbolType; baseType = ((SymbolType)baseType).element_type) ;
+                for (baseType = _baseType; baseType is SymbolType; baseType = ((SymbolType)baseType)._baseType) ;
 
                 return baseType.Assembly;
             }
@@ -329,7 +329,7 @@ namespace System.Reflection.Emit
                 Type baseType;
                 string? sFormat = _format;
 
-                for (baseType = element_type; baseType is SymbolType; baseType = ((SymbolType)baseType).element_type)
+                for (baseType = _baseType; baseType is SymbolType; baseType = ((SymbolType)baseType)._baseType)
                     sFormat = ((SymbolType)baseType)._format + sFormat;
 
                 return baseType.Name + sFormat;
@@ -345,7 +345,7 @@ namespace System.Reflection.Emit
             return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.ToString)!;
         }
 
-        public override string? Namespace => element_type.Namespace;
+        public override string? Namespace => _baseType.Namespace;
 
         public override Type BaseType => typeof(System.Array);
 
@@ -464,23 +464,23 @@ namespace System.Reflection.Emit
         {
             // Return the attribute flags of the base type?
             Type baseType;
-            for (baseType = element_type; baseType is SymbolType; baseType = ((SymbolType)baseType).element_type) ;
+            for (baseType = _baseType; baseType is SymbolType; baseType = ((SymbolType)baseType)._baseType) ;
             return baseType.Attributes;
         }
 
         protected override bool IsArrayImpl()
         {
-            return type_kind == TypeKind.IsArray;
+            return _typeKind == TypeKind.IsArray;
         }
 
         protected override bool IsPointerImpl()
         {
-            return type_kind == TypeKind.IsPointer;
+            return _typeKind == TypeKind.IsPointer;
         }
 
         protected override bool IsByRefImpl()
         {
-            return type_kind == TypeKind.IsByRef;
+            return _typeKind == TypeKind.IsByRef;
         }
 
         protected override bool IsPrimitiveImpl()
@@ -502,12 +502,12 @@ namespace System.Reflection.Emit
 
         public override Type? GetElementType()
         {
-            return element_type;
+            return _baseType;
         }
 
         protected override bool HasElementTypeImpl()
         {
-            return element_type != null;
+            return _baseType != null;
         }
 
         public override Type UnderlyingSystemType => this;
