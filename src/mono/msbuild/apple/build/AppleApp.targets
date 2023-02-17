@@ -100,12 +100,6 @@
       References="@(ReferencePath)"
       ToolExe="$(CscToolExe)"
       ToolPath="$(CscToolPath)" />
-    <ItemGroup Condition="'$(iOSLikeDedup)' == 'true'">
-      <_AotInputAssemblies Include="$(_iOSLikeDedupAssembly)">
-        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
-        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
-      </_AotInputAssemblies>
-    </ItemGroup>
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
