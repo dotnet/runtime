@@ -474,6 +474,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
+    GTF_FLD_TLS_MANAGED         = 0xC0000000, // GT_FIELD_ADDR -- field address is a TLS reference
     GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
     GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD -- same as GTF_IND_VOLATILE
     GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_FIELD_ADDR -- field access requires preceding class/static init helper
@@ -4071,6 +4072,12 @@ public:
     {
         assert(((gtFlags & GTF_FLD_TLS) == 0) || IsStatic());
         return (gtFlags & GTF_FLD_TLS) != 0;
+    }
+
+    bool IsTlsStaticManaged() const
+    {
+        assert(((gtFlags & GTF_FLD_TLS_MANAGED) == 0) || IsStatic());
+        return (gtFlags & GTF_FLD_TLS_MANAGED) != 0;
     }
 
     bool IsOffsetKnown() const
