@@ -54,6 +54,12 @@
 #include <time.h>
 #endif
 
+#ifdef TARGET_APPLE
+#include <sys/proc_info.h>
+#include <libproc.h>
+#include <mach-o/getsect.h>
+#endif
+
 using std::nullptr_t;
 
 #define PalRaiseFailFastException RaiseFailFastException
@@ -488,14 +494,64 @@ extern "C" bool PalDetachThread(void* thread)
 }
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
+
+#ifdef TARGET_APPLE
+static const struct section_64 *thunks_section;
+static const struct section_64 *thunks_data_section;
+#endif
+
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
+#ifdef TARGET_APPLE
+    char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
+    int ret;
+    int f;
+
+    // NOTE: We ignore hTemplateModule, it is alwyas the current module
+    ret = proc_pidpath(getpid(), pathbuf, sizeof(pathbuf));
+    if (ret <= 0)
+    {
+        return UInt32_FALSE;
+    }
+
+    f = open(pathbuf, O_RDONLY);
+    if (f < 0)
+    {
+        return UInt32_FALSE;
+    }
+
+    // NOTE: We ignore templateRva since we would need to convert it to file offset
+    // and templateSize is useless too. Instead we read the sections from the
+    // executable and determine the size from them.
+    if (thunks_section == NULL)
+    {
+        thunks_section = getsectbyname("__THUNKS", "__thunks");
+        thunks_data_section = getsectbyname("__THUNKS_DATA", "__thunks");
+    }
+
+    *newThunksOut = mmap(
+        NULL,
+        thunks_section->size + thunks_data_section->size,
+        PROT_READ | PROT_EXEC,
+        MAP_PRIVATE,
+        f,
+        thunks_section->offset);
+    close(f);
+
+    return *newThunksOut == NULL ? UInt32_FALSE : UInt32_TRUE;
+#else
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+#endif
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress)
 {
+#ifdef TARGET_APPLE
+    int ret = munmap(pBaseAddress, thunks_section->size + thunks_data_section->size);
+    return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
+#else
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+#endif
 }
 #endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
@@ -506,7 +562,11 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
     int thunkBlockSize,
     int thunkBlocksPerMapping)
 {
-    return UInt32_TRUE;
+    int ret = mprotect(
+        (void*)((uintptr_t)virtualAddress + (thunkBlocksPerMapping * OS_PAGE_SIZE)),
+        thunkBlocksPerMapping * OS_PAGE_SIZE,
+        PROT_READ | PROT_WRITE);
+    return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
 }
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
