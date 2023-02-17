@@ -476,6 +476,7 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
     return true;
 }
 
+#ifdef TARGET_64BIT
 //------------------------------------------------------------------------
 // AreUpper32BitsZero: check if some previously emitted
 //     instruction set the upper 32 bits of reg to zero.
@@ -506,11 +507,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
     {
         return false;
     }
-
-#ifdef TARGET_X86
-    // There are no upper 32-bits on x86, so return false.
-    return false;
-#endif // TARGET_X86
 
     instrDesc* id  = emitLastIns;
     insFormat  fmt = id->idInsFmt();
@@ -599,12 +595,10 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                 return false;
             }
 
-#ifdef TARGET_AMD64
             if (id->idIns() == INS_movsxd)
             {
                 return false;
             }
-#endif
 
             // movzx always zeroes the upper 32 bits.
             if (id->idIns() == INS_movzx)
@@ -647,11 +641,6 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
         return false;
     }
 
-#ifdef TARGET_X86
-    // There are no upper 32-bits on x86, so return false.
-    return false;
-#endif // TARGET_X86
-
     instrDesc* id = emitLastIns;
 
     if (id->idReg1() != reg)
@@ -665,16 +654,15 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
         return true;
     }
 
-#ifdef TARGET_AMD64
     // movsxd is always an 8 byte operation. W-bit is set.
     if (id->idIns() == INS_movsxd)
     {
         return true;
     }
-#endif
 
     return false;
 }
+#endif // TARGET_64BIT
 
 //------------------------------------------------------------------------
 // AreFlagsSetToZeroCmp: Checks if the previous instruction set the SZ, and optionally OC, flags to
