@@ -241,6 +241,54 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
     return mul->gtNext;
 }
 
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerAndNegativeOne:
+//    If safe, lowers a tree AND(X, CNS(-1)) to X.
+//
+// Arguments:
+//    node - GT_AND node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+GenTree* Lowering::TryLowerAndNegativeOne(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_AND));
+
+    if (!varTypeIsIntegral(node))
+        return nullptr;
+
+    if (node->gtSetFlags())
+        return nullptr;
+
+    GenTree* op2 = node->gtGetOp2();
+
+    if (!op2->IsIntegralConst(-1))
+        return nullptr;
+
+#ifdef TARGET_64BIT
+    if (!node->TypeIs(TYP_LONG) || !op2->TypeIs(TYP_LONG))
+        return nullptr;
+#else  // TARGET_64BIT
+    assert(op2->TypeIs(TYP_INT));
+
+    if (!node->TypeIs(TYP_INT))
+        return nullptr;
+#endif // !TARGET_64BIT
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(node, &use))
+        return nullptr;
+
+    GenTree* op1 = node->gtGetOp1();
+
+    use.ReplaceWith(op1);
+
+    BlockRange().Remove(node->gtGetOp2());
+    BlockRange().Remove(node);
+
+    return op1;
+}
+
 //------------------------------------------------------------------------
 // LowerBinaryArithmetic: lowers the given binary arithmetic node.
 //
@@ -288,6 +336,15 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         }
     }
 #endif
+
+    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND))
+    {
+        GenTree* replacementNode = TryLowerAndNegativeOne(binOp);
+        if (replacementNode != nullptr)
+        {
+            return replacementNode->gtNext;
+        }
+    }
 
     ContainCheckBinary(binOp);
 

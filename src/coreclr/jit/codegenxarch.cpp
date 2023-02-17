@@ -998,24 +998,18 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         src = op2;
     }
 
+#ifdef TARGET_64BIT
     // We can skip emitting 'and reg0, -1` if we know that the upper 32bits of 'reg0' are zero'ed.
     if (compiler->opts.OptimizationEnabled())
     {
-        if ((oper == GT_AND) && (targetType == TYP_INT) && !treeNode->gtSetFlags() && op2->IsIntegralConst(-1))
+        if ((oper == GT_AND) && (targetType == TYP_INT) && !treeNode->gtSetFlags() && op2->IsIntegralConst(-1) &&
+            emit->AreUpper32BitsZero(targetReg))
         {
-#ifdef TARGET_X86
-            // We can always skip this on x86 as the result will never change.
             genProduceReg(treeNode);
             return;
-#else  // TARGET_X86
-            if (emit->AreUpper32BitsZero(targetReg))
-            {
-                genProduceReg(treeNode);
-                return;
-            }
-#endif // !TARGET_X86
         }
     }
+#endif // TARGET_64BIT
 
     // try to use an inc or dec
     if (oper == GT_ADD && !varTypeIsFloating(treeNode) && src->isContainedIntOrIImmed() && !treeNode->gtOverflowEx())
