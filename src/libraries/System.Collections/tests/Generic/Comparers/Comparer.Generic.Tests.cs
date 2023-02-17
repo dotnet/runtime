@@ -78,7 +78,7 @@ namespace System.Collections.Generic.Tests
             // throw if both inputs are non-null and one of them is not of type T
             IComparer comparer = Comparer<T>.Default;
             StrongBox<T> notOfTypeT = new StrongBox<T>(default(T));
-            if (default(T) != null) // if default(T) is null these asserts will fail as IComparer.Compare returns early if either side is null
+            if (typeof(T).IsValueType) // if default(T) is null these asserts will fail as IComparer.Compare returns early if either side is null
             {
                 AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(notOfTypeT, default(T))); // lhs is the problem
                 AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(default(T), notOfTypeT)); // rhs is the problem

@@ -1742,7 +1742,7 @@ namespace Tests.Collections
 
         protected override sealed bool ItemsMustBeNonNull
         {
-            get { return default(T) != null; }
+            get { return typeof(T).IsValueType; }
         }
 
         protected override sealed object GenerateItem()

@@ -451,7 +451,7 @@ namespace System.Runtime.CompilerServices
 
         private static void ValidateNullValue(object? value, string argument)
         {
-            if (value == null && default(T) != null)
+            if (value == null && typeof(T).IsValueType)
             {
                 throw Error.InvalidNullValue(typeof(T), argument);
             }

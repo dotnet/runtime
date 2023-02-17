@@ -31,7 +31,7 @@ namespace System.Linq
 
             AssociativeAggregationOperator<T, Pair<bool, T>, T> aggregation =
                 new AssociativeAggregationOperator<T, Pair<bool, T>, T>(source, new Pair<bool, T>(false, default!), null,
-                                                                        true, intermediateReduce, finalReduce, resultSelector, default(T) != null, QueryAggregationOptions.AssociativeCommutative);
+                                                                        true, intermediateReduce, finalReduce, resultSelector, typeof(T).IsValueType, QueryAggregationOptions.AssociativeCommutative);
 
             return aggregation.Aggregate();
         }
@@ -71,7 +71,7 @@ namespace System.Linq
                            // the existing accumulated result is equal to the sign requested by the function factory,
                            // we will return a new pair that contains the current element as the best item.  We will
                            // ignore null elements (for reference and nullable types) in the input stream.
-                           if ((default(T) != null || element != null) &&
+                           if ((typeof(T).IsValueType || element != null) &&
                                (!accumulator.First || Util.Sign(comparer.Compare(element, accumulator.Second)) == sign))
                            {
                                return new Pair<bool, T>(true, element);
@@ -98,7 +98,7 @@ namespace System.Linq
                            if (element.First &&
                                (!accumulator.First || Util.Sign(comparer.Compare(element.Second, accumulator.Second)) == sign))
                            {
-                               Debug.Assert(default(T) != null || element.Second != null, "nulls unexpected in final reduce");
+                               Debug.Assert(typeof(T).IsValueType || element.Second != null, "nulls unexpected in final reduce");
                                return new Pair<bool, T>(true, element.Second);
                            }
 

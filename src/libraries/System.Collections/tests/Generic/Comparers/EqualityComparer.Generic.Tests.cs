@@ -85,7 +85,7 @@ namespace System.Collections.Generic.Tests
             Assert.Equal(default(T) == null, comparer.Equals(null, default(T)));
             Assert.True(comparer.Equals(null, null));
 
-            if (default(T) != null) // if default(T) is null this assert will fail as IEqualityComparer.Equals returns early if either input is null
+            if (typeof(T).IsValueType) // if default(T) is null this assert will fail as IEqualityComparer.Equals returns early if either input is null
             {
                 AssertExtensions.Throws<ArgumentException>(null, () => comparer.Equals(notOfTypeT, default(T))); // lhs is the problem
                 AssertExtensions.Throws<ArgumentException>(null, () => comparer.Equals(default(T), notOfTypeT)); // rhs is the problem

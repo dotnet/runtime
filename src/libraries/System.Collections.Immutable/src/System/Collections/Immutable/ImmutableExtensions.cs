@@ -19,7 +19,7 @@ namespace System.Collections.Immutable
 #if NETCOREAPP
             return typeof(T).IsValueType;
 #else
-            if (default(T) != null)
+            if (typeof(T).IsValueType)
             {
                 return true;
             }

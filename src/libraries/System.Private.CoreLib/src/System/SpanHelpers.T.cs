@@ -232,7 +232,7 @@ namespace System
 
             nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
 
-            if (default(T) != null || (object?)value != null)
+            if (typeof(T).IsValueType || (object?)value != null)
             {
                 Debug.Assert(value is not null);
 
@@ -303,7 +303,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
-            if (default(T) != null || (object?)value != null)
+            if (typeof(T).IsValueType || (object?)value != null)
             {
                 Debug.Assert(value is not null);
 
@@ -393,7 +393,7 @@ namespace System
 
             T lookUp;
             int index = 0;
-            if (default(T) != null || ((object?)value0 != null && (object?)value1 != null))
+            if (typeof(T).IsValueType || ((object?)value0 != null && (object?)value1 != null))
             {
                 Debug.Assert(value0 is not null && value1 is not null);
 
@@ -499,7 +499,7 @@ namespace System
 
             T lookUp;
             int index = 0;
-            if (default(T) != null || ((object?)value0 != null && (object?)value1 != null && (object?)value2 != null))
+            if (typeof(T).IsValueType || ((object?)value0 != null && (object?)value1 != null && (object?)value2 != null))
             {
                 Debug.Assert(value0 is not null && value1 is not null && value2 is not null);
 
@@ -713,7 +713,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            if (default(T) != null || (object?)value != null)
+            if (typeof(T).IsValueType || (object?)value != null)
             {
                 Debug.Assert(value is not null);
 
@@ -797,7 +797,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T) != null || ((object?)value0 != null && (object?)value1 != null))
+            if (typeof(T).IsValueType || ((object?)value0 != null && (object?)value1 != null))
             {
                 Debug.Assert(value0 is not null && value1 is not null);
 
@@ -902,7 +902,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T) != null || ((object?)value0 != null && (object?)value1 != null && (object?)value2 != null))
+            if (typeof(T).IsValueType || ((object?)value0 != null && (object?)value1 != null && (object?)value2 != null))
             {
                 Debug.Assert(value0 is not null && value1 is not null && value2 is not null);
 
