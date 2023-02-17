@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);CS0618</NoWarn>
+    <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
   </PropertyGroup>
 
   <ItemGroup>
