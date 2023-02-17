@@ -6,7 +6,7 @@
 #include <mono/metadata/loader.h>
 
 void mono_wasm_load_runtime (const char *unused, int debug_level);
-void mono_wasm_load_icu_data(const void* pData);
+int32_t mono_wasm_load_icu_data(const void* pData);
 int mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size);
 MonoAssembly* mono_wasm_assembly_load(const char *name);
 MonoMethod* mono_wasi_assembly_get_entry_point (MonoAssembly *assembly);

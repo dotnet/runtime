@@ -14,8 +14,8 @@ target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/wasi-default.rsp @${
 set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_WASICC_FLAGS})
 
 target_link_libraries(dotnet
-    #TODOWASI ${ICU_LIB_DIR}/libicuuc.a
-    #TODOWASI ${ICU_LIB_DIR}/libicui18n.a
+    ${ICU_LIB_DIR}/libicuuc.a
+    ${ICU_LIB_DIR}/libicui18n.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-hot_reload-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-debugger-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-diagnostics_tracing-stub-static.a

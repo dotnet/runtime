@@ -112,7 +112,8 @@ static int assembly_count;
 int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
 {
-	/*printf("wasi: mono_wasm_add_assembly: %s size: %u\n", name, size);*/
+	//check this
+	printf("wasi: mono_wasm_add_assembly: %s size: %u\n", name, size);
 	int len = strlen (name);
 	if (!strcasecmp (".pdb", &name [len - 4])) {
 		char *new_name = strdup (name);
@@ -162,6 +163,7 @@ static void *sysglobal_native_handle;
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 {
+	printf("wasi: wasm_dl_load:");
 	void* handle = wasm_dl_lookup_pinvoke_table (name);
 	if (handle)
 		return handle;
@@ -217,6 +219,7 @@ compare_int (const void *k1, const void *k2)
 static void*
 icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *out_flags)
 {
+	printf("wasi: icall_table_lookup:");
 	uint32_t token = mono_method_get_token (method);
 	assert (token);
 	assert ((token & MONO_TOKEN_METHOD_DEF) == MONO_TOKEN_METHOD_DEF);
@@ -284,6 +287,7 @@ icall_table_lookup_symbol (void *func)
 void*
 get_native_to_interp (MonoMethod *method, void *extra_arg)
 {
+	printf("wasi: get_native_to_interp:");
 	void *addr;
 
 	MONO_ENTER_GC_UNSAFE;
@@ -313,6 +317,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 void
 mono_wasm_register_bundled_satellite_assemblies (void)
 {
+	printf("wasi: mono_wasm_register_bundled_satellite_assemblies:");
 	/* In legacy satellite_assembly_count is always false */
 	if (satellite_assembly_count) {
 		MonoBundledSatelliteAssembly **satellite_bundle_array =  g_new0 (MonoBundledSatelliteAssembly *, satellite_assembly_count + 1);
@@ -328,7 +333,9 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 }
 
 void mono_wasm_link_icu_shim (void);
-//int32_t load_icu_data(const void* pData);
+
+int32_t load_icu_data(const void* pData);
+const char* mono_wasm_get_icudt_name(const char* culture);
 
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -475,11 +482,12 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_thread_set_main (mono_thread_current ());
 }
 
-void mono_wasm_load_icu_data(const void* pData)
+int32_t mono_wasm_load_icu_data(const void* pData)
 {
 	printf ("mono_wasm_load_icu_data implementation is called \n");
 	// pal_icushim_static.c
 	int32_t result = load_icu_data(pData);
+	return result;
 	//implement loading icu for wasi
 }
 
@@ -645,7 +653,7 @@ void add_assembly(const char* base_dir, const char *name) {
 	long filelen;
 	char filename[256];
 	sprintf(filename, "%s/%s", base_dir, name);
-	// printf("Loading %s...\n", filename);
+	printf("Loading %s...\n", filename);
 
 	fileptr = fopen(filename, "rb");
 	if (fileptr == 0) {
@@ -665,6 +673,10 @@ void add_assembly(const char* base_dir, const char *name) {
 	fclose(fileptr);
 
 	assert(mono_wasm_add_assembly(name, buffer, filelen));
+	printf("Before loading icu data to load %s\n", filename);
+	if (!mono_wasm_load_icu_data(buffer))
+	    printf("Failed to load icu data %s\n", filename);
+            //Module.printErr(`MONO_WASM: Error loading ICU asset ${asset.name}`);
 }
 
 MonoMethod* lookup_dotnet_method(const char* assembly_name, const char* namespace, const char* type_name, const char* method_name, int num_params) {

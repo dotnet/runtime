@@ -69,7 +69,6 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)
  */
 #endif
 
-static int32_t load_icu_data(const void* pData);
 
 void mono_wasm_link_icu_shim(void);
 
@@ -82,7 +81,17 @@ int32_t mono_wasm_load_icu(const void* pData)
 {
     return load_icu_data(pData);
 }*/
-static int32_t load_icu_data(const void* pData)
+
+const char* mono_wasm_get_icudt_name(const char* culture);
+
+const char* mono_wasm_get_icudt_name(const char* culture)
+{
+    return GlobalizationNative_GetICUDTName(culture);
+}
+
+int32_t load_icu_data(const void* pData);
+
+int32_t load_icu_data(const void* pData)
 {
 	printf ("pal_icushim_static load_icu_data is called from wasi \n");
 
