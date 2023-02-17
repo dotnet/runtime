@@ -249,6 +249,7 @@ namespace System.ComponentModel.DataAnnotations
     {
         public RequiredAttribute() { }
         public bool AllowEmptyStrings { get { throw null; } set { } }
+        public bool DisallowAllDefaultValues { get { throw null; } set { } }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]

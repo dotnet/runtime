@@ -295,6 +295,15 @@ namespace System.ComponentModel.DataAnnotations
             _errorMessageResourceAccessor = () => (string)property.GetValue(null, null)!;
         }
 
+        private protected ValidationResult CreateFailedValidationResult(ValidationContext validationContext)
+        {
+            string[]? memberNames = validationContext.MemberName is { } memberName
+                ? new[] { memberName }
+                : null;
+
+            return new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
+        }
+
         #endregion
 
         #region Protected & Public Methods
@@ -386,18 +395,10 @@ namespace System.ComponentModel.DataAnnotations
                     SR.ValidationAttribute_IsValid_NotImplemented);
             }
 
-            var result = ValidationResult.Success;
-
             // call overridden method.
-            if (!IsValid(value))
-            {
-                string[]? memberNames = validationContext.MemberName is { } memberName
-                    ? new[] { memberName }
-                    : null;
-                result = new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
-            }
-
-            return result;
+            return IsValid(value)
+                ? ValidationResult.Success
+                : CreateFailedValidationResult(validationContext);
         }
 
         /// <summary>
