@@ -371,7 +371,8 @@
     <Message Importance="High" Text="!!!naricc_debug!!!: Build dir: $(BuildDir)/testdir*/*.dll"/>
 
     <ItemGroup>
-        <_AppleAssembliesInternal Include="$(BuildDir)/*.dll" />
+        <_AppleAssembliesInternal Include="$(BuildDir)/**/*.dll" />
+        
         <_AppleAssembliesInternal>
             <_InternalForceInterpret Condition="'$(MonoForceInterpreter)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
             <_IsNative>false</_IsNative>
@@ -379,13 +380,6 @@
 
         <_AotInputAssemblies Include="@(_AppleAssembliesInternal)"
                             Condition="'%(_AppleAssembliesInternal._InternalForceInterpret)' != 'true'">
-            <AotArguments>$(AotArguments)</AotArguments>
-            <ProcessArguments>$(ProcessArguments)</ProcessArguments>
-        </_AotInputAssemblies>
-
-        <NariccTestItemGroup Include="$(BuildDir)/testdir*/*.dll" />
-
-        <_AotInputAssemblies Include="$(BuildDir)/testdir*/*.dll">
             <AotArguments>$(AotArguments)</AotArguments>
             <ProcessArguments>$(ProcessArguments)</ProcessArguments>
         </_AotInputAssemblies>
@@ -424,8 +418,8 @@
 
     <Message Importance = "High" Text="!!!naricc_debug!!! MsBuildProjectName: $(MsBuildProjectName)" />
     <Message Importance = "High" Text="!!!naricc_debug!!! AssemblyName: $(AssemblyName)" />
-    <Message Importance = "High" Text="!!!naricc_debug!!! _AppleAssembliesInternal: $(_AppleAssembliesInternal)" />
-    <Message Importance = "High" Text="!!!naricc_debug!!! _AotInputAssemblies: $(_AotInputAssemblies)" />
+    <Message Importance = "High" Text="!!!naricc_debug!!! _AppleAssembliesInternal: @(_AppleAssembliesInternal)" />
+    <Message Importance = "High" Text="!!!naricc_debug!!! _AotInputAssemblies: @(_AotInputAssemblies)" />
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         ProjectName="$(AssemblyName)"
