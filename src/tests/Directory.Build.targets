@@ -12,7 +12,10 @@
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>
-    <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)) or '$(RequiresProcessIsolation)' == 'true'">Exe</OutputType>
+    <OutputType Condition=
+        "('$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone))
+        or '$(RequiresProcessIsolation)' == 'true'
+        or ('$(IsMergedTestRunnerAssembly)' != 'true' and '$(BuildAsStandalone)' == 'true')">Exe</OutputType>
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildOnly</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
