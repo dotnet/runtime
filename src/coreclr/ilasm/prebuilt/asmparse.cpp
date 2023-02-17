@@ -396,7 +396,8 @@ typedef	YYEXIND_T	yyexind_t;
 #line 2074 "asmparse.y"
 
 
-#include "grammar_after.cpp"YYSTATIC YYCONST short yyexca[] = {
+#include "grammar_after.cpp"
+YYSTATIC YYCONST short yyexca[] = {
 #if !(YYOPTTIME)
 -1, 1,
 #endif
