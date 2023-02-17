@@ -43,7 +43,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an Int16 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="short" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short ReadInt16LittleEndian(ReadOnlySpan<byte> source)
@@ -54,7 +54,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an Int32 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="int" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ReadInt32LittleEndian(ReadOnlySpan<byte> source)
@@ -65,7 +65,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an Int64 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="long" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long ReadInt64LittleEndian(ReadOnlySpan<byte> source)
@@ -76,7 +76,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an Int128 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="Int128" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Int128 ReadInt128LittleEndian(ReadOnlySpan<byte> source)
@@ -87,7 +87,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an IntPtr out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="nint" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint ReadIntPtrLittleEndian(ReadOnlySpan<byte> source)
@@ -115,7 +115,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads a UInt16 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="ushort" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -127,7 +127,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads a UInt32 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="uint" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -139,7 +139,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads a UInt64 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="ulong" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -151,7 +151,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an UInt128 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="UInt128" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -163,7 +163,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an UIntPtr out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="nuint" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -219,9 +219,9 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an Int16 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="short" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain an Int16, return false.</returns>
+        /// <returns>If the span is too small to contain a <see cref="short" />, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt16LittleEndian(ReadOnlySpan<byte> source, out short value)
         {
@@ -236,9 +236,9 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an Int32 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="int" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain an Int32, return false.</returns>
+        /// <returns>If the span is too small to contain a <see cref="int" />, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt32LittleEndian(ReadOnlySpan<byte> source, out int value)
         {
@@ -253,9 +253,9 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an Int64 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="long" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain an Int64, return false.</returns>
+        /// <returns>If the span is too small to contain a <see cref="long" />, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt64LittleEndian(ReadOnlySpan<byte> source, out long value)
         {
@@ -270,9 +270,9 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an Int128 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="Int128" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain an Int128, return false.</returns>
+        /// <returns>If the span is too small to contain a <see cref="Int128" />, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt128LittleEndian(ReadOnlySpan<byte> source, out Int128 value)
         {
@@ -287,9 +287,9 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an IntPtr out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="nint" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain an Int128, return false.</returns>
+        /// <returns>If the span is too small to contain a <see cref="nint" />, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadIntPtrLittleEndian(ReadOnlySpan<byte> source, out nint value)
         {
@@ -325,9 +325,9 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads a UInt16 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="ushort" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a UInt16, return false.</returns>
+        /// <returns>If the span is too small to contain a <see cref="ushort" />, return false.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt16LittleEndian(ReadOnlySpan<byte> source, out ushort value)
@@ -343,9 +343,9 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads a UInt32 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="uint" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a UInt32, return false.</returns>
+        /// <returns>If the span is too small to contain a <see cref="uint" />, return false.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt32LittleEndian(ReadOnlySpan<byte> source, out uint value)
@@ -361,9 +361,9 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads a UInt64 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="ulong" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a UInt64, return false.</returns>
+        /// <returns>If the span is too small to contain a <see cref="ulong" />, return false.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt64LittleEndian(ReadOnlySpan<byte> source, out ulong value)
@@ -379,9 +379,9 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an UInt128 out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="UInt128" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain an UInt128, return false.</returns>
+        /// <returns>If the span is too small to contain a <see cref="UInt128" />, return false.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt128LittleEndian(ReadOnlySpan<byte> source, out UInt128 value)
@@ -397,9 +397,9 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an UIntPtr out of a read-only span of bytes as little endian.
+        /// Reads a <see cref="nuint" /> from the beginning of a read-only span of bytes, as little endian.
         /// </summary>
-        /// <returns>If the span is too small to contain an UIntPtr, return false.</returns>
+        /// <returns>If the span is too small to contain a <see cref="nuint" />, return false.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUIntPtrLittleEndian(ReadOnlySpan<byte> source, out nuint value)

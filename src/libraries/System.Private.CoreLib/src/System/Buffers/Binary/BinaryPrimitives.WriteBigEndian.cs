@@ -55,7 +55,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an Int16 into a span of bytes as big endian.
+        /// Writes a <see cref="short" /> into a span of bytes, as big endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt16BigEndian(Span<byte> destination, short value)
@@ -72,7 +72,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an Int32 into a span of bytes as big endian.
+        /// Writes a <see cref="int" /> into a span of bytes, as big endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt32BigEndian(Span<byte> destination, int value)
@@ -89,7 +89,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an Int64 into a span of bytes as big endian.
+        /// Writes a <see cref="long" /> into a span of bytes, as big endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt64BigEndian(Span<byte> destination, long value)
@@ -106,7 +106,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an Int128 into a span of bytes as big endian.
+        /// Writes a <see cref="Int128" /> into a span of bytes, as big endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt128BigEndian(Span<byte> destination, Int128 value)
@@ -123,7 +123,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an IntPtr into a span of bytes as big endian.
+        /// Writes a <see cref="nint" /> into a span of bytes, as big endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteIntPtrBigEndian(Span<byte> destination, nint value)
@@ -163,7 +163,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Write a UInt16 into a span of bytes as big endian.
+        /// Write a <see cref="ushort" /> into a span of bytes, as big endian.
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -181,7 +181,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Write a UInt32 into a span of bytes as big endian.
+        /// Write a <see cref="uint" /> into a span of bytes, as big endian.
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -199,7 +199,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Write a UInt64 into a span of bytes as big endian.
+        /// Write a <see cref="ulong" /> into a span of bytes, as big endian.
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -217,7 +217,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an UInt128 into a span of bytes as big endian.
+        /// Writes a <see cref="UInt128" /> into a span of bytes, as big endian.
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -235,7 +235,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an UIntPtr into a span of bytes as big endian.
+        /// Writes a <see cref="nuint" /> into a span of bytes, as big endian.
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -295,7 +295,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an Int16 into a span of bytes as big endian.
+        /// Writes a <see cref="short" /> into a span of bytes, as big endian.
         /// </summary>
         /// <returns>If the span is too small to contain the value, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -311,7 +311,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an Int32 into a span of bytes as big endian.
+        /// Writes a <see cref="int" /> into a span of bytes, as big endian.
         /// </summary>
         /// <returns>If the span is too small to contain the value, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -327,7 +327,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an Int64 into a span of bytes as big endian.
+        /// Writes a <see cref="long" /> into a span of bytes, as big endian.
         /// </summary>
         /// <returns>If the span is too small to contain the value, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -343,7 +343,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an Int128 into a span of bytes as big endian.
+        /// Writes a <see cref="Int128" /> into a span of bytes, as big endian.
         /// </summary>
         /// <returns>If the span is too small to contain the value, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -359,7 +359,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an IntPtr into a span of bytes as big endian.
+        /// Writes a <see cref="nint" /> into a span of bytes, as big endian.
         /// </summary>
         /// <returns>If the span is too small to contain the value, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -396,7 +396,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Write a UInt16 into a span of bytes as big endian.
+        /// Write a <see cref="ushort" /> into a span of bytes, as big endian.
         /// </summary>
         /// <returns>If the span is too small to contain the value, return false.</returns>
         [CLSCompliant(false)]
@@ -413,7 +413,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Write a UInt32 into a span of bytes as big endian.
+        /// Write a <see cref="uint" /> into a span of bytes, as big endian.
         /// </summary>
         /// <returns>If the span is too small to contain the value, return false.</returns>
         [CLSCompliant(false)]
@@ -430,7 +430,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Write a UInt64 into a span of bytes as big endian.
+        /// Write a <see cref="ulong" /> into a span of bytes, as big endian.
         /// </summary>
         /// <returns>If the span is too small to contain the value, return false.</returns>
         [CLSCompliant(false)]
@@ -447,7 +447,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an UInt128 into a span of bytes as big endian.
+        /// Writes a <see cref="UInt128" /> into a span of bytes, as big endian.
         /// </summary>
         /// <returns>If the span is too small to contain the value, return false.</returns>
         [CLSCompliant(false)]
@@ -464,7 +464,7 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an UIntPtr into a span of bytes as big endian.
+        /// Writes a <see cref="nuint" /> into a span of bytes, as big endian.
         /// </summary>
         /// <returns>If the span is too small to contain the value, return false.</returns>
         [CLSCompliant(false)]
