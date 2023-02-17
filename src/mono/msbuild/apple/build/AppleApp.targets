@@ -89,7 +89,7 @@
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
 
     <PropertyGroup Condition="'$(iOSLikeDedup)' == 'true'">
-      <_iOSLikeDedupAssembly>$(_MobileIntermediateOutputPath)\aot-instances.dll</_iOSLikeDedupAssembly>
+      <_iOSLikeDedupAssembly>$(TargetDir)publish\aot-instances.dll</_iOSLikeDedupAssembly>
     </PropertyGroup>
     <WriteLinesToFile Condition="'$(iOSLikeDedup)' == 'true'" File="$(_MobileIntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
     <Csc Condition="'$(iOSLikeDedup)' == 'true'"
