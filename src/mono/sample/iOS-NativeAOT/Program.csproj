@@ -64,7 +64,7 @@
 
     <AppleAppBuilderTask
         UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
-        NativeLibraries="@(NativeLibrary)"
+        NativeDependencies="@(NativeLibrary)"
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="$(AppName)"

@@ -172,9 +172,9 @@ public class AppleAppBuilderTask : Task
     public bool UseNativeAOTRuntime { get; set; }
 
     /// <summary>
-    /// List of static libraries to link with the program.
+    /// Extra native dependencies to link into the app
     /// </summary>
-    public ITaskItem[] NativeLibraries { get; set; } = Array.Empty<ITaskItem>();
+    public string[] NativeDependencies { get; set; } = Array.Empty<string>();
 
     public void ValidateRuntimeSelection()
     {
@@ -272,13 +272,9 @@ public class AppleAppBuilderTask : Task
             }
         }
 
-        foreach (ITaskItem nativeLibrary in NativeLibraries)
+        foreach (var nativeDependency in NativeDependencies)
         {
-            string nativeLibraryFile = nativeLibrary.GetMetadata("Identity");
-            if (!string.IsNullOrEmpty(nativeLibraryFile))
-            {
-                assemblerFilesToLink.Add(nativeLibraryFile);
-            }
+            assemblerFilesToLink.Add(nativeDependency);
         }
 
         if (!ForceInterpreter && (isDevice || ForceAOT) && (assemblerFiles.Count == 0 && !UseNativeAOTRuntime))
