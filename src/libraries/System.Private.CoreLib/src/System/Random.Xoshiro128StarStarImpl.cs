@@ -117,7 +117,7 @@ namespace System
                 }
             }
 
-            // NextInt64 in Xoshiro128 has not been implemented with the Lemire algorithm like the related methods.
+            // NextInt64 in Xoshiro128 has not been implemented with the fastrange algorithm like the related methods.
             // Benchmarking showed that on 32-bit changing implementation could cause regression.
 
             public override long NextInt64(long maxValue)
