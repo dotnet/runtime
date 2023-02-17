@@ -147,7 +147,7 @@ namespace ILCompiler
         internal bool IsWarningSuppressed(int code, MessageOrigin origin)
         {
             // This is causing too much noise
-            // https://github.com/dotnet/runtime/issues/81156
+            // https://github.com/dotnet/runtimelab/issues/1591
             if (code == 2110 || code == 2111 || code == 2113 || code == 2115)
                 return true;
 

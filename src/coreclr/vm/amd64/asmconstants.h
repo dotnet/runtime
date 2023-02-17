@@ -138,9 +138,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
 
 
 
-#define               OFFSETOF__NDirectMethodDesc__m_pWriteableData DBG_FRE(0x48, 0x20)
-ASMCONSTANTS_C_ASSERT(OFFSETOF__NDirectMethodDesc__m_pWriteableData == offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
-
 #define           OFFSETOF__DelegateObject___methodPtr      0x18
 ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _methodPtr);
 

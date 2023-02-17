@@ -172,7 +172,7 @@ namespace ILLink.RoslynAnalyzer
 				throw new NotImplementedException ();
 
 			var diagnosticContext = new DiagnosticContext (location);
-			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, new ReflectionAccessAnalyzer ());
+			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (diagnosticContext, default (ReflectionAccessAnalyzer));
 			requireDynamicallyAccessedMembersAction.Invoke (sourceValue, targetWithDynamicallyAccessedMembers);
 
 			return diagnosticContext.Diagnostics;

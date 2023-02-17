@@ -120,16 +120,18 @@ namespace Mono.Linker.Dataflow
 
 		public override bool HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams, out MultiValue methodReturnValue)
 		{
-			methodReturnValue = new ();
-
 			var reflectionProcessed = _markStep.ProcessReflectionDependency (callingMethodBody, operation);
-			if (reflectionProcessed)
+			if (reflectionProcessed) {
+				methodReturnValue = default;
 				return false;
+			}
 
 			Debug.Assert (callingMethodBody.Method == _origin.Provider);
 			var calledMethodDefinition = _context.TryResolve (calledMethod);
-			if (calledMethodDefinition == null)
+			if (calledMethodDefinition == null) {
+				methodReturnValue = default;
 				return false;
+			}
 
 			_origin = _origin.WithInstructionOffset (operation.Offset);
 

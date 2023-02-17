@@ -90,7 +90,7 @@
       <_TestUsingCrossProductValues Include="@(_TestUsingCrossProductValuesTemp)">
         <Webcil>%(_TestUsingWebcilValues.Identity)</Webcil>
       </_TestUsingCrossProductValues>
-            
+
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);TestUsingWebcil=%(_TestUsingCrossProductValues.Webcil)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>

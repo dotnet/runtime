@@ -398,17 +398,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				var origin = mc.Origin;
 				Debug.Assert (origin != null);
-				if (origin?.MemberDefinition == null)
-					return false;
-				if (expectedOriginProvider is not IMemberDefinition expectedOriginMember)
-					return false;
-
-				var actualOriginToken = new AssemblyQualifiedToken (origin.Value.MemberDefinition);
-				var expectedOriginToken = new AssemblyQualifiedToken (expectedOriginMember);
-				if (actualOriginToken.Equals(expectedOriginToken))
+				if (NameUtils.GetActualOriginDisplayName (origin?.MemberDefinition) == NameUtils.GetExpectedOriginDisplayName (expectedOriginProvider))
 					return true;
 
-				var actualMember = origin.Value.MemberDefinition;
+				var actualMember = origin!.Value.MemberDefinition;
 				// Compensate for cases where for some reason the OM doesn't preserve the declaring types
 				// on certain things after trimming.
 				if (actualMember != null && GetOwningType (actualMember) == null &&

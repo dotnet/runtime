@@ -912,33 +912,49 @@ void Compiler::fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* new
 {
     for (GenTree* node = newSubListFirst->gtPrev; node != nullptr; node = node->gtPrev)
     {
-        if ((node->gtFlags & GTF_VAR_DEATH) == 0)
+        if ((node->gtFlags & GTF_VAR_DEATH_MASK) == 0)
         {
             continue;
         }
 
         unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
         LclVarDsc* dsc    = lvaGetDesc(lclNum);
-        // Last-use copy omission does not work for promoted structs today, so
-        // we can always unmark these which saves us from having to update the
-        // promoted struct death vars map.
-        if (dsc->lvPromoted)
-        {
-            node->gtFlags &= ~GTF_VAR_DEATH;
-            continue;
-        }
 
         unsigned parentLclNum = dsc->lvIsStructField ? dsc->lvParentLcl : BAD_VAR_NUM;
 
         GenTree* candidate = newSubListFirst;
-        // See if a new instance of this local or its parent appeared.
         while (true)
         {
             unsigned newUseLclNum = candidate->AsLclVarCommon()->GetLclNum();
-            if ((newUseLclNum == lclNum) || (newUseLclNum == parentLclNum))
+            if (dsc->lvPromoted)
             {
-                node->gtFlags &= ~GTF_VAR_DEATH;
-                break;
+                // Is the parent struct being used?
+                if (newUseLclNum == lclNum)
+                {
+                    // Then all fields are not dying.
+                    node->gtFlags &= ~GTF_VAR_DEATH_MASK;
+                    break;
+                }
+
+                // Otherwise, is one single field being used?
+                if ((newUseLclNum >= dsc->lvFieldLclStart) && (newUseLclNum < dsc->lvFieldLclStart + dsc->lvFieldCnt))
+                {
+                    node->ClearLastUse(newUseLclNum - dsc->lvFieldLclStart);
+
+                    if ((node->gtFlags & GTF_VAR_DEATH_MASK) == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                // See if a new instance of this local or its parent appeared.
+                if ((newUseLclNum == lclNum) || (newUseLclNum == parentLclNum))
+                {
+                    node->gtFlags &= ~GTF_VAR_DEATH;
+                    break;
+                }
             }
 
             if (candidate == newSubListLast)

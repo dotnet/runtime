@@ -1098,7 +1098,49 @@ namespace Internal.IL
 
         private void ImportBox(int token)
         {
-            AddBoxingDependencies((TypeDesc)_methodIL.GetObject(token), "Box");
+            var type = (TypeDesc)_methodIL.GetObject(token);
+
+            // There are some sequences of box with ByRefLike types that are allowed
+            // per the extension to the ECMA-335 specification.
+            // Everything else is invalid.
+            if (!type.IsRuntimeDeterminedType && type.IsByRefLike)
+            {
+                ILReader reader = new ILReader(_ilBytes, _currentOffset);
+                ILOpcode nextOpcode = reader.ReadILOpcode();
+
+                // box ; br_true/false
+                if (nextOpcode is ILOpcode.brtrue or ILOpcode.brtrue_s or ILOpcode.brfalse or ILOpcode.brfalse_s)
+                    return;
+
+                if (nextOpcode is ILOpcode.unbox_any or ILOpcode.isinst)
+                {
+                    var type2 = (TypeDesc)_methodIL.GetObject(reader.ReadILToken());
+                    if (type == type2)
+                    {
+                        // box ; unbox_any with same token
+                        if (nextOpcode == ILOpcode.unbox_any)
+                            return;
+
+                        nextOpcode = reader.ReadILOpcode();
+
+                        // box ; isinst ; br_true/false
+                        if (nextOpcode is ILOpcode.brtrue or ILOpcode.brtrue_s or ILOpcode.brfalse or ILOpcode.brfalse_s)
+                            return;
+
+                        // box ; isinst ; unbox_any
+                        if (nextOpcode == ILOpcode.unbox_any)
+                        {
+                            type2 = (TypeDesc)_methodIL.GetObject(reader.ReadILToken());
+                            if (type2 == type)
+                                return;
+                        }
+                    }
+                }
+
+                ThrowHelper.ThrowInvalidProgramException();
+            }
+
+            AddBoxingDependencies(type, "Box");
         }
 
         private void AddBoxingDependencies(TypeDesc type, string reason)
@@ -1136,15 +1178,17 @@ namespace Internal.IL
 
         private void ImportNewArray(int token)
         {
-            var type = ((TypeDesc)_methodIL.GetObject(token)).MakeArrayType();
-            if (type.IsRuntimeDeterminedSubtype)
+            var elementType = (TypeDesc)_methodIL.GetObject(token);
+            if (elementType.IsRuntimeDeterminedSubtype)
             {
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "newarr");
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType.MakeArrayType()), "newarr");
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewArray), "newarr");
             }
             else
             {
-                _dependencies.Add(_factory.ConstructedTypeSymbol(type), "newarr");
+                if (elementType.IsVoid)
+                    ThrowHelper.ThrowInvalidProgramException();
+                _dependencies.Add(_factory.ConstructedTypeSymbol(elementType.MakeArrayType()), "newarr");
             }
         }
 

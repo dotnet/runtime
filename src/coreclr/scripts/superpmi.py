@@ -505,22 +505,24 @@ def read_csv_diffs(path):
         reader = csv.DictReader(csv_file)
         return list(reader)
 
-def determine_clrjit_compiler_version(clrjit_path):
-    """ Obtain the version of the compiler that was used to compile the clrjit at the specified path.
+def decode_clrjit_build_string(clrjit_path):
+    """ Obtain information about the compiler that was used to compile the clrjit at the specified path.
 
     Returns:
-        A string extract from the binary or "unknown" if the string could not be found.
+        None if the build string was not found; otherwise a tuple (version, with_native_pgo).
         See 'jitBuildString' in buildstring.cpp in the JIT to see where this is defined.
     """
 
     with open(clrjit_path, "rb") as fh:
         contents = fh.read()
 
-    match = re.search(b'RyuJIT built by ([^\0]*)? targeting ([^\0]*)-([^\0]*)\0', contents)
+    match = re.search(b'RyuJIT built by ([^\0]+?) targeting ([^\0]+?)-([^\0]+?)(| \(with native PGO\)| \(without native PGO\)|)\0', contents)
     if match is None:
-        return "unknown"
+        return None
 
-    return match.group(1).decode("ascii")
+    version = match.group(1).decode("ascii")
+    with_pgo_data = "with native PGO" in match.group(4).decode("ascii")
+    return (version, with_pgo_data)
 
 ################################################################################
 # Helper classes
@@ -1492,15 +1494,21 @@ class SuperPMIReplayAsmDiffs:
 
         # Set up some settings we'll use below.
 
+        # These vars are force overridden in the SPMI runs for both the base and diff, always.
+        replay_vars = {
+            "DOTNET_JitAlignLoops": "0", # disable loop alignment to filter noise
+            "DOTNET_JitEnableNoWayAssert": "1",
+            "DOTNET_JitNoForceFallback": "1",
+        }
+
+        # These vars are used in addition to the replay vars when creating disassembly for the interesting contexts
         asm_dotnet_vars = {
             "DOTNET_JitDisasm": "*",
             "DOTNET_JitUnwindDump": "*",
             "DOTNET_JitEHDump": "*",
-            "DOTNET_JitAlignLoops": "0", # disable loop alignment to filter noise
             "DOTNET_JitDiffableDasm": "1",
-            "DOTNET_JitEnableNoWayAssert": "1",
-            "DOTNET_JitNoForceFallback": "1",
-            "DOTNET_JitDisasmWithGC": "1" }
+            "DOTNET_JitDisasmWithGC": "1"
+        }
 
         if self.coreclr_args.gcinfo:
             asm_dotnet_vars.update({
@@ -1529,16 +1537,27 @@ class SuperPMIReplayAsmDiffs:
         altjit_replay_flags = target_flags
 
         base_option_flags = []
+        base_option_flags_for_diff_artifact = []
+        diff_option_flags = []
+        diff_option_flags_for_diff_artifact = []
+
+        for key, val in replay_vars.items():
+            assert(key.startswith("DOTNET_"))
+            name = key[len("DOTNET_"):]
+            base_option_flags += [ "-jitoption", "force", name + "=" + val ]
+            base_option_flags_for_diff_artifact += [ "-jitoption", "force", name + "=" + val ]
+            diff_option_flags += [ "-jit2option", "force", name + "=" + val ]
+            diff_option_flags_for_diff_artifact += [ "-jitoption", "force", name + "=" + val ]
+
         if self.coreclr_args.base_jit_option:
             for o in self.coreclr_args.base_jit_option:
                 base_option_flags += "-jitoption", o
+                base_option_flags_for_diff_artifact += "-jitoption", o
         if self.coreclr_args.jitoption:
             for o in self.coreclr_args.jitoption:
                 base_option_flags += "-jitoption", o
-        base_option_flags_for_diff_artifact = base_option_flags
+                base_option_flags_for_diff_artifact += "-jitoption", o
 
-        diff_option_flags = []
-        diff_option_flags_for_diff_artifact = []
         if self.coreclr_args.diff_jit_option:
             for o in self.coreclr_args.diff_jit_option:
                 diff_option_flags += "-jit2option", o
@@ -1746,6 +1765,8 @@ class SuperPMIReplayAsmDiffs:
                     logging.info("Differences found. To replay SuperPMI use:".format(len(diffs)))
 
                     logging.info("")
+                    for var, value in replay_vars.items():
+                        print_platform_specific_environment_vars(logging.INFO, self.coreclr_args, var, value)
                     for var, value in asm_dotnet_vars.items():
                         print_platform_specific_environment_vars(logging.INFO, self.coreclr_args, var, value)
                     logging.info("%s %s -c ### %s %s", self.superpmi_path, " ".join(altjit_replay_flags), self.diff_jit_path, mch_file)
@@ -2220,13 +2241,26 @@ class SuperPMIReplayThroughputDiff:
             for o in self.coreclr_args.diff_jit_option:
                 diff_option_flags += "-jit2option", o
 
-        base_jit_compiler_version = determine_clrjit_compiler_version(self.base_jit_path)
-        diff_jit_compiler_version = determine_clrjit_compiler_version(self.diff_jit_path)
+        base_jit_build_string_decoded = decode_clrjit_build_string(self.base_jit_path)
+        diff_jit_build_string_decoded = decode_clrjit_build_string(self.diff_jit_path)
 
-        if base_jit_compiler_version != diff_jit_compiler_version:
-            logging.warning("Warning: Different compilers used for base and diff JITs. Results may be misleading.")
-            logging.warning("  Base JIT's compiler: {}".format(base_jit_compiler_version))
-            logging.warning("  Diff JIT's compiler: {}".format(diff_jit_compiler_version))
+        if not base_jit_build_string_decoded:
+            logging.warning("Warning: Could not decode base JIT build string")
+        if not diff_jit_build_string_decoded:
+            logging.warning("Warning: Could not decode diff JIT build string")
+        if base_jit_build_string_decoded and diff_jit_build_string_decoded:
+            (base_jit_compiler_version, base_jit_with_native_pgo) = base_jit_build_string_decoded
+            (diff_jit_compiler_version, diff_jit_with_native_pgo) = diff_jit_build_string_decoded
+
+            if base_jit_compiler_version != diff_jit_compiler_version:
+                logging.warning("Warning: Different compilers used for base and diff JITs. Results may be misleading.")
+                logging.warning("  Base JIT's compiler: {}".format(base_jit_compiler_version))
+                logging.warning("  Diff JIT's compiler: {}".format(diff_jit_compiler_version))
+
+            if base_jit_with_native_pgo:
+                logging.warning("Warning: Base JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.")
+            if diff_jit_with_native_pgo:
+                logging.warning("Warning: Diff JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.")
 
         tp_diffs = []
 
@@ -2324,17 +2358,30 @@ class SuperPMIReplayThroughputDiff:
                 os.remove(overall_md_summary_file)
 
             with open(overall_md_summary_file, "w") as write_fh:
-                self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_compiler_version, diff_jit_compiler_version)
+                self.write_tpdiff_markdown_summary(write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded)
                 logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
         return True
         ################################################################################################ end of replay_with_throughput_diff()
 
-    def write_tpdiff_markdown_summary(self, write_fh, tp_diffs, base_jit_compiler_version, diff_jit_compiler_version):
-        if base_jit_compiler_version != diff_jit_compiler_version:
-            write_fh.write("Warning: Different compilers used for base and diff JITs. Results may be misleading.\n")
-            write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
-            write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
+    def write_tpdiff_markdown_summary(self, write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded):
+        if not base_jit_build_string_decoded:
+            write_fh.write("{} Could not decode base JIT build string".format(html_color("red", "Warning:")))
+        if not diff_jit_build_string_decoded:
+            write_fh.write("{} Could not decode diff JIT build string".format(html_color("red", "Warning:")))
+        if base_jit_build_string_decoded and diff_jit_build_string_decoded:
+            (base_jit_compiler_version, base_jit_with_native_pgo) = base_jit_build_string_decoded
+            (diff_jit_compiler_version, diff_jit_with_native_pgo) = diff_jit_build_string_decoded
+
+            if base_jit_compiler_version != diff_jit_compiler_version:
+                write_fh.write("{} Different compilers used for base and diff JITs. Results may be misleading.\n".format(html_color("red", "Warning:")))
+                write_fh.write("Base JIT's compiler: {}\n".format(base_jit_compiler_version))
+                write_fh.write("Diff JIT's compiler: {}\n".format(diff_jit_compiler_version))
+
+            if base_jit_with_native_pgo:
+                write_fh.write("{} Base JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
+            if diff_jit_with_native_pgo:
+                write_fh.write("{} Diff JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
 
         # We write two tables, an overview one with just significantly
         # impacted collections and a detailed one that includes raw

@@ -319,13 +319,33 @@ namespace System.Text.Json.Reflection
 
         public static object? GetDefaultValue(this ParameterInfo parameterInfo)
         {
+            Type parameterType = parameterInfo.ParameterType;
             object? defaultValue = parameterInfo.DefaultValue;
 
-            // DBNull.Value is sometimes used as the default value (returned by reflection) of nullable params in place of null.
-            if (defaultValue == DBNull.Value && parameterInfo.ParameterType != typeof(DBNull))
+            if (defaultValue is null)
             {
                 return null;
             }
+
+            // DBNull.Value is sometimes used as the default value (returned by reflection) of nullable params in place of null.
+            if (defaultValue == DBNull.Value && parameterType != typeof(DBNull))
+            {
+                return null;
+            }
+
+#if !BUILDING_SOURCE_GENERATOR
+            // Default values of enums or nullable enums are represented using the underlying type and need to be cast explicitly
+            // cf. https://github.com/dotnet/runtime/issues/68647
+            if (parameterType.IsEnum)
+            {
+                return Enum.ToObject(parameterType, defaultValue);
+            }
+
+            if (Nullable.GetUnderlyingType(parameterType) is Type underlyingType && underlyingType.IsEnum)
+            {
+                return Enum.ToObject(underlyingType, defaultValue);
+            }
+#endif
 
             return defaultValue;
         }

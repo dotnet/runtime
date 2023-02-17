@@ -210,7 +210,7 @@ namespace System.Reflection.Runtime.TypeInfos
             Debug.Assert(fullname != null);
 
             // Get namespace
-            int nsDelimiter = fullname.LastIndexOf(".", StringComparison.Ordinal);
+            int nsDelimiter = fullname.LastIndexOf('.');
             if (nsDelimiter != -1)
             {
                 ns = fullname.Substring(0, nsDelimiter);

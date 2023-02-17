@@ -1508,9 +1508,10 @@ namespace System
                 return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
-            if (separators.IsEmpty)
+            if (separators.IsEmpty && count > Length)
             {
-                // Caller is already splitting on whitespace; no need for separate trim step
+                // Caller is already splitting on whitespace; no need for separate trim step if the count is sufficient
+                // to examine the whole input.
                 options &= ~StringSplitOptions.TrimEntries;
             }
 

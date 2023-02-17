@@ -142,6 +142,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            factory.MetadataManager.GetDependenciesForGenericDictionary(ref result, factory, _owningType);
+
             return result;
         }
 

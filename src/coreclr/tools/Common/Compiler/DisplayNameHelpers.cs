@@ -89,10 +89,7 @@ namespace ILCompiler
             if (method.Signature.Length > 0)
             {
                 for (int i = 0; i < method.Signature.Length - 1; i++)
-                {
-                    TypeDesc instantiatedType = method.Signature[i].InstantiateSignature(method.OwningType.Instantiation, method.Instantiation);
-                    sb.Append(instantiatedType.GetDisplayNameWithoutNamespace()).Append(',');
-                }
+                    sb.Append(method.Signature[i].GetDisplayNameWithoutNamespace()).Append(',');
 
                 sb.Append(method.Signature[method.Signature.Length - 1].GetDisplayNameWithoutNamespace());
             }

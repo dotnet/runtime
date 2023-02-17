@@ -40,9 +40,17 @@ export const
     traceBranchDisplacements = false,
     // Trace when we reject something for being too small
     traceTooSmall = false,
+    // For instrumented methods, trace their exact IP during execution
+    traceEip = false,
     // Wraps traces in a JS function that will trap errors and log the trace responsible.
     // Very expensive!!!!
     trapTraceErrors = false,
+    // When eliminating a null check, replace it with a runtime 'not null' assertion
+    //  that will print a diagnostic message if the value is actually null
+    nullCheckValidation = false,
+    // If we encounter an enter opcode that looks like a loop body and it was already
+    //  jitted, we should abort the current trace since it's not worth continuing
+    abortAtJittedLoopBodies = true,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code
@@ -57,11 +65,18 @@ export const callTargetCounts : { [method: number] : number } = {};
 export let mostRecentTrace : InstrumentedTraceState | undefined;
 export let mostRecentOptions : JiterpreterOptions | undefined = undefined;
 
+// You can disable an opcode for debugging purposes by adding it to this list,
+//  instead of aborting the trace it will insert a bailout instead. This means that you will
+//  have trace code generated as if the opcode were otherwise enabled
 export const disabledOpcodes : Array<MintOpcode> = [
 ];
 
+// Detailed output and/or instrumentation will happen when a trace is jitted if the method fullname has a match
+// Having any items in this list will add some overhead to the jitting of *all* traces
+// These names can be substrings and instrumentation will happen if the substring is found in the full name
 export const instrumentedMethodNames : Array<string> = [
     // "System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>& System.Collections.Generic.Dictionary`2<System.Type, System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>>:FindValue (System.Type)"
+    // "InternalInsertNode"
 ];
 
 export class InstrumentedTraceState {
@@ -204,13 +219,18 @@ export let traceImports : Array<[string, string, Function]> | undefined;
 
 export let _wrap_trace_function: Function;
 
-export const mathOps1 = [
+const mathOps1 = [
     "acos",
     "cos",
     "sin",
     "asin",
     "tan",
     "atan"
+];
+
+const mathOps2 = [
+    "rem",
+    "atan2",
 ];
 
 function getTraceImports () {
@@ -234,18 +254,21 @@ function getTraceImports () {
         importDef("localloc", getRawCwrap("mono_jiterp_localloc")),
         ["ckovr_i4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_i4")],
         ["ckovr_u4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_u4")],
-        ["rem", "mathop_dd_d", getRawCwrap("mono_jiterp_fmod")],
-        ["atan2", "mathop_dd_d", getRawCwrap("mono_jiterp_atan2")],
-        ["newobj_i", "newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")],
-        ["ld_del_ptr", "ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")],
-        ["ldtsflda", "ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")],
-        ["conv_ovf", "conv_ovf", getRawCwrap("mono_jiterp_conv_ovf")],
-        ["relop_fp", "relop_fp", getRawCwrap("mono_jiterp_relop_fp")],
-        ["safepoint", "safepoint", getRawCwrap("mono_jiterp_auto_safepoint")],
-        ["hashcode", "hashcode", getRawCwrap("mono_jiterp_get_hashcode")],
-        ["hascsize", "hascsize", getRawCwrap("mono_jiterp_object_has_component_size")],
-        ["hasflag", "hasflag", getRawCwrap("mono_jiterp_enum_hasflag")],
-        ["array_rank", "array_rank", getRawCwrap("mono_jiterp_get_array_rank")],
+        importDef("newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")),
+        importDef("ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")),
+        importDef("ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")),
+        importDef("conv", getRawCwrap("mono_jiterp_conv")),
+        importDef("relop_fp", getRawCwrap("mono_jiterp_relop_fp")),
+        importDef("safepoint", getRawCwrap("mono_jiterp_do_safepoint")),
+        importDef("hashcode", getRawCwrap("mono_jiterp_get_hashcode")),
+        importDef("try_hash", getRawCwrap("mono_jiterp_try_get_hashcode")),
+        importDef("hascsize", getRawCwrap("mono_jiterp_object_has_component_size")),
+        importDef("hasflag", getRawCwrap("mono_jiterp_enum_hasflag")),
+        importDef("array_rank", getRawCwrap("mono_jiterp_get_array_rank")),
+        importDef("stfld_o", getRawCwrap("mono_jiterp_set_object_field")),
+        importDef("transfer", getRawCwrap("mono_jiterp_trace_transfer")),
+        importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
+        importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -253,9 +276,17 @@ function getTraceImports () {
         traceImports.push(["trace_args", "trace_eip", trace_operands]);
     }
 
+    if (nullCheckValidation)
+        traceImports.push(importDef("notnull", assert_not_null));
+
     for (let i = 0; i < mathOps1.length; i++) {
         const mop = mathOps1[i];
-        traceImports.push([mop, "mathop_d_d", (<any>Math)[mop]]);
+        traceImports.push([mop, "mathop_d_d", getRawCwrap("mono_jiterp_math_" + mop)]);
+    }
+
+    for (let i = 0; i < mathOps2.length; i++) {
+        const mop = mathOps2[i];
+        traceImports.push([mop, "mathop_dd_d", getRawCwrap("mono_jiterp_math_" + mop)]);
     }
 
     return traceImports;
@@ -444,7 +475,7 @@ function initialize_builder (builder: WasmBuilder) {
         }, WasmValtype.void, true
     );
     builder.defineType(
-        "conv_ovf", {
+        "conv", {
             "destination": WasmValtype.i32,
             "source": WasmValtype.i32,
             "opcode": WasmValtype.i32,
@@ -469,6 +500,11 @@ function initialize_builder (builder: WasmBuilder) {
         }, WasmValtype.i32, true
     );
     builder.defineType(
+        "try_hash", {
+            "ppObj": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
         "hascsize", {
             "ppObj": WasmValtype.i32,
         }, WasmValtype.i32, true
@@ -487,6 +523,52 @@ function initialize_builder (builder: WasmBuilder) {
             "source": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
+    builder.defineType(
+        "stfld_o", {
+            "locals": WasmValtype.i32,
+            "fieldOffsetBytes": WasmValtype.i32,
+            "targetLocalOffsetBytes": WasmValtype.i32,
+            "sourceLocalOffsetBytes": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "notnull", {
+            "ptr": WasmValtype.i32,
+            "traceIp": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "cmpxchg_i32", {
+            "dest": WasmValtype.i32,
+            "newVal": WasmValtype.i32,
+            "expected": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "cmpxchg_i64", {
+            "dest": WasmValtype.i32,
+            "newVal": WasmValtype.i32,
+            "expected": WasmValtype.i32,
+            "oldVal": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "transfer", {
+            "displacement": WasmValtype.i32,
+            "trace": WasmValtype.i32,
+            "frame": WasmValtype.i32,
+            "locals": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+}
+
+function assert_not_null (
+    value: number, traceIp: MintOpcodePtr
+) {
+    if (value)
+        return;
+    const info = traceInfo[<any>traceIp];
+    throw new Error(`expected non-null value in trace ${info.name} but found null`);
 }
 
 // returns function id
@@ -528,7 +610,11 @@ function generate_wasm (
     let compileStarted = 0;
     let rejected = true, threw = false;
 
-    const instrument = methodFullName && (instrumentedMethodNames.indexOf(methodFullName) >= 0);
+    const instrument = methodFullName && (
+        instrumentedMethodNames.findIndex(
+            (filter) => methodFullName.indexOf(filter) >= 0
+        ) >= 0
+    );
     const instrumentedTraceId = instrument ? nextInstrumentedTraceId++ : 0;
     if (instrument) {
         console.log(`instrumenting: ${methodFullName}`);
@@ -581,8 +667,9 @@ function generate_wasm (
             "math_lhs32": WasmValtype.i32,
             "math_rhs32": WasmValtype.i32,
             "math_lhs64": WasmValtype.i64,
-            "math_rhs64": WasmValtype.i64
-            // "tempi64": WasmValtype.i64
+            "math_rhs64": WasmValtype.i64,
+            "temp_f32": WasmValtype.f32,
+            "temp_f64": WasmValtype.f64,
         });
 
         if (emitPadding) {
@@ -702,6 +789,11 @@ function generate_wasm (
             console.log(`// MONO_WASM: ${traceName} generated, blob follows //`);
             let s = "", j = 0;
             try {
+                // We may have thrown an uncaught exception while inside a block,
+                //  so we need to pop it for getArrayView to work.
+                while (builder.activeBlocks > 0)
+                    builder.endBlock();
+
                 if (builder.inSection)
                     builder.endSection();
             } catch {
@@ -816,8 +908,8 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
     if (!mostRecentOptions.enableStats && (b !== undefined))
         return;
 
-    console.log(`// generated: ${counters.bytesGenerated} wasm bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
-    console.log(`// time spent: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm`);
+    console.log(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
+    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated`);
     if (concise)
         return;
 
@@ -901,7 +993,6 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                         continue;
 
                     // not worth implementing / too difficult
-                    case "intrins_ordinal_ignore_case_ascii":
                     case "intrins_marvin_block":
                     case "intrins_ascii_chars_to_uppercase":
                     case "newarr":

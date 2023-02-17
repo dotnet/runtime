@@ -35,3 +35,9 @@ extern "C" DLL_EXPORT void FillOutPtr(intptr_t *p)
 {
     *p = 60;
 }
+
+extern "C" DLL_EXPORT void FillOutIntParameter(intptr_t *p)
+{
+    *p = 50;
+}
+

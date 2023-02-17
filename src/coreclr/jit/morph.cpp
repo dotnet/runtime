@@ -3976,13 +3976,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
             if (!omitCopy && fgGlobalMorph)
             {
-                omitCopy = !varDsc->lvPromoted && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
-            }
-
-            if (!omitCopy && (totalAppearances == 1))
-            {
-                // fgMightHaveLoop() is expensive; check it last, only if necessary.
-                omitCopy = call->IsNoReturn() || !fgMightHaveLoop();
+                omitCopy = !varDsc->lvPromoted && !varDsc->lvIsStructField && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
             }
 
             if (omitCopy)

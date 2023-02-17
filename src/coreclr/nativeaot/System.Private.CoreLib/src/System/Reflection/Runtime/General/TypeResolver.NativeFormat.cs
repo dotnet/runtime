@@ -17,6 +17,7 @@ using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
 using Internal.Metadata.NativeFormat;
+using NativeFormatModifiedType = global::Internal.Metadata.NativeFormat.ModifiedType;
 
 namespace System.Reflection.Runtime.General
 {
@@ -45,7 +46,7 @@ namespace System.Reflection.Runtime.General
                 return typeDefRefOrSpec.ToTypeSpecificationHandle(reader).TryResolveTypeSignature(reader, typeContext, ref exception);
             else if (handleType == HandleType.ModifiedType)
             {
-                ModifiedType modifiedType = typeDefRefOrSpec.ToModifiedTypeHandle(reader).GetModifiedType(reader);
+                NativeFormatModifiedType modifiedType = typeDefRefOrSpec.ToModifiedTypeHandle(reader).GetModifiedType(reader);
                 return modifiedType.Type.TryResolve(reader, typeContext, ref exception);
             }
             else

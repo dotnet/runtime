@@ -379,7 +379,6 @@
     <Compile Include="Compiler\Dataflow\RequireDynamicallyAccessedMembersAction.cs" />
     <Compile Include="Compiler\Dataflow\ScannerExtensions.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisAssignmentPattern.cs" />
-    <Compile Include="Compiler\Dataflow\TrimAnalysisGenericInstantiationAccessPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisReflectionAccessPattern.cs" />
@@ -388,7 +387,6 @@
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedTrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedMethodNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedTypeDefinitionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
