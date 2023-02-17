@@ -283,7 +283,7 @@ GenTree* Lowering::TryLowerAndNegativeOne(GenTreeOp* node)
 
     use.ReplaceWith(op1);
 
-    BlockRange().Remove(node->gtGetOp2());
+    BlockRange().Remove(op2);
     BlockRange().Remove(node);
 
     return op1;
