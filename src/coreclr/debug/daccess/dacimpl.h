@@ -815,7 +815,8 @@ class ClrDataAccess
       public ISOSDacInterface9,
       public ISOSDacInterface10,
       public ISOSDacInterface11,
-      public ISOSDacInterface12
+      public ISOSDacInterface12,
+      public ISOSDacInterface13
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1204,6 +1205,8 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetGlobalAllocationContext(
         CLRDATA_ADDRESS *allocPtr,
         CLRDATA_ADDRESS *allocLimit);
+
+    virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);
 
     //
     // ClrDataAccess.
