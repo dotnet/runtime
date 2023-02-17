@@ -507,6 +507,11 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
         return false;
     }
 
+#ifdef TARGET_X86
+    // There are no upper 32-bits on x86, so return false.
+    return false;
+#endif // TARGET_X86
+
     instrDesc* id  = emitLastIns;
     insFormat  fmt = id->idInsFmt();
 
@@ -641,6 +646,11 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
     {
         return false;
     }
+
+#ifdef TARGET_X86
+    // There are no upper 32-bits on x86, so return false.
+    return false;
+#endif // TARGET_X86
 
     instrDesc* id = emitLastIns;
 
