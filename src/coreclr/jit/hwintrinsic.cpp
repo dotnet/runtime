@@ -325,7 +325,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
+    bool isIsaSupported                         = comp->compSupportsHWIntrinsic(isa);
+    bool isBaselineVector512IsaUsedAndSupported = false;
 
     bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
 #ifdef TARGET_XARCH
@@ -345,7 +346,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         }
         else if (strcmp(className, "Vector512") == 0)
         {
-            isa = InstructionSet_AVX512F;
+            isBaselineVector512IsaUsedAndSupported = comp->IsBaselineVector512IsaSupported();
         }
     }
 #endif
@@ -380,7 +381,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
         if (isIsaSupported)
         {
-            if (comp->compExactlyDependsOn(isa))
+            if (comp->compExactlyDependsOn(isa) || isBaselineVector512IsaUsedAndSupported)
             {
                 return NI_IsSupported_True;
             }
@@ -430,10 +431,9 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
     else if (isa == InstructionSet_Vector512)
     {
-        // We support some Vector512 intrinsics when AVX512F, AVX512BW, AVX512CD, AVX512DQ are available.
+        // We support Vector512 intrinsics when AVX512F, AVX512BW, AVX512DQ are available.
         if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
             !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512BW) &&
-            !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512CD) &&
             !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
         {
             return NI_Illegal;

@@ -174,16 +174,12 @@ struct simd64_t
 
     bool operator==(const simd64_t& other) const
     {
-        return (u64[0] == other.u64[0]) && (u64[1] == other.u64[1]) && (u64[2] == other.u64[2]) &&
-               (u64[3] == other.u64[3]) && (u64[4] == other.u64[4]) && (u64[5] == other.u64[5]) &&
-               (u64[6] == other.u64[6]) && (u64[7] == other.u64[7]);
+        return (v256[0] == other.v256[0]) && (v256[1] == other.v256[1]);
     }
 
     bool operator!=(const simd64_t& other) const
     {
-        return (u64[0] != other.u64[0]) || (u64[1] != other.u64[1]) || (u64[2] != other.u64[2]) ||
-               (u64[3] != other.u64[3]) || (u64[4] != other.u64[4]) || (u64[5] != other.u64[5]) ||
-               (u64[6] != other.u64[6]) || (u64[7] != other.u64[7]);
+        return (v256[0] != other.v256[0]) || (v256[1] != other.v256[1]);
     }
 };
 

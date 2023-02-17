@@ -17702,13 +17702,12 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd64
     {
         case NI_Vector512_Create:
         {
-            // Zero out the32Val
+            // Zero out the simd64Val
             simd64Val = {};
 
             // These intrinsics are meant to set the same value to every element.
             if ((argCnt == 1) && HandleArgForHWIntrinsicCreate(node->Op(1), 0, simd64Val, simdBaseType))
             {
-
                 cnsArgCnt = 1;
             }
             else

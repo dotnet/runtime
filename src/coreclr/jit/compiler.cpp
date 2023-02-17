@@ -2280,16 +2280,18 @@ void Compiler::compSetProcessor()
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
+    // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL and
+    // AVX512F/AVX512BW/AVX512CD/AVX512DQ/VX512VL have been shipped together historically.
+    // It is therefore unlikely that future CPUs only support "just one" and
+    // not worth the additional complexity in the JIT to support.
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F) &&
         instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD) &&
         instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ))
     {
         if (!DoJitStressEvexEncoding())
         {
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
             instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
         }

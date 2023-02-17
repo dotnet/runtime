@@ -5790,7 +5790,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // This applies to 512bit AVX512 instructions as well.
     if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && (GetEmitter()->Contains256bitOrMoreAVX()))
     {
-        assert(GetEmitter()->Contains256bitOrMoreAVX() && compiler->canUseVexEncoding());
+        assert(compiler->canUseVexEncoding());
         instGen(INS_vzeroupper);
     }
 

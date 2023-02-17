@@ -8773,11 +8773,8 @@ private:
     var_types getSIMDVectorType()
     {
 #if defined(TARGET_XARCH)
-        if (getSIMDSupportLevel() == SIMD_AVX512F_Supported)
-        {
-            return TYP_SIMD64;
-        }
-        else if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
+        // TODO-XArch-AVX512 : Return TYP_SIMD64 once Vector<T> supports AVX512.
+        if (getSIMDSupportLevel() >= SIMD_AVX2_Supported)
         {
             return TYP_SIMD32;
         }
@@ -9093,6 +9090,41 @@ private:
         // Report intent to use the ISA to the EE
         compExactlyDependsOn(isa);
         return opts.compSupportsISA.HasInstructionSet(isa);
+    }
+
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // IsBaselineVector512IsaSupportedDebugOnly - Does the target have isa support required for Vector512.
+    //
+    // Returns:
+    //    `true` if AVX512F, AVX512BW and AVX512DQ are supported.
+    //
+    bool IsBaselineVector512IsaSupportedDebugOnly() const
+    {
+#ifdef TARGET_AMD64
+        return (compIsaSupportedDebugOnly(InstructionSet_AVX512F) &&
+                compIsaSupportedDebugOnly(InstructionSet_AVX512BW) &&
+                compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
+#else
+        return false;
+#endif
+    }
+#endif // DEBUG
+
+    //------------------------------------------------------------------------
+    // IsBaselineVector512IsaSupported - Does the target have isa support required for Vector512.
+    //
+    // Returns:
+    //    `true` if AVX512F, AVX512BW and AVX512DQ are supported.
+    //
+    bool IsBaselineVector512IsaSupported() const
+    {
+#ifdef TARGET_AMD64
+        return (compExactlyDependsOn(InstructionSet_AVX512F) && compExactlyDependsOn(InstructionSet_AVX512BW) &&
+                compExactlyDependsOn(InstructionSet_AVX512DQ));
+#else
+        return false;
+#endif
     }
 
     bool canUseVexEncoding() const

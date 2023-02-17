@@ -169,7 +169,7 @@ const char* CodeGen::genSizeStr(emitAttr attr)
 
     unsigned size = EA_SIZE(attr);
 
-    assert(size == 0 || size == 1 || size == 2 || size == 4 || size == 8 || size == 16 || size == 32 || size == 64);
+    assert(genMaxOneBit(size) && (size <= 64));
 
     if (EA_ATTR(size) == attr)
     {

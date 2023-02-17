@@ -1936,6 +1936,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     GenTree* tmp3 = nullptr;
 
     bool isConstant = false;
+    // TODO-XArch-AVX512: Keep only one path once GenTreeVecCon supports gtSimd64Val.
     if (simdSize != 64)
     {
         isConstant = GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val);
@@ -1949,22 +1950,22 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     if (isConstant)
     {
+        assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == 32) || (simdSize == 64));
+
+        for (GenTree* arg : node->Operands())
+        {
+#if !defined(TARGET_64BIT)
+            if (arg->OperIsLong())
+            {
+                BlockRange().Remove(arg->AsOp()->gtGetOp1());
+                BlockRange().Remove(arg->AsOp()->gtGetOp2());
+            }
+#endif // !TARGET_64BIT
+            BlockRange().Remove(arg);
+        }
+
         if (simdSize != 64)
         {
-            assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16) || (simdSize == 32));
-
-            for (GenTree* arg : node->Operands())
-            {
-#if !defined(TARGET_64BIT)
-                if (arg->OperIsLong())
-                {
-                    BlockRange().Remove(arg->AsOp()->gtGetOp1());
-                    BlockRange().Remove(arg->AsOp()->gtGetOp2());
-                }
-#endif // !TARGET_64BIT
-                BlockRange().Remove(arg);
-            }
-
             GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType);
 
             vecCon->gtSimd32Val = simd32Val;
@@ -1986,19 +1987,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         }
         else
         {
-            for (GenTree* arg : node->Operands())
-            {
-#if !defined(TARGET_64BIT)
-                if (arg->OperIsLong())
-                {
-                    BlockRange().Remove(arg->AsOp()->gtGetOp1());
-                    BlockRange().Remove(arg->AsOp()->gtGetOp2());
-                }
-#endif // !TARGET_64BIT
-                BlockRange().Remove(arg);
-            }
-
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
 
             // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
             // We will be constructing the following parts:
@@ -2197,7 +2186,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         if (intrinsicId == NI_Vector512_Create)
         {
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
             // We will be constructing the following parts:
             //          /--*  op1  T
             //   tmp1 = *  HWINTRINSIC   simd32 T CreateScalarUnsafe
@@ -2617,6 +2606,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     GenTree* op2 = node->Op(2);
 
+    // TODO-XArch-AVX512 : Merge the NI_Vector512_Create and NI_Vector256_Create paths below.
     // We have the following (where simd is simd16 or simd32):
     //          /--*  op1 T
     //          +--*  ... T
@@ -2624,7 +2614,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     //   node = *  HWINTRINSIC   simd   T Create
     if (intrinsicId == NI_Vector512_Create)
     {
-        assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX2));
+        assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
 
         // We will be constructing the following parts:
         //          /--*  op1 T
@@ -2643,7 +2633,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         //   ...
         //   var lo   = Vector256.Create(op1, ...);
         //   var hi   = Vector256.Create(..., opN);
-        //   return Avx2.InsertVector512F(lo, hi, 0x01);
+        //   return Avx512F.InsertVector512(lo, hi, 0x01);
 
         // Each Vector256.Create call gets half the operands. That is:
         //   lo = Vector256.Create(op1, op2);

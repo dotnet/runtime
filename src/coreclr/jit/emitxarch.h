@@ -402,6 +402,8 @@ bool IsWEvexOpcodeExtension(const instrDesc* id)
         case INS_vpermilpsvar:
         case INS_movdqu8:
         case INS_movdqu32:
+        case INS_vinsertf32x8:
+        case INS_vinserti32x8:
         {
             return false; // W0
         }
