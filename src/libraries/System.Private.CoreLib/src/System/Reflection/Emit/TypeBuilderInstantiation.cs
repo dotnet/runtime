@@ -13,8 +13,11 @@ namespace System.Reflection.Emit
      */
     internal sealed partial class TypeBuilderInstantiation : TypeInfo
     {
+        #region Fields need to be kept in order
+        // For Mono runtime its important to keep this declaration order in sync with MonoReflectionGenericClass struct in object-internals.h
         private Type _genericType;
         private Type[] _typeArguments;
+        #endregion
         private string? _strFullQualName;
         internal Hashtable _hashtable;
 

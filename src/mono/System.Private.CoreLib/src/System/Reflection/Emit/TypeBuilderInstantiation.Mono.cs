@@ -42,7 +42,7 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     internal partial class TypeBuilderInstantiation
     {
-        // _genericType and _typeArguments fields defined in shared TypeBuilderInstantiation should kept in sync with MonoReflectionGenericClass in object-internals.h
+        //  Sequence of _genericType and _typeArguments fields should kept in sync with MonoReflectionGenericClass in object-internals.h
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "Reflection.Emit is not subject to trimming")]

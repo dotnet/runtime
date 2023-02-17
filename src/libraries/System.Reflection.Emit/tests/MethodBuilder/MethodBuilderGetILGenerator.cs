@@ -121,7 +121,8 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal("TestType[]", createdMethod.Invoke(null, null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/82257", TestRuntimes.Mono)]
         public void LoadByRefTypeInILGeneratedMethod()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

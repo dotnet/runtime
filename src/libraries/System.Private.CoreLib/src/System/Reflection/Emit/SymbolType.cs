@@ -19,9 +19,12 @@ namespace System.Reflection.Emit
     internal sealed partial class SymbolType : TypeInfo
     {
         #region Data Members
+        #region Fields need to be kept in order
+        // For Mono runtime its important to keep this declaration order in sync with MonoReflectionSymbolType struct in object-internals.h
         internal Type _baseType = null!;
         internal TypeKind _typeKind;
         internal int _rank;        // count of dimension
+        #endregion
         // If LowerBound and UpperBound is equal, that means one element.
         // If UpperBound is less than LowerBound, then the size is not specified.
         internal int[] _iaLowerBound;

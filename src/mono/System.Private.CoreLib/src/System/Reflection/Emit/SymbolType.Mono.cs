@@ -37,7 +37,7 @@ namespace System.Reflection.Emit
     [StructLayout(LayoutKind.Sequential)]
     internal partial class SymbolType
     {
-        // _baseType, _typeKind and _rank fields defined in shared SymbolType should kept in sync with MonoReflectionSymbolType in object-internals.h
+        // Sequence of _baseType, _typeKind and _rank fields should kept in sync with MonoReflectionSymbolType in object-internals.h
 
         internal override Type InternalResolve()
         {
