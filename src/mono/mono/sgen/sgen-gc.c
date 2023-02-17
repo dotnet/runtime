@@ -4097,7 +4097,7 @@ static void check_pressure_counts ()
 {
 	if (memory_pressure_gc_count != sgen_gc_collection_count(GENERATION_OLD)) {
 		memory_pressure_gc_count = sgen_gc_collection_count(GENERATION_OLD);
-		memory_pressure_iteration++;
+		mono_atomic_inc_i64((gint64*)&memory_pressure_iteration);
 
 		guint32 p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
 
