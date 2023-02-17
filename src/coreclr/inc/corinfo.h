@@ -1728,10 +1728,10 @@ struct CORINFO_FIELD_INFO
 
 struct CORINFO_THREAD_LOCAL_FIELD_INFO
 {
-    CORINFO_CONST_LOOKUP tlsIndex;
+    uint32_t tlsIndex;
     uint32_t offsetOfThreadLocalStoragePointer; // 0x58 on x64
-    CORINFO_CONST_LOOKUP offsetOfMaxThreadStaticBlocks;
-    CORINFO_CONST_LOOKUP offsetOfThreadStaticBlocks;
+    uint32_t offsetOfMaxThreadStaticBlocks;
+    uint32_t offsetOfThreadStaticBlocks;
     uint32_t threadStaticBlockIndex;
 };
 

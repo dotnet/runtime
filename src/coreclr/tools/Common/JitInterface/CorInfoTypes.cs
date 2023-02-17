@@ -1157,10 +1157,10 @@ namespace Internal.JitInterface
 
     public unsafe struct CORINFO_THREAD_LOCAL_FIELD_INFO
     {
-        public CORINFO_CONST_LOOKUP tlsIndex;
+        public uint tlsIndex;
         public uint offsetOfThreadLocalStoragePointer; // 0x58 on x64
-        public CORINFO_CONST_LOOKUP offsetOfMaxThreadStaticBlocks;
-        public CORINFO_CONST_LOOKUP offsetOfThreadStaticBlocks;
+        public uint offsetOfMaxThreadStaticBlocks;
+        public uint offsetOfThreadStaticBlocks;
         public uint threadStaticBlockIndex;
     };
 

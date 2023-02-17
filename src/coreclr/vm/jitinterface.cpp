@@ -1741,16 +1741,21 @@ void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
     FieldDesc* fieldDesc = (FieldDesc*)field;
     _ASSERTE(fieldDesc->IsThreadStatic());
 
-    pInfo->tlsIndex.accessType = IAT_VALUE;
-    pInfo->tlsIndex.addr = (void*)_tls_index;
-
+    pInfo->tlsIndex = _tls_index;
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
+    pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
+    pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
 
-    pInfo->offsetOfMaxThreadStaticBlocks.accessType = IAT_VALUE;
-    pInfo->offsetOfMaxThreadStaticBlocks.addr = (void*)CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
+    //pInfo->tlsIndex.accessType = IAT_VALUE;
+    //pInfo->tlsIndex.addr = PTR_VOID(dac_cast<PTR_BYTE>(_tls_index));
 
-    pInfo->offsetOfThreadStaticBlocks.accessType = IAT_VALUE;
-    pInfo->offsetOfThreadStaticBlocks.addr = (void*)CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks);
+    //pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
+
+    //pInfo->offsetOfMaxThreadStaticBlocks.accessType = IAT_VALUE;
+    //pInfo->offsetOfMaxThreadStaticBlocks.addr = PTR_VOID(dac_cast<PTR_BYTE>(CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks)));
+
+    //pInfo->offsetOfThreadStaticBlocks.accessType = IAT_VALUE;
+    //pInfo->offsetOfThreadStaticBlocks.addr = PTR_VOID(dac_cast<PTR_BYTE>(CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks)));
 
     pInfo->threadStaticBlockIndex = 0;
 

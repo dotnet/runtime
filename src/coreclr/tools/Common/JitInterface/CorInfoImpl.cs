@@ -2870,11 +2870,11 @@ namespace Internal.JitInterface
 
         private void getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
         {
-            pInfo->tlsIndex = CreateConstLookupToSymbol(null);
+            pInfo->tlsIndex = 5; // CreateConstLookupToSymbol(null);
             pInfo->threadStaticBlockIndex = 0;
-            pInfo->offsetOfThreadLocalStoragePointer = 0;
-            pInfo->offsetOfMaxThreadStaticBlocks = CreateConstLookupToSymbol(null);
-            pInfo->offsetOfThreadStaticBlocks = CreateConstLookupToSymbol(null);
+            pInfo->offsetOfThreadLocalStoragePointer = 0x58;
+            pInfo->offsetOfMaxThreadStaticBlocks = 23; // CreateConstLookupToSymbol(null);
+            pInfo->offsetOfThreadStaticBlocks = 32; // CreateConstLookupToSymbol(null);
         }
 
         private CORINFO_CLASS_STRUCT_* getFieldClass(CORINFO_FIELD_STRUCT_* field)
