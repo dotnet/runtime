@@ -1561,7 +1561,7 @@ public:
     static instruction JumpKindToCmov(emitJumpKind condition);
 #endif
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_LOONGARCH64)
     // Maps a GenCondition code to a sequence of conditional jumps or other conditional instructions
     // such as X86's SETcc. A sequence of instructions rather than just a single one is required for
     // certain floating point conditions.
@@ -1608,7 +1608,7 @@ public:
 
     void genCodeForJcc(GenTreeCC* tree);
     void genCodeForSetcc(GenTreeCC* setcc);
-#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#endif // !TARGET_LOONGARCH64
 };
 
 // A simple phase that just invokes a method on the codegen instance
