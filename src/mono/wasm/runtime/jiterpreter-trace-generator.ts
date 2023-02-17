@@ -519,6 +519,37 @@ export function generate_wasm_body (
                 builder.callImport("hascsize");
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
+
+            case MintOpcode.MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII: {
+                builder.local("pLocals");
+                // valueA (cache in lhs32, we need it again later)
+                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                builder.local("math_lhs32", WasmOpcode.tee_local);
+                // valueB
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+                // compute differentBits = (valueA ^ valueB) << 2
+                builder.appendU8(WasmOpcode.i32_xor);
+                builder.i32_const(2);
+                builder.appendU8(WasmOpcode.i32_shl);
+                builder.local("math_rhs32", WasmOpcode.set_local);
+                // compute indicator
+                builder.local("math_lhs32");
+                builder.i32_const(0x00050005);
+                builder.appendU8(WasmOpcode.i32_add);
+                builder.i32_const(0x00A000A0);
+                builder.appendU8(WasmOpcode.i32_or);
+                builder.i32_const(0x001A001A);
+                builder.appendU8(WasmOpcode.i32_add);
+                builder.i32_const(-8388737); // 0xFF7FFF7F == 4286578559U == -8388737
+                builder.appendU8(WasmOpcode.i32_or);
+                // result = (differentBits & indicator) == 0
+                builder.local("math_rhs32");
+                builder.appendU8(WasmOpcode.i32_and);
+                builder.appendU8(WasmOpcode.i32_eqz);
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                break;
+            }
+
             case MintOpcode.MINT_ARRAY_RANK: {
                 builder.block();
                 // dest, src
