@@ -150,6 +150,7 @@
 %type <int32> iidParamIndex genArity genArityNotEmpty
 %type <float64> float64
 %type <int64> int64
+%type <int32> noCheckOptGroup noCheckOpt
 %type <binstr> sigArgs0 sigArgs1 sigArg type bound bounds1 bytes hexbytes nativeType marshalBlob initOpt compQstring caValue
 %type <binstr> marshalClause
 %type <binstr> fieldInit serInit fieldSerInit
