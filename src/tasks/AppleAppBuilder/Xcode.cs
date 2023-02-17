@@ -455,11 +455,9 @@ internal sealed class Xcode
                     .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                     .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
         }
-        else
-        {
-            File.WriteAllText(Path.Combine(binDir, "util.h"), Utils.GetEmbeddedResource("util.h"));
-            File.WriteAllText(Path.Combine(binDir, "util.m"), Utils.GetEmbeddedResource("util.m"));
-        }
+
+        File.WriteAllText(Path.Combine(binDir, "util.h"), Utils.GetEmbeddedResource("util.h"));
+        File.WriteAllText(Path.Combine(binDir, "util.m"), Utils.GetEmbeddedResource("util.m"));
 
         return binDir;
     }

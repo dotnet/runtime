@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#import "util.h"
+
 static char *bundle_path;
 
 #define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
@@ -254,14 +256,8 @@ mono_ios_runtime_init (void)
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif
 
-    id args_array = [[NSProcessInfo processInfo] arguments];
-    assert ([args_array count] <= 128);
-    const char *managed_argv [128];
-    int argi;
-    for (argi = 0; argi < [args_array count]; argi++) {
-        NSString* arg = [args_array objectAtIndex: argi];
-        managed_argv[argi] = [arg UTF8String];
-    }
+    char **managed_argv;
+    int argi = get_managed_args (&managed_argv);
 
     bool wait_for_debugger = FALSE;
 
@@ -372,6 +368,8 @@ mono_ios_runtime_init (void)
     os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", res);
 
     mono_jit_cleanup (domain);
+
+    free_managed_args (&managed_argv, argi);
 
     exit (res);
 }
