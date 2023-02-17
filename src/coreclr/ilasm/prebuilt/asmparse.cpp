@@ -1921,7 +1921,7 @@ yynewstate:
 		YYAPI_TOKENNAME = YYLEX();
 		YYAPI_CALLAFTERYYLEX(YYAPI_TOKENNAME);
 	}
-	if( ((yyn += YYAPI_TOKENEME(YYAPI_TOKENNAME)) < 0) || (yyn >= YYLAST) ) {
+	if( ((yyn += (short)YYAPI_TOKENEME(YYAPI_TOKENNAME)) < 0) || (yyn >= YYLAST) ) {
 		goto yydefault;
 	}
 	if( YYCHK[ yyn = YYACT[ yyn ] ] == YYAPI_TOKENEME(YYAPI_TOKENNAME) ) {		/* valid shift */
@@ -2028,7 +2028,7 @@ yynewstate:
 
 		yyerrlab:
 			++yynerrs;
-
+            FALLTHROUGH;
 		case 1:
 		case 2: /* incompletely recovered error ... try again */
 
@@ -2078,7 +2078,7 @@ yyreduce:
 		yyval = yypv[1];
  		yyprintf("REDUCE: rule %4d, popped %2d tokens, uncovered state %4d, ",yyn, YYR2[yyn], *yyps);
 		yym = yyn;
-		yyn = YYR1[yyn];		/* consult goto table to find next state */
+		yyn = (short)YYR1[yyn];		/* consult goto table to find next state */
 		yyj = YYPGO[yyn] + *yyps + 1;
 		if( (yyj >= YYLAST) || (YYCHK[ yystate = YYACT[yyj] ] != -yyn) ) {
 			yystate = YYACT[YYPGO[yyn]];
