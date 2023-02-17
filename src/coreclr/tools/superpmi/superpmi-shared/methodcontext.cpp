@@ -3501,6 +3501,10 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 }
 
+void MethodContext::recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) {}
+void MethodContext::dmpGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) {}
+void MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) {}
+
 void MethodContext::recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle,
                                          void**                ppIndirection,
                                          CORINFO_METHOD_HANDLE result)

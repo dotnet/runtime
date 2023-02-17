@@ -686,6 +686,13 @@ void interceptor_ICJI::getFieldInfo(
     original_ICorJitInfo->getFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
+void interceptor_ICJI::getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field,
+          CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+{
+    original_ICorJitInfo->getThreadLocalFieldInfo(field, pInfo);
+}
+
 bool interceptor_ICJI::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {

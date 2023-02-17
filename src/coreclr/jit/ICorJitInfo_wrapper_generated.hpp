@@ -959,6 +959,15 @@ void WrapICorJitInfo::getFieldInfo(
     API_LEAVE(getFieldInfo);
 }
 
+void WrapICorJitInfo::getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field,
+          CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+{
+    API_ENTER(getThreadLocalFieldInfo);
+    wrapHnd->getThreadLocalFieldInfo(field, pInfo);
+    API_LEAVE(getThreadLocalFieldInfo);
+}
+
 bool WrapICorJitInfo::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {

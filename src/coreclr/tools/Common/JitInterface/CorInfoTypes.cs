@@ -1155,6 +1155,15 @@ namespace Internal.JitInterface
         public CORINFO_CONST_LOOKUP fieldLookup;
     };
 
+    public unsafe struct CORINFO_THREAD_LOCAL_FIELD_INFO
+    {
+        public CORINFO_CONST_LOOKUP tlsIndex;
+        public uint offsetOfThreadLocalStoragePointer; // 0x58 on x64
+        public CORINFO_CONST_LOOKUP offsetOfMaxThreadStaticBlocks;
+        public CORINFO_CONST_LOOKUP offsetOfThreadStaticBlocks;
+        public uint threadStaticBlockIndex;
+    };
+
     // System V struct passing
     // The Classification types are described in the ABI spec at https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf
     public enum SystemVClassificationType : byte

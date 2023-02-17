@@ -1713,6 +1713,21 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     EE_TO_JIT_TRANSITION();
 }
 
+/*********************************************************************/
+void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
+                                       CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    EE_TO_JIT_TRANSITION();
+}
+
 //---------------------------------------------------------------------------------------
 //
 bool CEEInfo::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)

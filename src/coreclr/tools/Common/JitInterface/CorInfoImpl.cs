@@ -2868,6 +2868,15 @@ namespace Internal.JitInterface
             return PrintFromUtf16(field.Name, buffer, bufferSize, requiredBufferSize);
         }
 
+        private void getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+        {
+            pInfo->tlsIndex = CreateConstLookupToSymbol(null);
+            pInfo->threadStaticBlockIndex = 0;
+            pInfo->offsetOfThreadLocalStoragePointer = 0;
+            pInfo->offsetOfMaxThreadStaticBlocks = CreateConstLookupToSymbol(null);
+            pInfo->offsetOfThreadStaticBlocks = CreateConstLookupToSymbol(null);
+        }
+
         private CORINFO_CLASS_STRUCT_* getFieldClass(CORINFO_FIELD_STRUCT_* field)
         {
             var fieldDesc = HandleToObject(field);

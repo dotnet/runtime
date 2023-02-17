@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -174,7 +175,7 @@ namespace Thunkerator
             IFDEFING
         }
 
-        private static IEnumerable<FunctionDecl> ParseInput(TextReader tr)
+        private static ReadOnlyCollection<FunctionDecl> ParseInput(StreamReader tr)
         {
             Dictionary<string, TypeReplacement> ThunkReturnTypes = new Dictionary<string, TypeReplacement>();
             Dictionary<string, TypeReplacement> ThunkTypes = new Dictionary<string, TypeReplacement>();
