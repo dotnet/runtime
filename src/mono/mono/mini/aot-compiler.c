@@ -5267,7 +5267,7 @@ MONO_RESTORE_WARNING
 					named += slen;
 				}
 
-				wrapper = mono_marshal_get_managed_wrapper (method, klass, 0, FALSE, error);
+				wrapper = mono_marshal_get_managed_wrapper (method, klass, 0, error);
 				mono_error_assert_ok (error);
 
 				add_method (acfg, wrapper);
@@ -5304,7 +5304,11 @@ MONO_RESTORE_WARNING
 				}
 				mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 
-				wrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, acfg->aot_opts.runtime_init_callback != NULL && export_name != NULL, error);
+				if (acfg->aot_opts.runtime_init_callback != NULL && export_name != NULL)
+					wrapper = mono_marshal_get_runtime_init_managed_wrapper (method, NULL, 0, error);
+				else
+					wrapper = mono_marshal_get_managed_wrapper (method, NULL, 0, error);
+
 				if (!is_ok (error)) {
 					report_loader_error (acfg, error, FALSE, "Unable to generate native entry point '%s' due to '%s'.", mono_method_get_full_name (method), mono_error_get_message (error));
 					continue;

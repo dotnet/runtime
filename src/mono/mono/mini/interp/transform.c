@@ -7730,7 +7730,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					MonoClass *delegate_klass = NULL;
 					MonoGCHandle target_handle = 0;
 					ERROR_DECL (wrapper_error);
-					m = mono_marshal_get_managed_wrapper (m, delegate_klass, target_handle, FALSE, wrapper_error);
+					m = mono_marshal_get_managed_wrapper (m, delegate_klass, target_handle, wrapper_error);
 					if (!is_ok (wrapper_error)) {
 						/* Generate a call that will throw an exception if the
 						 * UnmanagedCallersOnly attribute is used incorrectly */

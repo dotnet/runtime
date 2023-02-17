@@ -1308,7 +1308,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 			} else
 				klass = NULL;
-			ref->method = mono_marshal_get_managed_wrapper (m, klass, 0, FALSE, error);
+			ref->method = mono_marshal_get_managed_wrapper (m, klass, 0, error);
 			if (!is_ok (error))
 				return FALSE;
 			break;
