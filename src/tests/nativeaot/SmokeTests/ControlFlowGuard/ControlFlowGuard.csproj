@@ -6,7 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ControlFlowGuard>Guard</ControlFlowGuard>
     <Optimize>true</Optimize>
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true' or '$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ControlFlowGuard.cs" />
