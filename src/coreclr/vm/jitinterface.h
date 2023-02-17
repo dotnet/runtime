@@ -438,6 +438,8 @@ public:
 
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
                             _Out_writes_ (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
+    static uint32_t ThreadLocalOffset(void* p);
+
 
     DWORD getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftnHnd);
 

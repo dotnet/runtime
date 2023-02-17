@@ -65,6 +65,10 @@
 
 #include "tailcallhelp.h"
 
+EXTERN_C uint32_t _tls_index;
+__declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) void** t_threadStaticBlocks;
+
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
 
@@ -837,6 +841,15 @@ size_t CEEInfo::findNameOfToken (Module* module,
 
 
     return strlen (szFQName);
+}
+
+/* static */
+uint32_t CEEInfo::ThreadLocalOffset(void* p)
+{
+    PTEB Teb = NtCurrentTeb();
+    uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
+    uint8_t* pOurTls = pTls[_tls_index];
+    return (uint32_t)((uint8_t*)p - pOurTls);
 }
 
 CorInfoHelpFunc CEEInfo::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
@@ -1724,6 +1737,22 @@ void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
     } CONTRACTL_END;
 
     JIT_TO_EE_TRANSITION();
+
+    FieldDesc* fieldDesc = (FieldDesc*)field;
+    _ASSERTE(fieldDesc->IsThreadStatic());
+
+    pInfo->tlsIndex.accessType = IAT_VALUE;
+    pInfo->tlsIndex.addr = (void*)_tls_index;
+
+    pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
+
+    pInfo->offsetOfMaxThreadStaticBlocks.accessType = IAT_VALUE;
+    pInfo->offsetOfMaxThreadStaticBlocks.addr = (void*)CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
+
+    pInfo->offsetOfThreadStaticBlocks.accessType = IAT_VALUE;
+    pInfo->offsetOfThreadStaticBlocks.addr = (void*)CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks);
+
+    pInfo->threadStaticBlockIndex = 0;
 
     EE_TO_JIT_TRANSITION();
 }
