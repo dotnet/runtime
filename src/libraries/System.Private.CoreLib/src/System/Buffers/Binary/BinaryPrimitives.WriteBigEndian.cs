@@ -106,6 +106,40 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
+        /// Writes an Int128 into a span of bytes as big endian.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteInt128BigEndian(Span<byte> destination, Int128 value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                Int128 tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
+            }
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
+        }
+
+        /// <summary>
+        /// Writes an IntPtr into a span of bytes as big endian.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteIntPtrBigEndian(Span<byte> destination, nint value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                nint tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
+            }
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
+        }
+
+        /// <summary>
         /// Writes a <see cref="float" /> into a span of bytes, as big endian.
         /// </summary>
         /// <param name="destination">The span of bytes where the value is to be written, as big endian.</param>
@@ -174,6 +208,42 @@ namespace System.Buffers.Binary
             if (BitConverter.IsLittleEndian)
             {
                 ulong tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
+            }
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
+        }
+
+        /// <summary>
+        /// Writes an UInt128 into a span of bytes as big endian.
+        /// </summary>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUInt128BigEndian(Span<byte> destination, UInt128 value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                UInt128 tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
+            }
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
+        }
+
+        /// <summary>
+        /// Writes an UIntPtr into a span of bytes as big endian.
+        /// </summary>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUIntPtrBigEndian(Span<byte> destination, nuint value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                nuint tmp = ReverseEndianness(value);
                 MemoryMarshal.Write(destination, ref tmp);
             }
             else
@@ -273,6 +343,38 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
+        /// Writes an Int128 into a span of bytes as big endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteInt128BigEndian(Span<byte> destination, Int128 value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                Int128 tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
+            }
+
+            return MemoryMarshal.TryWrite(destination, ref value);
+        }
+
+        /// <summary>
+        /// Writes an IntPtr into a span of bytes as big endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteIntPtrBigEndian(Span<byte> destination, nint value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                nint tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
+            }
+
+            return MemoryMarshal.TryWrite(destination, ref value);
+        }
+
+        /// <summary>
         /// Writes a <see cref="float" /> into a span of bytes, as big endian.
         /// </summary>
         /// <param name="destination">The span of bytes where the value is to be written, as big endian.</param>
@@ -338,6 +440,40 @@ namespace System.Buffers.Binary
             if (BitConverter.IsLittleEndian)
             {
                 ulong tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
+            }
+
+            return MemoryMarshal.TryWrite(destination, ref value);
+        }
+
+        /// <summary>
+        /// Writes an UInt128 into a span of bytes as big endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteUInt128BigEndian(Span<byte> destination, UInt128 value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                UInt128 tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
+            }
+
+            return MemoryMarshal.TryWrite(destination, ref value);
+        }
+
+        /// <summary>
+        /// Writes an UIntPtr into a span of bytes as big endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteUIntPtrBigEndian(Span<byte> destination, nuint value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                nuint tmp = ReverseEndianness(value);
                 return MemoryMarshal.TryWrite(destination, ref tmp);
             }
 

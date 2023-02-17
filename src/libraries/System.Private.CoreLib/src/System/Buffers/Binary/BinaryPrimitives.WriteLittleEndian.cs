@@ -106,6 +106,40 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
+        /// Writes an Int128 into a span of bytes as little endian.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteInt128LittleEndian(Span<byte> destination, Int128 value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                Int128 tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
+            }
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
+        }
+
+        /// <summary>
+        /// Writes an IntPtr into a span of bytes as little endian.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteIntPtrLittleEndian(Span<byte> destination, nint value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                nint tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
+            }
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
+        }
+
+        /// <summary>
         /// Writes a <see cref="float" /> into a span of bytes, as little endian.
         /// </summary>
         /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
@@ -174,6 +208,42 @@ namespace System.Buffers.Binary
             if (!BitConverter.IsLittleEndian)
             {
                 ulong tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
+            }
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
+        }
+
+        /// <summary>
+        /// Writes an UInt128 into a span of bytes as little endian.
+        /// </summary>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUInt128LittleEndian(Span<byte> destination, UInt128 value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                UInt128 tmp = ReverseEndianness(value);
+                MemoryMarshal.Write(destination, ref tmp);
+            }
+            else
+            {
+                MemoryMarshal.Write(destination, ref value);
+            }
+        }
+
+        /// <summary>
+        /// Writes an UIntPtr into a span of bytes as little endian.
+        /// </summary>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUIntPtrLittleEndian(Span<byte> destination, nuint value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                nuint tmp = ReverseEndianness(value);
                 MemoryMarshal.Write(destination, ref tmp);
             }
             else
@@ -273,6 +343,38 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
+        /// Writes an Int128 into a span of bytes as little endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteInt128LittleEndian(Span<byte> destination, Int128 value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                Int128 tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
+            }
+
+            return MemoryMarshal.TryWrite(destination, ref value);
+        }
+
+        /// <summary>
+        /// Writes an IntPtr into a span of bytes as little endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteIntPtrLittleEndian(Span<byte> destination, nint value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                nint tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
+            }
+
+            return MemoryMarshal.TryWrite(destination, ref value);
+        }
+
+        /// <summary>
         /// Writes a <see cref="float" /> into a span of bytes, as little endian.
         /// </summary>
         /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
@@ -338,6 +440,40 @@ namespace System.Buffers.Binary
             if (!BitConverter.IsLittleEndian)
             {
                 ulong tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
+            }
+
+            return MemoryMarshal.TryWrite(destination, ref value);
+        }
+
+        /// <summary>
+        /// Writes an UInt128 into a span of bytes as little endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteUInt128LittleEndian(Span<byte> destination, UInt128 value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                UInt128 tmp = ReverseEndianness(value);
+                return MemoryMarshal.TryWrite(destination, ref tmp);
+            }
+
+            return MemoryMarshal.TryWrite(destination, ref value);
+        }
+
+        /// <summary>
+        /// Writes an UIntPtr into a span of bytes as little endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteUIntPtrLittleEndian(Span<byte> destination, nuint value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                nuint tmp = ReverseEndianness(value);
                 return MemoryMarshal.TryWrite(destination, ref tmp);
             }
 

@@ -76,6 +76,28 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
+        /// Reads an Int128 out of a read-only span of bytes as big endian.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Int128 ReadInt128BigEndian(ReadOnlySpan<byte> source)
+        {
+            return BitConverter.IsLittleEndian ?
+                ReverseEndianness(MemoryMarshal.Read<Int128>(source)) :
+                MemoryMarshal.Read<Int128>(source);
+        }
+
+        /// <summary>
+        /// Reads an IntPtr out of a read-only span of bytes as big endian.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nint ReadIntPtrBigEndian(ReadOnlySpan<byte> source)
+        {
+            return BitConverter.IsLittleEndian ?
+                ReverseEndianness(MemoryMarshal.Read<nint>(source)) :
+                MemoryMarshal.Read<nint>(source);
+        }
+
+        /// <summary>
         /// Reads a <see cref="float" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
         /// <param name="source">The read-only span to read.</param>
@@ -126,6 +148,30 @@ namespace System.Buffers.Binary
             return BitConverter.IsLittleEndian ?
                 ReverseEndianness(MemoryMarshal.Read<ulong>(source)) :
                 MemoryMarshal.Read<ulong>(source);
+        }
+
+        /// <summary>
+        /// Reads an UInt128 out of a read-only span of bytes as big endian.
+        /// </summary>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UInt128 ReadUInt128BigEndian(ReadOnlySpan<byte> source)
+        {
+            return BitConverter.IsLittleEndian ?
+                ReverseEndianness(MemoryMarshal.Read<UInt128>(source)) :
+                MemoryMarshal.Read<UInt128>(source);
+        }
+
+        /// <summary>
+        /// Reads an UIntPtr out of a read-only span of bytes as big endian.
+        /// </summary>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static nuint ReadUIntPtrBigEndian(ReadOnlySpan<byte> source)
+        {
+            return BitConverter.IsLittleEndian ?
+                ReverseEndianness(MemoryMarshal.Read<nuint>(source)) :
+                MemoryMarshal.Read<nuint>(source);
         }
 
         /// <summary>
@@ -224,6 +270,40 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
+        /// Reads an Int128 out of a read-only span of bytes as big endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain an Int128, return false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryReadInt128BigEndian(ReadOnlySpan<byte> source, out Int128 value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                bool success = MemoryMarshal.TryRead(source, out Int128 tmp);
+                value = ReverseEndianness(tmp);
+                return success;
+            }
+
+            return MemoryMarshal.TryRead(source, out value);
+        }
+
+        /// <summary>
+        /// Reads an IntPtr out of a read-only span of bytes as big endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain an IntPtr, return false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryReadIntPtrBigEndian(ReadOnlySpan<byte> source, out nint value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                bool success = MemoryMarshal.TryRead(source, out nint tmp);
+                value = ReverseEndianness(tmp);
+                return success;
+            }
+
+            return MemoryMarshal.TryRead(source, out value);
+        }
+
+        /// <summary>
         /// Reads a <see cref="float" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
         /// <param name="source">The read-only span of bytes to read.</param>
@@ -291,6 +371,42 @@ namespace System.Buffers.Binary
             if (BitConverter.IsLittleEndian)
             {
                 bool success = MemoryMarshal.TryRead(source, out ulong tmp);
+                value = ReverseEndianness(tmp);
+                return success;
+            }
+
+            return MemoryMarshal.TryRead(source, out value);
+        }
+
+        /// <summary>
+        /// Reads an UInt128 out of a read-only span of bytes as big endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain an UInt128, return false.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryReadUInt128BigEndian(ReadOnlySpan<byte> source, out UInt128 value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                bool success = MemoryMarshal.TryRead(source, out UInt128 tmp);
+                value = ReverseEndianness(tmp);
+                return success;
+            }
+
+            return MemoryMarshal.TryRead(source, out value);
+        }
+
+        /// <summary>
+        /// Reads an UIntPtr out of a read-only span of bytes as big endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain an UIntPtr, return false.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryReadUIntPtrBigEndian(ReadOnlySpan<byte> source, out nuint value)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                bool success = MemoryMarshal.TryRead(source, out nuint tmp);
                 value = ReverseEndianness(tmp);
                 return success;
             }
