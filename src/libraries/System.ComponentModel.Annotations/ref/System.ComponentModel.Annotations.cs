@@ -225,7 +225,9 @@ namespace System.ComponentModel.DataAnnotations
         public RangeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string minimum, string maximum) { }
         public bool ConvertValueInInvariantCulture { get { throw null; } set { } }
         public object Maximum { get { throw null; } }
+        public bool MaximumIsExclusive { get { throw null; } set { } }
         public object Minimum { get { throw null; } }
+        public bool MinimumIsExclusive { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Type OperandType { get { throw null; } }
         public bool ParseLimitsInInvariantCulture { get { throw null; } set { } }

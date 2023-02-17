@@ -150,6 +150,9 @@
   <data name="RangeAttribute_MinGreaterThanMax" xml:space="preserve">
     <value>The maximum value '{0}' must be greater than or equal to the minimum value '{1}'.</value>
   </data>
+  <data name="RangeAttribute_CannotUseExclusiveBoundsWhenTheyAreEqual" xml:space="preserve">
+    <value>Cannot use exclusive bounds when the maximum value is equal to the minimum value.</value>
+  </data>
   <data name="RangeAttribute_Must_Set_Min_And_Max" xml:space="preserve">
     <value>The minimum and maximum values must be set.</value>
   </data>
@@ -158,6 +161,15 @@
   </data>
   <data name="RangeAttribute_ValidationError" xml:space="preserve">
     <value>The field {0} must be between {1} and {2}.</value>
+  </data>
+  <data name="RangeAttribute_ValidationError_MinExclusive" xml:space="preserve">
+    <value>The field {0} must be between {1} exclusive and {2}.</value>
+  </data>
+  <data name="RangeAttribute_ValidationError_MaxExclusive" xml:space="preserve">
+    <value>The field {0} must be between {1} and {2} exclusive.</value>
+  </data>
+  <data name="RangeAttribute_ValidationError_MinExclusive_MaxExclusive" xml:space="preserve">
+    <value>The field {0} must be between {1} exclusive and {2} exclusive.</value>
   </data>
   <data name="RegexAttribute_ValidationError" xml:space="preserve">
     <value>The field {0} must match the regular expression '{1}'.</value>
