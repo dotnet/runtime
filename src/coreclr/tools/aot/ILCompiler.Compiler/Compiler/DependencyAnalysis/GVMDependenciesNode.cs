@@ -57,14 +57,6 @@ namespace ILCompiler.DependencyAnalysis
                     (methodOwningType.IsSealed() || _method.IsFinal))
                     return false;
 
-                // We model static (non-virtual) methods that are MethodImpls for a static interface method.
-                // But those cannot be overriden (they're not virtual to begin with).
-                if (!methodOwningType.IsInterface && _method.Signature.IsStatic)
-                {
-                    Debug.Assert(!_method.IsVirtual);
-                    return false;
-                }
-
                 return true;
             }
         }
