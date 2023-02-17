@@ -3803,16 +3803,6 @@ mono_interp_tier_enter_jiterpreter (
 {
 	// g_assert(thunk);
 	ptrdiff_t offset = thunk(frame, locals);
-	gboolean trace_requires_safepoint = FALSE;
-	/*
-	* The trace signals that we need to perform a safepoint by adding a very
-	*  large amount to the relative displacement. This is because setting a bit
-	*  in JS via the | operator doesn't work for negative numbers
-	*/
-	if (offset >= 0xE000000) {
-		offset -= 0xF000000;
-		trace_requires_safepoint = TRUE;
-	}
 	/*
 	* Verify that the offset returned by the thunk is not total garbage
 	* FIXME: These constants might actually be too small since a method
@@ -3825,9 +3815,6 @@ mono_interp_tier_enter_jiterpreter (
 		mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
 	}
 #endif
-	if (trace_requires_safepoint) {
-		SAFEPOINT;
-	}
 	return offset;
 }
 #endif // HOST_BROWSER

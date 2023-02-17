@@ -2202,10 +2202,10 @@ function emit_branch (
     builder.appendULeb(0);
 
     if (displacement < 0) {
-        // This is a backwards branch, and right now we always bail out for those -
-        //  so just return.
-        // FIXME: Why is this not a safepoint?
-        append_bailout(builder, destination, BailoutReason.BackwardBranch, true);
+        // This is a backwards branch, and right now we always bail out for those - so perform a
+        //  safepoint and then return. (This removes a safepoint check from all trace returns.)
+        append_safepoint(builder, ip);
+        append_bailout(builder, destination, BailoutReason.BackwardBranch);
     } else {
         // Do a safepoint *before* changing our IP, if necessary
         if (isSafepoint)
@@ -2796,8 +2796,8 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
     return true;
 }
 
-function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason, highBit?: boolean) {
-    builder.ip_const(ip, highBit);
+function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
+    builder.ip_const(ip);
     if (builder.options.countBailouts) {
         builder.i32_const(reason);
         builder.callImport("bailout");
