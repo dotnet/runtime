@@ -1007,7 +1007,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             // We can always skip this on x86 as the result will never change.
             genProduceReg(treeNode);
             return;
-#else // TARGET_X86
+#else  // TARGET_X86
             if (emit->AreUpper32BitsZero(targetReg))
             {
                 genProduceReg(treeNode);
