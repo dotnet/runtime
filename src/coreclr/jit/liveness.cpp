@@ -2122,7 +2122,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
             case GT_JCMP:
-            case GT_CMP:
             case GT_JCC:
             case GT_JTRUE:
             case GT_RETURN:

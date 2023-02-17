@@ -507,6 +507,47 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
 
 #endif // #ifndef DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
+
+OBJECTREF FnPtrTypeDesc::GetManagedClassObject()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+
+        INJECT_FAULT(COMPlusThrowOM());
+
+        PRECONDITION(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
+    }
+    CONTRACTL_END;
+
+    if (m_hExposedClassObject == NULL) {
+        REFLECTCLASSBASEREF  refClass = NULL;
+        GCPROTECT_BEGIN(refClass);
+        refClass = (REFLECTCLASSBASEREF) AllocateObject(g_pRuntimeTypeClass);
+
+        LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();
+        TypeHandle th = TypeHandle(this);
+        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetType(th);
+        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
+
+        // Let all threads fight over who wins using InterlockedCompareExchange.
+        // Only the winner can set m_hExposedClassObject from NULL.
+        LOADERHANDLE hExposedClassObject = pLoaderAllocator->AllocateHandle(refClass);
+
+        if (InterlockedCompareExchangeT(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
+        {
+            pLoaderAllocator->FreeHandle(hExposedClassObject);
+        }
+
+        GCPROTECT_END();
+    }
+    return GetManagedClassObjectIfExists();
+}
+
+#endif // #ifndef DACCESS_COMPILE
+
 BOOL TypeDesc::IsRestored()
 {
     STATIC_CONTRACT_NOTHROW;

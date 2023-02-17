@@ -164,6 +164,9 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("IsGenericVariable", RuntimeTypeHandle::IsGenericVariable)
     FCFuncElement("ContainsGenericVariables", RuntimeTypeHandle::ContainsGenericVariables)
     FCFuncElement("SatisfiesConstraints", RuntimeTypeHandle::SatisfiesConstraints)
+    FCFuncElement("GetArgumentTypesFromFunctionPointer", RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer)
+    FCFuncElement("IsUnmanagedFunctionPointer", RuntimeTypeHandle::IsUnmanagedFunctionPointer)
+
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("AllocateComObject", RuntimeTypeHandle::AllocateComObject)
 #endif // FEATURE_COMINTEROP
@@ -201,8 +204,11 @@ FCFuncEnd()
 
 FCFuncStart(gSignatureNative)
     FCFuncElement("GetSignature", SignatureNative::GetSignature)
-    FCFuncElement("GetCustomModifiers", SignatureNative::GetCustomModifiers)
     FCFuncElement("CompareSig", SignatureNative::CompareSig)
+    FCFuncElement("GetParameterOffset", SignatureNative::GetParameterOffset)
+    FCFuncElement("GetTypeParameterOffset", SignatureNative::GetTypeParameterOffset)
+    FCFuncElement("GetCustomModifiersAtOffset", SignatureNative::GetCustomModifiersAtOffset)
+    FCFuncElement("GetCallingConventionFromFunctionPointerAtOffset", SignatureNative::GetCallingConventionFromFunctionPointerAtOffset)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeMethodHandle)
@@ -618,7 +624,6 @@ FCFuncStart(gMngdRefCustomMarshalerFuncs)
 FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)
-    FCFuncElement("GetNDirectTarget", StubHelpers::GetNDirectTarget)
     FCFuncElement("GetDelegateTarget", StubHelpers::GetDelegateTarget)
     FCFuncElement("SetLastError", StubHelpers::SetLastError)
     FCFuncElement("ClearLastError", StubHelpers::ClearLastError)

@@ -24072,9 +24072,9 @@ inline void Prefetch(void* addr)
     __prefetch((const char*)addr);
 #endif //defined(TARGET_AMD64) || defined(TARGET_X86)
 
-#elif defined(TARGET_UNIX) || defined(TARGET_OSX)
+#elif defined(TARGET_UNIX)
     __builtin_prefetch(addr);
-#else //!(TARGET_WINDOWS || TARGET_UNIX || TARGET_OSX)
+#else //!(TARGET_WINDOWS || TARGET_UNIX)
     UNREFERENCED_PARAMETER(addr);
 #endif //TARGET_WINDOWS
 }

@@ -3,10 +3,7 @@
 //
 // File: typedesc.h
 //
-
-
 //
-
 //
 // ============================================================================
 
@@ -25,7 +22,7 @@ class TypeHandleList;
 
 
    ParamTypeDescs only include byref, array and pointer types.  They do NOT
-   include instantaitions of generic types, which are represented by MethodTables.
+   include instantiations of generic types, which are represented by MethodTables.
 */
 
 
@@ -43,7 +40,7 @@ public:
 #endif
 
     // This is the ELEMENT_TYPE* that would be used in the type sig for this type
-    // For enums this is the uderlying type
+    // For enums this is the underlying type
     inline CorElementType GetInternalCorElementType() {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -543,7 +540,36 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif //DACCESS_COMPILE
 
+    OBJECTREF GetManagedClassObject();
+
+    OBJECTREF GetManagedClassObjectIfExists()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        OBJECTREF objRet = NULL;
+        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedClassObject, &objRet);
+        return objRet;
+    }
+
+    OBJECTREF GetManagedClassObjectFast()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        OBJECTREF objRet = NULL;
+        LoaderAllocator::GetHandleValueFast(m_hExposedClassObject, &objRet);
+        return objRet;
+    }    
+
 protected:
+    // Handle back to the internal reflection Type object
+    LOADERHANDLE m_hExposedClassObject;
+
     // Number of arguments
     DWORD m_NumArgs;
 

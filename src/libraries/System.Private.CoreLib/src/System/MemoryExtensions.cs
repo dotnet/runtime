@@ -3353,8 +3353,8 @@ namespace System
             string.CheckStringSplitOptions(options);
 
             // If the separators list is empty, whitespace is used as separators.  In that case, we want to ignore TrimEntries if specified,
-            // since TrimEntries also impacts whitespace.
-            if (separators.IsEmpty)
+            // since TrimEntries also impacts whitespace.  The TrimEntries flag must be left intact if we are constrained by count because we need to process last substring.
+            if (separators.IsEmpty && destination.Length > source.Length)
             {
                 options &= ~StringSplitOptions.TrimEntries;
             }
@@ -3394,8 +3394,8 @@ namespace System
             string.CheckStringSplitOptions(options);
 
             // If the separators list is empty, whitespace is used as separators.  In that case, we want to ignore TrimEntries if specified,
-            // since TrimEntries also impacts whitespace.
-            if (separators.IsEmpty)
+            // since TrimEntries also impacts whitespace.  The TrimEntries flag must be left intact if we are constrained by count because we need to process last substring.
+            if (separators.IsEmpty && destination.Length > source.Length)
             {
                 options &= ~StringSplitOptions.TrimEntries;
             }
