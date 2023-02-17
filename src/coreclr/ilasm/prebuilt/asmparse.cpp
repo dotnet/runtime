@@ -2028,7 +2028,7 @@ yynewstate:
 
 		yyerrlab:
 			++yynerrs;
-            FALLTHROUGH;
+			FALLTHROUGH;
 		case 1:
 		case 2: /* incompletely recovered error ... try again */
 
