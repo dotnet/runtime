@@ -21,14 +21,14 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
     <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
     <IlcBuildTasksPath Condition="'$(IlcBuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\tools\netstandard\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
-    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('win'))">windows</TargetOS>
-    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</TargetOS>
-    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('maccatalyst'))">maccatalyst</TargetOS>
-    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('iossimulator'))">iossimulator</TargetOS>
-    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('ios'))">ios</TargetOS>
-    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('tvossimulator'))">tvossimulator</TargetOS>
-    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('tvos'))">tvos</TargetOS>
-    <TargetOS Condition="$(RuntimeIdentifier.StartsWith('freebsd'))">freebsd</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $(RuntimeIdentifier.StartsWith('win'))">windows</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $(RuntimeIdentifier.StartsWith('osx'))">osx</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $(RuntimeIdentifier.StartsWith('maccatalyst'))">maccatalyst</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $(RuntimeIdentifier.StartsWith('iossimulator'))">iossimulator</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $(RuntimeIdentifier.StartsWith('ios'))">ios</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $(RuntimeIdentifier.StartsWith('tvossimulator'))">tvossimulator</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $(RuntimeIdentifier.StartsWith('tvos'))">tvos</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == '' and $(RuntimeIdentifier.StartsWith('freebsd'))">freebsd</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">linux</TargetOS>
     <NativeDebugSymbols Condition="$(DebugSymbols) == 'true' or ($(DebugType) != 'none' and $(DebugType) != '')">true</NativeDebugSymbols>
     <!-- Workaround for https://github.com/dotnet/runtimelab/issues/771 -->
