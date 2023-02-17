@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <CustomNativeMain>true</CustomNativeMain>
     <StaticLibraryPrefix Condition="'$(TargetOS)' != 'windows'">lib</StaticLibraryPrefix>
+    <!-- Doesn't support cross-compilation: https://github.com/dotnet/runtime/issues/82320 -->
     <NativeAotIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'windows'">true</NativeAotIncompatible>
   </PropertyGroup>
 

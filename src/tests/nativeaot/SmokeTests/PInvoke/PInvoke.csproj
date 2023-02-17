@@ -8,6 +8,8 @@
 
     <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- Doesn't support cross-compilation: https://github.com/dotnet/runtime/issues/82320 -->
+    <NativeAotIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'windows'">true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvoke.cs" />

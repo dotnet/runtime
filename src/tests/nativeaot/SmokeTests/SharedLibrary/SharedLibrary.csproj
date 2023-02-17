@@ -5,6 +5,8 @@
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NativeLib>Shared</NativeLib>
+    <!-- Doesn't support cross-compilation: https://github.com/dotnet/runtime/issues/82320 -->
+    <NativeAotIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'windows'">true</NativeAotIncompatible>
   </PropertyGroup>
 
   <PropertyGroup>
