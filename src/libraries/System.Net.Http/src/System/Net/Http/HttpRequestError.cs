@@ -5,18 +5,20 @@ namespace System.Net.Http
 {
     public enum HttpRequestError
     {
-        NameResolutionError,
-        ConnectionError,
-        TransportError,
-        SecureConnectionError,
-        HttpProtocolError,
+        NameResolutionError,                    // DNS request failed
+        ConnectionError,                        // Transport-level errors during connection
+        TransportError,                         // Transport-level errors after connection
+        SecureConnectionError,                  // SSL/TLS errors
+        HttpProtocolError,                      // HTTP 2.0/3.0 protocol error occured
 
-        ResponseEnded,
-        InvalidResponse,
-        InvalidResponseHeader,
-        ContentBufferSizeExceeded,
-        ResponseHeaderExceededLengthLimit,
-        UnsupportedExtendedConnect,
-        VersionNegotiationError,
+        ResponseEnded,                          // Received EOF
+        InvalidResponse,                        // General error in response/malformed response
+        InvalidResponseHeader,                  // Error with response headers
+        ContentBufferSizeExceeded,              // Response Content size exceeded MaxResponseContentBufferSize
+        ResponseHeaderExceededLengthLimit,      // Response Header length exceeded MaxResponseHeadersLength
+        UnsupportedExtendedConnect,             // Extended CONNECT for WebSockets over HTTP/2 is not supported. (SETTINGS_ENABLE_CONNECT_PROTOCOL has not been sent).
+        VersionNegotiationError,                // Cannot negotiate the HTTP Version requested
+        AuthenticationError,
+        SocksTunnelError,
     }
 }

@@ -27,15 +27,16 @@ namespace System.Net.Http
             }
         }
 
-        public HttpRequestException(string? message, HttpRequestError httpRequestError)
+        public HttpRequestException(string? message, HttpRequestError? httpRequestError, Version? httpVersion = null)
             : this(message, null, httpRequestError)
         {
         }
 
-        public HttpRequestException(string? message, Exception? inner, HttpRequestError httpRequestError)
+        public HttpRequestException(string? message, Exception? inner, HttpRequestError? httpRequestError, Version? httpVersion = null)
             : this(message, inner)
         {
             HttpRequestError = httpRequestError;
+            HttpVersion = httpVersion;
         }
 
         /// <summary>
@@ -50,10 +51,11 @@ namespace System.Net.Http
             StatusCode = statusCode;
         }
 
-        public HttpRequestException(string? message, Exception? inner, HttpStatusCode? statusCode, HttpRequestError httpRequestError)
+        public HttpRequestException(string? message, Exception? inner, HttpStatusCode? statusCode, HttpRequestError? httpRequestError, Version? httpVersion = null)
             : this(message, inner, statusCode)
         {
             HttpRequestError = httpRequestError;
+            HttpVersion = httpVersion;
         }
 
         /// <summary>
@@ -66,13 +68,16 @@ namespace System.Net.Http
 
         public HttpRequestError? HttpRequestError { get; }
 
+        public Version? HttpVersion { get; }
+
         // This constructor is used internally to indicate that a request was not successfully sent due to an IOException,
         // and the exception occurred early enough so that the request may be retried on another connection.
-        internal HttpRequestException(string? message, Exception? inner, RequestRetryType allowRetry, HttpRequestError? httpRequestError = null)
+        internal HttpRequestException(string? message, Exception? inner, RequestRetryType allowRetry, HttpRequestError? httpRequestError = null, Version? httpVersion = null)
             : this(message, inner)
         {
             AllowRetry = allowRetry;
             HttpRequestError = httpRequestError;
+            HttpVersion = httpVersion;
         }
     }
 }

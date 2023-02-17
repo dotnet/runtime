@@ -2122,9 +2122,9 @@ namespace System.Net.Http
                     e is ObjectDisposedException ||
                     e is InvalidOperationException)
                 {
-                    if (e is HttpResponseReadException responseReadEx)
+                    if (e is HttpResponseReadException responseReadEx && responseReadEx.HttpRequestError.HasValue)
                     {
-                        throw new HttpRequestException(responseReadEx.Message, e, responseReadEx.HttpRequestError);
+                        throw new HttpRequestException(responseReadEx.Message, e, responseReadEx.HttpRequestError.Value, HttpVersion.Version20);
                     }
 
                     throw new HttpRequestException(SR.net_http_client_execution_error, e);

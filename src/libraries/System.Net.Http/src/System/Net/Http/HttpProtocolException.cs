@@ -24,7 +24,7 @@ namespace System.Net.Http
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
         public HttpProtocolException(long errorCode, string message, Exception? innerException)
-            : base(HttpRequestError.HttpProtocolError, message, innerException)
+            : base(Http.HttpRequestError.HttpProtocolError, message, innerException)
         {
             ErrorCode = errorCode;
         }

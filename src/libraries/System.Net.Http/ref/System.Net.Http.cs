@@ -250,12 +250,13 @@ namespace System.Net.Http
         public HttpRequestException() { }
         public HttpRequestException(string? message) { }
         public HttpRequestException(string? message, System.Exception? inner) { }
-        public HttpRequestException(string? message, HttpRequestError httpRequestError) { }
-        public HttpRequestException(string? message, Exception? inner, HttpRequestError httpRequestError) { }
+        public HttpRequestException(string? message, HttpRequestError? httpRequestError, Version? httpVersion = null) { }
+        public HttpRequestException(string? message, Exception? inner, HttpRequestError? httpRequestError, Version? httpVersion = null) { }
         public HttpRequestException(string? message, System.Exception? inner, System.Net.HttpStatusCode? statusCode) { }
-        public HttpRequestException(string? message, Exception? inner, HttpStatusCode? statusCode, HttpRequestError httpRequestError) { }
+        public HttpRequestException(string? message, Exception? inner, HttpStatusCode? statusCode, HttpRequestError? httpRequestError, Version? httpVersion = null) { }
         public System.Net.HttpStatusCode? StatusCode { get { throw null; } }
         public System.Net.Http.HttpRequestError? HttpRequestError { get { throw null; } }
+        public Version? HttpVersion {  get { throw null; } }
     }
     public partial class HttpRequestMessage : System.IDisposable
     {
@@ -471,11 +472,14 @@ namespace System.Net.Http
         ResponseHeaderExceededLengthLimit,
         UnsupportedExtendedConnect,
         VersionNegotiationError,
+        AuthenticationError,
+        SocksTunnelError
     }
     public class HttpResponseReadException : IOException
     {
         public HttpRequestError HttpRequestError { get { throw null; } }
-        public HttpResponseReadException(HttpRequestError httpRequestError, string? message, Exception? innerException = null) { }
+        public Version? HttpVersion { get { throw null; } }
+        public HttpResponseReadException(HttpRequestError? httpRequestError, string? message, Exception? innerException = null, Version? httpVersion = null) { }
     }
 }
 namespace System.Net.Http.Headers
