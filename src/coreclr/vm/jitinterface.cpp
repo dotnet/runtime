@@ -1537,14 +1537,19 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             else
             if (// Static fields are not pinned in collectible types. We will always access
                 // them using a helper since the address cannot be embedded into the code.
-                pFieldMT->Collectible() ||
-                // We always treat accessing thread statics as if we are in domain neutral code.
-                pField->IsThreadStatic()
+                pFieldMT->Collectible()
+                //// We always treat accessing thread statics as if we are in domain neutral code.
+                //|| pField->IsThreadStatic()
                 )
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
+            } else if (
+                // If the field is thread static
+                pField->IsThreadStatic())
+            {
+                fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
             }
             else
             {

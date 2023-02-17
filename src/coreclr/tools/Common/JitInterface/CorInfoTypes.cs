@@ -1115,6 +1115,7 @@ namespace Internal.JitInterface
         CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER, // static field access using the "generic static" helper (argument is MethodTable *)
         CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
         CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
+        CORINFO_FIELD_STATIC_TLS_MANAGED,       // unmanaged TLS access
         CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
         CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access from the data segment
         CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
