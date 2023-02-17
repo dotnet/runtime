@@ -6,6 +6,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using BundleTests;
@@ -14,14 +17,18 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Test.Utilities;
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.Extensions.DependencyModel;
 using Microsoft.NET.HostModel.AppHost;
 using Microsoft.NET.HostModel.Bundle;
 using Xunit;
+using static Microsoft.DotNet.CoreSetup.Test.NetCoreAppBuilder;
 
 namespace AppHost.Bundle.Tests
 {
     internal sealed class AppWithSubDirs : IDisposable
     {
+        private const string AppName = nameof(AppWithSubDirs);
+
         private static RepoDirectoriesProvider s_provider => RepoDirectoriesProvider.Default;
 
         private readonly TempDirectory _outDir = NoSdkTestBase.TempRoot.CreateDirectory();
@@ -36,7 +43,7 @@ namespace AppHost.Bundle.Tests
 
             string singleFile = BundleApp(
                 options,
-                "AppWithSubDirs",
+                RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AppName),
                 tempDir.Path,
                 _outDir.Path,
                 selfContained: false,
@@ -59,7 +66,7 @@ namespace AppHost.Bundle.Tests
             // Now bundle it
             string singleFile = BundleApp(
                 options,
-                "AppWithSubDirs",
+                RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AppName),
                 tempDir.Path,
                 _outDir.Path,
                 selfContained: true,
@@ -147,35 +154,62 @@ namespace AppHost.Bundle.Tests
 
         private static void WriteAppToDirectory(string tempDir, bool selfContained)
         {
-            string appName = "AppWithSubDirs";
             var srcPath = Path.Combine(
                 s_provider.TestAssetsFolder,
                 "TestProjects/AppWithSubDirs/Program.cs");
 
             var comp = CSharpCompilation.Create(
-                assemblyName: appName,
+                assemblyName: AppName,
                 syntaxTrees: new[] { CSharpSyntaxTree.ParseText(File.ReadAllText(srcPath)) },
                 references: RefAssemblies);
-            var emitResult = comp.Emit(Path.Combine(tempDir, appName + ".dll"));
+            var emitResult = comp.Emit(Path.Combine(tempDir, $"{AppName}.dll"));
             Assert.True(emitResult.Success);
 
             if (!selfContained)
             {
                 WriteBasicRuntimeConfig(
-                    Path.Combine(tempDir, appName + ".runtimeconfig.json"),
+                    Path.Combine(tempDir, $"{AppName}.runtimeconfig.json"),
                     s_provider.Tfm,
                     s_provider.MicrosoftNETCoreAppVersion,
                     selfContained);
+
+                DependencyContext dependencyContext = new DependencyContext(
+                    new Microsoft.Extensions.DependencyModel.TargetInfo($".NETCoreApp,Version=v{s_provider.Tfm[3..]}", null, null, true),
+                    Microsoft.Extensions.DependencyModel.CompilationOptions.Default,
+                    Enumerable.Empty<CompilationLibrary>(),
+                    new[]
+                    {
+                        new RuntimeLibrary(
+                            RuntimeLibraryType.project.ToString(),
+                            AppName,
+                            "1.0.0",
+                            string.Empty,
+                            new []
+                            {
+                                new RuntimeAssetGroup(null, $"{AppName}.dll")
+                            },
+                            Array.Empty<RuntimeAssetGroup>(),
+                            Enumerable.Empty<ResourceAssembly>(),
+                            Enumerable.Empty<Dependency>(),
+                            false)
+                    },
+                    Enumerable.Empty<RuntimeFallbacks>());
+
+                DependencyContextWriter writer = new DependencyContextWriter();
+                using (FileStream stream = new FileStream(Path.Combine(tempDir, $"{AppName}.deps.json"), FileMode.Create))
+                {
+                    writer.Write(dependencyContext, stream);
+                };
             }
             else
             {
-                WriteBasicSelfContainedDepsJson(Path.Combine(tempDir, "AppWithSubDirs.deps.json"));
+                WriteBasicSelfContainedDepsJson(Path.Combine(tempDir, $"{AppName}.deps.json"));
             }
 
             HostWriter.CreateAppHost(
-                GetAppHostPath(appName, selfContained),
-                Path.Combine(tempDir, appName + ExeSuffix),
-                appName + ".dll",
+                GetAppHostPath(AppName, selfContained),
+                Path.Combine(tempDir, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AppName)),
+                $"{AppName}.dll",
                 windowsGraphicalUserInterface: false,
                 assemblyToCopyResourcesFrom: null,
                 enableMacOSCodeSign: true);
@@ -188,8 +222,8 @@ namespace AppHost.Bundle.Tests
             bool selfContained)
         {
             return selfContained
-                ? Path.Combine(s_provider.CoreClrPath, "corehost", "singlefilehost" + ExeSuffix)
-                : Path.Combine(s_provider.HostArtifacts, "apphost" + ExeSuffix);
+                ? Path.Combine(s_provider.CoreClrPath, "corehost", RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("singlefilehost"))
+                : Path.Combine(s_provider.HostArtifacts, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost"));
         }
 
         private static void WriteBasicRuntimeConfig(
@@ -237,6 +271,14 @@ namespace AppHost.Bundle.Tests
                 .Append(
                     //System.Private.CoreLib is built and stored separately
                     Path.Combine(s_provider.CoreClrPath, "System.Private.CoreLib.dll"))
+                .Where(f =>
+                {
+                    using (var fs = File.OpenRead(f))
+                    using (var peReader = new PEReader(fs))
+                    {
+                        return peReader.HasMetadata && peReader.GetMetadataReader().IsAssembly;
+                    }
+                })
                 .Select(f =>
                 {
                     var fileVersion = FileVersionInfo.GetVersionInfo(f).FileVersion;
@@ -289,11 +331,6 @@ namespace AppHost.Bundle.Tests
             var text = value.ToJsonString(new JsonSerializerOptions() { WriteIndented = true });
             File.WriteAllText(outputPath, text);
         }
-
-        private static string ExeSuffix
-            => Environment.OSVersion.Platform == PlatformID.Win32NT
-            ? ".exe"
-            : "";
 
         // Specific to the AppWithSubDirs app
         private static void CopySentenceSubDir(string targetDir)
