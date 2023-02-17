@@ -59,6 +59,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/82252", TestRuntimes.CoreCLR)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]          
         public void FunctionPointers()
         {
