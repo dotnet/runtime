@@ -40,7 +40,9 @@ bool emitter::IsKInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse instruction.
+// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
+// Technically, K instructions would be considered under the VEX encoding umbrella, but due to
+// the instruction table encoding had to be pulled out with the rest of the `INST5` definitions.
 //
 // Arguments:
 //    ins - The instruction to check.
@@ -9497,8 +9499,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
 #ifdef TARGET_AMD64
     char suffix = '\0';
 
-    // TODO-XARCH-AVX512 hacky, fix
-    if (reg > REG_OPMASK_FIRST && reg < REG_OPMASK_LAST)
+    if (isMaskReg(reg))
     {
         return emitKregName(reg);
     }
@@ -18052,18 +18053,23 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         }
 #endif
 
-        // TODO-XARCH-AVX512 add proper values
         case INS_vpmovb2m:
         case INS_vpmovw2m:
         case INS_vpmovd2m:
         case INS_vpmovq2m:
+        {
+            result.insLatency += PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
+
         case INS_kmovb:
         case INS_kmovw:
         case INS_kmovd:
         case INS_kmovq:
         {
-            result.insLatency += PERFSCORE_LATENCY_1C;
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency += PERFSCORE_LATENCY_3C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
         }
 

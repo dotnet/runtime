@@ -1394,12 +1394,12 @@ RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, reg
 }
 
 #if defined(FEATURE_SIMD)
-RefPosition* LinearScan::buildInternalOpmaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
+RefPosition* LinearScan::buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
 {
     // The candidate set should contain only float registers.
     assert((internalCands & ~availableMaskRegs) == RBM_NONE);
 
-    RefPosition* defRefPosition = defineNewInternalTemp(tree, OpmaskRegisterType, internalCands);
+    RefPosition* defRefPosition = defineNewInternalTemp(tree, MaskRegisterType, internalCands);
     return defRefPosition;
 }
 #endif

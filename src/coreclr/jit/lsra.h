@@ -35,7 +35,7 @@ const unsigned int RegisterTypeCount    = 2;
 typedef var_types RegisterType;
 #define IntRegisterType TYP_INT
 #define FloatRegisterType TYP_FLOAT
-#define OpmaskRegisterType TYP_OPMASK
+#define MaskRegisterType TYP_MASK
 
 //------------------------------------------------------------------------
 // regType: Return the RegisterType to use for a given type
@@ -488,9 +488,9 @@ public:
             registerType = FloatRegisterType;
         }
 #if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
-        else if (emitter::isOpmaskReg(reg))
+        else if (emitter::isMaskReg(reg))
         {
-            registerType = OpmaskRegisterType;
+            registerType = MaskRegisterType;
         }
 #endif
         else
@@ -1098,7 +1098,7 @@ private:
     RefPosition* buildInternalIntRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
     RefPosition* buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
 #if defined(FEATURE_SIMD)
-    RefPosition* buildInternalOpmaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
+    RefPosition* buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands = RBM_NONE);
 #endif
     void buildInternalRegisterUses();
 

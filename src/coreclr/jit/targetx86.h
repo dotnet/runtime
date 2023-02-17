@@ -75,8 +75,8 @@
   #define REG_FP_FIRST             REG_XMM0
   #define REG_FP_LAST              REG_XMM7
 
-  #define REG_OPMASK_FIRST         REG_K0
-  #define REG_OPMASK_LAST          REG_K7
+  #define REG_MASK_FIRST           REG_K0
+  #define REG_MASK_LAST            REG_K7
 
   #define FIRST_FP_ARGREG          REG_XMM0
   #define LAST_FP_ARGREG           REG_XMM3
@@ -95,7 +95,7 @@
   #define RBM_ALLFLOAT            (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7)
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT
 
-  #define RBM_ALLOPMASK            (REG_K1 | REG_K2 | REG_K3 | REG_K4 | REG_K5 | REG_K6 | REG_K7)
+  #define RBM_ALLMASK             (REG_K1 | REG_K2 | REG_K3 | REG_K4 | REG_K5 | REG_K6 | REG_K7)
 
   // TODO-CQ: Currently we are following the x86 ABI for SSE2 registers.
   // This should be reconsidered.

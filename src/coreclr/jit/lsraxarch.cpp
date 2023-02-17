@@ -2501,7 +2501,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512F_MoveMaskSpec:
             {
                 srcCount += BuildOperandUses(op1);
-                buildInternalOpmaskRegisterDefForNode(intrinsicTree);
+                buildInternalMaskRegisterDefForNode(intrinsicTree);
                 setInternalRegsDelayFree = true;
 
                 buildUses = false;

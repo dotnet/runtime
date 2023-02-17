@@ -1674,7 +1674,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX512F_MoveMaskSpec:
         {
             op1Reg            = op1->GetRegNum();
-            regNumber maskReg = node->ExtractTempReg(RBM_ALLOPMASK);
+            regNumber maskReg = node->ExtractTempReg(RBM_ALLMASK);
 
             instruction maskIns;
             instruction kmovIns;
@@ -1707,7 +1707,8 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
                     unreached();
             }
 
-            // opReg should be a kmask reg
+            assert(emitter::isMaskReg(maskReg));
+
             emit->emitIns_R_R(maskIns, attr, maskReg, op1Reg);
             emit->emitIns_Mov(kmovIns, EA_8BYTE, targetReg, maskReg, INS_FLAGS_DONT_CARE);
             break;

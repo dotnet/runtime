@@ -79,15 +79,9 @@ inline bool varTypeIsSIMD(T vt)
 }
 
 template <class T>
-inline bool varTypeIsOpmask(T vt)
+inline bool varTypeIsMask(T vt)
 {
-    switch (TypeGet(vt))
-    {
-        case TYP_OPMASK:
-            return true;
-        default:
-            return false;
-    }
+    return (TypeGet(vt) == TYP_MASK);
 }
 
 #else  // FEATURE_SIMD
@@ -100,7 +94,7 @@ inline bool varTypeIsSIMD(T vt)
 }
 
 template <class T>
-inline bool varTypeIsOpmask(T vt)
+inline bool varTypeIsMask(T vt)
 {
     return false;
 }

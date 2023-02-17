@@ -23,9 +23,9 @@ inline static bool isDoubleReg(regNumber reg)
     return isFloatReg(reg);
 }
 
-inline static bool isOpmaskReg(regNumber reg)
+inline static bool isMaskReg(regNumber reg)
 {
-    return (reg >= REG_OPMASK_FIRST && reg <= REG_OPMASK_LAST);
+    return (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST);
 }
 
 /************************************************************************/
