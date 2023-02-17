@@ -540,7 +540,7 @@ namespace System.Net.Http
                 if (index <= LastHPackRequestPseudoHeaderId)
                 {
                     if (NetEventSource.Log.IsEnabled()) Trace($"Invalid request pseudo-header ID {index}.");
-                    throw new HttpRequestException(SR.net_http_invalid_response);
+                    throw new HttpRequestException(SR.net_http_invalid_response, HttpRequestError.InvalidResponseHeader);
                 }
                 else if (index <= LastHPackStatusPseudoHeaderId)
                 {
@@ -563,7 +563,7 @@ namespace System.Net.Http
                 if (index <= LastHPackRequestPseudoHeaderId)
                 {
                     if (NetEventSource.Log.IsEnabled()) Trace($"Invalid request pseudo-header ID {index}.");
-                    throw new HttpRequestException(SR.net_http_invalid_response);
+                    throw new HttpRequestException(SR.net_http_invalid_response, HttpRequestError.InvalidResponseHeader);
                 }
                 else if (index <= LastHPackStatusPseudoHeaderId)
                 {
@@ -589,7 +589,7 @@ namespace System.Net.Http
                 _headerBudgetRemaining -= amount;
                 if (_headerBudgetRemaining < 0)
                 {
-                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings.MaxResponseHeadersByteLength));
+                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings.MaxResponseHeadersByteLength), HttpRequestError.ResponseHeaderExceededLengthLimit);
                 }
             }
 
@@ -611,14 +611,14 @@ namespace System.Net.Http
                     if (_responseProtocolState == ResponseProtocolState.ExpectingHeaders)
                     {
                         if (NetEventSource.Log.IsEnabled()) Trace("Received extra status header.");
-                        throw new HttpRequestException(SR.net_http_invalid_response_multiple_status_codes);
+                        throw new HttpRequestException(SR.net_http_invalid_response_multiple_status_codes, HttpRequestError.InvalidResponseHeader);
                     }
 
                     if (_responseProtocolState != ResponseProtocolState.ExpectingStatus)
                     {
                         // Pseudo-headers are allowed only in header block
                         if (NetEventSource.Log.IsEnabled()) Trace($"Status pseudo-header received in {_responseProtocolState} state.");
-                        throw new HttpRequestException(SR.net_http_invalid_response_pseudo_header_in_trailer);
+                        throw new HttpRequestException(SR.net_http_invalid_response_pseudo_header_in_trailer, HttpRequestError.InvalidResponseHeader);
                     }
 
                     Debug.Assert(_response != null);
@@ -681,7 +681,7 @@ namespace System.Net.Http
                     if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingTrailingHeaders)
                     {
                         if (NetEventSource.Log.IsEnabled()) Trace("Received header before status.");
-                        throw new HttpRequestException(SR.net_http_invalid_response);
+                        throw new HttpRequestException(SR.net_http_invalid_response, HttpRequestError.InvalidResponseHeader);
                     }
 
                     Encoding? valueEncoding = _connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, _request);
@@ -725,7 +725,7 @@ namespace System.Net.Http
                     else
                     {
                         if (NetEventSource.Log.IsEnabled()) Trace($"Invalid response pseudo-header '{Encoding.ASCII.GetString(name)}'.");
-                        throw new HttpRequestException(SR.net_http_invalid_response);
+                        throw new HttpRequestException(SR.net_http_invalid_response, HttpRequestError.InvalidResponseHeader);
                     }
                 }
                 else
@@ -734,7 +734,7 @@ namespace System.Net.Http
                     if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
                     {
                         // Invalid header name
-                        throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+                        throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)), HttpRequestError.InvalidResponseHeader);
                     }
 
                     OnHeader(descriptor, value);

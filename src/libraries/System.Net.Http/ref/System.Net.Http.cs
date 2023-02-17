@@ -250,6 +250,7 @@ namespace System.Net.Http
         public HttpRequestException() { }
         public HttpRequestException(string? message) { }
         public HttpRequestException(string? message, System.Exception? inner) { }
+        public HttpRequestException(string? message, HttpRequestError httpRequestError) { }
         public HttpRequestException(string? message, Exception? inner, HttpRequestError httpRequestError) { }
         public HttpRequestException(string? message, System.Exception? inner, System.Net.HttpStatusCode? statusCode) { }
         public HttpRequestException(string? message, Exception? inner, HttpStatusCode? statusCode, HttpRequestError httpRequestError) { }
@@ -469,7 +470,7 @@ namespace System.Net.Http
         ContentBufferSizeExceeded,
         ResponseHeaderExceededLengthLimit,
         UnsupportedExtendedConnect,
-        RequestedVersionError,
+        VersionNegotiationError,
     }
     public class HttpResponseReadException : IOException
     {

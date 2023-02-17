@@ -17,6 +17,6 @@ namespace System.Net.Http
         ContentBufferSizeExceeded,
         ResponseHeaderExceededLengthLimit,
         UnsupportedExtendedConnect,
-        RequestedVersionError,
+        VersionNegotiationError,
     }
 }

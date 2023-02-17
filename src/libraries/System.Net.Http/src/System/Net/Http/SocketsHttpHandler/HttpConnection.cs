@@ -1037,7 +1037,7 @@ namespace System.Net.Http
             const int MinStatusLineLength = 12; // "HTTP/1.x 123"
             if (line.Length < MinStatusLineLength || line[8] != ' ')
             {
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)), HttpRequestError.InvalidResponse);
             }
 
             ulong first8Bytes = BitConverter.ToUInt64(line);
@@ -1058,7 +1058,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
+                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)), HttpRequestError.InvalidResponse);
                 }
             }
 
@@ -1066,7 +1066,7 @@ namespace System.Net.Http
             byte status1 = line[9], status2 = line[10], status3 = line[11];
             if (!IsDigit(status1) || !IsDigit(status2) || !IsDigit(status3))
             {
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(line.Slice(9, 3))));
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(line.Slice(9, 3))), HttpRequestError.InvalidResponse);
             }
             response.SetStatusCodeWithoutValidation((HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0')));
 
@@ -1089,15 +1089,15 @@ namespace System.Net.Http
                     {
                         response.ReasonPhrase = HttpRuleParser.DefaultHttpEncoding.GetString(reasonBytes);
                     }
-                    catch (FormatException error)
+                    catch (FormatException formatEx)
                     {
-                        throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_reason, Encoding.ASCII.GetString(reasonBytes.ToArray())), error);
+                        throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_reason, Encoding.ASCII.GetString(reasonBytes.ToArray())), formatEx, HttpRequestError.InvalidResponse);
                     }
                 }
             }
             else
             {
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)), HttpRequestError.InvalidResponse);
             }
         }
 
@@ -1196,7 +1196,7 @@ namespace System.Net.Http
             }
 
             static void ThrowForInvalidHeaderLine(ReadOnlySpan<byte> buffer, int newLineIndex) =>
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(buffer.Slice(0, newLineIndex))));
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(buffer.Slice(0, newLineIndex))), HttpRequestError.InvalidResponseHeader);
         }
 
         private void AddResponseHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value, HttpResponseMessage response, bool isFromTrailer)
@@ -1295,14 +1295,14 @@ namespace System.Net.Http
             Debug.Assert(added);
 
             static void ThrowForEmptyHeaderName() =>
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, ""));
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, ""), HttpRequestError.InvalidResponseHeader);
 
             static void ThrowForInvalidHeaderName(ReadOnlySpan<byte> name) =>
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)), HttpRequestError.InvalidResponseHeader);
         }
 
         private void ThrowExceededAllowedReadLineBytes() =>
-            throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength));
+            throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings.MaxResponseHeadersByteLength), HttpRequestError.ResponseHeaderExceededLengthLimit);
 
         private void ProcessKeepAliveHeader(string keepAlive)
         {

@@ -638,7 +638,7 @@ namespace System.Net.Http
 
                 if (contentLength > maxBufferSize)
                 {
-                    error = new HttpRequestException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, maxBufferSize));
+                    error = new HttpRequestException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, maxBufferSize), HttpRequestError.ContentBufferSizeExceeded);
                     return null;
                 }
 
@@ -834,7 +834,7 @@ namespace System.Net.Http
 
         private static HttpRequestException CreateOverCapacityException(int maxBufferSize)
         {
-            return new HttpRequestException(SR.Format(SR.net_http_content_buffersize_exceeded, maxBufferSize));
+            return new HttpRequestException(SR.Format(SR.net_http_content_buffersize_exceeded, maxBufferSize), HttpRequestError.ContentBufferSizeExceeded);
         }
 
         internal sealed class LimitMemoryStream : MemoryStream

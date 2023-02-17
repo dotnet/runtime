@@ -386,7 +386,7 @@ namespace System.Net.Http
 
                             if (currentLine.Length != 0)
                             {
-                                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_chunk_terminator_invalid, Encoding.ASCII.GetString(currentLine)));
+                                throw new HttpResponseReadException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_chunk_terminator_invalid, Encoding.ASCII.GetString(currentLine)));
                             }
 
                             _state = ParsingState.ExpectChunkHeader;

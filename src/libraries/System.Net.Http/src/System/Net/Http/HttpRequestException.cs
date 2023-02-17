@@ -24,11 +24,12 @@ namespace System.Net.Http
             if (inner != null)
             {
                 HResult = inner.HResult;
-                if (inner is HttpResponseReadException responseReadException)
-                {
-                    HttpRequestError = responseReadException.HttpRequestError;
-                }
             }
+        }
+
+        public HttpRequestException(string? message, HttpRequestError httpRequestError)
+            : this(message, null, httpRequestError)
+        {
         }
 
         public HttpRequestException(string? message, Exception? inner, HttpRequestError httpRequestError)

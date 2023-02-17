@@ -442,7 +442,7 @@ namespace System.Net.Http
         {
             Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
 
-            HttpRequestException ex = new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner);
+            HttpRequestException ex = new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner, HttpRequestError.VersionNegotiationError);
             if (request.IsExtendedConnectRequest && desiredVersion == 2)
             {
                 ex.Data["HTTP2_ENABLED"] = false;
@@ -1077,7 +1077,7 @@ namespace System.Net.Http
                                     await connection.InitialSettingsReceived.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                                     if (!connection.IsConnectEnabled)
                                     {
-                                        HttpRequestException exception = new(SR.net_unsupported_extended_connect);
+                                        HttpRequestException exception = new(SR.net_unsupported_extended_connect, HttpRequestError.UnsupportedExtendedConnect);
                                         exception.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"] = false;
                                         throw exception;
                                     }

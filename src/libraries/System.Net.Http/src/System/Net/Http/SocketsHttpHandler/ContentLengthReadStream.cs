@@ -38,7 +38,7 @@ namespace System.Net.Http
                 if (bytesRead <= 0 && buffer.Length != 0)
                 {
                     // Unexpected end of response stream.
-                    throw new HttpResponseReadException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _contentBytesRemaining));
+                    throw new HttpResponseReadException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _contentBytesRemaining));
                 }
 
                 Debug.Assert((ulong)bytesRead <= _contentBytesRemaining);
