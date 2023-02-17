@@ -108,7 +108,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeFramework Include="Foundation" />
       <NativeFramework Include="Security" />
       <!-- The library builds don't reference the GSS API on tvOS builds. -->
-      <NativeFramework Condition="'$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator'" Include="GSS" />
+      <NativeFramework Condition="!$(TargetOS.StartsWith('tvos'))" Include="GSS" />
     </ItemGroup>
 
     <ItemGroup>
