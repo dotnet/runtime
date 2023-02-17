@@ -372,7 +372,8 @@
 
     <ItemGroup>
         <_AppleAssembliesInternal Include="$(BuildDir)/**/*.dll" />
-        
+        <_AppleAssembliesInternal Include="$(BuildDir)/*.dll" />
+
         <_AppleAssembliesInternal>
             <_InternalForceInterpret Condition="'$(MonoForceInterpreter)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
             <_IsNative>false</_IsNative>
