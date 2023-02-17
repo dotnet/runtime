@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>X86_Popcnt_x64_r</AssemblyName>
-    <BuildAsStandalone>false</BuildAsStandalone>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
