@@ -59,6 +59,8 @@ struct _EventPipeSession_Internal {
 	// we expect to remove it in the future once that limitation is resolved other scenarios are discouraged from using this given that
 	// we plan to make it go away
 	bool paused;
+	// Set via environment variable to prevent stack collection for all events
+	bool disable_stacks;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_SESSION_GETTER_SETTER)
@@ -75,6 +77,7 @@ EP_DEFINE_GETTER(EventPipeSession *, session, bool, rundown_requested)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_time)
 EP_DEFINE_GETTER(EventPipeSession *, session, ep_timestamp_t, session_start_timestamp)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeFile *, file)
+EP_DEFINE_GETTER(EventPipeSession *, session, bool, disable_stacks)
 
 EventPipeSession *
 ep_session_alloc (
