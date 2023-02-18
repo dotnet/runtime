@@ -5938,6 +5938,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         const unsigned clsTmpNum = lvaGrabTemp(true DEBUGARG("spilling class handle"));
         impAssignTempGen(clsTmpNum, op2);
         op2 = gtNewLclvNode(clsTmpNum, op2->TypeGet());
+        lvaTable[clsTmpNum].lvIsCSE = true;
     }
     temp = gtNewMethodTableLookup(temp);
     condMT =
