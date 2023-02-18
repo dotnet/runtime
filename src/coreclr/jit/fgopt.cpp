@@ -2591,19 +2591,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 
         bool               isClosed;
         unsigned           sideEffects;
-        LIR::ReadOnlyRange testRange;
-
-        if (test->OperIs(GT_JCC))
-        {
-            assert(test->gtPrev->ProducesFlags());
-            test->gtPrev->ClearProducesFlags();
-            testRange = blockRange.GetTreeRange(test->gtPrev, &isClosed, &sideEffects);
-            testRange = LIR::ReadOnlyRange(testRange.FirstNode(), test);
-        }
-        else
-        {
-            testRange = blockRange.GetTreeRange(test, &isClosed, &sideEffects);
-        }
+        LIR::ReadOnlyRange testRange = blockRange.GetTreeRange(test, &isClosed, &sideEffects);
 
         if (isClosed && ((sideEffects & GTF_SIDE_EFFECT) == 0))
         {
@@ -3845,22 +3833,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 
             bool               isClosed;
             unsigned           sideEffects;
-            LIR::ReadOnlyRange jmpRange;
-
-            if (jmp->OperIs(GT_JCC))
-            {
-                // For JCC we have an invariant until resolution that the
-                // previous node sets those CPU flags.
-                GenTree* prevNode = jmp->gtPrev;
-                assert((prevNode != nullptr) && prevNode->ProducesFlags());
-                prevNode->ClearProducesFlags();
-                jmpRange = blockRange.GetTreeRange(prevNode, &isClosed, &sideEffects);
-                jmpRange = LIR::ReadOnlyRange(jmpRange.FirstNode(), jmp);
-            }
-            else
-            {
-                jmpRange = blockRange.GetTreeRange(jmp, &isClosed, &sideEffects);
-            }
+            LIR::ReadOnlyRange jmpRange = blockRange.GetTreeRange(jmp, &isClosed, &sideEffects);
 
             if (isClosed && ((sideEffects & GTF_SIDE_EFFECT) == 0))
             {
