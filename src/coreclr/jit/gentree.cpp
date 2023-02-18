@@ -16115,11 +16115,6 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
         return false;
     }
 
-    if (tree->OperIs(GT_RET_EXPR))
-    {
-        return gtTreeHasSideEffects(tree->AsRetExpr()->gtInlineCandidate, flags);
-    }
-
     if (sideEffectFlags == GTF_CALL)
     {
         if (tree->OperGet() == GT_CALL)
