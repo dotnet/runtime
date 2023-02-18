@@ -28,7 +28,6 @@ namespace System.Collections.Generic
         private int _count;
         private int _freeList;
         private int _freeCount;
-        private int _version;
         private IEqualityComparer<TKey>? _comparer;
         private KeyCollection? _keys;
         private ValueCollection? _values;
@@ -348,7 +347,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
             }
 
-            info.AddValue(VersionName, _version);
+            info.AddValue(VersionName, 0);
             info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<TKey>));
             info.AddValue(HashSizeName, _buckets == null ? 0 : _buckets.Length); // This is the length of the bucket array
 
@@ -604,7 +603,6 @@ namespace System.Collections.Generic
             entry.key = key;
             entry.value = value;
             bucket = index + 1; // Value in _buckets is 1-based
-            _version++;
 
             // Value types never rehash
             if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
@@ -741,7 +739,6 @@ namespace System.Collections.Generic
                 entry.key = key;
                 entry.value = default!;
                 bucket = index + 1; // Value in _buckets is 1-based
-                dictionary._version++;
 
                 // Value types never rehash
                 if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
@@ -779,7 +776,7 @@ namespace System.Collections.Generic
                 return;
             }
 
-            int realVersion = siInfo.GetInt32(VersionName);
+            _ = siInfo.GetInt32(VersionName);
             int hashsize = siInfo.GetInt32(HashSizeName);
             _comparer = (IEqualityComparer<TKey>)siInfo.GetValue(ComparerName, typeof(IEqualityComparer<TKey>))!; // When serialized if comparer is null, we use the default.
 
@@ -810,7 +807,6 @@ namespace System.Collections.Generic
                 _buckets = null;
             }
 
-            _version = realVersion;
             HashHelpers.SerializationInfoTable.Remove(this);
         }
 
@@ -1118,8 +1114,6 @@ namespace System.Collections.Generic
                 return currentCapacity;
             }
 
-            _version++;
-
             if (_buckets == null)
             {
                 return Initialize(capacity);
@@ -1167,7 +1161,6 @@ namespace System.Collections.Generic
             }
 
             int oldCount = _count;
-            _version++;
             Initialize(newSize);
 
             Debug.Assert(oldEntries is not null);
@@ -1336,7 +1329,7 @@ namespace System.Collections.Generic
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
             private readonly Dictionary<TKey, TValue> _dictionary;
-            private readonly int _version;
+            private readonly int _count;
             private int _index;
             private KeyValuePair<TKey, TValue> _current;
             private readonly int _getEnumeratorRetType;  // What should Enumerator.Current return?
@@ -1347,7 +1340,7 @@ namespace System.Collections.Generic
             internal Enumerator(Dictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
             {
                 _dictionary = dictionary;
-                _version = dictionary._version;
+                _count = dictionary._count;
                 _index = 0;
                 _getEnumeratorRetType = getEnumeratorRetType;
                 _current = default;
@@ -1355,7 +1348,7 @@ namespace System.Collections.Generic
 
             public bool MoveNext()
             {
-                if (_version != _dictionary._version)
+                if (_count != _dictionary._count)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
@@ -1402,7 +1395,7 @@ namespace System.Collections.Generic
 
             void IEnumerator.Reset()
             {
-                if (_version != _dictionary._version)
+                if (_count != _dictionary._count)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
@@ -1580,13 +1573,13 @@ namespace System.Collections.Generic
             {
                 private readonly Dictionary<TKey, TValue> _dictionary;
                 private int _index;
-                private readonly int _version;
+                private readonly int _count;
                 private TKey? _currentKey;
 
                 internal Enumerator(Dictionary<TKey, TValue> dictionary)
                 {
                     _dictionary = dictionary;
-                    _version = dictionary._version;
+                    _count = dictionary._count;
                     _index = 0;
                     _currentKey = default;
                 }
@@ -1595,7 +1588,7 @@ namespace System.Collections.Generic
 
                 public bool MoveNext()
                 {
-                    if (_version != _dictionary._version)
+                    if (_count != _dictionary._count)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                     }
@@ -1633,7 +1626,7 @@ namespace System.Collections.Generic
 
                 void IEnumerator.Reset()
                 {
-                    if (_version != _dictionary._version)
+                    if (_count != _dictionary._count)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                     }
@@ -1772,13 +1765,13 @@ namespace System.Collections.Generic
             {
                 private readonly Dictionary<TKey, TValue> _dictionary;
                 private int _index;
-                private readonly int _version;
+                private readonly int _count;
                 private TValue? _currentValue;
 
                 internal Enumerator(Dictionary<TKey, TValue> dictionary)
                 {
                     _dictionary = dictionary;
-                    _version = dictionary._version;
+                    _count = dictionary._count;
                     _index = 0;
                     _currentValue = default;
                 }
@@ -1787,7 +1780,7 @@ namespace System.Collections.Generic
 
                 public bool MoveNext()
                 {
-                    if (_version != _dictionary._version)
+                    if (_count != _dictionary._count)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                     }
@@ -1824,7 +1817,7 @@ namespace System.Collections.Generic
 
                 void IEnumerator.Reset()
                 {
-                    if (_version != _dictionary._version)
+                    if (_count != _dictionary._count)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                     }

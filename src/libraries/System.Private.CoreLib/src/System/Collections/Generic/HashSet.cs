@@ -43,7 +43,6 @@ namespace System.Collections.Generic
         private int _count;
         private int _freeList;
         private int _freeCount;
-        private int _version;
         private IEqualityComparer<T>? _comparer;
 
         #region Constructors
@@ -373,7 +372,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
             }
 
-            info.AddValue(VersionName, _version); // need to serialize version to avoid problems with serializing while enumerating
+            info.AddValue(VersionName, 0); // need to serialize version to avoid problems with serializing while enumerating
             info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
             info.AddValue(CapacityName, _buckets == null ? 0 : _buckets.Length);
 
@@ -430,7 +429,7 @@ namespace System.Collections.Generic
                 _buckets = null;
             }
 
-            _version = siInfo.GetInt32(VersionName);
+            _ = siInfo.GetInt32(VersionName);
             HashHelpers.SerializationInfoTable.Remove(this);
         }
 
@@ -1011,7 +1010,6 @@ namespace System.Collections.Generic
             }
 
             int oldCount = _count;
-            _version++;
             Initialize(newSize);
             Entry[]? entries = _entries;
             int count = 0;
@@ -1160,7 +1158,6 @@ namespace System.Collections.Generic
                 entry.Next = bucket - 1; // Value in _buckets is 1-based
                 entry.Value = value;
                 bucket = index + 1;
-                _version++;
                 location = index;
             }
 
@@ -1449,21 +1446,21 @@ namespace System.Collections.Generic
         public struct Enumerator : IEnumerator<T>
         {
             private readonly HashSet<T> _hashSet;
-            private readonly int _version;
+            private readonly int _count;
             private int _index;
             private T _current;
 
             internal Enumerator(HashSet<T> hashSet)
             {
                 _hashSet = hashSet;
-                _version = hashSet._version;
+                _count = hashSet._count;
                 _index = 0;
                 _current = default!;
             }
 
             public bool MoveNext()
             {
-                if (_version != _hashSet._version)
+                if (_count != _hashSet._count)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
@@ -1504,7 +1501,7 @@ namespace System.Collections.Generic
 
             void IEnumerator.Reset()
             {
-                if (_version != _hashSet._version)
+                if (_count != _hashSet._count)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }

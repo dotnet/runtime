@@ -24,7 +24,7 @@ namespace System.Collections.Generic
 
         internal T[] _items; // Do not rename (binary serialization)
         internal int _size; // Do not rename (binary serialization)
-        internal int _version; // Do not rename (binary serialization)
+        // Needs additional changes for missing field in binary serialization
 
 #pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>()
         private static readonly T[] s_emptyArray = new T[0];
@@ -159,7 +159,6 @@ namespace System.Collections.Generic
                     ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
                 }
                 _items[index] = value;
-                _version++;
             }
         }
 
@@ -195,7 +194,6 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(T item)
         {
-            _version++;
             T[] array = _items;
             int size = _size;
             if ((uint)size < (uint)array.Length)
@@ -259,7 +257,6 @@ namespace System.Collections.Generic
 
                     c.CopyTo(_items, _size);
                     _size += count;
-                    _version++;
                 }
             }
             else
@@ -319,7 +316,6 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
-            _version++;
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 int size = _size;
@@ -439,7 +435,6 @@ namespace System.Collections.Generic
             if (_items.Length < capacity)
             {
                 Grow(capacity);
-                _version++;
             }
 
             return _items.Length;
@@ -606,18 +601,18 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
             }
 
-            int version = _version;
-
-            for (int i = 0; i < _size; i++)
+            int startSize = _size;
+            int i = 0;
+            for (;i < startSize; i++)
             {
-                if (version != _version)
+                if (startSize != _size)
                 {
                     break;
                 }
                 action(_items[i]);
             }
 
-            if (version != _version)
+            if (i != startSize || startSize != _size)
                 ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
         }
 
@@ -746,7 +741,6 @@ namespace System.Collections.Generic
             }
             _items[index] = item;
             _size++;
-            _version++;
         }
 
         void IList.Insert(int index, object? item)
@@ -807,7 +801,6 @@ namespace System.Collections.Generic
                         c.CopyTo(_items, index);
                     }
                     _size += count;
-                    _version++;
                 }
             }
             else
@@ -954,7 +947,6 @@ namespace System.Collections.Generic
 
             int result = _size - freeIndex;
             _size = freeIndex;
-            _version++;
             return result;
         }
 
@@ -975,7 +967,6 @@ namespace System.Collections.Generic
             {
                 _items[_size] = default!;
             }
-            _version++;
         }
 
         // Removes a range of elements from this list.
@@ -1002,7 +993,6 @@ namespace System.Collections.Generic
                     Array.Copy(_items, index + count, _items, index, _size - index);
                 }
 
-                _version++;
                 if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 {
                     Array.Clear(_items, _size, count);
@@ -1038,7 +1028,6 @@ namespace System.Collections.Generic
             {
                 Array.Reverse(_items, index, count);
             }
-            _version++;
         }
 
         // Sorts the elements in this list.  Uses the default comparer and
@@ -1078,7 +1067,6 @@ namespace System.Collections.Generic
             {
                 Array.Sort<T>(_items, index, count, comparer);
             }
-            _version++;
         }
 
         public void Sort(Comparison<T> comparison)
@@ -1092,7 +1080,6 @@ namespace System.Collections.Generic
             {
                 ArraySortHelper<T>.Sort(new Span<T>(_items, 0, _size), comparison);
             }
-            _version++;
         }
 
         // ToArray returns an array containing the contents of the List.
@@ -1148,14 +1135,14 @@ namespace System.Collections.Generic
         {
             private readonly List<T> _list;
             private int _index;
-            private readonly int _version;
+            private readonly int _size;
             private T? _current;
 
             internal Enumerator(List<T> list)
             {
                 _list = list;
                 _index = 0;
-                _version = list._version;
+                _size = list._size;
                 _current = default;
             }
 
@@ -1167,7 +1154,7 @@ namespace System.Collections.Generic
             {
                 List<T> localList = _list;
 
-                if (_version == localList._version && ((uint)_index < (uint)localList._size))
+                if (_size == localList._size && ((uint)_index < (uint)localList._size))
                 {
                     _current = localList._items[_index];
                     _index++;
@@ -1178,7 +1165,7 @@ namespace System.Collections.Generic
 
             private bool MoveNextRare()
             {
-                if (_version != _list._version)
+                if (_size != _list._size)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
@@ -1204,7 +1191,7 @@ namespace System.Collections.Generic
 
             void IEnumerator.Reset()
             {
-                if (_version != _list._version)
+                if (_size != _list._size)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }

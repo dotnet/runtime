@@ -29,7 +29,7 @@ namespace System.Collections.Generic
         private int _head;       // The index from which to dequeue if the queue isn't empty.
         private int _tail;       // The index at which to enqueue if the queue isn't full.
         private int _size;       // Number of elements.
-        private int _version;
+        // Needs additional changes for missing field in binary serialization
 
         // Creates a queue with room for capacity objects. The default initial
         // capacity and grow factor are used.
@@ -91,7 +91,6 @@ namespace System.Collections.Generic
 
             _head = 0;
             _tail = 0;
-            _version++;
         }
 
         // CopyTo copies a collection into an Array, starting at a particular
@@ -178,7 +177,6 @@ namespace System.Collections.Generic
             _array[_tail] = item;
             MoveNext(ref _tail);
             _size++;
-            _version++;
         }
 
         // GetEnumerator returns an IEnumerator over this Queue.  This
@@ -219,7 +217,6 @@ namespace System.Collections.Generic
             }
             MoveNext(ref _head);
             _size--;
-            _version++;
             return removed;
         }
 
@@ -241,7 +238,6 @@ namespace System.Collections.Generic
             }
             MoveNext(ref _head);
             _size--;
-            _version++;
             return true;
         }
 
@@ -337,7 +333,6 @@ namespace System.Collections.Generic
             _array = newarray;
             _head = 0;
             _tail = (_size == capacity) ? 0 : _size;
-            _version++;
         }
 
         // Increments the index wrapping it if necessary.
@@ -416,14 +411,14 @@ namespace System.Collections.Generic
             System.Collections.IEnumerator
         {
             private readonly Queue<T> _q;
-            private readonly int _version;
+            private readonly int _size;
             private int _index;   // -1 = not started, -2 = ended/disposed
             private T? _currentElement;
 
             internal Enumerator(Queue<T> q)
             {
                 _q = q;
-                _version = q._version;
+                _size = q._size;
                 _index = -1;
                 _currentElement = default;
             }
@@ -436,7 +431,7 @@ namespace System.Collections.Generic
 
             public bool MoveNext()
             {
-                if (_version != _q._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                if (_size != _q._size) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
 
                 if (_index == -2)
                     return false;
@@ -497,7 +492,7 @@ namespace System.Collections.Generic
 
             void IEnumerator.Reset()
             {
-                if (_version != _q._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                if (_size != _q._size) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 _index = -1;
                 _currentElement = default;
             }
