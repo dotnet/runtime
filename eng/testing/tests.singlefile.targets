@@ -113,8 +113,12 @@
 
   <Target Name="__ReplaceCrossgen2ExecutableWithFreshlyBuiltOne"
           BeforeTargets="_PrepareForReadyToRunCompilation">
+    <PropertyGroup>
+      <Crossgen2ArtifactPath>$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)</Crossgen2ArtifactPath>
+    </PropertyGroup>
+
     <ItemGroup>
-      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(CoreCLRCrossgen2Dir)')" />
+      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(Crossgen2ArtifactPath)')" />
       <Crossgen2Tool Remove="@(Crossgen2Tool)" />
       <Crossgen2Tool Include="@(Crossgen2CurrentTool)" />
     </ItemGroup>
