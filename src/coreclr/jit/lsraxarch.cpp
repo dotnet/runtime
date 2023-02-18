@@ -1002,7 +1002,7 @@ int LinearScan::BuildSelect(GenTreeOp* select)
     // correctly).
     if (select->OperIs(GT_SELECTCC))
     {
-        GenCondition cc = select->AsOpCC()->gtCondition;
+        GenCondition cc = select->AsOpFlagsCC()->gtCondition;
         switch (cc.GetCode())
         {
             case GenCondition::FEQ:

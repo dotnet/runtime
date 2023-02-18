@@ -126,8 +126,15 @@ void LIR::Use::AssertIsValid() const
     assert(Def() != nullptr);
 
     GenTree** useEdge = nullptr;
-    assert(m_user->TryGetUse(Def(), &useEdge));
-    assert(useEdge == m_edge);
+    if (m_user->TryGetUse(Def(), &useEdge))
+    {
+        assert(useEdge == m_edge);
+    }
+    else
+    {
+        GenTree** flagsEdge = m_user->gtGetOpFlagsEdgeIfPresent();
+        assert((flagsEdge != nullptr) && (flagsEdge == m_edge));
+    }
 }
 
 //------------------------------------------------------------------------
@@ -933,6 +940,12 @@ void LIR::Range::Remove(GenTree* node, bool markOperandsUnused)
             }
             return GenTree::VisitResult::Continue;
         });
+
+        GenTree* opFlags = node->gtGetOpFlagsIfPresent();
+        if (opFlags != nullptr)
+        {
+            opFlags->ClearProducesFlags();
+        }
     }
 
     GenTree* prev = node->gtPrev;
@@ -1131,6 +1144,39 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 }
 
 //------------------------------------------------------------------------
+// LIR::Range::TryGetFlagsUse: Try to find the flags use for a given node.
+//
+// Arguments:
+//    node - The node for which to find the corresponding flags use.
+//    use (out) - The use of the corresponding node, if any. Invalid if
+//                this method returns false.
+//
+// Return Value: Returns true if a flags use was found; false otherwise.
+//
+bool LIR::Range::TryGetFlagsUse(GenTree* node, Use* use)
+{
+    assert(node != nullptr);
+    assert(use != nullptr);
+    assert(Contains(node));
+
+    if (node->ProducesFlags() && (node != LastNode()))
+    {
+        for (GenTree* n : ReadOnlyRange(node->gtNext, m_lastNode))
+        {
+            GenTree** flagsEdge = n->gtGetOpFlagsEdgeIfPresent();
+            if ((flagsEdge != nullptr) && (*flagsEdge == node))
+            {
+                *use = Use(*this, flagsEdge, n);
+                return true;
+            }
+        }
+    }
+
+    *use = Use();
+    return false;
+}
+
+//------------------------------------------------------------------------
 // LIR::Range::GetTreeRange: Computes the subrange that includes all nodes
 //                           in the dataflow trees rooted at a particular
 //                           set of nodes.
@@ -1156,12 +1202,14 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 //    return firstNode
 //
 // Instead of using a set for the worklist, the implementation uses the
-// `LIR::Mark` bit of the `GenTree::LIRFlags` field to track whether or
+// `LIR::Mark` bits of the `GenTree::LIRFlags` field to track whether or
 // not a node is in the worklist.
 //
-// Note also that this algorithm depends LIR nodes being SDSU, SDSU defs
-// and uses occurring in the same block, and correct dataflow (i.e. defs
-// occurring before uses).
+// Note also that this algorithm depends LIR nodes being SDSU, SDSU defs and
+// uses occurring in the same block, and correct dataflow (i.e. defs occurring
+// before uses). The exception is for flags nodes that can have two uses (a
+// value use and a flags use). The second mark bit is used to indicate these
+// that a node was used as a flag.
 //
 // Arguments:
 //    root        - The root of the dataflow tree.
@@ -1172,10 +1220,10 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
 // Returns:
 //    The computed subrange.
 //
-LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
-                                              GenTree*  start,
-                                              bool*     isClosed,
-                                              unsigned* sideEffects) const
+LIR::ReadOnlyRange LIR::Range::GetDataFlowRangeWithMarks(unsigned  markCount,
+                                                         GenTree*  start,
+                                                         bool*     isClosed,
+                                                         unsigned* sideEffects) const
 {
     assert(markCount != 0);
     assert(start != nullptr);
@@ -1189,7 +1237,7 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
     GenTree* lastNode  = nullptr;
     for (;;)
     {
-        if ((firstNode->gtLIRFlags & LIR::Flags::Mark) != 0)
+        if ((firstNode->gtLIRFlags & (LIR::Flags::Mark | LIR::Flags::Mark2)) != 0)
         {
             if (lastNode == nullptr)
             {
@@ -1203,9 +1251,40 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
                 return GenTree::VisitResult::Continue;
             });
 
-            // Unmark the node and update `firstNode`
-            firstNode->gtLIRFlags &= ~LIR::Flags::Mark;
-            markCount--;
+            GenTree* opFlags = firstNode->gtGetOpFlagsIfPresent();
+            if (opFlags != nullptr)
+            {
+                opFlags->gtLIRFlags |= LIR::Flags::Mark2;
+            }
+
+            if ((firstNode->gtLIRFlags & LIR::Flags::Mark) == 0)
+            {
+                if (firstNode->IsValue())
+                {
+                    // This node produces a value but we did not see the user.
+                    sawUnmarkedNode = true;
+                }
+            }
+            else
+            {
+                markCount--;
+            }
+
+            if ((firstNode->gtLIRFlags & LIR::Flags::Mark2) == 0)
+            {
+                if (firstNode->ProducesFlags())
+                {
+                    // This node produces flags but we did not see the user.
+                    sawUnmarkedNode = true;
+                }
+            }
+            else
+            {
+                markCount--;
+            }
+
+            // Unmark the node
+            firstNode->gtLIRFlags &= ~(LIR::Flags::Mark | LIR::Flags::Mark2);
         }
         else if (lastNode != nullptr)
         {
@@ -1276,10 +1355,10 @@ LIR::ReadOnlyRange LIR::Range::GetTreeRange(GenTree* root, bool* isClosed, unsig
     assert(root != nullptr);
 
     // Mark the root of the tree
-    const unsigned markCount = 1;
-    root->gtLIRFlags |= LIR::Flags::Mark;
+    const unsigned markCount = 2;
+    root->gtLIRFlags |= LIR::Flags::Mark | LIR::Flags::Mark2;
 
-    return GetMarkedRange(markCount, root, isClosed, sideEffects);
+    return GetDataFlowRangeWithMarks(markCount, root, isClosed, sideEffects);
 }
 
 //------------------------------------------------------------------------
@@ -1312,6 +1391,13 @@ LIR::ReadOnlyRange LIR::Range::GetRangeOfOperandTrees(GenTree* root, bool* isClo
         return GenTree::VisitResult::Continue;
     });
 
+    GenTree* flagsOp = root->gtGetOpFlagsIfPresent();
+    if (flagsOp != nullptr)
+    {
+        flagsOp->gtLIRFlags |= LIR::Flags::Mark;
+        markCount++;
+    }
+
     if (markCount == 0)
     {
         *isClosed    = true;
@@ -1319,7 +1405,7 @@ LIR::ReadOnlyRange LIR::Range::GetRangeOfOperandTrees(GenTree* root, bool* isClo
         return ReadOnlyRange();
     }
 
-    return GetMarkedRange(markCount, root, isClosed, sideEffects);
+    return GetDataFlowRangeWithMarks(markCount, root, isClosed, sideEffects);
 }
 
 #ifdef DEBUG
@@ -1401,28 +1487,8 @@ public:
                             bool     found = const_cast<LIR::Range*>(range)->TryGetUse(readNode, &use);
                             GenTree* user  = found ? use.User() : nullptr;
 
-                            for (GenTree* rangeNode : *range)
-                            {
-                                const char* prefix = nullptr;
-                                if (rangeNode == readNode)
-                                {
-                                    prefix = "read:  ";
-                                }
-                                else if (rangeNode == node)
-                                {
-                                    prefix = "write: ";
-                                }
-                                else if (rangeNode == user)
-                                {
-                                    prefix = "user:  ";
-                                }
-                                else
-                                {
-                                    prefix = "       ";
-                                }
-
-                                compiler->gtDispLIRNode(rangeNode, prefix);
-                            }
+                            LIR::Range::DisplayLIR(compiler, range->FirstNode(), range->LastNode(), readNode, "read:  ",
+                                                   node, "write: ", user, "user:  ");
 
                             assert(!"Write to unaliased local overlaps outstanding read");
                             break;
@@ -1516,6 +1582,85 @@ private:
     ArrayStack<SmallHashTable<GenTree*, GenTree*>*> lclVarReadsMapsCache;
 };
 
+void LIR::Range::DisplayLIR(Compiler*   compiler,
+                            GenTree*    first,
+                            GenTree*    last,
+                            GenTree*    node1,
+                            const char* prefix1,
+                            GenTree*    node2,
+                            const char* prefix2,
+                            GenTree*    node3,
+                            const char* prefix3)
+{
+    assert((first != nullptr) || (last != nullptr));
+    if (first == nullptr)
+    {
+        first = last;
+        for (int i = 0; i < 16 && (first->gtPrev != nullptr); i++)
+        {
+            first = first->gtPrev;
+        }
+    }
+    else
+    {
+        last = first;
+        for (int i = 0; i < 16 && (last->gtNext != nullptr); i++)
+        {
+            last = last->gtNext;
+        }
+    }
+
+    size_t prefixLen = 0;
+    if (prefix1 != nullptr)
+    {
+        prefixLen = max(prefixLen, strlen(prefix1));
+    }
+    if (prefix2 != nullptr)
+    {
+        prefixLen = max(prefixLen, strlen(prefix2));
+    }
+    if (prefix3 != nullptr)
+    {
+        prefixLen = max(prefixLen, strlen(prefix3));
+    }
+
+    char spaces[64];
+    for (size_t i = 0; i < prefixLen && i < ArrLen(spaces); i++)
+        spaces[i] = ' ';
+    spaces[min(ArrLen(spaces) - 1, prefixLen)] = '\0';
+
+    GenTree* node = first;
+    while (true)
+    {
+        const char* prefix = nullptr;
+        if (node == node1)
+        {
+            prefix = prefix1;
+        }
+        else if (node == node2)
+        {
+            prefix = prefix2;
+        }
+        else if (node == node3)
+        {
+            prefix = prefix3;
+        }
+        else
+        {
+            prefix = spaces;
+        }
+
+        compiler->gtDispLIRNode(node, prefix);
+
+        if (node == last)
+        {
+            break;
+        }
+
+        node = node->gtNext;
+    }
+}
+
 //------------------------------------------------------------------------
 // LIR::Range::CheckLIR: Performs a set of correctness checks on the LIR
 //                       contained in this range.
@@ -1549,7 +1694,9 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
 
     SmallHashTable<GenTree*, bool, 32> unusedDefs(compiler->getAllocatorDebugOnly());
 
-    GenTree* prev = nullptr;
+    GenTree* currentFlagsProducer = nullptr;
+    GenTree* prev                 = nullptr;
+
     for (Iterator node = begin(), end = this->end(); node != end; prev = *node, ++node)
     {
         // Verify that the node is allowed in LIR.
@@ -1612,6 +1759,55 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
             }
         }
 
+        GenTree* flagsDef = node->gtGetOpFlagsIfPresent();
+        if (flagsDef != nullptr)
+        {
+            if (flagsDef != currentFlagsProducer)
+            {
+                printf("found flags use of conflicting def\n");
+
+                DisplayLIR(compiler, nullptr, *node, *node, "flags use: ");
+
+                assert(!"found flags use of conflicting def");
+            }
+
+            currentFlagsProducer = nullptr;
+        }
+
+        if (currentFlagsProducer != nullptr)
+        {
+            bool interference = node->ProducesFlags();
+
+#ifdef TARGET_XARCH
+            // We only allow a few interfering nodes for which we know their
+            // codegen does not modify flags. These occur in practice due to
+            // decomposition or after resolution.
+            interference |=
+                !node->OperIsLocal() && !node->OperIs(GT_COPY, GT_RELOAD, GT_SWAP) &&
+                (!node->OperIs(GT_INTRINSIC) || (node->AsIntrinsic()->gtIntrinsicName != NI_SIMD_UpperRestore));
+#else
+            // Other platforms are more explicit about which instructions
+            // modify flags, and we only expect a few kinds of nodes to do that
+            // unless marked with ProducesFlags that is caught above.
+            interference |= node->OperIs(GT_CMP, GT_TEST);
+#endif
+
+            if (interference)
+            {
+                printf("found potentially interfering flags defs\n");
+
+                DisplayLIR(compiler, currentFlagsProducer, *node, currentFlagsProducer, "flags def 1: ", *node,
+                           "flags def 2: ");
+
+                assert(!"found potentially interfering flags defs");
+            }
+        }
+
+        if (node->ProducesFlags())
+        {
+            currentFlagsProducer = *node;
+        }
+
         if (node->IsValue())
         {
             bool added = unusedDefs.AddOrUpdate(*node, true);
@@ -1620,6 +1816,14 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
     }
 
     assert(prev == m_lastNode);
+
+    if (currentFlagsProducer != nullptr)
+    {
+        printf("expected to have used CPU flags at the end of the block\n");
+        DisplayLIR(compiler, currentFlagsProducer, m_lastNode, currentFlagsProducer, "flags def: ");
+
+        assert(!"expected to have used CPU flags at the end of the block");
+    }
 
     // At this point the unusedDefs map should contain only unused values.
     if (checkUnusedValues)

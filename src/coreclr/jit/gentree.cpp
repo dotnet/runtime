@@ -311,8 +311,9 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeLclVarCommon) <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeLclVar)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeLclFld)       <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeCC)           <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeOpCC)         <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeFlagsCC)      <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeOpFlags)      <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeOpFlagsCC)    <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeCast)         <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeBox)          <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeField)        <= TREE_NODE_SZ_LARGE); // *** large node
@@ -3455,8 +3456,8 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
     }
     else if (tree->OperIs(GT_JCC, GT_SETCC))
     {
-        GenTreeCC* cc   = tree->AsCC();
-        cc->gtCondition = GenCondition::Reverse(cc->gtCondition);
+        GenTreeFlagsCC* cc = tree->AsFlagsCC();
+        cc->gtCondition    = GenCondition::Reverse(cc->gtCondition);
     }
     else if (tree->OperIs(GT_JCMP))
     {
@@ -6165,7 +6166,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
 
 // Standard unary operators
 #ifdef TARGET_ARM64
-        case GT_CNEG_LT:
+        case GT_CNEG:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -6944,15 +6945,22 @@ GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, 
     return node;
 }
 
-GenTreeCC* Compiler::gtNewCC(genTreeOps oper, var_types type, GenCondition cond)
+GenTreeOpFlags* Compiler::gtNewOperFlags(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, GenTree* opFlags)
 {
-    GenTreeCC* node = new (this, oper) GenTreeCC(oper, type, cond);
+    GenTreeOpFlags* node = new (this, oper) GenTreeOpFlags(oper, type, op1, op2, opFlags);
     return node;
 }
 
-GenTreeOpCC* Compiler::gtNewOperCC(genTreeOps oper, var_types type, GenCondition cond, GenTree* op1, GenTree* op2)
+GenTreeFlagsCC* Compiler::gtNewFlagsCC(genTreeOps oper, var_types type, GenTree* opFlags, GenCondition cond)
 {
-    GenTreeOpCC* node = new (this, oper) GenTreeOpCC(oper, type, cond, op1, op2);
+    GenTreeFlagsCC* node = new (this, oper) GenTreeFlagsCC(oper, type, opFlags, cond);
+    return node;
+}
+
+GenTreeOpFlagsCC* Compiler::gtNewOperFlagsCC(
+    genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, GenTree* opFlags, GenCondition cond)
+{
+    GenTreeOpFlagsCC* node = new (this, oper) GenTreeOpFlagsCC(oper, type, op1, op2, opFlags, cond);
     return node;
 }
 
@@ -9477,7 +9485,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 
 // Standard unary operators
 #ifdef TARGET_ARM64
-        case GT_CNEG_LT:
+        case GT_CNEG:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -10722,14 +10730,24 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         // two additional characters for alignment.
         if (!hasOperands)
         {
-            msgLength += 1;
+            msgLength++;
         }
 
-        if (tree->IsValue())
+        const char* prefix;
+        if (tree->IsValue() && tree->ProducesFlags())
+            prefix = "t/f";
+        else if (tree->IsValue())
+            prefix = "t";
+        else if (tree->ProducesFlags())
+            prefix = "f";
+        else
+            prefix = nullptr;
+
+        if (prefix != nullptr)
         {
             const size_t bufLength = msgLength - 1;
             msg                    = reinterpret_cast<char*>(_alloca(bufLength * sizeof(char)));
-            sprintf_s(const_cast<char*>(msg), bufLength, "t%d = %s", tree->gtTreeID, hasOperands ? "" : " ");
+            sprintf_s(const_cast<char*>(msg), bufLength, "%s%d = %s", prefix, tree->gtTreeID, hasOperands ? "" : " ");
         }
     }
 
@@ -11708,7 +11726,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         case GT_JCC:
         case GT_SETCC:
-            printf(" cond=%s", tree->AsCC()->gtCondition.Name());
+            printf(" cond=%s", tree->AsFlagsCC()->gtCondition.Name());
             break;
         case GT_JCMP:
             printf(" cond=%s%s", (tree->gtFlags & GTF_JCMP_TST) ? "TEST_" : "",
@@ -12066,7 +12084,7 @@ void Compiler::gtDispTree(GenTree*     tree,
         }
         else if (tree->OperIs(GT_SELECTCC))
         {
-            printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
+            printf(" cond=%s", tree->AsOpFlagsCC()->gtCondition.Name());
         }
 
         gtDispCommonEndLine(tree);
@@ -12637,8 +12655,8 @@ void Compiler::gtDispTreeRange(LIR::Range& containingRange, GenTree* tree)
 //
 void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr */)
 {
-    auto displayOperand = [](GenTree* operand, const char* message, IndentInfo operandArc, IndentStack& indentStack,
-                             size_t prefixIndent) {
+    auto displayOperand = [node](GenTree* operand, const char* message, IndentInfo operandArc, IndentStack& indentStack,
+                                 size_t prefixIndent) {
         assert(operand != nullptr);
         assert(message != nullptr);
 
@@ -12655,7 +12673,9 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
         indentStack.Pop();
         operandArc = IIArc;
 
-        printf("  t%-5d %-6s %s\n", operand->gtTreeID, varTypeName(operand->TypeGet()), message);
+        bool isFlagsUse = operand == node->gtGetOpFlagsIfPresent();
+        printf("  %s%-5d %-6s %s\n", isFlagsUse ? "f" : "t", operand->gtTreeID,
+               isFlagsUse ? "flags" : varTypeName(operand->TypeGet()), message);
     };
 
     IndentStack indentStack(this);
@@ -12745,6 +12765,13 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
             displayOperand(operand, "", operandArc, indentStack, prefixIndent);
         }
 
+        operandArc = IIArc;
+    }
+
+    GenTree* opFlags = node->gtGetOpFlagsIfPresent();
+    if (opFlags != nullptr)
+    {
+        displayOperand(opFlags, "", operandArc, indentStack, prefixIndent);
         operandArc = IIArc;
     }
 

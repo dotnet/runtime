@@ -1088,7 +1088,8 @@ public:
     inline void SetUnusedValue();
     inline void ClearUnusedValue();
     inline bool IsUnusedValue() const;
-    // Indicates whether this node produces CPU flags consumed by a subsequent node.
+    // Indicates whether this node produces CPU flags consumed by a subsequent node. Used by codegen also to
+    // emit variants of instructions that produce CPU flags (e.g. add -> adds on arm64).
     inline void SetProducesFlags();
     inline void ClearProducesFlags();
     inline bool ProducesFlags() const;
@@ -1689,15 +1690,6 @@ public:
         return OperIs(GT_JTRUE, GT_JCMP, GT_JCC);
     }
 
-    bool OperConsumesFlags() const
-    {
-#if !defined(TARGET_64BIT)
-        if (OperIs(GT_ADD_HI, GT_SUB_HI))
-            return true;
-#endif
-        return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
-    }
-
 #ifdef DEBUG
     static const GenTreeDebugOperKind gtDebugOperKindTable[];
 
@@ -1791,6 +1783,10 @@ public:
 
     // The returned pointer might be nullptr if the node is not binary, or if non-null op2 is not required.
     inline GenTree* gtGetOp2IfPresent() const;
+
+    inline GenTree** gtGetOpFlagsEdgeIfPresent();
+
+    inline GenTree* gtGetOpFlagsIfPresent() const;
 
     inline GenTree*& Data();
 
@@ -8528,37 +8524,56 @@ public:
     }
 };
 
-// Represents a GT_JCC or GT_SETCC node.
-struct GenTreeCC final : public GenTree
+// Represents a node with a flags operand and a condition.
+struct GenTreeFlagsCC : public GenTree
 {
+    GenTree*     gtOpFlags;
     GenCondition gtCondition;
 
-    GenTreeCC(genTreeOps oper, var_types type, GenCondition condition)
-        : GenTree(oper, type DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
+    GenTreeFlagsCC(genTreeOps oper, var_types type, GenTree* opFlags, GenCondition condition)
+        : GenTree(oper, type DEBUGARG(/*largeNode*/ FALSE)), gtOpFlags(opFlags), gtCondition(condition)
     {
         assert(OperIs(GT_JCC, GT_SETCC));
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeCC() : GenTree()
+    GenTreeFlagsCC() : GenTree()
     {
     }
 #endif // DEBUGGABLE_GENTREE
 };
 
-// Represents a node with two operands and a condition.
-struct GenTreeOpCC final : public GenTreeOp
+// Represents a node with up to two value operands and a flags operand.
+struct GenTreeOpFlags : public GenTreeOp
+{
+    GenTree* gtOpFlags;
+
+    GenTreeOpFlags(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, GenTree* opFlags)
+        : GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ FALSE)), gtOpFlags(opFlags)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeOpFlags() : GenTreeOp()
+    {
+    }
+#endif // DEBUGGABLE_GENTREE
+};
+
+// Represents a node with up to two value operands, a flags operand, and a condition.
+struct GenTreeOpFlagsCC : public GenTreeOpFlags
 {
     GenCondition gtCondition;
 
-    GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree* op1 = nullptr, GenTree* op2 = nullptr)
-        : GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
+    GenTreeOpFlagsCC(
+        genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, GenTree* opFlags, GenCondition condition)
+        : GenTreeOpFlags(oper, type, op1, op2, opFlags), gtCondition(condition)
     {
         assert(OperIs(GT_SELECTCC));
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeOpCC() : GenTreeOp()
+    GenTreeOpFlagsCC() : GenTreeOpFlags()
     {
     }
 #endif // DEBUGGABLE_GENTREE
@@ -8975,6 +8990,41 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
     assert((op2 != nullptr) || !RequiresNonNullOp2(gtOper));
 
     return op2;
+}
+
+inline GenTree** GenTree::gtGetOpFlagsEdgeIfPresent()
+{
+    if (OperIs(GT_SETCC, GT_JCC))
+    {
+        return &AsFlagsCC()->gtOpFlags;
+    }
+
+    if (OperIs(GT_SELECTCC))
+    {
+        return &AsOpFlagsCC()->gtOpFlags;
+    }
+
+#ifdef TARGET_ARM64
+    if (OperIs(GT_CSNEG, GT_CNEG))
+    {
+        return &AsOpFlagsCC()->gtOpFlags;
+    }
+#endif
+
+#ifndef TARGET_64BIT
+    if (OperIs(GT_ADD_HI, GT_SUB_HI))
+    {
+        return &AsOpFlags()->gtOpFlags;
+    }
+#endif
+
+    return nullptr;
+}
+
+inline GenTree* GenTree::gtGetOpFlagsIfPresent() const
+{
+    GenTree** ptr = const_cast<GenTree*>(this)->gtGetOpFlagsEdgeIfPresent();
+    return ptr == nullptr ? nullptr : *ptr;
 }
 
 inline GenTree*& GenTree::Data()

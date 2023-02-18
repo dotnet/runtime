@@ -2225,10 +2225,10 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
                 return GenTree::VisitResult::Continue;
             });
 
-            if (node->OperConsumesFlags())
+            GenTree* opFlags = node->gtGetOpFlagsIfPresent();
+            if (opFlags != nullptr)
             {
-                assert(node->gtPrev->ProducesFlags());
-                node->gtPrev->ClearProducesFlags();
+                opFlags->ClearProducesFlags();
             }
 
             blockRange->Remove(node);

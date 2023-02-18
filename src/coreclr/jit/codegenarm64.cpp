@@ -2529,7 +2529,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         assert(varTypeIsIntegral(tree));
 
         // These operations cannot set flags
-        assert((tree->gtFlags & GTF_SET_FLAGS) == 0);
+        assert(!tree->ProducesFlags());
 
         GenTree* a = op1;
         GenTree* b = op2->gtGetOp1();
@@ -2576,7 +2576,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         instruction ins = genGetInsForOper(tree->OperGet(), targetType);
         insOpts     opt = INS_OPTS_NONE;
 
-        if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+        if (tree->ProducesFlags())
         {
             // A subset of operations can still set flags
 
@@ -2649,7 +2649,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         instruction ins = genGetInsForOper(tree->OperGet(), targetType);
         insOpts     opt = INS_OPTS_NONE;
 
-        if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+        if (tree->ProducesFlags())
         {
             // A subset of operations can still set flags
 
@@ -2727,7 +2727,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
 
     instruction ins = genGetInsForOper(tree->OperGet(), targetType);
 
-    if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+    if (tree->ProducesFlags())
     {
         switch (oper)
         {
@@ -3378,7 +3378,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     regNumber   targetReg = tree->GetRegNum();
     instruction ins       = genGetInsForOper(tree->OperGet(), targetType);
 
-    if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+    if (tree->ProducesFlags())
     {
         switch (tree->OperGet())
         {
@@ -10355,18 +10355,19 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
 // Arguments:
 //    tree - conditional op
 //
-void CodeGen::genCodeForCond(GenTreeOp* tree)
+void CodeGen::genCodeForCond(GenTreeOpFlagsCC* tree)
 {
-    assert(tree->OperIs(GT_CSNEG_MI, GT_CNEG_LT));
-    assert(!(tree->gtFlags & GTF_SET_FLAGS));
+    assert(tree->OperIs(GT_CSNEG, GT_CNEG));
+    assert(!tree->ProducesFlags());
     genConsumeOperands(tree);
+
+    insCond cond = JumpKindToInsCond(GenConditionDesc::Get(tree->gtCondition).jumpKind1);
 
     switch (tree->OperGet())
     {
-        case GT_CSNEG_MI:
+        case GT_CSNEG:
         {
-            instruction ins  = INS_csneg;
-            insCond     cond = INS_COND_MI;
+            instruction ins = INS_csneg;
 
             regNumber dstReg = tree->GetRegNum();
             regNumber op1Reg = tree->gtGetOp1()->GetRegNum();
@@ -10376,7 +10377,7 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
             break;
         }
 
-        case GT_CNEG_LT:
+        case GT_CNEG:
         {
             instruction ins  = INS_cneg;
             insCond     cond = INS_COND_LT;

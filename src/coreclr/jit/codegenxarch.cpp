@@ -1387,7 +1387,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     }
     else
     {
-        cc = select->AsOpCC()->gtCondition;
+        cc = select->AsOpFlagsCC()->gtCondition;
     }
 
     // The usual codegen will be
@@ -1848,11 +1848,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_JCC:
-            genCodeForJcc(treeNode->AsCC());
+            genCodeForJcc(treeNode->AsFlagsCC());
             break;
 
         case GT_SETCC:
-            genCodeForSetcc(treeNode->AsCC());
+            genCodeForSetcc(treeNode->AsFlagsCC());
             break;
 
         case GT_SELECT:
@@ -6801,8 +6801,22 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
     }
     else
     {
-        consumer = genTryFindFlagsConsumer(tree, &mutableCond);
-        if (consumer == nullptr)
+        LIR::Use flagsUse;
+        if (!LIR::AsRange(compiler->compCurBB).TryGetFlagsUse(tree, &flagsUse))
+        {
+            return false;
+        }
+
+        GenTree* user = flagsUse.User();
+        if (user->OperIs(GT_SELECTCC))
+        {
+            mutableCond = &user->AsOpFlagsCC()->gtCondition;
+        }
+        else if (user->OperIs(GT_JCC, GT_SETCC))
+        {
+            mutableCond = &user->AsFlagsCC()->gtCondition;
+        }
+        else
         {
             return false;
         }
@@ -6827,51 +6841,6 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
     }
 
     return false;
-}
-
-//------------------------------------------------------------------------
-// genTryFindFlagsConsumer: Given a node that produces flags, try to look ahead
-// for the node that consumes those flags.
-//
-// Parameters:
-//    producer - the node that produces CPU flags
-//    cond     - [out] the pointer to the condition inside that consumer.
-//
-// Returns:
-//    A node that consumes the flags, or nullptr if no such node was found.
-//
-GenTree* CodeGen::genTryFindFlagsConsumer(GenTree* producer, GenCondition** cond)
-{
-    assert(producer->ProducesFlags());
-    // We allow skipping some nodes where we know for sure that the flags are
-    // not consumed. In particular we handle resolution nodes. If we see any
-    // other node after the compare (which is an uncommon case, happens
-    // sometimes with decomposition) then we assume it could consume the flags.
-    for (GenTree* candidate = producer->gtNext; candidate != nullptr; candidate = candidate->gtNext)
-    {
-        if (candidate->OperIs(GT_JCC, GT_SETCC))
-        {
-            *cond = &candidate->AsCC()->gtCondition;
-            return candidate;
-        }
-
-        if (candidate->OperIs(GT_SELECTCC))
-        {
-            *cond = &candidate->AsOpCC()->gtCondition;
-            return candidate;
-        }
-
-        // The following nodes can be inserted between the compare and the user
-        // of the flags by resolution. Codegen for these will never modify CPU
-        // flags.
-        if (!candidate->OperIs(GT_LCL_VAR, GT_COPY, GT_SWAP))
-        {
-            // For other nodes we do the conservative thing.
-            return nullptr;
-        }
-    }
-
-    return nullptr;
 }
 
 #if !defined(TARGET_64BIT)

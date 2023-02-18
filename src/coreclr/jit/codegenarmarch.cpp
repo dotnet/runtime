@@ -319,9 +319,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForBfiz(treeNode->AsOp());
             break;
 
-        case GT_CSNEG_MI:
-        case GT_CNEG_LT:
-            genCodeForCond(treeNode->AsOp());
+        case GT_CSNEG:
+        case GT_CNEG:
+            genCodeForCond(treeNode->AsOpFlagsCC());
             break;
 #endif // TARGET_ARM64
 
@@ -370,11 +370,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // TARGET_ARM64
 
         case GT_JCC:
-            genCodeForJcc(treeNode->AsCC());
+            genCodeForJcc(treeNode->AsFlagsCC());
             break;
 
         case GT_SETCC:
-            genCodeForSetcc(treeNode->AsCC());
+            genCodeForSetcc(treeNode->AsFlagsCC());
             break;
 
         case GT_RETURNTRAP:

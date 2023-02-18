@@ -2595,7 +2595,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 // Arguments:
 //    jcc - The node
 //
-void CodeGen::genCodeForJcc(GenTreeCC* jcc)
+void CodeGen::genCodeForJcc(GenTreeFlagsCC* jcc)
 {
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
     assert(jcc->OperIs(GT_JCC));
@@ -2638,7 +2638,7 @@ void CodeGen::inst_JCC(GenCondition condition, BasicBlock* target)
 // Arguments:
 //    setcc - The node
 //
-void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
+void CodeGen::genCodeForSetcc(GenTreeFlagsCC* setcc)
 {
     assert(setcc->OperIs(GT_SETCC));
 

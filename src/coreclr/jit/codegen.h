@@ -904,7 +904,6 @@ protected:
     void genCompareInt(GenTree* treeNode);
 #ifdef TARGET_XARCH
     bool genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
-    GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
 #endif
 
 #ifdef FEATURE_SIMD
@@ -1202,7 +1201,7 @@ protected:
 #if defined(TARGET_ARM64)
     void genCodeForJumpCompare(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
-    void genCodeForCond(GenTreeOp* tree);
+    void genCodeForCond(GenTreeOpFlagsCC* tree);
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -1586,8 +1585,8 @@ public:
     void inst_JCC(GenCondition condition, BasicBlock* target);
     void inst_SETCC(GenCondition condition, var_types type, regNumber dstReg);
 
-    void genCodeForJcc(GenTreeCC* tree);
-    void genCodeForSetcc(GenTreeCC* setcc);
+    void genCodeForJcc(GenTreeFlagsCC* tree);
+    void genCodeForSetcc(GenTreeFlagsCC* setcc);
 #endif // !TARGET_LOONGARCH64
 };
 

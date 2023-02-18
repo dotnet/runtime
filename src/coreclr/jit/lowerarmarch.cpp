@@ -75,7 +75,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         emitAttr       attr   = emitActualTypeSize(childNode->TypeGet());
         emitAttr       size   = EA_SIZE(attr);
 #ifdef TARGET_ARM
-        insFlags flags = parentNode->gtSetFlags() ? INS_FLAGS_SET : INS_FLAGS_DONT_CARE;
+        insFlags flags = parentNode->ProducesFlags() ? INS_FLAGS_SET : INS_FLAGS_DONT_CARE;
 #endif
 
         switch (parentNode->OperGet())
@@ -187,7 +187,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
     if (!varTypeIsIntegral(childNode))
         return false;
 
-    if ((childNode->gtFlags & GTF_SET_FLAGS) != 0)
+    if (childNode->ProducesFlags())
         return false;
 
     if (childNode->OperMayOverflow() && childNode->gtOverflow())
@@ -203,7 +203,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             return false;
         }
 
-        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        if (parentNode->ProducesFlags())
         {
             // Cannot contain if the parent operation needs to set flags
             return false;
@@ -263,7 +263,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             }
         }
 
-        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        if (parentNode->ProducesFlags())
         {
             // Cannot contain if the parent operation needs to set flags
             return false;
@@ -319,7 +319,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             }
         }
 
-        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        if (parentNode->ProducesFlags())
         {
             // Cannot contain if the parent operation needs to set flags
             return false;
@@ -870,12 +870,14 @@ void Lowering::LowerModPow2(GenTree* node)
         BlockRange().InsertAfter(trueExpr, cnsZero);
 
         GenTree* const cmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, dividend2, cnsZero);
-        cmp->gtFlags |= GTF_SET_FLAGS;
+        cmp->SetProducesFlags();
         BlockRange().InsertAfter(cnsZero, cmp);
         LowerNode(cmp);
 
-        mod->ChangeOper(GT_CNEG_LT);
-        mod->gtOp1 = trueExpr;
+        mod->SetOper(GT_CNEG);
+        mod->gtOp1                      = trueExpr;
+        mod->AsOpFlagsCC()->gtOpFlags   = cmp;
+        mod->AsOpFlagsCC()->gtCondition = GenCondition(GenCondition::SLT);
     }
     else
     {
@@ -890,7 +892,7 @@ void Lowering::LowerModPow2(GenTree* node)
         //     csneg reg0, reg1, reg0, mi
 
         GenTree* const neg = comp->gtNewOperNode(GT_NEG, type, dividend2);
-        neg->gtFlags |= GTF_SET_FLAGS;
+        neg->SetProducesFlags();
         BlockRange().InsertAfter(trueExpr, neg);
 
         GenTreeIntCon* cns2 = comp->gtNewIconNode(divisorCnsValueMinusOne, type);
@@ -900,9 +902,11 @@ void Lowering::LowerModPow2(GenTree* node)
         BlockRange().InsertAfter(cns2, falseExpr);
         LowerNode(falseExpr);
 
-        mod->ChangeOper(GT_CSNEG_MI);
-        mod->gtOp1 = trueExpr;
-        mod->gtOp2 = falseExpr;
+        mod->SetOper(GT_CSNEG);
+        mod->gtOp1                      = trueExpr;
+        mod->gtOp2                      = falseExpr;
+        mod->AsOpFlagsCC()->gtOpFlags   = neg;
+        mod->AsOpFlagsCC()->gtCondition = GenCondition(GenCondition::S);
     }
 
     ContainCheckNode(mod);
@@ -929,7 +933,7 @@ GenTree* Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
     if (!varTypeIsIntegral(node))
         return nullptr;
 
-    if (node->gtFlags & GTF_SET_FLAGS)
+    if (node->ProducesFlags())
         return nullptr;
 
     if (node->gtOverflow())
@@ -958,14 +962,14 @@ GenTree* Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
         c   = op1;
     }
 
-    if (mul->OperIs(GT_MUL) && !(mul->gtFlags & GTF_SET_FLAGS) && varTypeIsIntegral(mul) && !mul->gtOverflow() &&
+    if (mul->OperIs(GT_MUL) && !mul->ProducesFlags() && varTypeIsIntegral(mul) && !mul->gtOverflow() &&
         !mul->isContained() && !c->isContained())
     {
         GenTree* a = mul->gtGetOp1();
         GenTree* b = mul->gtGetOp2();
 
         // Transform "-a * b + c" to "c - a * b"
-        if (a->OperIs(GT_NEG) && !(a->gtFlags & GTF_SET_FLAGS) && !b->OperIs(GT_NEG) && !a->isContained() &&
+        if (a->OperIs(GT_NEG) && !a->ProducesFlags() && !b->OperIs(GT_NEG) && !a->isContained() &&
             !a->gtGetOp1()->isContained())
         {
             mul->AsOp()->gtOp1 = a->gtGetOp1();
@@ -979,7 +983,7 @@ GenTree* Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
             return node->gtNext;
         }
         // Transform "a * -b + c" to "c - a * b"
-        else if (b->OperIs(GT_NEG) && !(b->gtFlags & GTF_SET_FLAGS) && !a->OperIs(GT_NEG) && !b->isContained() &&
+        else if (b->OperIs(GT_NEG) && !b->ProducesFlags() && !a->OperIs(GT_NEG) && !b->isContained() &&
                  !b->gtGetOp1()->isContained())
         {
             mul->AsOp()->gtOp2 = b->gtGetOp1();
@@ -2513,7 +2517,7 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
     if (!varTypeIsIntegral(neg))
         return;
 
-    if ((neg->gtFlags & GTF_SET_FLAGS))
+    if (neg->ProducesFlags())
         return;
 
     GenTree* childNode = neg->gtGetOp1();
@@ -2529,7 +2533,7 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
         if (!varTypeIsIntegral(childNode))
             return;
 
-        if ((childNode->gtFlags & GTF_SET_FLAGS))
+        if (childNode->ProducesFlags())
             return;
 
         if (IsInvariantInRange(childNode, neg))

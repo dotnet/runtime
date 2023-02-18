@@ -927,24 +927,21 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     loResult->AsOp()->gtOp1 = loOp1;
 
     GenTree* zero = m_compiler->gtNewZeroConNode(TYP_INT);
+    // The zero may modify flags, so keep it before we start the instructions that produce/consume flags.
+    Range().InsertBefore(loResult, zero);
 
 #if defined(TARGET_X86)
 
-    GenTree* hiAdjust = m_compiler->gtNewOperNode(GT_ADD_HI, TYP_INT, hiOp1, zero);
+    loResult->SetProducesFlags();
+    GenTree* hiAdjust = m_compiler->gtNewOperFlags(GT_ADD_HI, TYP_INT, hiOp1, zero, loResult);
     GenTree* hiResult = m_compiler->gtNewOperNode(GT_NEG, TYP_INT, hiAdjust);
-    Range().InsertAfter(loResult, zero, hiAdjust, hiResult);
-
-    loResult->gtFlags |= GTF_SET_FLAGS;
+    Range().InsertAfter(loResult, hiAdjust, hiResult);
 
 #elif defined(TARGET_ARM)
 
-    // We tend to use "movs" to load zero to a register, and that sets the flags, so put the
-    // zero before the loResult, which is setting the flags needed by GT_SUB_HI.
-    GenTree* hiResult = m_compiler->gtNewOperNode(GT_SUB_HI, TYP_INT, zero, hiOp1);
-    Range().InsertBefore(loResult, zero);
+    loResult->SetProducesFlags();
+    GenTree* hiResult = m_compiler->gtNewOperFlags(GT_SUB_HI, TYP_INT, zero, hiOp1, loResult);
     Range().InsertAfter(loResult, hiResult);
-
-    loResult->gtFlags |= GTF_SET_FLAGS;
 
 #endif
 
@@ -993,12 +990,12 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
     loResult->AsOp()->gtOp1 = loOp1;
     loResult->AsOp()->gtOp2 = loOp2;
 
-    GenTree* hiResult = new (m_compiler, oper) GenTreeOp(GetHiOper(oper), TYP_INT, hiOp1, hiOp2);
-    Range().InsertAfter(loResult, hiResult);
+    GenTree* hiResult;
 
     if ((oper == GT_ADD) || (oper == GT_SUB))
     {
-        loResult->gtFlags |= GTF_SET_FLAGS;
+        loResult->SetProducesFlags();
+        hiResult = m_compiler->gtNewOperFlags(GetHiOper(oper), TYP_INT, hiOp1, hiOp2, loResult);
 
         if ((loResult->gtFlags & GTF_OVERFLOW) != 0)
         {
@@ -1010,6 +1007,12 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
             hiResult->gtFlags |= GTF_UNSIGNED;
         }
     }
+    else
+    {
+        hiResult = m_compiler->gtNewOperNode(GetHiOper(oper), TYP_INT, hiOp1, hiOp2);
+    }
+
+    Range().InsertAfter(loResult, hiResult);
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
@@ -1211,7 +1214,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     //
                     // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything that
                     // feeds the lo operand while there are no side effects)
-                    if ((loOp1->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
+                    if (((loOp1->gtFlags & GTF_ALL_EFFECT) == 0) && !loOp1->ProducesFlags())
                     {
                         Range().Remove(loOp1, true);
                     }
@@ -1280,7 +1283,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     //
                     // TODO-CQ: we could go perform this removal transitively (i.e. iteratively remove everything that
                     // feeds the lo operand while there are no side effects)
-                    if ((loOp1->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
+                    if (((loOp1->gtFlags & GTF_ALL_EFFECT) == 0) && !loOp1->ProducesFlags())
                     {
                         Range().Remove(loOp1, true);
                     }
@@ -1547,8 +1550,9 @@ GenTree* DecomposeLongs::DecomposeSelect(LIR::Use& use)
     // flags, but for the "upper half" we treat the lower GT_SELECT similar to
     // other flag producing nodes and reuse them. GT_SELECTCC is the variant
     // that uses existing flags and has no condition as part of it.
-    select->gtFlags |= GTF_SET_FLAGS;
-    GenTree* hiSelect = m_compiler->gtNewOperCC(GT_SELECTCC, TYP_INT, GenCondition::NE, hiOp1, hiOp2);
+    select->SetProducesFlags();
+    GenTree* hiSelect =
+        m_compiler->gtNewOperFlagsCC(GT_SELECTCC, TYP_INT, hiOp1, hiOp2, select, GenCondition(GenCondition::NE));
 
     Range().InsertAfter(select, hiSelect);
 
@@ -1882,7 +1886,7 @@ GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast, GenTr
 
     // TODO-CQ: we could go perform this removal transitively.
     // See also identical code in shift decomposition.
-    if ((hiSrc->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
+    if (((hiSrc->gtFlags & GTF_ALL_EFFECT) == 0) && !hiSrc->ProducesFlags())
     {
         JITDUMP("Removing the HI part of [%06u] and marking its operands unused:\n", src->gtTreeID);
         DISPNODE(hiSrc);
@@ -1892,6 +1896,7 @@ GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast, GenTr
     {
         JITDUMP("The HI part of [%06u] has side effects, marking it unused\n", src->gtTreeID);
         hiSrc->SetUnusedValue();
+        hiSrc->ClearProducesFlags();
     }
 
     JITDUMP("Removing the LONG source:\n");
@@ -2044,19 +2049,14 @@ genTreeOps DecomposeLongs::GetHiOper(genTreeOps oper)
     {
         case GT_ADD:
             return GT_ADD_HI;
-            break;
         case GT_SUB:
             return GT_SUB_HI;
-            break;
         case GT_OR:
             return GT_OR;
-            break;
         case GT_AND:
             return GT_AND;
-            break;
         case GT_XOR:
             return GT_XOR;
-            break;
         default:
             assert(!"GetHiOper called for invalid oper");
             return GT_NONE;

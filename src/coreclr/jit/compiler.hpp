@@ -4085,7 +4085,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 
 // Standard unary operators
 #ifdef TARGET_ARM64
-        case GT_CNEG_LT:
+        case GT_CNEG:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:

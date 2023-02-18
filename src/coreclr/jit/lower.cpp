@@ -159,7 +159,7 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
         return true;
     }
 
-    if (node->OperConsumesFlags())
+    if (node->gtGetOpFlagsIfPresent() != nullptr)
     {
         return false;
     }
@@ -208,7 +208,7 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree*
         return true;
     }
 
-    if (node->OperConsumesFlags())
+    if (node->gtGetOpFlagsIfPresent() != nullptr)
     {
         return false;
     }
@@ -1197,7 +1197,7 @@ bool Lowering::TryLowerSwitchToBitTest(
     GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
     GenTree*  bitTest      = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
     bitTest->SetProducesFlags();
-    GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, bbSwitchCondition);
+    GenTreeFlagsCC* jcc = comp->gtNewFlagsCC(GT_JCC, TYP_VOID, bitTest, bbSwitchCondition);
 
     LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
 
@@ -2817,6 +2817,8 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
         }
 
         hiCmp = comp->gtNewOperNode(GT_OR, TYP_INT, loCmp, hiCmp);
+        hiCmp->SetProducesFlags();
+        hiCmp->SetUnusedValue();
         BlockRange().InsertBefore(cmp, hiCmp);
         ContainCheckBinary(hiCmp->AsOp());
     }
@@ -2897,14 +2899,17 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
             }
 
             hiCmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, hiSrc1, hiSrc2);
+            hiCmp->SetProducesFlags();
             BlockRange().InsertBefore(cmp, hiCmp);
             ContainCheckCompare(hiCmp->AsOp());
         }
         else
         {
             loCmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, loSrc1, loSrc2);
-            loCmp->gtFlags |= GTF_SET_FLAGS;
-            hiCmp = comp->gtNewOperNode(GT_SUB_HI, TYP_INT, hiSrc1, hiSrc2);
+            loCmp->SetProducesFlags();
+            hiCmp = comp->gtNewOperFlags(GT_SUB_HI, TYP_INT, hiSrc1, hiSrc2, loCmp);
+            hiCmp->SetProducesFlags();
+            hiCmp->SetUnusedValue();
             BlockRange().InsertBefore(cmp, loCmp, hiCmp);
             ContainCheckCompare(loCmp->AsOp());
             ContainCheckBinary(hiCmp->AsOp());
@@ -2925,12 +2930,6 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
         }
     }
 
-    hiCmp->gtFlags |= GTF_SET_FLAGS;
-    if (hiCmp->IsValue())
-    {
-        hiCmp->SetUnusedValue();
-    }
-
     LIR::Use cmpUse;
     if (BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE))
     {
@@ -2939,14 +2938,16 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
         GenTree* jcc       = cmpUse.User();
         jcc->AsOp()->gtOp1 = nullptr;
         jcc->ChangeOper(GT_JCC);
-        jcc->AsCC()->gtCondition = GenCondition::FromIntegralRelop(condition, cmp->IsUnsigned());
+        jcc->AsFlagsCC()->gtCondition = GenCondition::FromIntegralRelop(condition, cmp->IsUnsigned());
+        jcc->AsFlagsCC()->gtOpFlags   = hiCmp;
     }
     else
     {
         cmp->AsOp()->gtOp1 = nullptr;
         cmp->AsOp()->gtOp2 = nullptr;
         cmp->ChangeOper(GT_SETCC);
-        cmp->AsCC()->gtCondition = GenCondition::FromIntegralRelop(condition, cmp->IsUnsigned());
+        cmp->AsFlagsCC()->gtCondition = GenCondition::FromIntegralRelop(condition, cmp->IsUnsigned());
+        cmp->AsFlagsCC()->gtOpFlags   = hiCmp;
     }
 
     return cmp->gtNext;
@@ -3317,12 +3318,14 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     assert(relop->gtNext == jtrue);
     assert(jtrue->gtNext == nullptr);
 
+    GenTree*     opFlags;
     GenCondition cond;
-    bool         lowered = TryLowerConditionToFlagsNode(jtrue, relop, &cond);
+    bool         lowered = TryLowerConditionToFlagsDef(jtrue, relop, &opFlags, &cond);
     assert(lowered); // Should succeed since relop is right before jtrue
 
-    jtrue->SetOperRaw(GT_JCC);
-    jtrue->AsCC()->gtCondition = cond;
+    jtrue->SetOper(GT_JCC);
+    jtrue->AsFlagsCC()->gtOpFlags   = opFlags;
+    jtrue->AsFlagsCC()->gtCondition = cond;
     return nullptr;
 }
 
@@ -3375,12 +3378,14 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     // TODO-CQ: If we allowed multiple nodes to consume the same CPU flags then
     // we could do this on x86. We currently disable if-conversion for TYP_LONG
     // on 32-bit architectures because of this.
+    GenTree*     flagsDef;
     GenCondition selectCond;
-    if (!select->ProducesFlags() && TryLowerConditionToFlagsNode(select, cond, &selectCond))
+    if (!select->ProducesFlags() && TryLowerConditionToFlagsDef(select, cond, &flagsDef, &selectCond))
     {
-        select->SetOperRaw(GT_SELECTCC);
-        GenTreeOpCC* newSelect = select->AsOpCC();
-        newSelect->gtCondition = selectCond;
+        select->SetOper(GT_SELECTCC);
+        GenTreeOpFlagsCC* newSelect = select->AsOpFlagsCC();
+        newSelect->gtOpFlags        = flagsDef;
+        newSelect->gtCondition      = selectCond;
         ContainCheckSelect(newSelect);
         return newSelect->gtNext;
     }
@@ -3403,7 +3408,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
 // Return Value:
 //     True if relop was transformed and is now right before 'parent'; otherwise false.
 //
-bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* cond)
+bool Lowering::TryLowerConditionToFlagsDef(GenTree* parent, GenTree* condition, GenTree** flags, GenCondition* cond)
 {
     if (condition->OperIsCompare())
     {
@@ -3442,6 +3447,8 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
             BlockRange().InsertBefore(parent, relopOp1);
             BlockRange().Remove(relop);
             BlockRange().Remove(relopOp2);
+
+            *flags = relopOp1;
         }
         else
         {
@@ -3475,6 +3482,8 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
                 BlockRange().Remove(relop);
                 BlockRange().InsertBefore(parent, relop);
             }
+
+            *flags = relop;
         }
 
         return true;
@@ -3483,14 +3492,15 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
     // TODO-Cleanup: Avoid creating these SETCC nodes in the first place.
     if (condition->OperIs(GT_SETCC))
     {
-        assert(condition->gtPrev->ProducesFlags());
-        GenTree* flagsProducer = condition->gtPrev;
+        GenTreeFlagsCC* setCC         = condition->AsFlagsCC();
+        GenTree*        flagsProducer = setCC->gtOpFlags;
         if (!IsInvariantInRange(flagsProducer, parent, condition))
         {
             return false;
         }
 
-        *cond = condition->AsCC()->gtCondition;
+        *flags = flagsProducer;
+        *cond  = setCC->gtCondition;
 
         BlockRange().Remove(condition);
         BlockRange().Remove(flagsProducer);
@@ -3517,7 +3527,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
 //     It's the caller's responsibility to change `node` such that it only
 //     sets the condition flags, without producing a boolean value.
 //
-GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
+GenTreeFlagsCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
 {
     // Skip over a chain of EQ/NE(x, 0) relops. This may be present either
     // because `node` is not a relop and so it cannot be used directly by a
@@ -3551,24 +3561,20 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
         }
     }
 
-    GenTreeCC* cc = nullptr;
+    GenTreeFlagsCC* cc = nullptr;
 
     // Next may be null if `node` is not used. In that case we don't need to generate a SETCC node.
     if (next != nullptr)
     {
         if (next->OperIs(GT_JTRUE))
         {
-            // If the instruction immediately following 'relop', i.e. 'next' is a conditional branch,
-            // it should always have 'relop' as its 'op1'. If it doesn't, then we have improperly
-            // constructed IL (the setting of a condition code should always immediately precede its
-            // use, since the JIT doesn't track dataflow for condition codes). Still, if it happens
-            // it's not our problem, it simply means that `node` is not used and can be removed.
             if (next->AsUnOp()->gtGetOp1() == relop)
             {
                 assert(relop->OperIsCompare());
 
                 next->ChangeOper(GT_JCC);
-                cc              = next->AsCC();
+                cc              = next->AsFlagsCC();
+                cc->gtOpFlags   = node;
                 cc->gtCondition = condition;
             }
         }
@@ -3580,7 +3586,7 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
 
             if (BlockRange().TryGetUse(relop, &use))
             {
-                cc = comp->gtNewCC(GT_SETCC, TYP_INT, condition);
+                cc = comp->gtNewFlagsCC(GT_SETCC, TYP_INT, node, condition);
                 BlockRange().InsertAfter(node, cc);
                 use.ReplaceWith(cc);
             }

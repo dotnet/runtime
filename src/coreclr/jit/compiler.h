@@ -2414,8 +2414,10 @@ public:
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
 
-    GenTreeCC* gtNewCC(genTreeOps oper, var_types type, GenCondition cond);
-    GenTreeOpCC* gtNewOperCC(genTreeOps oper, var_types type, GenCondition cond, GenTree* op1, GenTree* op2);
+    GenTreeOpFlags* gtNewOperFlags(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, GenTree* opFlags);
+    GenTreeFlagsCC* gtNewFlagsCC(genTreeOps oper, var_types type, GenTree* opFlags, GenCondition cond);
+    GenTreeOpFlagsCC* gtNewOperFlagsCC(
+        genTreeOps oper, var_types type, GenTree* op1, GenTree* op2, GenTree* opFlags, GenCondition cond);
 
     GenTreeColon* gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);

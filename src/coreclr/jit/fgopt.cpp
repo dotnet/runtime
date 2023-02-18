@@ -2591,10 +2591,20 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 
         bool               isClosed;
         unsigned           sideEffects;
-        LIR::ReadOnlyRange testRange = blockRange.GetTreeRange(test, &isClosed, &sideEffects);
+        LIR::ReadOnlyRange testRange;
 
-        // TODO-LIR: this should really be checking GTF_ALL_EFFECT, but that produces unacceptable
-        //            diffs compared to the existing backend.
+        if (test->OperIs(GT_JCC))
+        {
+            assert(test->gtPrev->ProducesFlags());
+            test->gtPrev->ClearProducesFlags();
+            testRange = blockRange.GetTreeRange(test->gtPrev, &isClosed, &sideEffects);
+            testRange = LIR::ReadOnlyRange(testRange.FirstNode(), test);
+        }
+        else
+        {
+            testRange = blockRange.GetTreeRange(test, &isClosed, &sideEffects);
+        }
+
         if (isClosed && ((sideEffects & GTF_SIDE_EFFECT) == 0))
         {
             // If the jump and its operands form a contiguous, side-effect-free range,

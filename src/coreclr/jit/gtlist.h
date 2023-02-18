@@ -171,9 +171,9 @@ GTNODE(LONG             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 // to not be modified in phases post-decompose, and operators that return 64-bit
 // results in one instruction.
 GTNODE(ADD_LO           , GenTreeOp          ,1,GTK_BINOP|DBK_NOTHIR)
-GTNODE(ADD_HI           , GenTreeOp          ,1,GTK_BINOP|DBK_NOTHIR)
+GTNODE(ADD_HI           , GenTreeOpFlags     ,1,GTK_BINOP|DBK_NOTHIR)
 GTNODE(SUB_LO           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
-GTNODE(SUB_HI           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SUB_HI           , GenTreeOpFlags     ,0,GTK_BINOP|DBK_NOTHIR)
 
 // The following are nodes that specify shifts that take a GT_LONG op1. The GT_LONG
 // contains the hi and lo parts of three operand shift form where one op will be
@@ -220,8 +220,10 @@ GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
-GTNODE(CSNEG_MI         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Conditional select, negate, minus result
-GTNODE(CNEG_LT          , GenTreeOp          ,0,GTK_UNOP|DBK_NOTHIR)  // Conditional, negate, signed less than result
+// Conditional select negation: value = cond ? op1 : -op2
+GTNODE(CSNEG            , GenTreeOpFlagsCC   ,0,GTK_BINOP|DBK_NOTHIR)
+// Conditional negate: value = cond ? op : -op
+GTNODE(CNEG             , GenTreeOpFlagsCC   ,0,GTK_UNOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------
@@ -239,11 +241,11 @@ GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE|DBK_NOTHI
 // Makes a comparison and jump if the condition specified.  Does not set flags.
 GTNODE(JCMP             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and branch if the condition specified by GenTreeCC::gtCondition is true.
-GTNODE(JCC              , GenTreeCC          ,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)
+GTNODE(JCC              , GenTreeFlagsCC     ,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and produces 1 if the condition specified by GenTreeCC::gtCondition is true and 0 otherwise.
-GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF|DBK_NOTHIR)
+GTNODE(SETCC            , GenTreeFlagsCC     ,0,GTK_LEAF|DBK_NOTHIR)
 // Variant of SELECT that reuses flags computed by a previous node with the specified condition.
-GTNODE(SELECTCC         , GenTreeCC          ,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECTCC         , GenTreeOpFlagsCC   ,0,GTK_BINOP|DBK_NOTHIR)
 
 
 //-----------------------------------------------------------------------------

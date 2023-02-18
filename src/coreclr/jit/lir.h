@@ -27,24 +27,25 @@ public:
         {
             None = 0x00,
 
-            // An arbitrary "mark" bit that can be used in place of a more
-            // expensive data structure when processing a set of LIR nodes. See
-            // for example `LIR::GetTreeRange`.
-            Mark = 0x01,
-
             // Set on a node if it produces a value that is not subsequently
             // used. Should never be set on nodes that return `false` for
             // `GenTree::IsValue`.
-            UnusedValue = 0x02,
+            UnusedValue = 0x01,
 
             // Set on a node if it produces CPU flags that will be consumed by
             // a follow-up node.
-            ProducesFlags = 0x4,
+            ProducesFlags = 0x02,
 
             // Set on a node if it produces a value, but does not require a
             // register (i.e. it can be used from memory). See
             // IsSafeToMarkRegOptional for more information.
-            RegOptional = 0x08,
+            RegOptional = 0x04,
+
+            // Arbitrary "mark" bits that can be used in place of a more
+            // expensive data structure when processing a set of LIR nodes. See
+            // for example `LIR::GetTreeRange`.
+            Mark  = 0x80,
+            Mark2 = 0x40,
         };
     };
 
@@ -246,6 +247,7 @@ public:
         friend class LIR;
         friend struct BasicBlock;
         friend class Rationalizer;
+        friend class CheckLclVarSemanticsHelper;
 
     private:
         Range(GenTree* firstNode, GenTree* lastNode);
@@ -253,7 +255,10 @@ public:
         Range(const Range& other) = delete;
         Range& operator=(const Range& other) = delete;
 
-        ReadOnlyRange GetMarkedRange(unsigned markCount, GenTree* start, bool* isClosed, unsigned* sideEffects) const;
+        ReadOnlyRange GetDataFlowRangeWithMarks(unsigned  markCount,
+                                                GenTree*  start,
+                                                bool*     isClosed,
+                                                unsigned* sideEffects) const;
 
         void FinishInsertBefore(GenTree* insertionPoint, GenTree* first, GenTree* last);
         void FinishInsertAfter(GenTree* insertionPoint, GenTree* first, GenTree* last);
@@ -293,12 +298,22 @@ public:
         void Delete(Compiler* compiler, BasicBlock* block, ReadOnlyRange&& range);
 
         bool TryGetUse(GenTree* node, Use* use);
+        bool TryGetFlagsUse(GenTree* node, Use* use);
 
         ReadOnlyRange GetTreeRange(GenTree* root, bool* isClosed) const;
         ReadOnlyRange GetTreeRange(GenTree* root, bool* isClosed, unsigned* sideEffects) const;
         ReadOnlyRange GetRangeOfOperandTrees(GenTree* root, bool* isClosed, unsigned* sideEffects) const;
 
 #ifdef DEBUG
+        static void DisplayLIR(Compiler*   compiler,
+                               GenTree*    first,
+                               GenTree*    last,
+                               GenTree*    node1   = nullptr,
+                               const char* prefix1 = nullptr,
+                               GenTree*    node2   = nullptr,
+                               const char* prefix2 = nullptr,
+                               GenTree*    node3   = nullptr,
+                               const char* prefix3 = nullptr);
         bool CheckLIR(Compiler* compiler, bool checkUnusedValues = false) const;
 #endif
     };

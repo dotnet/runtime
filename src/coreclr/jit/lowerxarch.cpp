@@ -861,7 +861,7 @@ void Lowering::LowerCast(GenTree* tree)
 //
 void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition)
 {
-    GenTreeCC* cc = LowerNodeCC(node, condition);
+    GenTreeFlagsCC* cc = LowerNodeCC(node, condition);
 
     assert(HWIntrinsicInfo::lookupNumArgs(newIntrinsicId) == 2);
     node->ChangeHWIntrinsicId(newIntrinsicId);
@@ -5915,7 +5915,7 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
 
     if (select->OperIs(GT_SELECTCC))
     {
-        GenCondition cc = select->AsOpCC()->gtCondition;
+        GenCondition cc = select->AsOpFlagsCC()->gtCondition;
 
         // op1 and op2 are emitted as two separate instructions due to the
         // conditional nature of cmov, so both operands can usually be

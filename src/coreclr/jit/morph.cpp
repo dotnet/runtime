@@ -8603,18 +8603,25 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             op1->gtFlags |= GTF_DONT_CSE;
             break;
 
-#ifdef DEBUG
         case GT_QMARK:
         case GT_JTRUE:
-            assert(op1);
+            noway_assert(op1);
 
-            if (!op1->OperIsCompare())
+            if (op1->OperIsCompare())
+            {
+                /* Mark the comparison node with GTF_RELOP_JMP_USED so it knows that it does
+                   not need to materialize the result as a 0 or 1. */
+
+                /* We also mark it as DONT_CSE, as we don't handle QMARKs with nonRELOP op1s */
+                op1->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+            }
+            else
             {
                 GenTree* effOp1 = op1->gtEffectiveVal();
-                assert((effOp1->gtOper == GT_CNS_INT) && (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
+                noway_assert((effOp1->gtOper == GT_CNS_INT) &&
+                             (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
             }
             break;
-#endif
 
         case GT_COLON:
             if (optLocalAssertionProp)
