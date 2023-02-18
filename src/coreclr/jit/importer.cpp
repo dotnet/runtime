@@ -5933,11 +5933,11 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     // thus we can use gtClone(op1) from now on
     //
 
-    GenTree* op2Var = op2;
     if (isCastClass && !partialExpand)
     {
-        op2Var                                                  = fgInsertCommaFormTemp(&op2);
-        lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
+        const unsigned clsTmpNum = lvaGrabTemp(true DEBUGARG("spilling class handle"));
+        impAssignTempGen(clsTmpNum, op2);
+        op2 = gtNewLclvNode(clsTmpNum, op2->TypeGet());
     }
     temp = gtNewMethodTableLookup(temp);
     condMT =
@@ -5971,7 +5971,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             // use the special helper that skips the cases checked by our inlined cast
             specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
         }
-        condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
+        condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, gtClone(op2), gtClone(op1));
     }
     else if (partialExpand)
     {
