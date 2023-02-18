@@ -1,4 +1,7 @@
-// Implementation of ds-rt.h targeting Mono runtime.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// Implementation of ds-rt.h targeting CoreCLR runtime.
 #ifndef __DIAGNOSTICS_RT_MONO_H__
 #define __DIAGNOSTICS_RT_MONO_H__
 

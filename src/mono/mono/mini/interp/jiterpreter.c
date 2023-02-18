@@ -145,16 +145,6 @@ mono_jiterp_encode_leb_signed_boundary (unsigned char * destination, int bits, i
 //  so that jiterpreter traces don't have to inline dozens of wasm instructions worth of
 //  complex logic - these are designed to match interp.c
 
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_fmod (double lhs, double rhs) {
-	return fmod(lhs, rhs);
-}
-
-EMSCRIPTEN_KEEPALIVE double
-mono_jiterp_atan2 (double lhs, double rhs) {
-	return atan2(lhs, rhs);
-}
-
 // If a trace is jitted for a method that hasn't been tiered yet, we need to
 //  update the interpreter entry count for the method.
 EMSCRIPTEN_KEEPALIVE int
@@ -657,6 +647,18 @@ mono_jiterp_interp_entry_prologue (JiterpEntryData *data, void *this_arg)
 	return sp_args;
 }
 
+EMSCRIPTEN_KEEPALIVE int32_t
+mono_jiterp_cas_i32 (volatile int32_t *addr, int32_t newVal, int32_t expected)
+{
+	return mono_atomic_cas_i32 (addr, newVal, expected);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_cas_i64 (volatile int64_t *addr, int64_t *newVal, int64_t *expected, int64_t *oldVal)
+{
+	*oldVal= mono_atomic_cas_i64 (addr, *newVal, *expected);
+}
+
 // should_abort_trace returns one of these codes depending on the opcode and current state
 #define TRACE_IGNORE -1
 #define TRACE_CONTINUE 0
@@ -699,11 +701,10 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_INITOBJ:
 		case MINT_CKNULL:
 		case MINT_LDLOCA_S:
-		case MINT_LDTOKEN:
 		case MINT_LDSTR:
 		case MINT_LDFTN:
 		case MINT_LDFTN_ADDR:
-		case MINT_MONO_LDPTR:
+		case MINT_LDPTR:
 		case MINT_CPOBJ_VT:
 		case MINT_LDOBJ_VT:
 		case MINT_STOBJ_VT:
@@ -734,6 +735,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_INTRINS_TRY_GET_HASHCODE:
 		case MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE:
 		case MINT_INTRINS_ENUM_HASFLAG:
+		case MINT_INTRINS_ORDINAL_IGNORE_CASE_ASCII:
 		case MINT_ADD_MUL_I4_IMM:
 		case MINT_ADD_MUL_I8_IMM:
 		case MINT_ARRAY_RANK:
@@ -1098,7 +1100,6 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_get_hashcode (MonoObject ** ppObj)
 {
 	MonoObject *obj = *ppObj;
-	g_assert (obj);
 	return mono_object_hash_internal (obj);
 }
 
@@ -1106,7 +1107,6 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_try_get_hashcode (MonoObject ** ppObj)
 {
 	MonoObject *obj = *ppObj;
-	g_assert (obj);
 	return mono_object_try_get_hash_internal (obj);
 }
 
@@ -1189,6 +1189,73 @@ EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_debug_count ()
 {
 	return mono_debug_count();
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_rem (double lhs, double rhs) {
+	return fmod(lhs, rhs);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_atan2 (double lhs, double rhs) {
+	return atan2(lhs, rhs);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_acos (double value)
+{
+	return acos(value);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_cos (double value)
+{
+	return cos(value);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_asin (double value)
+{
+	return asin(value);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_sin (double value)
+{
+	return sin(value);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_atan (double value)
+{
+	return atan(value);
+}
+
+EMSCRIPTEN_KEEPALIVE double
+mono_jiterp_math_tan (double value)
+{
+	return tan(value);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_trace_transfer (
+	int displacement, JiterpreterThunk trace, void *frame, void *pLocals
+) {
+	// This indicates that we lost a race condition, so there's no trace to call. Just bail out.
+	// FIXME: Detect this at trace generation time and spin until the trace is available
+	if (!trace)
+		return displacement;
+
+	// When we transfer control to a trace that represents a loop body, at the end of the loop
+	//  body it may branch back to itself. In that case, we can just call it again - the
+	//  safepoint was already performed by the trace.
+	int relative_displacement = 0;
+	while (relative_displacement == 0)
+		relative_displacement = trace(frame, pLocals);
+
+	// We got a relative displacement other than 0, so the trace bailed out somewhere or
+	//  branched to another branch target. Time to return (and our caller will return too.)
+	return displacement + relative_displacement;
 }
 
 // HACK: fix C4206

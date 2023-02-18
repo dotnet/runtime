@@ -2868,7 +2868,8 @@ MethodTableBuilder::EnumerateClassMethods()
         }
 
         // Check for the presence of virtual static methods
-        if (IsMdVirtual(dwMemberAttrs) && IsMdStatic(dwMemberAttrs))
+        bool isStaticVirtual = (IsMdVirtual(dwMemberAttrs) && IsMdStatic(dwMemberAttrs));
+        if (isStaticVirtual)
         {
             bmtProp->fHasVirtualStaticMethods = TRUE;
         }
@@ -3202,7 +3203,7 @@ MethodTableBuilder::EnumerateClassMethods()
             BuildMethodTableThrowException(BFA_GENERIC_METHODS_INST);
         }
 
-        // count how many overrides this method does All methods bodies are defined
+        // Check if the method is a MethodImpl body. All method bodies are defined
         // on this type so we can just compare the tok with the body token found
         // from the overrides.
         implType = METHOD_IMPL_NOT;
@@ -3213,6 +3214,13 @@ MethodTableBuilder::EnumerateClassMethods()
                 implType = METHOD_IMPL;
                 break;
             }
+        }
+
+        if (implType == METHOD_IMPL && isStaticVirtual && IsMdAbstract(dwMemberAttrs))
+        {
+            // Don't record reabstracted static virtual methods as they don't constitute
+            // actual method slots, they're just markers used by the static virtual lookup.
+            continue;
         }
 
         // For delegates we don't allow any non-runtime implemented bodies
@@ -4788,7 +4796,11 @@ VOID MethodTableBuilder::TestMethodImpl(
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_NONVIRTUAL_DECL);
     }
-    if ((IsMdVirtual(dwImplAttrs) && IsMdStatic(dwImplAttrs)) || (!IsMdVirtual(dwImplAttrs) && !IsMdStatic(dwImplAttrs)))
+    if (!!IsMdVirtual(dwImplAttrs) != !!IsMdAbstract(dwImplAttrs) && IsMdStatic(dwImplAttrs))
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL);
+    }
+    if (!IsMdVirtual(dwImplAttrs) && !IsMdStatic(dwImplAttrs))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL);
     }
@@ -5636,7 +5648,10 @@ MethodTableBuilder::ProcessMethodImpls()
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
-        if (!IsMdVirtual(it.Attrs()) && it.IsMethodImpl() && bmtProp->fNoSanityChecks)
+        bool isVirtualStaticOverride = it.IsMethodImpl() && IsMdStatic(it.Attrs()) &&
+            !!IsMdVirtual(it.Attrs()) == !!IsMdAbstract(it.Attrs());
+
+        if (isVirtualStaticOverride && bmtProp->fNoSanityChecks)
         {
             // Non-virtual methods can only be classified as methodImpl when implementing
             // static virtual methods.
@@ -5819,7 +5834,7 @@ MethodTableBuilder::ProcessMethodImpls()
                                 }
 
                                 // 3. Find the matching method.
-                                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig, !IsMdVirtual(it.Attrs())); // Search for statics when the impl is non-virtual
+                                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig, isVirtualStaticOverride); // Search for statics when the impl is non-virtual
                             }
                             else
                             {
@@ -5854,7 +5869,7 @@ MethodTableBuilder::ProcessMethodImpls()
                         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL, it.Token());
                     }
 
-                    if (!IsMdVirtual(it.Attrs()) && it.IsMethodImpl() && IsMdStatic(it.Attrs()))
+                    if (isVirtualStaticOverride)
                     {
                         // Non-virtual methods can only be classified as methodImpl when implementing
                         // static virtual methods.

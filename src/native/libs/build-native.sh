@@ -102,7 +102,7 @@ elif [[ "$__TargetOS" == iossimulator ]]; then
     elif [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown iossimulator architecture $__TargetArch."
+        echo "Error: Unknown iOS Simulator architecture $__TargetArch."
         exit 1
     fi
 elif [[ "$__TargetOS" == ios ]]; then
@@ -114,7 +114,7 @@ elif [[ "$__TargetOS" == ios ]]; then
     elif [[ "$__TargetArch" == arm ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"armv7;armv7s\" $__CMakeArgs"
     else
-        echo "Error: Unknown ios architecture $__TargetArch."
+        echo "Error: Unknown iOS architecture $__TargetArch."
         exit 1
     fi
 elif [[ "$__TargetOS" == tvossimulator ]]; then
@@ -126,7 +126,7 @@ elif [[ "$__TargetOS" == tvossimulator ]]; then
     elif [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown tvossimulator architecture $__TargetArch."
+        echo "Error: Unknown tvOS Simulator architecture $__TargetArch."
         exit 1
     fi
 elif [[ "$__TargetOS" == tvos ]]; then
@@ -136,7 +136,7 @@ elif [[ "$__TargetOS" == tvos ]]; then
     if [[ "$__TargetArch" == arm64 ]]; then
         __CMakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $__CMakeArgs"
     else
-        echo "Error: Unknown tvos architecture $__TargetArch."
+        echo "Error: Unknown tvOS architecture $__TargetArch."
         exit 1
     fi
 fi
