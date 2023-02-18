@@ -349,8 +349,7 @@ bool TypeHandle::IsManagedClassObjectPinned() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // Function pointers are always mapped to typeof(IntPtr)
-    return !GetLoaderAllocator()->CanUnload() || IsFnPtrType();
+    return !GetLoaderAllocator()->CanUnload();
 }
 
 void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
