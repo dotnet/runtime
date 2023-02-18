@@ -5706,7 +5706,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                     gtTryRemoveBoxUpstreamEffects(op1);
                 }
 
-                if (gtTreeHasSideEffects(op1, GTF_ALL_EFFECT))
+                if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
                 {
                     impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
                 }
