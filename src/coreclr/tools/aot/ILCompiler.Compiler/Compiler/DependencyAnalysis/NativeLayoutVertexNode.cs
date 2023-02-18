@@ -517,6 +517,12 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var arg in _instantiationArgs)
                     dependencies.Add(new DependencyListEntry(arg, "NativeLayoutInstantiatedTypeSignatureVertexNode instantiation argument signature"));
 
+                if (!_type.ContainsSignatureVariables() && _type.IsRuntimeDeterminedSubtype)
+                {
+                    foreach (var dependency in context.NativeLayout.TemplateConstructableTypes(_type))
+                        dependencies.Add(dependency, "NativeLayoutInstantiatedTypeSignatureVertexNode template");
+                }
+
                 return dependencies;
             }
             public override Vertex WriteVertex(NodeFactory factory)

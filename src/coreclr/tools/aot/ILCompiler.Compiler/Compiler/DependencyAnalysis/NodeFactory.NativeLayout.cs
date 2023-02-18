@@ -192,12 +192,6 @@ namespace ILCompiler.DependencyAnalysis
                     if (!_factory.TypeSystemContext.IsCanonicalDefinitionType(canonicalType, CanonicalFormKind.Any))
                         yield return _factory.NativeLayout.TemplateTypeLayout(canonicalType);
                 }
-
-                foreach (TypeDesc instantiationType in type.Instantiation)
-                {
-                    foreach (var dependency in TemplateConstructableTypes(instantiationType))
-                        yield return dependency;
-                }
             }
 
             // Produce a set of dependencies that is necessary such that if this type
