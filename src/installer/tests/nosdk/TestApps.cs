@@ -8,14 +8,11 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using BundleTests;
 using BundleTests.Helpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Test.Utilities;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.Extensions.DependencyModel;
 using Microsoft.NET.HostModel.AppHost;
@@ -25,33 +22,34 @@ using static Microsoft.DotNet.CoreSetup.Test.NetCoreAppBuilder;
 
 namespace AppHost.Bundle.Tests
 {
-    internal sealed class AppWithSubDirs : IDisposable
+    internal sealed class AppWithSubDirs : TestArtifact
     {
         private const string AppName = nameof(AppWithSubDirs);
 
         private static RepoDirectoriesProvider s_provider => RepoDirectoriesProvider.Default;
 
-        private readonly TempDirectory _outDir = NoSdkTestBase.TempRoot.CreateDirectory();
+        public AppWithSubDirs()
+            : base(GetNewTestArtifactPath(AppName))
+        { }
 
         public string BundleFxDependent(BundleOptions options, Version? bundleVersion = null)
         {
             // First write out the app to a temp directory
-            var tempDir = _outDir.CreateDirectory("temp");
+            var tempDir = Directory.CreateDirectory(Path.Combine(Location, "temp"));
+            WriteAppToDirectory(tempDir.FullName, selfContained: false);
 
             // Now bundle it
-            WriteAppToDirectory(tempDir.Path, selfContained: false);
-
             string singleFile = BundleApp(
                 options,
                 RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AppName),
-                tempDir.Path,
-                _outDir.Path,
+                tempDir.FullName,
+                Location,
                 selfContained: false,
                 bundleVersion);
 
             if (options != BundleOptions.BundleAllContent)
             {
-                CopySentenceSubDir(_outDir.Path);
+                CopySentenceSubDir(Location);
             }
 
             return singleFile;
@@ -60,21 +58,21 @@ namespace AppHost.Bundle.Tests
         public string BundleSelfContained(BundleOptions options, Version? bundleVersion = null)
         {
             // First write out the app to a temp directory
-            var tempDir = _outDir.CreateDirectory("temp");
-            WriteAppToDirectory(tempDir.Path, selfContained: true);
+            var tempDir = Directory.CreateDirectory(Path.Combine(Location, "temp"));
+            WriteAppToDirectory(tempDir.FullName, selfContained: true);
 
             // Now bundle it
             string singleFile = BundleApp(
                 options,
                 RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AppName),
-                tempDir.Path,
-                _outDir.Path,
+                tempDir.FullName,
+                Location,
                 selfContained: true,
                 bundleVersion);
 
             if (options != BundleOptions.BundleAllContent)
             {
-                CopySentenceSubDir(_outDir.Path);
+                CopySentenceSubDir(Location);
             }
 
             return singleFile;
@@ -345,11 +343,6 @@ namespace AppHost.Bundle.Tests
                 overwrite: false);
 
             BundleHelper.AddLongNameContentToAppWithSubDirs(targetDir);
-        }
-
-        public void Dispose()
-        {
-            _outDir.Dispose();
         }
     }
 }
