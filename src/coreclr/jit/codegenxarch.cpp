@@ -6807,14 +6807,14 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
             return false;
         }
 
-        GenTree* user = flagsUse.User();
-        if (user->OperIs(GT_SELECTCC))
+        consumer = flagsUse.User();
+        if (consumer->OperIs(GT_SELECTCC))
         {
-            mutableCond = &user->AsOpFlagsCC()->gtCondition;
+            mutableCond = &consumer->AsOpFlagsCC()->gtCondition;
         }
-        else if (user->OperIs(GT_JCC, GT_SETCC))
+        else if (consumer->OperIs(GT_JCC, GT_SETCC))
         {
-            mutableCond = &user->AsFlagsCC()->gtCondition;
+            mutableCond = &consumer->AsFlagsCC()->gtCondition;
         }
         else
         {
