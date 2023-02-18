@@ -1191,11 +1191,6 @@ namespace System.Collections.Generic
 
             void IEnumerator.Reset()
             {
-                if (_size != _list._size)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-                }
-
                 _index = 0;
                 _current = default;
             }

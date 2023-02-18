@@ -1501,11 +1501,6 @@ namespace System.Collections.Generic
 
             void IEnumerator.Reset()
             {
-                if (_count != _hashSet._count)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-                }
-
                 _index = 0;
                 _current = default!;
             }

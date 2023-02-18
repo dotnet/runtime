@@ -492,7 +492,6 @@ namespace System.Collections.Generic
 
             void IEnumerator.Reset()
             {
-                if (_size != _q._size) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 _index = -1;
                 _currentElement = default;
             }

@@ -1395,11 +1395,6 @@ namespace System.Collections.Generic
 
             void IEnumerator.Reset()
             {
-                if (_count != _dictionary._count)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-                }
-
                 _index = 0;
                 _current = default;
             }
@@ -1626,11 +1621,6 @@ namespace System.Collections.Generic
 
                 void IEnumerator.Reset()
                 {
-                    if (_count != _dictionary._count)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-                    }
-
                     _index = 0;
                     _currentKey = default;
                 }
@@ -1817,11 +1807,6 @@ namespace System.Collections.Generic
 
                 void IEnumerator.Reset()
                 {
-                    if (_count != _dictionary._count)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-                    }
-
                     _index = 0;
                     _currentValue = default;
                 }
