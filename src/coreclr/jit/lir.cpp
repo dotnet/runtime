@@ -1394,7 +1394,7 @@ LIR::ReadOnlyRange LIR::Range::GetRangeOfOperandTrees(GenTree* root, bool* isClo
     GenTree* flagsOp = root->gtGetOpFlagsIfPresent();
     if (flagsOp != nullptr)
     {
-        flagsOp->gtLIRFlags |= LIR::Flags::Mark;
+        flagsOp->gtLIRFlags |= LIR::Flags::Mark2;
         markCount++;
     }
 
