@@ -276,7 +276,8 @@ bool Compiler::fgEnsureFirstBBisScratch()
         fgFirstBB->bbRefs--;
 
         // The new scratch bb will fall through to the old first bb
-        fgAddRefPred(fgFirstBB, block);
+        FlowEdge* const edge = fgAddRefPred(fgFirstBB, block);
+        edge->setLikelihood(1.0);
         fgInsertBBbefore(fgFirstBB, block);
     }
     else
@@ -486,9 +487,9 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
             //
             // Create the new edge [newTarget from blockSwitch]
             //
-            flowList* const newEdge = fgAddRefPred(newTarget, blockSwitch);
+            FlowEdge* const newEdge = fgAddRefPred(newTarget, blockSwitch);
 
-            // Now set the correct value of newEdge->flDupCount
+            // Now set the correct value of newEdge's DupCount
             // and replace any other jumps in jumpTab[] that go to oldTarget.
             //
             i++;
@@ -501,11 +502,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
                     //
                     jumpTab[i] = newTarget;
                     newTarget->bbRefs++;
-
-                    //
-                    // Increment the flDupCount
-                    //
-                    newEdge->flDupCount++;
+                    newEdge->incrementDupCount();
                 }
                 i++; // Check the next entry in jumpTab[]
             }
@@ -599,10 +596,10 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
 //
 // Notes:
 //
-// A block can only appear once in the preds list (for normal preds, not
-// cheap preds): if a predecessor has multiple ways to get to this block, then
-// flDupCount will be >1, but the block will still appear exactly once. Thus, this
-// function assumes that all branches from the predecessor (practically, that all
+// A block can only appear once in the preds list. If a predecessor has multiple
+// ways to get to this block, then the pred edge DupCount will be >1.
+//
+// This function assumes that all branches from the predecessor (practically, that all
 // switch cases that target this block) are changed to branch from the new predecessor,
 // with the same dup count.
 //
@@ -619,11 +616,11 @@ void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock*
 
     bool modified = false;
 
-    for (flowList* const pred : block->PredEdges())
+    for (FlowEdge* const pred : block->PredEdges())
     {
-        if (oldPred == pred->getBlock())
+        if (oldPred == pred->getSourceBlock())
         {
-            pred->setBlock(newPred);
+            pred->setSourceBlock(newPred);
             modified = true;
             break;
         }
@@ -2732,7 +2729,7 @@ void Compiler::fgLinkBasicBlocks()
 
     // Special args to fgAddRefPred so it will use the initialization fast path.
     //
-    flowList* const oldEdge           = nullptr;
+    FlowEdge* const oldEdge           = nullptr;
     bool const      initializingPreds = true;
 
     for (BasicBlock* const curBBdesc : Blocks())
@@ -2745,7 +2742,7 @@ void Compiler::fgLinkBasicBlocks()
             {
                 BasicBlock* const jumpDest = fgLookupBB(curBBdesc->bbJumpOffs);
                 curBBdesc->bbJumpDest      = jumpDest;
-                fgAddRefPred(jumpDest, curBBdesc, oldEdge, initializingPreds);
+                fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
 
                 if (curBBdesc->bbJumpDest->bbNum <= curBBdesc->bbNum)
                 {
@@ -2769,7 +2766,7 @@ void Compiler::fgLinkBasicBlocks()
                 FALLTHROUGH;
 
             case BBJ_NONE:
-                fgAddRefPred(curBBdesc->bbNext, curBBdesc, oldEdge, initializingPreds);
+                fgAddRefPred<initializingPreds>(curBBdesc->bbNext, curBBdesc, oldEdge);
                 break;
 
             case BBJ_EHFILTERRET:
@@ -2795,7 +2792,7 @@ void Compiler::fgLinkBasicBlocks()
                 {
                     BasicBlock* jumpDest = fgLookupBB((unsigned)*(size_t*)jumpPtr);
                     *jumpPtr             = jumpDest;
-                    fgAddRefPred(jumpDest, curBBdesc, oldEdge, initializingPreds);
+                    fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
                     if ((*jumpPtr)->bbNum <= curBBdesc->bbNum)
                     {
                         fgMarkBackwardJump(*jumpPtr, curBBdesc);
@@ -2814,6 +2811,18 @@ void Compiler::fgLinkBasicBlocks()
                 noway_assert(!"Unexpected bbJumpKind");
                 break;
         }
+    }
+
+    // If this is an OSR compile, note the original entry and
+    // the OSR entry block.
+    //
+    // We don't yet alter flow; see fgFixEntryFlowForOSR.
+    //
+    if (opts.IsOSR())
+    {
+        assert(info.compILEntry >= 0);
+        fgEntryBB    = fgLookupBB(0);
+        fgOSREntryBB = fgLookupBB(info.compILEntry);
     }
 
     // Pred lists now established.
@@ -3420,7 +3429,7 @@ void Compiler::fgFindBasicBlocks()
 
     /* Now create the basic blocks */
 
-    unsigned retBlocks = fgMakeBasicBlocks(info.compCode, info.compILCodeSize, jumpTarget);
+    fgReturnCount = fgMakeBasicBlocks(info.compCode, info.compILCodeSize, jumpTarget);
 
     if (compIsForInlining())
     {
@@ -3429,7 +3438,7 @@ void Compiler::fgFindBasicBlocks()
         // If fgFindJumpTargets marked the call as "no return" there
         // really should be no BBJ_RETURN blocks in the method.
         bool markedNoReturn = (impInlineInfo->iciCall->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0;
-        assert((markedNoReturn && (retBlocks == 0)) || (!markedNoReturn && (retBlocks >= 1)));
+        assert((markedNoReturn && (fgReturnCount == 0)) || (!markedNoReturn && (fgReturnCount >= 1)));
 #endif // DEBUG
 
         if (compInlineResult->IsFailure())
@@ -3446,7 +3455,7 @@ void Compiler::fgFindBasicBlocks()
 
         // Use a spill temp for the return value if there are multiple return blocks,
         // or if the inlinee has GC ref locals.
-        if ((info.compRetNativeType != TYP_VOID) && ((retBlocks > 1) || impInlineInfo->HasGcRefLocals()))
+        if ((info.compRetNativeType != TYP_VOID) && ((fgReturnCount > 1) || impInlineInfo->HasGcRefLocals()))
         {
             // If we've spilled the ret expr to a temp we can reuse the temp
             // as the inlinee return spill temp.
@@ -3465,7 +3474,7 @@ void Compiler::fgFindBasicBlocks()
                     // We may have co-opted an existing temp for the return spill.
                     // We likely assumed it was single-def at the time, but now
                     // we can see it has multiple definitions.
-                    if ((retBlocks > 1) && (lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef == 1))
+                    if ((fgReturnCount > 1) && (lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef == 1))
                     {
                         // Make sure it is no longer marked single def. This is only safe
                         // to do if we haven't ever updated the type.
@@ -3487,7 +3496,7 @@ void Compiler::fgFindBasicBlocks()
                 if (info.compRetType == TYP_REF)
                 {
                     // The return spill temp is single def only if the method has a single return block.
-                    if (retBlocks == 1)
+                    if (fgReturnCount == 1)
                     {
                         lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 1;
                         JITDUMP("Marked return spill temp V%02u as a single def temp\n", lvaInlineeReturnSpillTemp);
@@ -3947,39 +3956,36 @@ void Compiler::fgCheckForLoopsInHandlers()
 //
 void Compiler::fgFixEntryFlowForOSR()
 {
-    // Ensure lookup IL->BB lookup table is valid
+    // We should have looked for these blocks in fgLinkBasicBlocks.
     //
-    fgInitBBLookup();
+    assert(fgEntryBB != nullptr);
+    assert(fgOSREntryBB != nullptr);
 
-    // Remember the original entry block in case this method is tail recursive.
-    //
-    fgEntryBB = fgLookupBB(0);
-
-    // Find the OSR entry block.
-    //
-    assert(info.compILEntry >= 0);
-    BasicBlock* const osrEntry = fgLookupBB(info.compILEntry);
-
-    // Remember the OSR entry block so we can find it again later.
-    //
-    fgOSREntryBB = osrEntry;
-
-    // Now branch from method start to the right spot.
+    // Now branch from method start to the OSR entry.
     //
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->bbJumpKind == BBJ_NONE);
     fgRemoveRefPred(fgFirstBB->bbNext, fgFirstBB);
     fgFirstBB->bbJumpKind = BBJ_ALWAYS;
-    fgFirstBB->bbJumpDest = osrEntry;
-    fgAddRefPred(osrEntry, fgFirstBB);
+    fgFirstBB->bbJumpDest = fgOSREntryBB;
+    FlowEdge* const edge  = fgAddRefPred(fgOSREntryBB, fgFirstBB);
+    edge->setLikelihood(1.0);
 
-    // Give the method entry (which will be a scratch BB)
-    // the same weight as the OSR Entry.
+    // We don't know the right weight for this block, since
+    // execution of the method was interrupted within the
+    // loop containing fgOSREntryBB.
     //
-    fgFirstBB->inheritWeight(fgOSREntryBB);
+    // A plausible guess might be to sum the non-backedge
+    // weights of fgOSREntryBB and use those, but we don't
+    // have edge weights available yet. Note that might be
+    // an underestimate.
+    //
+    // For now we just guess that the loop will execute 100x.
+    //
+    fgFirstBB->inheritWeightPercentage(fgOSREntryBB, 1);
 
-    JITDUMP("OSR: redirecting flow at entry from entry " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
-            fgFirstBB->bbNum, osrEntry->bbNum);
+    JITDUMP("OSR: redirecting flow at method entry from " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
+            fgFirstBB->bbNum, fgOSREntryBB->bbNum);
 }
 
 /*****************************************************************************
@@ -5088,9 +5094,9 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         fgRemoveRefPred(succBlock, block);
 
-        for (flowList* const pred : block->PredEdges())
+        for (FlowEdge* const pred : block->PredEdges())
         {
-            BasicBlock* predBlock = pred->getBlock();
+            BasicBlock* predBlock = pred->getSourceBlock();
 
             /* Are we changing a loop backedge into a forward jump? */
 
@@ -5106,7 +5112,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             {
                 // Even if the pred is not a switch, we could have a conditional branch
                 // to the fallthrough, so duplicate there could be preds
-                for (unsigned i = 0; i < pred->flDupCount; i++)
+                for (unsigned i = 0; i < pred->getDupCount(); i++)
                 {
                     fgAddRefPred(succBlock, predBlock);
                 }
@@ -5269,7 +5275,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                     //
                     if (fgHaveValidEdgeWeights && fgHaveProfileWeights())
                     {
-                        flowList* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
+                        FlowEdge* const newEdge = fgGetPredForBlock(jmpBlk, bSrc);
 
                         jmpBlk->bbWeight = (newEdge->edgeWeightMin() + newEdge->edgeWeightMax()) / 2;
                         if (bSrc->bbWeight == BB_ZERO_WEIGHT)
@@ -6091,8 +6097,8 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     if (fgHaveValidEdgeWeights)
     {
         // We will compare the edge weight for our two choices
-        flowList* edgeFromAlt = fgGetPredForBlock(bCur, bAlt);
-        flowList* edgeFromCur = fgGetPredForBlock(bNext, bCur);
+        FlowEdge* edgeFromAlt = fgGetPredForBlock(bCur, bAlt);
+        FlowEdge* edgeFromCur = fgGetPredForBlock(bNext, bCur);
         noway_assert(edgeFromCur != nullptr);
         noway_assert(edgeFromAlt != nullptr);
 

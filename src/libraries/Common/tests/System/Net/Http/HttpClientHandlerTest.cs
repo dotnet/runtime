@@ -153,7 +153,6 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
-        [SkipOnPlatform(TestPlatforms.Android, "TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)

@@ -371,7 +371,7 @@ namespace Microsoft.Interop
                 elementStatements.AddRange(_elementMarshaller.Generate(localElementInfo, elementSubContext));
             }
 
-            if (elementStatements.Any())
+            if (elementStatements.Count != 0)
             {
                 StatementSyntax marshallingStatement = Block(
                     List(_elementMarshaller.Generate(localElementInfo, elementSetupSubContext)

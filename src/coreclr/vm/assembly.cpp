@@ -192,7 +192,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
         // manifest modules of dynamic assemblies are always transient
         m_pModule = ReflectionModule::Create(this, pPEAssembly, pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
-        m_pModule = Module::Create(this, mdFileNil, pPEAssembly, pamTracker);
+        m_pModule = Module::Create(this, pPEAssembly, pamTracker);
 
     InterlockedIncrement((LONG*)&g_cAssemblies);
 
@@ -222,7 +222,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
         FAULT_FORBID();
         //Cannot fail after this point.
 
-        PublishModuleIntoAssembly(m_pModule);
+        InterlockedIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
 
         return;  // Explicit return to let you know you are NOT welcome to add code after the CANNOTTHROW/FAULT_FORBID expires
     }
@@ -1022,28 +1022,7 @@ void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTrac
          module->GetPEAssembly()->GetSimpleName(),
          module->GetDebuggerInfoBits()));
 #endif // DEBUGGING_SUPPORTED
-
-    m_pModule->EnsureFileCanBeStored(module->GetModuleRef());
 }
-
-// This is the final step of publishing a Module into an Assembly. This step cannot fail.
-void Assembly::PublishModuleIntoAssembly(Module *module)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    GetModule()->EnsuredStoreFile(module->GetModuleRef(), module);
-    InterlockedIncrement((LONG*)&m_pClassLoader->m_cUnhashedModules);
-}
-
-
-
-
 
 //*****************************************************************************
 // Set up the list of names of any friend assemblies

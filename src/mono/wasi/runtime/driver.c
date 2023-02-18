@@ -676,21 +676,28 @@ mono_wasm_string_array_new (int size)
 }
 
 #ifdef _WASI_DEFAULT_MAIN
+/*
+ * with wasmtime, this is run as:
+ *  $ wasmtime run--dir . dotnet.wasm MainAssembly [args]
+ *
+ *
+ * arg0: dotnet.wasm
+ * arg1: MainAssembly
+ * arg2-..: args
+ */
 int main(int argc, char * argv[]) {
-	printf("TODOWASI: default main for non-relinked, non-aot apps, TODO\n");
 	if (argc < 2) {
 		printf("Error: First argument must be the name of the main assembly\n");
 		return 1;
 	}
-	// Assume the runtime pack has been copied into the output directory as 'runtime'
-	// Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
-	// AJ: not needed right now as we are bundling all the assemblies in the .wasm
-	mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
+
+	mono_set_assemblies_path("managed");
 	mono_wasm_load_runtime("", 0);
 
-	MonoAssembly* assembly = mono_wasm_assembly_load (argv[1]);
+	const char *assembly_name = argv[1];
+	MonoAssembly* assembly = mono_wasm_assembly_load (assembly_name);
 	if (!assembly) {
-		printf("wasi: mono_wasm_assembly_load returned NULL!\n");
+		printf("Could not load assembly %s\n", assembly_name);
 		return 1;
 	}
 	MonoMethod* entry_method = mono_wasi_assembly_get_entry_point (assembly);
@@ -701,11 +708,12 @@ int main(int argc, char * argv[]) {
 
 	MonoObject* out_exc;
 	MonoObject* out_res;
-	int ret = mono_runtime_run_main(entry_method, argc, argv, &out_exc);
+	// Managed app will see: arg0: MainAssembly, arg1-.. [args]
+	int ret = mono_runtime_run_main(entry_method, argc - 1, &argv[1], &out_exc);
 	if (out_exc) {
 		mono_print_unhandled_exception(out_exc);
 		exit(1);
 	}
-	return ret;
+	return ret < 0 ? -ret : ret;
 }
 #endif

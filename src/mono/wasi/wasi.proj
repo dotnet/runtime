@@ -6,9 +6,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- TODOWASI: icu support -->
-    <!--<ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'lib'))</ICULibDir>-->
-    <!--<ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'lib'))</ICULibDir>-->
+    <ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'lib'))</ICULibDir>
+    <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'lib'))</ICULibDir>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
@@ -149,10 +148,10 @@
           DependsOnTargets="GenerateWasiPropsAndRspFiles;GenerateManagedToNative;BundleTimeZones">
 
     <ItemGroup>
-      <!--<ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;-->
-                                  <!--$(ICULibDir)/libicui18n.a;-->
-                                  <!--$(ICULibDir)/libicudata.a" />-->
-      <!--<ICULibFiles Include="$(ICULibDir)/*.dat" />-->
+      <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
+                                  $(ICULibDir)/libicui18n.a;
+                                  $(ICULibDir)/libicudata.a" />
+      <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>

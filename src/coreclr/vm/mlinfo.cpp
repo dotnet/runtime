@@ -41,6 +41,7 @@
 
 
 
+#define INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMINFO_HASHTABLE_BUCKETS 32
 #define DEBUG_CONTEXT_STR_LEN 2000
@@ -822,6 +823,7 @@ EEMarshalingData::EEMarshalingData(LoaderAllocator* pAllocator, CrstBase *pCrst)
     CONTRACTL_END;
 
     LockOwner lock = {pCrst, IsOwnerOfCrst};
+    m_structILStubCache.Init(INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS, &lock);
     m_CMHelperHashtable.Init(INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS, &lock);
     m_SharedCMHelperToCMInfoMap.Init(INITIAL_NUM_CMINFO_HASHTABLE_BUCKETS, &lock);
 }
@@ -876,6 +878,23 @@ void EEMarshalingData::operator delete(void *pMem)
     LIMITED_METHOD_CONTRACT;
     // Instances of this class are always allocated on the loader heap so
     // the delete operator has nothing to do.
+}
+
+
+void EEMarshalingData::CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    CrstHolder lock(m_lock);
+
+    // Verify that the stub has not already been added by another thread.
+    HashDatum res = 0;
+    if (m_structILStubCache.GetValue(pMT, &res))
+    {
+        return;
+    }
+
+    m_structILStubCache.InsertValue(pMT, pStubMD);
 }
 
 

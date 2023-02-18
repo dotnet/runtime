@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
         private sealed class SyntaxContextReceiver : ISyntaxContextReceiver
         {
-            internal static ISyntaxContextReceiver Create()
+            internal static SyntaxContextReceiver Create()
             {
                 return new SyntaxContextReceiver();
             }

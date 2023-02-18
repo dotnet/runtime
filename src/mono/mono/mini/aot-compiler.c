@@ -188,6 +188,7 @@ typedef struct MonoAotOptions {
 	char *llvm_outfile;
 	char *data_outfile;
 	char *export_symbols_outfile;
+	char *compiled_methods_outfile;
 	GList *profile_files;
 	GList *mibc_profile_files;
 	gboolean save_temps;
@@ -407,6 +408,7 @@ typedef struct MonoAotCompile {
 	FILE *logfile;
 	FILE *instances_logfile;
 	FILE *data_outfile;
+	FILE *compiled_methods_outfile;
 	int datafile_offset;
 	int gc_name_offset;
 	// In this mode, we are emitting dedupable methods that we encounter
@@ -6587,6 +6589,8 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						direct_call_target = symbol;
 						patch_info->type = MONO_PATCH_INFO_NONE;
 					} else if ((m_class_get_image (patch_info->data.method->klass) == acfg->image) && !got_only && is_direct_callable (acfg, method, patch_info)) {
+#if 0
+						// FIXME: Currently not used. It fails as some callees require initialization.
 						MonoCompile *callee_cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, cmethod);
 
 						// Don't compile inflated methods if we're doing dedup
@@ -6600,6 +6604,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 							patch_info->type = MONO_PATCH_INFO_NONE;
 							acfg->stats.direct_calls ++;
 						}
+#endif
 					}
 
 					acfg->stats.all_calls ++;
@@ -7002,6 +7007,13 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_R8_GOT:
 		encode_value (((guint32 *)patch_info->data.target) [MINI_LS_WORD_IDX], p, &p);
 		encode_value (((guint32 *)patch_info->data.target) [MINI_MS_WORD_IDX], p, &p);
+		break;
+	case MONO_PATCH_INFO_X128:
+	case MONO_PATCH_INFO_X128_GOT:
+		encode_value (((guint32 *)patch_info->data.target) [(MINI_LS_WORD_IDX * 2) + MINI_LS_WORD_IDX], p, &p);
+		encode_value (((guint32 *)patch_info->data.target) [(MINI_LS_WORD_IDX * 2) + MINI_MS_WORD_IDX], p, &p);
+		encode_value (((guint32 *)patch_info->data.target) [(MINI_MS_WORD_IDX * 2) + MINI_LS_WORD_IDX], p, &p);
+		encode_value (((guint32 *)patch_info->data.target) [(MINI_MS_WORD_IDX * 2) + MINI_MS_WORD_IDX], p, &p);
 		break;
 	case MONO_PATCH_INFO_VTABLE:
 	case MONO_PATCH_INFO_CLASS:
@@ -8546,6 +8558,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->llvm_outfile = g_strdup (arg + strlen ("llvm-outfile="));
 		} else if (str_begins_with (arg, "export-symbols-outfile=")) {
 			opts->export_symbols_outfile = g_strdup (arg + strlen ("export-symbols-outfile="));
+		} else if (str_begins_with (arg, "compiled-methods-outfile=")) {
+			opts->compiled_methods_outfile = g_strdup (arg + strlen ("compiled-methods-outfile="));
 		} else if (str_begins_with (arg, "temp-path=")) {
 			opts->temp_path = clean_path (g_strdup (arg + strlen ("temp-path=")));
 		} else if (str_begins_with (arg, "save-temps")) {
@@ -9565,6 +9579,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_acfg_unlock (acfg);
 
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
+
+	if (acfg->aot_opts.compiled_methods_outfile && acfg->compiled_methods_outfile != NULL) {
+		if (!mono_method_is_generic_impl (method) && method->token != 0)
+			fprintf (acfg->compiled_methods_outfile, "%x\n", method->token);
+	}
 }
 
 static mono_thread_start_return_t WINAPI
@@ -14525,6 +14544,12 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->logfile = fopen (acfg->aot_opts.logfile, "a+");
 	}
 
+	if (acfg->aot_opts.compiled_methods_outfile && !acfg->dedup_collect_only) {
+		acfg->compiled_methods_outfile = fopen (acfg->aot_opts.compiled_methods_outfile, "w+");
+		if (!acfg->compiled_methods_outfile)
+			aot_printerrf (acfg, "Unable to open compiled-methods-outfile specified file %s\n", acfg->aot_opts.compiled_methods_outfile);
+	}
+
 	if (acfg->aot_opts.data_outfile) {
 		acfg->data_outfile = fopen (acfg->aot_opts.data_outfile, "w+");
 		if (!acfg->data_outfile) {
@@ -14869,9 +14894,12 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	TV_GETTIME (btv);
 
 	acfg->stats.jit_time = GINT64_TO_INT (TV_ELAPSED (atv, btv));
-
+	// Current implementation uses dedup_methods hash table for storing extra methods which are emitted in a dedup AOT image.
+	// Previously, cfg->skip flag in dedup_skip_methods is used for indicating if a method should be emitted in an AOT image.
+	// Method dedup_skip_methods is used only for wasm.
+#ifdef TARGET_WASM
 	dedup_skip_methods (acfg);
-
+#endif
 	if (acfg->dedup_collect_only) {
 		/* We only collected methods from this assembly */
 		acfg_free (acfg);
@@ -14879,6 +14907,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 
 	current_acfg = NULL;
+
+	if (acfg->compiled_methods_outfile) {
+		fclose (acfg->compiled_methods_outfile);
+	}
 
 	return emit_aot_image (acfg);
 }
@@ -15243,6 +15275,13 @@ mono_aot_assemblies (MonoAssembly **assemblies, int nassemblies, guint32 jit_opt
 		assemblies [dedup_aindex] = atmp;
 
 		dedup_methods = g_hash_table_new (NULL, NULL);
+	}
+
+	if (aot_opts.compiled_methods_outfile) {
+		if (g_ensure_directory_exists (aot_opts.compiled_methods_outfile) == FALSE) {
+			fprintf (stderr, "AOT : failed to create the directory to save the compiled method names: %s\n", aot_opts.compiled_methods_outfile);
+			exit (1);
+		}
 	}
 
 	for (int i = 0; i < nassemblies; ++i) {

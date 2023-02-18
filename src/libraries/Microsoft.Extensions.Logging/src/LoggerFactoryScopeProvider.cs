@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.Logging
         {
             private string? _cachedToString;
             private const int MaxItems = 5;
-            private KeyValuePair<string, object?>[] _items = new KeyValuePair<string, object?>[MaxItems];
+            private readonly KeyValuePair<string, object?>[] _items = new KeyValuePair<string, object?>[MaxItems];
 
             public ActivityLogScope(Activity activity, ActivityTrackingOptions activityTrackingOption)
             {

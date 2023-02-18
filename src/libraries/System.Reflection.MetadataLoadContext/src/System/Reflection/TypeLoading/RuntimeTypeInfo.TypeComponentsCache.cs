@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Reflection.Runtime.BindingFlagSupport;
 using System.Threading;
 using RuntimeTypeInfo = System.Reflection.TypeLoading.RoType;
 
 namespace System.Reflection.TypeLoading
 {
-    internal abstract partial class RoType
+    internal partial class RoType
     {
         /// <summary>
         /// TypeComponentsCache objects are allocated on-demand on a per-Type basis to cache hot data for key scenarios.
