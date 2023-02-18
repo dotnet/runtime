@@ -8086,6 +8086,22 @@ PhaseStatus Compiler::fgValueNumber()
     // Compute the side effects of loops.
     optComputeLoopSideEffects();
 
+    // The implementation of optComputeLoopSideEffects() can set some value numbers. These should not be used,
+    // and in fact, the implementation should probably clear them or use a side table or other implementation
+    // to avoid touching the value number field, as for reachable blocks they will get overridden below.
+    {
+        for (BasicBlock* const blk : Blocks())
+        {
+            for (Statement* const stmt : blk->NonPhiStatements())
+            {
+                for (GenTree* const tree : stmt->TreeList())
+                {
+                    tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
+                }
+            }
+        }
+    }
+
     // At the block level, we will use a modified worklist algorithm.  We will have two
     // "todo" sets of unvisited blocks.  Blocks (other than the entry block) are put in a
     // todo set only when some predecessor has been visited, so all blocks have at least one
