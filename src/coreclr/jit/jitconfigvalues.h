@@ -431,6 +431,8 @@ CONFIG_STRING(JitEnableRboRange, W("JitEnableRboRange"))
 CONFIG_STRING(JitEnableTailMergeRange, W("JitEnableTailMergeRange"))
 CONFIG_STRING(JitEnableVNBasedDeadStoreRemovalRange, W("JitEnableVNBasedDeadStoreRemovalRange"))
 CONFIG_STRING(JitEnableEarlyLivenessRange, W("JitEnableEarlyLivenessRange"))
+CONFIG_STRING(JitOnlyOptimizeRange,
+              W("JitOnlyOptimizeRange")) // If set, all methods that do _not_ match are forced into MinOpts
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions

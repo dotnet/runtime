@@ -80,7 +80,7 @@ ac_check_funcs (
   sched_getaffinity sched_setaffinity chmod lstat getdtablesize ftruncate msync
   getpeername utime utimes openlog closelog atexit popen strerror_r inet_pton inet_aton
   poll getfsstat mremap posix_fadvise vsnprintf statfs statvfs setpgid system
-  fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir
+  fork execv execve waitpid localtime_r mkdtemp getrandom getentropy execvp strlcpy stpcpy strtok_r rewinddir
   vasprintf strndup getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
   access inet_ntop Qp2getifaddrs getpid mktemp)
@@ -99,9 +99,9 @@ endif()
 
 check_include_files("sys/types.h;sys/user.h" HAVE_SYS_USER_H)
 
-if(NOT HOST_DARWIN)
-  # getentropy was introduced in macOS 10.12 / iOS 10.0
-  ac_check_funcs (getentropy)
+if(HOST_IOS OR HOST_MACCAT)
+  # getentropy isn't allowed in the AppStore: https://github.com/rust-lang/rust/issues/102643
+  set(HAVE_GETENTROPY 0)
 endif()
 
 if(NOT DISABLE_THREADS)
@@ -248,7 +248,6 @@ if(HOST_WIN32)
 elseif(HOST_IOS)
   set(HAVE_SYSTEM 0)
   set(HAVE_SYS_USER_H 0)
-  set(HAVE_GETENTROPY 0)
   if(HOST_TVOS)
     set(HAVE_PTHREAD_KILL 0)
     set(HAVE_KILL 0)

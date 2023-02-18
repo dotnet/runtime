@@ -104,16 +104,12 @@ extern "C" DWORD __stdcall xmmYmmStateSupport();
 extern "C" DWORD __stdcall avx512StateSupport();
 #endif
 
-const int CPUID_EAX = 0;
-const int CPUID_EBX = 1;
-const int CPUID_ECX = 2;
-const int CPUID_EDX = 3;
-
 inline bool TargetHasAVXSupport()
 {
 #if (defined(TARGET_X86) || defined(TARGET_AMD64))
     int cpuInfo[4];
     __cpuid(cpuInfo, 0x00000001);           // All x86/AMD64 targets support cpuid.
+    const int CPUID_ECX = 2;
     return ((cpuInfo[CPUID_ECX] & (1 << 28)) != 0); // The AVX feature is ECX bit 28.
 #endif // (defined(TARGET_X86) || defined(TARGET_AMD64))
     return false;

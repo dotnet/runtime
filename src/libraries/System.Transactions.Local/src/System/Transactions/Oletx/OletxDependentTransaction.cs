@@ -10,7 +10,7 @@ namespace System.Transactions.Oletx;
 [Serializable]
 internal sealed class OletxDependentTransaction : OletxTransaction
 {
-    private OletxVolatileEnlistmentContainer _volatileEnlistmentContainer;
+    private readonly OletxVolatileEnlistmentContainer _volatileEnlistmentContainer;
 
     private int _completed;
 

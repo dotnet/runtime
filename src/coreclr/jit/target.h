@@ -19,6 +19,10 @@
 #undef TARGET_OSX
 #endif
 
+#ifdef TARGET_APPLE
+#undef TARGET_APPLE
+#endif
+
 #ifdef TARGET_WINDOWS
 #undef TARGET_WINDOWS
 #endif

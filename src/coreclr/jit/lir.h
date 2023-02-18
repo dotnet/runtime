@@ -220,6 +220,8 @@ public:
 #ifdef DEBUG
         bool Contains(GenTree* node) const;
 #endif
+
+        ReadOnlyRange& operator=(ReadOnlyRange&& other);
     };
 
     //------------------------------------------------------------------------
