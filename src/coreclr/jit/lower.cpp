@@ -1196,7 +1196,7 @@ bool Lowering::TryLowerSwitchToBitTest(
     var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
     GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
     GenTree*  bitTest      = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
-    bitTest->gtFlags |= GTF_SET_FLAGS;
+    bitTest->SetProducesFlags();
     GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, bbSwitchCondition);
 
     LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
@@ -3376,7 +3376,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     // we could do this on x86. We currently disable if-conversion for TYP_LONG
     // on 32-bit architectures because of this.
     GenCondition selectCond;
-    if (((select->gtFlags & GTF_SET_FLAGS) == 0) && TryLowerConditionToFlagsNode(select, cond, &selectCond))
+    if (!select->ProducesFlags() && TryLowerConditionToFlagsNode(select, cond, &selectCond))
     {
         select->SetOperRaw(GT_SELECTCC);
         GenTreeOpCC* newSelect = select->AsOpCC();
@@ -3435,7 +3435,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
         if (optimizing && relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0) &&
             relopOp1->SupportsSettingZeroFlag() && IsInvariantInRange(relopOp1, parent))
         {
-            relopOp1->gtFlags |= GTF_SET_FLAGS;
+            relopOp1->SetProducesFlags();
             relopOp1->SetUnusedValue();
 
             BlockRange().Remove(relopOp1);
@@ -3446,7 +3446,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
         else
         {
             relop->gtType = TYP_VOID;
-            relop->gtFlags |= GTF_SET_FLAGS;
+            relop->SetProducesFlags();
 
             if (relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
             {
@@ -3483,7 +3483,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
     // TODO-Cleanup: Avoid creating these SETCC nodes in the first place.
     if (condition->OperIs(GT_SETCC))
     {
-        assert((condition->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
+        assert(condition->gtPrev->ProducesFlags());
         GenTree* flagsProducer = condition->gtPrev;
         if (!IsInvariantInRange(flagsProducer, parent, condition))
         {
@@ -3589,7 +3589,7 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
 
     if (cc != nullptr)
     {
-        node->gtFlags |= GTF_SET_FLAGS;
+        node->SetProducesFlags();
     }
 
     // Remove the chain of EQ/NE(x, 0) relop nodes, if any. Note that if a SETCC was

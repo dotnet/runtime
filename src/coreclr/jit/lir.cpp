@@ -1580,8 +1580,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
                 // other code that relies on being able to reach all the operands from a call node.
                 // The argument of a JTRUE doesn't produce a value (just sets a flag).
                 assert(((node->OperGet() == GT_CALL) && def->OperIs(GT_PUTARG_STK)) ||
-                       ((node->OperGet() == GT_JTRUE) && (def->TypeGet() == TYP_VOID) &&
-                        ((def->gtFlags & GTF_SET_FLAGS) != 0)));
+                       ((node->OperGet() == GT_JTRUE) && (def->TypeGet() == TYP_VOID) && !def->ProducesFlags()));
                 continue;
             }
 

@@ -2215,7 +2215,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
         // (as opposed to side effects of their children).
         // This default case should never include calls or assignments.
         assert(!node->OperRequiresAsgFlag() && !node->OperIs(GT_CALL));
-        if (!node->gtSetFlags() && !node->OperMayThrow(this))
+        if (!node->ProducesFlags() && !node->OperMayThrow(this))
         {
             JITDUMP("Removing dead node:\n");
             DISPNODE(node);
@@ -2225,10 +2225,10 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
                 return GenTree::VisitResult::Continue;
             });
 
-            if (node->OperIs(GT_SELECTCC, GT_SETCC))
+            if (node->OperConsumesFlags())
             {
-                assert((node->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
-                node->gtPrev->gtFlags &= ~GTF_SET_FLAGS;
+                assert(node->gtPrev->ProducesFlags());
+                node->gtPrev->ClearProducesFlags();
             }
 
             blockRange->Remove(node);

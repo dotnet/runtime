@@ -380,8 +380,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_NOREG_AT_USE = 0x00000100, // tree node is in memory at the point of use
 
-    GTF_SET_FLAGS   = 0x00000200, // Requires that codegen for this node set the flags. Use gtSetFlags() to check this flag.
-
 #ifdef TARGET_XARCH
     GTF_DONT_EXTEND = 0x00000400, // This small-typed tree produces a value with undefined upper bits. Used on x86/x64 as a
                                   // lowering optimization and tells the codegen to use instructions like "mov al, [addr]"
@@ -1090,6 +1088,11 @@ public:
     inline void SetUnusedValue();
     inline void ClearUnusedValue();
     inline bool IsUnusedValue() const;
+    // Indicates whether this node produces CPU flags consumed by a subsequent node.
+    inline void SetProducesFlags();
+    inline void ClearProducesFlags();
+    inline bool ProducesFlags() const;
+
     // RegOptional indicates that codegen can still generate code even if it isn't allocated a register.
     inline bool IsRegOptional() const;
     inline void SetRegOptional();
@@ -2218,7 +2221,6 @@ public:
 
     bool gtOverflow() const;
     bool gtOverflowEx() const;
-    bool gtSetFlags() const;
     bool gtRequestSetFlags();
 
 #ifdef DEBUG

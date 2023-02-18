@@ -968,7 +968,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     }
     // now we know there are 3 different operands so attempt to use LEA
     else if (oper == GT_ADD && !varTypeIsFloating(treeNode) && !treeNode->gtOverflowEx() // LEA does not set flags
-             && (op2->isContainedIntOrIImmed() || op2->isUsedFromReg()) && !treeNode->gtSetFlags())
+             && (op2->isContainedIntOrIImmed() || op2->isUsedFromReg()) && !treeNode->ProducesFlags())
     {
         if (op2->isContainedIntOrIImmed())
         {
@@ -1001,7 +1001,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // We can skip emitting 'and reg0, -1` if we know that the upper 32bits of 'reg0' are zero'ed.
     if (compiler->opts.OptimizationEnabled())
     {
-        if ((oper == GT_AND) && (targetType == TYP_INT) && !treeNode->gtSetFlags() && op2->IsIntegralConst(-1) &&
+        if ((oper == GT_AND) && (targetType == TYP_INT) && !treeNode->ProducesFlags() && op2->IsIntegralConst(-1) &&
             emit->AreUpper32BitsZero(targetReg))
         {
             genProduceReg(treeNode);
@@ -4534,7 +4534,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     {
         emitAttr size = emitTypeSize(tree);
 
-        bool mightOptimizeLsh = tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags();
+        bool mightOptimizeLsh = tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->ProducesFlags();
 
         // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
         if (mightOptimizeLsh && shiftBy->IsIntegralConst(1))
@@ -6842,7 +6842,7 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
 //
 GenTree* CodeGen::genTryFindFlagsConsumer(GenTree* producer, GenCondition** cond)
 {
-    assert((producer->gtFlags & GTF_SET_FLAGS) != 0);
+    assert(producer->ProducesFlags());
     // We allow skipping some nodes where we know for sure that the flags are
     // not consumed. In particular we handle resolution nodes. If we see any
     // other node after the compare (which is an uncommon case, happens

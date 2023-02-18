@@ -8603,34 +8603,18 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             op1->gtFlags |= GTF_DONT_CSE;
             break;
 
+#ifdef DEBUG
         case GT_QMARK:
         case GT_JTRUE:
+            assert(op1);
 
-            noway_assert(op1);
-
-            if (op1->OperIsCompare())
-            {
-                /* Mark the comparison node with GTF_RELOP_JMP_USED so it knows that it does
-                   not need to materialize the result as a 0 or 1. */
-
-                /* We also mark it as DONT_CSE, as we don't handle QMARKs with nonRELOP op1s */
-                op1->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
-
-                // Request that the codegen for op1 sets the condition flags
-                // when it generates the code for op1.
-                //
-                // Codegen for op1 must set the condition flags if
-                // this method returns true.
-                //
-                op1->gtRequestSetFlags();
-            }
-            else
+            if (!op1->OperIsCompare())
             {
                 GenTree* effOp1 = op1->gtEffectiveVal();
-                noway_assert((effOp1->gtOper == GT_CNS_INT) &&
-                             (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
+                assert((effOp1->gtOper == GT_CNS_INT) && (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
             }
             break;
+#endif
 
         case GT_COLON:
             if (optLocalAssertionProp)
@@ -9430,23 +9414,6 @@ DONE_MORPHING_CHILDREN:
     op1 = tree->AsOp()->gtOp1;
     op2 = tree->gtGetOp2IfPresent();
 
-    // Do we have an integer compare operation?
-    //
-    if (tree->OperIsCompare() && varTypeIsIntegralOrI(tree->TypeGet()))
-    {
-        // Are we comparing against zero?
-        //
-        if (op2->IsIntegralConst(0))
-        {
-            // Request that the codegen for op1 sets the condition flags
-            // when it generates the code for op1.
-            //
-            // Codegen for op1 must set the condition flags if
-            // this method returns true.
-            //
-            op1->gtRequestSetFlags();
-        }
-    }
     /*-------------------------------------------------------------------------
      * Perform the required oper-specific postorder morphing
      */
@@ -9690,8 +9657,6 @@ DONE_MORPHING_CHILDREN:
         CM_OVF_OP:
             if (tree->gtOverflow())
             {
-                tree->gtRequestSetFlags();
-
                 // Add the excptn-throwing basic block to jump to on overflow
 
                 fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);

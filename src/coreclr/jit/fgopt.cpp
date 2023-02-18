@@ -3842,8 +3842,8 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
                 // For JCC we have an invariant until resolution that the
                 // previous node sets those CPU flags.
                 GenTree* prevNode = jmp->gtPrev;
-                assert((prevNode != nullptr) && ((prevNode->gtFlags & GTF_SET_FLAGS) != 0));
-                prevNode->gtFlags &= ~GTF_SET_FLAGS;
+                assert((prevNode != nullptr) && prevNode->ProducesFlags());
+                prevNode->ClearProducesFlags();
                 jmpRange = blockRange.GetTreeRange(prevNode, &isClosed, &sideEffects);
                 jmpRange = LIR::ReadOnlyRange(jmpRange.FirstNode(), jmp);
             }

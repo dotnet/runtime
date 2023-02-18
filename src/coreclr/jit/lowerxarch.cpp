@@ -4383,8 +4383,7 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
     }
 
     // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
-    if (((addOp2->gtFlags & GTF_SET_FLAGS) != 0) || ((op2->gtFlags & GTF_SET_FLAGS) != 0) ||
-        ((andNode->gtFlags & GTF_SET_FLAGS) != 0))
+    if (addOp2->ProducesFlags() || op2->ProducesFlags() || andNode->ProducesFlags())
     {
         return nullptr;
     }
@@ -4469,7 +4468,7 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
     }
 
     // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
-    if (((opNode->gtFlags & GTF_SET_FLAGS) != 0) || ((negNode->gtFlags & GTF_SET_FLAGS) != 0))
+    if (opNode->ProducesFlags() || negNode->ProducesFlags())
     {
         return nullptr;
     }
@@ -4554,7 +4553,7 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     }
 
     // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
-    if (((andNode->gtFlags & GTF_SET_FLAGS) != 0) || ((notNode->gtFlags & GTF_SET_FLAGS) != 0))
+    if (andNode->ProducesFlags() || notNode->ProducesFlags())
     {
         return nullptr;
     }
@@ -4640,8 +4639,7 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
     }
 
     // Subsequent nodes may rely on CPU flags set by these nodes in which case we cannot remove them
-    if (((addOp2->gtFlags & GTF_SET_FLAGS) != 0) || ((op2->gtFlags & GTF_SET_FLAGS) != 0) ||
-        ((xorNode->gtFlags & GTF_SET_FLAGS) != 0))
+    if (addOp2->ProducesFlags() || op2->ProducesFlags() || xorNode->ProducesFlags())
     {
         return nullptr;
     }

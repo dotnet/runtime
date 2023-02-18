@@ -27,19 +27,24 @@ public:
         {
             None = 0x00,
 
-            Mark = 0x01, // An arbitrary "mark" bit that can be used in place of
-                         // a more expensive data structure when processing a set
-                         // of LIR nodes. See for example `LIR::GetTreeRange`.
+            // An arbitrary "mark" bit that can be used in place of a more
+            // expensive data structure when processing a set of LIR nodes. See
+            // for example `LIR::GetTreeRange`.
+            Mark = 0x01,
 
-            UnusedValue = 0x02, // Set on a node if it produces a value that is not
-                                // subsequently used. Should never be set on nodes
-                                // that return `false` for `GenTree::IsValue`. Note
-                                // that this bit should not be assumed to be valid
-                                // at all points during compilation: it is currently
-                                // only computed during target-dependent lowering.
+            // Set on a node if it produces a value that is not subsequently
+            // used. Should never be set on nodes that return `false` for
+            // `GenTree::IsValue`.
+            UnusedValue = 0x02,
 
-            RegOptional = 0x04, // Set on a node if it produces a value, but does not
-                                // require a register (i.e. it can be used from memory).
+            // Set on a node if it produces CPU flags that will be consumed by
+            // a follow-up node.
+            ProducesFlags = 0x4,
+
+            // Set on a node if it produces a value, but does not require a
+            // register (i.e. it can be used from memory). See
+            // IsSafeToMarkRegOptional for more information.
+            RegOptional = 0x08,
         };
     };
 
@@ -308,33 +313,48 @@ public:
     static void InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range);
 };
 
-inline void GenTree::SetUnusedValue()
+void GenTree::SetUnusedValue()
 {
     gtLIRFlags |= LIR::Flags::UnusedValue;
     ClearContained();
 }
 
-inline void GenTree::ClearUnusedValue()
+void GenTree::ClearUnusedValue()
 {
     gtLIRFlags &= ~LIR::Flags::UnusedValue;
 }
 
-inline bool GenTree::IsUnusedValue() const
+bool GenTree::IsUnusedValue() const
 {
     return (gtLIRFlags & LIR::Flags::UnusedValue) != 0;
 }
 
-inline void GenTree::SetRegOptional()
+void GenTree::SetProducesFlags()
+{
+    gtLIRFlags |= LIR::Flags::ProducesFlags;
+}
+
+void GenTree::ClearProducesFlags()
+{
+    gtLIRFlags &= ~LIR::Flags::ProducesFlags;
+}
+
+bool GenTree::ProducesFlags() const
+{
+    return (gtLIRFlags & LIR::Flags::ProducesFlags) != 0;
+}
+
+void GenTree::SetRegOptional()
 {
     gtLIRFlags |= LIR::Flags::RegOptional;
 }
 
-inline void GenTree::ClearRegOptional()
+void GenTree::ClearRegOptional()
 {
     gtLIRFlags &= ~LIR::Flags::RegOptional;
 }
 
-inline bool GenTree::IsRegOptional() const
+bool GenTree::IsRegOptional() const
 {
     return (gtLIRFlags & LIR::Flags::RegOptional) != 0;
 }
