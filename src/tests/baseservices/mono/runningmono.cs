@@ -9,16 +9,16 @@ namespace TestRunningMono
         public static int Main()
         {
              const int Pass = 100, Fail = 1;
-             /*bool isMono = typeof(object).Assembly.GetType("Mono.RuntimeStructs") != null;
+             bool isMono = typeof(object).Assembly.GetType("Mono.RuntimeStructs") != null;
 
              if(isMono)
-             {*/
+             {
                  return Pass;
-             /*}
+             }
              else
              {
                  return Fail;
-             }*/
+             }
         }
    }
 }
