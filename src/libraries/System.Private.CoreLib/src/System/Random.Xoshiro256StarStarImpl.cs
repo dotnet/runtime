@@ -90,46 +90,16 @@ namespace System
 
             public override int Next(int maxValue)
             {
-                if (maxValue > 1)
-                {
-                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
-                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = BitOperations.Log2Ceiling((uint)maxValue);
-                    while (true)
-                    {
-                        ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);
-                        if (result < (uint)maxValue)
-                        {
-                            return (int)result;
-                        }
-                    }
-                }
+                Debug.Assert(maxValue >= 0);
 
-                Debug.Assert(maxValue == 0 || maxValue == 1);
-                return 0;
+                return (int)NextUInt32((uint)maxValue, this);
             }
 
             public override int Next(int minValue, int maxValue)
             {
-                ulong exclusiveRange = (ulong)((long)maxValue - minValue);
+                Debug.Assert(minValue <= maxValue);
 
-                if (exclusiveRange > 1)
-                {
-                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
-                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = BitOperations.Log2Ceiling(exclusiveRange);
-                    while (true)
-                    {
-                        ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);
-                        if (result < exclusiveRange)
-                        {
-                            return (int)result + minValue;
-                        }
-                    }
-                }
-
-                Debug.Assert(minValue == maxValue || minValue + 1 == maxValue);
-                return minValue;
+                return (int)NextUInt32((uint)(maxValue - minValue), this) + minValue;
             }
 
             public override long NextInt64()
@@ -149,46 +119,16 @@ namespace System
 
             public override long NextInt64(long maxValue)
             {
-                if (maxValue > 1)
-                {
-                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
-                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = BitOperations.Log2Ceiling((ulong)maxValue);
-                    while (true)
-                    {
-                        ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);
-                        if (result < (ulong)maxValue)
-                        {
-                            return (long)result;
-                        }
-                    }
-                }
+                Debug.Assert(maxValue >= 0);
 
-                Debug.Assert(maxValue == 0 || maxValue == 1);
-                return 0;
+                return (long)NextUInt64((ulong)maxValue, this);
             }
 
             public override long NextInt64(long minValue, long maxValue)
             {
-                ulong exclusiveRange = (ulong)(maxValue - minValue);
+                Debug.Assert(minValue <= maxValue);
 
-                if (exclusiveRange > 1)
-                {
-                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
-                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = BitOperations.Log2Ceiling(exclusiveRange);
-                    while (true)
-                    {
-                        ulong result = NextUInt64() >> (sizeof(ulong) * 8 - bits);
-                        if (result < exclusiveRange)
-                        {
-                            return (long)result + minValue;
-                        }
-                    }
-                }
-
-                Debug.Assert(minValue == maxValue || minValue + 1 == maxValue);
-                return minValue;
+                return (long)NextUInt64((ulong)(maxValue - minValue), this) + minValue;
             }
 
             public override void NextBytes(byte[] buffer) => NextBytes((Span<byte>)buffer);
