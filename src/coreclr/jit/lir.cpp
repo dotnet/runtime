@@ -1782,9 +1782,15 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
             // We only allow a few interfering nodes for which we know their
             // codegen does not modify flags. These occur in practice due to
             // decomposition or after resolution.
-            interference |=
-                !node->OperIsLocal() && !node->OperIs(GT_COPY, GT_RELOAD, GT_SWAP) &&
-                (!node->OperIs(GT_INTRINSIC) || (node->AsIntrinsic()->gtIntrinsicName != NI_SIMD_UpperRestore));
+            bool preservesFlags = false;
+            preservesFlags |= node->OperIsLocal();
+            preservesFlags |= node->OperIs(GT_COPY, GT_RELOAD, GT_SWAP);
+
+#ifdef FEATURE_SIMD
+            preservesFlags |=
+                node->OperIs(GT_INTRINSIC) && node->AsIntrinsic()->gtIntrinsicName == NI_SIMD_UpperRestore;
+#endif
+            interference |= !preservesFlags;
 #else
             // Other platforms are more explicit about which instructions
             // modify flags, and we only expect a few kinds of nodes to do that
