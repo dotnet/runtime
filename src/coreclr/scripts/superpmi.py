@@ -1714,6 +1714,7 @@ class SuperPMIReplayAsmDiffs:
                 # create a base/diff asm file with diffable asm so we can analyze
                 # it. In addition, create a standalone .mc for easy iteration.
                 jit_analyze_summary_file = None
+                examples_to_put_in_summary = []
 
                 if any(diffs) and not self.coreclr_args.diff_with_release:
                     # AsmDiffs. Save the contents of the fail.mcl file to dig into failures.
@@ -1787,7 +1788,6 @@ class SuperPMIReplayAsmDiffs:
                     subproc_helper = AsyncSubprocessHelper(dasm_contexts, verbose=True)
                     subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, asm_dotnet_vars_full_env, text_differences, base_asm_location, diff_asm_location, ".dasm")
 
-                    examples_to_put_in_summary = []
                     for diff in example_diffs_to_put_in_summary:
                         context_num = int(diff["Context"])
                         base_path = os.path.join(base_asm_location, str(context_num) + ".dasm")
