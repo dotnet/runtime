@@ -3425,7 +3425,7 @@ static HRESULT TraverseLoaderHeapBlock(PTR_LoaderHeapBlock firstBlock, VISITHEAP
     //      this function need to check the return before acting on data given
     //      by the callback.
     //  3.  If we hit an exception, we'll return a failing HRESULT as before.
-    const int iterationMax = 4096;
+    const int iterationMax = 8192;
 
     int i = 0;
     PTR_LoaderHeapBlock block = firstBlock;
