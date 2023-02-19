@@ -36,7 +36,10 @@ namespace System
         private static extern void InternalCollect(int generation);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void RecordPressure(long bytesAllocated);
+        private static extern void AddPressure(ulong bytesAllocated);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void RemovePressure(ulong bytesRemoved);
 
         // TODO: Move following to ConditionalWeakTable
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -60,7 +63,7 @@ namespace System
             {
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
             }
-            RecordPressure(bytesAllocated);
+            AddPressure((ulong)bytesAllocated);
         }
 
         public static void RemoveMemoryPressure(long bytesAllocated)
@@ -70,7 +73,7 @@ namespace System
             {
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(bytesAllocated, int.MaxValue);
             }
-            RecordPressure(-bytesAllocated);
+            RemovePressure((ulong)bytesAllocated);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

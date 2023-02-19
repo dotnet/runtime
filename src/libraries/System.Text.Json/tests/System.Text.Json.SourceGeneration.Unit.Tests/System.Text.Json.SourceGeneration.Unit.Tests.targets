@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI> 
   </PropertyGroup>
 
   <ItemGroup>

@@ -4492,11 +4492,16 @@ inst_is_private (MonoGenericInst *inst)
 gboolean
 mono_aot_can_dedup (MonoMethod *method)
 {
-#ifdef TARGET_WASM
+	// Dedup enabled for wasm and iOS
+#if defined(TARGET_WASM) || defined(TARGET_IOS)
 	/* Use a set of wrappers/instances which work and useful */
 	switch (method->wrapper_type) {
 	case MONO_WRAPPER_RUNTIME_INVOKE:
+#ifdef TARGET_WASM
 		return TRUE;
+#else
+		return FALSE;
+#endif
 		break;
 	case MONO_WRAPPER_OTHER: {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
