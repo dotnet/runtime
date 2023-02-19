@@ -37,8 +37,8 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Private Data Members
-        private Type m_type;
-        private Type[] m_inst;
+        private readonly Type m_type;
+        private readonly Type[] m_inst;
         private string? m_strFullQualName;
         internal Hashtable m_hashtable;
 

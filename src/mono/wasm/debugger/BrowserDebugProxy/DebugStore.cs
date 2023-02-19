@@ -186,10 +186,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal sealed class SourceLocation
     {
-        private SourceId id;
-        private int line;
-        private int column;
-        private IlLocation ilLocation;
+        private readonly SourceId id;
+        private readonly int line;
+        private readonly int column;
+        private readonly IlLocation ilLocation;
 
         public SourceLocation(SourceId id, int line, int column)
         {
@@ -327,7 +327,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal sealed class MethodInfo
     {
-        private MethodDefinition methodDef;
+        private readonly MethodDefinition methodDef;
         internal SourceFile Source { get; set; }
 
         public SourceId SourceId => Source.SourceId;
@@ -842,7 +842,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int next_id;
         private readonly int id;
         private readonly ILogger logger;
-        private Dictionary<int, MethodInfo> methods = new Dictionary<int, MethodInfo>();
+        private readonly Dictionary<int, MethodInfo> methods = new Dictionary<int, MethodInfo>();
         private Dictionary<string, string> sourceLinkMappings = new Dictionary<string, string>();
         private readonly List<SourceFile> sources = new List<SourceFile>();
         internal string Url { get; }
@@ -1228,10 +1228,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         [GeneratedRegex(@"([:/])")]
         private static partial Regex RegexForEscapeFileName();
 
-        private Dictionary<int, MethodInfo> methods;
-        private AssemblyInfo assembly;
-        private Document doc;
-        private DocumentHandle docHandle;
+        private readonly Dictionary<int, MethodInfo> methods;
+        private readonly AssemblyInfo assembly;
+        private readonly Document doc;
+        private readonly DocumentHandle docHandle;
         internal List<int> BreakableLines { get; }
 
         public string FilePath { get; init; }
@@ -1245,7 +1245,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string AssemblyName => assembly.Name;
         public SourceId SourceId => new SourceId(assembly.Id, this.Id);
         public IEnumerable<MethodInfo> Methods => this.methods.Values;
-        private static SHA256 _sha256 = System.Security.Cryptography.SHA256.Create();
+        private static readonly SHA256 _sha256 = System.Security.Cryptography.SHA256.Create();
         private string _relativePath;
 
         internal SourceFile(AssemblyInfo assembly, int id, DocumentHandle docHandle, string documentName, Dictionary<string, string> sourceLinkMappings)

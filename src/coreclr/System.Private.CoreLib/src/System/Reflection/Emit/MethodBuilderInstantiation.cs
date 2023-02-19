@@ -21,7 +21,7 @@ namespace System.Reflection.Emit
 
         #region Private Data Members
         internal MethodInfo m_method;
-        private Type[] m_inst;
+        private readonly Type[] m_inst;
         #endregion
 
         #region Constructor
