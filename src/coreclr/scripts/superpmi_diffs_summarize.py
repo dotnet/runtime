@@ -211,7 +211,7 @@ def html_color_diff(lines):
             commit_block()
             cur_block_color = color
             cur_block = line
-        elif cur_block_color == color:
+        else:
             if cur_block is None:
                 cur_block = line
             else:
