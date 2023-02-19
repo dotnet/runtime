@@ -129,13 +129,6 @@ internal sealed class PInvokeTableGenerator
             if (!MethodHasCallbackAttributes(method))
                 return false;
 
-            if (TryIsMethodGetParametersUnsupported(method, out string? reason))
-            {
-                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
-                        $"Skipping callback '{method.DeclaringType!.FullName}::{method.Name}' because '{reason}'.");
-                return false;
-            }
-
             if (method.DeclaringType != null && HasAssemblyDisableRuntimeMarshallingAttribute(method.DeclaringType.Assembly))
                 return true;
 
@@ -281,14 +274,11 @@ internal sealed class PInvokeTableGenerator
                 return false;
 
             PInvoke first = candidates[0];
-            if (TryIsMethodGetParametersUnsupported(first.Method, out _))
-                return false;
 
             int firstNumArgs = first.Method.GetParameters().Length;
             return candidates
                         .Skip(1)
-                        .Any(c => !TryIsMethodGetParametersUnsupported(c.Method, out _) &&
-                                    c.Method.GetParameters().Length != firstNumArgs);
+                        .Any(c => c.Method.GetParameters().Length != firstNumArgs);
         }
     }
 
@@ -313,50 +303,10 @@ internal sealed class PInvokeTableGenerator
         _ => "int"
     };
 
-    // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
-    // https://github.com/dotnet/runtime/issues/43791
-    private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
-    {
-        try
-        {
-            method.GetParameters();
-        }
-        catch (NotSupportedException nse)
-        {
-            reason = nse.Message;
-            return true;
-        }
-        catch
-        {
-            // not concerned with other exceptions
-        }
-
-        reason = null;
-        return false;
-    }
-
     private string? GenPInvokeDecl(PInvoke pinvoke)
     {
         var sb = new StringBuilder();
         var method = pinvoke.Method;
-        if (method.Name == "EnumCalendarInfo")
-        {
-            // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
-            // https://github.com/dotnet/runtime/issues/43791
-            sb.Append($"int {_fixupSymbolName(pinvoke.EntryPoint)} (int, int, int, int, int);");
-            return sb.ToString();
-        }
-
-        if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
-        {
-            // Don't use method.ToString() or any of it's parameters, or return type
-            // because at least one of those are unsupported, and will throw
-            Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
-                    $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}::{pinvoke.Method.Name}' because '{reason}'.");
-
-            pinvoke.Skip = true;
-            return null;
-        }
 
         sb.Append(MapType(method.ReturnType));
         sb.Append($" {_fixupSymbolName(pinvoke.EntryPoint)} (");
