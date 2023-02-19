@@ -3242,22 +3242,6 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
 //
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-    if (jtrue->gtGetOp1()->IsIntegralConst())
-    {
-        // JTRUE(0/1) is possible for Tier0 here where we don't do BB optimizations and if some
-        // post-importer phase (e.g. Global Morph) manages to fold a comparison we might end up
-        // with this. Create a fake comparison "cns != 0" and lower it as usual.
-        GenTree* cns = jtrue->gtGetOp1();
-        assert(cns->IsIntegralConst(0) || cns->IsIntegralConst(1));
-        assert(comp->opts.OptimizationDisabled());
-
-        GenTree* zero = comp->gtNewIconNode(0, cns->TypeGet());
-        GenTree* cmp  = comp->gtNewOperNode(GT_NE, TYP_INT, cns, zero);
-        BlockRange().InsertBefore(jtrue, zero);
-        BlockRange().InsertBefore(jtrue, cmp);
-        jtrue->gtOp1 = cmp;
-    }
-
     assert(jtrue->gtGetOp1()->OperIsCompare());
     assert(jtrue->gtGetOp1()->gtNext == jtrue);
     GenTreeOp* relop = jtrue->gtGetOp1()->AsOp();
