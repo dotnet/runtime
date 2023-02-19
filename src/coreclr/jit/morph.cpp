@@ -10782,74 +10782,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         return vecCon;
     }
 
-#if defined(TARGET_XARCH)
-    switch (node->GetHWIntrinsicId())
-    {
-        case NI_SSE_And:
-        case NI_SSE2_And:
-        case NI_AVX_And:
-        case NI_AVX2_And:
-        {
-            if (node->GetOperandCount() != 2)
-            {
-                return node;
-            }
-
-            GenTree*            op1      = node->Op(1);
-            GenTree*            op2      = node->Op(2);
-            GenTree*            lhs      = nullptr;
-            GenTree*            rhs      = nullptr;
-            GenTreeHWIntrinsic* inner_hw = nullptr;
-
-            // Transforms ~v1 & v2 to VectorXxx.AndNot(v2, v1)
-            if (op1->OperIs(GT_HWINTRINSIC))
-            {
-                rhs      = op2;
-                inner_hw = op1->AsHWIntrinsic();
-            }
-            // Transforms v2 & (~v1) to VectorXxx.AndNot(v1, v2)
-            else if (op2->OperIs(GT_HWINTRINSIC))
-            {
-                rhs      = op1;
-                inner_hw = op2->AsHWIntrinsic();
-            }
-            else
-            {
-                return node;
-            }
-
-            if ((inner_hw->GetOperandCount() != 2) || (!inner_hw->Op(2)->IsVectorAllBitsSet()))
-            {
-                return node;
-            }
-
-            switch (inner_hw->GetHWIntrinsicId())
-            {
-                case NI_SSE_Xor:
-                case NI_SSE2_Xor:
-                case NI_AVX_Xor:
-                case NI_AVX2_Xor:
-                    break;
-                default:
-                    return node;
-            }
-
-            var_types    hw_type     = node->TypeGet();
-            CorInfoType  hw_coretype = node->GetSimdBaseJitType();
-            unsigned int hw_simdsize = node->GetSimdSize();
-
-            lhs = inner_hw->Op(1);
-
-            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, hw_type, lhs, rhs, hw_coretype, hw_simdsize, true);
-
-            DEBUG_DESTROY_NODE(node);
-
-            INDEBUG(andnNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-            return andnNode;
-        }
-    }
-#endif
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
     switch (intrinsicId)
@@ -10937,7 +10869,71 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
+#if defined(TARGET_XARCH)
+        case NI_SSE_And:
+        case NI_SSE2_And:
+        case NI_AVX_And:
+        case NI_AVX2_And:
+        {
+            if (node->GetOperandCount() != 2)
+            {
+                return node;
+            }
 
+            GenTree*            op1      = node->Op(1);
+            GenTree*            op2      = node->Op(2);
+            GenTree*            lhs      = nullptr;
+            GenTree*            rhs      = nullptr;
+            GenTreeHWIntrinsic* inner_hw = nullptr;
+
+            // Transforms ~v1 & v2 to VectorXxx.AndNot(v2, v1)
+            if (op1->OperIs(GT_HWINTRINSIC))
+            {
+                rhs      = op2;
+                inner_hw = op1->AsHWIntrinsic();
+            }
+            // Transforms v2 & (~v1) to VectorXxx.AndNot(v1, v2)
+            else if (op2->OperIs(GT_HWINTRINSIC))
+            {
+                rhs      = op1;
+                inner_hw = op2->AsHWIntrinsic();
+            }
+            else
+            {
+                return node;
+            }
+
+            if ((inner_hw->GetOperandCount() != 2) || (!inner_hw->Op(2)->IsVectorAllBitsSet()))
+            {
+                return node;
+            }
+
+            switch (inner_hw->GetHWIntrinsicId())
+            {
+                case NI_SSE_Xor:
+                case NI_SSE2_Xor:
+                case NI_AVX_Xor:
+                case NI_AVX2_Xor:
+                    break;
+                default:
+                    return node;
+            }
+
+            var_types    hw_type     = node->TypeGet();
+            CorInfoType  hw_coretype = node->GetSimdBaseJitType();
+            unsigned int hw_simdsize = node->GetSimdSize();
+
+            lhs = inner_hw->Op(1);
+
+            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, hw_type, lhs, rhs, hw_coretype, hw_simdsize, true);
+
+            DEBUG_DESTROY_NODE(node);
+
+            INDEBUG(andnNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return andnNode;
+        }
+#endif
         default:
         {
             break;
