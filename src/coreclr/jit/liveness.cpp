@@ -1046,8 +1046,7 @@ void Compiler::fgExtendDbgLifetimes()
                 {
                     printf("Created zero-init of V%02u in " FMT_BB "\n", varNum, block->bbNum);
                 }
-#endif                                         // DEBUG
-                block->bbFlags |= BBF_CHANGED; // indicates that the contents of the block have changed.
+#endif // DEBUG
             }
 
             /* Update liveness information so that redoing fgLiveVarAnalysis()

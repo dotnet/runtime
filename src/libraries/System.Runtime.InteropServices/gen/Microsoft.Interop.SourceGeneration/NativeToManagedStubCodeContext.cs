@@ -3,6 +3,8 @@
 
 using System;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
 namespace Microsoft.Interop
 {
     public sealed record NativeToManagedStubCodeContext : StubCodeContext

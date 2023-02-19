@@ -111,8 +111,8 @@ jobs:
     - ${{ if in(parameters.platform, 'maccatalyst_arm64', 'iossimulator_arm64') }}:
       - OSX.1200.Arm64.Open
 
-    # iOS/tvOS simulator x64/x86 & MacCatalyst x64
-    - ${{ if in(parameters.platform, 'iossimulator_x64', 'iossimulator_x86', 'tvossimulator_x64', 'maccatalyst_x64') }}:
+    # iOS/tvOS Simulator x64 & MacCatalyst x64
+    - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64', 'maccatalyst_x64') }}:
       - OSX.1200.Amd64.Open
 
     # iOS devices
