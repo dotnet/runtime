@@ -1255,6 +1255,7 @@ LIR::ReadOnlyRange LIR::Range::GetDataFlowRangeWithMarks(unsigned  markCount,
             if (opFlags != nullptr)
             {
                 opFlags->gtLIRFlags |= LIR::Flags::Mark2;
+                markCount++;
             }
 
             if ((firstNode->gtLIRFlags & LIR::Flags::Mark) == 0)
