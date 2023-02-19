@@ -131,7 +131,9 @@ ICALL_EXPORT void ves_icall_System_Array_SetGenericValue_icall (MonoObjectHandle
 
 ICALL_EXPORT void ves_icall_System_Environment_Exit (int);
 ICALL_EXPORT void ves_icall_System_GC_InternalCollect (int generation);
-ICALL_EXPORT void ves_icall_System_GC_RecordPressure (gint64);
+ICALL_EXPORT void ves_icall_System_GC_AddPressure (guint64);
+ICALL_EXPORT void ves_icall_System_GC_RemovePressure (guint64);
+
 ICALL_EXPORT void ves_icall_System_GC_WaitForPendingFinalizers (void);
 ICALL_EXPORT void ves_icall_System_GC_GetGCMemoryInfo (gint64*, gint64*, gint64*, gint64*, gint64*, gint64*);
 
@@ -209,5 +211,12 @@ ICALL_EXPORT MonoBoolean ves_icall_System_Array_IsValueOfElementTypeInternal (Mo
 ICALL_EXPORT MonoBoolean ves_icall_System_Array_FastCopy (MonoObjectHandleOnStack source_handle, int source_idx, MonoObjectHandleOnStack dest_handle, int dest_idx, int length);
 
 ICALL_EXPORT MonoBoolean ves_icall_System_Reflection_LoaderAllocatorScout_Destroy (gpointer native);
+
+ICALL_EXPORT void ves_icall_System_Diagnostics_StackTrace_GetTrace (MonoObjectHandleOnStack ex_handle, MonoObjectHandleOnStack res, int skip_frames, MonoBoolean need_file_info);
+
+ICALL_EXPORT MonoBoolean ves_icall_System_Diagnostics_StackFrame_GetFrameInfo (gint32 skip, MonoBoolean need_file_info,
+																			   MonoObjectHandleOnStack out_method, MonoObjectHandleOnStack file,
+																			   gint32 *iloffset, gint32 *native_offset,
+																			   gint32 *line, gint32 *column);
 
 #endif // __MONO_METADATA_ICALL_DECL_H__

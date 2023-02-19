@@ -560,12 +560,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix4x4.Impl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Plane.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Quaternion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Quaternion.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\TotalOrderIeee754Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector2.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector3.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector3.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4.Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\VectorDebugView_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\VectorMath.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Object.cs" />
@@ -633,10 +637,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\DefaultMemberAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilderAccess.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ConstructorBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\DynamicMethod.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EmptyCAHolder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EnumBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\EventBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FieldBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\FlowControl.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Label.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\MethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\Opcode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OpCodes.cs" />
@@ -644,6 +654,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\OperandType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PackingSize.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PEFileKinds.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\PropertyBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\StackBehaviour.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\TypeNameBuilder.cs" />
@@ -660,6 +671,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IntrospectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvalidFilterCriteriaException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvocationFlags.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvokerEmitUtil.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvokeUtils.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflect.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\IReflectableType.cs" />
@@ -675,8 +687,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.Internal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInvoker.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\InvokerEmitUtil.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Missing.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedHasElementType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedFunctionPointerType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModifiedGenericType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModuleResolveEventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\NullabilityInfo.cs" />
@@ -702,6 +717,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\RuntimeReflectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureArrayType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureByRefType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureCallingConvention.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureConstructedGenericType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureGenericMethodParameterType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureGenericParameterType.cs" />

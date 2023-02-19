@@ -343,7 +343,7 @@ namespace System
         // IndexOfNullByte processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
         // This behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        internal static unsafe int IndexOfNullByte(ref byte searchSpace)
+        internal static unsafe int IndexOfNullByte(byte* searchSpace)
         {
             const int Length = int.MaxValue;
 
@@ -354,32 +354,32 @@ namespace System
             if (Vector128.IsHardwareAccelerated)
             {
                 // Avx2 branch also operates on Sse2 sizes, so check is combined.
-                lengthToExamine = UnalignedCountVector128(ref searchSpace);
+                lengthToExamine = UnalignedCountVector128(searchSpace);
             }
             else if (Vector.IsHardwareAccelerated)
             {
-                lengthToExamine = UnalignedCountVector(ref searchSpace);
+                lengthToExamine = UnalignedCountVector(searchSpace);
             }
         SequentialScan:
             while (lengthToExamine >= 8)
             {
                 lengthToExamine -= 8;
 
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset))
+                if (uValue == searchSpace[offset])
                     goto Found;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 1))
+                if (uValue == searchSpace[offset + 1])
                     goto Found1;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 2))
+                if (uValue == searchSpace[offset + 2])
                     goto Found2;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 3))
+                if (uValue == searchSpace[offset + 3])
                     goto Found3;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 4))
+                if (uValue == searchSpace[offset + 4])
                     goto Found4;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 5))
+                if (uValue == searchSpace[offset + 5])
                     goto Found5;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 6))
+                if (uValue == searchSpace[offset + 6])
                     goto Found6;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 7))
+                if (uValue == searchSpace[offset + 7])
                     goto Found7;
 
                 offset += 8;
@@ -389,13 +389,13 @@ namespace System
             {
                 lengthToExamine -= 4;
 
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset))
+                if (uValue == searchSpace[offset])
                     goto Found;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 1))
+                if (uValue == searchSpace[offset + 1])
                     goto Found1;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 2))
+                if (uValue == searchSpace[offset + 2])
                     goto Found2;
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset + 3))
+                if (uValue == searchSpace[offset + 3])
                     goto Found3;
 
                 offset += 4;
@@ -405,7 +405,7 @@ namespace System
             {
                 lengthToExamine -= 1;
 
-                if (uValue == Unsafe.AddByteOffset(ref searchSpace, offset))
+                if (uValue == searchSpace[offset])
                     goto Found;
 
                 offset += 1;
@@ -418,13 +418,13 @@ namespace System
             {
                 if (offset < (nuint)(uint)Length)
                 {
-                    if ((((nuint)(uint)Unsafe.AsPointer(ref searchSpace) + offset) & (nuint)(Vector256<byte>.Count - 1)) != 0)
+                    if ((((nuint)(uint)searchSpace + offset) & (nuint)(Vector256<byte>.Count - 1)) != 0)
                     {
                         // Not currently aligned to Vector256 (is aligned to Vector128); this can cause a problem for searches
                         // with no upper bound e.g. String.strlen.
                         // Start with a check on Vector128 to align to Vector256, before moving to processing Vector256.
                         // This ensures we do not fault across memory pages while searching for an end of string.
-                        Vector128<byte> search = Vector128.LoadUnsafe(ref searchSpace, offset);
+                        Vector128<byte> search = Vector128.Load(searchSpace + offset);
 
                         // Same method as below
                         uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
@@ -445,7 +445,7 @@ namespace System
                     {
                         do
                         {
-                            Vector256<byte> search = Vector256.LoadUnsafe(ref searchSpace, offset);
+                            Vector256<byte> search = Vector256.Load(searchSpace + offset);
                             uint matches = Vector256.Equals(Vector256<byte>.Zero, search).ExtractMostSignificantBits();
                             // Note that MoveMask has converted the equal vector elements into a set of bit flags,
                             // So the bit position in 'matches' corresponds to the element offset.
@@ -464,7 +464,7 @@ namespace System
                     lengthToExamine = GetByteVector128SpanLength(offset, Length);
                     if (lengthToExamine > offset)
                     {
-                        Vector128<byte> search = Vector128.LoadUnsafe(ref searchSpace, offset);
+                        Vector128<byte> search = Vector128.Load(searchSpace + offset);
 
                         // Same method as above
                         uint matches = Vector128.Equals(Vector128<byte>.Zero, search).ExtractMostSignificantBits();
@@ -495,7 +495,7 @@ namespace System
 
                     while (lengthToExamine > offset)
                     {
-                        Vector128<byte> search = Vector128.LoadUnsafe(ref searchSpace, offset);
+                        Vector128<byte> search = Vector128.Load(searchSpace + offset);
 
                         // Same method as above
                         Vector128<byte> compareResult = Vector128.Equals(Vector128<byte>.Zero, search);
@@ -526,7 +526,7 @@ namespace System
 
                     while (lengthToExamine > offset)
                     {
-                        var matches = Vector.Equals(Vector<byte>.Zero, LoadVector(ref searchSpace, offset));
+                        Vector<byte> matches = Vector.Equals(Vector<byte>.Zero, Vector.Load(searchSpace + offset));
                         if (Vector<byte>.Zero.Equals(matches))
                         {
                             offset += (nuint)Vector<byte>.Count;
@@ -1123,16 +1123,16 @@ namespace System
             => (nuint)(uint)((length - (int)offset) & ~(Vector256<byte>.Count - 1));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nuint UnalignedCountVector(ref byte searchSpace)
+        private static unsafe nuint UnalignedCountVector(byte* searchSpace)
         {
-            nint unaligned = (nint)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
+            nint unaligned = (nint)searchSpace & (Vector<byte>.Count - 1);
             return (nuint)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe nuint UnalignedCountVector128(ref byte searchSpace)
+        private static unsafe nuint UnalignedCountVector128(byte* searchSpace)
         {
-            nint unaligned = (nint)Unsafe.AsPointer(ref searchSpace) & (Vector128<byte>.Count - 1);
+            nint unaligned = (nint)searchSpace & (Vector128<byte>.Count - 1);
             return (nuint)(uint)((Vector128<byte>.Count - unaligned) & (Vector128<byte>.Count - 1));
         }
 

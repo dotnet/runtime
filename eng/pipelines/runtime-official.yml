@@ -39,14 +39,12 @@ extends:
       # Localization build
       #
 
-      # TODO: Re-enable when https://github.com/dotnet/runtime/issues/80729 is fixed.
-
-      #- ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
-      #  - template: /eng/common/templates/job/onelocbuild.yml
-      #    parameters:
-      #      MirrorRepo: runtime
-      #      LclSource: lclFilesfromPackage
-      #      LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+        - template: /eng/common/templates/job/onelocbuild.yml
+          parameters:
+            MirrorRepo: runtime
+            LclSource: lclFilesfromPackage
+            LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
       #
       # Source Index Build
@@ -119,9 +117,7 @@ extends:
           - tvossimulator_arm64
           - tvos_arm64
           - iossimulator_x64
-          - iossimulator_x86
           - iossimulator_arm64
-          - ios_arm
           - ios_arm64
           - osx_x64
           - osx_arm64
@@ -140,7 +136,7 @@ extends:
           # - windows_arm
           # - windows_arm64
           jobParameters:
-            buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
             nameSuffix: AllSubsets_Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -155,7 +151,7 @@ extends:
           platforms:
           - browser_wasm
           jobParameters:
-            buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=perftrace
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=perftrace
             nameSuffix: AllSubsets_Mono_perftrace
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: perftrace
@@ -171,7 +167,7 @@ extends:
           platforms:
           - browser_wasm
           jobParameters:
-            buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread
             nameSuffix: AllSubsets_Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread
@@ -498,10 +494,8 @@ extends:
             - Build_android_x86_release_AllSubsets_Mono
             - Build_android_x64_release_AllSubsets_Mono
             - Build_browser_wasm_Linux_release_AllSubsets_Mono
-            - Build_ios_arm_release_AllSubsets_Mono
             - Build_ios_arm64_release_AllSubsets_Mono
             - Build_iossimulator_x64_release_AllSubsets_Mono
-            - Build_iossimulator_x86_release_AllSubsets_Mono
             - Build_iossimulator_arm64_release_AllSubsets_Mono
             - Build_maccatalyst_arm64_release_AllSubsets_Mono
             - Build_maccatalyst_x64_release_AllSubsets_Mono

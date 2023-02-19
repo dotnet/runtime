@@ -68,6 +68,14 @@ CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
 {
 }
 
+#if defined(TARGET_AMD64)
+void CodeGenInterface::CopyRegisterInfo()
+{
+    rbmAllFloat       = compiler->rbmAllFloat;
+    rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+}
+#endif // TARGET_AMD64
+
 /*****************************************************************************/
 
 CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
@@ -140,6 +148,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     genForceFuncletFrameType5              = false;
 #endif // TARGET_ARM64
 }
+
 #if defined(TARGET_X86) || defined(TARGET_ARM)
 
 //---------------------------------------------------------------------
@@ -7042,7 +7051,7 @@ const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsi
  *  Display a IPmappingDsc. Pass -1 as mappingNum to not display a mapping number.
  */
 
-void CodeGen::genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping)
+void CodeGen::genIPmappingDisp(unsigned mappingNum, const IPmappingDsc* ipMapping)
 {
     if (mappingNum != unsigned(-1))
     {

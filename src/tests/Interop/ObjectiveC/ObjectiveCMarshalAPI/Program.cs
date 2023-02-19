@@ -23,6 +23,10 @@ namespace ObjectiveCMarshalAPI
             out delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
 
         [DllImport(nameof(NativeObjCMarshalTests))]
+        public static extern unsafe void SetImports(
+            delegate* unmanaged<void> beforeThrowNativeExceptionCallback);
+
+        [DllImport(nameof(NativeObjCMarshalTests))]
         public static extern int CallAndCatch(IntPtr fptr, int a);
 
         [DllImport(nameof(NativeObjCMarshalTests))]
@@ -173,6 +177,9 @@ namespace ObjectiveCMarshalAPI
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization;
             NativeObjCMarshalTests.GetExports(out beginEndCallback, out isReferencedCallback, out trackedObjectEnteredFinalization);
 
+            delegate* unmanaged<void> beforeThrow = &BeforeThrowNativeException;
+            NativeObjCMarshalTests.SetImports(beforeThrow);
+
             ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization, OnUnhandledExceptionPropagationHandler);
         }
 
@@ -282,6 +289,14 @@ namespace ObjectiveCMarshalAPI
             _Validate_ExceptionPropagation();
         }
 
+        [UnmanagedCallersOnly]
+        private static void BeforeThrowNativeException()
+        {
+            // This function is called from the exception propagation callback.
+            // It ensures that the thread was transitioned to preemptive mode.
+            GC.Collect();
+        }
+
         private class IntException : Exception
         {
             public int Value { get; }
@@ -293,22 +308,72 @@ namespace ObjectiveCMarshalAPI
             public ExceptionException() {}
         }
 
+        static bool s_finallyExecuted;
+
         [UnmanagedCallersOnly]
-        static void UCO_ThrowIntException(int a) => throw new IntException(a);
+        static void UCO_ThrowIntException(int a)
+        {
+            try
+            {
+                throw new IntException(a);
+            }
+            finally
+            {
+                s_finallyExecuted = true;
+            }
+        }
+
         [UnmanagedCallersOnly]
-        static void UCO_ThrowExceptionException(int _) => throw new ExceptionException();
+        static void UCO_ThrowExceptionException(int _)
+        {
+            try
+            {
+                throw new ExceptionException();
+            }
+            finally
+            {
+                s_finallyExecuted = true;
+            }
+        }
 
         delegate void ThrowExceptionDelegate(int a);
-        static void DEL_ThrowIntException(int a) => throw new IntException(a);
-        static void DEL_ThrowExceptionException(int _) => throw new ExceptionException();
+
+        static void DEL_ThrowIntException(int a)
+        {
+            try
+            {
+                throw new IntException(a);
+            }
+            finally
+            {
+                s_finallyExecuted = true;
+            }
+        }
+
+        static void DEL_ThrowExceptionException(int _)
+        {
+            try
+            {
+                throw new ExceptionException();
+            }
+            finally
+            {
+                s_finallyExecuted = true;
+            }
+        }
 
         static unsafe delegate* unmanaged<IntPtr, void> OnUnhandledExceptionPropagationHandler(
             Exception e,
             RuntimeMethodHandle lastMethodHandle,
             out IntPtr context)
         {
-            var lastMethod = (MethodInfo)MethodBase.GetMethodFromHandle(lastMethodHandle);
-            Assert.True(lastMethod != null);
+            // Not yet implemented For NativeAOT.
+            // https://github.com/dotnet/runtime/issues/80985
+            if (!TestLibrary.Utilities.IsNativeAot)
+            {
+                var lastMethod = (MethodInfo)MethodBase.GetMethodFromHandle(lastMethodHandle);
+                Assert.True(lastMethod != null);
+            }
 
             context = IntPtr.Zero;
             if (e is IntException ie)
@@ -335,14 +400,6 @@ namespace ObjectiveCMarshalAPI
         // Do not call this method from Main as it depends on a previous test for set up.
         static void _Validate_ExceptionPropagation()
         {
-            // Not yet implemented for NativeAOT.
-            // https://github.com/dotnet/runtime/issues/77472
-            if (TestLibrary.Utilities.IsNativeAot)
-            {
-                Console.WriteLine($"Skipping {nameof(_Validate_ExceptionPropagation)}, NYI");
-                return;
-            }
-
             Console.WriteLine($"Running {nameof(_Validate_ExceptionPropagation)}");
 
             var delThrowInt = new ThrowExceptionDelegate(DEL_ThrowIntException);
@@ -357,9 +414,11 @@ namespace ObjectiveCMarshalAPI
 
             foreach (var scen in scenarios)
             {
+                s_finallyExecuted = false;
                 delegate* unmanaged<int, void> testNativeMethod = scen.Fptr;
                 int ret = NativeObjCMarshalTests.CallAndCatch((IntPtr)testNativeMethod, scen.Expected);
                 Assert.Equal(scen.Expected, ret);
+                Assert.True(s_finallyExecuted, "Finally block not executed.");
             }
 
             GC.KeepAlive(delThrowInt);

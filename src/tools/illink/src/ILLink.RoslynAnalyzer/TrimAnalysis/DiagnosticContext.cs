@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	readonly partial struct DiagnosticContext
+	internal readonly partial struct DiagnosticContext
 	{
 		public List<Diagnostic> Diagnostics { get; } = new ();
 

@@ -65,7 +65,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 			int Bar3 { get; set; }
 		}
 
-		// Cat class should be Kept https://github.com/dotnet/runtime/issues/80408
+		[Kept (By = ProducedBy.NativeAot)]
 		class Cat
 		{
 		}

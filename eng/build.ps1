@@ -267,6 +267,10 @@ foreach ($argument in $PSBoundParameters.Keys)
   }
 }
 
+if ($env:TreatWarningsAsErrors -eq 'false') {
+  $arguments += " -warnAsError 0"
+}
+
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.
 $env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0

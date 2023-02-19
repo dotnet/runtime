@@ -28,7 +28,7 @@ internal sealed class JSEngineArguments
         ParseJsonProperties(CommonConfig.HostConfig.Properties);
     }
 
-    private void ParseJsonProperties(IDictionary<string, JsonElement>? properties)
+    private void ParseJsonProperties(Dictionary<string, JsonElement>? properties)
     {
         if (properties?.TryGetValue("js-path", out JsonElement jsPathElement) == true &&
             jsPathElement.GetString() is string parsedPath)

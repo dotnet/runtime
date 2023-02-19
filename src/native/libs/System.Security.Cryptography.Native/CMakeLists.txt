@@ -45,6 +45,7 @@ set(NATIVECRYPTO_SOURCES
 )
 
 if (LOCAL_BUILD)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     add_definitions(-DLOCAL_BUILD)
     add_definitions(-DPALEXPORT=EXTERN_C)
     add_definitions(-DTARGET_UNIX)

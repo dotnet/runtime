@@ -1264,6 +1264,20 @@ isUnexpectedResult = (dest != result);
     ("ScalarTernOpBinResTest.template", new Dictionary<string, string> { ["Isa"] = "Bmi2.X64", ["Method"] = "MultiplyNoFlags",     ["RetBaseType"] = "UInt64", ["Op1BaseType"] = "UInt64", ["Op2BaseType"] = "UInt64", ["Op3BaseType"] = "UInt64",        ["NextValueOp1"] = "UInt64.MaxValue",                   ["NextValueOp2"] = "UInt64.MaxValue",                     ["NextValueOp3"] = "0",  ["ValidateResult"] = "ulong expectedHigher = 18446744073709551614, expectedLower = 1; isUnexpectedResult = (expectedHigher != higher) || (expectedLower != lower);" }),
 };
 
+(string templateFileName, Dictionary<string, string> templateData)[] X86BaseInputs = new []
+{
+    ("ScalarTernOpTupleBinRetTest.template", new Dictionary<string, string> { ["Isa"] = "X86Base", ["Method"] = "DivRem", ["RetBaseType"] = "Int32",  ["Op1BaseType"] = "UInt32", ["Op2BaseType"] = "Int32",  ["Op3BaseType"] = "Int32",  ["NextValueOp1"] = "UInt32.MaxValue", ["NextValueOp2"] = "-2", ["NextValueOp3"] = "-0x10001",   ["ValidateResult"] = " int expectedQuotient = 0xFFFF;  int expectedReminder = -2; isUnexpectedResult = (expectedQuotient != ret1) || (expectedReminder != ret2);" }),
+    ("ScalarTernOpTupleBinRetTest.template", new Dictionary<string, string> { ["Isa"] = "X86Base", ["Method"] = "DivRem", ["RetBaseType"] = "UInt32", ["Op1BaseType"] = "UInt32", ["Op2BaseType"] = "UInt32", ["Op3BaseType"] = "UInt32", ["NextValueOp1"] = "1",               ["NextValueOp2"] = "1",  ["NextValueOp3"] = "0x80000000", ["ValidateResult"] = "uint expectedQuotient = 2;      uint expectedReminder = 1;  isUnexpectedResult = (expectedQuotient != ret1) || (expectedReminder != ret2);" }),
+    ("ScalarTernOpTupleBinRetTest.template", new Dictionary<string, string> { ["Isa"] = "X86Base", ["Method"] = "DivRem", ["RetBaseType"] = "nint",   ["Op1BaseType"] = "nuint",  ["Op2BaseType"] = "nint",   ["Op3BaseType"] = "nint",   ["NextValueOp1"] = "nuint.MaxValue",  ["NextValueOp2"] = "-2", ["NextValueOp3"] = "-((nint)1 << (IntPtr.Size * 4)) - 1", ["ValidateResult"] = " nint expectedQuotient = ((nint)1 << (IntPtr.Size * 4)) - 1;  nint expectedReminder = -2; isUnexpectedResult = (expectedQuotient != ret1) || (expectedReminder != ret2);" }),
+    ("ScalarTernOpTupleBinRetTest.template", new Dictionary<string, string> { ["Isa"] = "X86Base", ["Method"] = "DivRem", ["RetBaseType"] = "nuint",  ["Op1BaseType"] = "nuint",  ["Op2BaseType"] = "nuint",  ["Op3BaseType"] = "nuint",  ["NextValueOp1"] = "1",               ["NextValueOp2"] = "1",  ["NextValueOp3"] = "(nuint)nint.MinValue",                ["ValidateResult"] = "nuint expectedQuotient = 2;                                  nuint expectedReminder = 1;  isUnexpectedResult = (expectedQuotient != ret1) || (expectedReminder != ret2);" }),
+};
+
+(string templateFileName, Dictionary<string, string> templateData)[] X86BaseX64Inputs = new []
+{
+    ("ScalarTernOpTupleBinRetTest.template", new Dictionary<string, string> { ["Isa"] = "X86Base.X64", ["Method"] = "DivRem", ["RetBaseType"] = "Int64",  ["Op1BaseType"] = "UInt64", ["Op2BaseType"] = "Int64",  ["Op3BaseType"] = "Int64",  ["NextValueOp1"] = "UInt64.MaxValue", ["NextValueOp2"] = "-2", ["NextValueOp3"] = "-0x100000001",       ["ValidateResult"] = " long expectedQuotient = 0xFFFFFFFF;  long expectedReminder = -2; isUnexpectedResult = (expectedQuotient != ret1) || (expectedReminder != ret2);" }),
+    ("ScalarTernOpTupleBinRetTest.template", new Dictionary<string, string> { ["Isa"] = "X86Base.X64", ["Method"] = "DivRem", ["RetBaseType"] = "UInt64", ["Op1BaseType"] = "UInt64", ["Op2BaseType"] = "UInt64", ["Op3BaseType"] = "UInt64", ["NextValueOp1"] = "1",               ["NextValueOp2"] = "1",  ["NextValueOp3"] = "0x8000000000000000", ["ValidateResult"] = "ulong expectedQuotient = 2;          ulong expectedReminder = 1;  isUnexpectedResult = (expectedQuotient != ret1) || (expectedReminder != ret2);" }),
+};
+
 Dictionary<string,string> extraHelperFiles = new Dictionary<string, string>
 {
     ["Sse2Verify"] = @"..\Sse2\Sse2Verify.cs",
@@ -1374,6 +1388,11 @@ void ProcessInput(StreamWriter testListFile, string groupName, (string templateF
         testName += ".BinRes";
         suffix += "BinRes";
     }
+    else if (input.templateFileName == "ScalarTernOpTupleBinRetTest.template")
+    {
+        testName += ".Tuple3Op";
+        suffix += "Tuple3Op";
+    }
 
     var fileName = Path.Combine(outputDirectory, $"{testName}.cs");
 
@@ -1414,3 +1433,5 @@ void ProcessInput(StreamWriter testListFile, string groupName, (string templateF
     File.WriteAllText(fileName, template);
 }
 
+ProcessInputs("X86Base", X86BaseInputs);
+ProcessInputs("X86Base.X64", X86BaseX64Inputs);

@@ -148,9 +148,9 @@ namespace ILCompiler.Dataflow
                 return;
             }
 
-            if (knownStacks.ContainsKey(newOffset))
+            if (knownStacks.TryGetValue(newOffset, out var knownStack))
             {
-                knownStacks[newOffset] = MergeStack(knownStacks[newOffset], newStack);
+                knownStacks[newOffset] = MergeStack(knownStack, newStack);
             }
             else
             {
@@ -319,7 +319,7 @@ namespace ILCompiler.Dataflow
             // are the same set of methods that we discovered and scanned above.
             if (_annotations.CompilerGeneratedState.TryGetCompilerGeneratedCalleesForUserMethod(startingMethod, out List<TypeSystemEntity>? compilerGeneratedCallees))
             {
-                var calleeMethods = compilerGeneratedCallees.OfType<MethodDefinition>();
+                var calleeMethods = compilerGeneratedCallees.OfType<MethodDesc>();
                 // https://github.com/dotnet/linker/issues/2845
                 // Disabled asserts due to a bug
                 // Debug.Assert (interproceduralState.Count == 1 + calleeMethods.Count ());
@@ -363,16 +363,16 @@ namespace ILCompiler.Dataflow
                 ValidateNoReferenceToReference(locals, methodBody, reader.Offset);
                 int curBasicBlock = blockIterator.MoveNext(reader.Offset);
 
-                if (knownStacks.ContainsKey(reader.Offset))
+                if (knownStacks.TryGetValue(reader.Offset, out var knownStack))
                 {
                     if (currentStack == null)
                     {
                         // The stack copy constructor reverses the stack
-                        currentStack = new Stack<StackSlot>(knownStacks[reader.Offset].Reverse());
+                        currentStack = new Stack<StackSlot>(knownStack.Reverse());
                     }
                     else
                     {
-                        currentStack = MergeStack(currentStack, knownStacks[reader.Offset]);
+                        currentStack = MergeStack(currentStack, knownStack);
                     }
                 }
 

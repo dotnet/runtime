@@ -223,7 +223,6 @@ namespace System.IO.Hashing
             Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref dest0, new IntPtr(sizeof(ulong))), low);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Hash128 HashLength0To16(byte* source, uint length, ulong seed)
         {
             if (length > 8)

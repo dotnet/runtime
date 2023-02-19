@@ -149,5 +149,49 @@ namespace System.Formats.Tar.Tests
                 }
             }, format.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
+        
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void CreateEntryFromFileOwnedByNonExistentGroup_Async(TarEntryFormat f)
+        {
+            RemoteExecutor.Invoke(async (string strFormat) =>
+            {
+                using TempDirectory root = new TempDirectory();
+
+                string fileName = "file.txt";
+                string filePath = Path.Join(root.Path, fileName);
+                File.Create(filePath).Dispose();
+
+                string groupName = Path.GetRandomFileName()[0..6];
+                int groupId = CreateGroup(groupName);
+
+                try
+                {
+                    SetGroupAsOwnerOfFile(groupName, filePath);
+                }
+                finally
+                {
+                    DeleteGroup(groupName);
+                }
+
+                await using MemoryStream archive = new MemoryStream();
+                await using (TarWriter writer = new TarWriter(archive, Enum.Parse<TarEntryFormat>(strFormat), leaveOpen: true))
+                {
+                    await writer.WriteEntryAsync(filePath, fileName); // Should not throw
+                }
+                archive.Seek(0, SeekOrigin.Begin);
+                
+                await using (TarReader reader = new TarReader(archive, leaveOpen: false))
+                {
+                    PosixTarEntry entry = await reader.GetNextEntryAsync() as PosixTarEntry;
+                    Assert.NotNull(entry);
+                    Assert.Equal(entry.GroupName, string.Empty);
+                    Assert.Equal(groupId, entry.Gid);
+                    Assert.Null(await reader.GetNextEntryAsync());
+                }
+            }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
     }
 }

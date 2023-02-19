@@ -106,7 +106,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			};
 		}
 
-		private IEnumerable<NPath> CompileBeforeTestCaseAssemblies (NPath outputDirectory, NPath[] references, string[] defines, IList<NPath> removeFromLinkerInputAssemblies)
+		private IEnumerable<NPath> CompileBeforeTestCaseAssemblies (NPath outputDirectory, NPath[] references, string[] defines, List<NPath> removeFromLinkerInputAssemblies)
 		{
 			foreach (var setupCompileInfo in _metadataProvider.GetSetupCompileAssembliesBefore ()) {
 				NPath outputFolder;
@@ -134,7 +134,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		private void CompileAfterTestCaseAssemblies (NPath outputDirectory, NPath[] references, string[] defines, IList<NPath> removeFromLinkerInputAssemblies)
+		private void CompileAfterTestCaseAssemblies (NPath outputDirectory, NPath[] references, string[] defines, List<NPath> removeFromLinkerInputAssemblies)
 		{
 			foreach (var setupCompileInfo in _metadataProvider.GetSetupCompileAssembliesAfter ()) {
 				var options = CreateOptionsForSupportingAssembly (

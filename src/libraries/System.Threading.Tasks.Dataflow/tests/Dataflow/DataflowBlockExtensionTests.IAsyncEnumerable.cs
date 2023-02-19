@@ -239,8 +239,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             ValueTask<bool> vt = e.MoveNextAsync();
             Assert.True(vt.IsCompleted);
             Assert.False(vt.IsCompletedSuccessfully);
-            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
-            Assert.Equal(cts.Token, oce.CancellationToken);
+            await AssertExtensions.CanceledAsync(cts.Token, vt.AsTask());
         }
 
         [Fact]
@@ -254,7 +253,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.False(vt.IsCompleted);
 
             cts.Cancel();
-            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+            await AssertExtensions.CanceledAsync(cts.Token, vt.AsTask());
 
             vt = e.MoveNextAsync();
             Assert.True(vt.IsCompletedSuccessfully);

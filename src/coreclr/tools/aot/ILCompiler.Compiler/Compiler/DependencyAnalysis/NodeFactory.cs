@@ -462,6 +462,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new ModuleMetadataNode(module);
             });
 
+            _inlineableStringResources = new NodeCache<EcmaModule, InlineableStringsResourceNode>(module =>
+            {
+                return new InlineableStringsResourceNode(module);
+            });
+
             _customAttributesWithMetadata = new NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode>(ca =>
             {
                 return new CustomAttributeMetadataNode(ca);
@@ -1137,6 +1142,12 @@ namespace ILCompiler.DependencyAnalysis
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _modulesWithMetadata.GetOrAdd(module);
+        }
+
+        private NodeCache<EcmaModule, InlineableStringsResourceNode> _inlineableStringResources;
+        internal InlineableStringsResourceNode InlineableStringResource(EcmaModule module)
+        {
+            return _inlineableStringResources.GetOrAdd(module);
         }
 
         private NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode> _customAttributesWithMetadata;

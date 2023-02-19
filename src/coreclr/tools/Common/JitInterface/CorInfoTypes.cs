@@ -745,6 +745,7 @@ namespace Internal.JitInterface
         CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
         CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
         CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
+        CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000008, // The read-only data will be 64-byte aligned
     }
 
     public enum CorJitFuncKind
@@ -1418,7 +1419,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_BBINSTR = 29, // Collect basic block profile information
         CORJIT_FLAG_BBOPT = 30, // Optimize method based on profile information
         CORJIT_FLAG_FRAMED = 31, // All methods have an EBP frame
-        CORJIT_FLAG_UNUSED8 = 32,
+        CORJIT_FLAG_BBINSTR_IF_LOOPS = 32, // JIT must instrument current method if it has loops
         CORJIT_FLAG_PUBLISH_SECRET_PARAM = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
         CORJIT_FLAG_UNUSED9 = 34,
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background

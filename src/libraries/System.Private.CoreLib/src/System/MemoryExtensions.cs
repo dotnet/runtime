@@ -3353,8 +3353,8 @@ namespace System
             string.CheckStringSplitOptions(options);
 
             // If the separators list is empty, whitespace is used as separators.  In that case, we want to ignore TrimEntries if specified,
-            // since TrimEntries also impacts whitespace.
-            if (separators.IsEmpty)
+            // since TrimEntries also impacts whitespace.  The TrimEntries flag must be left intact if we are constrained by count because we need to process last substring.
+            if (separators.IsEmpty && destination.Length > source.Length)
             {
                 options &= ~StringSplitOptions.TrimEntries;
             }
@@ -3394,8 +3394,8 @@ namespace System
             string.CheckStringSplitOptions(options);
 
             // If the separators list is empty, whitespace is used as separators.  In that case, we want to ignore TrimEntries if specified,
-            // since TrimEntries also impacts whitespace.
-            if (separators.IsEmpty)
+            // since TrimEntries also impacts whitespace.  The TrimEntries flag must be left intact if we are constrained by count because we need to process last substring.
+            if (separators.IsEmpty && destination.Length > source.Length)
             {
                 options &= ~StringSplitOptions.TrimEntries;
             }
@@ -3562,6 +3562,97 @@ namespace System
             }
 
             return (startInclusive, endExclusive);
+        }
+
+        /// <summary>Counts the number of times the specified <paramref name="value"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value for which to search.</param>
+        /// <returns>The number of times <paramref name="value"/> was found in the <paramref name="span"/>.</returns>
+        public static int Count<T>(this Span<T> span, T value) where T : IEquatable<T>? =>
+            Count((ReadOnlySpan<T>)span, value);
+
+        /// <summary>Counts the number of times the specified <paramref name="value"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value for which to search.</param>
+        /// <returns>The number of times <paramref name="value"/> was found in the <paramref name="span"/>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Count<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
+        {
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    return SpanHelpers.CountValueType(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref value),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    return SpanHelpers.CountValueType(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref value),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    return SpanHelpers.CountValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, int>(ref value),
+                        span.Length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    return SpanHelpers.CountValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, long>(ref value),
+                        span.Length);
+                }
+            }
+
+            return SpanHelpers.Count(
+                ref MemoryMarshal.GetReference(span),
+                value,
+                span.Length);
+        }
+
+        /// <summary>Counts the number of times the specified <paramref name="value"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value for which to search.</param>
+        /// <returns>The number of times <paramref name="value"/> was found in the <paramref name="span"/>.</returns>
+        public static int Count<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>? =>
+            Count((ReadOnlySpan<T>)span, value);
+
+        /// <summary>Counts the number of times the specified <paramref name="value"/> occurs in the <paramref name="span"/>.</summary>
+        /// <typeparam name="T">The element type of the span.</typeparam>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value for which to search.</param>
+        /// <returns>The number of times <paramref name="value"/> was found in the <paramref name="span"/>.</returns>
+        public static int Count<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>?
+        {
+            switch (value.Length)
+            {
+                case 0:
+                    return 0;
+
+                case 1:
+                    return Count(span, value[0]);
+
+                default:
+                    int count = 0;
+
+                    int pos;
+                    while ((pos = span.IndexOf(value)) >= 0)
+                    {
+                        span = span.Slice(pos + value.Length);
+                        count++;
+                    }
+
+                    return count;
+            }
         }
 
         /// <summary>Writes the specified interpolated string to the character span.</summary>

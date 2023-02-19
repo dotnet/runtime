@@ -80,7 +80,16 @@ namespace ILCompiler.DependencyAnalysis
 
                     // Function pointers are not supported yet.
                     // https://github.com/dotnet/runtime/issues/71883
-                    if (type.IsFunctionPointer)
+                    static bool ContainsFunctionPointers(TypeDesc type)
+                    {
+                        if (type.IsParameterizedType)
+                            return ContainsFunctionPointers(((ParameterizedType)type).ParameterType);
+                        foreach (TypeDesc instArg in type.Instantiation)
+                            if (ContainsFunctionPointers(instArg))
+                                return true;
+                        return type.IsFunctionPointer;
+                    }
+                    if (ContainsFunctionPointers(type))
                         return;
 
                     TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);

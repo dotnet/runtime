@@ -849,6 +849,9 @@ namespace System.Diagnostics.Metrics.Tests
                 counter.Add(1);
                 Assert.Equal(6, count);
 
+                upDownCounter.Add(-1);
+                Assert.Equal(6, count);
+
                 histogram.Record(1);
                 Assert.Equal(6, count);
 

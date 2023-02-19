@@ -461,6 +461,11 @@ void Compiler::gsParamsToShadows()
         shadowVarDsc->lvIsUnsafeBuffer = varDsc->lvIsUnsafeBuffer;
         shadowVarDsc->lvIsPtr          = varDsc->lvIsPtr;
 
+        if (varDsc->IsNeverNegative())
+        {
+            shadowVarDsc->SetIsNeverNegative(true);
+        }
+
 #ifdef DEBUG
         if (verbose)
         {

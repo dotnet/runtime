@@ -298,18 +298,23 @@ namespace System
         public static (ulong Quotient, ulong Remainder) DivRem(ulong left, ulong right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        [Intrinsic]
         public static ulong LeadingZeroCount(ulong value) => (ulong)BitOperations.LeadingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        [Intrinsic]
         public static ulong PopCount(ulong value) => (ulong)BitOperations.PopCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        [Intrinsic]
         public static ulong RotateLeft(ulong value, int rotateAmount) => BitOperations.RotateLeft(value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        [Intrinsic]
         public static ulong RotateRight(ulong value, int rotateAmount) => BitOperations.RotateRight(value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        [Intrinsic]
         public static ulong TrailingZeroCount(ulong value) => (ulong)BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
@@ -480,6 +485,7 @@ namespace System
         public static bool IsPow2(ulong value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
         public static ulong Log2(ulong value) => (ulong)BitOperations.Log2(value);
 
         //

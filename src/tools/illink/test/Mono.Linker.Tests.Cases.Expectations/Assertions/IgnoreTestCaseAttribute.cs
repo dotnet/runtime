@@ -11,8 +11,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 
 		public IgnoreTestCaseAttribute (string reason)
 		{
-			if (reason == null)
-				throw new ArgumentNullException (nameof (reason));
+			ArgumentNullException.ThrowIfNull (reason);
 		}
 	}
 }

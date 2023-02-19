@@ -270,7 +270,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     catch (Exception ex)
                     {
-                        throw new ExpressionEvaluationFailedException($"BUG: Unable to get properties for scope: {scopeId}. {ex}");
+                        throw new ReturnAsErrorException($"BUG: Unable to get properties for scope: {scopeId}. {ex}", ex.GetType().Name);
                     }
                     localsFetched = true;
                 }
@@ -454,9 +454,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of scheme '{objectId.Scheme}'");
                 }
             }
-            catch (Exception ex) when (ex is not ExpressionEvaluationFailedException)
+            catch (Exception ex)
             {
-                throw new ExpressionEvaluationFailedException($"Unable to evaluate element access '{elementAccess}': {ex.Message}", ex);
+                throw new ReturnAsErrorException($"Unable to evaluate element access '{elementAccess}': {ex.Message}", ex.GetType().Name);
             }
 
             async Task<ElementIndexInfo> GetElementIndexInfo()
@@ -549,7 +549,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     methodName = memberAccessExpressionSyntax.Name.ToString();
 
                     if (rootObject.IsNullValuedObject())
-                        throw new ExpressionEvaluationFailedException($"Expression '{memberAccessExpressionSyntax}' evaluated to null");
+                        throw new ReturnAsErrorException($"Expression '{memberAccessExpressionSyntax}' evaluated to null", "NullReferenceException");
                 }
                 else if (expr is IdentifierNameSyntax && scopeCache.ObjectFields.TryGetValue("this", out JObject thisValue))
                 {
@@ -558,7 +558,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 return (rootObject, methodName);
             }
-            catch (Exception ex) when (ex is not (ExpressionEvaluationFailedException or ReturnAsErrorException))
+            catch (Exception ex) when (ex is not ReturnAsErrorException)
             {
                 throw new Exception($"Unable to evaluate method '{methodName}'", ex);
             }
@@ -683,9 +683,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 throw new ReturnAsErrorException($"No implementation of method '{methodName}' matching '{method}' found in type {rootObject["className"]}.", "ArgumentError");
             }
-            catch (Exception ex) when (ex is not (ExpressionEvaluationFailedException or ReturnAsErrorException))
+            catch (Exception ex) when (ex is not ReturnAsErrorException)
             {
-                throw new ExpressionEvaluationFailedException($"Unable to evaluate method '{method}': {ex.Message}", ex);
+                throw new ReturnAsErrorException($"Unable to evaluate method '{method}': {ex.Message}", ex.GetType().Name);
             }
 
             async Task<int> FindMethodIdOnLinqEnumerable(IList<int> typeIds, string methodName)

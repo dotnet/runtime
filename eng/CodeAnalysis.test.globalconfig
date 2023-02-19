@@ -21,6 +21,30 @@ dotnet_diagnostic.BCL0015.severity = none
 # BCL0020: Invalid SR.Format call
 dotnet_diagnostic.BCL0020.severity = none
 
+# SYSLIB1045: Convert to 'GeneratedRegexAttribute'.
+dotnet_diagnostic.SYSLIB1045.severity = none
+
+# SYSLIB1054: Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+dotnet_diagnostic.SYSLIB1054.severity = none
+
+# SYSLIB1055: Invalid 'CustomMarshallerAttribute' usage
+dotnet_diagnostic.SYSLIB1055.severity = error
+
+# SYSLIB1056:Specified marshaller type is invalid
+dotnet_diagnostic.SYSLIB1056.severity = error
+
+# SYSLIB1057: Marshaller type does not have the required shape
+dotnet_diagnostic.SYSLIB1057.severity = error
+
+# SYSLIB1058: Invalid 'NativeMarshallingAttribute' usage
+dotnet_diagnostic.SYSLIB1058.severity = error
+
+# SYSLIB1060: Specified marshaller type is invalid
+dotnet_diagnostic.SYSLIB1060.severity = error
+
+# SYSLIB1061: Marshaller type has incompatible method signatures
+dotnet_diagnostic.SYSLIB1061.severity = error
+
 # CA1000: Do not declare static members on generic types
 dotnet_diagnostic.CA1000.severity = none
 
@@ -437,6 +461,12 @@ dotnet_diagnostic.CA1857.severity = none
 
 # CA1858: Use 'StartsWith' instead of 'IndexOf'
 dotnet_diagnostic.CA1858.severity = none
+
+# CA1859: Use concrete types when possible for improved performance
+dotnet_diagnostic.CA1859.severity = none
+
+# CA1860: Prefer Length/Count/IsEmpty property check over Any()
+dotnet_diagnostic.CA1860.severity = none
 
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none

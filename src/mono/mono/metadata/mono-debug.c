@@ -1105,7 +1105,7 @@ bsymfile_match (BundledSymfile *bsymfile, const char *assembly_name)
 #ifdef ENABLE_WEBCIL
 	const char *p = strstr (assembly_name, ".webcil");
 	/* if assembly_name ends with .webcil, check if aname matches, with a .dll extension instead */
-	if (p && *(p + 7) == 0) {
+	if (p && *(p + strlen(".webcil")) == 0) {
 		size_t n = p - assembly_name;
 		if (!strncmp (bsymfile->aname, assembly_name, n)
 			&& !strcmp (bsymfile->aname + n, ".dll"))

@@ -122,14 +122,22 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
+        public static bool TryUpdateClintCertificate(
+            SafeFreeCredentials? _1,
+            SafeDeleteSslContext? _2,
+            SslAuthenticationOptions _3)
+        {
+            // We will need to allocate new credential handle
+            return false;
+        }
+
         public static unsafe SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             string? targetName,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
-            SslAuthenticationOptions sslAuthenticationOptions,
-            SelectClientCertificate? _ /*clientCertificateSelectionCallback*/)
+            SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
