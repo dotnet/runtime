@@ -180,14 +180,10 @@ def main(main_args):
     return 0
 
 def html_color_diff(lines):
-    new_text = None
+    new_text = ""
 
     addition_line_color = "rgba(46,160,67,0.15)"
     deletion_line_color = "rgba(248,81,73,0.15)"
-
-    # Ideally we would use block style, but AzDO trims that out of the markdown.
-    lines = [line.replace('\t', '    ') for line in lines]
-    pad_width = max(len(line) for line in lines)
 
     cur_block = None
     cur_block_color = None
@@ -199,22 +195,17 @@ def html_color_diff(lines):
         if cur_block is None:
             return
 
-        style = ""
+        style = "display:block"
 
         if cur_block_color is not None:
-            style = ' style="background-color:{}"'.format(cur_block_color)
+            style = style + ";background-color:" + cur_block_color
 
-        new_block_text = '<span{}>'.format(style) + cur_block + "</span>"
-        if new_text is None:
-            new_text = new_block_text
-        else:
-            new_text = new_text + "\n" + new_block_text
+        new_block_text = '<div style="{}">'.format(style) + cur_block + "</div>"
+        new_text = new_text + new_block_text
 
     def add_block_line(line, color):
         nonlocal cur_block
         nonlocal cur_block_color
-
-        line = line.ljust(pad_width)
 
         if cur_block_color != color:
             commit_block()
