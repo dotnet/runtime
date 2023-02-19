@@ -5937,13 +5937,11 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
 
     GenTree* op2Var = op2;
-    if (isCastClass && !partialExpand)
+    if (isCastClass && !partialExpand && (exactCls == NO_CLASS_HANDLE))
     {
-        const unsigned clsTmpNum = lvaGrabTemp(true DEBUGARG("spilling class handle"));
-        impAssignTempGen(clsTmpNum, op2);
-        lvaTable[clsTmpNum].lvIsCSE = true;
-        op2                         = gtNewLclvNode(clsTmpNum, op2->TypeGet());
-        op2Var                      = gtNewLclvNode(clsTmpNum, op2->TypeGet());
+        // if exactCls is not null we won't have to clone op2 (it will be used only for the fallback)
+        op2Var                                                  = fgInsertCommaFormTemp(&op2);
+        lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
     }
     temp = gtNewMethodTableLookup(temp);
     condMT =
