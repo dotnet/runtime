@@ -195,12 +195,12 @@ def html_color_diff(lines):
         if cur_block is None:
             return
 
-        style = "display:block"
+        style = ""
 
         if cur_block_color is not None:
-            style = style + ";background-color:" + cur_block_color
+            style = ' style="background-color:{}"'.format(cur_block_color)
 
-        new_block_text = '<div style="{}">'.format(style) + cur_block + "</div>"
+        new_block_text = '<div{}>'.format(style) + cur_block + "</div>"
         new_text = new_text + new_block_text
 
     def add_block_line(line, color):
