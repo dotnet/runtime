@@ -98,7 +98,6 @@ namespace System.Reflection.Emit
             customBuilder.CreateCustomAttribute(m_module, m_evToken);
         }
 
-        // These are package private so that TypeBuilder can access them.
         private readonly string m_name;         // The name of the event
         private readonly int m_evToken;      // The token of this event
         private readonly RuntimeModuleBuilder m_module;

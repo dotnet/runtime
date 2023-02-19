@@ -40,7 +40,7 @@ namespace System.Reflection.Emit
         private readonly Type m_type;
         private readonly Type[] m_inst;
         private string? m_strFullQualName;
-        internal Hashtable m_hashtable;
+        internal readonly Hashtable m_hashtable;
 
         #endregion
 
