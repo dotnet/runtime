@@ -7827,8 +7827,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
                 }
 
-                // See if we can optimize type comparisons, IsCall() checks for better TP
-                if (op1->gtGetOp1()->IsCall() && op1->gtGetOp2()->IsCall())
+                // See if we can optimize type comparisons, gtIsTypeof() checks for better TP
+                if (gtIsTypeof(op1->gtGetOp1()) && gtIsTypeof(op1->gtGetOp2()))
                 {
                     op1 = gtFoldTypeCompare(op1);
                 }
