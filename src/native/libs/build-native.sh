@@ -7,12 +7,18 @@ __scriptpath="$(cd "$(dirname "$0")"; pwd -P)"
 __nativeroot="$__scriptpath"
 __RepoRootDir="$(cd "$__scriptpath"/../../..; pwd -P)"
 __artifactsDir="$__RepoRootDir/artifacts"
+__icuDir=""
 
 handle_arguments() {
 
     case "$1" in
         outconfig|-outconfig)
             __outConfig="$2"
+            __ShiftArgs=1
+            ;;
+
+        icudir|-icudir)
+            __icuDir="$2"
             __ShiftArgs=1
             ;;
 
@@ -139,6 +145,10 @@ elif [[ "$__TargetOS" == tvos ]]; then
         echo "Error: Unknown tvOS architecture $__TargetArch."
         exit 1
     fi
+fi
+
+if [[ -n "$__icuDir" ]]; then
+    __CMakeArgs="-DCMAKE_ICU_DIR=\"$__icuDir\" $__CMakeArgs"
 fi
 
 # Set the remaining variables based upon the determined build configuration

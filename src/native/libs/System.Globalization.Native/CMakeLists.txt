@@ -13,7 +13,7 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_options(-Wno-extra-semi-stmt)
     add_compile_options(-Wno-unknown-warning-option)
 
-    if (NOT CLR_CMAKE_TARGET_ANDROID)
+    if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT DEFINED CMAKE_ICU_DIR)
         if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
             execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
             set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
@@ -59,6 +59,11 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_normalization.c
 )
 
+if (DEFINED CMAKE_ICU_DIR)
+    include_directories(${CMAKE_ICU_DIR}/include)
+    link_libraries(${CMAKE_ICU_DIR}/lib)
+endif()
+
 if (LOCAL_BUILD)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim_static.c)
@@ -69,6 +74,9 @@ if (LOCAL_BUILD)
     # For minipal files
     include_directories(../../)
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
+elseif (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    add_definitions(-DSTATIC_ICU)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim_static.c)
 else()
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_icushim.c)
 endif()
@@ -97,6 +105,9 @@ if (GEN_SHARED_LIB)
         include(CMakeFindFrameworks)
         find_library(FOUNDATION Foundation REQUIRED)
     endif()
+    if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+        find_library(ICUCORE icucore REQUIRED)
+    endif()
 
     add_library(System.Globalization.Native
         SHARED
@@ -107,6 +118,7 @@ if (GEN_SHARED_LIB)
     target_link_libraries(System.Globalization.Native
         dl
         ${FOUNDATION}
+        ${ICUCORE}
     )
 
     install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
