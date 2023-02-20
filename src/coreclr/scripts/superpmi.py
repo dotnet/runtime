@@ -1843,7 +1843,6 @@ class SuperPMIReplayAsmDiffs:
                         current_text_diff = None
 
                     logging.info("Generated asm is located under %s %s", base_asm_location, diff_asm_location)
-                    example_diffs_to_put_in_summary
 
                     if current_text_diff is not None:
                         logging.info("Textual differences found in generated asm.")
