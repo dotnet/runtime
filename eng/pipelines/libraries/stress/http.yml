@@ -32,7 +32,7 @@ extends:
       jobs:
       - job: linux
         displayName: Docker Linux
-        timeoutInMinutes: 180
+        timeoutInMinutes: 240
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
         pool:
