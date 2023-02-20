@@ -20,16 +20,20 @@ namespace System
         // Avoid paying the init cost of all the IndexOfAnyValues unless they are actually used.
         internal static class IndexOfAnyValuesStorage
         {
-            // The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
-            // CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
-            // also specifically excludes VT from the list of newline functions, so we do not include
-            // it in the needle list.
-            public static readonly IndexOfAnyValues<char> NewLineChars =
-                IndexOfAnyValues.Create("\r\n\f\u0085\u2028\u2029");
-
-            // IndexOfAnyValues would use SpanHelpers.IndexOfAnyValueType for 5 values in this case.
-            // No need to allocate the IndexOfAnyValues as a regular Span.IndexOfAny will use the same implementation.
+            /// <summary>
+            /// IndexOfAnyValues would use SpanHelpers.IndexOfAnyValueType for 5 values in this case.
+            /// No need to allocate the IndexOfAnyValues as a regular Span.IndexOfAny will use the same implementation.
+            /// </summary>
             public const string NewLineCharsExceptLineFeed = "\r\f\u0085\u2028\u2029";
+
+            /// <summary>
+            /// The Unicode Standard, Sec. 5.8, Recommendation R4 and Table 5-2 state that the CR, LF,
+            /// CRLF, NEL, LS, FF, and PS sequences are considered newline functions. That section
+            /// also specifically excludes VT from the list of newline functions, so we do not include
+            /// it in the needle list.
+            /// </summary>
+            public static readonly IndexOfAnyValues<char> NewLineChars =
+                IndexOfAnyValues.Create(NewLineCharsExceptLineFeed + "\n");
         }
 
         internal const int StackallocIntBufferSizeLimit = 128;
@@ -1482,8 +1486,6 @@ namespace System
         {
             // If we are going to replace the new line with a line feed ('\n'),
             // we can skip looking for it to avoid breaking out of the vectorized path unnecessarily.
-            // We can't use the same optimization for the carriage return ('\r')
-            // as we still want to replace CRLF ("\r\n") sequences.
             int idxOfFirstNewlineChar = this.AsSpan().IndexOfAny(IndexOfAnyValuesStorage.NewLineCharsExceptLineFeed);
             if ((uint)idxOfFirstNewlineChar >= (uint)Length)
             {
