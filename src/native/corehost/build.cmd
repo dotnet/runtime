@@ -36,7 +36,6 @@ if /i [%1] == [amd64]       (set __BuildArch=x64&&shift&goto Arg_Loop)
 if /i [%1] == [arm64]       (set __BuildArch=arm64&&shift&goto Arg_Loop)
 
 if /i [%1] == [portable]    (set __PortableBuild=1&&shift&goto Arg_Loop)
-if /i [%1] == [rid]         (set __OutputRid=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [outputrid]   (set __OutputRid=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [toolsetDir]  (set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [hostver]     (set __HostVersion=%2&&shift&&shift&goto Arg_Loop)
