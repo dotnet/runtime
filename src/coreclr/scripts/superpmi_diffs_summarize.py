@@ -189,9 +189,7 @@ def html_color_diff(lines):
     cur_block_color = None
 
     def commit_block():
-        nonlocal new_text
-        nonlocal cur_block
-        nonlocal cur_block_color
+        nonlocal new_text, cur_block, cur_block_color
         if cur_block is None:
             return
 
@@ -201,11 +199,10 @@ def html_color_diff(lines):
             style = ' style="background-color:{}"'.format(cur_block_color)
 
         new_block_text = '<div{}>'.format(style) + cur_block + "</div>"
-        new_text = new_text + new_block_text
+        new_text += new_block_text
 
     def add_block_line(line, color):
-        nonlocal cur_block
-        nonlocal cur_block_color
+        nonlocal cur_block, cur_block_color
 
         if cur_block_color != color:
             commit_block()
@@ -215,7 +212,7 @@ def html_color_diff(lines):
             if cur_block is None:
                 cur_block = line
             else:
-                cur_block = cur_block + "\n" + line
+                cur_block += "\n" + line
 
     for line in lines:
         if line.startswith("+"):
