@@ -180,6 +180,10 @@ namespace System.Net.Quic.Tests
             await using var clientConnection3 = await CreateQuicConnection(listener.LocalEndPoint);
             // Third one again, should fail.
             await AssertThrowsQuicExceptionAsync(QuicError.ConnectionRefused, async () => await CreateQuicConnection(listener.LocalEndPoint));
+
+            // Accept the remaining connection to see that failure do not affect them.
+            await using var serverConnection2 = await listener.AcceptConnectionAsync();
+            await using var serverConnection3 = await listener.AcceptConnectionAsync();
         }
 
         [Theory]

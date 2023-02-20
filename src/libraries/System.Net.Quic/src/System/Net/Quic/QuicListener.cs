@@ -279,6 +279,11 @@ public sealed partial class QuicListener : IAsyncDisposable
         // Check if there's capacity to have another connection waiting to be accepted.
         if (Interlocked.Decrement(ref _pendingConnectionsCapacity) < 0)
         {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} Refusing connection from {data.Info->RemoteAddress->ToIPEndPoint()} due to backlog limit");
+            }
+
             Interlocked.Increment(ref _pendingConnectionsCapacity);
             return QUIC_STATUS_CONNECTION_REFUSED;
         }
