@@ -2008,6 +2008,7 @@ class SuperPMIReplayAsmDiffs:
         missing_diff_contexts = sum_diff("Overall", "Missing compiles")
 
         num_contexts_color = "#1460aa"
+        write_fh.write("<div><style> details > *:not(summary) { margin-left: 1em; }</style>")
         write_fh.write("Diffs are based on {} contexts ({} MinOpts, {} FullOpts).\n\n".format(
             html_color(num_contexts_color, "{:,d}".format(diffed_contexts)),
             html_color(num_contexts_color, "{:,d}".format(diffed_minopts_contexts)),
@@ -2155,7 +2156,7 @@ superpmi.py asmdiffs -target_os {2} -target_arch {3} -arch {1}
                     shutil.copyfileobj(read_fh, write_fh)
                     write_fh.write("\n</details>\n")
 
-        write_fh.write("\n</details>\n")
+        write_fh.write("\n</details></div>\n")
 
     def write_example_diffs_to_markdown_summary(self, write_fh, asm_diffs):
         """ Write a section with example diffs to the markdown summary.
@@ -2484,6 +2485,7 @@ class SuperPMIReplayThroughputDiff:
         ################################################################################################ end of replay_with_throughput_diff()
 
     def write_tpdiff_markdown_summary(self, write_fh, tp_diffs, base_jit_build_string_decoded, diff_jit_build_string_decoded):
+        write_fh.write("<div><style> details > *:not(summary) { margin-left: 1em; }</style>")
         if not base_jit_build_string_decoded:
             write_fh.write("{} Could not decode base JIT build string".format(html_color("red", "Warning:")))
         if not diff_jit_build_string_decoded:
@@ -2559,7 +2561,7 @@ class SuperPMIReplayThroughputDiff:
                     mch_file, base_instructions, diff_instructions,
                     compute_and_format_pct(base_instructions, diff_instructions)))
             write_fh.write("\n")
-        write_fh.write("\n</details>\n")
+        write_fh.write("\n</details></div>\n")
 
 ################################################################################
 # Argument handling helpers
