@@ -357,7 +357,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
 #if NETCOREAPP
-        private bool TryParseEnumCore(ref Utf8JsonReader reader, JsonSerializerOptions options, out T value)
+        private static bool TryParseEnumCore(ref Utf8JsonReader reader, JsonSerializerOptions options, out T value)
         {
             char[]? rentedBuffer = null;
             int bufferLength = reader.ValueLength;
@@ -369,22 +369,8 @@ namespace System.Text.Json.Serialization.Converters
             int charsWritten = reader.CopyString(charBuffer);
             ReadOnlySpan<char> source = charBuffer.Slice(0, charsWritten);
 
-            bool success = true;
-            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0)
-            {
-                success = CheckIfValidNamedEnumLiteral(source);
-            }
-
-            T result;
-            if (success)
-            {
-                // Try parsing case sensitive first
-                success = Enum.TryParse(source, out result) || Enum.TryParse(source, ignoreCase: true, out result);
-            }
-            else
-            {
-                result = default;
-            }
+            // Try parsing case sensitive first
+            bool success = Enum.TryParse(source, out T result) || Enum.TryParse(source, ignoreCase: true, out result);
 
             if (rentedBuffer != null)
             {
@@ -396,38 +382,14 @@ namespace System.Text.Json.Serialization.Converters
             return success;
         }
 #else
-        private bool TryParseEnumCore(string? enumString, JsonSerializerOptions _, out T value)
+        private static bool TryParseEnumCore(string? enumString, JsonSerializerOptions _, out T value)
         {
-            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0 && (enumString is null || !CheckIfValidNamedEnumLiteral(enumString.AsSpan())))
-            {
-                value = default;
-                return false;
-            }
-
             // Try parsing case sensitive first
             bool success = Enum.TryParse(enumString, out T result) || Enum.TryParse(enumString, ignoreCase: true, out result);
             value = result;
             return success;
         }
 #endif
-
-        // By just checking first char, will filter out all numeric value, and other named ones which is invalid for named enum literal
-        private static bool CheckIfValidNamedEnumLiteral(ReadOnlySpan<char> source)
-        {
-            ReadOnlySpan<char> trimmedSource = source.TrimStart();
-            if (trimmedSource.IsEmpty)
-            {
-                return false;
-            }
-
-            char c = trimmedSource[0];
-            if ((uint)(c - '0') <= 9 || c is '-' or '+')
-            {
-                return false;
-            }
-
-            return true;
-        }
 
         private T ReadEnumUsingNamingPolicy(string? enumString)
         {
