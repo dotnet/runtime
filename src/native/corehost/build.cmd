@@ -103,12 +103,12 @@ echo "Computed RID for native build is %cm_BaseRid%"
 
 :: When the host runs on an unknown rid, it falls back to the output rid
 :: Strip the architecture
-for /f "delims=-" %%i in ("%__OutputRid%") do set __FallbackOS=%%i
+for /f "delims=-" %%i in ("%__OutputRid%") do set __HostFallbackOS=%%i
 :: The "win" host build is Windows 10 compatible
-if "%__FallbackOS%" == "win"       (set __FallbackOS=win10)
+if "%__HostFallbackOS%" == "win"       (set __HostFallbackOS=win10)
 
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_HOST_VER=%__HostVersion%" "-DCLI_CMAKE_COMMON_HOST_VER=%__AppHostVersion%" "-DCLI_CMAKE_HOST_FXR_VER=%__HostFxrVersion%"
-set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_HOST_POLICY_VER=%__HostPolicyVersion%" "-DCLI_CMAKE_PKG_RID=%cm_BaseRid%" "-DCLI_CMAKE_FALLBACK_OS=%__FallbackOS%" "-DCLI_CMAKE_COMMIT_HASH=%__CommitSha%"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_HOST_POLICY_VER=%__HostPolicyVersion%" "-DCLI_CMAKE_PKG_RID=%cm_BaseRid%" "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLI_CMAKE_COMMIT_HASH=%__CommitSha%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DRUNTIME_FLAVOR=%__RuntimeFlavor% "
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 

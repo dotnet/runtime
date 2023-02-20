@@ -331,11 +331,11 @@ REM ============================================================================
 
 :: When the host runs on an unknown rid, it falls back to the output rid
 :: Strip the architecture
-for /f "delims=-" %%i in ("%__OutputRid%") do set __FallbackOS=%%i
+for /f "delims=-" %%i in ("%__OutputRid%") do set __HostFallbackOS=%%i
 :: The "win" host build is Windows 10 compatible
-if "%__FallbackOS%" == "win"       (set __FallbackOS=win10)
+if "%__HostFallbackOS%" == "win"       (set __HostFallbackOS=win10)
 :: Default to "win10" fallback
-if "%__FallbackOS%" == ""          (set __FallbackOS=win10)
+if "%__HostFallbackOS%" == ""          (set __HostFallbackOS=win10)
 
 if %__BuildNative% EQU 1 (
     REM Scope environment changes start {
@@ -365,7 +365,7 @@ if %__BuildNative% EQU 1 (
         set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
     )
 
-    set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CMAKE_TARGET_ARCH=%__TargetArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLI_CMAKE_FALLBACK_OS=%__FallbackOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" %__CMakeArgs%
+    set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CMAKE_TARGET_ARCH=%__TargetArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" %__CMakeArgs%
     echo Calling "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% %__TargetOS% !__ExtraCmakeArgs!
     call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% %__TargetOS% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
