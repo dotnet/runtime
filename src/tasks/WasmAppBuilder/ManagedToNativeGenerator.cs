@@ -11,6 +11,8 @@ using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
+namespace Microsoft.WebAssembly.Build.Tasks;
+
 public class ManagedToNativeGenerator : Task
 {
     [Required]

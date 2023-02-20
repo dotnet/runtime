@@ -2867,11 +2867,16 @@ mono_gc_card_table_nursery_check (void)
 	return !sgen_get_major_collector ()->is_concurrent;
 }
 
-/* Negative value to remove */
 void
-mono_gc_add_memory_pressure (gint64 value)
+mono_gc_add_memory_pressure (guint64 value)
 {
-	/* FIXME: Implement at some point? */
+	sgen_add_memory_pressure(value);
+}
+
+void
+mono_gc_remove_memory_pressure (guint64 value)
+{
+	sgen_remove_memory_pressure(value);
 }
 
 /*

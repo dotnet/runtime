@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -81,8 +82,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            typeInfo.CreateObjectWithArgs ??=
-                JsonSerializerOptions.MemberAccessorStrategy.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo!);
+            Debug.Assert(typeInfo.CreateObjectWithArgs != null);
 
             var arguments = new Arguments<TArg0, TArg1, TArg2, TArg3>();
 
@@ -111,6 +111,13 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             state.Current.CtorArgumentState!.Arguments = arguments;
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        internal override void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
+        {
+            jsonTypeInfo.CreateObjectWithArgs = DefaultJsonTypeInfoResolver.MemberAccessor.CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo!);
         }
     }
 }

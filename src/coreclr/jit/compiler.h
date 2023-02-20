@@ -3925,6 +3925,7 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
+
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                      CORINFO_SIG_INFO*    sig,
@@ -5319,11 +5320,9 @@ public:
 
     void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
 
-    FlowEdge* fgAddRefPred(BasicBlock* block,
-                           BasicBlock* blockPred,
-                           FlowEdge*   oldEdge           = nullptr,
-                           bool        initializingPreds = false); // Only set to 'true' when we are computing preds in
-                                                                   // fgLinkBasicBlocks()
+    // initializingPreds is only 'true' when we are computing preds in fgLinkBasicBlocks()
+    template <bool initializingPreds = false>
+    FlowEdge* fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge = nullptr);
 
     void fgFindBasicBlocks();
 
@@ -6137,6 +6136,9 @@ protected:
     // Records the set of "side effects" of all loops: fields (object instance and static)
     // written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopSideEffects();
+
+    // Compute the sets of long and float vars (lvaLongVars, lvaFloatVars).
+    void optComputeInterestingVarSets();
 
 #ifdef DEBUG
     bool optAnyChildNotRemoved(unsigned loopNum);

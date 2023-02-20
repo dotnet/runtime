@@ -32,16 +32,24 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 			}
 		}
 
+		// NativeAOT should generate conditional dependencies for the tag required
+		// https://github.com/dotnet/runtime/issues/80464
+		[Kept (By = ProducedBy.NativeAot)]
 		class ReallyUnused
 		{
+			[Kept (By = ProducedBy.NativeAot)]
 			private void PreservedMethod ()
 			{
 				new SecondLevelUnused (2);
 			}
 		}
 
+		// NativeAOT should generate conditional dependencies for the tag required
+		// https://github.com/dotnet/runtime/issues/80464
+		[Kept (By = ProducedBy.NativeAot)]
 		class SecondLevelUnused
 		{
+			[Kept (By = ProducedBy.NativeAot)]
 			public SecondLevelUnused (int arg)
 			{
 			}

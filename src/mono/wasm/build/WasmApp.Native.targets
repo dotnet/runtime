@@ -1,7 +1,7 @@
 <Project>
   <!-- not really meant to be used w/o WasmApp.targets -->
 
-  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>

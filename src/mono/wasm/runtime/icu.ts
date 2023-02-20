@@ -53,10 +53,8 @@ export function mono_wasm_globalization_init(): void {
         }
     }
 
-    if (invariantMode)
+    if (invariantMode) {
         cwraps.mono_wasm_setenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
-
-    // Set globalization mode to PredefinedCulturesOnly
-    cwraps.mono_wasm_setenv("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", "1");
+    }
 }
 

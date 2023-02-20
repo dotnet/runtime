@@ -24,7 +24,7 @@ namespace System.Text.RegularExpressions
 
         private readonly string[] _strings; // table of string constants
         private readonly int[] _rules;      // negative -> group #, positive -> string #
-        private bool _hasBackreferences;    // true if the replacement has any backreferences; otherwise, false
+        private readonly bool _hasBackreferences;    // true if the replacement has any backreferences; otherwise, false
 
         /// <summary>
         /// Since RegexReplacement shares the same parser as Regex,
