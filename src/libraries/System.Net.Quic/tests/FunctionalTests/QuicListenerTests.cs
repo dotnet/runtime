@@ -293,6 +293,8 @@ namespace System.Net.Quic.Tests
             var acceptTask = listener.AcceptConnectionAsync(token);
             await using var clientConnection = await CreateQuicConnection(listener.LocalEndPoint);
 
+            await Task.Delay(TimeSpan.FromSeconds(0.5));
+
             // Cancellation should get ignored as the connection was connected.
             cts.Cancel();
 
