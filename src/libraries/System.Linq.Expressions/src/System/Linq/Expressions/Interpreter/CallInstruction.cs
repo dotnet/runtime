@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Dynamic.Utils;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Expressions.Interpreter
@@ -280,6 +281,7 @@ namespace System.Linq.Expressions.Interpreter
     {
         protected readonly MethodInfo _target;
         protected readonly int _argumentCount;
+        private object?[]?[]? _argsCache;
 
         public override int ArgumentCount => _argumentCount;
 
@@ -296,9 +298,10 @@ namespace System.Linq.Expressions.Interpreter
             int first = frame.StackIndex - _argumentCount;
 
             object? ret;
+            object?[] args;
             if (_target.IsStatic)
             {
-                object?[] args = GetArgs(frame, first, 0);
+                args = GetArgs(frame, first, 0);
                 try
                 {
                     ret = _target.Invoke(null, args);
@@ -314,7 +317,7 @@ namespace System.Linq.Expressions.Interpreter
                 object? instance = frame.Data[first];
                 NullCheck(instance);
 
-                object?[] args = GetArgs(frame, first, 1);
+                args = GetArgs(frame, first, 1);
 
                 if (TryGetLightLambdaTarget(instance, out LightLambda? targetLambda))
                 {
@@ -335,6 +338,8 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
+            ReturnCachedArgs(args);
+
             if (_target.ReturnType != typeof(void))
             {
                 frame.Data[first] = ret;
@@ -348,13 +353,57 @@ namespace System.Linq.Expressions.Interpreter
             return 1;
         }
 
+        private object?[]? GetCachedArgs()
+        {
+            object?[]?[]? argsCache = _argsCache;
+            if (argsCache == null)
+            {
+                _argsCache = new object?[16][];
+                return null;
+            }
+
+            for (int i = 0; i < argsCache.Length; i++)
+            {
+                if (argsCache[i] != null)
+                {
+                    object?[]? args = Interlocked.Exchange(ref argsCache[i], null);
+                    if (args != null)
+                    {
+                        return args;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        protected void ReturnCachedArgs(object?[] args)
+        {
+            if (args.Length > 0)
+            {
+                Array.Clear(args);
+                object?[]?[] argsCache = _argsCache!;
+                for (int i = 0; i < argsCache.Length; i++)
+                {
+                    if (argsCache[i] == null)
+                    {
+                        args = Interlocked.Exchange(ref argsCache[i], args)!;
+                        if (args == null)
+                        {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
         protected object?[] GetArgs(InterpretedFrame frame, int first, int skip)
         {
             int count = _argumentCount - skip;
 
             if (count > 0)
             {
-                var args = new object?[count];
+                var args = GetCachedArgs() ?? new object?[count];
 
                 for (int i = 0; i < args.Length; i++)
                 {
@@ -452,6 +501,8 @@ namespace System.Linq.Expressions.Interpreter
                         // gets passed by reference from reflection for value types.
                         arg.Update(frame, arg.ArgumentIndex == -1 ? instance : args[arg.ArgumentIndex]);
                     }
+
+                    ReturnCachedArgs(args);
                 }
             }
 
