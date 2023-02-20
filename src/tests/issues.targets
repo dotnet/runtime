@@ -1324,9 +1324,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/*">
             <Issue>https://github.com/dotnet/runtime/issues/71883</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/PGO/ProfileCastClassAndIsInst/**">
-            <Issue>https://github.com/dotnet/runtime/issues/82071</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection emit</Issue>
         </ExcludeList>
