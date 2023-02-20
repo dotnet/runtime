@@ -5414,18 +5414,21 @@ mono_set_runtime_init_callback (MonoRuntimeInitCallback callback)
 void
 mono_invoke_runtime_init_callback (void)
 {
-	if (G_UNLIKELY (runtime_init_callback)) {
+	MonoRuntimeInitCallback callback = NULL;
+	mono_atomic_load_acquire (callback, MonoRuntimeInitCallback, &runtime_init_callback);
+	if (G_UNLIKELY (callback)) {
 		guint64 thread_id = mono_native_thread_os_id_get ();
-		if (runtime_init_callback && (runtime_init_thread_id == thread_id))
+		if (callback && (mono_atomic_load_i64 ((volatile gint64 *)&runtime_init_thread_id) == thread_id))
 			return;
 
 		while (mono_atomic_cas_i64 ((volatile gint64 *)&runtime_init_thread_id, (gint64)thread_id, (gint64)G_MAXUINT64) != (gint64)G_MAXUINT64)
 			g_usleep (1000);
 
-		if (runtime_init_callback) {
+		mono_atomic_load_acquire (callback, MonoRuntimeInitCallback, &runtime_init_callback);
+		if (callback) {
 			if (!mono_thread_info_current_unchecked ())
-				runtime_init_callback ();
-			runtime_init_callback = NULL;
+				callback ();
+			mono_atomic_store_release (&runtime_init_callback, NULL);
 		}
 
 		mono_atomic_xchg_i64 ((volatile gint64 *)&runtime_init_thread_id, (gint64)G_MAXUINT64);
