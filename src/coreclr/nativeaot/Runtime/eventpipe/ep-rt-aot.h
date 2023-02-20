@@ -1,4 +1,7 @@
-// Implementation of ep-rt.h targeting CoreCLR runtime.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// Implementation of ep-rt.h targeting NativeAOT runtime.
 #ifndef __EVENTPIPE_RT_AOT_H__
 #define __EVENTPIPE_RT_AOT_H__
 
@@ -2624,7 +2627,7 @@ ep_rt_utf16_to_utf8_string (
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Temp implementation that is the reverse of ep_rt_utf8_to_utf16le_string
     size_t len_utf16 = len;
-    if(len_utf16 == -1)
+    if(len_utf16 == (size_t)-1)
     {
         len_utf16 = ep_rt_utf16_string_len (str);
     }

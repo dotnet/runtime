@@ -97,8 +97,6 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        internal abstract JsonParameterInfo CreateJsonParameterInfo();
-
         internal abstract JsonConverter<TTarget> CreateCastingConverter<TTarget>();
 
         /// <summary>

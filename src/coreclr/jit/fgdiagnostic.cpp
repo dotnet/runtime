@@ -3635,7 +3635,7 @@ void Compiler::fgDebugCheckBlockLinks()
             {
                 // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
                 // about the BlockSet epoch.
-                BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
+                BitVecTraits bitVecTraits(impInlineRoot()->fgBBNumMax + 1, this);
                 BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
                 for (BasicBlock* const bTarget : block->SwitchTargets())
                 {

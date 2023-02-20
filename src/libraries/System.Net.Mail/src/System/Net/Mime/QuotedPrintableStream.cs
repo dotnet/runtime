@@ -54,7 +54,7 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
         };
 
-        private static ReadOnlySpan<byte> HexEncodeMap => new byte[] { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 };
+        private static ReadOnlySpan<byte> HexEncodeMap => "0123456789ABCDEF"u8;
 
         private readonly int _lineLength;
         private ReadStateInfo? _readState;

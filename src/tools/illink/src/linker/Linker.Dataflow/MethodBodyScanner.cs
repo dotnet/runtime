@@ -42,7 +42,7 @@ namespace Mono.Linker.Dataflow
 		}
 	}
 
-	abstract partial class MethodBodyScanner
+	internal abstract partial class MethodBodyScanner
 	{
 		protected readonly LinkContext _context;
 		protected readonly InterproceduralStateLattice InterproceduralStateLattice;
@@ -54,7 +54,7 @@ namespace Mono.Linker.Dataflow
 			this.InterproceduralStateLattice = new InterproceduralStateLattice (default, default, context);
 		}
 
-		internal MultiValue ReturnValue { private set; get; }
+		internal MultiValue ReturnValue { get; private set; }
 
 		protected virtual void WarnAboutInvalidILInMethod (MethodBody method, int ilOffset)
 		{
@@ -256,7 +256,7 @@ namespace Mono.Linker.Dataflow
 				// Disabled asserts due to a bug
 				// Debug.Assert (interproceduralState.Count == 1 + calleeMethods.Count ());
 				// foreach (var method in calleeMethods)
-				// 	Debug.Assert (interproceduralState.Any (kvp => kvp.Key.Method == method));
+				//  Debug.Assert (interproceduralState.Any (kvp => kvp.Key.Method == method));
 			} else {
 				Debug.Assert (interproceduralState.MethodBodies.Count () == 1);
 			}
@@ -288,7 +288,7 @@ namespace Mono.Linker.Dataflow
 
 			BasicBlockIterator blockIterator = new BasicBlockIterator (methodIL);
 
-			ReturnValue = new ();
+			ReturnValue = default;
 			foreach (Instruction operation in methodIL.Instructions) {
 				int curBasicBlock = blockIterator.MoveNext (operation);
 
@@ -656,7 +656,7 @@ namespace Mono.Linker.Dataflow
 						if (hasReturnValue) {
 							StackSlot retValue = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 							// If the return value is a reference, treat it as the value itself for now
-							//	We can handle ref return values better later
+							// We can handle ref return values better later
 							ReturnValue = MultiValueLattice.Meet (ReturnValue, DereferenceValue (retValue.Value, locals, ref interproceduralState));
 							ValidateNoReferenceToReference (locals, methodBody.Method, operation.Offset);
 						}
@@ -728,7 +728,7 @@ namespace Mono.Linker.Dataflow
 
 			bool isByRef = code == Code.Ldarga || code == Code.Ldarga_S;
 			isByRef |= paramType.IsByRefOrPointer ();
-			isByRef |= param.IsImplicitThis == true && paramType.IsValueType;
+			isByRef |= param.IsImplicitThis && paramType.IsValueType;
 
 			StackSlot slot = new StackSlot (
 				isByRef

@@ -56,11 +56,11 @@ namespace System.Text
 
         // We have to load the 936 code page tables, so impersonate 936 as our base
         // This pretends to be other code pages as far as memory sections are concerned.
-        internal ISO2022Encoding(int codePage) : base(codePage, s_tableBaseCodePages[codePage % 10])
+        internal ISO2022Encoding(int codePage) : base(codePage, TableBaseCodePages[codePage % 10])
         {
         }
 
-        private static readonly int[] s_tableBaseCodePages =
+        private static ReadOnlySpan<int> TableBaseCodePages => new int[]
         {
             932,    // 50220  ISO-2022-JP, No halfwidth Katakana, convert to full width
             932,    // 50221  ISO-2022-JP, Use escape sequence for half width Katakana
@@ -400,14 +400,14 @@ namespace System.Text
                     {
                         // CodePage 50220 doesn't use halfwidth Katakana, convert to fullwidth
                         // See if its out of range, fallback if so, throws if recursive fallback
-                        if (bTrailByte < 0x21 || bTrailByte >= 0x21 + s_HalfToFullWidthKanaTable.Length)
+                        if (bTrailByte < 0x21 || bTrailByte >= 0x21 + HalfToFullWidthKanaTable.Length)
                         {
                             buffer.Fallback(ch);
                             continue;
                         }
 
                         // Get the full width katakana char to use.
-                        iBytes = unchecked((ushort)(s_HalfToFullWidthKanaTable[bTrailByte - 0x21] & 0x7F7F));
+                        iBytes = unchecked((ushort)(HalfToFullWidthKanaTable[bTrailByte - 0x21] & 0x7F7F));
 
                         // May have to do all sorts of fun stuff for mode, go back to start convert
                         goto StartConvert;
@@ -1852,7 +1852,7 @@ namespace System.Text
             }
         }
 
-        private static readonly ushort[] s_HalfToFullWidthKanaTable =
+        private static ReadOnlySpan<ushort> HalfToFullWidthKanaTable => new ushort[]
         {
             0xa1a3, // 0x8ea1 : Halfwidth Ideographic Period
             0xa1d6, // 0x8ea2 : Halfwidth Opening Corner Bracket
