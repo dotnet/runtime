@@ -1431,7 +1431,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(json, await Serializer.SerializeWrapper(obj));
         }
 
-#if FIXED
+#if FIXED // https://github.com/dotnet/roslyn/issues/66900
         [Fact]
         public async Task TestClassWithManyConstructorParameters()
         {
