@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -20,59 +20,63 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Private Data Members
-        internal MethodInfo m_method;
-        private Type[] m_inst;
+        internal MethodInfo _method;
+        private Type[] _inst;
         #endregion
 
         #region Constructor
         internal MethodBuilderInstantiation(MethodInfo method, Type[] inst)
         {
-            m_method = method;
-            m_inst = inst;
+            _method = method;
+            _inst = inst;
         }
         #endregion
 
         internal override Type[] GetParameterTypes()
         {
-            return m_method.GetParameterTypes();
+            return _method.GetParameterTypes();
         }
 
         #region MemberBase
-        public override MemberTypes MemberType => m_method.MemberType;
-        public override string Name => m_method.Name;
-        public override Type? DeclaringType => m_method.DeclaringType;
-        public override Type? ReflectedType => m_method.ReflectedType;
-        public override object[] GetCustomAttributes(bool inherit) { return m_method.GetCustomAttributes(inherit); }
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_method.GetCustomAttributes(attributeType, inherit); }
-        public override bool IsDefined(Type attributeType, bool inherit) { return m_method.IsDefined(attributeType, inherit); }
-        public override Module Module => m_method.Module;
+        public override MemberTypes MemberType => _method.MemberType;
+        public override string Name => _method.Name;
+        public override Type? DeclaringType => _method.DeclaringType;
+        public override Type? ReflectedType => _method.ReflectedType;
+        public override object[] GetCustomAttributes(bool inherit) { return _method.GetCustomAttributes(inherit); }
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return _method.GetCustomAttributes(attributeType, inherit); }
+        public override bool IsDefined(Type attributeType, bool inherit) { return _method.IsDefined(attributeType, inherit); }
+        public override Module Module => _method.Module;
         #endregion
 
         #region MethodBase Members
         public override ParameterInfo[] GetParameters() { throw new NotSupportedException(); }
-        public override MethodImplAttributes GetMethodImplementationFlags() { return m_method.GetMethodImplementationFlags(); }
+        public override MethodImplAttributes GetMethodImplementationFlags() { return _method.GetMethodImplementationFlags(); }
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
-        public override MethodAttributes Attributes => m_method.Attributes;
+        public override MethodAttributes Attributes => _method.Attributes;
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }
-        public override CallingConventions CallingConvention => m_method.CallingConvention;
-        public override Type[] GetGenericArguments() { return m_inst; }
-        public override MethodInfo GetGenericMethodDefinition() { return m_method; }
+        public override CallingConventions CallingConvention => _method.CallingConvention;
+        public override Type[] GetGenericArguments() { return _inst; }
+        public override MethodInfo GetGenericMethodDefinition() { return _method; }
         public override bool IsGenericMethodDefinition => false;
         public override bool ContainsGenericParameters
         {
             get
             {
-                for (int i = 0; i < m_inst.Length; i++)
+                for (int i = 0; i < _inst.Length; i++)
                 {
-                    if (m_inst[i].ContainsGenericParameters)
+                    if (_inst[i].ContainsGenericParameters)
+                    {
                         return true;
+                    }
                 }
 
                 if (DeclaringType != null && DeclaringType.ContainsGenericParameters)
+                {
                     return true;
+                }
 
                 return false;
             }
@@ -89,7 +93,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Abstract\Virtual Members
-        public override Type ReturnType => m_method.ReturnType;
+        public override Type ReturnType => _method.ReturnType;
 
         public override ParameterInfo ReturnParameter => throw new NotSupportedException();
         public override ICustomAttributeProvider ReturnTypeCustomAttributes => throw new NotSupportedException();

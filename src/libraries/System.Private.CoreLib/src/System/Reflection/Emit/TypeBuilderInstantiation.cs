@@ -1,15 +1,27 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Globalization;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class TypeBuilderInstantiation : TypeInfo
+    /*
+     * TypeBuilderInstantiation represents an instantiation of a generic TypeBuilder.
+     */
+    internal sealed partial class TypeBuilderInstantiation : TypeInfo
     {
+        #region Fields need to be kept in order
+        // For Mono runtime its important to keep this declaration order in sync with MonoReflectionGenericClass struct in object-internals.h
+        private Type _genericType;
+        private Type[] _typeArguments;
+        #endregion
+        private string? _strFullQualName;
+        internal Hashtable _hashtable;
+
+
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
             if (typeInfo == null) return false;
@@ -33,23 +45,14 @@ namespace System.Reflection.Emit
 
             return new TypeBuilderInstantiation(type, typeArguments);
         }
-
-        #endregion
-
-        #region Private Data Members
-        private Type m_type;
-        private Type[] m_inst;
-        private string? m_strFullQualName;
-        internal Hashtable m_hashtable;
-
         #endregion
 
         #region Constructor
-        private TypeBuilderInstantiation(Type type, Type[] inst)
+        internal TypeBuilderInstantiation(Type type, Type[] inst)
         {
-            m_type = type;
-            m_inst = inst;
-            m_hashtable = new Hashtable();
+            _genericType = type;
+            _typeArguments = inst;
+            _hashtable = new Hashtable();
         }
         #endregion
 
@@ -61,13 +64,13 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        public override Type? DeclaringType => m_type.DeclaringType;
+        public override Type? DeclaringType => _genericType.DeclaringType;
 
-        public override Type? ReflectedType => m_type.ReflectedType;
+        public override Type? ReflectedType => _genericType.ReflectedType;
 
-        public override string Name => m_type.Name;
+        public override string Name => _genericType.Name;
 
-        public override Module Module => m_type.Module;
+        public override Module Module => _genericType.Module;
         #endregion
 
         #region Type Overrides
@@ -99,10 +102,10 @@ namespace System.Reflection.Emit
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) { throw new NotSupportedException(); }
 
-        public override Assembly Assembly => m_type.Assembly;
+        public override Assembly Assembly => _genericType.Assembly;
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
-        public override string? FullName => m_strFullQualName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
-        public override string? Namespace => m_type.Namespace;
+        public override string? FullName => _strFullQualName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
+        public override string? Namespace => _genericType.Namespace;
         public override string? AssemblyQualifiedName => TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName);
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "The entire TypeBuilderInstantiation is serving the MakeGenericType implementation. " +
@@ -145,7 +148,7 @@ namespace System.Reflection.Emit
             // D<S,string> : B<string,List<S>,char>
             get
             {
-                Type? typeBldrBase = m_type.BaseType;
+                Type? typeBldrBase = _genericType.BaseType;
 
                 if (typeBldrBase == null)
                     return null;
@@ -212,7 +215,7 @@ namespace System.Reflection.Emit
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) { throw new NotSupportedException(); }
 
-        protected override TypeAttributes GetAttributeFlagsImpl() { return m_type.Attributes; }
+        protected override TypeAttributes GetAttributeFlagsImpl() { return _genericType.Attributes; }
 
         public override bool IsTypeDefinition => false;
         public override bool IsSZArray => false;
@@ -225,20 +228,20 @@ namespace System.Reflection.Emit
         public override Type GetElementType() { throw new NotSupportedException(); }
         protected override bool HasElementTypeImpl() { return false; }
         public override Type UnderlyingSystemType => this;
-        public override Type[] GetGenericArguments() { return m_inst; }
+        public override Type[] GetGenericArguments() { return _typeArguments; }
         public override bool IsGenericTypeDefinition => false;
         public override bool IsGenericType => true;
         public override bool IsConstructedGenericType => true;
         public override bool IsGenericParameter => false;
         public override int GenericParameterPosition => throw new InvalidOperationException();
-        protected override bool IsValueTypeImpl() { return m_type.IsValueType; }
+        protected override bool IsValueTypeImpl() { return _genericType.IsValueType; }
         public override bool ContainsGenericParameters
         {
             get
             {
-                for (int i = 0; i < m_inst.Length; i++)
+                for (int i = 0; i < _typeArguments.Length; i++)
                 {
-                    if (m_inst[i].ContainsGenericParameters)
+                    if (_typeArguments[i].ContainsGenericParameters)
                         return true;
                 }
 
@@ -246,7 +249,7 @@ namespace System.Reflection.Emit
             }
         }
         public override MethodBase? DeclaringMethod => null;
-        public override Type GetGenericTypeDefinition() { return m_type; }
+        public override Type GetGenericTypeDefinition() { return _genericType; }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
