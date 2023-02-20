@@ -10316,28 +10316,30 @@ mono_aot_mark_unused_llvm_plt_entry (MonoJumpInfo *patch_info)
 char*
 mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 {
+	gboolean direct_calls = llvm_acfg->aot_opts.direct_icalls;
 	const char *sym = NULL;
 
-	if (llvm_acfg->aot_opts.direct_icalls) {
-		if (type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-			/* Call to a C function implementing a jit icall */
-			sym = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data)->c_symbol;
-		} else if (type == MONO_PATCH_INFO_ICALL_ADDR_CALL) {
-			MonoMethod *method = (MonoMethod *)data;
-			if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-				sym = lookup_icall_symbol_name_aot (method);
-			else if (is_direct_pinvoke_specified_for_method (llvm_acfg, method))
-				get_pinvoke_import (llvm_acfg, method, NULL, &sym);
-		} else if (type == MONO_PATCH_INFO_JIT_ICALL_ID) {
-			MonoJitICallInfo const * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
-			char const * const name = info->c_symbol;
-			if (name && info->func == info->wrapper)
-				sym = name;
+	if (direct_calls && type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
+		/* Call to a C function implementing a jit icall */
+		sym = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data)->c_symbol;
+	} else if (direct_calls && type == MONO_PATCH_INFO_ICALL_ADDR_CALL) {
+		MonoMethod *method = (MonoMethod *)data;
+		if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
+			sym = lookup_icall_symbol_name_aot (method);
+		else if (is_direct_pinvoke_specified_for_method (llvm_acfg, method))
+			get_pinvoke_import (llvm_acfg, method, NULL, &sym);
+	} else if (type == MONO_PATCH_INFO_JIT_ICALL_ID && (direct_calls || (MonoJitICallId)(gsize)data == MONO_JIT_ICALL_mono_dummy_runtime_init_callback)) {
+		MonoJitICallInfo const * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
+		if (info->func == info->wrapper) {
+			if ((MonoJitICallId)(gsize)data == MONO_JIT_ICALL_mono_dummy_runtime_init_callback) {
+				sym = llvm_acfg->aot_opts.runtime_init_callback;
+			} else {
+				sym = info->c_symbol ? info->c_symbol : NULL;
+			}
 		}
-		if (sym)
-			return g_strdup (sym);
 	}
-	return NULL;
+
+	return sym ? g_strdup (sym) : NULL;
 }
 
 char*
