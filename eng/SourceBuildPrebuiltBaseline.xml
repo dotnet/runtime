@@ -8,9 +8,6 @@
     <Usage Id="Microsoft.NETCore.App.Crossgen2.linux-x64" Version="8.*" />
     <Usage Id="Microsoft.NETCore.App.Runtime.linux-x64" Version="8.*" />
     <!-- Should be removed as part of https://github.com/dotnet/runtime/issues/82298 -->
-    <Usage Id="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" IsDirectDependency="true" IsAutoReferenced="true" />
-    <Usage Id="Microsoft.NETFramework.ReferenceAssemblies.net45" Version="1.0.3" />
-    <Usage Id="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="1.0.3" />
-    <Usage Id="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" />
+    <Usage Id="Microsoft.NETFramework.ReferenceAssemblies*" Version="1.0.3" />
   </Usages>
 </UsageData>
