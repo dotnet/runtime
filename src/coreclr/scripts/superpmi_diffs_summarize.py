@@ -212,7 +212,7 @@ def html_color_diff(lines):
             if cur_block is None:
                 cur_block = line
             else:
-                cur_block += + "\n" + line
+                cur_block += "\n" + line
 
     for line in lines:
         if line.startswith("+"):
