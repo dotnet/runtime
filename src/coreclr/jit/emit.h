@@ -698,7 +698,7 @@ protected:
         {
         }
 #elif defined(TARGET_RISCV64)
-        insFormat idInsFmt() const
+        insFormat   idInsFmt() const
         {
             _ASSERTE(!"TODO RISCV64 NYI");
             return (insFormat)0;
@@ -739,7 +739,7 @@ protected:
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /* _idOpSize defined below. */
 #else
-        opSize    _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
+        opSize _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // On Amd64, this is where the second DWORD begins
@@ -1115,7 +1115,7 @@ protected:
         }
 
 #elif defined(TARGET_LOONGARCH64)
-        unsigned    idCodeSize() const
+        unsigned  idCodeSize() const
         {
             return _idCodeSize;
         }
@@ -1127,7 +1127,7 @@ protected:
             _idCodeSize = sz;
         }
 #elif defined(TARGET_RISCV64)
-        unsigned    idCodeSize() const
+        unsigned idCodeSize() const
         {
             return _idCodeSize;
         }
@@ -1674,7 +1674,6 @@ protected:
 #define PERFSCORE_LATENCY_RD_GENERAL PERFSCORE_LATENCY_4C
 #define PERFSCORE_LATENCY_WR_GENERAL PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_GENERAL PERFSCORE_LATENCY_4C
-
 
 #endif // TARGET_XXX
 

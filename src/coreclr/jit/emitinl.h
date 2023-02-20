@@ -366,7 +366,7 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
     assert(REGNUM_BITS >= 6);
     encodeMask = 0;
 
-    //if ((regmask & RBM_S0) != RBM_NONE)
+    // if ((regmask & RBM_S0) != RBM_NONE)
     //    encodeMask |= 0x01;
     if ((regmask & RBM_S1) != RBM_NONE)
         encodeMask |= 0x01;
@@ -540,7 +540,7 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
     assert(REGNUM_BITS >= 6);
     encodeMask = id->idReg1();
 
-    //if ((encodeMask & 0x01) != 0) // TODO CHECK S0 is FP
+    // if ((encodeMask & 0x01) != 0) // TODO CHECK S0 is FP
     //    regmask |= RBM_S0;
     if ((encodeMask & 0x01) != 0)
         regmask |= RBM_S1;
@@ -567,7 +567,6 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
         regmask |= RBM_S10;
     if ((encodeMask & 0x10) != 0)
         regmask |= RBM_S11;
-
 
 #else
     NYI("unknown target");

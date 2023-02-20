@@ -2063,11 +2063,12 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
     // but the GTF_SPILL flag records the fact that the register value is going dead.
     if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || (!varDsc->IsAlwaysAliveInMemory()))
     {
-        // Store local variable to its home location.
-        // Ensure that lclVar stores are typed correctly.
+// Store local variable to its home location.
+// Ensure that lclVar stores are typed correctly.
 #ifdef TARGET_RISCV64
         assert(!compiler->isSIMDTypeLocalAligned(varNum));
-        GetEmitter()->emitIns_S_R(ins_Store(type, compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(type), regNum, REG_NA,
+        GetEmitter()->emitIns_S_R(ins_Store(type, compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(type), regNum,
+                                  REG_NA,
 #else
         GetEmitter()->emitIns_S_R(ins_Store(type, compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(type), regNum,
 #endif

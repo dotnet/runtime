@@ -4234,7 +4234,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
                     tmp_offset     = base;
                     tmp_reg        = REG_RA; // TODO CHECK R21 => RA
 
-                    GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, base); // TODO CHECK R21 => RA
+                    GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, base);                   // TODO CHECK R21 => RA
                     GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2); // TODO CHECK R21 => RA
                     GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, -8);
                 }
@@ -4677,7 +4677,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                     {
                         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
 #ifdef TARGET_RISCV64
-                                                  genGetZeroReg(initReg, pInitRegZeroed), REG_NA, varNum, i * REGSIZE_BYTES);
+                                                  genGetZeroReg(initReg, pInitRegZeroed), REG_NA, varNum,
+                                                  i * REGSIZE_BYTES);
 #else
                                                   genGetZeroReg(initReg, pInitRegZeroed), varNum, i * REGSIZE_BYTES);
 #endif
@@ -5956,7 +5957,7 @@ void CodeGen::genFnProlog()
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     genPushCalleeSavedRegisters(initReg, &initRegZeroed);
 
-#else // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#else  // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
     if (!isOSRx64Root)
     {
@@ -8218,9 +8219,9 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             // should consider the padding field within a struct.
             offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
 #endif
-            // Several fields could be passed in one register, copy using the register type.
-            // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
-            // it is safe to store a long register into a byte field as it is known that we have enough padding after.
+// Several fields could be passed in one register, copy using the register type.
+// It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
+// it is safe to store a long register into a byte field as it is known that we have enough padding after.
 #ifdef TARGET_RISCV64
             GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, REG_NA, lclNum, offset);
 #else
@@ -9409,7 +9410,8 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
                 if ((offs % 8) == 0 && end - offs >= 8)
                 {
 #ifdef TARGET_RISCV64
-                    GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, REG_NA, (int)varNum, offs - addr);
+                    GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, REG_NA, (int)varNum,
+                                              offs - addr);
 #else
                     GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
 #endif

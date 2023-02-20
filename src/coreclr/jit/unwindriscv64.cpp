@@ -166,7 +166,8 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
     {
         // save_reg: 11010000 | 000xxxxx | zzzzzzzz: save reg r(1 + #X) at [sp + #Z * 8], offset <= 2047
 
-        assert(reg == REG_RA || (REG_FP <= reg && reg <= REG_S11));  // first legal register: RA, last legal register: S11
+        assert(reg == REG_RA ||
+               (REG_FP <= reg && reg <= REG_S11)); // first legal register: RA, last legal register: S11
 
         BYTE x = (BYTE)(reg - REG_RA);
         assert(0 <= x && x <= 0x1B);
@@ -176,8 +177,8 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
     else
     {
         // save_freg: 1101110x | xxxxzzzz | zzzzzzzz : save reg f(8 + #X) at [sp + #Z * 8], offset <= 2047
-        assert(REG_F8 == reg || REG_F9 == reg || // first legal register: F8
-               (REG_F18 <= reg && reg <= REG_F27));  // last legal register: F27
+        assert(REG_F8 == reg || REG_F9 == reg ||    // first legal register: F8
+               (REG_F18 <= reg && reg <= REG_F27)); // last legal register: F27
 
         BYTE x = (BYTE)(reg - REG_F8);
         assert(0 <= x && x <= 0x13);

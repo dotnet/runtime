@@ -115,8 +115,6 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
     }
 }
 
-
-
 bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 {
     if (!id->idIsLclVar())
@@ -154,9 +152,10 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
 {
     assert(ins != INS_invalid);
-    return (ins <= INS_remuw) && (ins >= INS_mov) &&
-           !(ins >= INS_jal && ins <= INS_bgeu && ins != INS_jalr) &&
-           (CodeGenInterface::instInfo[ins] & ST) == 0 ? true : false; // TODO CHECK
+    return (ins <= INS_remuw) && (ins >= INS_mov) && !(ins >= INS_jal && ins <= INS_bgeu && ins != INS_jalr) &&
+                   (CodeGenInterface::instInfo[ins] & ST) == 0
+               ? true
+               : false; // TODO CHECK
 }
 
 //------------------------------------------------------------------------
@@ -281,7 +280,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     assert(reg2 != REG_NA && reg2 != REG_RA);
 
     // regNumber reg2 = reg3;
-    offs           = offs < 0 ? -offs - 8 : offs;
+    offs = offs < 0 ? -offs - 8 : offs;
 
     if ((-2048 <= imm) && (imm < 2048))
     {
@@ -376,8 +375,8 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
     assert(offs >= 0);
-    //reg2           = offs < 0 ? REG_R21 : reg2; // TODO
-    offs           = offs < 0 ? -offs - 8 : offs;
+    // reg2           = offs < 0 ? REG_R21 : reg2; // TODO
+    offs = offs < 0 ? -offs - 8 : offs;
 
     reg1 = (regNumber)((char)reg1 & 0x1f);
     code_t code;
@@ -397,7 +396,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         if (ins == INS_lea)
         {
             assert(isValidSimm20((imm + 0x800) >> 12));
-            emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm  + 0x800) >> 12);
+            emitIns_R_I(INS_lui, EA_PTRSIZE, REG_RA, (imm + 0x800) >> 12);
             ssize_t imm2 = imm & 0xfff;
             emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_RA, imm2);
 
@@ -415,7 +414,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_RA, REG_RA, reg2);
 
             ssize_t imm2 = imm & 0xfff;
-            code = emitInsCode(ins);
+            code         = emitInsCode(ins);
             code |= (code_t)reg1 << 7;
             code |= (code_t)REG_RA << 15;
             code |= (code_t)(imm2 & 0xfff) << 20;
@@ -452,10 +451,10 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
             break;
         case INS_j:
             assert(imm >= -1048576 && imm < 1048576);
-            code |= ((imm >> 12) & 0xff)  << 12;
-            code |= ((imm >> 11)  & 0x1)  << 20;
-            code |= ((imm >> 1)  & 0x3ff) << 21;
-            code |= ((imm >> 20) & 0x1)  << 31;
+            code |= ((imm >> 12) & 0xff) << 12;
+            code |= ((imm >> 11) & 0x1) << 20;
+            code |= ((imm >> 1) & 0x3ff) << 21;
+            code |= ((imm >> 20) & 0x1) << 31;
             break;
         default:
             fprintf(stderr, "emitIns_I %llx %llx\n", ins, code);
@@ -485,7 +484,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
 {
     code_t code = emitInsCode(ins);
 
-    switch(ins)
+    switch (ins)
     {
         case INS_lui:
         case INS_auipc:
@@ -501,10 +500,10 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             assert(imm >= -1048576 && imm < 1048576);
 
             code != reg << 7;
-            code |= ((imm >> 12) & 0xff)  << 12;
-            code |= ((imm >> 11)  & 0x1)  << 20;
-            code |= ((imm >> 1)  & 0x3ff) << 21;
-            code |= ((imm >> 20) & 0x1)  << 31;
+            code |= ((imm >> 12) & 0xff) << 12;
+            code |= ((imm >> 11) & 0x1) << 20;
+            code |= ((imm >> 1) & 0x3ff) << 21;
+            code |= ((imm >> 20) & 0x1) << 31;
             break;
         default:
             fprintf(stderr, "emitIns_R_I %llx %llx\n", ins, code);
@@ -567,10 +566,8 @@ void emitter::emitIns_R_R(
         code |= reg1 << 7;
         code |= reg2 << 15;
     }
-    else if ((INS_fcvt_w_s <= ins && INS_fmv_x_w >= ins) ||
-             (INS_fclass_s == ins || INS_fclass_d == ins) ||
-             (INS_fcvt_w_d == ins || INS_fcvt_wu_d == ins) ||
-             (INS_fcvt_l_s == ins || INS_fcvt_lu_s == ins) ||
+    else if ((INS_fcvt_w_s <= ins && INS_fmv_x_w >= ins) || (INS_fclass_s == ins || INS_fclass_d == ins) ||
+             (INS_fcvt_w_d == ins || INS_fcvt_wu_d == ins) || (INS_fcvt_l_s == ins || INS_fcvt_lu_s == ins) ||
              (INS_fmv_x_d == ins))
     {
         // TODO CHECK ROUNDING MODE
@@ -579,10 +576,8 @@ void emitter::emitIns_R_R(
         code |= (reg1 & 0x1f) << 7;
         code |= (reg2 & 0x1f) << 15;
     }
-    else if ((INS_fcvt_s_w <= ins && INS_fmv_w_x >= ins) ||
-             (INS_fcvt_d_w == ins || INS_fcvt_d_wu == ins) ||
-             (INS_fcvt_s_l == ins || INS_fcvt_s_lu == ins) ||
-             (INS_fmv_d_x == ins))
+    else if ((INS_fcvt_s_w <= ins && INS_fmv_w_x >= ins) || (INS_fcvt_d_w == ins || INS_fcvt_d_wu == ins) ||
+             (INS_fcvt_s_l == ins || INS_fcvt_s_lu == ins) || (INS_fmv_d_x == ins))
 
     {
         // TODO CHECK ROUNDING MODE
@@ -623,30 +618,28 @@ void emitter::emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt /* = INS_OPTS_NONE */)
 {
     code_t code = emitInsCode(ins);
-    if ((INS_addi <= ins && INS_srai >= ins) ||
-        (INS_addiw <= ins && INS_sraiw >= ins) ||
-        (INS_lb <= ins && INS_lhu >= ins) ||
-        INS_ld == ins || INS_lw == ins || INS_jalr == ins ||
-        INS_fld == ins || INS_flw == ins)
+    if ((INS_addi <= ins && INS_srai >= ins) || (INS_addiw <= ins && INS_sraiw >= ins) ||
+        (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
+        INS_flw == ins)
     {
         code |= (reg1 & 0x1f) << 7;  // rd
-        code |= (reg2 & 0x1f) << 15;          // rs1
+        code |= (reg2 & 0x1f) << 15; // rs1
         code |= imm << 20;           // imm
     }
     else if (INS_sd == ins || INS_sw == ins || INS_sh == ins || INS_sb == ins || INS_fsw == ins || INS_fsd == ins)
     {
-        code |= (reg1 & 0x1f) << 20; // rs2
-        code |= (reg2 & 0x1f) << 15;          // rs1
-        code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7);           // imm
+        code |= (reg1 & 0x1f) << 20;                               // rs2
+        code |= (reg2 & 0x1f) << 15;                               // rs1
+        code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7); // imm
     }
     else if (INS_beq <= ins && INS_bgeu >= ins)
     {
         code |= (reg1 & 0x1f) << 15;
         code |= (reg2 & 0x1f) << 20;
-        code |= ((imm >> 11) & 0x1)  << 7;
-        code |= ((imm >> 1)  & 0xf)  << 8;
-        code |= ((imm >> 5)  & 0x3f) << 25;
-        code |= ((imm >> 12) & 0x1)  << 31;
+        code |= ((imm >> 11) & 0x1) << 7;
+        code |= ((imm >> 1) & 0xf) << 8;
+        code |= ((imm >> 5) & 0x3f) << 25;
+        code |= ((imm >> 12) & 0x1) << 31;
     }
     else
     {
@@ -674,12 +667,9 @@ void emitter::emitIns_R_R_R(
 {
     code_t code = emitInsCode(ins);
 
-    if ((INS_add <= ins && ins <= INS_and) ||
-        (INS_mul <= ins && ins <= INS_remuw) ||
-        (INS_addw <= ins && ins <= INS_sraw) ||
-        (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
-        (INS_fadd_d <= ins && ins <= INS_fmax_d) ||
-        (INS_feq_s <= ins && ins <= INS_fle_s) ||
+    if ((INS_add <= ins && ins <= INS_and) || (INS_mul <= ins && ins <= INS_remuw) ||
+        (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
+        (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d))
     {
 #ifdef DEBUG
@@ -877,7 +867,7 @@ void emitter::emitIns_R_AI(instruction ins,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
-    assert(ins == INS_jal);     // for special.
+    assert(ins == INS_jal);    // for special.
     assert(isGeneralRegister(reg));
 
     // INS_OPTS_RELOC: placeholders.  2-ins:
@@ -1098,7 +1088,8 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
 {
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
-    if (0 == ((imm + 0x800) >> 32)) {
+    if (0 == ((imm + 0x800) >> 32))
+    {
         if (((imm + 0x800) >> 12) != 0)
         {
             emitIns_R_I(INS_lui, size, reg, ((imm + 0x800) >> 12));
@@ -1291,7 +1282,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         assert(callType == EC_FUNC_TOKEN);
         assert(addr != NULL);
-        // assert((((size_t)addr) & 3) == 0); // TODO NEED TO CHECK ALIGNMENT (ex. Address of RNGCHKFAIL is 0x2033b32 in my test.)
+        // assert((((size_t)addr) & 3) == 0); // TODO NEED TO CHECK ALIGNMENT (ex. Address of RNGCHKFAIL is 0x2033b32 in
+        // my test.)
 
         addr = (void*)(((size_t)addr) + (isJump ? 0 : 1)); // NOTE: low-bit0 is used for jirl ra/r0,rd,0
         id->idAddr()->iiaAddr = (BYTE*)addr;
@@ -1430,7 +1422,6 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         // slli t2, t2, 10
         // jalr t2
 
-
         ssize_t imm = (ssize_t)(id->idAddr()->iiaAddr);
         assert((imm >> 32) <= 0xff);
 
@@ -1438,7 +1429,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         imm -= reg2;
 
         UINT32 high = imm >> 32;
-        code = emitInsCode(INS_lui);
+        code        = emitInsCode(INS_lui);
         code |= (code_t)REG_T2 << 7;
         code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
         emitOutput_Instr(dst, code);
@@ -1558,7 +1549,6 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
     else
     {
         callInstrSize = id->idIsReloc() ? (2 << 2) : (8 << 2); // INS_OPTS_C: 2/9-ins.
-
     }
 
     return callInstrSize;
@@ -1812,8 +1802,7 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins >
-                    INS_jalr ) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
                 {
                     if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
                     {
@@ -1900,8 +1889,7 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_jal <= ins) && (ins <= INS_bgeu));
 
-                if (ins >
-                    INS_jalr ) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
+                if (ins > INS_jalr) // jal < beqz < bnez < jalr < beq/bne/blt/bltu/bge/bgeu
                 {
                     if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
                     {
@@ -2106,7 +2094,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 case 32:
                 {
                     ssize_t high = (imm >> 32) & 0xffffffff;
-                    code = emitInsCode(INS_lui);
+                    code         = emitInsCode(INS_lui);
                     code |= (code_t)reg1 << 7;
                     code |= ((code_t)((high + 0x800) >> 12) & 0xfffff) << 12;
 
@@ -2123,9 +2111,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     ssize_t low = imm & 0xffffffff;
 
                     code = emitInsCode(INS_slli);
-                    code |= (code_t) reg1 << 7;
-                    code |= (code_t) reg1 << 15;
-                    code |= (code_t) 11 << 20;
+                    code |= (code_t)reg1 << 7;
+                    code |= (code_t)reg1 << 15;
+                    code |= (code_t)11 << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
@@ -2137,9 +2125,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     dstRW += 4;
 
                     code = emitInsCode(INS_slli);
-                    code |= (code_t) reg1 << 7;
-                    code |= (code_t) reg1 << 15;
-                    code |= (code_t) 11 << 20;
+                    code |= (code_t)reg1 << 7;
+                    code |= (code_t)reg1 << 15;
+                    code |= (code_t)11 << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
@@ -2151,16 +2139,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     dstRW += 4;
 
                     code = emitInsCode(INS_slli);
-                    code |= (code_t) reg1 << 7;
-                    code |= (code_t) reg1 << 15;
-                    code |= (code_t) 10 << 20;
+                    code |= (code_t)reg1 << 7;
+                    code |= (code_t)reg1 << 15;
+                    code |= (code_t)10 << 20;
                     *(code_t*)dstRW = code;
                     dstRW += 4;
 
                     code = emitInsCode(INS_addi);
                     code |= (code_t)reg1 << 7;
                     code |= (code_t)reg1 << 15;
-                    code |= (code_t)((low) & 0x3ff) << 20;
+                    code |= (code_t)((low)&0x3ff) << 20;
                     *(code_t*)dstRW = code;
                     break;
                 }
@@ -2200,7 +2188,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 imm = (ssize_t)emitConsBlock - (ssize_t)(dstRW - writeableOffset) + dataOffs;
                 assert(imm > 0);
                 assert(!(imm & 3));
-
 
                 doff = (int)(imm & 0xfff);
                 assert(isValidSimm20((imm + 0x800) >> 12));
@@ -2279,7 +2266,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     assert((imm >> 40) == 0);
 
-                    doff = imm & 0x7ff;
+                    doff        = imm & 0x7ff;
                     UINT32 high = imm >> 11;
 
                     code |= (code_t)(REG_RA << 7); // TODO CHECK R21 => RA
@@ -2332,7 +2319,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert(isValidSimm20((imm + 0x800) >> 12));
 
                 code            = 0x00000017;
-                *(code_t*)dstRW = code | (code_t)reg1 << 7 | ((imm + 0x800)& 0xfffff000);
+                *(code_t*)dstRW = code | (code_t)reg1 << 7 | ((imm + 0x800) & 0xfffff000);
                 dstRW += 4;
 #ifdef DEBUG
                 code = emitInsCode(INS_auipc);
@@ -2376,7 +2363,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 *(code_t*)dstRW = code;
                 dstRW += 4;
 
-                ins = INS_add;
+                ins  = INS_add;
                 code = emitInsCode(INS_add);
                 code |= (code_t)reg1 << 7;
                 code |= (code_t)reg1 << 15;
@@ -2405,77 +2392,76 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 switch (jmp->idCodeSize())
                 {
                     case 8:
+                    {
+                        regNumber reg2 = id->idReg2();
+                        // assert((INS_bceqz <= ins) && (ins <= INS_bgeu));
+
+                        if ((INS_beq == ins) || (INS_bne == ins))
                         {
-                            regNumber reg2 = id->idReg2();
-                            // assert((INS_bceqz <= ins) && (ins <= INS_bgeu));
-
-                            if ((INS_beq == ins) || (INS_bne == ins))
+                            if ((-0x1000 <= imm) && (imm < 0x1000))
                             {
-                                if ((-0x1000 <= imm) && (imm < 0x1000))
-                                {
-                                    code = emitInsCode(INS_xor);
-                                    code |= (code_t)REG_RA << 7; // TODO R21 => RA
-                                    code |= (code_t)reg1 << 15;
-                                    code |= (code_t)reg2 << 20;
+                                code = emitInsCode(INS_xor);
+                                code |= (code_t)REG_RA << 7; // TODO R21 => RA
+                                code |= (code_t)reg1 << 15;
+                                code |= (code_t)reg2 << 20;
 
-                                    *(code_t*)dstRW = code;
-                                    dstRW += 4;
+                                *(code_t*)dstRW = code;
+                                dstRW += 4;
 
-                                    code = emitInsCode(ins);
-                                    code |= (code_t)REG_RA << 15; // TODO R21 => RA
-                                    code |= ((imm >> 11) & 0x1)  << 7;
-                                    code |= ((imm >> 1)  & 0xf)  << 8;
-                                    code |= ((imm >> 5)  & 0x3f) << 25;
-                                    code |= ((imm >> 12) & 0x1)  << 31;
-                                    *(code_t*)dstRW = code;
-                                    dstRW += 4;
-                                }
-                                else
-                                {
-                                    assert((-0x100000 <= imm) && (imm < 0x100000));
-                                    assert((INS_bne & 0xefff) == INS_beq);
-
-                                    code = emitInsCode((instruction)((int)ins ^ 0x1000));
-                                    code |= ((code_t)(reg1) /*& 0x1f */) << 15; /* rj */
-                                    code |= ((code_t)(reg2) /*& 0x1f */) << 20;      /* rd */
-                                    code |= 0x8 << 7;
-                                    *(code_t*)dstRW = code;
-                                    dstRW += 4;
-
-
-                                    code = emitInsCode(INS_jal);
-                                    code |= ((imm >> 12) & 0xff)  << 12;
-                                    code |= ((imm >> 11)  & 0x1)  << 20;
-                                    code |= ((imm >> 1)  & 0x3ff) << 21;
-                                    code |= ((imm >> 20) & 0x1)  << 31;
-
-                                    *(code_t*)dstRW = code;
-                                    dstRW += 4;
-                                }
+                                code = emitInsCode(ins);
+                                code |= (code_t)REG_RA << 15; // TODO R21 => RA
+                                code |= ((imm >> 11) & 0x1) << 7;
+                                code |= ((imm >> 1) & 0xf) << 8;
+                                code |= ((imm >> 5) & 0x3f) << 25;
+                                code |= ((imm >> 12) & 0x1) << 31;
+                                *(code_t*)dstRW = code;
+                                dstRW += 4;
                             }
-                            else if ((INS_blt <= ins) && (ins <= INS_bgeu))
+                            else
                             {
                                 assert((-0x100000 <= imm) && (imm < 0x100000));
-                                assert((INS_bge & 0xefff) == INS_blt);
-                                assert((INS_bgeu & 0xefff) == INS_bltu);
+                                assert((INS_bne & 0xefff) == INS_beq);
 
                                 code = emitInsCode((instruction)((int)ins ^ 0x1000));
                                 code |= ((code_t)(reg1) /*& 0x1f */) << 15; /* rj */
-                                code |= ((code_t)(reg2) /*& 0x1f */) << 20;   /* rd */
+                                code |= ((code_t)(reg2) /*& 0x1f */) << 20; /* rd */
                                 code |= 0x8 << 7;
                                 *(code_t*)dstRW = code;
                                 dstRW += 4;
 
                                 code = emitInsCode(INS_jal);
-                                code |= ((imm >> 12) & 0xff)  << 12;
-                                code |= ((imm >> 11)  & 0x1)  << 20;
-                                code |= ((imm >> 1)  & 0x3ff) << 21;
-                                code |= ((imm >> 20) & 0x1)  << 31;
+                                code |= ((imm >> 12) & 0xff) << 12;
+                                code |= ((imm >> 11) & 0x1) << 20;
+                                code |= ((imm >> 1) & 0x3ff) << 21;
+                                code |= ((imm >> 20) & 0x1) << 31;
+
                                 *(code_t*)dstRW = code;
                                 dstRW += 4;
                             }
-                            break;
                         }
+                        else if ((INS_blt <= ins) && (ins <= INS_bgeu))
+                        {
+                            assert((-0x100000 <= imm) && (imm < 0x100000));
+                            assert((INS_bge & 0xefff) == INS_blt);
+                            assert((INS_bgeu & 0xefff) == INS_bltu);
+
+                            code = emitInsCode((instruction)((int)ins ^ 0x1000));
+                            code |= ((code_t)(reg1) /*& 0x1f */) << 15; /* rj */
+                            code |= ((code_t)(reg2) /*& 0x1f */) << 20; /* rd */
+                            code |= 0x8 << 7;
+                            *(code_t*)dstRW = code;
+                            dstRW += 4;
+
+                            code = emitInsCode(INS_jal);
+                            code |= ((imm >> 12) & 0xff) << 12;
+                            code |= ((imm >> 11) & 0x1) << 20;
+                            code |= ((imm >> 1) & 0x3ff) << 21;
+                            code |= ((imm >> 20) & 0x1) << 31;
+                            *(code_t*)dstRW = code;
+                            dstRW += 4;
+                        }
+                        break;
+                    }
 
                     default:
                         unreached();
@@ -2495,10 +2481,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins);
             code |= ((code_t)id->idReg1()) << 15;
             code |= ((code_t)id->idReg2()) << 20;
-            code |= ((imm >> 11) & 0x1)  << 7;
-            code |= ((imm >> 1)  & 0xf)  << 8;
-            code |= ((imm >> 5)  & 0x3f) << 25;
-            code |= ((imm >> 12) & 0x1)  << 31;
+            code |= ((imm >> 11) & 0x1) << 7;
+            code |= ((imm >> 1) & 0xf) << 8;
+            code |= ((imm >> 5) & 0x3f) << 25;
+            code |= ((imm >> 12) & 0x1) << 31;
             *(code_t*)dstRW = code;
             dstRW += 4;
 
@@ -2506,60 +2492,60 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         break;
         case INS_OPTS_J:
-        //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dstRW-relative.
-        {
-            ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
-            assert((imm & 3) == 0);
+            //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu/beqz/bnez/b/bl  dstRW-relative.
+            {
+                ssize_t imm = (ssize_t)id->idAddr()->iiaGetJmpOffset(); // get jmp's offset relative delay-slot.
+                assert((imm & 3) == 0);
 
-            ins  = id->idIns();
-            code = emitInsCode(ins);
-            if (ins == INS_jal)
-            {
-                code |= ((imm >> 12) & 0xff)  << 12;
-                code |= ((imm >> 11)  & 0x1)  << 20;
-                code |= ((imm >> 1)  & 0x3ff) << 21;
-                code |= ((imm >> 20) & 0x1)  << 31;
-                code |= REG_RA << 7;
-            }
-            else if (ins == INS_j)
-            {
-                code |= ((imm >> 12) & 0xff)  << 12;
-                code |= ((imm >> 11)  & 0x1)  << 20;
-                code |= ((imm >> 1)  & 0x3ff) << 21;
-                code |= ((imm >> 20) & 0x1)  << 31;
-            }
-            else if (ins == INS_jalr)
-            {
-                code |= ((code_t)(imm & 0xfff) << 20);
-            }
-            else if (ins == INS_bnez || ins == INS_beqz)
-            {
-                code |= (code_t)id->idReg1() << 15;
-                code |= ((imm >> 11) & 0x1)  << 7;
-                code |= ((imm >> 1)  & 0xf)  << 8;
-                code |= ((imm >> 5)  & 0x3f) << 25;
-                code |= ((imm >> 12) & 0x1)  << 31;
-            }
-            else if ((INS_beq <= ins) && (ins <= INS_bgeu))
-            {
-                code |= ((code_t)id->idReg1()) << 15;
-                code |= ((code_t)id->idReg2()) << 20;
-                code |= ((imm >> 1)  & 0xf)  << 8;
-                code |= ((imm >> 5)  & 0x3f) << 25;
-                code |= ((imm >> 11) & 0x1)  << 7;
-                code |= ((imm >> 12) & 0x1)  << 31;
-            }
-            else
-            {
-                assert(!"unimplemented on RISCV64 yet");
-            }
+                ins  = id->idIns();
+                code = emitInsCode(ins);
+                if (ins == INS_jal)
+                {
+                    code |= ((imm >> 12) & 0xff) << 12;
+                    code |= ((imm >> 11) & 0x1) << 20;
+                    code |= ((imm >> 1) & 0x3ff) << 21;
+                    code |= ((imm >> 20) & 0x1) << 31;
+                    code |= REG_RA << 7;
+                }
+                else if (ins == INS_j)
+                {
+                    code |= ((imm >> 12) & 0xff) << 12;
+                    code |= ((imm >> 11) & 0x1) << 20;
+                    code |= ((imm >> 1) & 0x3ff) << 21;
+                    code |= ((imm >> 20) & 0x1) << 31;
+                }
+                else if (ins == INS_jalr)
+                {
+                    code |= ((code_t)(imm & 0xfff) << 20);
+                }
+                else if (ins == INS_bnez || ins == INS_beqz)
+                {
+                    code |= (code_t)id->idReg1() << 15;
+                    code |= ((imm >> 11) & 0x1) << 7;
+                    code |= ((imm >> 1) & 0xf) << 8;
+                    code |= ((imm >> 5) & 0x3f) << 25;
+                    code |= ((imm >> 12) & 0x1) << 31;
+                }
+                else if ((INS_beq <= ins) && (ins <= INS_bgeu))
+                {
+                    code |= ((code_t)id->idReg1()) << 15;
+                    code |= ((code_t)id->idReg2()) << 20;
+                    code |= ((imm >> 1) & 0xf) << 8;
+                    code |= ((imm >> 5) & 0x3f) << 25;
+                    code |= ((imm >> 11) & 0x1) << 7;
+                    code |= ((imm >> 12) & 0x1) << 31;
+                }
+                else
+                {
+                    assert(!"unimplemented on RISCV64 yet");
+                }
 
-            *(code_t*)dstRW = code;
-            dstRW += 4;
+                *(code_t*)dstRW = code;
+                dstRW += 4;
 
-            sz = sizeof(instrDescJmp);
-        }
-        break;
+                sz = sizeof(instrDescJmp);
+            }
+            break;
         case INS_OPTS_C:
             if (id->idIsLargeCall())
             {
@@ -2584,7 +2570,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dstRW += 4;
             ins = id->idIns();
             sz  = emitSizeOfInsDsc(id);
-            break; }
+            break;
+    }
 
     // Determine if any registers now hold GC refs, or whether a register that was overwritten held a GC ref.
     // We assume here that "id->idGCref()" is not GC_NONE only if the instruction described by "id" writes a
@@ -2725,7 +2712,7 @@ static const char* const RegNames[] =
 
 void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 {
-    const BYTE*       insAdr      = addr - writeableOffset;
+    const BYTE* insAdr = addr - writeableOffset;
 
     unsigned int opcode = code & 0x7f;
     assert((opcode & 0x3) == 0x3);
@@ -2748,8 +2735,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
     {
         case 0x37: // LUI
         {
-            const char* rd = RegNames[(code >> 7) & 0x1f];
-            int imm20 = (code >> 12) & 0xfffff;
+            const char* rd    = RegNames[(code >> 7) & 0x1f];
+            int         imm20 = (code >> 12) & 0xfffff;
             if (imm20 & 0x80000)
             {
                 imm20 |= 0xfff00000;
@@ -2759,8 +2746,8 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         }
         case 0x17: // AUIPC
         {
-            const char* rd = RegNames[(code >> 7) & 0x1f];
-            int imm20 = (code >> 12) & 0xfffff;
+            const char* rd    = RegNames[(code >> 7) & 0x1f];
+            int         imm20 = (code >> 12) & 0xfffff;
             if (imm20 & 0x80000)
             {
                 imm20 |= 0xfff00000;
@@ -2771,10 +2758,10 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         case 0x13:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char* rd = RegNames[(code >> 7) & 0x1f];
-            const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            int imm12 = (((int)code) >> 20); // & 0xfff;
-            //if (imm12 & 0x800)
+            const char*  rd      = RegNames[(code >> 7) & 0x1f];
+            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+            int          imm12   = (((int)code) >> 20); // & 0xfff;
+            // if (imm12 & 0x800)
             //{
             //    imm12 |= 0xfffff000;
             //}
@@ -2783,7 +2770,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x0: // ADDI
                     printf("addi         %s, %s, %d\n", rd, rs1, imm12);
                     return;
-                case 0x1: // SLLI
+                case 0x1:                                                       // SLLI
                     printf("slli         %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
                     return;
                 case 0x2: // SLTI
@@ -2814,16 +2801,15 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 default:
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);
                     return;
-
             }
         }
         case 0x1b:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char* rd = RegNames[(code >> 7) & 0x1f];
-            const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            int imm12 = (((int)code) >> 20); // & 0xfff;
-            //if (imm12 & 0x800)
+            const char*  rd      = RegNames[(code >> 7) & 0x1f];
+            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+            int          imm12   = (((int)code) >> 20); // & 0xfff;
+            // if (imm12 & 0x800)
             //{
             //    imm12 |= 0xfffff000;
             //}
@@ -2832,7 +2818,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x0: // ADDIW
                     printf("addiw        %s, %s, %d\n", rd, rs1, imm12);
                     return;
-                case 0x1: // SLLIW
+                case 0x1:                                                       // SLLIW
                     printf("slliw        %s, %s, %d\n", rd, rs1, imm12 & 0x3f); // 6 BITS for SHAMT in RISCV64
                     return;
                 case 0x5: // SRLIW & SRAIW
@@ -2854,9 +2840,9 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             unsigned int opcode2 = (code >> 25) & 0x3;
             unsigned int opcode3 = (code >> 12) & 0x7;
-            const char* rd = RegNames[(code >> 7) & 0x1f];
-            const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            const char* rs2 = RegNames[(code >> 20) & 0x1f];
+            const char*  rd      = RegNames[(code >> 7) & 0x1f];
+            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+            const char*  rs2     = RegNames[(code >> 20) & 0x1f];
             if (opcode2 == 0)
             {
                 switch (opcode3)
@@ -2902,7 +2888,6 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     default:
                         printf("RISCV64 illegal instruction: 0x%08X\n", code);
                         return;
-
                 }
             }
             else if (opcode2 == 0x1)
@@ -2936,7 +2921,6 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     default:
                         printf("RISCV64 illegal instruction: 0x%08X\n", code);
                         return;
-
                 }
             }
             else
@@ -2949,9 +2933,9 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             unsigned int opcode2 = (code >> 25) & 0x3;
             unsigned int opcode3 = (code >> 12) & 0x7;
-            const char* rd = RegNames[(code >> 7) & 0x1f];
-            const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            const char* rs2 = RegNames[(code >> 20) & 0x1f];
+            const char*  rd      = RegNames[(code >> 7) & 0x1f];
+            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+            const char*  rs2     = RegNames[(code >> 20) & 0x1f];
 
             if (opcode2 == 0)
             {
@@ -3018,15 +3002,15 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         case 0x23:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            const char* rs2 = RegNames[(code >> 20) & 0x1f];
-            int offset = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
+            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+            const char*  rs2     = RegNames[(code >> 20) & 0x1f];
+            int          offset  = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
 
-            switch(opcode2)
+            switch (opcode2)
             {
                 case 0: // SB
                     printf("sb           %s, %d(%s)\n", rs2, offset, rs1);
@@ -3048,11 +3032,9 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         case 0x63:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            const char* rs2 = RegNames[(code >> 20) & 0x1f];
-            int offset = (((code >> 31) & 0x1) << 12) |
-                         (((code >> 7) & 0x1) << 11) |
-                         (((code >> 25) & 0x3f) << 5) |
+            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+            const char*  rs2     = RegNames[(code >> 20) & 0x1f];
+            int offset = (((code >> 31) & 0x1) << 12) | (((code >> 7) & 0x1) << 11) | (((code >> 25) & 0x3f) << 5) |
                          (((code >> 8) & 0xf) << 1);
             if (offset & 0x800)
             {
@@ -3086,15 +3068,15 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         case 0x03:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            const char* rd = RegNames[(code >> 7) & 0x1f];
-            int offset = ((code >> 20) & 0xfff);
+            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+            const char*  rd      = RegNames[(code >> 7) & 0x1f];
+            int          offset  = ((code >> 20) & 0xfff);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
 
-            switch(opcode2)
+            switch (opcode2)
             {
                 case 0: // LB
                     printf("lb           %s, %d(%s)\n", rd, offset, rs1);
@@ -3121,13 +3103,12 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     printf("RISCV64 illegal instruction: 0x%08X\n", code);
                     return;
             }
-
         }
         case 0x67:
         {
-            const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            const char* rd = RegNames[(code >> 7) & 0x1f];
-            int offset = ((code >> 20) & 0xfff);
+            const char* rs1    = RegNames[(code >> 15) & 0x1f];
+            const char* rd     = RegNames[(code >> 7) & 0x1f];
+            int         offset = ((code >> 20) & 0xfff);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
@@ -3138,9 +3119,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         case 0x6f:
         {
             const char* rd = RegNames[(code >> 7) & 0x1f];
-            int offset = (((code >> 31) & 0x1) << 20) |
-                         (((code >> 12) & 0xff) << 12) |
-                         (((code >> 20) & 0x1) << 11) |
+            int offset = (((code >> 31) & 0x1) << 20) | (((code >> 12) & 0xff) << 12) | (((code >> 20) & 0x1) << 11) |
                          (((code >> 21) & 0x3ff) << 1);
             if (offset & 0x80000)
             {
@@ -3174,15 +3153,15 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             unsigned int opcode2 = (code >> 25) & 0x7f;
             unsigned int opcode3 = (code >> 20) & 0x1f;
             unsigned int opcode4 = (code >> 12) & 0x7;
-            const char* fd = RegNames[((code >> 7) & 0x1f) | 0x20];
-            const char* fs1 = RegNames[((code >> 15) & 0x1f) | 0x20];
-            const char* fs2 = RegNames[((code >> 20) & 0x1f) | 0x20];
+            const char*  fd      = RegNames[((code >> 7) & 0x1f) | 0x20];
+            const char*  fs1     = RegNames[((code >> 15) & 0x1f) | 0x20];
+            const char*  fs2     = RegNames[((code >> 20) & 0x1f) | 0x20];
 
-            const char* xd = RegNames[(code >> 7) & 0x1f];
+            const char* xd  = RegNames[(code >> 7) & 0x1f];
             const char* xs1 = RegNames[(code >> 15) & 0x1f];
             const char* xs2 = RegNames[(code >> 20) & 0x1f];
 
-            switch(opcode2)
+            switch (opcode2)
             {
                 case 0x00: // FADD.S
                     printf("fadd.s       %s, %s, %s\n", fd, fs1, fs2);
@@ -3199,7 +3178,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x2C: // FSQRT.S
                     printf("fsqrt.s      %s, %s\n", fd, fs1);
                     return;
-                case 0x10: // FSGNJ.S & FSGNJN.S & FSGNJX.S
+                case 0x10:            // FSGNJ.S & FSGNJN.S & FSGNJX.S
                     if (opcode4 == 0) // FSGNJ.S
                     {
                         printf("fsgnj.s      %s, %s, %s\n", fd, fs1, fs2);
@@ -3218,7 +3197,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x14: // FMIN.S & FMAX.S
+                case 0x14:            // FMIN.S & FMAX.S
                     if (opcode4 == 0) // FMIN.S
                     {
                         printf("fmin.s       %s, %s, %s\n", fd, fs1, fs2);
@@ -3233,7 +3212,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x60: // FCVT.W.S & FCVT.WU.S & FCVT.L.S & FCVT.LU.S
+                case 0x60:            // FCVT.W.S & FCVT.WU.S & FCVT.L.S & FCVT.LU.S
                     if (opcode3 == 0) // FCVT.W.S
                     {
                         printf("fcvt.w.s     %s, %s\n", xd, fs1);
@@ -3256,7 +3235,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x70: // FMV.X.W & FCLASS.S
+                case 0x70:            // FMV.X.W & FCLASS.S
                     if (opcode4 == 0) // FMV.X.W
                     {
                         printf("fmv.x.w      %s, %s\n", xd, xs1);
@@ -3271,7 +3250,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x50: // FLE.S & FLT.S & FEQ.S
+                case 0x50:            // FLE.S & FLT.S & FEQ.S
                     if (opcode4 == 0) // FLE.S
                     {
                         printf("fle.s        %s, %s, %s\n", xd, fs1, fs2);
@@ -3282,7 +3261,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     else if (opcode4 == 2) // FEQ.S
                     {
-                    printf("feq.s        %s, %s, %s\n", fd, xs1, fs2);
+                        printf("feq.s        %s, %s, %s\n", fd, xs1, fs2);
                     }
                     else
                     {
@@ -3290,7 +3269,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x68: // FCVT.S.W & FCVT.S.WU & FCVT.S.L & FCVT.S.LU
+                case 0x68:            // FCVT.S.W & FCVT.S.WU & FCVT.S.L & FCVT.S.LU
                     if (opcode3 == 0) // FCVT.S.W
                     {
                         printf("fcvt.s.w     %s, %s\n", fd, xs1);
@@ -3332,7 +3311,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x2d: // FSQRT.D
                     printf("fsqrt.d      %s, %s\n", fd, fs1);
                     return;
-                case 0x11: // FSGNJ.D & FSGNJN.D & FSGNJX.D
+                case 0x11:            // FSGNJ.D & FSGNJN.D & FSGNJX.D
                     if (opcode4 == 0) // FSGNJ.D
                     {
                         printf("fsgnj.d      %s, %s, %s\n", fd, fs1, fs2);
@@ -3351,7 +3330,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x15: // FMIN.D & FMAX.D
+                case 0x15:            // FMIN.D & FMAX.D
                     if (opcode4 == 0) // FMIN.D
                     {
                         printf("fmin.d       %s, %s, %s\n", fd, fs1, fs2);
@@ -3366,7 +3345,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x20: // FCVT.S.D
+                case 0x20:            // FCVT.S.D
                     if (opcode3 == 1) // FCVT.S.D
                     {
                         printf("fcvt.s.d     %s, %s\n", fd, fs1);
@@ -3377,7 +3356,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x21: // FCVT.D.S
+                case 0x21:            // FCVT.D.S
                     if (opcode4 == 1) // FCVT.D.S
                     {
                         printf("fcvt.d.s     %s, %s\n", fd, fs1);
@@ -3388,7 +3367,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x51: // FLE.D & FLT.D & FEQ.D
+                case 0x51:            // FLE.D & FLT.D & FEQ.D
                     if (opcode4 == 0) // FLE.D
                     {
                         printf("fle.d        %s, %s, %s\n", xd, fs1, fs2);
@@ -3432,7 +3411,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                         _ASSERTE(!"TODO RISCV64 NYI");
                     }
                     return;
-                case 0x69: // FCVT.D.W & FCVT.D.WU & FCVT.D.L & FCVT.D.LU
+                case 0x69:            // FCVT.D.W & FCVT.D.WU & FCVT.D.L & FCVT.D.LU
                     if (opcode3 == 0) // FCVT.D.W
                     {
                         printf("fcvt.d.w     %s, %s\n", fd, xs1);
@@ -3457,7 +3436,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
 
                     return;
-                case 0x71: // FMV.X.D & FCLASS.D
+                case 0x71:            // FMV.X.D & FCLASS.D
                     if (opcode4 == 0) // FMV.X.D
                     {
                         printf("fmv.x.d      %s, %s\n", xd, fs1);
@@ -3487,20 +3466,20 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
 
-            const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            const char* rs2 = RegNames[((code >> 20) & 0x1f) | 0x20];
-            int offset = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
+            const char* rs1    = RegNames[(code >> 15) & 0x1f];
+            const char* rs2    = RegNames[((code >> 20) & 0x1f) | 0x20];
+            int         offset = (((code >> 25) & 0x7f) << 5) | ((code >> 7) & 0x1f);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
             if (opcode2 == 2) // FSW
             {
-                    printf("fsw          %s, %d(%s)\n", rs2, offset, rs1);
+                printf("fsw          %s, %d(%s)\n", rs2, offset, rs1);
             }
             else if (opcode2 == 3) // FSD
             {
-                    printf("fsd          %s, %d(%s)\n", rs2, offset, rs1);
+                printf("fsd          %s, %d(%s)\n", rs2, offset, rs1);
             }
             else
             {
@@ -3512,20 +3491,20 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         case 0x7:
         {
             unsigned int opcode2 = (code >> 12) & 0x7;
-            const char* rs1 = RegNames[(code >> 15) & 0x1f];
-            const char* rd = RegNames[((code >> 7) & 0x1f) | 0x20];
-            int offset = ((code >> 20) & 0xfff);
+            const char*  rs1     = RegNames[(code >> 15) & 0x1f];
+            const char*  rd      = RegNames[((code >> 7) & 0x1f) | 0x20];
+            int          offset  = ((code >> 20) & 0xfff);
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
             }
             if (opcode2 == 2) // FLW
             {
-                    printf("flw          %s, %d(%s)\n", rd, offset, rs1);
+                printf("flw          %s, %d(%s)\n", rd, offset, rs1);
             }
             else if (opcode2 == 3) // FLD
             {
-                    printf("fld          %s, %d(%s)\n", rd, offset, rs1);
+                printf("fld          %s, %d(%s)\n", rd, offset, rs1);
             }
             else
             {
@@ -3664,7 +3643,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 switch (EA_SIZE(emitTypeSize(indir->TypeGet())))
                 {
                     case EA_1BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld || ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd);
+                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
+                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd);
                         if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
                         {
                             if (varTypeIsUnsigned(indir->TypeGet()))
@@ -3676,7 +3656,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                             ins = INS_sb;
                         break;
                     case EA_2BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld || ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd);
+                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
+                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd);
                         if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
                         {
                             if (varTypeIsUnsigned(indir->TypeGet()))
@@ -3688,7 +3669,9 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                             ins = INS_sh;
                         break;
                     case EA_4BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld || ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd || ins == INS_fsw || ins == INS_flw);
+                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
+                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd || ins == INS_fsw ||
+                               ins == INS_flw);
                         assert(INS_fsw > INS_sd);
                         if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
                         {
@@ -3701,9 +3684,9 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                             ins = INS_sw;
                         break;
                     case EA_8BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) ||
-                            ins == INS_lwu || ins == INS_ld ||
-                            ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd || ins == INS_fld || ins == INS_fsd);
+                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
+                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd || ins == INS_fld ||
+                               ins == INS_fsd);
                         assert(INS_fsd > INS_sd);
                         if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
                         {
@@ -3945,7 +3928,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 // A = B + C
                 if ((dst->gtFlags & GTF_UNSIGNED) != 0)
                 {
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dst->GetRegNum(), nullptr, REG_RA); // TODO R21 => RA
+                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dst->GetRegNum(), nullptr,
+                                                     REG_RA); // TODO R21 => RA
                 }
                 else
                 {
@@ -3953,7 +3937,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     {
                         // B > 0 and C > 0, if A < B, goto overflow
                         BasicBlock* tmpLabel = codeGen->genCreateTempLabel();
-                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_R0, REG_RA); // TODO R21 => RA
+                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_R0, REG_RA);               // TODO R21 => RA
                         emitIns_R_R_I(INS_slti, EA_PTRSIZE, REG_RA, dst->GetRegNum(), imm); // TODO R21 => RA
 
                         codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_RA); // TODO R21 => RA
@@ -3965,9 +3949,10 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                         // B < 0 and C < 0, if A > B, goto overflow
                         BasicBlock* tmpLabel = codeGen->genCreateTempLabel();
                         emitIns_J_cond_la(INS_bge, tmpLabel, REG_RA, REG_R0); // TODO R21 => RA
-                        emitIns_R_R_I(INS_addi, attr, REG_RA, REG_R0, imm); // TODO R21 => RA
+                        emitIns_R_R_I(INS_addi, attr, REG_RA, REG_R0, imm);   // TODO R21 => RA
 
-                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, REG_RA, nullptr, dst->GetRegNum()); // TODO R21 => RA
+                        codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, REG_RA, nullptr,
+                                                         dst->GetRegNum()); // TODO R21 => RA
 
                         codeGen->genDefineTempLabel(tmpLabel);
                     }

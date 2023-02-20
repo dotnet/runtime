@@ -567,7 +567,8 @@ inline regMaskTP genRegMask(regNumber reg)
 
 inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE */)
 {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) ||            \
+    defined(TARGET_RISCV64)
     assert(genIsValidFloatReg(reg));
     assert((unsigned)reg < ArrLen(regMasks));
     return regMasks[reg];

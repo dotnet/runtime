@@ -918,7 +918,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         {
             canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // On LoongArch64 and TARGET_RISCV64 , if there aren't any remaining floating-point registers to pass the argument,
+            // On LoongArch64 and TARGET_RISCV64 , if there aren't any remaining floating-point registers to pass the
+            // argument,
             // integer registers (if any) are used instead.
             if (!canPassArgInRegisters && varTypeIsFloating(argType))
             {
@@ -2121,7 +2122,8 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         JITDUMP("Not promoting multi-reg returned struct local V%02u with holes.\n", lclNum);
         shouldPromote = false;
     }
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) ||            \
+    defined(TARGET_RISCV64)
     // TODO-PERF - Only do this when the LclVar is used in an argument context
     // TODO-ARM64 - HFA support should also eliminate the need for this.
     // TODO-ARM32 - HFA support should also eliminate the need for this.

@@ -359,7 +359,8 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
         if (regPair.reg2 != REG_NA)
         {
             // We can use two SD instructions.
-            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_RA, // TODO REG_R21 => REG_RA
+            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair,
+                                 REG_RA, // TODO REG_R21 => REG_RA
                                  nullptr);
 
             spOffset += 2 * slotSize;
@@ -438,7 +439,8 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
         {
             spOffset -= 2 * slotSize;
 
-            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair, REG_RA, // TODO REG_R21 => REG_RA
+            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair,
+                                    REG_RA, // TODO REG_R21 => REG_RA
                                     nullptr);
         }
         else
@@ -557,8 +559,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta);
         compiler->unwindSaveReg(REG_FP, genFuncletInfo.fiSP_to_FPRA_save_delta);
 
-        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE,
-                                    genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
+        GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
         compiler->unwindSaveReg(REG_RA, genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
 
         maskSaveRegsInt &= ~(RBM_RA | RBM_FP); // We've saved these now
@@ -588,7 +589,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         offset = frameSize + SP_delta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
         genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, 0);
 
-        genStackPointerAdjustment(frameSize + SP_delta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+        genStackPointerAdjustment(frameSize + SP_delta, REG_T6, nullptr,
+                                  /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
     }
     else
     {
@@ -616,8 +618,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
             regSet.verifyRegUsed(REG_A1);
 
             // Store the PSP value (aka CallerSP)
-            genInstrWithConstant(INS_sd, EA_PTRSIZE, REG_A1, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta,
-                                 REG_A2, false);
+            genInstrWithConstant(INS_sd, EA_PTRSIZE, REG_A1, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta, REG_A2,
+                                 false);
 
             // re-establish the frame pointer
             genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_FPBASE, REG_A1,
@@ -632,8 +634,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
                                  -genFuncletInfo.fiFunction_CallerSP_to_FP_delta, REG_A2, false);
             regSet.verifyRegUsed(REG_A3);
 
-            genInstrWithConstant(INS_sd, EA_PTRSIZE, REG_A3, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta,
-                                 REG_A2, false);
+            genInstrWithConstant(INS_sd, EA_PTRSIZE, REG_A3, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta, REG_A2,
+                                 false);
         }
     }
 }
@@ -686,8 +688,7 @@ void CodeGen::genFuncletEpilog()
 
         genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, genFuncletInfo.fiSP_to_PSP_slot_delta + 8, 0);
 
-        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE,
-                                    genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
+        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
         compiler->unwindSaveReg(REG_RA, genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
 
         GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta);
@@ -706,7 +707,8 @@ void CodeGen::genFuncletEpilog()
         offset       = SP_delta - offset;
 
         // first, generate daddiu SP,SP,imm
-        genStackPointerAdjustment(-frameSize - SP_delta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
+        genStackPointerAdjustment(-frameSize - SP_delta, REG_T6, nullptr,
+                                  /* reportUnwindData */ true); // TODO CHECK REG_R21 => T6
 
         int offset2 = frameSize + SP_delta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
         assert(offset2 < 2040); // can amend.
@@ -1358,7 +1360,6 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
             emit->emitIns_R_R_R(INS_mul, EA_8BYTE, targetReg, op1->GetRegNum(), op2->GetRegNum());
             emit->emitIns_R_R_I(INS_srai, attr, targetReg, targetReg, 32);
         }
-
     }
 
     genProduceReg(treeNode);
@@ -1744,7 +1745,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         assert(regCnt != REG_RA); // TODO CHECK REG_R21 => RA
         ssize_t imm2 = ~(STACK_ALIGN - 1);
-        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, imm2); // TODO CHECK REG_R21 => RA
+        emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, imm2);                // TODO CHECK REG_R21 => RA
         emit->emitIns_R_R_R(INS_and, emitActualTypeSize(type), regCnt, regCnt, REG_RA); // TODO CHECK REG_R21 => RA
     }
 
@@ -1929,7 +1930,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         assert(regTmp != REG_RA); // TODO CHECK REG_R21 => RA
 
-        ssize_t imm = 3 << 2; // goto done.
+        ssize_t imm = 3 << 2;                                           // goto done.
         emit->emitIns_R_R_I(INS_bltu, EA_PTRSIZE, REG_RA, regCnt, imm); // TODO CHECK REG_R21 => RA
 
         emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
@@ -2000,7 +2001,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 
     assert(!tree->OperIs(GT_NOT) || !varTypeIsFloating(targetType));
 
-    regNumber   targetReg = tree->GetRegNum();
+    regNumber targetReg = tree->GetRegNum();
 
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(!tree->isContained());
@@ -2092,7 +2093,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             if (divisorOp->isContainedIntOrIImmed())
             {
                 ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
-                divisorReg       = REG_RA; // TODO REG_R21 => REG_RA
+                divisorReg       = REG_RA;                        // TODO REG_R21 => REG_RA
                 emit->emitIns_I_la(EA_PTRSIZE, REG_RA, intConst); // TODO REG_R21 => REG_RA
             }
             // Only for commutative operations do we check src1 and allow it to be a contained immediate
@@ -2106,7 +2107,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 {
                     assert(!divisorOp->isContainedIntOrIImmed());
                     ssize_t intConst = (int)(src1->AsIntCon()->gtIconVal);
-                    Reg1             = REG_RA; // TODO REG_R21 => REG_RA
+                    Reg1             = REG_RA;                        // TODO REG_R21 => REG_RA
                     emit->emitIns_I_la(EA_PTRSIZE, REG_RA, intConst); // TODO REG_R21 => REG_RA
                 }
             }
@@ -2145,8 +2146,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 if (checkDividend)
                 {
                     // Check if the divisor is not -1 branch to 'sdivLabel'
-                    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, -1); // TODO REG_R21 => REG_RA
-                    BasicBlock* sdivLabel = genCreateTempLabel(); // can optimize for riscv64.
+                    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, -1);   // TODO REG_R21 => REG_RA
+                    BasicBlock* sdivLabel = genCreateTempLabel();                    // can optimize for riscv64.
                     emit->emitIns_J_cond_la(INS_bne, sdivLabel, REG_RA, divisorReg); // TODO REG_R21 => REG_RA
 
                     // If control flow continues past here the 'divisorReg' is known to be -1
@@ -2158,7 +2159,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
                     emit->emitIns_J_cond_la(INS_beq, sdivLabel, dividendReg, REG_R0);
 
-                    emit->emitIns_R_R_R(size == EA_4BYTE ? INS_addw : INS_add, size, REG_RA, dividendReg, // TODO REG_R21 => REG_RA
+                    emit->emitIns_R_R_R(size == EA_4BYTE ? INS_addw : INS_add, size, REG_RA,
+                                        dividendReg, // TODO REG_R21 => REG_RA
                                         dividendReg);
                     genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, REG_RA); // TODO REG_R21 => REG_RA
                     genDefineTempLabel(sdivLabel);
@@ -2488,12 +2490,12 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                     }
                     emit->emitIns_R_R_I(INS_ld, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
                     emit->emitIns_R_R_I(INS_ld, EA_8BYTE, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE);
-                    emit->emitIns_R_R_I(INS_addi, attrSrcAddr, REG_WRITE_BARRIER_SRC_BYREF,
-                                        REG_WRITE_BARRIER_SRC_BYREF, 2 * TARGET_POINTER_SIZE);
+                    emit->emitIns_R_R_I(INS_addi, attrSrcAddr, REG_WRITE_BARRIER_SRC_BYREF, REG_WRITE_BARRIER_SRC_BYREF,
+                                        2 * TARGET_POINTER_SIZE);
                     emit->emitIns_R_R_I(INS_sd, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, 0);
                     emit->emitIns_R_R_I(INS_sd, EA_8BYTE, tmpReg2, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE);
-                    emit->emitIns_R_R_I(INS_addi, attrDstAddr, REG_WRITE_BARRIER_DST_BYREF,
-                                        REG_WRITE_BARRIER_DST_BYREF, 2 * TARGET_POINTER_SIZE);
+                    emit->emitIns_R_R_I(INS_addi, attrDstAddr, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_DST_BYREF,
+                                        2 * TARGET_POINTER_SIZE);
                     ++i; // extra increment of i, since we are copying two items
                 }
                 else
@@ -2504,11 +2506,11 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                         attrDstAddr = EA_8BYTE;
                     }
                     emit->emitIns_R_R_I(INS_ld, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, 0);
-                    emit->emitIns_R_R_I(INS_addi, attrSrcAddr, REG_WRITE_BARRIER_SRC_BYREF,
-                                        REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE);
+                    emit->emitIns_R_R_I(INS_addi, attrSrcAddr, REG_WRITE_BARRIER_SRC_BYREF, REG_WRITE_BARRIER_SRC_BYREF,
+                                        TARGET_POINTER_SIZE);
                     emit->emitIns_R_R_I(INS_sd, EA_8BYTE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, 0);
-                    emit->emitIns_R_R_I(INS_addi, attrDstAddr, REG_WRITE_BARRIER_DST_BYREF,
-                                        REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE);
+                    emit->emitIns_R_R_I(INS_addi, attrDstAddr, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_DST_BYREF,
+                                        TARGET_POINTER_SIZE);
                 }
             }
             else
@@ -2545,7 +2547,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber tmpReg = treeNode->GetSingleTempReg();
 
     // load the ip-relative offset (which is relative to start of fgFirstBB)
-    GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, idxReg, 2); // TODO CHECK REG_R21 => RA
+    GetEmitter()->emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, idxReg, 2);       // TODO CHECK REG_R21 => RA
     GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, baseReg, baseReg, REG_RA); // TODO CHECK REG_R21 => RA
     GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, baseReg, baseReg, 0);
 
@@ -3158,7 +3160,6 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
                 ins = INS_fcvt_s_lu;
             }
         }
-
     }
     else
     {
@@ -3220,7 +3221,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     assert(genIsValidIntReg(targetReg));
 
     GenTree* op1 = treeNode->AsOp()->gtOp1;
-    assert(!op1->isContained());                // Cannot be contained
+    assert(!op1->isContained());                  // Cannot be contained
     assert(genIsValidFloatReg(op1->GetRegNum())); // Must be a valid int reg.
 
     var_types dstType = treeNode->CastToType();
@@ -3261,7 +3262,6 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
                 ins = INS_fcvt_lu_s;
             }
         }
-
     }
     else
     {
@@ -3616,7 +3616,7 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     // TODO CHECK REGISTER ALLOCATION RSVD AND REG_RA
     emitter* emit = GetEmitter();
 
-    instruction ins       = INS_invalid;
+    instruction ins = INS_invalid;
 
     assert(jcc->OperIs(GT_JCC) && (instruction)jcc->GetRegNum() == INS_bnez);
     emit->emitIns_J(INS_bnez, compiler->compCurBB->bbJumpDest, (int)(int64_t)REG_RA);
@@ -4381,8 +4381,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
                 assert(treeNode_next->OperIs(GT_JCC));
                 treeNode_next->SetRegNum((regNumber)INS_bnez);
                 // Revert JCC Comparison. TODO NEED TO UPDATE LATER.
-                GenTreeCC* jcc = treeNode_next->AsCC();
-                unsigned code = jcc->gtCondition.GetCode();
+                GenTreeCC*                  jcc         = treeNode_next->AsCC();
+                unsigned                    code        = jcc->gtCondition.GetCode();
                 static constexpr genTreeOps s_gtopers[] = {GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT};
                 assert((code & 0x7) <= 0x5);
                 treeNode->SetOper(s_gtopers[code & 0x7]);
@@ -4644,27 +4644,19 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             UINT32 high = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) >> 32;
             if (((high + 0x800) >> 12) != 0)
             {
-                GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, regGSConst,
-                                          (((high + 0x800) >> 12) & 0xfffff));
+                GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, regGSConst, (((high + 0x800) >> 12) & 0xfffff));
             }
             if ((high & 0xFFF) != 0)
             {
-                GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst,
-                                            REG_R0, (high & 0xfff));
+                GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst, REG_R0, (high & 0xfff));
             }
             UINT32 low = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) & 0xffffffff;
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst,
-                                        regGSConst, 11);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst,
-                                        regGSConst, (low >> 21) & 0x7FF);
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst,
-                                        regGSConst, 11);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst,
-                                        regGSConst, (low >> 10) & 0x7FF);
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst,
-                                        regGSConst, 10);
-            GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, regGSConst,
-                                        regGSConst, low & 0x3FF);
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst, regGSConst, 11);
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst, regGSConst, (low >> 21) & 0x7FF);
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst, regGSConst, 11);
+            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst, regGSConst, (low >> 10) & 0x7FF);
+            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst, regGSConst, 10);
+            GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, regGSConst, regGSConst, low & 0x3FF);
         }
         regSet.verifyRegUsed(regGSConst);
     }
@@ -4970,7 +4962,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     }
 }
 
-
 //---------------------------------------------------------------------
 // genPutArgReg - generate code for a T_PUTARG_REG node
 //
@@ -5062,7 +5053,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         if (imm == INT64_MAX)
         {
             emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_RA, REG_R0, -1); // TODO CHECK R21 => RA
-            emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, REG_RA, REG_RA, 1); // TODO CHECK R21 => RA
+            emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, REG_RA, REG_RA, 1);  // TODO CHECK R21 => RA
         }
         else
         {
@@ -5189,7 +5180,7 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
 //
 void CodeGen::genCodeForShift(GenTree* tree)
 {
-    emitAttr    size = emitActualTypeSize(tree);
+    emitAttr size = emitActualTypeSize(tree);
 
     assert(tree->GetRegNum() != REG_NA);
 
@@ -5204,7 +5195,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         if (!shiftBy->IsCnsIntOrI())
         {
             regNumber shiftRight = tree->OperIs(GT_ROR) ? shiftBy->GetRegNum() : REG_RA;
-            regNumber shiftLeft = tree->OperIs(GT_ROR) ? REG_RA : shiftBy->GetRegNum();
+            regNumber shiftLeft  = tree->OperIs(GT_ROR) ? REG_RA : shiftBy->GetRegNum();
             GetEmitter()->emitIns_R_R_I(INS_addi, size, REG_RA, REG_R0, immWidth);
             GetEmitter()->emitIns_R_R_R(INS_sub, size, REG_RA, REG_RA, shiftBy->GetRegNum());
             if (size == EA_8BYTE)
@@ -5226,7 +5217,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 immWidth = 64;
             }
             unsigned shiftRight = tree->OperIs(GT_ROR) ? shiftByImm : immWidth - shiftByImm;
-            unsigned shiftLeft = tree->OperIs(GT_ROR) ? immWidth - shiftByImm : shiftByImm;
+            unsigned shiftLeft  = tree->OperIs(GT_ROR) ? immWidth - shiftByImm : shiftByImm;
             if ((shiftByImm >= 32 && shiftByImm < 64) || size == EA_8BYTE)
             {
                 GetEmitter()->emitIns_R_R_I(INS_srli, size, tree->GetRegNum(), operand->GetRegNum(), shiftRight);
@@ -5240,16 +5231,17 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
         GetEmitter()->emitIns_R_R_R(INS_or, size, tree->GetRegNum(), tree->GetRegNum(), REG_RA);
     }
-    else {
+    else
+    {
         if (!shiftBy->IsCnsIntOrI())
         {
-            instruction ins  = genGetInsForOper(tree);
+            instruction ins = genGetInsForOper(tree);
             GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
         }
         else
         {
-            instruction ins  = genGetInsForOper(tree);
-            unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+            instruction ins        = genGetInsForOper(tree);
+            unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
 
             // should check shiftByImm for riscv64-ins.
             unsigned immWidth = emitter::getBitWidth(size); // For RISCV64, immWidth will be set to 32 or 64
@@ -5390,7 +5382,8 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     // Generate the bounds check if necessary.
     if (node->IsBoundsChecked())
     {
-        GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_RA, base->GetRegNum(), node->gtLenOffset); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+        GetEmitter()->emitIns_R_R_I(INS_lw, EA_4BYTE, REG_RA, base->GetRegNum(),
+                                    node->gtLenOffset); // TODO CHECK SIDE EFFECT WHEN R21 => RA
         // if (index >= REG_RA)
         // {
         //   JumpToThrowHlpBlk;
@@ -5433,8 +5426,10 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
                 ins  = INS_sll;
                 ins2 = INS_add;
             }
-            GetEmitter()->emitIns_R_R_R(ins, attr, REG_RA, index->GetRegNum(), REG_RA); // TODO CHECK SIDE EFFECT WHEN R21 => RA
-            GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), REG_RA, base->GetRegNum()); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+            GetEmitter()->emitIns_R_R_R(ins, attr, REG_RA, index->GetRegNum(),
+                                        REG_RA); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+            GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), REG_RA,
+                                        base->GetRegNum()); // TODO CHECK SIDE EFFECT WHEN R21 => RA
         }
     }
     else // we have to load the element size and use a MADD (multiply-add) instruction
@@ -5455,8 +5450,10 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             ins  = INS_mul;
             ins2 = INS_add;
         }
-        GetEmitter()->emitIns_R_R_R(ins, EA_PTRSIZE, REG_RA, index->GetRegNum(), REG_RA); // TODO CHECK SIDE EFFECT WHEN R21 => RA
-        GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), REG_RA, base->GetRegNum()); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+        GetEmitter()->emitIns_R_R_R(ins, EA_PTRSIZE, REG_RA, index->GetRegNum(),
+                                    REG_RA); // TODO CHECK SIDE EFFECT WHEN R21 => RA
+        GetEmitter()->emitIns_R_R_R(ins2, attr, node->GetRegNum(), REG_RA,
+                                    base->GetRegNum()); // TODO CHECK SIDE EFFECT WHEN R21 => RA
     }
 
     // dest = dest + elemOffs
@@ -6362,7 +6359,8 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
     {
         // If double to double cast or float to float cast. Emit a move instruction.
         instruction ins = (srcType == TYP_FLOAT) ? INS_fsgnj_s : INS_fsgnj_d;
-        GetEmitter()->emitIns_R_R_R(ins, emitActualTypeSize(treeNode), treeNode->GetRegNum(), op1->GetRegNum(), op1->GetRegNum());
+        GetEmitter()->emitIns_R_R_R(ins, emitActualTypeSize(treeNode), treeNode->GetRegNum(), op1->GetRegNum(),
+                                    op1->GetRegNum());
     }
 
     genProduceReg(treeNode);
@@ -6623,8 +6621,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
     if (reportUnwindData)
     {
         compiler->unwindSetFrameReg(REG_FPBASE, delta);
-    }
-;
+    };
 }
 
 //------------------------------------------------------------------------
@@ -6737,7 +6734,8 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             {
                 ssize_t imm = (2 + 1) << 2; // , 1=jalr.
                 emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
-                GetEmitter()->emitIns_R_AI(INS_jalr, EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr); // TODO NEED TO CHECK bl => jalr
+                GetEmitter()->emitIns_R_AI(INS_jalr, EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr); // TODO NEED TO
+            CHECK bl => jalr
             }
             else
             {
@@ -7137,7 +7135,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 else
                 {
                     outSzAligned = compiler->lvaOutgoingArgSpaceSize & ~0xf;
-                    genStackPointerAdjustment(outSzAligned, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 => T6
+                    genStackPointerAdjustment(outSzAligned, REG_T6, nullptr,
+                                              /* reportUnwindData */ true); // TODO CHECK R21 => T6
                 }
 
                 regsToRestoreMask &= ~(RBM_FP | RBM_RA); // We'll restore FP/RA at the end.
@@ -7148,7 +7147,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
                 compiler->unwindSaveReg(REG_FP, offset2);
 
-                genStackPointerAdjustment(calleeSaveSPDelta, REG_T6, nullptr, /* reportUnwindData */ true); // TODO CHECK R21 =>T6
+                genStackPointerAdjustment(calleeSaveSPDelta, REG_T6, nullptr,
+                                          /* reportUnwindData */ true); // TODO CHECK R21 =>T6
 
                 calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
                 calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDelta, STACK_ALIGN);
@@ -7316,8 +7316,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     assert(genIsValidFloatReg(varDsc->GetArgInitReg()));
                     if (genIsValidIntReg(varDsc->GetArgReg()))
                     {
-                        GetEmitter()->emitIns_Mov(INS_fmv_d_x, EA_PTRSIZE, varDsc->GetArgInitReg(),
-                                                  varDsc->GetArgReg(), false);
+                        GetEmitter()->emitIns_Mov(INS_fmv_d_x, EA_PTRSIZE, varDsc->GetArgInitReg(), varDsc->GetArgReg(),
+                                                  false);
                         regArgMaskLive &= ~genRegMask(varDsc->GetArgReg());
                     }
                     else if (varDsc->GetArgInitReg() > REG_ARG_FP_LAST)
@@ -7516,7 +7516,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         }
                         else
                         {
-                            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_T6, REG_T6, slotSize); // TODO REG21 => T6
+                            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_T6, REG_T6,
+                                                        slotSize); // TODO REG21 => T6
                             GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, REG_T6, varNum,
                                                       -slotSize - 8); // TODO REG21 => T6
                         }
@@ -7638,10 +7639,12 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         }
                         else if (k == i)
                         {
-                            GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, REG_T6, (regNumber)regArg[i], 0); // TODO REG21 => T6
+                            GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, REG_T6, (regNumber)regArg[i],
+                                                        0); // TODO REG21 => T6
                             GetEmitter()->emitIns_R_R_I(ins2, EA_PTRSIZE, (regNumber)regArgInit[j],
                                                         (regNumber)regArg[j], 0);
-                            GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, (regNumber)regArgInit[i], REG_T6, 0); // TODO REG21 => T6
+                            GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, (regNumber)regArgInit[i], REG_T6,
+                                                        0); // TODO REG21 => T6
                             regArgNum--;
                             regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
                             regArg[j] = 0;
@@ -7680,15 +7683,16 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     else if (regArgInit[i] > regArg[i] || (regArgInit[i] <= REG_F9)) // TODO NEED TO VERIFY
                     {
                         GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[i],
-                                                  (regNumber)regArg[i], (regNumber)regArg[i]);
+                                                    (regNumber)regArg[i], (regNumber)regArg[i]);
                     }
                     else
                     {
                         assert(i > MAX_REG_ARG);
                         assert(regArgNum > 0);
 
-                        int j = genIsValidIntReg((regNumber)regArgInit[i]) ? (regArgInit[i] - REG_ARG_FIRST)
-                                                                           : ((((int)regArgInit[i]) - REG_ARG_FP_FIRST) + 0x8);
+                        int j = genIsValidIntReg((regNumber)regArgInit[i])
+                                    ? (regArgInit[i] - REG_ARG_FIRST)
+                                    : ((((int)regArgInit[i]) - REG_ARG_FP_FIRST) + 0x8);
                         if (j < MAX_REG_ARG || regArg[j] == 0)
                         {
                             GetEmitter()->emitIns_Mov(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i],
@@ -7704,9 +7708,9 @@ void CodeGen::genFnPrologCalleeRegArgs()
                             if ((regArg[k] == 0) || (k > i) || (k < MAX_REG_ARG))
                             {
                                 GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                          (regNumber)regArg[j], (regNumber)regArg[j]);
+                                                            (regNumber)regArg[j], (regNumber)regArg[j]);
                                 GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[i],
-                                                          (regNumber)regArg[i], (regNumber)regArg[i]);
+                                                            (regNumber)regArg[i], (regNumber)regArg[i]);
                                 regArgNum--;
                                 regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
                                 if (regArgNum == 0)
@@ -7717,11 +7721,11 @@ void CodeGen::genFnPrologCalleeRegArgs()
                             else if (k == i)
                             {
                                 GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, REG_SCRATCH_FLT,
-                                                          (regNumber)regArg[i], (regNumber)regArg[i]);
+                                                            (regNumber)regArg[i], (regNumber)regArg[i]);
                                 GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                          (regNumber)regArg[j], (regNumber)regArg[j]);
+                                                            (regNumber)regArg[j], (regNumber)regArg[j]);
                                 GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[i],
-                                                          REG_SCRATCH_FLT, REG_SCRATCH_FLT);
+                                                            REG_SCRATCH_FLT, REG_SCRATCH_FLT);
                                 regArgNum--;
                                 regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
                                 regArg[j] = 0;

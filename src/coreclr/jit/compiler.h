@@ -555,7 +555,6 @@ public:
     unsigned char lvIsSplit : 1;   // Set if the argument is splited.
 #endif                             // defined(TARGET_RISCV64)
 
-
     unsigned char lvIsBoolean : 1; // set if variable is boolean
     unsigned char lvSingleDef : 1; // variable has a single def
                                    // before lvaMarkLocalVars: identifies ref type locals that can get type updates
@@ -8274,7 +8273,6 @@ public:
     void unwindReturn(regNumber reg);
 #endif // defined(TARGET_RISCV64)
 
-
     //
     // Private "helper" functions for the unwind implementation.
     //
@@ -11799,7 +11797,7 @@ const instruction INS_SQRT       = INS_fsqrt_d; // NOTE: default is double.
 
 #ifdef TARGET_RISCV64
 const instruction INS_BREAKPOINT = INS_ebreak;
-#endif                                          // TARGET_RISCV64
+#endif // TARGET_RISCV64
 
 /*****************************************************************************/
 

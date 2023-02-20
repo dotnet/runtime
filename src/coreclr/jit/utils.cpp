@@ -342,8 +342,7 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                     sep        = "-";
                 }
 #elif defined(TARGET_RISCV64)
-                if ((REG_A0 <= regNum && REG_A7 >= regNum) ||
-                    REG_T0 == regNum || REG_T1 == regNum ||
+                if ((REG_A0 <= regNum && REG_A7 >= regNum) || REG_T0 == regNum || REG_T1 == regNum ||
                     (REG_T2 <= regNum && REG_T6 >= regNum))
                 {
                     regHead    = regNum;

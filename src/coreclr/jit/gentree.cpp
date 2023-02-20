@@ -4879,7 +4879,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-RISCV64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
-                //_ASSERTE(!"TODO RISCV64 NYI");
+//_ASSERTE(!"TODO RISCV64 NYI");
 #else
 #error "Unknown TARGET"
 #endif
@@ -17132,7 +17132,8 @@ const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
 //
 GenTreeLclVarCommon* GenTree::IsImplicitByrefParameterValuePreMorph(Compiler* compiler)
 {
-#if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) // TODO-LOONGARCH64-CQ & TODO-RISCV64: enable this.
+#if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) &&                                                         \
+    !defined(TARGET_RISCV64) // TODO-LOONGARCH64-CQ & TODO-RISCV64: enable this.
 
     GenTreeLclVarCommon* lcl = OperIsLocal() ? AsLclVarCommon() : nullptr;
 
@@ -17162,7 +17163,8 @@ GenTreeLclVarCommon* GenTree::IsImplicitByrefParameterValuePreMorph(Compiler* co
 //
 GenTreeLclVar* GenTree::IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr)
 {
-#if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) // TODO-LOONGARCH64-RISCV64-CQ: enable this.
+#if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) &&                                                         \
+    !defined(TARGET_RISCV64) // TODO-LOONGARCH64-RISCV64-CQ: enable this.
 
     if (!OperIsIndir())
     {

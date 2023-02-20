@@ -241,7 +241,6 @@ INST(fcvt_d_l,      "fcvt.d.l",       0,   0xd2200053)
 INST(fcvt_d_lu,     "fcvt.d.lu",      0,   0xd2300053)
 INST(fmv_d_x,       "fmv.d.x",        0,   0xf2000053)
 
-
 // clang-format on
 /*****************************************************************************/
 #undef INST
