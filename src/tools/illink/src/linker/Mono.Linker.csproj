@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,13 +6,36 @@
     <AssemblyName>illink</AssemblyName>
     <Description>IL Linker</Description>
     <RootNamespace>Mono.Linker</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <PackageId>Microsoft.NET.ILLink</PackageId>
+    <!-- Disabling baseline validation since this is a brand new package.
+       Once this package has shipped a stable version, the following line
+       should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
     <EnableXlfLocalization>false</EnableXlfLocalization>
     <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
     <ContractProject>$(MSBuildThisFileDirectory)ref\Mono.Linker.csproj</ContractProject>
     <RollForward>Major</RollForward>
     <UseAppHost>false</UseAppHost>
+    <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
+
+  <!-- The default pack logic will include the implementation assembly in lib.
+       This also adds the reference assembly under ref. -->
+  <Target Name="_AddReferenceAssemblyToPackage">
+    <!-- Get the build output of the reference project, which has been built due to the ProjectReference. -->
+    <MSBuild Projects="$(ContractProject)" Targets="BuiltProjectOutputGroup" Properties="TargetFramework=$(TargetFramework)">
+      <Output TaskParameter="TargetOutputs" ItemName="_ReferenceAssemblies" />
+    </MSBuild>
+    <!-- Check just to be safe. -->
+    <Error Condition="!Exists('%(_ReferenceAssemblies.Identity)')" Text="Reference assembly %(Identity) does not exist. Ensure it has been built before packaging." />
+    <!-- Add it to the package. -->
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(_ReferenceAssemblies)" PackagePath="ref\$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <AdditionalFiles Include="BannedSymbols.txt" />
