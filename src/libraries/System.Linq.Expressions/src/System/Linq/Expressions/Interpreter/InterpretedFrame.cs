@@ -52,6 +52,28 @@ namespace System.Linq.Expressions.Interpreter
             _pendingValue = Interpreter.NoValue;
         }
 
+        internal void Clear()
+        {
+            StackIndex = Interpreter.LocalCount;
+            Array.Clear(Data);
+
+            if (_continuations != null)
+            {
+                Array.Clear(_continuations);
+            }
+
+            _pendingContinuation = -1;
+            _pendingValue = Interpreter.NoValue;
+
+            InstructionIndex = 0;
+            _parent = null;
+            _continuationIndex = 0;
+
+#if FEATURE_THREAD_ABORT
+            CurrentAbortHandler = null;
+#endif
+        }
+
         public DebugInfo? GetDebugInfo(int instructionIndex)
         {
             return DebugInfo.GetMatchingDebugInfo(Interpreter._debugInfos, instructionIndex);

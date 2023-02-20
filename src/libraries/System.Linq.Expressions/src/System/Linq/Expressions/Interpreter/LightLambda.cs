@@ -7,6 +7,7 @@ using System.Dynamic.Utils;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Text;
 using AstUtils = System.Linq.Expressions.Utils;
 
@@ -17,6 +18,8 @@ namespace System.Linq.Expressions.Interpreter
     {
         private readonly IStrongBox[]? _closure;
         private readonly Interpreter _interpreter;
+        private InterpretedFrame?[]? _frameCache;
+
 #if NO_FEATURE_STATIC_DELEGATE
         private static readonly CacheDict<Type, Func<LightLambda, Delegate>> _runCache = new CacheDict<Type, Func<LightLambda, Delegate>>(100);
 #endif
@@ -377,9 +380,50 @@ namespace System.Linq.Expressions.Interpreter
 #endif
         }
 
+        private InterpretedFrame? GetCachedFrame()
+        {
+            InterpretedFrame?[]? frameCache = _frameCache;
+            if (frameCache == null)
+            {
+                _frameCache = new InterpretedFrame?[16];
+                return null;
+            }
+
+            for (int i = 0; i < frameCache.Length; i++)
+            {
+                if (frameCache[i] != null)
+                {
+                    InterpretedFrame? frame = Interlocked.Exchange(ref frameCache[i], null);
+                    if (frame != null)
+                    {
+                        return frame;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private void ReturnCachedFrame(InterpretedFrame frame)
+        {
+            frame.Clear();
+            InterpretedFrame[] frameCache = _frameCache!;
+            for (int i = 0; i < frameCache.Length; i++)
+            {
+                if (frameCache[i] == null)
+                {
+                    frame = Interlocked.Exchange(ref frameCache[i], frame)!;
+                    if (frame == null)
+                    {
+                        return;
+                    }
+                }
+            }
+        }
+
         private InterpretedFrame MakeFrame()
         {
-            return new InterpretedFrame(_interpreter, _closure);
+            return GetCachedFrame() ?? new InterpretedFrame(_interpreter, _closure);
         }
 
 #if NO_FEATURE_STATIC_DELEGATE
@@ -399,6 +443,7 @@ namespace System.Linq.Expressions.Interpreter
                 frame.Leave(currentFrame);
                 arg0 = (T0)frame.Data[0];
                 arg1 = (T1)frame.Data[1];
+                ReturnCachedFrame(frame);
             }
         }
 #endif
@@ -424,7 +469,10 @@ namespace System.Linq.Expressions.Interpreter
 
                 InterpretedFrame.Leave(currentFrame);
             }
-            return frame.Pop();
+            object? result = frame.Pop();
+
+            ReturnCachedFrame(frame);
+            return result;
         }
 
         public object? RunVoid(params object?[] arguments)
@@ -447,7 +495,9 @@ namespace System.Linq.Expressions.Interpreter
                 }
 
                 InterpretedFrame.Leave(currentFrame);
+                ReturnCachedFrame(frame);
             }
+
             return null;
         }
     }
