@@ -69,22 +69,21 @@ namespace System.CommandLine
 
                 throw new NotImplementedException();
             }
-            else
+
+            string lowerToken = token.ToLowerInvariant();
+            return lowerToken switch
             {
-                return token.ToLowerInvariant() switch
-                {
-                    "windows" => TargetOS.Windows,
-                    "linux" => TargetOS.Linux,
-                    "freebsd" => TargetOS.FreeBSD,
-                    "osx" => TargetOS.OSX,
-                    "maccatalyst" => TargetOS.MacCatalyst,
-                    "ios" => TargetOS.iOS,
-                    "iossimulator" => TargetOS.iOSSimulator,
-                    "tvos" => TargetOS.tvOS,
-                    "tvossimulator" => TargetOS.tvOSSimulator,
-                    _ => throw new CommandLineException($"Target OS '{token}' is not supported")
-                };
-            }
+                "linux" or "linux-musl" => TargetOS.Linux,
+                _ when lowerToken.StartsWith("win") => TargetOS.Windows,
+                _ when lowerToken.StartsWith("osx") => TargetOS.OSX,
+                _ when lowerToken.StartsWith("freebsd") => TargetOS.FreeBSD,
+                _ when lowerToken.StartsWith("maccatalyst") => TargetOS.MacCatalyst,
+                _ when lowerToken.StartsWith("iossimulator") => TargetOS.iOSSimulator,
+                _ when lowerToken.StartsWith("ios") => TargetOS.iOS,
+                _ when lowerToken.StartsWith("tvossimulator") => TargetOS.tvOSSimulator,
+                _ when lowerToken.StartsWith("tvos") => TargetOS.tvOS,
+                _ => throw new CommandLineException($"Target OS '{token}' is not supported")
+            };
         }
 
         public static TargetArchitecture GetTargetArchitecture(string token)
