@@ -54,7 +54,7 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
         <source>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </source>
-        <target state="new">Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </target>
+        <target state="translated">包含具有 VirtualMethodIndexAttribute 的方法類型沒有 UnmanagedObjectUnwrapperAttribute。 </target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
