@@ -3415,6 +3415,42 @@ ClrDataAccess::TraverseRCWCleanupList(CLRDATA_ADDRESS cleanupListPtr, VISITRCWFO
 #endif // FEATURE_COMINTEROP
 }
 
+static HRESULT TraverseLoaderHeapBlock(PTR_LoaderHeapBlock firstBlock, VISITHEAP pFunc)
+{
+    // If we are given a bad address, we may end up mis-interpreting random memory
+    // as a loader heap.  We'll do three things to try to avoid this:
+    //  1.  Put a cap on the number of heaps we enumerate at some sensible number.
+    //  2.  If we detect the block is bad, return a failure HRESULT.  Callers of
+    //      this function need to check the return before acting on data given
+    //      by the callback.
+    //  3.  If we hit an exception, we'll return a failing HRESULT as before.
+    const int iterationMax = 8192;
+
+    int i = 0;
+    PTR_LoaderHeapBlock block = firstBlock;
+
+    while (block != nullptr && i++ < iterationMax)
+    {
+        if (!block.IsValid())
+            return E_POINTER;
+
+        TADDR addr = PTR_TO_TADDR(block->pVirtualAddress);
+        size_t size = block->dwVirtualSize;
+
+        BOOL bCurrentBlock = (block == firstBlock);
+        pFunc(addr, size, bCurrentBlock);
+
+        block = block->pNext;
+        
+        // Ensure we only see the first block once and that we aren't looping
+        // infinitely.
+        if (block == firstBlock)
+            return E_POINTER;
+    }
+
+    return i < iterationMax ? S_OK : S_FALSE;
+}
+
 HRESULT
 ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFunc)
 {
@@ -3422,19 +3458,36 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFun
         return E_INVALIDARG;
 
     SOSDacEnter();
+    
+    hr = TraverseLoaderHeapBlock(PTR_LoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pFunc);
 
-    ExplicitControlLoaderHeap *pLoaderHeap = PTR_ExplicitControlLoaderHeap(TO_TADDR(loaderHeapAddr));
-    PTR_LoaderHeapBlock block = pLoaderHeap->m_pFirstBlock;
-    while (block.IsValid())
+    SOSDacLeave();
+    return hr;
+}
+
+
+
+HRESULT
+ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback)
+{
+    if (loaderHeapAddr == 0 || pCallback == 0)
+        return E_INVALIDARG;
+
+    SOSDacEnter();
+
+    switch (kind)
     {
-        TADDR addr = PTR_TO_TADDR(block->pVirtualAddress);
-        size_t size = block->dwVirtualSize;
+        case LoaderHeapKindNormal:
+            hr = TraverseLoaderHeapBlock(PTR_LoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
+            break;
 
-        BOOL bCurrentBlock = (block == pLoaderHeap->m_pFirstBlock);
+        case LoaderHeapKindExplicitControl:
+            hr = TraverseLoaderHeapBlock(PTR_ExplicitControlLoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
+            break;
 
-        pFunc(addr,size,bCurrentBlock);
-
-        block = block->pNext;
+        default:
+            hr = E_NOTIMPL;
+            break;
     }
 
     SOSDacLeave();
@@ -3457,41 +3510,40 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
     }
     else
     {
-        LoaderHeap *pLoaderHeap = NULL;
+        PTR_LoaderHeap pLoaderHeap = NULL;
         switch(heaptype)
         {
             case IndcellHeap:
                 pLoaderHeap = pVcsMgr->indcell_heap;
                 break;
+
             case LookupHeap:
                 pLoaderHeap = pVcsMgr->lookup_heap;
                 break;
+
             case ResolveHeap:
                 pLoaderHeap = pVcsMgr->resolve_heap;
                 break;
+
             case DispatchHeap:
                 pLoaderHeap = pVcsMgr->dispatch_heap;
                 break;
+
             case CacheEntryHeap:
                 pLoaderHeap = pVcsMgr->cache_entry_heap;
                 break;
+
+            case VtableHeap:
+                pLoaderHeap = pVcsMgr->vtable_heap;
+                break;
+
             default:
                 hr = E_INVALIDARG;
         }
 
         if (SUCCEEDED(hr))
         {
-            PTR_LoaderHeapBlock block = pLoaderHeap->m_pFirstBlock;
-            while (block.IsValid())
-            {
-                TADDR addr = PTR_TO_TADDR(block->pVirtualAddress);
-                size_t size = block->dwVirtualSize;
-
-                BOOL bCurrentBlock = (block == pLoaderHeap->m_pFirstBlock);
-                pFunc(addr, size, bCurrentBlock);
-
-                block = block->pNext;
-            }
+            hr = TraverseLoaderHeapBlock(pLoaderHeap->m_pFirstBlock, pFunc);
         }
     }
 
