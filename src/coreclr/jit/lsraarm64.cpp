@@ -87,7 +87,7 @@ bool LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     {
         assert(consecutiveRefPosition->regCount == 0);
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        if ((consecutiveRefPosition->refType == RefTypeUpperVectorRestore))
+        if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
         {
             if (consecutiveRefPosition->getInterval()->isPartiallySpilled)
             {
@@ -171,11 +171,11 @@ regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPo
 
     regMaskTP overallResult          = RBM_NONE;
     regMaskTP consecutiveResult      = RBM_NONE;
-    uint32_t  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    DWORD  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
     do
     {
         // From LSB, find the first available register (bit `1`)
-        regAvailableStartIndex = BitOperations::_BitScanForward(currAvailableRegs);
+        BitScanForward64(&regAvailableStartIndex, static_cast<DWORD64>(currAvailableRegs));
         regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
 
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
@@ -193,7 +193,7 @@ regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPo
         }
         else
         {
-            regAvailableEndIndex = BitOperations::_BitScanForward(maskProcessed);
+            BitScanForward64(&regAvailableEndIndex, static_cast<DWORD64>(maskProcessed));
         }
         regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
 
