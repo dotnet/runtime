@@ -18,6 +18,12 @@ public class DependencyInjectionPattern
         var actual = printer.GetNameLength(new DataObject() { Name = "0123456789" });
         Assert.Equal(10, actual);
 
+        services.RegisterService(typeof(ICustomFactory<>), typeof(CustomFactoryImpl<>));
+
+        var customFactory = services.GetService<ICustomFactory<FactoryCreated>>();
+        var created = customFactory.Create();
+        Assert.Equal(42, created.GetValue());
+
         return 100;
     }
 }
@@ -143,4 +149,29 @@ class DataObjectPrinterService : IDataObjectPrinter
         string? name = _nameProvider.GetName(instance);
         return name == null ? 0 : name.Length;
     }
+}
+
+interface ICustomFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>
+{
+    T Create();
+}
+
+class CustomFactoryImpl<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T> : ICustomFactory<T>
+{
+    public T Create()
+    {
+        return Activator.CreateInstance<T>();
+    }
+}
+
+class FactoryCreated
+{
+    int _value;
+
+    public FactoryCreated()
+    {
+        _value = 42;
+    }
+
+    public int GetValue() => _value;
 }
