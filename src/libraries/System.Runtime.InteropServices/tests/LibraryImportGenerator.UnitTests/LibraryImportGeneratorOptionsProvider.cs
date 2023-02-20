@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
+using SourceGenerators.Tests;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -13,30 +14,19 @@ namespace LibraryImportGenerator.UnitTests
     /// An implementation of <see cref="AnalyzerConfigOptionsProvider"/> that provides configuration in code
     /// of the options supported by the LibraryImportGenerator source generator. Used for testing various configurations.
     /// </summary>
-    internal class LibraryImportGeneratorOptionsProvider : AnalyzerConfigOptionsProvider
+    internal sealed class LibraryImportGeneratorOptionsProvider : GlobalOptionsOnlyProvider
     {
-        public LibraryImportGeneratorOptionsProvider(bool useMarshalType, bool generateForwarders)
+        public LibraryImportGeneratorOptionsProvider(TestTargetFramework targetFramework, bool useMarshalType, bool generateForwarders)
+            :base(new GlobalGeneratorOptions(targetFramework, useMarshalType, generateForwarders))
         {
-            GlobalOptions = new GlobalGeneratorOptions(useMarshalType, generateForwarders);
         }
 
-        public override AnalyzerConfigOptions GlobalOptions  { get; }
-
-        public override AnalyzerConfigOptions GetOptions(SyntaxTree tree)
-        {
-            return EmptyOptions.Instance;
-        }
-
-        public override AnalyzerConfigOptions GetOptions(AdditionalText textFile)
-        {
-            return EmptyOptions.Instance;
-        }
-
-        private class GlobalGeneratorOptions : AnalyzerConfigOptions
+        private sealed class GlobalGeneratorOptions : TargetFrameworkConfigOptions
         {
             private readonly bool _useMarshalType = false;
             private readonly bool _generateForwarders = false;
-            public GlobalGeneratorOptions(bool useMarshalType, bool generateForwarders)
+            public GlobalGeneratorOptions(TestTargetFramework targetFramework, bool useMarshalType, bool generateForwarders)
+                : base(targetFramework)
             {
                 _useMarshalType = useMarshalType;
                 _generateForwarders = generateForwarders;
@@ -55,21 +45,9 @@ namespace LibraryImportGenerator.UnitTests
                         return true;
 
                     default:
-                        value = null;
-                        return false;
+                        return base.TryGetValue(key, out value);
                 }
             }
-        }
-
-        private class EmptyOptions : AnalyzerConfigOptions
-        {
-            public override bool TryGetValue(string key, [NotNullWhen(true)] out string? value)
-            {
-                value = null;
-                return false;
-            }
-
-            public static AnalyzerConfigOptions Instance = new EmptyOptions();
         }
     }
 }

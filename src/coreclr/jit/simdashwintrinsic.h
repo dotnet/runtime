@@ -7,6 +7,8 @@
 enum class SimdAsHWIntrinsicClassId
 {
     Unknown,
+    Plane,
+    Quaternion,
     Vector2,
     Vector3,
     Vector4,
@@ -24,8 +26,7 @@ enum class SimdAsHWIntrinsicFlag : unsigned int
     // Indicates the intrinsic is for an instance method.
     InstanceMethod = 0x02,
 
-    // Indicates the operands should be swapped in importation.
-    NeedsOperandsSwapped = 0x04,
+    /* UnusedFlag = 0x04, */
 
     // Base type should come from the this argument
     BaseTypeFromThisArg = 0x08,
@@ -130,12 +131,6 @@ struct SimdAsHWIntrinsicInfo
     {
         SimdAsHWIntrinsicFlag flags = lookupFlags(id);
         return (flags & SimdAsHWIntrinsicFlag::InstanceMethod) == SimdAsHWIntrinsicFlag::InstanceMethod;
-    }
-
-    static bool NeedsOperandsSwapped(NamedIntrinsic id)
-    {
-        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & SimdAsHWIntrinsicFlag::NeedsOperandsSwapped) == SimdAsHWIntrinsicFlag::NeedsOperandsSwapped;
     }
 
     static bool BaseTypeFromThisArg(NamedIntrinsic id)

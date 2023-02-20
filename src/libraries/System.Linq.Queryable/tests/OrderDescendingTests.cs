@@ -43,14 +43,14 @@ namespace System.Linq.Tests
         [Fact]
         public void OrderDescending1()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().OrderDescending().Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().OrderDescending().Count();
             Assert.Equal(3, count);
         }
 
         [Fact]
         public void OrderDescending2()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().OrderDescending(Comparer<int>.Default).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().OrderDescending(Comparer<int>.Default).Count();
             Assert.Equal(3, count);
         }
     }

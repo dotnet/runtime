@@ -1675,9 +1675,6 @@ HRESULT MDInternalRO::GetMethodSpecProps(         // S_OK or error.
     HRESULT         hr = NOERROR;
     MethodSpecRec  *pMethodSpecRec;
 
-    LOG((LOGMD, "MD RegMeta::GetMethodSpecProps(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        mi, tkParent, ppvSigBlob, pcbSigBlob));
-
     _ASSERTE(TypeFromToken(mi) == mdtMethodSpec);
 
     IfFailRet(m_LiteWeightStgdb.m_MiniMd.GetMethodSpecRecord(RidFromToken(mi), &pMethodSpecRec));

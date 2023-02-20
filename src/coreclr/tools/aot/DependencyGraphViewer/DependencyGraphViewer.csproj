@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <RootNamespace>DependencyLogViewer</RootNamespace>
   </PropertyGroup>
 

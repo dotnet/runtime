@@ -11,12 +11,12 @@
 
 using System;
 
-abstract class Base<U>
+public abstract class Base<U>
 {
     public abstract int Foo<T>(T obj) where T : U;
 }
 
-class Derived : Base<string>
+public class Derived : Base<string>
 {
     public override int Foo<T>(T obj)
     {

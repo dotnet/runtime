@@ -283,9 +283,17 @@ namespace System.Net.Sockets
             // Try to detect if a property gets added that we're not copying correctly.
             foreach (PropertyInfo pi in typeof(Socket).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                object? origValue = pi.GetValue(source);
-                object? cloneValue = pi.GetValue(this);
-                Debug.Assert(Equals(origValue, cloneValue), $"{pi.Name}. Expected: {origValue}, Actual: {cloneValue}");
+                try
+                {
+                    object? origValue = pi.GetValue(source);
+                    object? cloneValue = pi.GetValue(this);
+
+                    Debug.Assert(Equals(origValue, cloneValue), $"{pi.Name}. Expected: {origValue}, Actual: {cloneValue}");
+                }
+                catch (TargetInvocationException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.OperationNotSupported)
+                {
+                    // macOS fails to retrieve DontFragment and MulticastLoopback at the moment
+                }
             }
 #endif
             return this;

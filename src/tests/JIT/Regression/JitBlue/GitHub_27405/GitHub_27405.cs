@@ -5,9 +5,9 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         Vector3 v3 = Test1(new Vector4(1, 2, 3, 4));
         if (v3.X != 1 || v3.Y != 2 || v3.Z != 3)

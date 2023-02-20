@@ -32,7 +32,7 @@ public struct float4
     }
 }
 
-class X
+public class X
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static float P(int i)
@@ -41,7 +41,7 @@ class X
         return test[i];
     }
 
-    static int Main()
+    public static int Main()
     {
         float v0 = P(0);
         float v1 = P(1);

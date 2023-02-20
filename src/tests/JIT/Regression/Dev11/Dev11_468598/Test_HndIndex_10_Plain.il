@@ -15,7 +15,6 @@
     .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 ) 
 }
 
-.module Test_HndIndex_10_Plain.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -28,7 +27,8 @@
     Test.App
         extends [mscorlib]System.Object
 {
-    .method private hidebysig static int32 Main() cil managed
+.class public auto ansi Test_Test_HndIndex_10_Plain extends [mscorlib] System.Object {
+    .method public hidebysig static int32 Main() cil managed
     {
         .entrypoint
         .maxstack 8
@@ -69,6 +69,7 @@
         ldloc       exitCode
         ret
     }
+}
 
 
     .method public hidebysig static void WriteLine(string format) cil managed noinlining

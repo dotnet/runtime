@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static ILiteSymmetricCipher CreateLiteCipher(
+        private static BasicSymmetricCipherLiteBCrypt CreateLiteCipher(
             CipherMode cipherMode,
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,

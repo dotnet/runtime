@@ -7,7 +7,7 @@ public class Program
     // 'vlu1' is source as well as destination and want to make sure that
     // we do not allocate same register to the src/dest. We need to mark the
     // src as 'delayFree'.
-    static unsafe int Main()
+    public static unsafe int Main()
     {
         if (Avx2.IsSupported)
         {

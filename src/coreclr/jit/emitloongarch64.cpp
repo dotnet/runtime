@@ -600,7 +600,7 @@ void emitter::emitIns(instruction ins)
  *        the negtive `offs` is special for optimizing the large offset which >2047.
  *        when offs >2047 we can't encode one instruction to load/store the data,
  *        if there are several load/store at this case, you have to repeat the similar
- *        large offs with reduntant instructions and maybe eat up the `SC_IG_BUFFER_SIZE`.
+ *        large offs with reduntant instructions and maybe eat up the `emitIGbuffSize`.
  *
  *    Before optimizing the following instructions:
  *      lu12i.w  x0, 0x0
@@ -1874,25 +1874,23 @@ void emitter::emitIns_R_C(
 {
     assert(offs >= 0);
     assert(instrDesc::fitsInSmallCns(offs)); // can optimize.
-    // assert(ins == INS_bl);//for special. indicating isGeneralRegister(reg).
-    // assert(isGeneralRegister(reg)); while load float the reg is FPR.
 
     // when id->idIns == bl, for reloc! 4-ins.
     //   pcaddu12i reg, off-hi-20bits
     //   addi_d  reg, reg, off-lo-12bits
     // when id->idIns == load-ins, for reloc! 4-ins.
     //   pcaddu12i reg, off-hi-20bits
-    //   load  reg, offs_lo-12bits(reg)    #when ins is load ins.
+    //   load  reg, offs_lo-12bits(reg)
     //
-    // INS_OPTS_RC: ins == bl placeholders.  3-ins:  // TODO-LoongArch64: maybe optimize.
-    //   lu12i_w reg, addr-hi-20bits
-    //   ori     reg, reg, addr-lo-12bits
-    //   lu32i_d reg, addr_hi-32bits
+    // INS_OPTS_RC: ins == bl placeholders.  3-ins:
+    //   lu12i_w r21, addr_bits[31:12]
+    //   ori     reg, r21, addr_bits[11:0]
+    //   lu32i_d reg, addr_bits[50:32]
     //
     // INS_OPTS_RC: ins == load.  3-ins:
-    //   lu12i_w at, offs_hi-20bits           //NOTE: offs = (int)(offs_hi<<12) + (int)offs_lo
-    //   lu32i_d at, 0xff  addr_hi-32bits
-    //   load  reg, addr_lo-12bits(reg)    #when ins is load ins.
+    //   lu12i_w r21, addr_bits[31:12]
+    //   lu32i_d r21, addr_bits[50:32]
+    //   load  reg, r21 + addr_bits[11:0]
 
     instrDesc* id = emitNewInstr(attr);
 
@@ -1908,7 +1906,9 @@ void emitter::emitIns_R_C(
         id->idCodeSize(8);
     }
     else
-        id->idCodeSize(12); // TODO-LoongArch64: maybe optimize.
+    {
+        id->idCodeSize(12);
+    }
 
     if (EA_IS_GCREF(attr))
     {
@@ -2009,9 +2009,9 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     //   addi_d  reg, reg, offset-lo12
     //
     // else:  3-ins:
-    //   lu12i_w reg, dst-hi-20bits
-    //   ori reg, reg, dst-lo-12bits
-    //   bstrins_d  reg, zero, msbd, lsbd / lu32i_d reg, 0xff
+    //   lu12i_w r21, addr_bits[31:12]
+    //   ori     reg, r21, addr_bits[11:0]
+    //   lu32i_d reg, addr_bits[50:32]
 
     instrDesc* id = emitNewInstr(attr);
 
@@ -2025,7 +2025,9 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
         id->idCodeSize(8);
     }
     else
+    {
         id->idCodeSize(12);
+    }
 
     id->idReg1(reg);
 
@@ -2535,13 +2537,13 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
     }
     else
     {
-        // lu12i_w  t2, dst_offset_lo32-hi   // TODO-LoongArch64: maybe optimize.
-        // ori  t2, t2, dst_offset_lo32-lo
-        // lu32i_d  t2, dst_offset_hi32-lo
+        // lu12i_w  t2, addr_bits[31:12]   // TODO-LoongArch64: maybe optimize.
+        // ori  t2, t2, addr_bits[11:0]
+        // lu32i_d  t2, addr_bits[50:32]
         // jirl  t2
 
         ssize_t imm = (ssize_t)(id->idAddr()->iiaAddr);
-        assert((imm >> 32) == 0xff);
+        assert((uint64_t)(imm >> 32) <= 0x7ffff); // In fact max is <= 0xffff.
 
         int reg2 = (int)(imm & 1);
         imm -= reg2;
@@ -2563,7 +2565,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
         code = emitInsCode(INS_lu32i_d);
         code |= (code_t)REG_T2;
-        code |= 0xff << 5;
+        code |= ((imm >> 32) & 0x7ffff) << 5;
 
         emitOutput_Instr(dst, code);
         dst += 4;
@@ -2694,7 +2696,7 @@ void emitter::emitJumpDistBind()
 AGAIN:
 
 #ifdef DEBUG
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif
 
 #ifdef DEBUG
@@ -3063,7 +3065,7 @@ AGAIN:
         emitDispIGlist(false);
     }
 
-    emitCheckIGoffsets();
+    emitCheckIGList();
 #endif // DEBUG
 }
 
@@ -3275,14 +3277,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //   load  reg, offs_lo-12bits(r21)    #when ins is load ins.
             //
             // when id->idIns == bl
-            //   lu12i_w r21, addr-hi-20bits
-            //   ori     reg, r21, addr-lo-12bits
-            //   lu32i_d reg, addr_hi-32bits
+            //   lu12i_w r21, addr_bits[31:12]
+            //   ori     reg, r21, addr_bits[11:0]
+            //   lu32i_d reg, addr_bits[50:32]
             //
             // when id->idIns == load-ins
-            //   lu12i_w r21, offs_hi-20bits
-            //   lu32i_d r21, 0xff  addr_hi-32bits
-            //   load  reg, addr_lo-12bits(r21)
+            //   lu12i_w r21, addr_bits[31:12]
+            //   lu32i_d r21, addr_bits[50:32]
+            //   load  reg, r21 + addr_bits[11:0]
             assert(id->idAddr()->iiaIsJitDataOffset());
             assert(id->idGCref() == GCT_NONE);
 
@@ -3349,7 +3351,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(INS_lu12i_w);
                 if (ins == INS_bl)
                 {
-                    assert((imm >> 32) == 0xff);
+                    assert((uint64_t)(imm >> 32) <= 0x7ffff);
 
                     doff = (int)imm >> 12;
                     code |= (code_t)REG_R21;
@@ -3368,7 +3370,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     ins  = INS_lu32i_d;
                     code = emitInsCode(INS_lu32i_d);
                     code |= (code_t)reg1;
-                    code |= 0xff << 5;
+                    code |= ((imm >> 32) & 0x7ffff) << 5;
 
                     *(code_t*)dstRW = code;
                     dstRW += 4;
@@ -3379,7 +3381,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     imm += doff;
                     doff = (int)(imm & 0x7ff) - doff; // addr-lo-12bit.
 
-                    assert((imm >> 32) == 0xff);
+                    assert((uint64_t)(imm >> 32) <= 0x7ffff);
 
                     dataOffs = (unsigned)(imm >> 12); // addr-hi-20bits.
                     code |= (code_t)REG_R21;
@@ -3390,7 +3392,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     code = emitInsCode(INS_lu32i_d);
                     code |= (code_t)REG_R21;
-                    code |= 0xff << 5;
+                    code |= ((imm >> 32) & 0x7ffff) << 5;
 
                     *(code_t*)dstRW = code;
                     dstRW += 4;
@@ -3416,9 +3418,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //   addi_d  reg, reg, offset-lo12
             //
             // else:       // TODO-LoongArch64:optimize.
-            //   lu12i_w reg, dstRW-hi-12bits
-            //   ori reg, reg, dstRW-lo-12bits
-            //   lu32i_d reg, dstRW-hi-32bits
+            //   lu12i_w r21, addr_bits[31:12]
+            //   ori     reg, r21, addr_bits[11:0]
+            //   lu32i_d reg, addr_bits[50:32]
 
             insGroup* tgtIG          = (insGroup*)emitCodeGetCookie(id->idAddr()->iiaBBlabel);
             id->idAddr()->iiaIGlabel = tgtIG;
@@ -3453,7 +3455,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 ssize_t imm = (ssize_t)tgtIG->igOffs + (ssize_t)emitCodeBlock;
-                assert((imm >> 32) == 0xff);
+                assert((uint64_t)(imm >> 32) <= 0x7ffff);
 
                 code = emitInsCode(INS_lu12i_w);
                 code |= (code_t)REG_R21;
@@ -3472,7 +3474,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 ins  = INS_lu32i_d;
                 code = emitInsCode(INS_lu32i_d);
                 code |= (code_t)reg1;
-                code |= 0xff << 5;
+                code |= ((imm >> 32) & 0x7ffff) << 5;
 
                 *(code_t*)dstRW = code;
             }

@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public SetupCompileAssemblyNameAttribute (string outputName)
 		{
-			if (string.IsNullOrEmpty (outputName))
-				throw new ArgumentNullException (nameof (outputName));
+			ArgumentException.ThrowIfNullOrEmpty (outputName);
 		}
 	}
 }

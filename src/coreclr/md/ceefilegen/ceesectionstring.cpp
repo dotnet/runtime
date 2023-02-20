@@ -28,37 +28,8 @@ void CeeSectionString::deleteEntries(StringTableEntry *e)
     delete e;
 }
 
-#ifdef RDATA_STATS
-int CeeSectionString::dumpEntries(StringTableEntry *e)
-{
-    if (!e)
-        return 0;
-    else {
-        printf("    HashId: %d, value: %S\n", e->m_hashId, computOffset(e->m_offset));
-        return dumpEntries(e->m_next) + 1;
-    }
-}
-
-void CeeSectionString::dumpTable()
-{
-    int sum = 0, count = 0;
-    for (int i=0; i < MaxRealEntries; i++) {
-        if (stringTable[i]) {
-            printf("Bucket %d\n", i);
-            printf("Total size: %d\n\n",
-                    count = dumpEntries(stringTable[i]));
-            sum += count;
-        }
-    }
-    printf("Total number strings: %d\n\n", sum);
-}
-#endif
-
 CeeSectionString::~CeeSectionString()
 {
-#ifdef RDATA_STATS
-    dumpTable();
-#endif
     for (int i=0; i < MaxRealEntries; i++)
         deleteEntries(stringTable[i]);
 }

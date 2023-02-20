@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal unsafe class bug1
+public unsafe class bug1
 {
     public static void Func1(double* a01)
     {

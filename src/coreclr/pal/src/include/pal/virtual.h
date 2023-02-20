@@ -34,13 +34,6 @@ typedef struct _CMI {
 
     DWORD  accessProtection;    /* Initial allocation access protection. */
     DWORD  allocationType;      /* Initial allocation type. */
-
-    BYTE * pAllocState;         /* Individual allocation type tracking for each */
-                                /* page in the region. */
-
-    BYTE * pProtectionState;    /* Individual allocation type tracking for each */
-                                /* page in the region. */
-
 } CMI, * PCMI;
 
 enum VIRTUAL_CONSTANTS

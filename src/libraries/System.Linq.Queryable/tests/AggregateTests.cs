@@ -64,21 +64,21 @@ namespace System.Linq.Tests
         [Fact]
         public void Aggregate1()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Aggregate((n1, n2) => n1 + n2);
+            var val = new[] { 0, 2, 1 }.AsQueryable().Aggregate((n1, n2) => n1 + n2);
             Assert.Equal((int)3, val);
         }
 
         [Fact]
         public void Aggregate2()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Aggregate("", (n1, n2) => n1 + n2.ToString());
+            var val = new[] { 0, 2, 1 }.AsQueryable().Aggregate("", (n1, n2) => n1 + n2.ToString());
             Assert.Equal("021", val);
         }
 
         [Fact]
         public void Aggregate3()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Aggregate(0L, (n1, n2) => n1 + n2, n => n.ToString());
+            var val = new[] { 0, 2, 1 }.AsQueryable().Aggregate(0L, (n1, n2) => n1 + n2, n => n.ToString());
             Assert.Equal("3", val);
         }
     }

@@ -56,12 +56,14 @@ namespace System
                 {
                     IntPtr unused;
                     IntPtr r = Interop.User32.SendMessageTimeout(new IntPtr(Interop.User32.HWND_BROADCAST), Interop.User32.WM_SETTINGCHANGE, IntPtr.Zero, (IntPtr)lParam, 0, 1000, &unused);
-                    Debug.Assert(r != IntPtr.Zero, $"SetEnvironmentVariable failed: {Marshal.GetLastPInvokeError()}");
+
+                    // SendMessageTimeout message is a empty stub on Windows Nano Server that fails with both result and last error 0.
+                    Debug.Assert(r != IntPtr.Zero || Marshal.GetLastPInvokeError() == 0, $"SetEnvironmentVariable failed: {Marshal.GetLastPInvokeError()}");
                 }
             }
         }
 
-        private static IDictionary GetEnvironmentVariablesFromRegistry(bool fromMachine)
+        private static Hashtable GetEnvironmentVariablesFromRegistry(bool fromMachine)
         {
             var results = new Hashtable();
 

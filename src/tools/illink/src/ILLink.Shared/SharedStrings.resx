@@ -181,7 +181,7 @@
     <value>There was an unexpected error while trimming. An exception with more details is printed to the MSBuild log. Please share this stack trace with the IL Linker team to further investigate the cause and possible solution.</value>
   </data>
   <data name="LinkerUnexpectedErrorMessage" xml:space="preserve">
-    <value>IL Trimmer has encountered an unexpected error. Please report the issue at https://github.com/dotnet/linker/issues</value>
+    <value>IL Trimmer has encountered an unexpected error. Please report the issue at https://aka.ms/report-illink</value>
   </data>
   <data name="ErrorProcessingXmlLocationTitle" xml:space="preserve">
     <value>There was an error processing 'XML document location' xml file. The most likely reason for this is that the XML file has syntactical errors.</value>

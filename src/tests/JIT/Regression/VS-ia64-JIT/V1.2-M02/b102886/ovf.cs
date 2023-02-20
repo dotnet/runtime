@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-class ovf
+public class ovf
 {
 
     public static void f()

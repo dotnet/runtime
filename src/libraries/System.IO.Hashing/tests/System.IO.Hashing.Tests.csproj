@@ -8,6 +8,7 @@
     <Compile Include="Crc64Tests.cs" />
     <Compile Include="NonCryptoHashBaseTests.cs" />
     <Compile Include="NonCryptoHashTestDriver.cs" />
+    <Compile Include="XxHash128Tests.cs" />
     <Compile Include="XxHash3Tests.cs" />
     <Compile Include="XxHash32Tests.cs" />
     <Compile Include="XxHash32Tests.007.cs" />

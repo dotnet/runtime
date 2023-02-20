@@ -8,9 +8,9 @@
 // Test case triggers reimportation of a leave,
 // leading to an unreachable callfinally pair.
 
-.class FinallyReimp
+.class public FinallyReimp
 {
-.method static int32 Main(class [mscorlib]System.String[]) cil managed
+.method public static int32 Main(class [mscorlib]System.String[]) cil managed
 {
    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
        01 00 00 00

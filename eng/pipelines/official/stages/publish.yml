@@ -22,6 +22,7 @@ stages:
       pool:
         name: NetCore1ESPool-Internal
         demands: ImageOverride -equals 1es-windows-2022
+      symbolPublishingAdditionalParameters: '/p:PublishSpecialClrFiles=true'
 
 # Stages-based publishing entry point
 - template: /eng/common/templates/post-build/post-build.yml

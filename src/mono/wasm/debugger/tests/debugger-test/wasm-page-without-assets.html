@@ -7,9 +7,11 @@
 <body>
 	<script type='text/javascript'>
 		var App = {
-			init: function () { },
+			init: function () {
+				console.debug ("#debugger-app-ready#");
+			},
 		};
-		function reload_wasm_page() {
+		function reload_wasm_page () {
 			window.location.replace("http://localhost:9400/debugger-driver.html");
 		}
 	</script>

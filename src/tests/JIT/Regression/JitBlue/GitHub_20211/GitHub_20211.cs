@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 
 namespace GitHub_20211
 {
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static unsafe sbyte SquareRootAt0(Vector<sbyte> arg)
@@ -235,7 +235,7 @@ namespace GitHub_20211
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             if (new TestRunner().Run() == Result.Pass)
             {

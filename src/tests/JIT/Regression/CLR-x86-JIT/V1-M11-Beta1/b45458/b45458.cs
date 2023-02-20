@@ -6,9 +6,9 @@ namespace JitTest
 {
     using System;
 
-    class Test
+    public class Test
     {
-        static int Main()
+        public static int Main()
         {
             ulong A = 0x3bbde5b000000000;
             uint B = 0xaeb84648;

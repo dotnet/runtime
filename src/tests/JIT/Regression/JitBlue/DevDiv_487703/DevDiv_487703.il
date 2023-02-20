@@ -5,7 +5,7 @@
 .assembly 'DevDiv_487703' {}
 .assembly extern xunit.core {}
 
-.class ILGEN_CLASS
+.class public ILGEN_CLASS
 {
     .method static native int ILGEN_METHOD(unsigned int8, int64, native int, unsigned int16)
     {

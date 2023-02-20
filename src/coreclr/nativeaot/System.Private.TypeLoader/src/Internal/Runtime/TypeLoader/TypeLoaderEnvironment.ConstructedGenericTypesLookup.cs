@@ -19,12 +19,6 @@ namespace Internal.Runtime.TypeLoader
 {
     public sealed partial class TypeLoaderEnvironment
     {
-        internal struct TypeEntryToRegister
-        {
-            public GenericTypeEntry GenericTypeEntry;
-            public MetadataType MetadataDefinitionType;
-        }
-
         internal class GenericTypeEntry
         {
             private int? _hashCode;

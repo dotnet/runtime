@@ -224,7 +224,7 @@ namespace System.IO
         /// <summary>
         /// Returns true if the path ends in a directory separator.
         /// </summary>
-        internal static bool EndsInDirectorySeparator(string? path) =>
+        internal static bool EndsInDirectorySeparator([NotNullWhen(true)] string? path) =>
               !string.IsNullOrEmpty(path) && IsDirectorySeparator(path[path.Length - 1]);
 
         /// <summary>

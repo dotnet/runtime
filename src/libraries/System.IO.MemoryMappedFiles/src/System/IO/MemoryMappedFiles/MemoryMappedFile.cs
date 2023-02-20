@@ -262,10 +262,7 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_MapNameEmptyString);
             }
 
-            if (capacity <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedPositiveNumber);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
             if (IntPtr.Size == 4 && capacity > uint.MaxValue)
             {
@@ -322,10 +319,7 @@ namespace System.IO.MemoryMappedFiles
         {
             ArgumentException.ThrowIfNullOrEmpty(mapName);
 
-            if (capacity <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedPositiveNumber);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
 
             if (IntPtr.Size == 4 && capacity > uint.MaxValue)
             {
@@ -374,10 +368,7 @@ namespace System.IO.MemoryMappedFiles
 
         public MemoryMappedViewStream CreateViewStream(long offset, long size, MemoryMappedFileAccess access)
         {
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (size < 0)
             {
@@ -411,10 +402,7 @@ namespace System.IO.MemoryMappedFiles
 
         public MemoryMappedViewAccessor CreateViewAccessor(long offset, long size, MemoryMappedFileAccess access)
         {
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             if (size < 0)
             {

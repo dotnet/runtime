@@ -6,9 +6,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-internal class Test_DDB188478
+public class Test_DDB188478
 {
-    private static int Main()
+    public static int Main()
     {
         Test_DDB188478[] test = new Test_DDB188478[0];
         IList<Test_DDB188478> ls = (IList<Test_DDB188478>)test;

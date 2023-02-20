@@ -54,10 +54,7 @@ namespace System.Security.Cryptography
 
         private RSACryptoServiceProvider(int keySize, CspParameters? parameters, bool useDefaultKeySize)
         {
-            if (keySize < 0)
-            {
-                throw new ArgumentOutOfRangeException("dwKeySize", "ArgumentOutOfRange_NeedNonNegNum");
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(keySize);
 
             _parameters = CapiHelper.SaveCspParameters(
                 CapiHelper.CspAlgorithmType.Rsa,
@@ -677,7 +674,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static Exception PaddingModeNotSupported()
+        private static CryptographicException PaddingModeNotSupported()
         {
             return new CryptographicException(SR.Cryptography_InvalidPaddingMode);
         }

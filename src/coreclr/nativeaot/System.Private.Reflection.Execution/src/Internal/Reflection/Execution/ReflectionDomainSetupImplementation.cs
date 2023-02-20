@@ -35,8 +35,8 @@ namespace Internal.Reflection.Execution
                 resourceName = methodBase.IsConstructedGenericMethod ? SR.MakeGenericMethod_NoMetadata : SR.Object_NotInvokable;
                 if (methodBase is ConstructorInfo)
                 {
-                    TypeInfo declaringTypeInfo = methodBase.DeclaringType.GetTypeInfo();
-                    if (typeof(Delegate).GetTypeInfo().IsAssignableFrom(declaringTypeInfo))
+                    Type declaringType = methodBase.DeclaringType;
+                    if (declaringType.BaseType == typeof(MulticastDelegate))
                         throw new PlatformNotSupportedException(SR.PlatformNotSupported_CannotInvokeDelegateCtor);
                 }
             }

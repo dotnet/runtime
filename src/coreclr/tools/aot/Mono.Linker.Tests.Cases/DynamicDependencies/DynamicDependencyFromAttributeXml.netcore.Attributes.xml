@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../src/ILLink.Shared/ILLink.LinkAttributes.xsd">
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyFromAttributeXml">
+      <method name="DependencyToUnusedMethod">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute">
+          <argument>UnusedMethod</argument>
+        </attribute>
+      </method>
+      <method name="DependencyToUnusedType">
+        <attribute fullname="System.Diagnostics.CodeAnalysis.DynamicDependencyAttribute">
+          <argument type="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes">All</argument>
+          <argument type="System.Type">Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyFromAttributeXml/NonUsedType, test</argument>
+        </attribute>
+      </method>
+    </type>
+  </assembly>
+</linker>

@@ -68,7 +68,12 @@ namespace Microsoft.Interop
             }
 
             _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = new BoundGenerators(argTypes, CreateGenerator);
+            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingFailures);
+
+            foreach (var failure in bindingFailures)
+            {
+                marshallingNotSupportedCallback(failure.Info, failure.Exception);
+            }
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
@@ -78,7 +83,7 @@ namespace Microsoft.Interop
 
             bool noMarshallingNeeded = true;
 
-            foreach (BoundGenerator generator in _marshallers.AllMarshallers)
+            foreach (BoundGenerator generator in _marshallers.SignatureMarshallers)
             {
                 // Check if marshalling info and generator support the current target framework.
                 SupportsTargetFramework &= generator.TypeInfo.MarshallingAttributeInfo is not MissingSupportMarshallingInfo
@@ -92,19 +97,6 @@ namespace Microsoft.Interop
             StubIsBasicForwarder = !setLastError
                 && _marshallers.ManagedNativeSameReturn // If the managed return has native return position, then it's the return for both.
                 && noMarshallingNeeded;
-
-            IMarshallingGenerator CreateGenerator(TypePositionInfo p)
-            {
-                try
-                {
-                    return generatorFactory.Create(p, _context);
-                }
-                catch (MarshallingNotSupportedException e)
-                {
-                    marshallingNotSupportedCallback(p, e);
-                    return new Forwarder();
-                }
-            }
         }
 
         /// <summary>
@@ -119,7 +111,7 @@ namespace Microsoft.Interop
         {
             GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context, IdentifierName(dllImportName));
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
-            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
+            VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
             var setupStatements = new List<StatementSyntax>();
 
@@ -203,7 +195,7 @@ namespace Microsoft.Interop
 
         public (ParameterListSyntax ParameterList, TypeSyntax ReturnType, AttributeListSyntax? ReturnTypeAttributes) GenerateTargetMethodSignatureData()
         {
-            return _marshallers.GenerateTargetMethodSignatureData();
+            return _marshallers.GenerateTargetMethodSignatureData(_context);
         }
     }
 }

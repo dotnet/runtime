@@ -22,6 +22,7 @@ namespace System.Net.Security
                 CertificateChainPolicy = options.CertificateChainPolicy,
                 CipherSuitesPolicy = options.CipherSuitesPolicy,
                 ClientCertificates = options.ClientCertificates,
+                ClientCertificateContext = options.ClientCertificateContext,
                 EnabledSslProtocols = options.EnabledSslProtocols,
                 EncryptionPolicy = options.EncryptionPolicy,
                 LocalCertificateSelectionCallback = options.LocalCertificateSelectionCallback,

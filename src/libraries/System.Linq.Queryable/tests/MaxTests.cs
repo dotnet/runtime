@@ -580,14 +580,14 @@ namespace System.Linq.Tests
         [Fact]
         public void Max1()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Max();
+            var val = new[] { 0, 2, 1 }.AsQueryable().Max();
             Assert.Equal(2, val);
         }
 
         [Fact]
         public void Max2()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Max(n => n);
+            var val = new[] { 0, 2, 1 }.AsQueryable().Max(n => n);
             Assert.Equal(2, val);
         }
 

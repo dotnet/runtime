@@ -5802,7 +5802,7 @@ void CordbProcess::RawDispatchEvent(
             FramePointer fp = pEvent->ExceptionCallback2.framePointer;
             if (fp != LEAF_MOST_FRAME)
             {
-                // The interface forces us to to pass a FramePointer via an ICorDebugFrame.
+                // The interface forces us to pass a FramePointer via an ICorDebugFrame.
                 // However, we can't get a real ICDFrame without a stackwalk, and we don't
                 // want to do a stackwalk now. so pass a netuered proxy frame. The shim
                 // can map this to a real frame.

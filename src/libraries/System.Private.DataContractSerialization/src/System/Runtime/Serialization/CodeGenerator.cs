@@ -1110,7 +1110,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void LoadParam(object? arg, int oneBasedArgIndex, MethodBase methodInfo)
+        private void LoadParam(object? arg, int oneBasedArgIndex, MethodInfo methodInfo)
         {
             Load(arg);
             if (arg != null)

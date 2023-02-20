@@ -7,7 +7,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class MutateStructArg
+public class MutateStructArg
 {
     public struct P
     {

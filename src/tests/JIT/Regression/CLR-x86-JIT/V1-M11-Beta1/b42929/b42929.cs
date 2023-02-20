@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         private ulong[] m_aulDummyField;
         private static object[] m_axField4;
@@ -29,7 +29,7 @@ namespace Test
                 } while (AA.Static1(null, new bool[7]));
             }
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

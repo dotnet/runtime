@@ -133,9 +133,9 @@ struct Big100000DW
 }
 
 
-class Test_hugestruct
+public class Test_hugestruct
 {
-    static int Main()
+    public static int Main()
     {
         Big100000DW b = new Big100000DW();
         b.b10.b10.b10.b10.i5 = 0;

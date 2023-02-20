@@ -1,17 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Text;
-using Microsoft.Interop.UnitTests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.Interop.UnitTests;
 using Xunit;
 using static Microsoft.Interop.LibraryImportGenerator;
 
@@ -212,13 +210,20 @@ namespace LibraryImportGenerator.UnitTests
                 });
         }
 
+        public static IEnumerable<object[]> CompilationObjectLivenessSources()
+        {
+            // Basic stub
+            yield return new[] { CodeSnippets.BasicParametersAndModifiers<int>() };
+            // Stub with custom string marshaller
+            yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<string>() };
+        }
+
         // This test requires precise GC to ensure that we're accurately testing that we aren't
         // keeping the Compilation alive.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        public async Task GeneratorRun_WithNewCompilation_DoesNotKeepOldCompilationAlive()
+        [MemberData(nameof(CompilationObjectLivenessSources))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        public async Task GeneratorRun_WithNewCompilation_DoesNotKeepOldCompilationAlive(string source)
         {
-            string source = $"namespace NS{{{CodeSnippets.BasicParametersAndModifiers<int>()}}}";
-
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview));
 
             Compilation comp1 = await TestUtils.CreateCompilation(new[] { syntaxTree });

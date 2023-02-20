@@ -52,6 +52,7 @@ typedef int T_CONTEXT;
 #include <releaseholder.h>
 #ifdef HOST_UNIX
 #include <dumpcommon.h>
+#include <clrconfignocache.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>

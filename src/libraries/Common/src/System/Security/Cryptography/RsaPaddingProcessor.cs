@@ -116,7 +116,7 @@ namespace System.Security.Cryptography
             destination[ps.Length + 2] = 0;
 
             // 2(a). Fill PS with random data from a CSPRNG, but no zero-values.
-            FillNonZeroBytes(ps);
+            RandomNumberGeneratorImplementation.FillNonZeroBytes(ps);
 
             source.CopyTo(mInEM);
         }
@@ -497,41 +497,6 @@ namespace System.Security.Cryptography
                 }
 
                 count++;
-            }
-        }
-
-        // This is a copy of RandomNumberGeneratorImplementation.GetNonZeroBytes, but adapted
-        // to the object-less RandomNumberGenerator.Fill.
-        private static void FillNonZeroBytes(Span<byte> data)
-        {
-            while (data.Length > 0)
-            {
-                // Fill the remaining portion of the span with random bytes.
-                RandomNumberGenerator.Fill(data);
-
-                // Find the first zero in the remaining portion.
-                int indexOfFirst0Byte = data.Length;
-                for (int i = 0; i < data.Length; i++)
-                {
-                    if (data[i] == 0)
-                    {
-                        indexOfFirst0Byte = i;
-                        break;
-                    }
-                }
-
-                // If there were any zeros, shift down all non-zeros.
-                for (int i = indexOfFirst0Byte + 1; i < data.Length; i++)
-                {
-                    if (data[i] != 0)
-                    {
-                        data[indexOfFirst0Byte++] = data[i];
-                    }
-                }
-
-                // Request new random bytes if necessary; dont re-use
-                // existing bytes since they were shifted down.
-                data = data.Slice(indexOfFirst0Byte);
             }
         }
 

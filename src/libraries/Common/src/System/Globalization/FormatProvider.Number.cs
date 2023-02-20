@@ -964,10 +964,8 @@ namespace System.Globalization
                                 }
 
                                 groupSizeCount += groupDigits[groupSizeIndex];
-                                if (groupSizeCount < 0 || bufferSize < 0)
-                                {
-                                    throw new ArgumentOutOfRangeException(); // If we overflow
-                                }
+                                ArgumentOutOfRangeException.ThrowIfNegative(groupSizeCount); // If we overflow
+                                ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
                             }
 
                             if (groupSizeCount == 0) // If you passed in an array with one entry as 0, groupSizeCount == 0

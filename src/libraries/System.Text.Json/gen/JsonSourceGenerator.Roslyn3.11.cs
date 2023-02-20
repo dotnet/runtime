@@ -1,13 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//#define LAUNCH_DEBUGGER
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Text.Json.Reflection;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -80,7 +75,7 @@ namespace System.Text.Json.SourceGeneration
             {
                 if (IsSyntaxTargetForGeneration(context.Node))
                 {
-                    ClassDeclarationSyntax classSyntax = GetSemanticTargetForGeneration(context, _cancellationToken);
+                    ClassDeclarationSyntax? classSyntax = GetSemanticTargetForGeneration(context, _cancellationToken);
                     if (classSyntax != null)
                     {
                         (ClassDeclarationSyntaxList ??= new List<ClassDeclarationSyntax>()).Add(classSyntax);
@@ -100,7 +95,7 @@ namespace System.Text.Json.SourceGeneration
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax, cancellationToken).Symbol as IMethodSymbol;
+                        IMethodSymbol? attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax, cancellationToken).Symbol as IMethodSymbol;
                         if (attributeSymbol == null)
                         {
                             continue;
@@ -124,7 +119,7 @@ namespace System.Text.Json.SourceGeneration
         /// <summary>
         /// Helper for unit tests.
         /// </summary>
-        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName, p => p.Type);
+        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName!, p => p.Type);
         private List<TypeGenerationSpec>? _rootTypes;
     }
 

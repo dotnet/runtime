@@ -10,7 +10,7 @@ public class BB
     {
         return new byte[][, ,] { }[0][Math.Sign(1), Math.Sign(1), Math.Min(0, 0)];
     }
-    static int Main()
+    public static int Main()
     {
         try
         {

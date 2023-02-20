@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-internal static class Program
+public static class Program
 {
     class MemberInfo { }
 
@@ -53,7 +53,7 @@ internal static class Program
         return result;
     }
 
-    private static int Main()
+    public static int Main()
     {
         return GetCustomAttribute<Attribute>(new PropertyInfo()) != null ? 100 : -1;
     }

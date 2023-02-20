@@ -3,9 +3,9 @@
 
 using System;
 
-internal static class Module
+public static class Module
 {
-    private static int Main()
+    public static int Main()
     {
         int Var1, Temp;
         try

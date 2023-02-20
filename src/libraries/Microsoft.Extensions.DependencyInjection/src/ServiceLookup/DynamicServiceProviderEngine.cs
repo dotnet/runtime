@@ -8,12 +8,12 @@ using System.Threading;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
     internal sealed class DynamicServiceProviderEngine : CompiledServiceProviderEngine
     {
         private readonly ServiceProvider _serviceProvider;
 
-        public DynamicServiceProviderEngine(ServiceProvider serviceProvider): base(serviceProvider)
+        [RequiresDynamicCode("Creates DynamicMethods")]
+        public DynamicServiceProviderEngine(ServiceProvider serviceProvider) : base(serviceProvider)
         {
             _serviceProvider = serviceProvider;
         }

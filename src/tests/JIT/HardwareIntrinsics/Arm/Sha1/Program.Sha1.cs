@@ -11,8 +11,6 @@ namespace JIT.HardwareIntrinsics.Arm._Sha1
         static Program()
         {
             JIT.HardwareIntrinsics.Arm.Program.PrintSupportedIsa();
-
-
         }
     }
 }

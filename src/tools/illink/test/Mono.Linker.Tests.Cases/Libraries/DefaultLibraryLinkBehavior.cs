@@ -1,9 +1,10 @@
-﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Libraries
 {
 	[SetupCompileAsLibrary]
+	[SetupLinkerArgument ("-a", "test.dll")]
 	[Kept]
 	[KeptMember (".ctor()")]
 	public class DefaultLibraryLinkBehavior

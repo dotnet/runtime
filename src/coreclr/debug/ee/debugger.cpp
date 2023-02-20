@@ -6890,10 +6890,10 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
         bool fHasDebugger = GetCompleteDebuggerLaunchString(&strDbgCommand);
         if (fHasDebugger)
         {
+            LOG((LF_CORDB, LL_INFO10000, "D::EDA: launching with command [%s]\n", strDbgCommand.GetUTF8()));
+
             wszDbgCommand = strDbgCommand.GetUnicode();
             _ASSERTE(wszDbgCommand != NULL); // would have thrown on oom.
-
-            LOG((LF_CORDB, LL_INFO10000, "D::EDA: launching with command [%S]\n", wszDbgCommand));
         }
     }
     EX_CATCH
@@ -9335,7 +9335,7 @@ void Debugger::LoadAssembly(DomainAssembly * pDomainAssembly)
     if (CORDBUnrecoverableError(this))
         return;
 
-    LOG((LF_CORDB, LL_INFO100, "D::LA: Load Assembly Asy:0x%p AD:0x%p which:%ls\n",
+    LOG((LF_CORDB, LL_INFO100, "D::LA: Load Assembly Asy:0x%p AD:0x%p which:%s\n",
         pDomainAssembly, pDomainAssembly->GetAppDomain(), pDomainAssembly->GetAssembly()->GetDebugName() ));
 
     if (!CORDebuggerAttached())
@@ -9391,7 +9391,7 @@ void Debugger::UnloadAssembly(DomainAssembly * pDomainAssembly)
     if (CORDBUnrecoverableError(this))
         return;
 
-    LOG((LF_CORDB, LL_INFO100, "D::UA: Unload Assembly Asy:0x%p AD:0x%p which:%ls\n",
+    LOG((LF_CORDB, LL_INFO100, "D::UA: Unload Assembly Asy:0x%p AD:0x%p which:%s\n",
          pDomainAssembly, pDomainAssembly->GetAppDomain(), pDomainAssembly->GetAssembly()->GetDebugName() ));
 
     Thread *thread = g_pEEInterface->GetThread();
@@ -9676,7 +9676,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
 
 
 
-    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%ls\n",
+    LOG((LF_CORDB, LL_INFO100, "D::UM: unload module Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%s\n",
          LookupOrCreateModule(pRuntimeModule, pAppDomain), pAppDomain, pRuntimeModule, pRuntimeModule->GetDebugName()));
 
 
@@ -9689,7 +9689,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
         DebuggerModule* module = LookupOrCreateModule(pRuntimeModule, pAppDomain);
         if (module == NULL)
         {
-            LOG((LF_CORDB, LL_INFO100, "D::UM: module already unloaded AD:%#08x runtimeMod:%#08x modName:%ls\n",
+            LOG((LF_CORDB, LL_INFO100, "D::UM: module already unloaded AD:%#08x runtimeMod:%#08x modName:%s\n",
                  pAppDomain, pRuntimeModule, pRuntimeModule->GetDebugName()));
             goto LExit;
         }
@@ -9776,7 +9776,7 @@ void Debugger::DestructModule(Module *pModule)
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO100, "D::DM: destruct module runtimeMod:%#08x modName:%ls\n",
+    LOG((LF_CORDB, LL_INFO100, "D::DM: destruct module runtimeMod:%#08x modName:%s\n",
          pModule, pModule->GetDebugName()));
 
     // @@@
@@ -10002,7 +10002,7 @@ BOOL  Debugger::LoadClass(TypeHandle th,
     // handle this in SendSystemClassLoadUnloadEvent below by looping through all AppDomains and dispatching
     // events for each that contain this assembly.
 
-    LOG((LF_CORDB, LL_INFO10000, "D::LC: load class Tok:%#08x Mod:%#08x AD:%#08x classMod:%#08x modName:%ls\n",
+    LOG((LF_CORDB, LL_INFO10000, "D::LC: load class Tok:%#08x Mod:%#08x AD:%#08x classMod:%#08x modName:%s\n",
          classMetadataToken, (pAppDomain == NULL) ? NULL : LookupOrCreateModule(classModule, pAppDomain),
          pAppDomain, classModule, classModule->GetDebugName()));
 
@@ -10057,7 +10057,7 @@ void Debugger::UnloadClass(mdTypeDef classMetadataToken,
         return;
     }
 
-    LOG((LF_CORDB, LL_INFO10000, "D::UC: unload class Tok:0x%08x Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%ls\n",
+    LOG((LF_CORDB, LL_INFO10000, "D::UC: unload class Tok:0x%08x Mod:%#08x AD:%#08x runtimeMod:%#08x modName:%s\n",
          classMetadataToken, LookupOrCreateModule(classModule, pAppDomain), pAppDomain, classModule, classModule->GetDebugName()));
 
     Assembly *pAssembly = classModule->GetClassLoader()->GetAssembly();
@@ -10439,16 +10439,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         // In V3, Attach is atomic, meaning that there isn't a complex handshake back and forth between LS + RS.
         // the RS sends a single-attaching event and attaches at the first response from the Left-side.
         StartCanaryThread();
-
-        // In V3 after attaching event was handled we iterate throughout all ADs and made shadow copies of PDBs in the BIN directories.
-        // After all AppDomain, DomainAssembly and modules iteration was available in out-of-process model in V4 the code that enables
-        // PDBs to be copied was not called at attach time.
-        // Eliminating PDBs copying side effect is an issue: Dev10 #927143
-        EX_TRY
-        {
-            IterateAppDomainsForPdbs();
-        }
-        EX_CATCH_HRESULT(hr); // ignore failures
 
         if (m_jitAttachInProgress)
         {
@@ -12746,7 +12736,7 @@ EnCSequencePointHelper::~EnCSequencePointHelper()
 
     if (m_pOffsetToHandlerInfo)
     {
-        delete m_pOffsetToHandlerInfo;
+        delete[] m_pOffsetToHandlerInfo;
     }
 }
 
@@ -14360,8 +14350,12 @@ void Debugger::SendLogSwitchSetting(int iLevel,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "D::SLSS: Sending log switch message switch=%S parent=%S.\n",
-        pLogSwitchName, pParentSwitchName));
+#ifdef LOGGING
+    MAKE_UTF8PTR_FROMWIDE(pLogSwitchNameUtf8, pLogSwitchName);
+    MAKE_UTF8PTR_FROMWIDE(pParentSwitchNameUtf8, pParentSwitchName);
+    LOG((LF_CORDB, LL_INFO1000, "D::SLSS: Sending log switch message switch=%s parent=%s.\n",
+        pLogSwitchNameUtf8, pParentSwitchNameUtf8));
+#endif // LOGGING
 
     // Send the message only if the debugger is attached to this appdomain.
     if (!CORDebuggerAttached())
@@ -14663,95 +14657,12 @@ HRESULT Debugger::UpdateAppDomainEntryInIPC(AppDomain *pAppDomain)
     szName = pADInfo->m_pAppDomain->GetFriendlyNameForDebugger();
     pADInfo->SetName(szName);
 
-    LOG((LF_CORDB, LL_INFO100,
-         "D::UADEIIPC: New name:%ls (AD:0x%x)\n", pADInfo->m_szAppDomainName,
-         pAppDomain));
-
 ErrExit:
     // UnLock the list
     m_pAppDomainCB->Unlock();
 
     return hr;
 }
-
-HRESULT Debugger::CopyModulePdb(Module* pRuntimeModule)
-{
-    CONTRACTL
-    {
-        THROWS;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-
-        PRECONDITION(ThisIsHelperThread());
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!pRuntimeModule->IsVisibleToDebugger())
-    {
-        return S_OK;
-    }
-
-    HRESULT hr = S_OK;
-
-    return hr;
-}
-
-/******************************************************************************
- * When attaching to a process, this is called to enumerate all of the
- * AppDomains currently in the process and allow modules pdbs to be copied over to the shadow dir maintaining out V2 in-proc behaviour.
- ******************************************************************************/
-HRESULT Debugger::IterateAppDomainsForPdbs()
-{
-    CONTRACTL
-    {
-        THROWS;
-        MAY_DO_HELPER_THREAD_DUTY_GC_TRIGGERS_CONTRACT;
-
-        PRECONDITION(ThisIsHelperThread());
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    STRESS_LOG0(LF_CORDB, LL_INFO100, "Entered function IterateAppDomainsForPdbs()\n");
-    HRESULT hr = S_OK;
-
-    // Lock the list
-    if (!m_pAppDomainCB->Lock())
-        return (E_FAIL);
-
-    // Iterate through the app domains
-    AppDomainInfo *pADInfo = m_pAppDomainCB->FindFirst();
-
-    while (pADInfo)
-    {
-        STRESS_LOG2(LF_CORDB, LL_INFO100, "Iterating over domain AD:%#08x %ls\n", pADInfo->m_pAppDomain, pADInfo->m_szAppDomainName);
-
-        AppDomain::AssemblyIterator i;
-        i = pADInfo->m_pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeLoading | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (i.Next(pDomainAssembly.This()))
-        {
-            if (!pDomainAssembly->IsVisibleToDebugger())
-                continue;
-
-            if (pDomainAssembly->ShouldNotifyDebugger())
-            {
-                CopyModulePdb(pDomainAssembly->GetModule());
-            }
-        }
-
-        // Get the next appdomain in the list
-        pADInfo = m_pAppDomainCB->FindNext(pADInfo);
-    }
-
-    // Unlock the list
-    m_pAppDomainCB->Unlock();
-
-    STRESS_LOG0(LF_CORDB, LL_INFO100, "Exiting function IterateAppDomainsForPdbs\n");
-
-    return hr;
-}
-
 
 /******************************************************************************
  *
@@ -16383,7 +16294,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
 #endif
 
 #ifdef USE_INTEROPSAFE_CANARY
-// Small header to to prefix interop-heap blocks.
+// Small header to prefix interop-heap blocks.
 // This lets us enforce that we don't delete interopheap data from a non-interop heap.
 struct InteropHeapCanary
 {

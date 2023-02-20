@@ -29,6 +29,7 @@ set(HEADERS
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
+    add_definitions(-DUNICODE)
     list(APPEND SOURCES
         ../apphost.windows.cpp)
 

@@ -72,8 +72,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                     return EventCustomAttributeSearcher.Default.GetMatchingCustomAttributes(eventInfo, optionalAttributeTypeFilter, inherit, skipTypeValidation: skipTypeValidation);
             }
 
-            if (element == null)
-                throw new ArgumentNullException();
+            ArgumentNullException.ThrowIfNull(element);
 
             throw new NotSupportedException(); // Shouldn't get here.
         }

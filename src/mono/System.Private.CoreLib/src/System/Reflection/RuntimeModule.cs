@@ -370,9 +370,9 @@ namespace System.Reflection
         internal static Exception resolve_token_exception(string name, int metadataToken, ResolveTokenError error, string tokenType)
         {
             if (error == ResolveTokenError.OutOfRange)
-                return new ArgumentOutOfRangeException(nameof(metadataToken), string.Format("Token 0x{0:x} is not valid in the scope of module {1}", metadataToken, name));
+                return new ArgumentOutOfRangeException(nameof(metadataToken), SR.Format(SR.Argument_InvalidToken, metadataToken, name));
             else
-                return new ArgumentException(string.Format("Token 0x{0:x} is not a valid {1} token in the scope of module {2}", metadataToken, tokenType, name), nameof(metadataToken));
+                return new ArgumentException(SR.Format(SR.Argument_ResolveType, metadataToken, tokenType, name), nameof(metadataToken));
         }
 
         internal static IntPtr[]? ptrs_from_types(Type[]? types)

@@ -3,7 +3,7 @@
 
 using System;
 
-class X
+public class X
 {
     static string s = "hello, world";
 

@@ -6,11 +6,11 @@ using System.Numerics;
 
 namespace JitCrashPOC
 {
-    class Program
+    public class Program
     {
         static public int s_res;
 
-        static int Main()
+        public static int Main()
         {
             var map = new ItemRunner();
 

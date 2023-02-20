@@ -888,7 +888,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                 {
                                     // This method has a generic type token which is required to figure out the exact instantiation
                                     // of the method.
-                                    // We need to to use the variable index of the generic type token in order to do the look up.
+                                    // We need to use the variable index of the generic type token in order to do the look up.
                                     CLRDATA_ADDRESS address = NULL;
                                     DWORD dwExactGenericArgsTokenIndex = 0;
                                     ReleaseHolder<IXCLRDataValue> pDV(NULL);

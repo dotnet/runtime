@@ -67,7 +67,7 @@ namespace JitTest.HFA
         }
 
 
-        static int Main()
+        public static int Main()
         {
 
             HFA12 hfa11;

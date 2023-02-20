@@ -102,7 +102,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                return generic_type is TypeBuilder tb ? tb.is_created : true;
+                return generic_type is RuntimeTypeBuilder tb ? tb.is_created : true;
             }
         }
 

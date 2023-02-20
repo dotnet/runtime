@@ -240,19 +240,21 @@ internal static partial class Interop
 
         internal static unsafe SafeTemporaryKeychainHandle CreateTemporaryKeychain()
         {
-            const int randomSize = 256;
-            string tmpKeychainPath = Path.Combine(
-                Path.GetTempPath(),
-                Guid.NewGuid().ToString("N") + ".keychain");
+            const int RandomSize = 256;
+
+            string tempPath = Path.GetTempPath();
+            string tmpKeychainPath = Path.EndsInDirectorySeparator(tempPath) ?
+                $"{tempPath}{Guid.NewGuid():N}.keychain" :
+                $"{tempPath}{Path.DirectorySeparatorChar}{Guid.NewGuid():N}.keychain";
 
             // Use a random password so that if a keychain is abandoned it isn't recoverable.
             // We use stack to minimize lingering
-            Span<byte> random = stackalloc byte[randomSize];
+            Span<byte> random = stackalloc byte[RandomSize];
             RandomNumberGenerator.Fill(random);
 
             // Create hex-like UTF8 string.
-            Span<byte> utf8Passphrase =  stackalloc byte[randomSize * 2 +1];
-            utf8Passphrase[randomSize * 2] = 0; // null termination for C string.
+            Span<byte> utf8Passphrase =  stackalloc byte[RandomSize * 2 +1];
+            utf8Passphrase[RandomSize * 2] = 0; // null termination for C string.
 
             for (int i = 0; i < random.Length; i++)
             {

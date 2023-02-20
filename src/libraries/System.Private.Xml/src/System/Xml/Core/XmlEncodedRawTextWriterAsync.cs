@@ -318,13 +318,18 @@ namespace System.Xml
 
             if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
+            if (_attrEndPos == _bufPos)
+            {
+                _bufChars[_bufPos++] = (char)' ';
+            }
+
             if (prefix.Length == 0)
             {
-                await RawTextAsync(" xmlns=\"").ConfigureAwait(false);
+                await RawTextAsync("xmlns=\"").ConfigureAwait(false);
             }
             else
             {
-                await RawTextAsync(" xmlns:").ConfigureAwait(false);
+                await RawTextAsync("xmlns:").ConfigureAwait(false);
                 await RawTextAsync(prefix).ConfigureAwait(false);
                 _bufChars[_bufPos++] = (char)'=';
                 _bufChars[_bufPos++] = (char)'"';
@@ -1974,6 +1979,19 @@ namespace System.Xml
             }
 
             await base.WriteStartAttributeAsync(prefix, localName, ns).ConfigureAwait(false);
+        }
+
+        // Same as base class, plus possible indentation.
+        internal override async Task WriteStartNamespaceDeclarationAsync(string prefix)
+        {
+            CheckAsyncCall();
+            // Add indentation
+            if (_newLineOnAttributes)
+            {
+                await WriteIndentAsync().ConfigureAwait(false);
+            }
+
+            await base.WriteStartNamespaceDeclarationAsync(prefix).ConfigureAwait(false);
         }
 
         public override Task WriteCDataAsync(string? text)

@@ -13,7 +13,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class ReferenceHandlerTests_IgnoreCycles_Metadata_String : ReferenceHandlerTests_IgnoreCycles_Metadata
     {
         public ReferenceHandlerTests_IgnoreCycles_Metadata_String()
-            : base(new StringSerializerWrapper(ReferenceHandlerTests_IgnoreCyclesContext_Metadata.Default, (options) => new ReferenceHandlerTests_IgnoreCyclesContext_Metadata(options)))
+            : base(new StringSerializerWrapper(ReferenceHandlerTests_IgnoreCyclesContext_Metadata.Default))
         {
         }
     }
@@ -21,7 +21,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class ReferenceHandlerTests_IgnoreCycles_Metadata_AsyncStream : ReferenceHandlerTests_IgnoreCycles_Metadata
     {
         public ReferenceHandlerTests_IgnoreCycles_Metadata_AsyncStream()
-            : base(new AsyncStreamSerializerWrapper(ReferenceHandlerTests_IgnoreCyclesContext_Metadata.Default, (options) => new ReferenceHandlerTests_IgnoreCyclesContext_Metadata(options)))
+            : base(new AsyncStreamSerializerWrapper(ReferenceHandlerTests_IgnoreCyclesContext_Metadata.Default))
         {
         }
     }
@@ -97,7 +97,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class ReferenceHandlerTests_IgnoreCycles_Default_String : ReferenceHandlerTests_IgnoreCycles_Default
     {
         public ReferenceHandlerTests_IgnoreCycles_Default_String()
-            : base(new StringSerializerWrapper(ReferenceHandlerTests_IgnoreCyclesContext_Default.Default, (options) => new ReferenceHandlerTests_IgnoreCyclesContext_Default(options)))
+            : base(new StringSerializerWrapper(ReferenceHandlerTests_IgnoreCyclesContext_Default.Default))
         {
         }
     }
@@ -105,7 +105,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class ReferenceHandlerTests_IgnoreCycles_Default_AsyncStream : ReferenceHandlerTests_IgnoreCycles_Default
     {
         public ReferenceHandlerTests_IgnoreCycles_Default_AsyncStream()
-            : base(new AsyncStreamSerializerWrapper(ReferenceHandlerTests_IgnoreCyclesContext_Default.Default, (options) => new ReferenceHandlerTests_IgnoreCyclesContext_Default(options)))
+            : base(new AsyncStreamSerializerWrapper(ReferenceHandlerTests_IgnoreCyclesContext_Default.Default))
         {
         }
     }

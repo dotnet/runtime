@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public DefineAttribute (string name)
 		{
-			if (string.IsNullOrEmpty (name))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (name));
+			ArgumentException.ThrowIfNullOrEmpty (name);
 		}
 	}
 }

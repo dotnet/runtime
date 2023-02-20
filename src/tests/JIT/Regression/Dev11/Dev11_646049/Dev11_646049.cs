@@ -4,7 +4,7 @@
 
 using System;
 
-class Test
+public class Test
 {
     /// <summary>
     /// Another 64 bit optimization issue where we dont do the coversion correctly. The following output is seen when this program fails
@@ -12,7 +12,7 @@ class Test
     /// </summary>
     /// <param name="args"></param>
     /// <returns></returns>
-    static int Main()
+    public static int Main()
     {
         double expected = -4.54403989493052E+18;
         double value = -66876.654654;

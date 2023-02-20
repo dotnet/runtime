@@ -77,7 +77,7 @@ namespace System.Threading
         {
             get
             {
-                ThrowIfDisposed();
+                ObjectDisposedException.ThrowIf(IsDisposed, this);
                 if (m_eventObj == null)
                 {
                     // Lazily initialize the event object if needed.
@@ -173,17 +173,8 @@ namespace System.Threading
         /// 0 or greater than the maximum allowed value.</exception>
         public ManualResetEventSlim(bool initialState, int spinCount)
         {
-            if (spinCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(spinCount));
-            }
-
-            if (spinCount > SpinCountState_MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(spinCount),
-                    SR.Format(SR.ManualResetEventSlim_ctor_SpinCountOutOfRange, SpinCountState_MaxValue));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(spinCount);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(spinCount, SpinCountState_MaxValue);
 
             // We will suppress default spin  because the user specified a count.
             Initialize(initialState, spinCount);
@@ -327,7 +318,7 @@ namespace System.Threading
         /// </remarks>
         public void Reset()
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             // If there's an event, reset it.
             m_eventObj?.Reset();
@@ -399,10 +390,9 @@ namespace System.Threading
         public bool Wait(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
 
             return Wait((int)totalMilliseconds, CancellationToken.None);
         }
@@ -431,10 +421,9 @@ namespace System.Threading
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
 
             return Wait((int)totalMilliseconds, cancellationToken);
         }
@@ -479,13 +468,10 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
             cancellationToken.ThrowIfCancellationRequested(); // an early convenience check
 
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             if (!IsSet)
             {
@@ -636,14 +622,7 @@ namespace System.Threading
             }
         }
 
-        /// <summary>
-        /// Throw ObjectDisposedException if the MRES is disposed
-        /// </summary>
-        private void ThrowIfDisposed()
-        {
-            if ((m_combinedState & Dispose_BitMask) != 0)
-                throw new ObjectDisposedException(SR.ManualResetEventSlim_Disposed);
-        }
+        private bool IsDisposed => (m_combinedState & Dispose_BitMask) != 0;
 
         /// <summary>
         /// Private helper method to wake up waiters when a cancellationToken gets canceled.

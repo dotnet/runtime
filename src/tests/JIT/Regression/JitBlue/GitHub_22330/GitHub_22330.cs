@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class X
+public class X
 {
     // a -> rdi
     // b -> rsi

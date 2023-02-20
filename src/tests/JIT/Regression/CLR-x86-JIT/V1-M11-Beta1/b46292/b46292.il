@@ -75,7 +75,7 @@
 
 } // end of class 'c1'
 
-.class private auto ansi _vbProject
+.class public auto ansi _vbProject
        extends [mscorlib]System.Object
 {
   .method public static int32  _main() il managed

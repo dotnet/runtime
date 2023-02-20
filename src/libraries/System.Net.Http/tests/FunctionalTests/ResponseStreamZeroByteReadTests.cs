@@ -159,35 +159,6 @@ namespace System.Net.Http.Functional.Tests
                 server.Dispose();
             }
         }
-
-        private sealed class ReadInterceptStream : DelegatingStream
-        {
-            private readonly Action<int> _readCallback;
-
-            public ReadInterceptStream(Stream innerStream, Action<int> readCallback)
-                : base(innerStream)
-            {
-                _readCallback = readCallback;
-            }
-
-            public override int Read(Span<byte> buffer)
-            {
-                _readCallback(buffer.Length);
-                return base.Read(buffer);
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                _readCallback(count);
-                return base.Read(buffer, offset, count);
-            }
-
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-            {
-                _readCallback(buffer.Length);
-                return base.ReadAsync(buffer, cancellationToken);
-            }
-        }
     }
 
     public sealed class Http1ResponseStreamZeroByteReadTest : ResponseStreamZeroByteReadTestBase
@@ -297,6 +268,77 @@ namespace System.Net.Http.Functional.Tests
                     return Task.Run(() => stream.Read(buffer));
                 }
             }
+        }
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    public sealed class Http2ConnectionZeroByteReadTest : HttpClientHandlerTestBase
+    {
+        public Http2ConnectionZeroByteReadTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Version UseVersion => HttpVersion.Version20;
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectionIssuesZeroByteReadsOnUnderlyingStream(bool useSsl)
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+
+                int zeroByteReads = 0;
+                GetUnderlyingSocketsHttpHandler(handler).PlaintextStreamFilter = (context, _) =>
+                {
+                    return new ValueTask<Stream>(new ReadInterceptStream(context.PlaintextStream, read =>
+                    {
+                        if (read == 0)
+                        {
+                            zeroByteReads++;
+                        }
+                    }));
+                };
+
+                using HttpClient client = CreateHttpClient(handler);
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                Assert.Equal("Foo", await client.GetStringAsync(uri));
+
+                Assert.NotEqual(0, zeroByteReads);
+            },
+            async server =>
+            {
+                await server.HandleRequestAsync(content: "Foo");
+            }, http2Options: new Http2Options { UseSsl = useSsl });
+        }
+    }
+
+    file sealed class ReadInterceptStream : DelegatingStream
+    {
+        private readonly Action<int> _readCallback;
+
+        public ReadInterceptStream(Stream innerStream, Action<int> readCallback)
+            : base(innerStream)
+        {
+            _readCallback = readCallback;
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            _readCallback(buffer.Length);
+            return base.Read(buffer);
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            _readCallback(count);
+            return base.Read(buffer, offset, count);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            _readCallback(buffer.Length);
+            return base.ReadAsync(buffer, cancellationToken);
         }
     }
 }

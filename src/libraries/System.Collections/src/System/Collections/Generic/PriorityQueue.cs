@@ -113,11 +113,7 @@ namespace System.Collections.Generic
         /// </exception>
         public PriorityQueue(int initialCapacity, IComparer<TPriority>? comparer)
         {
-            if (initialCapacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(initialCapacity), initialCapacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(initialCapacity);
 
             _nodes = new (TElement, TPriority)[initialCapacity];
             _comparer = InitializeComparer(comparer);
@@ -531,10 +527,7 @@ namespace System.Collections.Generic
         /// <returns>The current capacity of the <see cref="PriorityQueue{TElement, TPriority}"/>.</returns>
         public int EnsureCapacity(int capacity)
         {
-            if (capacity < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(capacity), capacity, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (_nodes.Length < capacity)
             {
@@ -886,7 +879,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
             }
 

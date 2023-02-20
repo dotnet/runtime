@@ -192,7 +192,7 @@ namespace System.Net.Tests
             // Local
 
             yield return new object[] { new Uri($"http://nodotinhostname"), true };
-            yield return new object[] { new Uri($"http://{Guid.NewGuid().ToString("N")}"), true };
+            yield return new object[] { new Uri($"http://{Guid.NewGuid():N}"), true };
             foreach (IPAddress address in Dns.GetHostEntryAsync(Dns.GetHostName()).GetAwaiter().GetResult().AddressList)
             {
                 if (address.AddressFamily == AddressFamily.InterNetwork)
@@ -209,7 +209,7 @@ namespace System.Net.Tests
             if (!string.IsNullOrWhiteSpace(domain))
             {
                 Uri uri = null;
-                try { uri = new Uri($"http://{Guid.NewGuid().ToString("N")}.{domain}"); }
+                try { uri = new Uri($"http://{Guid.NewGuid():N}.{domain}"); }
                 catch (UriFormatException) { }
 
                 if (uri != null)
@@ -220,7 +220,7 @@ namespace System.Net.Tests
 
             // Non-local
 
-            yield return new object[] { new Uri($"http://{Guid.NewGuid().ToString("N")}.com"), false };
+            yield return new object[] { new Uri($"http://{Guid.NewGuid():N}.com"), false };
             yield return new object[] { new Uri($"http://{IPAddress.None}"), false };
         }
 

@@ -5620,7 +5620,7 @@ namespace System.Xml.Xsl.IlGen
         /// <summary>
         /// Remove unused global functions, variables, or parameters from the list.
         /// </summary>
-        private static void EliminateUnusedGlobals(IList<QilNode> globals)
+        private static void EliminateUnusedGlobals(QilList globals)
         {
             int newIdx = 0;
 

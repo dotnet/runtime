@@ -99,9 +99,6 @@ namespace System.Xml.Xsl.Runtime
         private const string RomanDigitsUC = "IIVIXXLXCCDCM";
         private const string RomanDigitsLC = "iivixxlxccdcm";
 
-        //                            RomanDigit       = { I  IV   V  IX   X  XL   L  XC    C   CD    D   CM     M }
-        private static readonly int[] s_romanDigitValue = { 1, 4, 5, 9, 10, 40, 50, 90, 100, 400, 500, 900, 1000 };
-
         public static void ConvertToRoman(StringBuilder sb, double val, bool upperCase)
         {
             Debug.Assert(1 <= val && val <= MaxRomanValue);
@@ -109,11 +106,14 @@ namespace System.Xml.Xsl.Runtime
             int number = (int)val;
             string digits = upperCase ? RomanDigitsUC : RomanDigitsLC;
 
-            for (int idx = s_romanDigitValue.Length; idx-- != 0;)
+            //                         RomanDigit       = { I IV  V IX   X  XL   L  XC    C   CD    D   CM     M }
+            ReadOnlySpan<int> RomanDigitValue = new int[] { 1, 4, 5, 9, 10, 40, 50, 90, 100, 400, 500, 900, 1000 };
+
+            for (int idx = RomanDigitValue.Length; idx-- != 0;)
             {
-                while (number >= s_romanDigitValue[idx])
+                while (number >= RomanDigitValue[idx])
                 {
-                    number -= s_romanDigitValue[idx];
+                    number -= RomanDigitValue[idx];
                     sb.Append(digits, idx, 1 + (idx & 1));
                 }
             }

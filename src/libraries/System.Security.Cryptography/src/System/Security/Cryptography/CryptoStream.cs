@@ -18,10 +18,10 @@ namespace System.Security.Cryptography
         private readonly ICryptoTransform _transform;
         private byte[] _inputBuffer;  // read from _stream before _Transform
         private int _inputBufferIndex;
-        private int _inputBlockSize;
+        private readonly int _inputBlockSize;
         private byte[] _outputBuffer; // buffered output of _Transform
         private int _outputBufferIndex;
-        private int _outputBlockSize;
+        private readonly int _outputBlockSize;
         private bool _canRead;
         private bool _canWrite;
         private bool _finalBlockTransformed;
@@ -719,21 +719,13 @@ namespace System.Security.Cryptography
         private void CheckCopyToArguments(Stream destination, int bufferSize)
         {
             ArgumentNullException.ThrowIfNull(destination);
-
-            EnsureNotDisposed(destination, nameof(destination));
+            ObjectDisposedException.ThrowIf(!destination.CanRead && !destination.CanWrite, destination);
 
             if (!destination.CanWrite)
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
             if (!CanRead)
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-        }
-
-        private static void EnsureNotDisposed(Stream stream, string objectName)
-        {
-            if (!stream.CanRead && !stream.CanWrite)
-                throw new ObjectDisposedException(objectName);
         }
 
         public void Clear()

@@ -30,7 +30,7 @@ namespace System.Formats.Tar.Tests
         public void WriteEntry_LongFileSize(TarEntryFormat entryFormat, long size, bool unseekableStream)
         {
             // Write archive with a 8 Gb long entry.
-            FileStream tarFile = File.Open(GetTestFilePath(), new FileStreamOptions { Access = FileAccess.ReadWrite, Mode = FileMode.Create, Options = FileOptions.DeleteOnClose });
+            using FileStream tarFile = File.Open(GetTestFilePath(), new FileStreamOptions { Access = FileAccess.ReadWrite, Mode = FileMode.Create, Options = FileOptions.DeleteOnClose });
             Stream s = unseekableStream ? new WrappedStream(tarFile, tarFile.CanRead, tarFile.CanWrite, canSeek: false) : tarFile;
 
             using (TarWriter writer = new(s, leaveOpen: true))

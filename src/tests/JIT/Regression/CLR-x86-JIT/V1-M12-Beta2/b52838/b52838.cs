@@ -5,7 +5,7 @@
 namespace Test
 {
     using System;
-    class CC
+    public class CC
     {
         static sbyte m_sb;
         static void Finally() { }
@@ -28,7 +28,7 @@ namespace Test
                 Finally();
             }
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

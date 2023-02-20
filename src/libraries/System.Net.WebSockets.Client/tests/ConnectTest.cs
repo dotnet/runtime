@@ -352,7 +352,7 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 var cts = new CancellationTokenSource();
                 cts.Cancel();
-                Task t = ConnectAsync(clientSocket, new Uri("ws://" + Guid.NewGuid().ToString("N")), cts.Token);
+                Task t = ConnectAsync(clientSocket, new Uri($"ws://{Guid.NewGuid():N}"), cts.Token);
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }
         }
@@ -363,7 +363,7 @@ namespace System.Net.WebSockets.Client.Tests
             using (var clientSocket = new ClientWebSocket())
             {
                 var cts = new CancellationTokenSource();
-                Task t = ConnectAsync(clientSocket, new Uri("ws://" + Guid.NewGuid().ToString("N")), cts.Token);
+                Task t = ConnectAsync(clientSocket, new Uri($"ws://{Guid.NewGuid():N}"), cts.Token);
                 cts.Cancel();
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
             }

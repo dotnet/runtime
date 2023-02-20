@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
-    static int Main()
+    public static int Main()
     {
         return (Test1.Run() & Test2.Run() & Test3.Run()) ? 100 : -1;
     }

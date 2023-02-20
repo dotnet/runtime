@@ -52,6 +52,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task NestedDelegateInvokeMethodsPreserved ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task NeverInstantiatedTypeWithOverridesFromObject ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -65,6 +71,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task UnusedClassGetsRemoved ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task UnusedDelegateGetsRemoved ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task UnusedEnumGetsRemoved ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
@@ -112,7 +130,25 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task UsedEnumIsKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task UsedEventIsKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task UsedEventOnInterfaceIsKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task UsedEventOnInterfaceIsRemovedWhenUsedFromClass ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

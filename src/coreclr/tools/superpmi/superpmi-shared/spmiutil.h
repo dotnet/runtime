@@ -96,4 +96,6 @@ inline constexpr unsigned ArrLen(T (&)[size])
 std::string getMethodName(MethodContext* mc, CORINFO_METHOD_HANDLE methHnd);
 std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd);
 
+std::string ConvertToUtf8(const WCHAR* str);
+
 #endif // !_SPMIUtil

@@ -12,9 +12,9 @@
 
 .typedef [System.Numerics.Vectors]System.Numerics.Vector2 as Vector2
 
-.class Runtime_72133 extends [System.Runtime]System.Object
+.class public Runtime_72133 extends [System.Runtime]System.Object
 {
-  .method static int32 Main()
+  .method public static int32 Main()
   {
     .entrypoint
     .locals (int32 result)

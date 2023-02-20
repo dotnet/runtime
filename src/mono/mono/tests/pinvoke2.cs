@@ -25,7 +25,7 @@ public unsafe class Tests {
 	{
 		return int_field + a;
 	}
-	
+
 	[StructLayout (LayoutKind.Sequential)]
 	public struct SimpleStruct {
 		public bool a;
@@ -70,9 +70,9 @@ public unsafe class Tests {
 	public struct DelegateStruct {
 		public int a;
 		public SimpleDelegate del;
-		[MarshalAs(UnmanagedType.FunctionPtr)] 
+		[MarshalAs(UnmanagedType.FunctionPtr)]
 		public SimpleDelegate del2;
-		[MarshalAs(UnmanagedType.FunctionPtr)] 
+		[MarshalAs(UnmanagedType.FunctionPtr)]
 		public SimpleDelegate del3;
 	}
 
@@ -81,7 +81,7 @@ public unsafe class Tests {
 		public double d;
 	}
 
-	/* sparcv9 has complex conventions when passing structs with doubles in them 
+	/* sparcv9 has complex conventions when passing structs with doubles in them
 	   by value, some simple tests for them */
 	[StructLayout (LayoutKind.Sequential)]
 	public struct Point {
@@ -94,7 +94,7 @@ public unsafe class Tests {
 		public int x;
 		public double y;
 	}
-	
+
 	[StructLayout (LayoutKind.Sequential)]
 	public struct TinyStruct {
 		public TinyStruct (int i)
@@ -231,7 +231,7 @@ public unsafe class Tests {
 	public static extern int mono_test_marshal_unicode_string_array (string [] a1, [MarshalAs(UnmanagedType.LPArray, ArraySubType=UnmanagedType.LPStr)]string [] a2);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_array")]
-	public static extern int mono_test_marshal_stringbuilder_array (StringBuilder [] a1);	
+	public static extern int mono_test_marshal_stringbuilder_array (StringBuilder [] a1);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_array")]
 	public static extern int mono_test_marshal_inout_array ([In, Out] int [] a1);
@@ -247,10 +247,10 @@ public unsafe class Tests {
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_nonblittable_array", CharSet = CharSet.Unicode)]
 	public static extern int mono_test_marshal_inout_nonblittable_array ([In, Out] char [] a1);
-	
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct")]
 	public static extern int mono_test_marshal_struct (SimpleStruct ss);
-	
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_struct")]
 	public static extern int mono_test_marshal_struct_gen (SimpleStructGen<string> ss);
 
@@ -351,12 +351,12 @@ public unsafe class Tests {
 	public static extern int mono_test_asany_unicode ([MarshalAs (UnmanagedType.AsAny)] object o, int what);
 
 	[DllImport("libtest", EntryPoint="mono_test_marshal_asany_in")]
-	static extern void mono_test_asany_in ([MarshalAs(UnmanagedType.AsAny)][In] object obj); 
+	static extern void mono_test_asany_in ([MarshalAs(UnmanagedType.AsAny)][In] object obj);
 
 	[DllImport("libtest", EntryPoint="mono_test_marshal_asany_out")]
-	static extern void mono_test_asany_out ([MarshalAs(UnmanagedType.AsAny)][Out] object obj); 
+	static extern void mono_test_asany_out ([MarshalAs(UnmanagedType.AsAny)][Out] object obj);
 	[DllImport("libtest", EntryPoint="mono_test_marshal_asany_inout")]
-	static extern void mono_test_asany_inout ([MarshalAs(UnmanagedType.AsAny)][In, Out] object obj); 
+	static extern void mono_test_asany_inout ([MarshalAs(UnmanagedType.AsAny)][In, Out] object obj);
 
 	[DllImport ("libtest")]
         static extern int class_marshal_test0 (SimpleObj obj);
@@ -366,7 +366,7 @@ public unsafe class Tests {
 
 	[DllImport ("libtest")]
         static extern int class_marshal_test4 (SimpleObj obj);
-	
+
 	[DllImport ("libtest")]
         static extern int string_marshal_test0 (string str);
 
@@ -486,7 +486,7 @@ public unsafe class Tests {
 		ss.b = true;
 		ss.d = "TEST";
 		ss.d2 = "OK";
-		
+
 		return mono_test_marshal_struct (ss);
 	}
 
@@ -495,7 +495,7 @@ public unsafe class Tests {
 		ss.b = true;
 		ss.d = "TEST";
 		ss.d2 = "OK";
-		
+
 		return mono_test_marshal_struct_gen (ss);
 	}
 
@@ -540,7 +540,7 @@ public unsafe class Tests {
 		EmptyStructCpp es = new EmptyStructCpp ();
 
 		mono_test_return_empty_struct_cpp (42);
-		
+
 		return 0;
 	}
 	*/
@@ -549,7 +549,7 @@ public unsafe class Tests {
 		SimpleStruct ss = new  SimpleStruct ();
 		ss.b = true;
 		ss.d = "TEST";
-		
+
 		return mono_test_marshal_lpstruct (ss);
 	}
 
@@ -557,7 +557,7 @@ public unsafe class Tests {
 		Point p = new Point ();
 		p.x = 1.0;
 		p.y = 2.0;
-		
+
 		return mono_test_marshal_lpstruct_blittable (p);
 	}
 
@@ -618,7 +618,7 @@ public unsafe class Tests {
 		SimpleClass res = mono_test_marshal_class (10, 11, 12, ss, 14);
 		if (res == null)
 			return 1;
-		if  (! (res.a == ss.a && res.b == ss.b && res.c == ss.c && 
+		if  (! (res.a == ss.a && res.b == ss.b && res.c == ss.c &&
 				res.d == ss.d && res.e == ss.e && res.f == ss.f &&
 				res.g == ss.g && res.h == ss.h))
 			return 2;
@@ -767,7 +767,7 @@ public unsafe class Tests {
 		Point pt = new Point();
 		pt.x = 1.25;
 		pt.y = 3.5;
-		
+
 		return mono_test_marshal_point(pt);
 	}
 
@@ -775,7 +775,7 @@ public unsafe class Tests {
 		MixedPoint mpt = new MixedPoint();
 		mpt.x = 5;
 		mpt.y = 6.75;
-		
+
 		return mono_test_marshal_mixed_point(mpt);
 	}
 
@@ -873,7 +873,7 @@ public unsafe class Tests {
 		String res = sb.ToString();
 
 		if (res != "This is my message.  Isn't it nice?")
-			return 1;  
+			return 1;
 
 		// Test StringBuilder with default capacity (16)
 		StringBuilder sb2 = new StringBuilder();
@@ -918,23 +918,23 @@ public unsafe class Tests {
 		String res = sb.ToString();
 
 		if (res != "This is my message.  Isn't it nice?")
-			return 1;  
+			return 1;
 
 		// Test StringBuilder with default capacity (16)
 		StringBuilder sb2 = new StringBuilder();
 		mono_test_marshal_stringbuilder_unicode (sb2, sb2.Capacity);
 		if (sb2.ToString () != "This is my messa")
 			return 2;
-		
+
 		return 0;
 	}
 
 	public static int test_0_marshal_stringbuilder_out () {
 		StringBuilder sb;
 		mono_test_marshal_stringbuilder_out (out sb);
-		
+
 		if (sb.ToString () != "This is my message.  Isn't it nice?")
-			return 1;  
+			return 1;
 		return 0;
 	}
 
@@ -943,7 +943,7 @@ public unsafe class Tests {
 		mono_test_marshal_stringbuilder_out_unicode (out sb);
 
 		if (sb.ToString () != "This is my message.  Isn't it nice?")
-			return 1;  
+			return 1;
 		return 0;
 	}
 
@@ -953,16 +953,16 @@ public unsafe class Tests {
 		int res = mono_test_marshal_stringbuilder_ref (ref sb);
 		if (res != 0)
 			return 1;
-		
+
 		if (sb.ToString () != "This is my message.  Isn't it nice?")
-			return 2;  
+			return 2;
 		return 0;
 	}
 
 	public static int test_0_marshal_stringbuilder_utf16_tolower () {
 		StringBuilder sb = new StringBuilder (3);
 		sb.Append ("ABC").Append ("DEF");
-		
+
 		mono_test_marshal_stringbuilder_utf16_tolower (sb, sb.Length);
 		if (sb.ToString () != "abcdef")
 			return 1;
@@ -973,7 +973,7 @@ public unsafe class Tests {
 	public static int test_0_marshal_stringbuilder_utf16_tolower_in () {
 		StringBuilder sb = new StringBuilder (3);
 		sb.Append ("ABC").Append ("DEF");
-		
+
 		mono_test_marshal_stringbuilder_utf16_tolower_in (sb, sb.Length);
 		if (sb.ToString () != "ABCDEF")
 			return 1;
@@ -1039,7 +1039,7 @@ public unsafe class Tests {
 		return 0;
 	}
 
-	/* Check that the runtime adds lib to to the library name */
+	/* Check that the runtime adds lib to the library name */
 	public static int test_0_add_lib_to_name () {
 
 		mono_test_marshal_char_3 ('A');
@@ -1194,10 +1194,10 @@ public unsafe class Tests {
 		public int k;
 		public int l;
 	}
-	
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct1")]
 	public static extern Amd64Struct1 mono_test_marshal_amd64_pass_return_struct1 (Amd64Struct1 s);
-	
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct1_many_args")]
 	public static extern Amd64Struct1 mono_test_marshal_amd64_pass_return_struct1_many_args (Amd64Struct1 s, int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8);
 
@@ -1232,7 +1232,7 @@ public unsafe class Tests {
 		public int i;
 		public int j;
 	}
-	
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct2")]
 	public static extern Amd64Struct2 mono_test_marshal_amd64_pass_return_struct2 (Amd64Struct2 s);
 
@@ -1252,7 +1252,7 @@ public unsafe class Tests {
 	public struct Amd64Struct3 {
 		public int i;
 	}
-	
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct3")]
 	public static extern Amd64Struct3 mono_test_marshal_amd64_pass_return_struct3 (Amd64Struct3 s);
 
@@ -1271,7 +1271,7 @@ public unsafe class Tests {
 	public struct Amd64Struct4 {
 		public double d1, d2;
 	}
-	
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct4")]
 	public static extern Amd64Struct4 mono_test_marshal_amd64_pass_return_struct4 (Amd64Struct4 s);
 
@@ -1295,7 +1295,7 @@ public unsafe class Tests {
 	public struct TestStruct5 {
 		public float d1, d2;
 	}
-	
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_ia64_pass_return_struct5")]
 	public static extern TestStruct5 mono_test_marshal_ia64_pass_return_struct5 (double d1, double d2, TestStruct5 s, int i, double f3, double f4);
 
@@ -1315,7 +1315,7 @@ public unsafe class Tests {
 	public struct TestStruct6 {
 		public double d1, d2;
 	}
-	
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_ia64_pass_return_struct6")]
 	public static extern TestStruct6 mono_test_marshal_ia64_pass_return_struct6 (double d1, double d2, TestStruct6 s, int i, double f3, double f4);
 
@@ -1328,7 +1328,7 @@ public unsafe class Tests {
 
 		return (s2.d1 == 12.0 && s2.d2 == 3.0) ? 0 : 1;
 	}
-	
+
 	/* Blittable class */
 	[DllImport("libtest")]
 	private static extern BlittableClass TestBlittableClass (BlittableClass vl);
@@ -1341,7 +1341,7 @@ public unsafe class Tests {
 
 		if (v1.a != 2 || v1.b != 3)
 			return 1;
-		
+
 		if (v2.a != 2 || v2.b != 3)
 			return 2;
 
@@ -1350,7 +1350,7 @@ public unsafe class Tests {
 
 		if (v3.a != 42 || v3.b != 43)
 			return 3;
-		
+
 		return 0;
 	}
 
@@ -1365,7 +1365,7 @@ public unsafe class Tests {
 		public T k;
 		public T l;
 	}
-	
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_amd64_pass_return_struct1")]
 	public static extern Amd64Struct1Gen<int> mono_test_marshal_amd64_pass_return_struct1_gen (Amd64Struct1Gen<int> s);
 
@@ -1389,7 +1389,7 @@ public unsafe class Tests {
 		SimpleObj obj0 = new SimpleObj ();
 		obj0.str = "T1";
 		obj0.i = 4;
-		
+
 		if (class_marshal_test0 (obj0) != 0)
 			return 1;
 
@@ -1423,7 +1423,7 @@ public unsafe class Tests {
 
 	public static int test_0_marshal_out_string () {
 		string res;
-		
+
 		string_marshal_test1 (out res);
 
 		if (res != "TEST1")
@@ -1546,7 +1546,7 @@ public unsafe class Tests {
 
 	public static int test_0_pass_return_lwpstr () {
 		string s;
-		
+
 		mono_test_marshal_lpwstr_out_marshal (out s);
 
 		if (s != "ABC")
@@ -1557,13 +1557,13 @@ public unsafe class Tests {
 
 		if (s != "ABC")
 			return 2;
-		
-		return 0;		
+
+		return 0;
 	}
 
 	public static int test_0_out_lwpstr () {
 		string s = "ABC";
-		
+
 		string res = mono_test_marshal_lpwstr_marshal (s, s.Length);
 
 		if (res != "ABC")
@@ -1573,8 +1573,8 @@ public unsafe class Tests {
 
 		if (res2 != "ABC")
 			return 2;
-		
-		return 0;		
+
+		return 0;
 	}
 
 	/*
@@ -1584,9 +1584,9 @@ public unsafe class Tests {
 	[DllImport("libtest")]
 	extern static int marshal_test_ref_bool
 	(
-		int i, 
-		[MarshalAs(UnmanagedType.I1)] ref bool b1, 
-		[MarshalAs(UnmanagedType.VariantBool)] ref bool b2, 
+		int i,
+		[MarshalAs(UnmanagedType.I1)] ref bool b1,
+		[MarshalAs(UnmanagedType.VariantBool)] ref bool b2,
 		ref bool b3
 	);
 
@@ -1718,7 +1718,7 @@ public unsafe class Tests {
 		} catch (Exception ex) {
 			return 0;
 		}
-		
+
 		return 1;
 	}
 
@@ -1758,7 +1758,7 @@ public unsafe class Tests {
 	/*
 	 * Calling pinvoke functions dynamically using calli
 	 */
-	
+
 	[DllImport("libtest")]
 	private static extern IntPtr mono_test_marshal_lookup_symbol (string fileName);
 

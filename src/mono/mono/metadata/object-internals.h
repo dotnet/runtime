@@ -17,6 +17,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/handle.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/mono-debug.h>
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
 #include "mono/utils/mono-error-internals.h"
@@ -440,6 +441,7 @@ TYPED_HANDLE_DECL (MonoSafeHandle);
 struct _MonoReflectionType {
 	MonoObject object;
 	MonoType  *type;
+	MonoObject *m_keepalive;
 };
 
 /* Safely access System.Type from native code */
@@ -698,6 +700,10 @@ typedef struct {
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
 	gboolean (*interp_sufficient_stack)(gsize size);
 	void (*init_class) (MonoClass *klass);
+	MonoArray *(*get_trace) (MonoException *exc, gint32 skip, MonoBoolean need_file_info);
+	MonoBoolean (*get_frame_info) (gint32 skip, MonoMethod **out_method,
+								   MonoDebugSourceLocation **out_location,
+								   gint32 *iloffset, gint32 *native_offset);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -906,10 +912,11 @@ struct _MonoReflectionMethodBody {
 /* Safely access System.Reflection.MethodBody from native code */
 TYPED_HANDLE_DECL (MonoReflectionMethodBody);
 
-/* System.RuntimeAssembly */
+/* System.Reflection.RuntimeAssembly */
 struct _MonoReflectionAssembly {
 	MonoObject object;
 	MonoAssembly *assembly;
+	MonoObject *m_keepalive;
 };
 
 typedef struct {
@@ -1057,7 +1064,7 @@ typedef struct {
 	MonoArray *param_modopt;
 } MonoReflectionCtorBuilder;
 
-/* Safely access System.Reflection.Emit.ConstructorBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeConstructorBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionCtorBuilder);
 
 typedef struct {
@@ -1090,7 +1097,7 @@ typedef struct {
 	MonoArray *param_modopt;
 } MonoReflectionMethodBuilder;
 
-/* Safely access System.Reflection.Emit.MethodBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeMethodBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionMethodBuilder);
 
 typedef struct {
@@ -1120,7 +1127,7 @@ typedef struct {
 	guint32 access;
 } MonoReflectionAssemblyBuilder;
 
-/* Safely access System.Reflection.Emit.AssemblyBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeAssemblyBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionAssemblyBuilder);
 
 typedef struct {
@@ -1139,7 +1146,7 @@ typedef struct {
 	MonoArray *modopt;
 } MonoReflectionFieldBuilder;
 
-/* Safely access System.Reflection.Emit.FieldBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeFieldBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionFieldBuilder);
 
 typedef struct {
@@ -1190,7 +1197,7 @@ typedef struct {
 	MonoArray *table_indexes;
 } MonoReflectionModuleBuilder;
 
-/* Safely acess System.Reflection.Emit.ModuleBuilder from native code */
+/* Safely acess System.Reflection.Emit.RuntimeModuleBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionModuleBuilder);
 
 typedef enum {
@@ -1256,7 +1263,7 @@ typedef struct {
 	guint32 attrs;
 } MonoReflectionGenericParam;
 
-/* Safely access System.Reflection.Emit.GenericTypeParameterBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeGenericTypeParameterBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionGenericParam);
 
 typedef struct {
@@ -1264,7 +1271,7 @@ typedef struct {
 	MonoReflectionTypeBuilder *tb;
 } MonoReflectionEnumBuilder;
 
-/* Safely access System.Reflection.Emit.EnumBuilder from native code */
+/* Safely access System.Reflection.Emit.RuntimeEnumBuilder from native code */
 TYPED_HANDLE_DECL (MonoReflectionEnumBuilder);
 
 typedef struct _MonoReflectionGenericClass MonoReflectionGenericClass;
@@ -1422,6 +1429,14 @@ typedef enum {
 	UNLOADING = 1
 } MonoManagedAssemblyLoadContextInternalState;
 
+
+typedef struct {
+	MonoObject object;
+	MonoObject *m_scout;
+	MonoArray *m_slots;
+	MonoArray *m_hashes;
+	int m_nslots;
+} MonoManagedLoaderAllocator;
 
 /* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
  * for uniformity, icall wrapping will make handles anyway.  So this is the method for getting the payload.
@@ -1810,6 +1825,9 @@ mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoEr
 gboolean
 mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, MonoError *error);
 
+gboolean
+mono_object_isinst_vtable_mbyref (MonoVTable *vt, MonoClass *klass, MonoError *error);
+
 MonoStringHandle
 mono_string_new_size_handle (gint32 len, MonoError *error);
 
@@ -1984,6 +2002,9 @@ mono_string_hash_internal (MonoString *s);
 MONO_COMPONENT_API int
 mono_object_hash_internal (MonoObject* obj);
 
+int
+mono_object_try_get_hash_internal (MonoObject* obj);
+
 ICALL_EXPORT
 void
 mono_value_copy_internal (void* dest, const void* src, MonoClass *klass);
@@ -2131,5 +2152,8 @@ mono_string_instance_is_interned (MonoString *str);
 
 gpointer
 mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean only_unmanaged_callers_only, MonoError *error);
+
+void
+mono_runtime_run_startup_hooks (void);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

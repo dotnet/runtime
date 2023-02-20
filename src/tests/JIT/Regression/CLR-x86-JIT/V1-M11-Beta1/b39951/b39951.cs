@@ -12,9 +12,9 @@ namespace Test
         public static void Static1(double param1, uint param4) { }
     }
 
-    class BB
+    public class BB
     {
-        static int Main()
+        public static int Main()
         {
             double local3 = 133.28;
             AA.Static1(local3, AA.m_auForward3[2]);

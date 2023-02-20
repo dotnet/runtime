@@ -12,10 +12,11 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Reflection;
 using System.Reflection.Emit;
+using Xunit;
 
 namespace TestCasts
 {
-    class Program
+    public class Program
     {
         static int failedCount = 0;
 
@@ -1165,7 +1166,8 @@ namespace TestCasts
             GenerateTest<double, ulong>(Single.NaN, sourceOp, convOvfUn, ExpectException, 0);
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             TestConvertFromInt4();
             TestConvertFromInt8();

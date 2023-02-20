@@ -9,10 +9,8 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public RemovedAssemblyReferenceAttribute (string assemblyFileName, string assemblyReferenceName)
 		{
-			if (string.IsNullOrEmpty (assemblyFileName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (assemblyFileName));
-			if (string.IsNullOrEmpty (assemblyReferenceName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (assemblyReferenceName));
+			ArgumentException.ThrowIfNullOrEmpty (assemblyFileName);
+			ArgumentException.ThrowIfNullOrEmpty (assemblyReferenceName);
 		}
 	}
 }

@@ -1,11 +1,11 @@
 # Microsoft.Extensions.Configuration.EnvironmentVariables
 
-Environment variables configuration provider implementation for [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/). This package enables you to read configuration parameters from environment variables. You can use [EnvironmentVariablesExtensions.AddEnvironmentVariables](https://learn.microsoft.com/dotnet/api/microsoft.extensions.configuration.environmentvariablesextensions.addenvironmentvariables) extension method on `IConfigurationBuilder` to add the environment variables configuration provider to the configuration builder.
+Environment variables configuration provider implementation for [Microsoft.Extensions.Configuration](https://www.nuget.org/packages/Microsoft.Extensions.Configuration/).
 
 Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/configuration-providers#environment-variable-configuration-provider
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs, bug fixes, and performance changes](https://github.com/dotnet/runtime/tree/main/src/libraries#contribution-bar)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](../README.md#contribution-bar)
 
 The APIs and functionality are mature, but do get extended occasionally.
 

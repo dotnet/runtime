@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new NotImplementedException("ToManaged: " + slot.ElementType+ "[]");
+                    throw new NotSupportedException(SR.Format(SR.ToManagedNotImplemented, slot.ElementType+ "[]"));
                 }
             }
             else if (slot.Type == MarshalerType.Task)
@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else
             {
-                throw new NotImplementedException("ToManaged: " + slot.Type);
+                throw new NotSupportedException(SR.Format(SR.ToManagedNotImplemented, slot.Type));
             }
         }
 
@@ -125,7 +125,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (typeof(long) == type)
                 {
                     // we do it because not all Int64 could fit into Int52 of the JS Number
-                    throw new NotImplementedException("ToJS: " + type.FullName);
+                    throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
                 }
                 else if (typeof(int) == type)
                 {
@@ -169,7 +169,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new NotImplementedException("ToJS: " + type.FullName);
+                    throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
                 }
             }
             else if (typeof(string) == type)
@@ -192,7 +192,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (typeof(long) == ut)
                 {
                     // we do it because not all Int64 could fit into Int52 of the JS Number
-                    throw new NotImplementedException("ToJS: " + type.FullName);
+                    throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
                 }
                 else if (typeof(int) == ut)
                 {
@@ -246,7 +246,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    throw new NotImplementedException("ToJS: " + type.FullName);
+                    throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
                 }
             }
             else if (typeof(JSObject).IsAssignableFrom(type))
@@ -301,19 +301,19 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             else if (type.IsArray)
             {
-                throw new NotImplementedException("ToJS: " + type.FullName);
+                throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
             }
             else if (typeof(MulticastDelegate).IsAssignableFrom(type.BaseType))
             {
-                throw new NotImplementedException("ToJS: " + type.FullName);
+                throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
             }
             else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ArraySegment<>))
             {
-                throw new NotImplementedException("ToJS: " + type.FullName);
+                throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
             }
             else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Span<>))
             {
-                throw new NotImplementedException("ToJS: " + type.FullName);
+                throw new NotSupportedException(SR.Format(SR.ToJSNotImplemented, type.FullName));
             }
             else
             {

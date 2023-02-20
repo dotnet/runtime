@@ -43,22 +43,36 @@ wasm_get_stack_size (void)
 
 #else /* WASI */
 
-static int
-wasm_get_stack_base (void)
-{
-	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
-	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
-	// value that aligns to 32 bits.
-	return 4;
-}
+// TODO after https://github.com/llvm/llvm-project/commit/1532be98f99384990544bd5289ba339bca61e15b
+// use __stack_low && __stack_high
+// see mono-threads-wasi.S
+uintptr_t get_wasm_heap_base(void);
+uintptr_t get_wasm_data_end(void);
 
 static int
 wasm_get_stack_size (void)
 {
-	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
-	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
-	// value that aligns to 32 bits.
-	return 4;
+	/*
+	 * | -- increasing address ---> |
+	 * | data (data_end)| stack |(heap_base) heap |
+	 */
+	size_t heap_base = get_wasm_heap_base();
+	size_t data_end = get_wasm_data_end();
+	size_t max_stack_size = heap_base - data_end;
+
+	g_assert (data_end > 0);
+	g_assert (heap_base > data_end);
+
+	// this is the max available stack size size,
+	// return a 16-byte aligned smaller size
+	return max_stack_size & ~0xF;
+}
+
+static int
+wasm_get_stack_base (void)
+{
+	return get_wasm_data_end();
+	// this will need further change for multithreading as the stack will allocated be per thread at different addresses
 }
 
 #endif
@@ -139,12 +153,6 @@ mono_native_thread_os_id_get (void)
 #endif
 }
 
-gint32
-mono_native_thread_processor_id_get (void)
-{
-	return -1;
-}
-
 MONO_API gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
@@ -180,9 +188,7 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
-#ifndef HOST_WASI
 	int tmp;
-#endif	
 #ifdef __EMSCRIPTEN_PTHREADS__
 	pthread_attr_t attr;
 	gint res;
@@ -215,13 +221,8 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*stsize = wasm_get_stack_size ();
 #endif
 
-#ifdef HOST_WASI
-	// TODO: For WASI, we need to ensure the stack is positioned correctly and reintroduce these assertions.
-	// Currently it works anyway in prototypes (except these checks would fail)
-#else
 	g_assert ((guint8*)&tmp > *staddr);
 	g_assert ((guint8*)&tmp < (guint8*)*staddr + *stsize);
-#endif
 }
 
 gboolean

@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
         public static unsafe byte[] SignHash(this SafeNCryptKeyHandle keyHandle, ReadOnlySpan<byte> hash, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, int estimatedSize)
         {
 #if DEBUG
-            estimatedSize = 2;  // Make sure the NTE_BUFFER_TOO_SMALL scenario gets exercised.
+            estimatedSize = 2;  // Make sure the NTE_BUFFER_TOO_SMALL and TPM_E_PCP_BUFFER_TOO_SMALL scenario gets exercised.
 #endif
             byte[] signature = new byte[estimatedSize];
             int numBytesNeeded;
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
                 errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
             }
 
-            if (errorCode == ErrorCode.NTE_BUFFER_TOO_SMALL)
+            if (errorCode.IsBufferTooSmall())
             {
                 signature = new byte[numBytesNeeded];
                 errorCode = Interop.NCrypt.NCryptSignHash(keyHandle, pPaddingInfo, hash, hash.Length, signature, signature.Length, out numBytesNeeded, paddingMode);
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
                         bytesWritten = numBytesNeeded;
                         return true;
 
-                    case ErrorCode.NTE_BUFFER_TOO_SMALL:
+                    case ErrorCode code when code.IsBufferTooSmall():
                         bytesWritten = 0;
                         return false;
 

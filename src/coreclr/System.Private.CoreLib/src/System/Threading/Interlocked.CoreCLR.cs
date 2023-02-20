@@ -81,6 +81,7 @@ namespace System.Threading
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [return: NotNullIfNotNull(nameof(location1))]
         public static extern object? Exchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
@@ -145,6 +146,7 @@ namespace System.Threading
         /// <param name="comparand">The object that is compared by reference to the object at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [return: NotNullIfNotNull(nameof(location1))]
         public static extern object? CompareExchange(ref object? location1, object? value, object? comparand);

@@ -82,7 +82,7 @@ namespace ILCompiler
             private readonly IRootingServiceProvider _rootingServiceProvider;
 
             public CompilationRootProvider(IRootingServiceProvider provider, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc owningModule, string xmlDocumentLocation)
-                : base(context, documentStream, resource, owningModule, xmlDocumentLocation, ImmutableDictionary<string, bool>.Empty)
+                : base(null , context, documentStream, resource, owningModule, xmlDocumentLocation, ImmutableDictionary<string, bool>.Empty)
             {
                 _rootingServiceProvider = provider;
             }

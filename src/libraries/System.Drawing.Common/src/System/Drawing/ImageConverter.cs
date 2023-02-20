@@ -36,7 +36,7 @@ namespace System.Drawing
             {
                 Debug.Assert(value != null, "value is null.");
                 // Try to get memory stream for images with ole header.
-                Stream memStream = GetBitmapStream(bytes) ?? new MemoryStream(bytes);
+                MemoryStream memStream = GetBitmapStream(bytes) ?? new MemoryStream(bytes);
                 return Image.FromStream(memStream);
             }
             else
@@ -107,7 +107,7 @@ namespace System.Drawing
 
         public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
 
-        private static unsafe Stream? GetBitmapStream(ReadOnlySpan<byte> rawData)
+        private static unsafe MemoryStream? GetBitmapStream(ReadOnlySpan<byte> rawData)
         {
             try
             {

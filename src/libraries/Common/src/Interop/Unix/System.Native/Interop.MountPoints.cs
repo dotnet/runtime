@@ -7,6 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
+#pragma warning disable 8500 // takes address of managed type
+
 internal static partial class Interop
 {
     internal static partial class Sys
@@ -23,15 +25,14 @@ internal static partial class Interop
         [UnmanagedCallersOnly]
         private static unsafe void AddMountPoint(void* context, byte* name)
         {
-            ref AllMountPointsContext callbackContext = ref Unsafe.As<byte, AllMountPointsContext>(ref *(byte*)context);
-
+            AllMountPointsContext* callbackContext = (AllMountPointsContext*)context;
             try
             {
-                callbackContext._results.Add(Marshal.PtrToStringUTF8((IntPtr)name)!);
+                callbackContext->_results.Add(Marshal.PtrToStringUTF8((IntPtr)name)!);
             }
             catch (Exception e)
             {
-                callbackContext._exception = ExceptionDispatchInfo.Capture(e);
+                callbackContext->_exception = ExceptionDispatchInfo.Capture(e);
             }
         }
 
@@ -42,7 +43,7 @@ internal static partial class Interop
 
             unsafe
             {
-                GetAllMountPoints(&AddMountPoint, Unsafe.AsPointer(ref context));
+                GetAllMountPoints(&AddMountPoint, &context);
             }
 
             context._exception?.Throw();

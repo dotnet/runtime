@@ -159,7 +159,7 @@ namespace DefaultNamespace
     }
     */
 
-    class Foo
+    public class Foo
     {
 
         public static int Read(ref int x)

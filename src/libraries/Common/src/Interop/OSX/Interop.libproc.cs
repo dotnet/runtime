@@ -238,16 +238,10 @@ internal static partial class Interop
         internal static unsafe proc_threadinfo? GetThreadInfoById(int pid, ulong thread)
         {
             // Negative PIDs are invalid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pid));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             // Negative TIDs are invalid
-            if (thread < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(thread));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(thread);
 
             // Get the thread information for the specified thread in the specified process
             int size = sizeof(proc_threadinfo);
@@ -259,10 +253,7 @@ internal static partial class Interop
         internal static unsafe List<KeyValuePair<ulong, proc_threadinfo?>> GetAllThreadsInProcess(int pid)
         {
             // Negative PIDs are invalid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pid));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             int result = 0;
             int size = 20; // start assuming 20 threads is enough
@@ -331,10 +322,7 @@ internal static partial class Interop
         internal static unsafe string proc_pidpath(int pid)
         {
             // Negative PIDs are invalid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pid), SR.NegativePidNotSupported);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             // The path is a fixed buffer size, so use that and trim it after
             int result = 0;
@@ -372,10 +360,7 @@ internal static partial class Interop
         internal static unsafe rusage_info_v3 proc_pid_rusage(int pid)
         {
             // Negative PIDs are invalid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pid), SR.NegativePidNotSupported);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             rusage_info_v3 info = default;
 

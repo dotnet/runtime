@@ -45,5 +45,22 @@ namespace System.Reflection.Runtime.General
 
             throw new BadImageFormatException();  // Expected TypeRef, Def or Spec with MetadataReader
         }
+
+        //
+        // Main routine to resolve a typeDef.
+        //
+        internal static RuntimeTypeInfo Resolve(this QTypeDefinition typeDef)
+        {
+            if (typeDef.IsNativeFormatMetadataBased)
+            {
+                return typeDef.NativeFormatHandle.ResolveTypeDefinition(typeDef.NativeFormatReader);
+            }
+
+#if ECMA_METADATA_SUPPORT
+            // TODO: implement
+#endif
+
+            throw new BadImageFormatException();  // Expected TypeRef, Def or Spec with MetadataReader
+        }
     }
 }

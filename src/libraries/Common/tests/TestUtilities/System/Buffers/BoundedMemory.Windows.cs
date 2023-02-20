@@ -20,7 +20,7 @@ namespace System.Buffers
                 // We only need to round the count up if it's not an exact multiple
                 // of the system page size.
 
-                var leftoverBytes = totalBytesToAllocate % SystemPageSize;
+                long leftoverBytes = totalBytesToAllocate % SystemPageSize;
                 if (leftoverBytes != 0)
                 {
                     totalBytesToAllocate += SystemPageSize - leftoverBytes;
@@ -33,7 +33,7 @@ namespace System.Buffers
 
             // Reserve and commit the entire range as NOACCESS.
 
-            var handle = UnsafeNativeMethods.VirtualAlloc(
+            VirtualAllocHandle handle = UnsafeNativeMethods.VirtualAlloc(
                 lpAddress: IntPtr.Zero,
                 dwSize: (IntPtr)totalBytesToAllocate /* cast throws OverflowException if out of range */,
                 flAllocationType: VirtualAllocAllocationType.MEM_RESERVE | VirtualAllocAllocationType.MEM_COMMIT,
@@ -91,7 +91,7 @@ namespace System.Buffers
                         _handle.DangerousAddRef(ref refAdded);
                         if (UnsafeNativeMethods.VirtualQuery(
                             lpAddress: _handle.DangerousGetHandle() + _byteOffsetIntoHandle,
-                            lpBuffer: out var memoryInfo,
+                            lpBuffer: out MEMORY_BASIC_INFORMATION memoryInfo,
                             dwLength: (IntPtr)sizeof(MEMORY_BASIC_INFORMATION)) == IntPtr.Zero)
                         {
                             Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());

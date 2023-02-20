@@ -3187,8 +3187,9 @@
       IL_0029:  stsfld     int32 TailcallVerify.Condition10::Result
       IL_002e:  ldarg.0
       IL_002f:  ldc.i4.s   20
-      IL_0031:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
-      IL_0036:  ret
+                tail.
+      IL_0032:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
+      IL_0037:  ret
     } // end of method Foo1`2::Caller1Recursive
 
     .method private hidebysig instance void
@@ -3266,8 +3267,9 @@
       IL_0054:  ldarg.1
       IL_0055:  ldc.i4.1
       IL_0056:  sub
-      IL_0057:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
-      IL_005c:  ret
+                tail.
+      IL_0058:  call       instance void class TailcallVerify.Condition10/Foo1`2<!V,!K>::Callee1Recursive(int32)
+      IL_005d:  ret
     } // end of method Foo1`2::Callee1Recursive
 
     .method public hidebysig specialname rtspecialname

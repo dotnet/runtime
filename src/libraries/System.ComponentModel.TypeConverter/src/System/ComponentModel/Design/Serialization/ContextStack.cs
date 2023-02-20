@@ -49,10 +49,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             get
             {
-                if (level < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(level));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(level);
                 if (_contextStack != null && level < _contextStack.Count)
                 {
                     return _contextStack[_contextStack.Count - 1 - level];

@@ -11,7 +11,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	static partial class ValueExtensions
+	internal static partial class ValueExtensions
 	{
 		internal static string ValueToString (this SingleValue value, params object[] args)
 		{
@@ -20,15 +20,15 @@ namespace ILLink.Shared.TrimAnalysis
 
 			StringBuilder sb = new ();
 			sb.Append (value.GetType ().Name);
-			sb.Append ("(");
+			sb.Append ('(');
 			if (args != null) {
 				for (int i = 0; i < args.Length; i++) {
 					if (i > 0)
-						sb.Append (",");
+						sb.Append (',');
 					sb.Append (args[i] == null ? "<null>" : args[i].ToString ());
 				}
 			}
-			sb.Append (")");
+			sb.Append (')');
 			return sb.ToString ();
 		}
 

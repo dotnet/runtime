@@ -21,6 +21,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(CurrencyGroupSizes_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79867", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public void CurrencyGroupSizes_Get_ReturnsExpected(NumberFormatInfo format, int[] expected)
         {
             Assert.Equal(expected, format.CurrencyGroupSizes);

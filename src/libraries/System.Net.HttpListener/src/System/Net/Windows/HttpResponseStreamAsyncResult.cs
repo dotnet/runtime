@@ -123,7 +123,7 @@ namespace System.Net
             {
                 _dataChunks = new Interop.HttpApi.HTTP_DATA_CHUNK[chunked ? 3 : 1];
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "m_pOverlapped:0x" + ((IntPtr)_pOverlapped).ToString("x8"));
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"m_pOverlapped:0x{(IntPtr)_pOverlapped:x8}");
 
                 object[] objectsToPin = new object[1 + _dataChunks.Length];
                 objectsToPin[_dataChunks.Length] = _dataChunks;
@@ -227,7 +227,7 @@ namespace System.Net
         {
             object state = ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
             HttpResponseStreamAsyncResult asyncResult = (state as HttpResponseStreamAsyncResult)!;
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "errorCode:0x" + errorCode.ToString("x8") + " numBytes:" + numBytes + " nativeOverlapped:0x" + ((IntPtr)nativeOverlapped).ToString("x8"));
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode:0x{errorCode:x8} numBytes:{numBytes} nativeOverlapped:0x{(IntPtr)nativeOverlapped:x8}");
 
             IOCompleted(asyncResult, errorCode, numBytes);
         }

@@ -89,7 +89,7 @@ namespace System.Diagnostics.TraceSourceTests
         {
             // Exception should be handled by DefaultTraceListener.WriteLine so no need to assert.
             var listener = new TestDefaultTraceListener();
-            listener.LogFileName = $"{Guid.NewGuid().ToString("N")}\\LogFile.txt";
+            listener.LogFileName = $"{Guid.NewGuid:N}\\LogFile.txt";
 
             listener.ShouldOverrideWriteLine = false;
             listener.Fail("FAIL");

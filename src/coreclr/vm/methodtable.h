@@ -831,7 +831,8 @@ public:
     // instantiations of the superclass or interfaces e.g. System.Int32 : IComparable<System.Int32>
 
     void AllocateRegularStaticBoxes();
-    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0);
+    void AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle);
+    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0, bool canBeFrozen = false);
 
     void CheckRestore();
 

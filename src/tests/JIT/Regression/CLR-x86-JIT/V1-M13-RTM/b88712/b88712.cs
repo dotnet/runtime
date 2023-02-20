@@ -11,7 +11,7 @@ public struct AA
         float a = 125.0f;
         a += (a *= 60.0f);
     }
-    static int Main()
+    public static int Main()
     {
         Static5();
         return 100;

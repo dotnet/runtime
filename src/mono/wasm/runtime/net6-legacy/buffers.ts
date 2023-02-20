@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "../imports";
-import { wrap_error_root } from "../invoke-js";
+import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { mono_wasm_new_external_root } from "../roots";
 import { MonoArray, MonoObjectRef, MonoObject } from "../types";
 import { Int32Ptr, TypedArray } from "../types/emscripten";
@@ -15,6 +15,7 @@ export function mono_wasm_typed_array_from_ref(pinned_array: MonoArray, begin: n
         const res = typed_array_from(pinned_array, begin, end, bytes_per_element, type);
         // returns JS typed array like Int8Array, to be wraped with JSObject proxy
         js_to_mono_obj_root(res, resultRoot, true);
+        wrap_no_error_root(is_exception);
     } catch (exc) {
         wrap_error_root(is_exception, String(exc), resultRoot);
     } finally {

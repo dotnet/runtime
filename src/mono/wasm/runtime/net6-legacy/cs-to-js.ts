@@ -4,7 +4,7 @@
 import { _are_promises_supported } from "../cancelable-promise";
 import cwraps from "../cwraps";
 import { mono_wasm_get_jsobj_from_js_handle, _lookup_js_owned_object, setup_managed_proxy, mono_wasm_get_js_handle, teardown_managed_proxy, assert_not_disposed } from "../gc-handles";
-import { wrap_error_root } from "../invoke-js";
+import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { ManagedObject } from "../marshal";
 import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../memory";
 import { createPromiseController } from "../promise-controller";
@@ -260,6 +260,7 @@ export function mono_wasm_create_cs_owned_object_ref(core_name: MonoStringRef, a
             // returns boxed js_handle int, because on exception we need to return String on same method signature
             // here we don't have anything to in-flight reference, as the JSObject doesn't exist yet
             js_to_mono_obj_root(js_handle, resultRoot, false);
+            wrap_no_error_root(is_exception);
         } catch (ex) {
             wrap_error_root(is_exception, ex, resultRoot);
             return;

@@ -65,7 +65,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[KeptTypeInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PrivateNestedType")]
 	[KeptMemberInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PrivateNestedType", new string[] { "PrivateMethod()" })]
 
-	[KeptMember (".ctor()")]
+	// NativeAOT: https://github.com/dotnet/runtime/issues/78752
+	// Once the above issue is fixed the ctor should be preserved even in NativeAOT
+	[KeptMember (".ctor()", By = ProducedBy.Trimmer)]
 	public class MemberTypesAllOnCopyAssembly
 	{
 		public static void Main ()

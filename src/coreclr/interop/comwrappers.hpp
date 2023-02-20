@@ -76,6 +76,13 @@ public: // static
     // into a ManagedObjectWrapper, otherwise null.
     static ManagedObjectWrapper* MapFromIUnknown(_In_ IUnknown* pUnk);
 
+    // Convert the IUnknown if the instance is a ManagedObjectWrapper
+    // into a ManagedObjectWrapper, otherwise null. This API provides
+    // a stronger guarantee than MapFromIUnknown(), but does so by
+    // performing a QueryInterface() which may not always be possible.
+    // See implementation for more details.
+    static ManagedObjectWrapper* MapFromIUnknownWithQueryInterface(_In_ IUnknown* pUnk);
+
     // Create a ManagedObjectWrapper instance
     static HRESULT Create(
         _In_ InteropLib::Com::CreateComInterfaceFlags flags,

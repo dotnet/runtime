@@ -34,12 +34,13 @@ namespace System
         private readonly string _userName;
         private SafeAccessTokenHandle _accountTokenHandle;
         public SafeAccessTokenHandle AccountTokenHandle => _accountTokenHandle;
-        public string AccountName { get; set; }
+        public string AccountName { get; private set; }
         public string Password { get; }
 
         public WindowsTestAccount(string userName)
         {
-            Assert.True(PlatformDetection.IsWindowsAndElevated);
+            Assert.True(PlatformDetection.IsWindows);
+            Assert.True(PlatformDetection.IsPrivilegedProcess);
 
             _userName = userName;
             Password = GeneratePassword();
@@ -117,8 +118,8 @@ namespace System
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool LogonUser(string userName, string domain, string password, int logonType, int logonProvider, out SafeAccessTokenHandle safeAccessTokenHandle);
 
-        [LibraryImport("netapi32.dll", SetLastError = true)]
-        internal static partial uint NetUserAdd([MarshalAs(UnmanagedType.LPWStr)] string servername, uint level, ref USER_INFO_1 buf, out uint parm_err);
+        [DllImport("netapi32.dll", SetLastError = true)]
+        internal static extern uint NetUserAdd([MarshalAs(UnmanagedType.LPWStr)] string servername, uint level, ref USER_INFO_1 buf, out uint parm_err);
 
         [LibraryImport("netapi32.dll")]
         internal static partial uint NetUserDel([MarshalAs(UnmanagedType.LPWStr)] string servername, [MarshalAs(UnmanagedType.LPWStr)] string username);

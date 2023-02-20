@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace GitHub_19910
 {
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void SwapNonGeneric(ref Vector128<uint> a, ref Vector128<uint> b)
@@ -17,7 +17,7 @@ namespace GitHub_19910
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Main()
+        public static int Main()
         {
             if (Sse2.IsSupported)
             {

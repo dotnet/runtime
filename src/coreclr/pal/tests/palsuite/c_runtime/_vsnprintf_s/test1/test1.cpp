@@ -22,13 +22,13 @@ PALTEST(c_runtime__vsnprintf_s_test1_paltest_vsnprintf_test1, "c_runtime/_vsnpri
     char checkstr[] = "hello world";
     char buf[256] = { 0 };
     int ret;
-    
+
     if (PAL_Initialize(argc, argv) != 0)
     {
         return(FAIL);
     }
 
-    Testvsnprintf(buf, 256, "hello world");
+    ret = Testvsnprintf(buf, 256, "hello world");
 
     if (memcmp(checkstr, buf, strlen(checkstr)+1) != 0)
     {

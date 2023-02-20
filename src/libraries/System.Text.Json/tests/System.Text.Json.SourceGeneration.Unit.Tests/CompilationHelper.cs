@@ -365,6 +365,34 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateCompilationWithRequiredProperties()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {
+                public class MyClass
+                {
+                    public required string Required1 { get; set; }
+                    public required string Required2 { get; set; }
+
+                    public MyClass(string required1)
+                    {
+                        Required1 = required1;
+                    }
+                }
+
+                [JsonSerializable(typeof(MyClass))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
         public static Compilation CreateCompilationWithRecordPositionalParameters()
         {
             string source = @"

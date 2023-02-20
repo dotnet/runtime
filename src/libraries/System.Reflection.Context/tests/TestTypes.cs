@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection.Context.Tests;
 using System.Runtime.Serialization;
 
 namespace System.Reflection.Context.Tests
@@ -148,6 +149,16 @@ namespace System.Reflection.Context.Tests
 
     }
 
+    internal class SecondTestObject : TestObject
+    {
+        [Test]
+        public int field = 2;
+        public SecondTestObject(string a) : base(a)
+        {
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Field)]
     internal class TestAttribute : Attribute
     {
     }
@@ -170,4 +181,7 @@ namespace System.Reflection.Context.Tests
     internal class TestAssemblyAttribute : Attribute
     {
     }
+
+    [AttributeUsage(AttributeTargets.Module)]
+    internal class TestModuleAttribute: Attribute { }
 }

@@ -7,10 +7,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_3109600104 {}
+.assembly 'b14591' {}
 
-.class ILGEN_3109600104 {
-.method static int32 main() {
+.class public ILGEN_3109600104 {
+.method public static int32 main() {
 .entrypoint
 .maxstack	11
  .locals ( float32, int32, int64, int32, int32, int32, int32, float64, int64, int32, float64, int32, float64, int64, int32, int64, int64, int32, int32, int32, int32, int64, float32, int32, int32, int64, float64, int32, int32, int32, float64, int32, float32, float32, int32, float32, float32, int32, float64, int32, int32, int32, int32, float32, float32, int32, float64, int64, float32, int32, float64, float32, int32, int32, int32, float64, float64, float32, int32, float64, int32, int32, int32, int32)
