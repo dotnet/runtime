@@ -14896,8 +14896,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	acfg->stats.jit_time = GINT64_TO_INT (TV_ELAPSED (atv, btv));
 	// Current implementation uses dedup_methods hash table for storing extra methods which are emitted in a dedup AOT image.
 	// Previously, cfg->skip flag in dedup_skip_methods is used for indicating if a method should be emitted in an AOT image.
-	// Method dedup_skip_methods is used only for wasm.
-#ifdef TARGET_WASM
+#ifdef 0
 	dedup_skip_methods (acfg);
 #endif
 	if (acfg->dedup_collect_only) {
