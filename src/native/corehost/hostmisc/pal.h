@@ -261,7 +261,7 @@ namespace pal
     string_t get_current_os_rid_platform();
     inline string_t get_current_os_fallback_rid()
     {
-        return _STRINGIFY(FALLBACK_HOST_RID);
+        return _STRINGIFY(FALLBACK_HOST_OS);
     }
 
     const void* mmap_read(const string_t& path, size_t* length = nullptr);
