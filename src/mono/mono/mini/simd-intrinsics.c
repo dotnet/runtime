@@ -2114,7 +2114,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_Min: {
 		const char *klass_name = m_class_get_name (klass);
 		// FIXME https://github.com/dotnet/runtime/issues/82408
-		if (!strcmp (klass_name, "Quaternion") && (id == SN_op_Multiply || id == SN_Multiply || id == SN_op_Division || id == SN_Divide))
+		if ((id == SN_op_Multiply || id == SN_Multiply || id == SN_op_Division || id == SN_Divide) && !strcmp (klass_name, "Quaternion"))
 			return NULL;
 		if (!(!fsig->hasthis && fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
