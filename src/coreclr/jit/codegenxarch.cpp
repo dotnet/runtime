@@ -1363,7 +1363,11 @@ instruction CodeGen::JumpKindToCmov(emitJumpKind condition)
 //
 void CodeGen::genCodeForSelect(GenTreeOp* select)
 {
-    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
+#ifdef TARGET_X86
+    assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
+#else
+    assert(select->OperIs(GT_SELECT));
+#endif
 
     if (select->OperIs(GT_SELECT))
     {
@@ -1381,13 +1385,25 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
 
     if (select->OperIs(GT_SELECT))
     {
-        GenTree*  cond    = select->AsConditional()->gtCond;
-        regNumber condReg = cond->GetRegNum();
-        GetEmitter()->emitIns_R_R(INS_test, emitActualTypeSize(cond), condReg, condReg);
-    }
-    else
-    {
-        cc = select->AsOpCC()->gtCondition;
+        GenTree* cond = select->AsConditional()->gtCond;
+        if (cond->isContained())
+        {
+            assert(cond->OperIsCompare());
+            genCodeForCompare(cond->AsOp());
+            cc = GenCondition::FromRelop(cond);
+
+            if (cc.PreferSwap())
+            {
+                // genCodeForCompare generated the compare with swapped
+                // operands because this swap requires fewer branches/cmovs.
+                cc = GenCondition::Swap(cc);
+            }
+        }
+        else
+        {
+            regNumber condReg = cond->GetRegNum();
+            GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, condReg, condReg);
+        }
     }
 
     // The usual codegen will be
@@ -1859,9 +1875,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForSelect(treeNode->AsConditional());
             break;
 
-        case GT_SELECTCC:
+#ifdef TARGET_X86
+        case GT_SELECT_HI:
             genCodeForSelect(treeNode->AsOp());
             break;
+#endif
 
         case GT_RETURNTRAP:
             genCodeForReturnTrap(treeNode->AsOp());
@@ -6791,9 +6809,8 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
         return false;
     }
 
-    GenTree*      consumer    = nullptr;
-    GenCondition* mutableCond = nullptr;
-    GenCondition  cond;
+    GenTreeCC*   cc = nullptr;
+    GenCondition cond;
 
     if (tree->OperIsCompare())
     {
@@ -6801,13 +6818,13 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
     }
     else
     {
-        consumer = genTryFindFlagsConsumer(tree, &mutableCond);
-        if (consumer == nullptr)
+        cc = genTryFindFlagsConsumer(tree);
+        if (cc == nullptr)
         {
             return false;
         }
 
-        cond = *mutableCond;
+        cond = cc->gtCondition;
     }
 
     if (GetEmitter()->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(opType), cond))
@@ -6816,12 +6833,11 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
         return true;
     }
 
-    if ((mutableCond != nullptr) &&
-        GetEmitter()->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(opType), cond))
+    if ((cc != nullptr) && GetEmitter()->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(opType), cond))
     {
         JITDUMP("Not emitting compare due to sign being already set; modifying [%06u] to check sign flag\n",
-                Compiler::dspTreeID(consumer));
-        *mutableCond =
+                Compiler::dspTreeID(cc));
+        cc->gtCondition =
             (cond.GetCode() == GenCondition::SLT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
         return true;
     }
@@ -6835,12 +6851,11 @@ bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opT
 //
 // Parameters:
 //    producer - the node that produces CPU flags
-//    cond     - [out] the pointer to the condition inside that consumer.
 //
 // Returns:
 //    A node that consumes the flags, or nullptr if no such node was found.
 //
-GenTree* CodeGen::genTryFindFlagsConsumer(GenTree* producer, GenCondition** cond)
+GenTreeCC* CodeGen::genTryFindFlagsConsumer(GenTree* producer)
 {
     assert((producer->gtFlags & GTF_SET_FLAGS) != 0);
     // We allow skipping some nodes where we know for sure that the flags are
@@ -6851,14 +6866,7 @@ GenTree* CodeGen::genTryFindFlagsConsumer(GenTree* producer, GenCondition** cond
     {
         if (candidate->OperIs(GT_JCC, GT_SETCC))
         {
-            *cond = &candidate->AsCC()->gtCondition;
-            return candidate;
-        }
-
-        if (candidate->OperIs(GT_SELECTCC))
-        {
-            *cond = &candidate->AsOpCC()->gtCondition;
-            return candidate;
+            return candidate->AsCC();
         }
 
         // The following nodes can be inserted between the compare and the user

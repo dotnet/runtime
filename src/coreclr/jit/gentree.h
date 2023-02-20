@@ -1683,16 +1683,7 @@ public:
 
     bool OperIsConditionalJump() const
     {
-        return OperIs(GT_JTRUE, GT_JCMP, GT_JCC);
-    }
-
-    bool OperConsumesFlags() const
-    {
-#if !defined(TARGET_64BIT)
-        if (OperIs(GT_ADD_HI, GT_SUB_HI))
-            return true;
-#endif
-        return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
+        return (gtOper == GT_JTRUE) || (gtOper == GT_JCMP) || (gtOper == GT_JCC);
     }
 
 #ifdef DEBUG
@@ -8527,11 +8518,12 @@ public:
 };
 
 // Represents a GT_JCC or GT_SETCC node.
+
 struct GenTreeCC final : public GenTree
 {
     GenCondition gtCondition;
 
-    GenTreeCC(genTreeOps oper, var_types type, GenCondition condition)
+    GenTreeCC(genTreeOps oper, GenCondition condition, var_types type = TYP_VOID)
         : GenTree(oper, type DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
     {
         assert(OperIs(GT_JCC, GT_SETCC));
@@ -8539,24 +8531,6 @@ struct GenTreeCC final : public GenTree
 
 #if DEBUGGABLE_GENTREE
     GenTreeCC() : GenTree()
-    {
-    }
-#endif // DEBUGGABLE_GENTREE
-};
-
-// Represents a node with two operands and a condition.
-struct GenTreeOpCC final : public GenTreeOp
-{
-    GenCondition gtCondition;
-
-    GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree* op1 = nullptr, GenTree* op2 = nullptr)
-        : GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
-    {
-        assert(OperIs(GT_SELECTCC));
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeOpCC() : GenTreeOp()
     {
     }
 #endif // DEBUGGABLE_GENTREE
