@@ -1489,11 +1489,11 @@ class DetailsSection:
 
     def __enter__(self):
         self.write_fh.write("\n<details>\n")
-        self.write_fh.write("<summary>{}</summary>".format(self.summary_text))
-        self.write_fh.write('<div style="margin-left:1em">\n')
+        self.write_fh.write("<summary>{}</summary>\n".format(self.summary_text))
+        self.write_fh.write('<div style="margin-left:1em">\n\n')
 
     def __exit__(self, *args):
-        self.write_fh.write("\n</div></details>\n")
+        self.write_fh.write("\n\n</div></details>\n")
 
 class SuperPMIReplayAsmDiffs:
     """ SuperPMI Replay AsmDiffs class
