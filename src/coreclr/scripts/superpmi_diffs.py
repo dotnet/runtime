@@ -215,7 +215,6 @@ def main(main_args):
         "-base_jit_path", base_checked_jit_path,
         "-diff_jit_path", diff_checked_jit_path,
         "-spmi_location", spmi_location,
-        "-f", "libraries",
         "-error_limit", "100",
         "-log_level", "debug",
         "-log_file", log_file])
@@ -245,7 +244,6 @@ def main(main_args):
         "-base_jit_path", base_release_jit_path,
         "-diff_jit_path", diff_release_jit_path,
         "-spmi_location", spmi_location,
-        "-f", "libraries",
         "-error_limit", "100",
         "-log_level", "debug",
         "-log_file", log_file])
