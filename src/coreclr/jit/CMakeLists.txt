@@ -616,6 +616,9 @@ else()
   set(TARGET_OS_NAME win)
 endif()
 
+create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} DESTINATIONS . sharedFramework)
+install_clr(TARGETS clrjit DESTINATIONS . sharedFramework COMPONENT jit)
+
 # Enable profile guided optimization
 add_pgo(clrjit)
 
