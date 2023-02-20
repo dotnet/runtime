@@ -2509,26 +2509,25 @@ class SuperPMIReplayThroughputDiff:
                 if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
                     return
 
-                write_fh.write("\n<details>\n")
                 pcts = [compute_pct(int(base_metrics[row]["Diff executed instructions"]), int(diff_metrics[row]["Diff executed instructions"])) for (_, base_metrics, diff_metrics) in tp_diffs]
                 min_pct_str = format_pct(min(pcts))
                 max_pct_str = format_pct(max(pcts))
                 if min_pct_str == max_pct_str:
-                    write_fh.write("<summary>{} ({})</summary>\n\n".format(row, min_pct_str))
+                    tp_summary = "{} ({})".format(row, min_pct_str)
                 else:
-                    write_fh.write("<summary>{} ({} to {})</summary>\n\n".format(row, min_pct_str, max_pct_str))
-                write_fh.write("|Collection|PDIFF|\n")
-                write_fh.write("|---|--:|\n")
-                for mch_file, base, diff in tp_diffs:
-                    base_instructions = int(base[row]["Diff executed instructions"])
-                    diff_instructions = int(diff[row]["Diff executed instructions"])
+                    tp_summary = "{} ({} to {})".format(row, min_pct_str, max_pct_str)
 
-                    if is_significant(row, base, diff):
-                        write_fh.write("|{}|{}|\n".format(
-                            mch_file,
-                            compute_and_format_pct(base_instructions, diff_instructions)))
+                with DetailsSection(write_fh, tp_summary):
+                    write_fh.write("|Collection|PDIFF|\n")
+                    write_fh.write("|---|--:|\n")
+                    for mch_file, base, diff in tp_diffs:
+                        base_instructions = int(base[row]["Diff executed instructions"])
+                        diff_instructions = int(diff[row]["Diff executed instructions"])
 
-                write_fh.write("\n\n</details>\n")
+                        if is_significant(row, base, diff):
+                            write_fh.write("|{}|{}|\n".format(
+                                mch_file,
+                                compute_and_format_pct(base_instructions, diff_instructions)))
 
             write_pivot_section("Overall")
             write_pivot_section("MinOpts")
@@ -2536,20 +2535,18 @@ class SuperPMIReplayThroughputDiff:
         else:
             write_fh.write("No significant throughput differences found\n")
 
-        write_fh.write("\n<details>\n")
-        write_fh.write("<summary>Details</summary>\n\n")
-        for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
-            write_fh.write("{} contexts:\n\n".format(disp))
-            write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
-            write_fh.write("|---|--:|--:|--:|\n")
-            for mch_file, base, diff in tp_diffs:
-                base_instructions = int(base[row]["Diff executed instructions"])
-                diff_instructions = int(diff[row]["Diff executed instructions"])
-                write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
-                    mch_file, base_instructions, diff_instructions,
-                    compute_and_format_pct(base_instructions, diff_instructions)))
-            write_fh.write("\n")
-        write_fh.write("\n</details>\n")
+        with DetailsSection(write_fh, "Details"):
+            for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
+                write_fh.write("{} contexts:\n\n".format(disp))
+                write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
+                write_fh.write("|---|--:|--:|--:|\n")
+                for mch_file, base, diff in tp_diffs:
+                    base_instructions = int(base[row]["Diff executed instructions"])
+                    diff_instructions = int(diff[row]["Diff executed instructions"])
+                    write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
+                        mch_file, base_instructions, diff_instructions,
+                        compute_and_format_pct(base_instructions, diff_instructions)))
+                write_fh.write("\n")
 
 ################################################################################
 # Argument handling helpers
