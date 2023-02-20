@@ -10,6 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using FluentAssertions;
 using ILCompiler;
+using ILCompiler.DependencyAnalysis;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -159,12 +160,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private void PopulateLinkedMembers ()
 		{
-			foreach (TypeDesc? constructedType in testResult.TrimmingResults.ConstructedEETypes) {
-				AddType (constructedType);
+			foreach (TypeDesc type in testResult.TrimmingResults.AllEETypes) {
+				AddType (type);
 			}
 
-			foreach (MethodDesc? compiledMethod in testResult.TrimmingResults.CompiledMethodBodies) {
-				AddMethod (compiledMethod);
+			foreach (MethodDesc method in testResult.TrimmingResults.CompiledMethodBodies) {
+				AddMethod (method);
 			}
 
 			void AddMethod (MethodDesc method)

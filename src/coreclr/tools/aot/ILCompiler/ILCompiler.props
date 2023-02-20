@@ -88,6 +88,7 @@
   <ItemGroup>
     <Compile Include="..\..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
     <Compile Include="..\..\Common\InstructionSetHelpers.cs" Link="InstructionSetHelpers.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs" Link="HelperExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

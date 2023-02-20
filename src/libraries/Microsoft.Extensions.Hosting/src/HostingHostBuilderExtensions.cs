@@ -201,7 +201,9 @@ namespace Microsoft.Extensions.Hosting
         private static void ApplyDefaultHostConfiguration(IConfigurationBuilder hostConfigBuilder, string[]? args)
         {
             SetDefaultContentRoot(hostConfigBuilder);
-            AddDefaultHostConfigurationSources(hostConfigBuilder, args);
+
+            hostConfigBuilder.AddEnvironmentVariables(prefix: "DOTNET_");
+            AddCommandLineConfig(hostConfigBuilder, args);
         }
 
         internal static void SetDefaultContentRoot(IConfigurationBuilder hostConfigBuilder)
@@ -222,12 +224,6 @@ namespace Microsoft.Extensions.Hosting
                     new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, cwd),
                 });
             }
-        }
-
-        internal static void AddDefaultHostConfigurationSources(IConfigurationBuilder hostConfigBuilder, string[]? args)
-        {
-            hostConfigBuilder.AddEnvironmentVariables(prefix: "DOTNET_");
-            AddCommandLineConfig(hostConfigBuilder, args);
         }
 
         internal static void ApplyDefaultAppConfiguration(HostBuilderContext hostingContext, IConfigurationBuilder appConfigBuilder, string[]? args)

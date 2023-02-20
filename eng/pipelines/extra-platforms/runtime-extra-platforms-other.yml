@@ -174,7 +174,7 @@ jobs:
     jobParameters:
       testScope: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      buildArgs: -s mono+mono.mscordbi+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
       timeoutInMinutes: 120
       condition: >-
         or(
