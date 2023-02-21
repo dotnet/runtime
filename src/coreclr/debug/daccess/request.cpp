@@ -3590,6 +3590,8 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
     "VtableHeap",
 };
 
+const int LoaderHeapCount = 12;
+
 HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAddress, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded)
 {
     if (loaderAllocatorAddress == 0)
@@ -3597,15 +3599,14 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
 
     SOSDacEnter();
 
-    const int total = _countof(LoaderAllocatorLoaderHeapNames);
     PTR_LoaderAllocator pLoaderAllocator = PTR_LoaderAllocator(TO_TADDR(loaderAllocatorAddress));
 
     if (pNeeded)
-        *pNeeded = total;
+        *pNeeded = LoaderHeapCount;
 
     if (pLoaderHeaps)
     {
-        if (count < total)
+        if (count < LoaderHeapCount)
         {
             hr = E_INVALIDARG;
         }
@@ -3623,7 +3624,7 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             VirtualCallStubManager *pVcsMgr = pLoaderAllocator->GetVirtualCallStubManager();
             if (pVcsMgr == nullptr)
             {
-                for (; i < min(count, total); i++)
+                for (; i < min(count, LoaderHeapCount); i++)
                     pLoaderHeaps[i] = 0;
             }
             else
@@ -3635,6 +3636,10 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->cache_entry_heap);
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->vtable_heap);
             }
+            
+            // All of the above are "LoaderHeap" and not the ExplicitControl version.
+            for (int j = 0; j < i; j++)
+                pKinds[j] = LoaderHeapKindNormal;
         }
     }
 
@@ -3647,15 +3652,14 @@ ClrDataAccess::GetLoaderAllocatorHeapNames(int count, const char **ppNames, int 
 {
     SOSDacEnter();
 
-    const int needed = _countof(LoaderAllocatorLoaderHeapNames);
     if (pNeeded)
-        *pNeeded = needed;
+        *pNeeded = LoaderHeapCount;
 
     if (ppNames)
-        for (int i = 0; i < min(count, needed); i++)
+        for (int i = 0; i < min(count, LoaderHeapCount); i++)
             ppNames[i] = LoaderAllocatorLoaderHeapNames[i];
 
-    if (count < needed)
+    if (count < LoaderHeapCount)
         hr = S_FALSE;
 
     SOSDacLeave();
