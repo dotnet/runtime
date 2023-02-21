@@ -62,6 +62,13 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
             }
         }
 
+        foreach (ITaskItem item in NativeAssets)
+        {
+            string dest = Path.Combine(AppDir, Path.GetFileName(item.ItemSpec));
+            if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
+                return false;
+        }
+
         ProcessSatelliteAssemblies(args =>
         {
             string name = Path.GetFileName(args.fullPath);

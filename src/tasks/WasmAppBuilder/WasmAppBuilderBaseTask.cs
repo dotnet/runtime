@@ -22,6 +22,7 @@ public abstract class WasmAppBuilderBaseTask : Task
     [Required]
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
+    // files like dotnet.wasm, icudt.dat etc
     [NotNull]
     [Required]
     public ITaskItem[] NativeAssets { get; set; } = Array.Empty<ITaskItem>();
