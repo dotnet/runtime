@@ -12,7 +12,7 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundledAppWithSubDirs : NoSdkTestBase
+    public class BundledAppWithSubDirs
     {
         private void RunTheApp(string path, bool selfContained)
         {
@@ -23,8 +23,8 @@ namespace AppHost.Bundle.Tests
             if (!selfContained)
             {
                 cmd = cmd
-                    .EnvironmentVariable("DOTNET_ROOT", Provider.BuiltDotnet)
-                    .EnvironmentVariable("DOTNET_ROOT(x86)", Provider.BuiltDotnet)
+                    .EnvironmentVariable("DOTNET_ROOT", RepoDirectoriesProvider.Default.BuiltDotnet)
+                    .EnvironmentVariable("DOTNET_ROOT(x86)", RepoDirectoriesProvider.Default.BuiltDotnet)
                     .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0");
             }
             cmd.Execute()

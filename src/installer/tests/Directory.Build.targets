@@ -1,14 +1,8 @@
 <Project>
 
-  <Target Name="RefreshProjectTestAssets"
-          Condition="'$(UsesTestAssets)' == 'true' and '$(SkipTests)' != 'true'"
+  <Target Name="SetUpSharedFrameworkPublish"
           DependsOnTargets="DetermineTestOutputDirectory"
           BeforeTargets="RunTests">
-    <!-- Build PrepareTestAssets once for all tests. -->
-    <MSBuild
-      Projects="$(TestDir)PrepareTestAssets\PrepareTestAssets.proj"
-      Targets="PrepareTestAssets" />
-
     <!--
       Set up the shared framework copy this set of tests should use. There's no known reason to have
       one per test project, but RepoDirectoriesProvider may need some tweaking to share.
@@ -16,6 +10,15 @@
     <MSBuild Projects="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj"
              Targets="PublishToDisk"
              Properties="OutputPath=$(TestsOutputDir)sharedFrameworkPublish/" />
+  </Target>
+  <Target Name="RefreshProjectTestAssets"
+          Condition="'$(UsesTestAssets)' == 'true' and '$(SkipTests)' != 'true'"
+          DependsOnTargets="DetermineTestOutputDirectory;SetUpSharedFrameworkPublish"
+          BeforeTargets="RunTests">
+    <!-- Build PrepareTestAssets once for all tests. -->
+    <MSBuild
+      Projects="$(TestDir)PrepareTestAssets\PrepareTestAssets.proj"
+      Targets="PrepareTestAssets" />
 
     <!-- Create files with a name that describes what a test dir is. Useful if path abbreviated. -->
     <WriteLinesToFile
@@ -72,7 +75,6 @@
       <TestContextVariable Include="NUGET_PACKAGES=$(TestRestorePackagesPath)" />
       <TestContextVariable Include="TEST_ARTIFACTS=$(SystemPathTestsOutputDir)" />
       <TestContextVariable Include="TEST_TARGETRID=$(TestTargetRid)" />
-      <TestContextVariable Include="TESTHOST_PATH=$(TestHostPath)" />
       <TestContextVariable Include="RUNTIME_PACK_PATH=$(RuntimePackPath)" />
       <TestContextVariable Include="CORECLR_ARTIFACTS_PATH=$(CoreClrPath)" />
       <TestContextVariable Include="BUILDRID=$(OutputRid)" />
