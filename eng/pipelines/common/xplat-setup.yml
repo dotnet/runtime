@@ -21,6 +21,7 @@ jobs:
     dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'dotnet-linker-tests', 'runtime-dev-innerloop', 'runtime-coreclr superpmi-replay', 'runtime-coreclr superpmi-diffs')) }}
 
     variables:
+      - template: /eng/common/templates/variables/pool-providers.yml
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential
       # warnings and errors into our build timelines that make it hard to track down

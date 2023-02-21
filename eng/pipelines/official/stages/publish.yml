@@ -2,6 +2,9 @@ parameters:
   PublishRidAgnosticPackagesFromPlatform: windows_x64
   publishingInfraVersion: 3
 
+variables:
+- template: /eng/common/templates/variables/pool-providers.yml
+
 stages:
 
 - stage: PrepareForPublish
