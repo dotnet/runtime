@@ -134,7 +134,7 @@ cstdlib_load_icu_data(const char *path)
         goto error;
     }
 
-    file_buf = malloc(sizeof(char) * (file_buf_size + 1));
+    file_buf = malloc(sizeof(char) * (unsigned long)(file_buf_size + 1));
 
     if (file_buf == NULL)
     {
@@ -148,7 +148,7 @@ cstdlib_load_icu_data(const char *path)
         goto error;
     }
 
-    fread(file_buf, sizeof(char), file_buf_size, fp);
+    fread(file_buf, sizeof(char), (unsigned long)file_buf_size, fp);
     if (ferror( fp ) != 0)
     {
         log_shim_error("Unable to read ICU dat file");
