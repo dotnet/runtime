@@ -580,6 +580,20 @@ emit_strfpx (guint8 *code, int rt, int rn, int imm)
 }
 
 static WARN_UNUSED_RESULT guint8*
+emit_strfpq (guint8 *code, int rt, int rn, int imm)
+{
+	if (arm_is_strx_imm (imm)) {
+		arm_strfpq (code, rt, rn, imm);
+	} else {
+		g_assert (rn != ARMREG_IP0);
+		code = emit_imm (code, ARMREG_IP0, imm);
+		arm_addx (code, ARMREG_IP0, rn, ARMREG_IP0);
+		arm_strfpq (code, rt, ARMREG_IP0, 0);
+	}
+	return code;
+}
+
+static WARN_UNUSED_RESULT guint8*
 emit_strx (guint8 *code, int rt, int rn, int imm)
 {
 	if (arm_is_strx_imm (imm)) {
@@ -713,6 +727,20 @@ emit_ldrfpx (guint8 *code, int rt, int rn, int imm)
 		code = emit_imm (code, ARMREG_IP0, imm);
 		arm_addx (code, ARMREG_IP0, rn, ARMREG_IP0);
 		arm_ldrfpx (code, rt, ARMREG_IP0, 0);
+	}
+	return code;
+}
+
+static WARN_UNUSED_RESULT guint8*
+emit_ldrfpq (guint8 *code, int rt, int rn, int imm)
+{
+	if (arm_is_pimm12_scaled (imm, 8)) {
+		arm_ldrfpq (code, rt, rn, imm);
+	} else {
+		g_assert (rn != ARMREG_IP0);
+		code = emit_imm (code, ARMREG_IP0, imm);
+		arm_addx (code, ARMREG_IP0, rn, ARMREG_IP0);
+		arm_ldrfpq (code, rt, ARMREG_IP0, 0);
 	}
 	return code;
 }
@@ -2212,9 +2240,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	case ArgHFA: {
 		/* Allocate a local to hold the result, the epilog will copy it to the correct place */
 		MonoType *ret_type = mini_get_underlying_type (sig->ret);
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (ret_type))) {
-			int align = 16;
-			offset = (offset + (align - 1)) & ~(align -1);
+		MonoClass *klass = mono_class_from_mono_type_internal (ret_type);
+		if (MONO_CLASS_IS_SIMD (cfg, klass)) {
+			int align = mono_type_size (m_class_get_byval_arg (klass), NULL);
+			offset = ALIGN_TO (offset, align);
 		}
 
 		cfg->ret->opcode = OP_REGOFFSET;
@@ -3466,10 +3495,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_STOREX_MEMBASE:
-			arm_strfpq (code, sreg1, dreg, ins->inst_offset);
+			code = emit_strfpq (code, sreg1, dreg, ins->inst_offset);
 			break;
 		case OP_LOADX_MEMBASE:
-			arm_ldrfpq (code, dreg, sreg1, ins->inst_offset);
+			code = emit_ldrfpq (code, dreg, sreg1, ins->inst_offset);
 			break;
 		case OP_XZERO:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
