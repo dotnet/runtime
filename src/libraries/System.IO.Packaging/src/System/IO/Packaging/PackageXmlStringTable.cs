@@ -127,11 +127,12 @@ namespace System.IO.Packaging
 
         // Nested Types
         [StructLayout(LayoutKind.Sequential)]
-        private struct XmlStringTableStruct
+        private readonly struct XmlStringTableStruct
         {
             private readonly object _nameString;
             private readonly PackageXmlEnum _namespace;
             private readonly string? _valueType;
+
             internal XmlStringTableStruct(object nameString, PackageXmlEnum ns, string? valueType)
             {
                 _nameString = nameString;
@@ -139,27 +140,11 @@ namespace System.IO.Packaging
                 _valueType = valueType;
             }
 
-            internal object Name
-            {
-                get
-                {
-                    return (string)_nameString;
-                }
-            }
-            internal PackageXmlEnum Namespace
-            {
-                get
-                {
-                    return _namespace;
-                }
-            }
-            internal string? ValueType
-            {
-                get
-                {
-                    return _valueType;
-                }
-            }
+            internal object Name => (string)_nameString;
+
+            internal PackageXmlEnum Namespace => _namespace;
+
+            internal string? ValueType => _valueType;
         }
 
         private sealed class ThreadSafeNameTable : NameTable
