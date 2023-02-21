@@ -1,6 +1,6 @@
 project(System.Globalization.Native C)
 
-if(CLR_CMAKE_TARGET_UNIX)
+if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     add_compile_options(-Wno-switch-enum)
     add_compile_options(-Wno-covered-switch-default)
 
@@ -8,10 +8,14 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_options(-Wno-reserved-id-macro)
     add_compile_options(-Wno-documentation)
     add_compile_options(-Wno-documentation-unknown-command)
+    add_compile_options(-Wno-reserved-identifier)
 
     # Workaround for https://unicode-org.atlassian.net/browse/ICU-20601
     add_compile_options(-Wno-extra-semi-stmt)
     add_compile_options(-Wno-unknown-warning-option)
+
+    # pal_icushim_static.c(41,24): error G026380BD: unused function 'icu_trace_data'
+    add_compile_options(-Wno-unused-function)
 
     if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT DEFINED CMAKE_ICU_DIR)
         if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
