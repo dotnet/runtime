@@ -7512,14 +7512,14 @@ void CodeGen::genFnPrologCalleeRegArgs()
                             // The last parameter `int offs` of the `emitIns_S_R` is negtive,
                             // it means the offset imm had been stored within the `REG_T6`.
                             GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, REG_T6, varNum,
-                                                      -slotSize - 8);
+                                                        -slotSize - 8);
                         }
                         else
                         {
                             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_T6, REG_T6,
                                                         slotSize); // TODO REG21 => T6
                             GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, REG_T6, varNum,
-                                                      -slotSize - 8); // TODO REG21 => T6
+                                                        -slotSize - 8); // TODO REG21 => T6
                         }
                     }
                     regArgMaskLive &= ~genRegMask(srcRegNum); // maybe do this later is better!
