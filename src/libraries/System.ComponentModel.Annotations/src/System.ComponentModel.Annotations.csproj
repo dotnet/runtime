@@ -27,6 +27,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\FilterUIHintAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\IValidatableObject.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\KeyAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\LengthAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\LocalizableString.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\MaxLengthAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\MetadataPropertyDescriptorWrapper.cs" />
@@ -55,8 +56,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationException.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ValidationResult.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\Validator.cs" />
-    <Compile Include="$(CommonPath)System\NotImplemented.cs"
-             Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\NotImplemented.cs" Link="Common\System\NotImplemented.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

@@ -183,6 +183,16 @@ namespace System.ComponentModel.DataAnnotations
     {
         public KeyAttribute() { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false)]
+    public partial class LengthAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed. Ensure it is preserved.")]
+        public LengthAttribute(int minimumLength, int maximumLength) { }
+        public int MinimumLength { get { throw null; } }
+        public int MaximumLength { get { throw null; } }
+        public override string FormatErrorMessage(string name) { throw null; }
+        public override bool IsValid(object? value) { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class MaxLengthAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
