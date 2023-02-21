@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -79,6 +80,11 @@ namespace Microsoft.Extensions.Hosting.Internal
             Logger.LogInformation("Application started. Press Ctrl+C to shut down.");
             Logger.LogInformation("Hosting environment: {EnvName}", Environment.EnvironmentName);
             Logger.LogInformation("Content root path: {ContentRoot}", Environment.ContentRootPath);
+
+            if (Path.GetFullPath(Environment.ContentRootPath).Equals(Path.GetFullPath("."), StringComparison.InvariantCultureIgnoreCase))
+            {
+                Logger.LogWarning("Current working directory is /. If Content root path is not set explicitly, then working directory is used by default.");
+            }
         }
 
         private void OnApplicationStopping()
