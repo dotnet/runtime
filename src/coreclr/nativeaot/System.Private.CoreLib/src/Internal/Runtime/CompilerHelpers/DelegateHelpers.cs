@@ -16,16 +16,6 @@ namespace Internal.Runtime.CompilerHelpers
         [ThreadStatic]
         private static object[][] _arrayCache;
 
-        internal static void ReturnObjectArray(object[] array)
-        {
-            int length = array.Length;
-            if (length < CacheLength)
-            {
-                Array.Clear(array);
-                _arrayCache[length] = array;
-            }
-        }
-
         internal static object[] GetObjectArray(int length)
         {
             if (length == 0)
@@ -39,6 +29,16 @@ namespace Internal.Runtime.CompilerHelpers
             }
 
             return result ?? new object[length];
+        }
+
+        internal static void ReturnObjectArray(object[] array)
+        {
+            int length = array.Length;
+            if (length < CacheLength)
+            {
+                Array.Clear(array);
+                _arrayCache[length] = array;
+            }
         }
     }
 }

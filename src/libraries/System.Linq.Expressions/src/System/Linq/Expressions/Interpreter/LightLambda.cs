@@ -412,11 +412,8 @@ namespace System.Linq.Expressions.Interpreter
             {
                 if (frameCache[i] == null)
                 {
-                    frame = Interlocked.Exchange(ref frameCache[i], frame)!;
-                    if (frame == null)
-                    {
-                        return;
-                    }
+                    frameCache[i] = frame;
+                    return;
                 }
             }
         }

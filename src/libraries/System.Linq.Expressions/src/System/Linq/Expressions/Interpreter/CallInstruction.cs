@@ -281,7 +281,10 @@ namespace System.Linq.Expressions.Interpreter
     {
         protected readonly MethodInfo _target;
         protected readonly int _argumentCount;
-        private object?[]?[]? _argsCache;
+
+        private const int CacheLength = 16;
+        [ThreadStatic]
+        private static object?[]?[]? _argsCache;
 
         public override int ArgumentCount => _argumentCount;
 
@@ -353,47 +356,25 @@ namespace System.Linq.Expressions.Interpreter
             return 1;
         }
 
-        private object?[]? GetCachedArgs()
+        private static object?[]? GetCachedArgs(int length)
         {
-            object?[]?[]? argsCache = _argsCache;
-            if (argsCache == null)
+            object?[]? result = null;
+            if (length < CacheLength)
             {
-                _argsCache = new object?[16][];
-                return null;
+                _argsCache ??= new object?[CacheLength][];
+                result = _argsCache[length];
             }
 
-            for (int i = 0; i < argsCache.Length; i++)
-            {
-                if (argsCache[i] != null)
-                {
-                    object?[]? args = Interlocked.Exchange(ref argsCache[i], null);
-                    if (args != null)
-                    {
-                        return args;
-                    }
-                }
-            }
-
-            return null;
+            return result;
         }
 
-        protected void ReturnCachedArgs(object?[] args)
+        protected static void ReturnCachedArgs(object?[] args)
         {
-            if (args.Length > 0)
+            int length = args.Length;
+            if (length > 0 && length < CacheLength)
             {
                 Array.Clear(args);
-                object?[]?[] argsCache = _argsCache!;
-                for (int i = 0; i < argsCache.Length; i++)
-                {
-                    if (argsCache[i] == null)
-                    {
-                        args = Interlocked.Exchange(ref argsCache[i], args)!;
-                        if (args == null)
-                        {
-                            return;
-                        }
-                    }
-                }
+                _argsCache![length] = args;
             }
         }
 
@@ -403,7 +384,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (count > 0)
             {
-                var args = GetCachedArgs() ?? new object?[count];
+                var args = GetCachedArgs(count) ?? new object?[count];
 
                 for (int i = 0; i < args.Length; i++)
                 {
