@@ -379,10 +379,12 @@ namespace System.Linq.Expressions.Interpreter
 #endif
         }
 
-        private static void ReturnCachedFrame(ref InterpretedFrame frame)
+        private static void DestroyFrame(ref InterpretedFrame frame)
         {
-            // TODO: VS free Data and _continuations
+            frame.ReturnRentedArrays();
+#if DEBUG
             frame = default;
+#endif
         }
 
         private InterpretedFrame MakeFrame()
@@ -407,7 +409,7 @@ namespace System.Linq.Expressions.Interpreter
                 frame.Leave(currentFrame);
                 arg0 = (T0)frame.Data[0];
                 arg1 = (T1)frame.Data[1];
-                ReturnCachedFrame(ref frame);
+                DestroyFrame(ref frame);
             }
         }
 #endif
@@ -435,7 +437,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             object? result = frame.Pop();
 
-            ReturnCachedFrame(ref frame);
+            DestroyFrame(ref frame);
             return result;
         }
 
@@ -459,7 +461,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
 
                 InterpretedFrame.Leave(currentFrame);
-                ReturnCachedFrame(ref frame);
+                DestroyFrame(ref frame);
             }
 
             return null;

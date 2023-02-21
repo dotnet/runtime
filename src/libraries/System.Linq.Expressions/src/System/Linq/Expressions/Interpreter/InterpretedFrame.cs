@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -38,12 +39,13 @@ namespace System.Linq.Expressions.Interpreter
         {
             Interpreter = interpreter;
             StackIndex = interpreter.LocalCount;
-            Data = new object[StackIndex + interpreter.Instructions.MaxStackDepth];
+
+            Data = ArrayPool<object>.Shared.Rent(StackIndex + interpreter.Instructions.MaxStackDepth);
 
             int c = interpreter.Instructions.MaxContinuationDepth;
             if (c > 0)
             {
-                _continuations = new int[c];
+                _continuations = ArrayPool<int>.Shared.Rent(c);
             }
 
             Closure = closure;
@@ -52,26 +54,14 @@ namespace System.Linq.Expressions.Interpreter
             _pendingValue = Interpreter.NoValue;
         }
 
-        internal void Clear()
+        internal void ReturnRentedArrays()
         {
-            StackIndex = Interpreter.LocalCount;
-            Array.Clear(Data);
+            ArrayPool<object?>.Shared.Return(Data, clearArray: true);
 
             if (_continuations != null)
             {
-                Array.Clear(_continuations);
+                ArrayPool<int>.Shared.Return(_continuations);
             }
-
-            _pendingContinuation = -1;
-            _pendingValue = Interpreter.NoValue;
-
-            InstructionIndex = 0;
-            _parent = null;
-            _continuationIndex = 0;
-
-#if FEATURE_THREAD_ABORT
-            CurrentAbortHandler = null;
-#endif
         }
 
         public DebugInfo? GetDebugInfo(int instructionIndex)
