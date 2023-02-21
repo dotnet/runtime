@@ -28,14 +28,31 @@ namespace System.Reflection.TypeLoading.Ecma
         {
             if (!(genericType is RoDefinitionType roDefinitionType))
                 throw new BadImageFormatException(); // TypeSpec tried to instantiate a non-definition type as a generic type.
+
             return roDefinitionType.GetUniqueConstructedGenericType(typeArguments.ToArray());
         }
 
         public RoType GetGenericTypeParameter(TypeContext genericContext, int index) => genericContext.GetGenericTypeArgumentOrNull(index) ?? throw new BadImageFormatException(SR.Format(SR.GenericTypeParamIndexOutOfRange, index));
         public RoType GetGenericMethodParameter(TypeContext genericContext, int index) => genericContext.GetGenericMethodArgumentOrNull(index) ?? throw new BadImageFormatException(SR.Format(SR.GenericMethodParamIndexOutOfRange, index));
 
-        public RoType GetFunctionPointerType(MethodSignature<RoType> signature) => throw new NotSupportedException(SR.NotSupported_FunctionPointers);
-        public RoType GetModifiedType(RoType modifier, RoType unmodifiedType, bool isRequired) => unmodifiedType;
+        public RoType GetFunctionPointerType(MethodSignature<RoType> signature) => new RoFunctionPointerType(this, signature);
+        public RoType GetModifiedType(RoType modifier, RoType unmodifiedType, bool isRequired)
+        {
+            RoModifiedType? modifiedType = unmodifiedType as RoModifiedType;
+            modifiedType ??= RoModifiedType.Create(unmodifiedType);
+
+            if (isRequired)
+            {
+                modifiedType.AddRequiredModifier(modifier);
+            }
+            else
+            {
+                modifiedType.AddOptionalModifier(modifier);
+            }
+
+            return modifiedType;
+        }
+
         public RoType GetPinnedType(RoType elementType) => elementType;
 
         public RoType GetPrimitiveType(PrimitiveTypeCode typeCode) => Loader.GetCoreType(typeCode.ToCoreType());

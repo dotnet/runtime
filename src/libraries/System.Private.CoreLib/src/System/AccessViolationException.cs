@@ -40,10 +40,10 @@ namespace System
         {
         }
 
-#pragma warning disable CA1823, 169 // Field is not used from managed.
-        private IntPtr _ip;             // Address of faulting instruction.
-        private IntPtr _target;         // Address that could not be accessed.
-        private int _accessType;        // 0:read, 1:write
-#pragma warning restore CA1823, 169
+#pragma warning disable CA1823, 169, IDE0044 // Fields are not used from managed
+        private IntPtr _ip;      // Address of faulting instruction.
+        private IntPtr _target;  // Address that could not be accessed.
+        private int _accessType; // 0:read, 1:write
+#pragma warning restore CA1823, 169, IDE0044
     }
 }

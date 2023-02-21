@@ -45,6 +45,16 @@ namespace Microsoft.Interop
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidAttributedMethodDescription)));
 
+        public static readonly DiagnosticDescriptor InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute =
+            new DiagnosticDescriptor(
+            Ids.InvalidLibraryImportAttributeUsage,
+            GetResourceString(nameof(SR.InvalidVirtualMethodIndexAttributeUsage)),
+            GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(SR.InvalidAttributedMethodDescription)));
+
         public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,

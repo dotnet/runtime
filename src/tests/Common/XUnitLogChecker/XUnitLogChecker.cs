@@ -29,7 +29,6 @@ public class XUnitLogChecker
 
     private const int SUCCESS = 0;
     private const int MISSING_ARGS = -1;
-    private const int SOMETHING_VERY_WRONG = -2;
 
     static int Main(string[] args)
     {
@@ -47,37 +46,31 @@ public class XUnitLogChecker
         string resultsDir = args[0];
         string wrapperName = args[1];
 
-        // Browser-Wasm tests follow a different test files layout in Helix.
-        // Everything is located in a root folder, rather than the usual path
-        // with the wrapper name other platforms follow.
-
-        string tempLogName = string.IsNullOrEmpty(wrapperName)
-                             ? "tempLog.xml"
-                             : $"{wrapperName}.tempLog.xml";
-
-        string finalLogName = string.IsNullOrEmpty(wrapperName)
-                              ? "testResults.xml"
-                              : $"{wrapperName}.testResults.xml";
-
-        string statsCsvName = string.IsNullOrEmpty(wrapperName)
-                              ? "testStats.csv"
-                              : $"{wrapperName}.testStats.csv";
+        string tempLogName = $"{wrapperName}.tempLog.xml";
+        string finalLogName = $"{wrapperName}.testResults.xml";
+        string statsCsvName = $"{wrapperName}.testStats.csv";
 
         string tempLogPath = Path.Combine(resultsDir, tempLogName);
         string finalLogPath = Path.Combine(resultsDir, finalLogName);
         string statsCsvPath = Path.Combine(resultsDir, statsCsvName);
 
-        // If there is not even the temp log, then something went very badly with
+        // If there are no logs, then this work item was probably entirely skipped.
+        // This can happen under certain specific circumstances, such as with the
+        // JIT Hardware Intrinsics tests with DOTNET_GCStress enabled. See Github
+        // Issue dotnet/runtime #82143 for more info.
+        //
+        // The other possibility would be that something went very badly with
         // the work item in question. It will need a developer/engineer to look
         // at it urgently.
 
         if (!File.Exists(tempLogPath))
         {
-            Console.WriteLine("[XUnitLogChecker]: No logs were found. Something"
-                              + " went very wrong with this item...");
-            Console.WriteLine($"[XUnitLogChecker]: Expected log name: '{tempLogName}'");
-
-            return SOMETHING_VERY_WRONG;
+            Console.WriteLine("[XUnitLogChecker]: No logs were found. This work"
+                              + " item was skipped.");
+            Console.WriteLine($"[XUnitLogChecker]: If this is a mistake, then"
+                              + " something went very wrong. The expected temp"
+                              + $" log name would be: '{tempLogName}'");
+            return SUCCESS;
         }
 
         // Read the stats csv file.

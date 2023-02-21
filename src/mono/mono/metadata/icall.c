@@ -7286,9 +7286,15 @@ ves_icall_System_GC_GetTotalAllocatedBytes (MonoBoolean precise, MonoError* erro
 }
 
 void
-ves_icall_System_GC_RecordPressure (gint64 value)
+ves_icall_System_GC_AddPressure (guint64 value)
 {
 	mono_gc_add_memory_pressure (value);
+}
+
+void
+ves_icall_System_GC_RemovePressure (guint64 value)
+{
+	mono_gc_remove_memory_pressure (value);
 }
 
 MonoBoolean

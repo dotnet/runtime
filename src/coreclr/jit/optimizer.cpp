@@ -6675,6 +6675,8 @@ PhaseStatus Compiler::optHoistLoopCode()
     }
 #endif
 
+    optComputeInterestingVarSets();
+
     // Consider all the loop nests, in inner-to-outer order
     //
     bool             modified = false;
@@ -6829,9 +6831,8 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
     pLoopDsc->lpHoistAddedPreheader = false;
 
 #ifndef TARGET_64BIT
-    unsigned longVarsCount = VarSetOps::Count(this, lvaLongVars);
 
-    if (longVarsCount > 0)
+    if (!VarSetOps::IsEmpty(this, lvaLongVars))
     {
         // Since 64-bit variables take up two registers on 32-bit targets, we increase
         //  the Counts such that each TYP_LONG variable counts twice.
@@ -6866,9 +6867,7 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
     }
 #endif
 
-    unsigned floatVarsCount = VarSetOps::Count(this, lvaFloatVars);
-
-    if (floatVarsCount > 0)
+    if (!VarSetOps::IsEmpty(this, lvaFloatVars))
     {
         VARSET_TP loopFPVars(VarSetOps::Intersection(this, loopVars, lvaFloatVars));
         VARSET_TP inOutFPVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, lvaFloatVars));
@@ -6893,7 +6892,7 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
         }
 #endif
     }
-    else // (floatVarsCount == 0)
+    else // lvaFloatVars is empty
     {
         pLoopDsc->lpLoopVarFPCount     = 0;
         pLoopDsc->lpVarInOutFPCount    = 0;
@@ -8494,7 +8493,10 @@ void Compiler::optComputeLoopSideEffects()
             optComputeLoopNestSideEffects(lnum);
         }
     }
+}
 
+void Compiler::optComputeInterestingVarSets()
+{
     VarSetOps::AssignNoCopy(this, lvaFloatVars, VarSetOps::MakeEmpty(this));
 #ifndef TARGET_64BIT
     VarSetOps::AssignNoCopy(this, lvaLongVars, VarSetOps::MakeEmpty(this));

@@ -1295,7 +1295,8 @@ void CodeGen::genFloatReturn(GenTree* treeNode)
 //
 void CodeGen::genCodeForCompare(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE, GT_CMP));
+    assert(tree->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE, GT_BITTEST_EQ, GT_BITTEST_NE,
+                        GT_CMP, GT_TEST, GT_BT));
 
     // TODO-XArch-CQ: Check if we can use the currently set flags.
     // TODO-XArch-CQ: Check for the case where we can simply transfer the carry bit to a register
@@ -1463,30 +1464,6 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     }
 
     genProduceReg(select);
-}
-
-//------------------------------------------------------------------------
-// genCodeForBT: Generates code for a GT_BT node.
-//
-// Arguments:
-//    tree - The node.
-//
-void CodeGen::genCodeForBT(GenTreeOp* bt)
-{
-    assert(bt->OperIs(GT_BT));
-
-    GenTree*  op1  = bt->gtGetOp1();
-    GenTree*  op2  = bt->gtGetOp2();
-    var_types type = genActualType(op1->TypeGet());
-
-    assert(op1->isUsedFromReg() && op2->isUsedFromReg());
-    assert((genTypeSize(type) >= genTypeSize(TYP_INT)) && (genTypeSize(type) <= genTypeSize(TYP_I_IMPL)));
-
-    genConsumeOperands(bt);
-    // Note that the emitter doesn't fully support INS_bt, it only supports the reg,reg
-    // form and encodes the registers in reverse order. To get the correct order we need
-    // to reverse the operands when calling emitIns_R_R.
-    GetEmitter()->emitIns_R_R(INS_bt, emitTypeSize(type), op2->GetRegNum(), op1->GetRegNum());
 }
 
 // clang-format off
@@ -1877,13 +1854,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_GT:
         case GT_TEST_EQ:
         case GT_TEST_NE:
+        case GT_BITTEST_EQ:
+        case GT_BITTEST_NE:
         case GT_CMP:
+        case GT_TEST:
+        case GT_BT:
             genConsumeOperands(treeNode->AsOp());
             genCodeForCompare(treeNode->AsOp());
-            break;
-
-        case GT_JTRUE:
-            genCodeForJumpTrue(treeNode->AsOp());
             break;
 
         case GT_JCC:
@@ -1903,10 +1880,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForSelect(treeNode->AsOp());
             break;
 #endif
-
-        case GT_BT:
-            genCodeForBT(treeNode->AsOp());
-            break;
 
         case GT_RETURNTRAP:
             genCodeForReturnTrap(treeNode->AsOp());
@@ -6585,7 +6558,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 //
 void CodeGen::genCompareFloat(GenTree* treeNode)
 {
-    assert(treeNode->OperIsCompare());
+    assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP));
 
     GenTreeOp* tree    = treeNode->AsOp();
     GenTree*   op1     = tree->gtOp1;
@@ -6600,12 +6573,20 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     instruction ins;
     emitAttr    cmpAttr;
 
-    GenCondition condition = GenCondition::FromFloatRelop(treeNode);
-
-    if (condition.PreferSwap())
+    GenCondition condition;
+    if (!treeNode->OperIs(GT_CMP))
     {
-        condition = GenCondition::Swap(condition);
-        std::swap(op1, op2);
+        condition = GenCondition::FromFloatRelop(treeNode);
+
+        if (condition.PreferSwap())
+        {
+            condition = GenCondition::Swap(condition);
+            std::swap(op1, op2);
+        }
+    }
+    else
+    {
+        assert(targetReg == REG_NA);
     }
 
     ins     = (op1Type == TYP_FLOAT) ? INS_ucomiss : INS_ucomisd;
@@ -6655,7 +6636,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
 //    None.
 void CodeGen::genCompareInt(GenTree* treeNode)
 {
-    assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP));
+    assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP, GT_TEST, GT_BT));
 
     GenTreeOp* tree          = treeNode->AsOp();
     GenTree*   op1           = tree->gtOp1;
@@ -6672,7 +6653,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     instruction ins;
     var_types   type = TYP_UNKNOWN;
 
-    if (tree->OperIs(GT_TEST_EQ, GT_TEST_NE))
+    if (tree->OperIs(GT_TEST_EQ, GT_TEST_NE, GT_TEST))
     {
         ins = INS_test;
 
@@ -6691,6 +6672,21 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         {
             type = TYP_UBYTE;
         }
+    }
+    else if (tree->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE, GT_BT))
+    {
+        ins = INS_bt;
+
+        // BT is a bit special in that the index is used modulo 32. We allow
+        // mixing the types of op1/op2 because of that -- even if the index is
+        // TYP_INT but the op size is TYP_LONG the instruction itself will
+        // ignore the upper part of the register anyway.
+        type = genActualType(op1->TypeGet());
+
+        // The emitter's general logic handles op1/op2 for bt reversed. As a
+        // small hack we reverse it in codegen instead of special casing the
+        // emitter throughout.
+        std::swap(op1, op2);
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
@@ -6764,21 +6760,10 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     assert(genTypeSize(type) <= genTypeSize(TYP_I_IMPL));
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
-    // Sign jump optimization should only be set the following check
-    assert((tree->gtFlags & GTF_RELOP_SJUMP_OPT) == 0);
 
     var_types targetType = tree->TypeGet();
 
-    if (canReuseFlags && emit->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(type), tree->OperGet()))
-    {
-        JITDUMP("Not emitting compare due to flags being already set\n");
-    }
-    else if (canReuseFlags && emit->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(type), tree))
-    {
-        JITDUMP("Not emitting compare due to sign being already set, follow up instr will transform jump\n");
-        tree->gtFlags |= GTF_RELOP_SJUMP_OPT;
-    }
-    else
+    if (!canReuseFlags || !genCanAvoidEmittingCompareAgainstZero(tree, type))
     {
         // Clear target reg in advance via "xor reg,reg" to avoid movzx after SETCC
         if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
@@ -6800,6 +6785,101 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         inst_SETCC(GenCondition::FromIntegralRelop(tree), targetType, targetReg);
         genProduceReg(tree);
     }
+}
+
+//------------------------------------------------------------------------
+// genCanAvoidEmittingCompareAgainstZero: A peephole to check if we can avoid
+// emitting a compare against zero because the register was previously used
+// with an instruction that sets the zero flag.
+//
+// Parameters:
+//    tree   - the compare node
+//    opType - type of the compare
+//
+// Returns:
+//    True if the compare can be omitted.
+//
+bool CodeGen::genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType)
+{
+    GenTree* op1 = tree->gtGetOp1();
+    assert(tree->gtGetOp2()->IsIntegralConst(0));
+
+    if (!op1->isUsedFromReg())
+    {
+        return false;
+    }
+
+    GenTreeCC*   cc = nullptr;
+    GenCondition cond;
+
+    if (tree->OperIsCompare())
+    {
+        cond = GenCondition::FromIntegralRelop(tree);
+    }
+    else
+    {
+        cc = genTryFindFlagsConsumer(tree);
+        if (cc == nullptr)
+        {
+            return false;
+        }
+
+        cond = cc->gtCondition;
+    }
+
+    if (GetEmitter()->AreFlagsSetToZeroCmp(op1->GetRegNum(), emitTypeSize(opType), cond))
+    {
+        JITDUMP("Not emitting compare due to flags being already set\n");
+        return true;
+    }
+
+    if ((cc != nullptr) && GetEmitter()->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(opType), cond))
+    {
+        JITDUMP("Not emitting compare due to sign being already set; modifying [%06u] to check sign flag\n",
+                Compiler::dspTreeID(cc));
+        cc->gtCondition =
+            (cond.GetCode() == GenCondition::SLT) ? GenCondition(GenCondition::S) : GenCondition(GenCondition::NS);
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// genTryFindFlagsConsumer: Given a node that produces flags, try to look ahead
+// for the node that consumes those flags.
+//
+// Parameters:
+//    producer - the node that produces CPU flags
+//
+// Returns:
+//    A node that consumes the flags, or nullptr if no such node was found.
+//
+GenTreeCC* CodeGen::genTryFindFlagsConsumer(GenTree* producer)
+{
+    assert((producer->gtFlags & GTF_SET_FLAGS) != 0);
+    // We allow skipping some nodes where we know for sure that the flags are
+    // not consumed. In particular we handle resolution nodes. If we see any
+    // other node after the compare (which is an uncommon case, happens
+    // sometimes with decomposition) then we assume it could consume the flags.
+    for (GenTree* candidate = producer->gtNext; candidate != nullptr; candidate = candidate->gtNext)
+    {
+        if (candidate->OperIs(GT_JCC, GT_SETCC))
+        {
+            return candidate->AsCC();
+        }
+
+        // The following nodes can be inserted between the compare and the user
+        // of the flags by resolution. Codegen for these will never modify CPU
+        // flags.
+        if (!candidate->OperIs(GT_LCL_VAR, GT_COPY, GT_SWAP))
+        {
+            // For other nodes we do the conservative thing.
+            return nullptr;
+        }
+    }
+
+    return nullptr;
 }
 
 #if !defined(TARGET_64BIT)

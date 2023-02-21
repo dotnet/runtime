@@ -2293,7 +2293,7 @@ namespace MonoTests.System.Drawing
                 Assert.Throws<ArgumentException>(() => g.ReleaseHdc());
             }
         }
-        [Fact]
+        [ConditionalFact]
         public void VisibleClipBound()
         {
             if (PlatformDetection.IsArmOrArm64Process)
@@ -2329,7 +2329,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public void VisibleClipBound_BigClip()
         {
             if (PlatformDetection.IsArmOrArm64Process)
@@ -2376,7 +2376,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         public void Rotate()
         {
             if (PlatformDetection.IsArmOrArm64Process)
