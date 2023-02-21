@@ -4550,7 +4550,7 @@ namespace NativeVarargTest
         ////////////////////////////////////////////////////////////////////////////
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Main(string[] args)
+        static int Main()
         {
             int success = 100;
             m_testCount = 0;
