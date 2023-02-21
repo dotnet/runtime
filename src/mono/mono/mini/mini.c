@@ -4520,7 +4520,7 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 	*nelems = 0;
 
 	const char *klass_name = m_class_get_name (klass);
-	if (!strcmp (klass_name, "Vector2") || !strcmp (klass_name, "Vector3") || !strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
+	if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
 		*nelems = 4;
 		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
