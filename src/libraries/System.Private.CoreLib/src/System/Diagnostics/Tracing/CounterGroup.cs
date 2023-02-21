@@ -16,12 +16,14 @@ namespace System.Diagnostics.Tracing
     {
         private readonly EventSource _eventSource;
         private readonly List<DiagnosticCounter> _counters;
+        private int _refCount;
         private static readonly object s_counterGroupLock = new object();
 
         internal CounterGroup(EventSource eventSource)
         {
             _eventSource = eventSource;
             _counters = new List<DiagnosticCounter>();
+            _refCount = 0;
             RegisterCommandCallback();
         }
 
@@ -46,23 +48,36 @@ namespace System.Diagnostics.Tracing
 
         private void OnEventSourceCommand(object? sender, EventCommandEventArgs e)
         {
-            if (e.Command == EventCommand.Enable || e.Command == EventCommand.Update)
+            lock (s_counterGroupLock)      // Lock the CounterGroup
             {
-                Debug.Assert(e.Arguments != null);
-
-                if (e.Arguments.TryGetValue("EventCounterIntervalSec", out string? valueStr) && float.TryParse(valueStr, out float value))
+                if (e.Command == EventCommand.Enable)
                 {
-                    lock (s_counterGroupLock)      // Lock the CounterGroup
+                    Debug.Assert(e.Arguments != null);
+                    Debug.Assert(_refCount >= 0);
+
+                    ++_refCount;
+                    float intervalValue = 1.0f;
+                    if (e.Arguments.TryGetValue("EventCounterIntervalSec", out string? valueStr)
+                        && float.TryParse(valueStr, out float value))
                     {
-                        EnableTimer(value);
+                        intervalValue = value;
+                    }
+
+                    EnableTimer(intervalValue);
+                }
+                else if (e.Command == EventCommand.Disable)
+                {
+                    Debug.Assert(_refCount >= 1);
+                    --_refCount;
+                    if (_refCount == 0)
+                    {
+                        DisableTimer();
                     }
                 }
-            }
-            else if (e.Command == EventCommand.Disable)
-            {
-                lock (s_counterGroupLock)
+                else
                 {
-                    DisableTimer();
+                    // Should only be enable or disable
+                    Debug.Assert(false);
                 }
             }
         }
