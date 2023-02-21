@@ -15,7 +15,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)native-binplace.proj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
