@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'maccatalyst'">
-    <DevTeamProvisioning Condition="'$(TargetOS)' == 'maccatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
+    <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
     <EnableAppSandbox Condition="'$(EnableAppSandbox)' == ''">false</EnableAppSandbox>
   </PropertyGroup>
 

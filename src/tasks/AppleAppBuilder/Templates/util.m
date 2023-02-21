@@ -21,13 +21,13 @@ size_t get_managed_args (char*** managed_args_array)
     id args_array = [[NSProcessInfo processInfo] arguments];
     size_t args_count = [args_array count];
     assert (args_count <= 128);
-    *managed_args_array = (char**) malloc (sizeof(char**) * args_count);
+    *managed_args_array = (char**) malloc (sizeof(char*) * args_count);
     size_t argi;
     for (argi = 0; argi < args_count; argi++) {
         NSString* arg = [args_array objectAtIndex: argi];
         const char* cstring = [arg UTF8String];
         size_t cstring_len = strlen(cstring) + 1;
-        (*managed_args_array)[argi] = (char*) malloc (sizeof(char*) * cstring_len);
+        (*managed_args_array)[argi] = (char*) malloc (sizeof(char) * cstring_len);
         strcpy((*managed_args_array)[argi], cstring);
     }
     return argi;

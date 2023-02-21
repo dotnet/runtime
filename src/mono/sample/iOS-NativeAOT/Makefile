@@ -40,11 +40,11 @@ appbuilder:
 hello-app: clean
 	$(DOTNET) \
 	build -c $(BUILD_CONFIG) \
-	/p:TargetOS=$(TARGET_OS) \
-	/p:TargetArchitecture=$(TARGET_ARCH) \
-	/p:RepoDir=$(REPO_DIR) \
-	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
-	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
+	-p:TargetOS=$(TARGET_OS) \
+	-p:TargetArchitecture=$(TARGET_ARCH) \
+	-p:RepoDir=$(REPO_DIR) \
+	-p:DeployAndRun=$(DEPLOY_AND_RUN) \
+	-p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	-bl
 
 clean:
