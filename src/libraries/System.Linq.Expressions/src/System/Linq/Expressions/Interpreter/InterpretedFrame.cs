@@ -8,13 +8,13 @@ using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
-    internal sealed class InterpretedFrame
+    internal unsafe struct InterpretedFrame
     {
         [ThreadStatic]
-        private static InterpretedFrame? s_currentFrame;
+        private static void* s_currentFrame;
 
         internal readonly Interpreter Interpreter;
-        internal InterpretedFrame? _parent;
+        internal void* _parent;
 
         private readonly int[]? _continuations;
         private int _continuationIndex;
@@ -144,7 +144,7 @@ namespace System.Linq.Expressions.Interpreter
 
         #region Stack Trace
 
-        public InterpretedFrame? Parent => _parent;
+        public ref InterpretedFrame Parent => ref Unsafe.AsRef<InterpretedFrame>(_parent);
 
         public static bool IsInterpretedFrame(MethodBase method)
         {
@@ -154,12 +154,17 @@ namespace System.Linq.Expressions.Interpreter
 
         public IEnumerable<InterpretedFrameInfo> GetStackTraceDebugInfo()
         {
-            InterpretedFrame? frame = this;
-            do
+            InterpretedFrame frame = this;
+            while(true)
             {
                 yield return new InterpretedFrameInfo(frame.Name, frame.GetDebugInfo(frame.InstructionIndex));
+                if (Unsafe.IsNullRef(ref frame.Parent))
+                {
+                    break;
+                }
+
                 frame = frame.Parent;
-            } while (frame != null);
+            }
         }
 
         internal void SaveTraceToException(Exception exception)
@@ -178,25 +183,26 @@ namespace System.Linq.Expressions.Interpreter
             get
             {
                 var trace = new List<string>();
-                InterpretedFrame? frame = this;
+                ref InterpretedFrame frame = ref this;
                 do
                 {
                     trace.Add(frame.Name!);
                     frame = frame.Parent;
-                } while (frame != null);
+                } while (!Unsafe.IsNullRef(ref frame));
                 return trace.ToArray();
             }
         }
 #endif
 
-        internal InterpretedFrame? Enter()
+        internal void* Enter()
         {
-            InterpretedFrame? currentFrame = s_currentFrame;
-            s_currentFrame = this;
-            return _parent = currentFrame;
+            void* currentFrame = s_currentFrame;
+            s_currentFrame = Unsafe.AsPointer<int>(ref Unsafe.As<InterpretedFrame, int>(ref this));
+            _parent = currentFrame;
+            return _parent;
         }
 
-        internal static void Leave(InterpretedFrame? prevFrame)
+        internal static void Leave(void* prevFrame)
         {
             s_currentFrame = prevFrame;
         }
