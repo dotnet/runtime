@@ -2938,6 +2938,9 @@ enum {
 	SIMD_PREFETCH_MODE_2,
 };
 
+int mini_primitive_type_size (MonoTypeEnum type);
+MonoTypeEnum mini_get_simd_type_info (MonoClass *klass, guint32 *nelems);
+
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
