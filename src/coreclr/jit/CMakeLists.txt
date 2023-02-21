@@ -296,6 +296,7 @@ set( JIT_HEADERS
   emitpub.h
   error.h
   gentree.h
+  gentreeopsdef.h
   gtlist.h
   gtstructs.h
   hashbv.h
@@ -340,7 +341,6 @@ set( JIT_HEADERS
   sideeffects.h
   simd.h
   simdashwintrinsic.h
-  simdintrinsiclist.h
   sm.h
   smallhash.h
   smcommon.h

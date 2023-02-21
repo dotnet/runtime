@@ -4,7 +4,8 @@
     <WasmMainJSPath>main.js</WasmMainJSPath>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
-    <WasmDebugLevel>1</WasmDebugLevel>
+    <!-- note that enabling debugger disables interp optimizations -->
+    <WasmDebugLevel Condition="'$(Configuration)' == 'Debug'">-1</WasmDebugLevel>
     <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
     <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) $(WasmXHarnessArgs) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
   </PropertyGroup>

@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private sealed class TempExportPal : ICertificatePalCore
         {
-            private readonly ICertificatePal _realPal;
+            private readonly AppleCertificatePal _realPal;
 
             internal TempExportPal(AppleCertificatePal realPal)
             {

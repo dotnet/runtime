@@ -450,6 +450,9 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
     heap_segment_next(seg) = 0;
     heap_segment_used(seg) = heap_segment_allocated(seg);
     heap_segment_plan_allocated(seg) = 0;
+#ifdef USE_REGIONS
+    heap_segment_gen_num(seg) = max_generation;
+#endif //USE_REGIONS
     seg->flags = heap_segment_flags_readonly;
 
 #ifdef MULTIPLE_HEAPS

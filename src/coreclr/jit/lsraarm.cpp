@@ -309,11 +309,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildCast(tree->AsCast());
             break;
 
-        case GT_JTRUE:
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-
         case GT_JMP:
             srcCount = 0;
             assert(dstCount == 0);
@@ -796,7 +791,7 @@ int LinearScan::BuildNode(GenTree* tree)
     // We need to be sure that we've set srcCount and dstCount appropriately
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
-    assert(!tree->IsUnusedValue() || (dstCount != 0));
+    assert(!tree->IsValue() || (dstCount != 0));
     assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }

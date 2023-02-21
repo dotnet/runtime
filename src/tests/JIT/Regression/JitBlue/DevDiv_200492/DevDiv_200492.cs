@@ -15,7 +15,7 @@ using System.Runtime.CompilerServices;
 // so this test (like the original code in the bug report)
 // uses custom attribute constructor arguments as the sources
 // of the casts in question.
-internal class Program
+public class Program
 {
     [AttributeUsage(AttributeTargets.Method)]
     class TestDoubleAttribute : System.Attribute
@@ -76,7 +76,7 @@ internal class Program
         return (attribute.Field == (ulong)6);
     }
 
-    private static int Main()
+    public static int Main()
     {
         int errors = 0;
 

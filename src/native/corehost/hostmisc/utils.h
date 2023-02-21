@@ -28,6 +28,21 @@
 #define INSTALL_NET_ERROR_MESSAGE _X("You must install .NET to run this application.")
 #define INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("You must install .NET Desktop Runtime to run this application.")
 
+#define DOC_LINK_INTRO _X("Learn more:")
+
+#define MISSING_RUNTIME_ERROR_FORMAT \
+    _X("%s\n\n")                                \
+    _X("App: %s\n")                             \
+    _X("Architecture: %s\n")                    \
+    _X("App host version: %s\n")                \
+    _X(".NET location: %s\n")                   \
+    _X("\n")                                    \
+    DOC_LINK_INTRO _X("\n")                     \
+    DOTNET_APP_LAUNCH_FAILED_URL                \
+    _X("\n\n")                                  \
+    _X("Download the .NET runtime:\n")          \
+    _X("%s&apphost_version=%s")
+
 #define DOTNET_ROOT_ENV_VAR _X("DOTNET_ROOT")
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);

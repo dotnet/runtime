@@ -10,7 +10,6 @@
       <Platform>arm64</Platform>
     </OfficialBuildRID>
     <!-- Not currently built by CoreFX. -->
-    <!-- <OfficialBuildRID Include="freebsd-x64" /> -->
     <!-- <OfficialBuildRID Include="netbsd-x64" /> -->
     <!-- <OfficialBuildRID Include="illumos-x64" /> -->
     <!-- <OfficialBuildRID Include="solaris-x64" /> -->
@@ -53,6 +52,7 @@
          built during official builds, however we wish to include them
          in our runtime.json to enable others to provide them.  -->
     <UnofficialBuildRID Include="freebsd-x64" />
+    <UnofficialBuildRID Include="freebsd-arm64" />
     <UnofficialBuildRID Include="tizen.4.0.0-armel">
       <Platform>armel</Platform>
     </UnofficialBuildRID>

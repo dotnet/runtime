@@ -1355,7 +1355,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pszDebugName = (LPCUTF8)name;
     }
 
-    LOG((LF_CLASSLOADER, LL_INFO1000, "Loading class \"%s%s%s\" from module \"%ws\" in domain 0x%p %s\n",
+    LOG((LF_CLASSLOADER, LL_INFO1000, "Loading class \"%s%s%s\" from module \"%s\" in domain 0x%p %s\n",
         *pszDebugNamespace ? pszDebugNamespace : "",
         *pszDebugNamespace ? NAMESPACE_SEPARATOR_STR : "",
         debugName.GetUTF8(),
@@ -2009,7 +2009,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
 #endif //_DEBUG
 
-    STRESS_LOG3(LF_CLASSLOADER,  LL_INFO1000, "MethodTableBuilder: finished method table for module %p token %x = %pT \n",
+    STRESS_LOG3(LF_CLASSLOADER,  LL_INFO1000, "MTB:BMTT finished method table for module %p token %x = %p\n",
         pModule,
         GetCl(),
         GetHalfBakedMethodTable());
@@ -2868,7 +2868,8 @@ MethodTableBuilder::EnumerateClassMethods()
         }
 
         // Check for the presence of virtual static methods
-        if (IsMdVirtual(dwMemberAttrs) && IsMdStatic(dwMemberAttrs))
+        bool isStaticVirtual = (IsMdVirtual(dwMemberAttrs) && IsMdStatic(dwMemberAttrs));
+        if (isStaticVirtual)
         {
             bmtProp->fHasVirtualStaticMethods = TRUE;
         }
@@ -3202,7 +3203,7 @@ MethodTableBuilder::EnumerateClassMethods()
             BuildMethodTableThrowException(BFA_GENERIC_METHODS_INST);
         }
 
-        // count how many overrides this method does All methods bodies are defined
+        // Check if the method is a MethodImpl body. All method bodies are defined
         // on this type so we can just compare the tok with the body token found
         // from the overrides.
         implType = METHOD_IMPL_NOT;
@@ -3213,6 +3214,13 @@ MethodTableBuilder::EnumerateClassMethods()
                 implType = METHOD_IMPL;
                 break;
             }
+        }
+
+        if (implType == METHOD_IMPL && isStaticVirtual && IsMdAbstract(dwMemberAttrs))
+        {
+            // Don't record reabstracted static virtual methods as they don't constitute
+            // actual method slots, they're just markers used by the static virtual lookup.
+            continue;
         }
 
         // For delegates we don't allow any non-runtime implemented bodies
@@ -4788,7 +4796,11 @@ VOID MethodTableBuilder::TestMethodImpl(
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_NONVIRTUAL_DECL);
     }
-    if ((IsMdVirtual(dwImplAttrs) && IsMdStatic(dwImplAttrs)) || (!IsMdVirtual(dwImplAttrs) && !IsMdStatic(dwImplAttrs)))
+    if (!!IsMdVirtual(dwImplAttrs) != !!IsMdAbstract(dwImplAttrs) && IsMdStatic(dwImplAttrs))
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL);
+    }
+    if (!IsMdVirtual(dwImplAttrs) && !IsMdStatic(dwImplAttrs))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL);
     }
@@ -5116,7 +5128,7 @@ MethodTableBuilder::InitNewMethodDesc(
                    pMethod->GetMethodSignature().GetToken(),
                    pMethod->GetImplAttrs(),
                    pMethod->GetDeclAttrs(),
-                   FALSE,
+                   FALSE,    // fEnC
                    pMethod->GetRVA(),
                    GetMDImport(),
                    pName
@@ -5636,7 +5648,10 @@ MethodTableBuilder::ProcessMethodImpls()
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
-        if (!IsMdVirtual(it.Attrs()) && it.IsMethodImpl() && bmtProp->fNoSanityChecks)
+        bool isVirtualStaticOverride = it.IsMethodImpl() && IsMdStatic(it.Attrs()) &&
+            !!IsMdVirtual(it.Attrs()) == !!IsMdAbstract(it.Attrs());
+
+        if (isVirtualStaticOverride && bmtProp->fNoSanityChecks)
         {
             // Non-virtual methods can only be classified as methodImpl when implementing
             // static virtual methods.
@@ -5819,7 +5834,7 @@ MethodTableBuilder::ProcessMethodImpls()
                                 }
 
                                 // 3. Find the matching method.
-                                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig, !IsMdVirtual(it.Attrs())); // Search for statics when the impl is non-virtual
+                                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig, isVirtualStaticOverride); // Search for statics when the impl is non-virtual
                             }
                             else
                             {
@@ -5854,7 +5869,7 @@ MethodTableBuilder::ProcessMethodImpls()
                         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_MUSTBEVIRTUAL, it.Token());
                     }
 
-                    if (!IsMdVirtual(it.Attrs()) && it.IsMethodImpl() && IsMdStatic(it.Attrs()))
+                    if (isVirtualStaticOverride)
                     {
                         // Non-virtual methods can only be classified as methodImpl when implementing
                         // static virtual methods.
@@ -6002,8 +6017,8 @@ MethodTableBuilder::InitMethodDesc(
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_EVERYTHING, "EEC::IMD: pNewMD:0x%x for tok:0x%x (%s::%s)\n",
-        pNewMD, tok, pszDebugClassName, pszDebugMethodName));
+    LOG((LF_CORDB, LL_EVERYTHING, "MTB::IMD: pNewMD:%p (%u) EnC: %s tok:%x (%s::%s)\n",
+        pNewMD, Classification, (fEnC ? "true" : "false"), tok, pszDebugClassName, pszDebugMethodName));
 
     // Now we know the classification we can perform any classification specific initialization.
 
@@ -6097,21 +6112,17 @@ MethodTableBuilder::InitMethodDesc(
         break;
 
     case mcInstantiated:
-#ifdef EnC_SUPPORTED
-        if (fEnC)
-        {
-            // We reuse the instantiated methoddescs to get the slot
-            InstantiatedMethodDesc* pNewIMD = (InstantiatedMethodDesc*) pNewMD;
-            pNewIMD->SetupEnCAddedMethod();
-        }
-        else
-#endif // EnC_SUPPORTED
         {
             // Initialize the typical instantiation.
-            InstantiatedMethodDesc* pNewIMD = (InstantiatedMethodDesc*) pNewMD;
+            InstantiatedMethodDesc* pNewIMD = pNewMD->AsInstantiatedMethodDesc();
+
             //data has the same lifetime as method table, use our allocator
-            pNewIMD->SetupGenericMethodDefinition(pIMDII, GetLoaderAllocator(), GetMemTracker(), GetModule(),
-                                                  tok);
+            pNewIMD->SetupGenericMethodDefinition(
+                pIMDII,
+                GetLoaderAllocator(),
+                GetMemTracker(),
+                GetModule(),
+                tok);
         }
         break;
 
@@ -6126,6 +6137,11 @@ MethodTableBuilder::InitMethodDesc(
 
     if (IsMdStatic(dwMemberAttrs))
         pNewMD->SetStatic();
+
+#ifdef EnC_SUPPORTED
+    if (fEnC)
+        pNewMD->SetIsEnCAddedMethod();
+#endif // EnC_SUPPORTED
 
 #ifdef _DEBUG
     // Mark as many methods as synchronized as possible.
@@ -6860,9 +6876,15 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
     SIZE_T sizeOfMethodDescs = 0; // current running size of methodDesc chunk
     int startIndex = 0; // start of the current chunk (index into bmtMethod array)
 
+    // Limit the maximum MethodDescs per chunk by the number of precodes that can fit to a single memory page,
+    // since we allocate consecutive temporary entry points for all MethodDescs in the whole chunk.
+    DWORD maxPrecodesPerPage = Precode::GetMaxTemporaryEntryPointsCount();
+    DWORD methodDescCount = 0;
+
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
+        DWORD currentSlotMethodDescCount = 1;
         int tokenRange = GetTokenRange(it.Token());
 
         // This code assumes that iterator returns tokens in ascending order. If this assumption does not hold,
@@ -6885,6 +6907,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         // See comment in AllocAndInitMethodDescChunk
         if (NeedsTightlyBoundUnboxingStub(*it))
         {
+            currentSlotMethodDescCount = 2;
             size *= 2;
 
             if (bmtGenerics->GetNumGenericArgs() == 0) {
@@ -6896,7 +6919,8 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         }
 
         if (tokenRange != currentTokenRange ||
-            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs)
+            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs ||
+            methodDescCount + currentSlotMethodDescCount > maxPrecodesPerPage)
         {
             if (sizeOfMethodDescs != 0)
             {
@@ -6906,9 +6930,11 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
 
             currentTokenRange = tokenRange;
             sizeOfMethodDescs = 0;
+            methodDescCount = 0;
         }
 
         sizeOfMethodDescs += size;
+        methodDescCount += currentSlotMethodDescCount;
     }
 
     if (sizeOfMethodDescs != 0)
@@ -8732,29 +8758,30 @@ MethodTableBuilder::HandleExplicitLayout(
     if (pMT->IsByRefLike())
         return CheckByRefLikeValueClassLayout(pMT, pFieldLayout);
 
-    // This method assumes there is a GC desc associated with the MethodTable.
-    _ASSERTE(pMT->ContainsPointers());
-
     // Build a layout of the value class (vc). Don't know the sizes of all the fields easily, but
     // do know (a) vc is already consistent so don't need to check it's overlaps and
     // (b) size and location of all objectrefs. So build it by setting all non-oref
-    // then fill in the orefs later
+    // then fill in the orefs later if present.
     UINT fieldSize = pMT->GetNumInstanceFieldBytes();
 
     CQuickBytes qb;
     bmtFieldLayoutTag *vcLayout = (bmtFieldLayoutTag*) qb.AllocThrows(fieldSize * sizeof(bmtFieldLayoutTag));
     memset((void*)vcLayout, nonoref, fieldSize);
 
-    // use pointer series to locate the orefs
-    CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
-    CGCDescSeries *pSeries = map->GetLowestSeries();
-
-    for (SIZE_T j = 0; j < map->GetNumSeries(); j++)
+    // If the type contains pointers fill it out from the GC data
+    if (pMT->ContainsPointers())
     {
-        CONSISTENCY_CHECK(pSeries <= map->GetHighestSeries());
+        // use pointer series to locate the orefs
+        CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
+        CGCDescSeries *pSeries = map->GetLowestSeries();
 
-        memset((void*)&vcLayout[pSeries->GetSeriesOffset() - OBJECT_SIZE], oref, pSeries->GetSeriesSize() + pMT->GetBaseSize());
-        pSeries++;
+        for (SIZE_T j = 0; j < map->GetNumSeries(); j++)
+        {
+            CONSISTENCY_CHECK(pSeries <= map->GetHighestSeries());
+
+            memset((void*)&vcLayout[pSeries->GetSeriesOffset() - OBJECT_SIZE], oref, pSeries->GetSeriesSize() + pMT->GetBaseSize());
+            pSeries++;
+        }
     }
 
     ExplicitClassTrust explicitClassTrust;
@@ -9884,6 +9911,22 @@ void MethodTableBuilder::CheckForSystemTypes()
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
     #else
                     pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 32; // sizeof(__m256)
+    #endif // TARGET_ARM elif TARGET_ARM64
+                }
+                else if (strcmp(name, g_Vector512Name) == 0)
+                {
+    #ifdef TARGET_ARM
+                    // No such type exists for the Procedure Call Standard for ARM. We will default
+                    // to the same alignment as __m128, which is supported by the ABI.
+
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
+    #elif defined(TARGET_ARM64)
+                    // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
+                    // 16-byte alignment for __m256.
+
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+    #else
+                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 64; // sizeof(__m512)
     #endif // TARGET_ARM elif TARGET_ARM64
                 }
                 else
@@ -11690,7 +11733,7 @@ void MethodTableBuilder::bmtMethodImplInfo::AddMethodImpl(
         // because this is a stacking allocator. However, the old array will get freed when all the stack allocator is freed.
         Entry *rgEntriesNew = new (pStackingAllocator) Entry[newEntriesCount];
         if (cMaxIndex > 0)
-            memcpy(rgEntriesNew, rgEntries, sizeof(Entry) * cMaxIndex);
+            memcpy((void*)rgEntriesNew, rgEntries, sizeof(Entry) * cMaxIndex);
 
         // Start using newly allocated array.
         rgEntries = rgEntriesNew;

@@ -18,7 +18,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class MainApp
+public class MainApp
 {
 
     static int one = 1;

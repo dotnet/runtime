@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <MonoForceInterpreter>true</MonoForceInterpreter>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -23,8 +23,8 @@
     <DeltaCount>1</DeltaCount>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
-    <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
+  <PropertyGroup Condition="'$(TargetOS)' == 'maccatalyst'">
+    <DevTeamProvisioning Condition="'$(TargetOS)' == 'maccatalyst' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
   </PropertyGroup>
 
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
@@ -51,7 +51,7 @@
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="AppleDelta"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\native\include\mono-2.0"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS)-$(TargetArchitecture)\native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
 	NativeMainSource="$(MSBuildThisFileDirectory)\main.m"
         MainLibraryFileName="AppleDelta.dll"
@@ -70,10 +70,10 @@
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App:   $(AppBundlePath)"/>
 
-    <Exec Condition="'$(TargetOS)' == 'iOSSimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
 
     <!-- run on MacCatalyst -->
-    <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=maccatalyst --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'maccatalyst'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=maccatalyst --output-directory=/tmp/out" />
 
   </Target>
 

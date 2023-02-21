@@ -14,7 +14,7 @@ namespace Runtime_52320
             Unsafe.InitBlock(ref Unsafe.As<int, byte>(ref a), 0, 2);
             return a == 1 << 20;
         }
-        static int Main()
+        public static int Main()
         {
             bool res = UseAsgOpt(1 << 20);
             Debug.Assert(res);

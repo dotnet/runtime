@@ -37,7 +37,7 @@ function initializeImportsAndExports(
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
 
-    // we want to have same instance of MONO, BINDING and Module in dotnet iffe
+    // we want to have same instance of MONO, BINDING and Module in dotnet iife
     set_imports_exports(imports, exports);
     set_legacy_exports(exports);
     init_polyfills(replacements);

@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <MonoAOTCompiler
-      CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+      CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
       OutputType="$(_AotOutputType)"
       LibraryFormat="$(_AotLibraryFormat)"
       Assemblies="@(AotInputAssemblies)"

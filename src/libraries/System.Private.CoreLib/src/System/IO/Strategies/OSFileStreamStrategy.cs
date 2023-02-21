@@ -15,7 +15,7 @@ namespace System.IO.Strategies
         private readonly FileAccess _access; // What file was opened for.
 
         protected long _filePosition;
-        private long _appendStart; // When appending, prevent overwriting file.
+        private readonly long _appendStart; // When appending, prevent overwriting file.
 
         internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access)
         {
@@ -85,7 +85,7 @@ namespace System.IO.Strategies
         public sealed override long Position
         {
             get => _filePosition;
-            set => _filePosition = value;
+            set => Seek(value, SeekOrigin.Begin);
         }
 
         internal sealed override string Name => _fileHandle.Path ?? SR.IO_UnknownFileName;
@@ -144,11 +144,6 @@ namespace System.IO.Strategies
 
         public sealed override long Seek(long offset, SeekOrigin origin)
         {
-            if (origin < SeekOrigin.Begin || origin > SeekOrigin.End)
-                throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin));
-            if (_fileHandle.IsClosed) ThrowHelper.ThrowObjectDisposedException_FileClosed();
-            if (!CanSeek) ThrowHelper.ThrowNotSupportedException_UnseekableStream();
-
             long oldPos = _filePosition;
             long pos = origin switch
             {

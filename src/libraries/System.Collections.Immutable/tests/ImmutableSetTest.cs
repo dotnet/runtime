@@ -19,7 +19,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddDuplicatesTest()
         {
-            var arrayWithDuplicates = Enumerable.Range(1, 100).Concat(Enumerable.Range(1, 100)).ToArray();
+            int[] arrayWithDuplicates = Enumerable.Range(1, 100).Concat(Enumerable.Range(1, 100)).ToArray();
             this.AddTestHelper(this.Empty<int>(), arrayWithDuplicates);
         }
 
@@ -32,7 +32,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddRemoveLoadTest()
         {
-            var data = this.GenerateDummyFillData();
+            double[] data = this.GenerateDummyFillData();
             this.AddRemoveLoadTestHelper(Empty<double>(), data);
         }
 
@@ -44,7 +44,7 @@ namespace System.Collections.Immutable.Tests
 
             // Also fill up a set with many elements to build up the tree, then remove from various places in the tree.
             const int Size = 200;
-            var set = emptySet;
+            IImmutableSet<int> set = emptySet;
             for (int i = 0; i < Size; i += 2)
             { // only even numbers!
                 set = set.Add(i);
@@ -53,7 +53,7 @@ namespace System.Collections.Immutable.Tests
             // Verify that removing odd numbers doesn't change anything.
             for (int i = 1; i < Size; i += 2)
             {
-                var setAfterRemoval = set.Remove(i);
+                IImmutableSet<int> setAfterRemoval = set.Remove(i);
                 Assert.Same(set, setAfterRemoval);
             }
         }
@@ -61,8 +61,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddBulkFromImmutableToEmpty()
         {
-            var set = this.Empty<int>().Add(5);
-            var empty2 = this.Empty<int>();
+            IImmutableSet<int> set = this.Empty<int>().Add(5);
+            IImmutableSet<int> empty2 = this.Empty<int>();
             Assert.Same(set, empty2.Union(set)); // "Filling an empty immutable set with the contents of another immutable set with the exact same comparer should return the other set."
         }
 
@@ -89,7 +89,7 @@ namespace System.Collections.Immutable.Tests
         public void SetEqualsTest()
         {
             Assert.True(this.Empty<int>().SetEquals(this.Empty<int>()));
-            var nonEmptySet = this.Empty<int>().Add(5);
+            IImmutableSet<int> nonEmptySet = this.Empty<int>().Add(5);
             Assert.True(nonEmptySet.SetEquals(nonEmptySet));
 
             this.SetCompareTestHelper(s => s.SetEquals, s => s.SetEquals, this.GetSetEqualsScenarios());
@@ -147,9 +147,9 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void ClearTest()
         {
-            var originalSet = this.Empty<int>();
-            var nonEmptySet = originalSet.Add(5);
-            var clearedSet = nonEmptySet.Clear();
+            IImmutableSet<int> originalSet = this.Empty<int>();
+            IImmutableSet<int> nonEmptySet = originalSet.Add(5);
+            IImmutableSet<int> clearedSet = nonEmptySet.Clear();
             Assert.Same(originalSet, clearedSet);
         }
 
@@ -195,10 +195,10 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void NullHandling()
         {
-            var empty = this.Empty<string>();
-            var set = empty.Add(null);
+            IImmutableSet<string> empty = this.Empty<string>();
+            IImmutableSet<string> set = empty.Add(null);
             Assert.True(set.Contains(null));
-            Assert.True(set.TryGetValue(null, out var @null));
+            Assert.True(set.TryGetValue(null, out string @null));
             Assert.Null(@null);
             Assert.Equal(empty, set.Remove(null));
 
@@ -224,7 +224,7 @@ namespace System.Collections.Immutable.Tests
             Assert.NotNull(sequence);
 
             var list = new List<T>();
-            var enumerator = sequence.GetEnumerator();
+            IEnumerator enumerator = sequence.GetEnumerator();
             while (enumerator.MoveNext())
             {
                 list.Add((T)enumerator.Current);
@@ -248,7 +248,7 @@ namespace System.Collections.Immutable.Tests
             Assert.NotNull(injectedValues);
             Assert.NotNull(expectedValues);
 
-            var set = emptySet;
+            IImmutableSet<T> set = emptySet;
             foreach (T value in injectedValues)
             {
                 set = set.Add(value);
@@ -349,19 +349,19 @@ namespace System.Collections.Immutable.Tests
             //const string message = "Scenario #{0}: Set 1: {1}, Set 2: {2}";
 
             int iteration = 0;
-            foreach (var scenario in scenarios)
+            foreach (Tuple<IEnumerable<T>, IEnumerable<T>, bool> scenario in scenarios)
             {
                 iteration++;
 
                 // Figure out the response expected based on the BCL mutable collections.
-                var baselineSet = this.EmptyMutable<T>();
+                ISet<T> baselineSet = this.EmptyMutable<T>();
                 baselineSet.UnionWith(scenario.Item1);
-                var expectedFunc = baselineOperation(baselineSet);
+                Func<IEnumerable<T>, bool> expectedFunc = baselineOperation(baselineSet);
                 bool expected = expectedFunc(scenario.Item2);
                 Assert.Equal(expected, scenario.Item3); //, "Test scenario has an expected result that is inconsistent with BCL mutable collection behavior.");
 
-                var actualFunc = operation(this.SetWith(scenario.Item1.ToArray()));
-                var args = new object[] { iteration, ToStringDeferred(scenario.Item1), ToStringDeferred(scenario.Item2) };
+                Func<IEnumerable<T>, bool> actualFunc = operation(this.SetWith(scenario.Item1.ToArray()));
+                object[] args = new object[] { iteration, ToStringDeferred(scenario.Item1), ToStringDeferred(scenario.Item2) };
                 Assert.Equal(scenario.Item3, actualFunc(this.SetWith(scenario.Item2.ToArray()))); //, message, args);
                 Assert.Equal(scenario.Item3, actualFunc(scenario.Item2)); //, message, args);
             }
@@ -383,7 +383,7 @@ namespace System.Collections.Immutable.Tests
             int removedCount = 0;
             foreach (T value in values)
             {
-                var nextSet = set.Remove(value);
+                IImmutableSet<T> nextSet = set.Remove(value);
                 Assert.NotSame(set, nextSet);
                 Assert.Equal(initialCount - removedCount, set.Count);
                 Assert.Equal(initialCount - removedCount - 1, nextSet.Count);
@@ -403,7 +403,7 @@ namespace System.Collections.Immutable.Tests
 
             foreach (T value in data)
             {
-                var newSet = set.Add(value);
+                IImmutableSet<T> newSet = set.Add(value);
                 Assert.NotSame(set, newSet);
                 set = newSet;
             }
@@ -415,7 +415,7 @@ namespace System.Collections.Immutable.Tests
 
             foreach (T value in data)
             {
-                var newSet = set.Remove(value);
+                IImmutableSet<T> newSet = set.Remove(value);
                 Assert.NotSame(set, newSet);
                 set = newSet;
             }
@@ -423,16 +423,16 @@ namespace System.Collections.Immutable.Tests
 
         protected void EnumeratorTestHelper<T>(IImmutableSet<T> emptySet, IComparer<T> comparer, params T[] values)
         {
-            var set = emptySet;
+            IImmutableSet<T> set = emptySet;
             foreach (T value in values)
             {
                 set = set.Add(value);
             }
 
-            var nonGenericEnumerableList = ToListNonGeneric<T>(set);
+            List<T> nonGenericEnumerableList = ToListNonGeneric<T>(set);
             CollectionAssertAreEquivalent(nonGenericEnumerableList, values);
 
-            var list = set.ToList();
+            List<T> list = set.ToList();
             CollectionAssertAreEquivalent(list, values);
 
             if (comparer != null)
@@ -478,7 +478,7 @@ namespace System.Collections.Immutable.Tests
             int initialCount = set.Count;
 
             var uniqueValues = new HashSet<T>(values);
-            var enumerateAddSet = set.Union(values);
+            IImmutableSet<T> enumerateAddSet = set.Union(values);
             Assert.Equal(initialCount + uniqueValues.Count, enumerateAddSet.Count);
             foreach (T value in values)
             {
@@ -489,7 +489,7 @@ namespace System.Collections.Immutable.Tests
             foreach (T value in values)
             {
                 bool duplicate = set.Contains(value);
-                var nextSet = set.Add(value);
+                IImmutableSet<T> nextSet = set.Add(value);
                 Assert.True(nextSet.Count > 0);
                 Assert.Equal(initialCount + addedCount, set.Count);
                 int expectedCount = initialCount + addedCount;

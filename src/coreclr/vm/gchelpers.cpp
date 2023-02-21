@@ -342,6 +342,11 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
 #endif // FEATURE_EVENT_TRACE
 }
 
+void PublishFrozenObject(Object*& orObject)
+{
+    PublishObjectAndNotify(orObject, GC_ALLOC_NO_FLAGS);
+}
+
 inline SIZE_T MaxArrayLength()
 {
     // Impose limits on maximum array length to prevent corner case integer overflow bugs
@@ -886,10 +891,12 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap, bool* pIs
     if (preferFrozenHeap)
     {
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-        orString = static_cast<StringObject*>(foh->TryAllocateObject(g_pStringClass, totalSize));
+        orString = static_cast<StringObject*>(foh->TryAllocateObject(g_pStringClass, totalSize, /* publish = */false));
         if (orString != nullptr)
         {
             orString->SetStringLength(cchStringLength);
+            // Publish needs to be postponed in this case because we need to specify string length 
+            PublishObjectAndNotify(orString, GC_ALLOC_NO_FLAGS);
             _ASSERTE(orString->GetBuffer()[cchStringLength] == W('\0'));
             orStringRef = ObjectToSTRINGREF(orString);
             *pIsFrozen = true;

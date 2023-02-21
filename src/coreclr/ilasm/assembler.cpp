@@ -2059,8 +2059,8 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
     );
     if (FAILED(hr))
     {
-        report->error("Failed to add user string using DefineUserString, hr=0x%08x, data: '%S'\n",
-               hr, UnicodeString);
+        report->error("Failed to add user string using DefineUserString, hr=0x%08x, data: '%s'\n",
+               hr, pb);
     }
     else
     {
@@ -2380,7 +2380,6 @@ void Assembler::SetSourceFileName(_In_ __nullterminated char* szName)
             if(strcmp(m_szSourceFileName,szName))
             {
                 strcpy_s(m_szSourceFileName,MAX_FILENAME_LENGTH*3+1,szName);
-                WszMultiByteToWideChar(g_uCodePage,0,szName,-1,m_wzSourceFileName,MAX_FILENAME_LENGTH);
             }
             if(m_fGeneratePDB)
             {

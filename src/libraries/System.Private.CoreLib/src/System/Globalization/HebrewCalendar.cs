@@ -389,10 +389,8 @@ namespace System.Globalization
             // Get the offset into the LunarMonthLen array and the lunar day
             //  for January 1st.
             int index = gregorianYear - FirstGregorianTableYear;
-            if (index < 0 || index > TableSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(gregorianYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index, nameof(gregorianYear));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, TableSize, nameof(gregorianYear));
 
             index *= 2;
             lunarDate.day = HebrewTable[index];

@@ -329,7 +329,7 @@ namespace System.Security.Cryptography
         public virtual bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             VerifyHash(hash.ToArray(), signature.ToArray(), hashAlgorithm, padding);
 
-        private static Exception DerivedClassMustOverride() =>
+        private static NotImplementedException DerivedClassMustOverride() =>
             new NotImplementedException(SR.NotSupported_SubclassOverride);
 
         [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -357,10 +357,13 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding)
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             ArgumentNullException.ThrowIfNull(padding);
 
@@ -617,10 +620,13 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding)
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (offset < 0 || offset > data.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || count > data.Length - offset)
-                throw new ArgumentOutOfRangeException(nameof(count));
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, data.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, data.Length - offset);
+
             ArgumentNullException.ThrowIfNull(signature);
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             ArgumentNullException.ThrowIfNull(padding);

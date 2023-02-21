@@ -5,7 +5,7 @@ namespace Test
 {
     using System;
 
-    internal class AA
+    public class AA
     {
         private object[] _axField1 = new object[7];
         private static AA[] s_axForward1;
@@ -34,7 +34,7 @@ namespace Test
             GC.Collect();
             return new float[7];
         }
-        private static int Main()
+        public static int Main()
         {
             try
             {

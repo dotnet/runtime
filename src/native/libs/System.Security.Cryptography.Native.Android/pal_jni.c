@@ -426,8 +426,8 @@ jclass    g_SSLEngine;
 jmethodID g_SSLEngineBeginHandshake;
 jmethodID g_SSLEngineCloseOutbound;
 jmethodID g_SSLEngineGetApplicationProtocol;
-jmethodID g_SSLEngineGetHandshakeStatus;
 jmethodID g_SSLEngineGetHandshakeSession;
+jmethodID g_SSLEngineGetHandshakeStatus;
 jmethodID g_SSLEngineGetSession;
 jmethodID g_SSLEngineGetSSLParameters;
 jmethodID g_SSLEngineGetSupportedProtocols;
@@ -463,6 +463,7 @@ jmethodID g_SSLContextCreateSSLEngineMethodWithHostAndPort;
 jclass    g_SSLSession;
 jmethodID g_SSLSessionGetApplicationBufferSize;
 jmethodID g_SSLSessionGetCipherSuite;
+jmethodID g_SSLSessionGetLocalCertificates;
 jmethodID g_SSLSessionGetPacketBufferSize;
 jmethodID g_SSLSessionGetPeerCertificates;
 jmethodID g_SSLSessionGetProtocol;
@@ -479,6 +480,13 @@ jmethodID g_KeyAgreementGetInstance;
 jmethodID g_KeyAgreementInit;
 jmethodID g_KeyAgreementDoPhase;
 jmethodID g_KeyAgreementGenerateSecret;
+
+// javax/net/ssl/TrustManager
+jclass g_TrustManager;
+
+// net/dot/android/crypto/DotnetProxyTrustManager
+jclass    g_DotnetProxyTrustManager;
+jmethodID g_DotnetProxyTrustManagerCtor;
 
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
@@ -647,7 +655,7 @@ JNIEnv* GetJNIEnv(void)
     LOG_DEBUG("Registering JNI thread detach. env ptr %p. Key: %ld", (void*)env, (long)threadLocalEnvKey);
     pthread_setspecific(threadLocalEnvKey, env);
 
-    abort_unless(ret == JNI_OK, "Unable to attach thread to JVM");
+    abort_unless(ret == JNI_OK, "Unable to attach thread to JVM (error: %d)", ret);
     return env;
 }
 
@@ -1020,9 +1028,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLEngineBeginHandshake =         GetMethod(env, false, g_SSLEngine, "beginHandshake", "()V");
     g_SSLEngineCloseOutbound =          GetMethod(env, false, g_SSLEngine, "closeOutbound", "()V");
     g_SSLEngineGetApplicationProtocol = GetOptionalMethod(env, false, g_SSLEngine, "getApplicationProtocol", "()Ljava/lang/String;");
+    g_SSLEngineGetHandshakeSession =    GetOptionalMethod(env, false, g_SSLEngine, "getHandshakeSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineGetHandshakeStatus =     GetMethod(env, false, g_SSLEngine, "getHandshakeStatus", "()Ljavax/net/ssl/SSLEngineResult$HandshakeStatus;");
     g_SSLEngineGetSession =             GetMethod(env, false, g_SSLEngine, "getSession", "()Ljavax/net/ssl/SSLSession;");
-    g_SSLEngineGetHandshakeSession =    GetOptionalMethod(env, false, g_SSLEngine, "getHandshakeSession", "()Ljavax/net/ssl/SSLSession;");
     g_SSLEngineGetSSLParameters =       GetMethod(env, false, g_SSLEngine, "getSSLParameters", "()Ljavax/net/ssl/SSLParameters;");
     g_SSLEngineGetSupportedProtocols =  GetMethod(env, false, g_SSLEngine, "getSupportedProtocols", "()[Ljava/lang/String;");
     g_SSLEngineSetEnabledProtocols =    GetMethod(env, false, g_SSLEngine, "setEnabledProtocols", "([Ljava/lang/String;)V");
@@ -1054,6 +1062,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_SSLSession =                          GetClassGRef(env, "javax/net/ssl/SSLSession");
     g_SSLSessionGetApplicationBufferSize =  GetMethod(env, false, g_SSLSession, "getApplicationBufferSize", "()I");
     g_SSLSessionGetCipherSuite =            GetMethod(env, false, g_SSLSession, "getCipherSuite", "()Ljava/lang/String;");
+    g_SSLSessionGetLocalCertificates =      GetMethod(env, false, g_SSLSession, "getLocalCertificates", "()[Ljava/security/cert/Certificate;");
     g_SSLSessionGetPacketBufferSize =       GetMethod(env, false, g_SSLSession, "getPacketBufferSize", "()I");
     g_SSLSessionGetPeerCertificates =       GetMethod(env, false, g_SSLSession, "getPeerCertificates", "()[Ljava/security/cert/Certificate;");
     g_SSLSessionGetProtocol =               GetMethod(env, false, g_SSLSession, "getProtocol", "()Ljava/lang/String;");
@@ -1068,6 +1077,11 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_KeyAgreementInit           = GetMethod(env, false, g_KeyAgreementClass, "init", "(Ljava/security/Key;)V");
     g_KeyAgreementDoPhase        = GetMethod(env, false, g_KeyAgreementClass, "doPhase", "(Ljava/security/Key;Z)Ljava/security/Key;");
     g_KeyAgreementGenerateSecret = GetMethod(env, false, g_KeyAgreementClass, "generateSecret", "()[B");
+
+    g_TrustManager = GetClassGRef(env, "javax/net/ssl/TrustManager");
+
+    g_DotnetProxyTrustManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetProxyTrustManager");
+    g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(J)V");
 
     return JNI_VERSION_1_6;
 }

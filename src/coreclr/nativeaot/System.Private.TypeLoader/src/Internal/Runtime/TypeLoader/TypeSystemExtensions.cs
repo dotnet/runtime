@@ -7,7 +7,7 @@ using System;
 using Internal.Runtime.Augments;
 using Internal.TypeSystem;
 
-namespace Internal.Runtime.TypeLoader
+namespace Internal.TypeSystem
 {
     internal static class TypeDescExtensions
     {
@@ -20,6 +20,22 @@ namespace Internal.Runtime.TypeLoader
         {
             DefType typeAsDefType = type as DefType;
             return typeAsDefType != null && typeAsDefType.HasInstantiation;
+        }
+
+        public static bool IsWellKnownType(this TypeDesc type, WellKnownType wellKnownType)
+        {
+            return type == type.Context.GetWellKnownType(wellKnownType, false);
+        }
+
+        public static ByRefType MakeByRefType(this TypeDesc type)
+        {
+            return type.Context.GetByRefType(type);
+        }
+
+        public static TypeDesc GetParameterType(this TypeDesc type)
+        {
+            ParameterizedType paramType = (ParameterizedType)type;
+            return paramType.ParameterType;
         }
     }
 

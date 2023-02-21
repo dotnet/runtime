@@ -6,13 +6,10 @@ namespace System.Transactions.Configuration
     internal sealed class MachineSettingsSection // ConfigurationSection
     {
         private static readonly MachineSettingsSection s_section = new MachineSettingsSection();
-        private static TimeSpan s_maxTimeout = TimeSpan.Parse(ConfigurationStrings.DefaultMaxTimeout);
+        private static readonly TimeSpan s_maxTimeout = TimeSpan.Parse(ConfigurationStrings.DefaultMaxTimeout);
 
         internal static MachineSettingsSection GetSection() => s_section;
 
-        public static TimeSpan MaxTimeout
-        {
-            get { return s_maxTimeout; }
-        }
+        public static TimeSpan MaxTimeout => s_maxTimeout;
     }
 }

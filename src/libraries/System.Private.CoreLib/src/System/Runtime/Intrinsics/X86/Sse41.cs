@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.X86
@@ -28,51 +29,51 @@ namespace System.Runtime.Intrinsics.X86
             ///   PEXTRQ reg/m64, xmm, imm8
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
-            public static long Extract(Vector128<long> value, byte index) => Extract(value, index);
+            public static long Extract(Vector128<long> value, [ConstantExpected] byte index) => Extract(value, index);
             /// <summary>
             /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
             ///   PEXTRQ reg/m64, xmm, imm8
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
-            public static ulong Extract(Vector128<ulong> value, byte index) => Extract(value, index);
+            public static ulong Extract(Vector128<ulong> value, [ConstantExpected] byte index) => Extract(value, index);
 
             /// <summary>
             /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
             ///   PINSRQ xmm, reg/m64, imm8
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
-            public static Vector128<long> Insert(Vector128<long> value, long data, byte index) => Insert(value, data, index);
+            public static Vector128<long> Insert(Vector128<long> value, long data, [ConstantExpected] byte index) => Insert(value, data, index);
             /// <summary>
             /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
             ///   PINSRQ xmm, reg/m64, imm8
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
-            public static Vector128<ulong> Insert(Vector128<ulong> value, ulong data, byte index) => Insert(value, data, index);
+            public static Vector128<ulong> Insert(Vector128<ulong> value, ulong data, [ConstantExpected] byte index) => Insert(value, data, index);
         }
 
         /// <summary>
         /// __m128i _mm_blend_epi16 (__m128i a, __m128i b, const int imm8)
         ///   PBLENDW xmm, xmm/m128 imm8
         /// </summary>
-        public static Vector128<short> Blend(Vector128<short> left, Vector128<short> right, byte control) => Blend(left, right, control);
+        public static Vector128<short> Blend(Vector128<short> left, Vector128<short> right, [ConstantExpected] byte control) => Blend(left, right, control);
 
         /// <summary>
         /// __m128i _mm_blend_epi16 (__m128i a, __m128i b, const int imm8)
         ///   PBLENDW xmm, xmm/m128 imm8
         /// </summary>
-        public static Vector128<ushort> Blend(Vector128<ushort> left, Vector128<ushort> right, byte control) => Blend(left, right, control);
+        public static Vector128<ushort> Blend(Vector128<ushort> left, Vector128<ushort> right, [ConstantExpected] byte control) => Blend(left, right, control);
 
         /// <summary>
         /// __m128 _mm_blend_ps (__m128 a, __m128 b, const int imm8)
         ///   BLENDPS xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<float> Blend(Vector128<float> left, Vector128<float> right, byte control) => Blend(left, right, control);
+        public static Vector128<float> Blend(Vector128<float> left, Vector128<float> right, [ConstantExpected] byte control) => Blend(left, right, control);
 
         /// <summary>
         /// __m128d _mm_blend_pd (__m128d a, __m128d b, const int imm8)
         ///   BLENDPD xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<double> Blend(Vector128<double> left, Vector128<double> right, byte control) => Blend(left, right, control);
+        public static Vector128<double> Blend(Vector128<double> left, Vector128<double> right, [ConstantExpected] byte control) => Blend(left, right, control);
 
         /// <summary>
         /// __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask)
@@ -303,33 +304,33 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_dp_ps (__m128 a, __m128 b, const int imm8)
         ///   DPPS xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<float> DotProduct(Vector128<float> left, Vector128<float> right, byte control) => DotProduct(left, right, control);
+        public static Vector128<float> DotProduct(Vector128<float> left, Vector128<float> right, [ConstantExpected] byte control) => DotProduct(left, right, control);
         /// <summary>
         /// __m128d _mm_dp_pd (__m128d a, __m128d b, const int imm8)
         ///   DPPD xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<double> DotProduct(Vector128<double> left, Vector128<double> right, byte control) => DotProduct(left, right, control);
+        public static Vector128<double> DotProduct(Vector128<double> left, Vector128<double> right, [ConstantExpected] byte control) => DotProduct(left, right, control);
 
         /// <summary>
         /// int _mm_extract_epi8 (__m128i a, const int imm8)
         ///   PEXTRB reg/m8, xmm, imm8
         /// </summary>
-        public static byte Extract(Vector128<byte> value, byte index) => Extract(value, index);
+        public static byte Extract(Vector128<byte> value, [ConstantExpected] byte index) => Extract(value, index);
         /// <summary>
         /// int _mm_extract_epi32 (__m128i a, const int imm8)
         ///   PEXTRD reg/m32, xmm, imm8
         /// </summary>
-        public static int Extract(Vector128<int> value, byte index) => Extract(value, index);
+        public static int Extract(Vector128<int> value, [ConstantExpected] byte index) => Extract(value, index);
         /// <summary>
         /// int _mm_extract_epi32 (__m128i a, const int imm8)
         ///   PEXTRD reg/m32, xmm, imm8
         /// </summary>
-        public static uint Extract(Vector128<uint> value, byte index) => Extract(value, index);
+        public static uint Extract(Vector128<uint> value, [ConstantExpected] byte index) => Extract(value, index);
         /// <summary>
         /// int _mm_extract_ps (__m128 a, const int imm8)
         ///   EXTRACTPS xmm, xmm/m32, imm8
         /// </summary>
-        public static float Extract(Vector128<float> value, byte index) => Extract(value, index);
+        public static float Extract(Vector128<float> value, [ConstantExpected] byte index) => Extract(value, index);
 
         /// <summary>
         /// __m128 _mm_floor_ps (__m128 a)
@@ -370,27 +371,27 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_insert_epi8 (__m128i a, int i, const int imm8)
         ///   PINSRB xmm, reg/m8, imm8
         /// </summary>
-        public static Vector128<sbyte> Insert(Vector128<sbyte> value, sbyte data, byte index) => Insert(value, data, index);
+        public static Vector128<sbyte> Insert(Vector128<sbyte> value, sbyte data, [ConstantExpected] byte index) => Insert(value, data, index);
         /// <summary>
         /// __m128i _mm_insert_epi8 (__m128i a, int i, const int imm8)
         ///   PINSRB xmm, reg/m8, imm8
         /// </summary>
-        public static Vector128<byte> Insert(Vector128<byte> value, byte data, byte index) => Insert(value, data, index);
+        public static Vector128<byte> Insert(Vector128<byte> value, byte data, [ConstantExpected] byte index) => Insert(value, data, index);
         /// <summary>
         /// __m128i _mm_insert_epi32 (__m128i a, int i, const int imm8)
         ///   PINSRD xmm, reg/m32, imm8
         /// </summary>
-        public static Vector128<int> Insert(Vector128<int> value, int data, byte index) => Insert(value, data, index);
+        public static Vector128<int> Insert(Vector128<int> value, int data, [ConstantExpected] byte index) => Insert(value, data, index);
         /// <summary>
         /// __m128i _mm_insert_epi32 (__m128i a, int i, const int imm8)
         ///   PINSRD xmm, reg/m32, imm8
         /// </summary>
-        public static Vector128<uint> Insert(Vector128<uint> value, uint data, byte index) => Insert(value, data, index);
+        public static Vector128<uint> Insert(Vector128<uint> value, uint data, [ConstantExpected] byte index) => Insert(value, data, index);
         /// <summary>
         /// __m128 _mm_insert_ps (__m128 a, __m128 b, const int imm8)
         ///   INSERTPS xmm, xmm/m32, imm8
         /// </summary>
-        public static Vector128<float> Insert(Vector128<float> value, Vector128<float> data, byte index) => Insert(value, data, index);
+        public static Vector128<float> Insert(Vector128<float> value, Vector128<float> data, [ConstantExpected] byte index) => Insert(value, data, index);
 
         /// <summary>
         /// __m128i _mm_max_epi8 (__m128i a, __m128i b)
@@ -444,7 +445,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_mpsadbw_epu8 (__m128i a, __m128i b, const int imm8)
         ///   MPSADBW xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<ushort> MultipleSumAbsoluteDifferences(Vector128<byte> left, Vector128<byte> right, byte mask) => MultipleSumAbsoluteDifferences(left, right, mask);
+        public static Vector128<ushort> MultipleSumAbsoluteDifferences(Vector128<byte> left, Vector128<byte> right, [ConstantExpected] byte mask) => MultipleSumAbsoluteDifferences(left, right, mask);
 
         /// <summary>
         /// __m128i _mm_mul_epi32 (__m128i a, __m128i b)

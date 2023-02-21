@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Reflection;
 using Xunit;
 
@@ -206,6 +207,18 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(SerializationContext.Default.TypeWithValidationAttributes.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.TypeWithDerivedAttribute.SerializeHandler);
             Assert.Null(SerializationContext.Default.PolymorphicClass.SerializeHandler);
+        }
+
+        [Fact]
+        public void TypeWithoutMetadataOrFastPathHandler_SerializationThrowsInvalidOperationException()
+        {
+            JsonTypeInfo<ClassWithCustomConverterProperty> typeInfo = SerializationContext.Default.ClassWithCustomConverterProperty;
+            Assert.Null(typeInfo.SerializeHandler);
+            Assert.Empty(typeInfo.Properties);
+
+            var value = new ClassWithCustomConverterProperty();
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, typeInfo));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("""{"Property":42}""", typeInfo));
         }
 
         [Fact]

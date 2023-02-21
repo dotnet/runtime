@@ -741,7 +741,7 @@ byref_arg_is_reference (MonoType *t)
  * return the type.
  */
 static MonoClass*
-get_class_from_ldtoken_ins (MonoInst *ins)
+get_class_from_ldtoken_ins (MonoCompile *cfg, MonoInst *ins)
 {
 	// FIXME: The JIT case uses PCONST
 
@@ -751,7 +751,7 @@ get_class_from_ldtoken_ins (MonoInst *ins)
 		MonoJumpInfoToken *token = (MonoJumpInfoToken*)ins->inst_p0;
 		MonoClass *handle_class;
 		ERROR_DECL (error);
-		gpointer handle = mono_ldtoken_checked (token->image, token->token, &handle_class, NULL, error);
+		gpointer handle = mono_ldtoken_checked (token->image, token->token, &handle_class, cfg->generic_context, error);
 		mono_error_assert_ok (error);
 		MonoType *t = (MonoType*)handle;
 		return mono_class_from_mono_type_internal (t);
@@ -767,10 +767,10 @@ get_class_from_ldtoken_ins (MonoInst *ins)
  * their relation (EQ/NE/NONE).
  */
 static CompRelation
-get_rttype_ins_relation (MonoInst *ins1, MonoInst *ins2, gboolean *vtype_constrained_gparam)
+get_rttype_ins_relation (MonoCompile *cfg, MonoInst *ins1, MonoInst *ins2, gboolean *vtype_constrained_gparam)
 {
-	MonoClass *k1 = get_class_from_ldtoken_ins (ins1);
-	MonoClass *k2 = get_class_from_ldtoken_ins (ins2);
+	MonoClass *k1 = get_class_from_ldtoken_ins (cfg, ins1);
+	MonoClass *k2 = get_class_from_ldtoken_ins (cfg, ins2);
 
 	CompRelation rel = CMP_UNORD;
 	if (k1 && k2) {
@@ -794,6 +794,8 @@ get_rttype_ins_relation (MonoInst *ins1, MonoInst *ins2, gboolean *vtype_constra
 				else if (MONO_TYPE_IS_REFERENCE (t2))
 					rel = CMP_NE;
 			}
+		} else if (MONO_TYPE_IS_PRIMITIVE (t1) && MONO_TYPE_IS_PRIMITIVE (t2)) {
+			rel = t1->type == t2->type ? CMP_EQ : CMP_NE;
 		}
 	}
 	return rel;
@@ -877,15 +879,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			mini_type_to_eval_stack_type (cfg, fsig->ret, ins);
 			ins->klass = mono_defaults.runtimetype_class;
 			*ins_type_initialized = TRUE;
-			return ins;
-		} else if (!cfg->backend->emulate_mul_div && strcmp (cmethod->name, "InternalGetHashCode") == 0 && fsig->param_count == 1 && !mono_gc_is_moving ()) {
-			int dreg = alloc_ireg (cfg);
-			int t1 = alloc_ireg (cfg);
-
-			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_IMM, t1, args [0]->dreg, 3);
-			EMIT_NEW_BIALU_IMM (cfg, ins, OP_MUL_IMM, dreg, t1, 2654435761u);
-			ins->type = STACK_I4;
-
 			return ins;
 		} else if (strcmp (cmethod->name, ".ctor") == 0 && fsig->param_count == 0) {
  			MONO_INST_NEW (cfg, ins, OP_NOP);
@@ -1016,6 +1009,49 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_COMPARE_IMM, -1, dreg, 0);
 			EMIT_NEW_UNALU (cfg, ins, OP_ICGT, dreg, -1);
 			ins->type = STACK_I4;
+			return ins;
+		} else if (!strcmp (cmethod->name, "CreateSpan") && fsig->param_count == 1) {
+			MonoGenericContext* ctx = mono_method_get_context (cmethod);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			MonoType* arg_type = ctx->method_inst->type_argv [0];
+			MonoType* t = mini_get_underlying_type (arg_type);
+			g_assert (!MONO_TYPE_IS_REFERENCE (t) && t->type != MONO_TYPE_VALUETYPE);
+
+			// This OP_LDTOKEN_FIELD later changes into a OP_VMOVE.
+			MonoClassField* field = (MonoClassField*) args [0]->inst_p1;
+			if (args [0]->opcode != OP_LDTOKEN_FIELD)
+					return NULL;
+
+			int alignment = 0;
+			const int element_size = mono_type_size (t, &alignment);
+			const int num_elements = mono_type_size (field->type, &alignment) / element_size;
+			const int obj_size = MONO_ABI_SIZEOF (MonoObject);
+			
+			MonoInst* span = mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
+			MonoInst* span_addr;
+			EMIT_NEW_TEMPLOADA (cfg, span_addr, span->inst_c0);
+
+			MonoInst* ptr_inst;
+			if (cfg->compile_aot) {
+				NEW_RVACONST (cfg, ptr_inst, mono_class_get_image (mono_field_get_parent (field)), args [0]->inst_c0);
+				MONO_ADD_INS (cfg->cbb, ptr_inst);
+			} else {
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+				const int swizzle = 1;
+#else
+				const int swizzle = element_size;
+#endif
+				gpointer data_ptr = (gpointer)mono_field_get_rva (field, swizzle);
+				EMIT_NEW_PCONST (cfg, ptr_inst, data_ptr); 
+			}
+
+			MonoClassField* field_ref = mono_class_get_field_from_name_full (span->klass, "_reference", NULL);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, span_addr->dreg, field_ref->offset - obj_size, ptr_inst->dreg);
+			MonoClassField* field_len = mono_class_get_field_from_name_full (span->klass, "_length", NULL);
+			MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_len->offset - obj_size, num_elements);
+			EMIT_NEW_TEMPLOAD (cfg, ins, span->inst_c0);
 			return ins;
 		} else
 			return NULL;
@@ -1877,7 +1913,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Equality") &&
 			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
 		gboolean vtype_constrained_gparam = FALSE;
-		CompRelation rel = get_rttype_ins_relation (args [0], args [1], &vtype_constrained_gparam);
+		CompRelation rel = get_rttype_ins_relation (cfg, args [0], args [1], &vtype_constrained_gparam);
 		if (rel == CMP_EQ) {
 			if (cfg->verbose_level > 2)
 				printf ("-> true\n");
@@ -1901,7 +1937,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Inequality") &&
 			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
 		gboolean vtype_constrained_gparam = FALSE;
-		CompRelation rel = get_rttype_ins_relation (args [0], args [1], &vtype_constrained_gparam);
+		CompRelation rel = get_rttype_ins_relation (cfg, args [0], args [1], &vtype_constrained_gparam);
 		if (rel == CMP_NE) {
 			if (cfg->verbose_level > 2)
 				printf ("-> true\n");
@@ -1923,7 +1959,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return ins;
 	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "get_IsValueType") &&
 			   args [0]->klass == mono_defaults.runtimetype_class) {
-		MonoClass *k1 = get_class_from_ldtoken_ins (args [0]);
+		MonoClass *k1 = get_class_from_ldtoken_ins (cfg, args [0]);
 		if (k1) {
 			MonoType *t1 = m_class_get_byval_arg (k1);
 			MonoType *constraint1 = NULL;
@@ -2073,16 +2109,20 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 
-	// Return false for RuntimeFeature.IsDynamicCodeSupported and RuntimeFeature.IsDynamicCodeCompiled on FullAOT, otherwise true
+	// On FullAOT, return false for RuntimeFeature:
+	// - IsDynamicCodeCompiled 
+	// - IsDynamicCodeSupported and no interpreter
+	// otherwise use the C# code in System.Private.CoreLib
 	if (in_corlib &&
+		cfg->full_aot &&
 		!strcmp ("System.Runtime.CompilerServices", cmethod_klass_name_space) &&
 		!strcmp ("RuntimeFeature", cmethod_klass_name)) {
 		if (!strcmp (cmethod->name, "get_IsDynamicCodeCompiled")) {
-			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? 0 : 1);
+			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;
-		} else if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported")) {
-			EMIT_NEW_ICONST (cfg, ins, cfg->full_aot ? (cfg->interp ? 1 : 0) : 1);
+		} else if (!strcmp (cmethod->name, "get_IsDynamicCodeSupported") && !cfg->interp) {
+			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;
 			return ins;
 		}

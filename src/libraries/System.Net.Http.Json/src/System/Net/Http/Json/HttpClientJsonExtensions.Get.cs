@@ -15,166 +15,59 @@ namespace System.Net.Http.Json
     /// </summary>
     public static partial class HttpClientJsonExtensions
     {
-        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
-        {
-            if (client is null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
-        }
+        private static readonly Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> s_getAsync =
+            static (client, uri, cancellation) => client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellation);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
-        {
-            if (client is null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            return GetFromJsonAsyncCore(taskResponse, type, options, cancellationToken);
-        }
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default) =>
+            GetFromJsonAsync(client, CreateUri(requestUri), type, options, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
-        {
-            if (client is null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            return GetFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
-        }
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default) =>
+            FromJsonAsyncCore(static (client, uri, cancellation) => client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellation), client, requestUri, type, options, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
-        {
-            if (client is null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            return GetFromJsonAsyncCore<TValue>(taskResponse, options, cancellationToken);
-        }
-
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
-        {
-            if (client is null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            return GetFromJsonAsyncCore(taskResponse, type, context, cancellationToken);
-        }
-
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default)
-        {
-            if (client is null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            return GetFromJsonAsyncCore(taskResponse, type, context, cancellationToken);
-        }
-
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
-        {
-            if (client is null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            return GetFromJsonAsyncCore(taskResponse, jsonTypeInfo, cancellationToken);
-        }
-
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
-        {
-            if (client is null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            Task<HttpResponseMessage> taskResponse = client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            return GetFromJsonAsyncCore<TValue>(taskResponse, jsonTypeInfo, cancellationToken);
-        }
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default) =>
+            GetFromJsonAsync<TValue>(client, CreateUri(requestUri), options, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, CancellationToken cancellationToken = default)
-            => client.GetFromJsonAsync(requestUri, type, options: null, cancellationToken);
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default) =>
+            FromJsonAsyncCore<TValue>(s_getAsync, client, requestUri, options, cancellationToken);
+
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default) =>
+            GetFromJsonAsync(client, CreateUri(requestUri), type, context, cancellationToken);
+
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerContext context, CancellationToken cancellationToken = default) =>
+            FromJsonAsyncCore(s_getAsync, client, requestUri, type, context, cancellationToken);
+
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default) =>
+            GetFromJsonAsync(client, CreateUri(requestUri), jsonTypeInfo, cancellationToken);
+
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default) =>
+            FromJsonAsyncCore(s_getAsync, client, requestUri, jsonTypeInfo, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, CancellationToken cancellationToken = default)
-            => client.GetFromJsonAsync(requestUri, type, options: null, cancellationToken);
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, Type type, CancellationToken cancellationToken = default) =>
+            GetFromJsonAsync(client, requestUri, type, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken = default)
-            => client.GetFromJsonAsync<TValue>(requestUri, options: null, cancellationToken);
+        public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, CancellationToken cancellationToken = default) =>
+            GetFromJsonAsync(client, requestUri, type, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, CancellationToken cancellationToken = default)
-            => client.GetFromJsonAsync<TValue>(requestUri, options: null, cancellationToken);
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken = default) =>
+            GetFromJsonAsync<TValue>(client, requestUri, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        private static async Task<object?> GetFromJsonAsyncCore(Task<HttpResponseMessage> taskResponse, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
-        {
-            using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
-            {
-                response.EnsureSuccessStatusCode();
-                // Nullable forgiving reason:
-                // GetAsync will usually return Content as not-null.
-                // If Content happens to be null, the extension will throw.
-                return await response.Content!.ReadFromJsonAsync(type, options, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        private static async Task<T?> GetFromJsonAsyncCore<T>(Task<HttpResponseMessage> taskResponse, JsonSerializerOptions? options, CancellationToken cancellationToken)
-        {
-            using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
-            {
-                response.EnsureSuccessStatusCode();
-                // Nullable forgiving reason:
-                // GetAsync will usually return Content as not-null.
-                // If Content happens to be null, the extension will throw.
-                return await response.Content!.ReadFromJsonAsync<T>(options, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        private static async Task<object?> GetFromJsonAsyncCore(Task<HttpResponseMessage> taskResponse, Type type, JsonSerializerContext context, CancellationToken cancellationToken)
-        {
-            using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
-            {
-                response.EnsureSuccessStatusCode();
-                return await response.Content!.ReadFromJsonAsync(type, context, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        private static async Task<T?> GetFromJsonAsyncCore<T>(Task<HttpResponseMessage> taskResponse, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken)
-        {
-            using (HttpResponseMessage response = await taskResponse.ConfigureAwait(false))
-            {
-                response.EnsureSuccessStatusCode();
-                return await response.Content!.ReadFromJsonAsync<T>(jsonTypeInfo, cancellationToken).ConfigureAwait(false);
-            }
-        }
+        public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, CancellationToken cancellationToken = default) =>
+            GetFromJsonAsync<TValue>(client, requestUri, options: null, cancellationToken);
     }
 }

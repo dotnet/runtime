@@ -5,7 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-static class DeadEH
+public static class DeadEH
 {
 
     // This is the method that exposes the JIT bug
@@ -57,7 +57,7 @@ static class DeadEH
     }
 
     // Get everything jitted before we call
-    static int Main()
+    public static int Main()
     {
         Foo("prep");
         Bar(0);

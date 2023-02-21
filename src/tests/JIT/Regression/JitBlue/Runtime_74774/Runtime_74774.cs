@@ -3,9 +3,9 @@
 
 using System.Runtime.CompilerServices;
 
-class Runtime_74774
+public class Runtime_74774
 {
-    private static int Main()
+    public static int Main()
     {
         return Problem(new() { FirstLngValue = 1, SecondLngValue = 2 }) != 3 ? 101 : 100;
     }

@@ -6,11 +6,11 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static float[] m_af = new float[2];
 
-        static int Main()
+        public static int Main()
         {
             while (m_af[0] < m_af[1])
             {

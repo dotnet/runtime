@@ -634,7 +634,7 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsGeneric);
+                Debug.Assert(IsGeneric || IsGenericTypeDefinition);
 
                 if (!HasGenericVariance)
                     return null;
@@ -1364,6 +1364,12 @@ namespace Internal.Runtime
             {
                 return (EETypeElementType)((_uFlags & (uint)EETypeFlags.ElementTypeMask) >> (byte)EETypeFlags.ElementTypeShift);
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _uFlags = (_uFlags & ~(uint)EETypeFlags.ElementTypeMask) | ((uint)value << (byte)EETypeFlags.ElementTypeShift);
+            }
+#endif
         }
 
         public bool HasCctor
@@ -1446,10 +1452,10 @@ namespace Internal.Runtime
 
             if (eField == EETypeField.ETF_GenericComposition)
             {
-                Debug.Assert(IsGeneric);
+                Debug.Assert(IsGeneric || (IsGenericTypeDefinition && HasGenericVariance));
                 return cbOffset;
             }
-            if (IsGeneric)
+            if (IsGeneric || (IsGenericTypeDefinition && HasGenericVariance))
             {
                 cbOffset += relativeOrFullPointerOffset;
             }

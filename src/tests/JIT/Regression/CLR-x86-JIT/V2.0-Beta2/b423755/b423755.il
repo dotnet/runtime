@@ -12,6 +12,7 @@
 .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 )
 }
 
+.class public auto ansi Test_b423755 extends [mscorlib] System.Object {
 .method public static int32 Main()
 {
     .entrypoint
@@ -25,4 +26,5 @@
 
     ldc.i4 100 
     ret
+}
 }

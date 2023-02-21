@@ -59,7 +59,7 @@ namespace System.Reflection.Emit
             return m_parameterTypes;
         }
 
-        internal int GetToken(ModuleBuilder mod)
+        internal int GetToken(RuntimeModuleBuilder mod)
         {
             return mod.GetArrayMethodToken(m_containingType, m_name, m_callingConvention, m_returnType, m_parameterTypes);
         }

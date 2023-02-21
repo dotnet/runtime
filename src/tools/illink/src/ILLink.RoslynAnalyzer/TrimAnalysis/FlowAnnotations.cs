@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis;
 #nullable enable
 namespace ILLink.Shared.TrimAnalysis
 {
-	sealed partial class FlowAnnotations
+	internal sealed partial class FlowAnnotations
 	{
 		// In the analyzer there's no stateful data the flow annotations need to store
 		// so we just create a singleton on demand.
@@ -35,7 +35,7 @@ namespace ILLink.Shared.TrimAnalysis
 			return false;
 		}
 
-		public static DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (ParameterProxy param)
+		internal static DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (ParameterProxy param)
 		{
 			IMethodSymbol method = param.Method.Method;
 			if (param.IsImplicitThis)

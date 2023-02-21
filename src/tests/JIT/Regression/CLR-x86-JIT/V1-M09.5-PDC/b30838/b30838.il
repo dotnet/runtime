@@ -25,6 +25,7 @@
   IL_0001:  ret
 } // end of global method 'foo'
 
+.class public auto ansi Test_b30838 extends [mscorlib] System.Object {
 .method public static int32 main() il managed
 {
   .entrypoint
@@ -40,5 +41,6 @@ ldc.i4 100
 add
   IL_0012:  ret
 } // end of global method 'main'
+}
 
 //*********** DISASSEMBLY COMPLETE ***********************

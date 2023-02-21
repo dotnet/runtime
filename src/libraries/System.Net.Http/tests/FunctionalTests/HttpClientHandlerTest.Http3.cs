@@ -795,6 +795,11 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(HttpStatusCode.OK, responseA.StatusCode);
                     Assert.NotEqual(3, responseA.Version.Major);
                 }
+                catch (TimeoutException ex)
+                {
+                    _output.WriteLine($"Unable to establish non-H/3 connection to {uri}: {ex}");
+                    return;
+                }
                 catch (HttpRequestException ex) when
                     (ex.InnerException is SocketException se &&
                     (se.SocketErrorCode == SocketError.NetworkUnreachable || se.SocketErrorCode == SocketError.HostUnreachable || se.SocketErrorCode == SocketError.ConnectionRefused))

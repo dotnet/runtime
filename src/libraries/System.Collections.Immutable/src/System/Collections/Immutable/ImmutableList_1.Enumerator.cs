@@ -165,7 +165,7 @@ namespace System.Collections.Immutable
 
                 if (_stack != null)
                 {
-                    var stack = _stack.Use(ref this);
+                    Stack<RefAsValueType<ImmutableList<T>.Node>> stack = _stack.Use(ref this);
                     if (_remainingCount > 0 && stack.Count > 0)
                     {
                         Node n = stack.Pop().Value;
@@ -199,11 +199,11 @@ namespace System.Collections.Immutable
             private void ResetStack()
             {
                 Debug.Assert(_stack != null);
-                var stack = _stack.Use(ref this);
+                Stack<RefAsValueType<ImmutableList<T>.Node>> stack = _stack.Use(ref this);
                 stack.ClearFastWhenEmpty();
 
-                var node = _root;
-                var skipNodes = _reversed ? _root.Count - _startIndex - 1 : _startIndex;
+                ImmutableList<T>.Node node = _root;
+                int skipNodes = _reversed ? _root.Count - _startIndex - 1 : _startIndex;
                 while (!node.IsEmpty && skipNodes != this.PreviousBranch(node)!.Count)
                 {
                     if (skipNodes < this.PreviousBranch(node)!.Count)
@@ -273,7 +273,7 @@ namespace System.Collections.Immutable
                 if (!node.IsEmpty)
                 {
                     Debug.Assert(_stack != null);
-                    var stack = _stack.Use(ref this);
+                    Stack<RefAsValueType<ImmutableList<T>.Node>> stack = _stack.Use(ref this);
                     while (!node.IsEmpty)
                     {
                         stack.Push(new RefAsValueType<Node>(node));

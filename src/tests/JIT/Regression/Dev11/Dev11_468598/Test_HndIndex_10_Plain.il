@@ -27,7 +27,8 @@
     Test.App
         extends [mscorlib]System.Object
 {
-    .method private hidebysig static int32 Main() cil managed
+.class public auto ansi Test_Test_HndIndex_10_Plain extends [mscorlib] System.Object {
+    .method public hidebysig static int32 Main() cil managed
     {
         .entrypoint
         .maxstack 8
@@ -68,6 +69,7 @@
         ldloc       exitCode
         ret
     }
+}
 
 
     .method public hidebysig static void WriteLine(string format) cil managed noinlining

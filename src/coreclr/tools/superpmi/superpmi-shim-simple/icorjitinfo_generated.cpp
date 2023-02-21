@@ -1109,13 +1109,6 @@ uint32_t interceptor_ICJI::getFieldThreadLocalStoreID(
     return original_ICorJitInfo->getFieldThreadLocalStoreID(field, ppIndirection);
 }
 
-void interceptor_ICJI::addActiveDependency(
-          CORINFO_MODULE_HANDLE moduleFrom,
-          CORINFO_MODULE_HANDLE moduleTo)
-{
-    original_ICorJitInfo->addActiveDependency(moduleFrom, moduleTo);
-}
-
 CORINFO_METHOD_HANDLE interceptor_ICJI::GetDelegateCtor(
           CORINFO_METHOD_HANDLE methHnd,
           CORINFO_CLASS_HANDLE clsHnd,

@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.Reflection;
 
-internal class test
+public class test
 {
     public static int Main()
     {

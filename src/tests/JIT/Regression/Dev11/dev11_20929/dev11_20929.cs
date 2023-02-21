@@ -3,14 +3,14 @@
 
 using System;
 
-internal static class Repro
+public static class Repro
 {
     private struct foo
     {
         public int x, y;
     }
 
-    private static int Main()
+    public static int Main()
     {
 
         foo f = new foo();

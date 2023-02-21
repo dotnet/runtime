@@ -10,7 +10,7 @@
 .assembly 'b223924' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
-.class ILGEN_0xef3a9aea {
+.class public ILGEN_0xef3a9aea {
 
 .method static int64  Method_0x40026544(native int Arg_0x1, float64 Arg_0x2) {
 .maxstack	17
@@ -38,7 +38,7 @@
   ldc.i8 0x9ac29bfd47019ed5
  ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

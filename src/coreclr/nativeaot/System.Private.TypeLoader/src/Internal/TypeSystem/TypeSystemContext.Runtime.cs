@@ -131,9 +131,18 @@ namespace Internal.TypeSystem
                 unsafe
                 {
                     TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericArgumentCount];
+                    Runtime.GenericVariance* runtimeVariance = rtth.ToEETypePtr()->HasGenericVariance ?
+                        rtth.ToEETypePtr()->GenericVariance : null;
                     for (int i = 0; i < genericParameters.Length; i++)
                     {
-                        genericParameters[i] = GetSignatureVariable(i, false);
+                        GenericVariance variance = runtimeVariance == null ? GenericVariance.None : runtimeVariance[i] switch
+                        {
+                            Runtime.GenericVariance.Contravariant => GenericVariance.Contravariant,
+                            Runtime.GenericVariance.Covariant => GenericVariance.Covariant,
+                            Runtime.GenericVariance.NonVariant or Runtime.GenericVariance.ArrayCovariant => GenericVariance.None,
+                            _ => throw new NotImplementedException()
+                        };
+                        genericParameters[i] = genericParameters[i] = new RuntimeGenericParameterDesc(GenericParameterKind.Type, i, this, variance);
                     }
 
                     returnedType = new NoMetadataType(this, rtth, null, new Instantiation(genericParameters), rtth.GetHashCode());
@@ -388,11 +397,6 @@ namespace Internal.TypeSystem
         public DefType ResolveGenericInstantiation(DefType typeDef, Instantiation arguments)
         {
             Debug.Assert(typeDef.Instantiation.IsNull || typeDef.Instantiation.Length == arguments.Length);
-
-            MetadataType typeAsMetadataType = typeDef as MetadataType;
-
-            if (typeAsMetadataType != null)
-                return GetInstantiatedType(typeAsMetadataType, arguments);
 
             _genericTypeInstances ??= new LowLevelDictionary<GenericTypeInstanceKey, DefType>();
 

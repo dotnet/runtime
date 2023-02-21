@@ -12,7 +12,7 @@
     <!-- This test takes a long time to complete -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- https://github.com/dotnet/runtime/issues/53321 -->
-    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm64' And '$(TargetOS)' == 'OSX'">true</JitOptimizationSensitive>
+    <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm64' And '$(TargetOS)' == 'osx'">true</JitOptimizationSensitive>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

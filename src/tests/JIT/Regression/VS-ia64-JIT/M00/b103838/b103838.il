@@ -10,7 +10,8 @@
 .assembly 'b103838'
 {
 }
-.method static int32 Main()
+.class public auto ansi Test_b103838 extends [mscorlib] System.Object {
+.method public static int32 Main()
 {
     .entrypoint
     .maxstack 2
@@ -33,5 +34,6 @@
     call       void [System.Console]System.Console::WriteLine(int32)
     ldc.i4 100
     ret
+}
 }
 

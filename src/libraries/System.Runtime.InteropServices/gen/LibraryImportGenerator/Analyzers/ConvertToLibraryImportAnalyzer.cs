@@ -55,11 +55,19 @@ namespace Microsoft.Interop.Analyzers
                     if (libraryImportAttrType == null)
                         return;
 
-                    context.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, libraryImportAttrType), SymbolKind.Method);
+                    TargetFrameworkSettings targetFramework = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.GetTargetFrameworkSettings();
+
+                    StubEnvironment env = new StubEnvironment(
+                        context.Compilation,
+                        targetFramework.TargetFramework,
+                        targetFramework.Version,
+                        context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
+
+                    context.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, libraryImportAttrType, env), SymbolKind.Method);
                 });
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol libraryImportAttrType)
+        private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol libraryImportAttrType, StubEnvironment env)
         {
             var method = (IMethodSymbol)context.Symbol;
 
@@ -86,7 +94,6 @@ namespace Microsoft.Interop.Analyzers
             // If any diagnostics or failures to marshal are reported, then mark this diagnostic with a property signifying that it may require
             // later user work.
             AnyDiagnosticsSink diagnostics = new();
-            StubEnvironment env = context.Compilation.CreateStubEnvironment();
             AttributeData dllImportAttribute = method.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.DllImportAttribute);
             SignatureContext targetSignatureContext = SignatureContext.Create(method, DefaultMarshallingInfoParser.Create(env, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute), env, typeof(ConvertToLibraryImportAnalyzer).Assembly);
 
@@ -146,9 +153,9 @@ namespace Microsoft.Interop.Analyzers
                 || unmanagedType == UnmanagedType.SafeArray;
         }
 
-        private static InteropAttributeData CreateInteropAttributeDataFromDllImport(DllImportData dllImportData)
+        private static InteropAttributeCompilationData CreateInteropAttributeDataFromDllImport(DllImportData dllImportData)
         {
-            InteropAttributeData interopData = new();
+            InteropAttributeCompilationData interopData = new();
             if (dllImportData.SetLastError)
             {
                 interopData = interopData with { IsUserDefined = interopData.IsUserDefined | InteropAttributeMember.SetLastError, SetLastError = true };

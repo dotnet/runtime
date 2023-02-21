@@ -72,6 +72,13 @@ struct simd12_t
         uint8_t  u8[12];
         uint16_t u16[6];
         uint32_t u32[3];
+
+        // These three exist to simplify templatized code
+        // they won't actually be accessed for real scenarios
+
+        double   f64[1];
+        int64_t  i64[1];
+        uint64_t u64[1];
     };
 
     bool operator==(const simd12_t& other) const
@@ -142,29 +149,253 @@ struct simd32_t
     }
 };
 
-#ifdef FEATURE_SIMD
+template <typename TBase>
+TBase EvaluateUnaryScalar(genTreeOps oper, TBase arg0)
+{
+    switch (oper)
+    {
+        case GT_NEG:
+        {
+            return static_cast<TBase>(0) - arg0;
+        }
 
-#ifdef DEBUG
-extern const char* const simdIntrinsicNames[];
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd, typename TBase>
+void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+
+    if (scalar)
+    {
+        count = 1;
+
+#if defined(TARGET_XARCH)
+        // scalar operations on xarch copy the upper bits from arg0
+        *result = arg0;
+#elif defined(TARGET_ARM64)
+        // scalar operations on arm64 zero the upper bits
+        *result = {};
 #endif
+    }
 
-enum SIMDIntrinsicID : uint16_t
-{
-#define SIMD_INTRINSIC(m, i, id, n, r, ac, arg1, arg2, arg3, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10) SIMDIntrinsic##id,
-#include "simdintrinsiclist.h"
-};
+    for (uint32_t i = 0; i < count; i++)
+    {
+        // Safely execute `result[i] = oper(arg0[i])`
 
-// Static info about a SIMD intrinsic
-struct SIMDIntrinsicInfo
+        TBase input0;
+        memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
+
+        TBase output = EvaluateUnaryScalar<TBase>(oper, input0);
+        memcpy(&result->u8[i * sizeof(TBase)], &output, sizeof(TBase));
+    }
+}
+
+template <typename TSimd>
+void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* result, TSimd arg0)
 {
-    SIMDIntrinsicID id;
-    const char*     methodName;
-    bool            isInstMethod;
-    var_types       retType;
-    unsigned char   argCount;
-    var_types       argType[SIMD_INTRINSIC_MAX_MODELED_PARAM_COUNT];
-    var_types       supportedBaseTypes[SIMD_INTRINSIC_MAX_BASETYPE_COUNT];
-};
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        {
+            EvaluateUnarySimd<TSimd, float>(oper, scalar, result, arg0);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        {
+            EvaluateUnarySimd<TSimd, double>(oper, scalar, result, arg0);
+            break;
+        }
+
+        case TYP_BYTE:
+        {
+            EvaluateUnarySimd<TSimd, int8_t>(oper, scalar, result, arg0);
+            break;
+        }
+
+        case TYP_SHORT:
+        {
+            EvaluateUnarySimd<TSimd, int16_t>(oper, scalar, result, arg0);
+            break;
+        }
+
+        case TYP_INT:
+        {
+            EvaluateUnarySimd<TSimd, int32_t>(oper, scalar, result, arg0);
+            break;
+        }
+
+        case TYP_LONG:
+        {
+            EvaluateUnarySimd<TSimd, int64_t>(oper, scalar, result, arg0);
+            break;
+        }
+
+        case TYP_UBYTE:
+        {
+            EvaluateUnarySimd<TSimd, uint8_t>(oper, scalar, result, arg0);
+            break;
+        }
+
+        case TYP_USHORT:
+        {
+            EvaluateUnarySimd<TSimd, uint16_t>(oper, scalar, result, arg0);
+            break;
+        }
+
+        case TYP_UINT:
+        {
+            EvaluateUnarySimd<TSimd, uint32_t>(oper, scalar, result, arg0);
+            break;
+        }
+
+        case TYP_ULONG:
+        {
+            EvaluateUnarySimd<TSimd, uint64_t>(oper, scalar, result, arg0);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TBase>
+TBase EvaluateBinaryScalar(genTreeOps oper, TBase arg0, TBase arg1)
+{
+    switch (oper)
+    {
+        case GT_ADD:
+        {
+            return arg0 + arg1;
+        }
+
+        case GT_SUB:
+        {
+            return arg0 - arg1;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd, typename TBase>
+void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0, TSimd arg1)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+
+    if (scalar)
+    {
+        count = 1;
+
+#if defined(TARGET_XARCH)
+        // scalar operations on xarch copy the upper bits from arg0
+        *result = arg0;
+#elif defined(TARGET_ARM64)
+        // scalar operations on arm64 zero the upper bits
+        *result = {};
+#endif
+    }
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        // Safely execute `result[i] = oper(arg0[i], arg1[i])`
+
+        TBase input0;
+        memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
+
+        TBase input1;
+        memcpy(&input1, &arg1.u8[i * sizeof(TBase)], sizeof(TBase));
+
+        TBase output = EvaluateBinaryScalar<TBase>(oper, input0, input1);
+        memcpy(&result->u8[i * sizeof(TBase)], &output, sizeof(TBase));
+    }
+}
+
+template <typename TSimd>
+void EvaluateBinarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* result, TSimd arg0, TSimd arg1)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        {
+            EvaluateBinarySimd<TSimd, float>(oper, scalar, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        {
+            EvaluateBinarySimd<TSimd, double>(oper, scalar, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_BYTE:
+        {
+            EvaluateBinarySimd<TSimd, int8_t>(oper, scalar, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_SHORT:
+        {
+            EvaluateBinarySimd<TSimd, int16_t>(oper, scalar, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_INT:
+        {
+            EvaluateBinarySimd<TSimd, int32_t>(oper, scalar, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_LONG:
+        {
+            EvaluateBinarySimd<TSimd, int64_t>(oper, scalar, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_UBYTE:
+        {
+            EvaluateBinarySimd<TSimd, uint8_t>(oper, scalar, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_USHORT:
+        {
+            EvaluateBinarySimd<TSimd, uint16_t>(oper, scalar, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_UINT:
+        {
+            EvaluateBinarySimd<TSimd, uint32_t>(oper, scalar, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_ULONG:
+        {
+            EvaluateBinarySimd<TSimd, uint64_t>(oper, scalar, result, arg0, arg1);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+#ifdef FEATURE_SIMD
 
 #ifdef TARGET_XARCH
 // SSE2 Shuffle control byte to shuffle vector <W, Z, Y, X>

@@ -9,7 +9,7 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-class GitHub_11816
+public class GitHub_11816
 {
     struct StructType
     {
@@ -116,7 +116,7 @@ class GitHub_11816
         return f[0];
     }
 
-    static int Main()
+    public static int Main()
     {
         float value = 0.0F;
         value += TestStruct();

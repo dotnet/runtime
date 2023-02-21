@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         static int Method1(uint param2) { return 0; }
 
@@ -22,7 +22,7 @@ namespace Test
             return (int)param2[Method1(au[param1])];
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

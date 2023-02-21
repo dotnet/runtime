@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public KeptDelegateCacheFieldAttribute (string uniquePartOfName)
 		{
-			if (string.IsNullOrEmpty (uniquePartOfName))
-				throw new ArgumentNullException (nameof (uniquePartOfName));
+			ArgumentException.ThrowIfNullOrEmpty (uniquePartOfName);
 		}
 	}
 }

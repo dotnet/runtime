@@ -187,6 +187,17 @@ namespace Internal.TypeSystem.NoMetadata
                 }
             }
 
+            if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
+            {
+                flags |= TypeFlags.HasGenericVarianceComputed;
+
+                unsafe
+                {
+                    if (_genericTypeDefinition.ToEETypePtr()->HasGenericVariance)
+                        flags |= TypeFlags.HasGenericVariance;
+                }
+            }
+
             return flags;
         }
 
@@ -212,7 +223,7 @@ namespace Internal.TypeSystem.NoMetadata
             if (needsChange)
             {
                 TypeDesc openType = GetTypeDefinition();
-                return openType.InstantiateSignature(canonInstantiation, new Instantiation());
+                return Context.ResolveGenericInstantiation((DefType)openType, canonInstantiation);
             }
 
             return this;

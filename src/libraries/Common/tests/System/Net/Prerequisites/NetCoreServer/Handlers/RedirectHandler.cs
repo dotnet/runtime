@@ -60,15 +60,13 @@ namespace NetCoreServer
 
             if (hops <= 1)
             {
-                context.Response.Headers.Add("Location", redirectUri);
+                context.Response.Headers["Location"] = redirectUri;
             }
             else
             {
-                context.Response.Headers.Add(
-                    "Location",
-                    string.Format("/Redirect.ashx?uri={0}&hops={1}",
+                context.Response.Headers["Location"] = string.Format("/Redirect.ashx?uri={0}&hops={1}",
                     redirectUri,
-                    hops - 1));
+                    hops - 1);
             }
 
             context.Response.StatusCode = statusCode;

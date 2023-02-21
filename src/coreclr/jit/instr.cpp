@@ -702,10 +702,37 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
         }
         else
         {
+            assert(op->OperIsHWIntrinsic());
+
 #if defined(FEATURE_HW_INTRINSICS)
-            assert(op->AsHWIntrinsic()->OperIsMemoryLoad());
-            assert(op->AsHWIntrinsic()->GetOperandCount() == 1);
-            addr = op->AsHWIntrinsic()->Op(1);
+            GenTreeHWIntrinsic* hwintrinsic = op->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+            switch (intrinsicId)
+            {
+                case NI_Vector128_CreateScalarUnsafe:
+                case NI_Vector256_CreateScalarUnsafe:
+                {
+                    // The hwintrinsic should be contained and its
+                    // op1 should be either contained or spilled. This
+                    // allows us to transparently "look through" the
+                    // CreateScalarUnsafe and treat it directly like
+                    // a load from memory.
+
+                    assert(hwintrinsic->isContained());
+                    op = hwintrinsic->Op(1);
+                    return genOperandDesc(op);
+                }
+
+                default:
+                {
+                    assert(hwintrinsic->OperIsMemoryLoad());
+                    assert(hwintrinsic->GetOperandCount() == 1);
+
+                    addr = hwintrinsic->Op(1);
+                    break;
+                }
+            }
 #else
             unreached();
 #endif // FEATURE_HW_INTRINSICS
@@ -960,7 +987,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
         break;
 
         case OperandKind::Reg:
-            emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOp->GetRegNum(), ival);
+            emit->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpDesc.GetReg(), ival);
             break;
 
         default:
@@ -1013,7 +1040,7 @@ void CodeGen::inst_RV_RV_TT(
 
         case OperandKind::Reg:
         {
-            regNumber op2Reg = op2->GetRegNum();
+            regNumber op2Reg = op2Desc.GetReg();
 
             if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
             {
@@ -1378,11 +1405,6 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         }
         else
 #endif // FEATURE_SIMD
-            if (compiler->canUseVexEncoding())
-        {
-            return (aligned) ? INS_movapd : INS_movupd;
-        }
-        else
         {
             // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
             // former doesn't require 66h prefix and one byte smaller than the
@@ -1641,11 +1663,6 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         }
         else
 #endif // FEATURE_SIMD
-            if (compiler->canUseVexEncoding())
-        {
-            return (aligned) ? INS_movapd : INS_movupd;
-        }
-        else
         {
             // SSE2 Note: always prefer movaps/movups over movapd/movupd since the
             // former doesn't require 66h prefix and one byte smaller than the

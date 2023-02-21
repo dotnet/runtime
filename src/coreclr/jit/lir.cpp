@@ -308,6 +308,26 @@ LIR::ReadOnlyRange::ReadOnlyRange(GenTree* firstNode, GenTree* lastNode) : m_fir
 }
 
 //------------------------------------------------------------------------
+// LIR::ReadOnlyRange::operator=:
+//    Move assignment operator= for LIR ranges.
+//
+// Arguments:
+//    other - The range to move from.
+//
+LIR::ReadOnlyRange& LIR::ReadOnlyRange::operator=(ReadOnlyRange&& other)
+{
+    m_firstNode = other.m_firstNode;
+    m_lastNode  = other.m_lastNode;
+
+#ifdef DEBUG
+    other.m_firstNode = nullptr;
+    other.m_lastNode  = nullptr;
+#endif
+
+    return *this;
+}
+
+//------------------------------------------------------------------------
 // LIR::ReadOnlyRange::FirstNode: Returns the first node in the range.
 //
 GenTree* LIR::ReadOnlyRange::FirstNode() const
@@ -1525,37 +1545,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         return true;
     }
 
-    // Check the gtNext/gtPrev links: (1) ensure there are no circularities, (2) ensure the gtPrev list is
-    // precisely the inverse of the gtNext list.
-    //
-    // To detect circularity, use the "tortoise and hare" 2-pointer algorithm.
-
-    GenTree* slowNode = FirstNode();
-    assert(slowNode != nullptr); // because it's a non-empty range
-    GenTree* fastNode1    = nullptr;
-    GenTree* fastNode2    = slowNode;
-    GenTree* prevSlowNode = nullptr;
-    while (((fastNode1 = fastNode2->gtNext) != nullptr) && ((fastNode2 = fastNode1->gtNext) != nullptr))
-    {
-        if ((slowNode == fastNode1) || (slowNode == fastNode2))
-        {
-            assert(!"gtNext nodes have a circularity!");
-        }
-        assert(slowNode->gtPrev == prevSlowNode);
-        prevSlowNode = slowNode;
-        slowNode     = slowNode->gtNext;
-        assert(slowNode != nullptr); // the fastNodes would have gone null first.
-    }
-    // If we get here, the list had no circularities, so either fastNode1 or fastNode2 must be nullptr.
-    assert((fastNode1 == nullptr) || (fastNode2 == nullptr));
-
-    // Need to check the rest of the gtPrev links.
-    while (slowNode != nullptr)
-    {
-        assert(slowNode->gtPrev == prevSlowNode);
-        prevSlowNode = slowNode;
-        slowNode     = slowNode->gtNext;
-    }
+    CheckDoublyLinkedList<GenTree, &GenTree::gtPrev, &GenTree::gtNext>(FirstNode());
 
     SmallHashTable<GenTree*, bool, 32> unusedDefs(compiler->getAllocatorDebugOnly());
 

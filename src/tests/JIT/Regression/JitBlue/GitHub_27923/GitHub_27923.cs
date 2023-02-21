@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Writer
+public class Writer
 {
     public object Data { get; set; }
     public int Position { get; set; }

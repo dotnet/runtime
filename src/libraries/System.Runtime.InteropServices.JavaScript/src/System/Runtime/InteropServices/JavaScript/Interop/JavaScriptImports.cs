@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.GetGlobalObjectRef(str, out exception, out object jsObj);
 
             if (exception != 0)
-                throw new JSException($"Error obtaining a handle to global {str}");
+                throw new JSException(SR.Format(SR.ErrorResolvingFromGlobalThis, str));
 
             JSHostImplementation.ReleaseInFlight(jsObj);
             return jsObj;

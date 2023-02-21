@@ -2,12 +2,47 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.EcDsa.Tests;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Cng.Tests
 {
     public static class PropertyTests
     {
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [InlineData("ECDH_P256", 256)]
+        [InlineData("ECDH_P384", 384)]
+        [InlineData("ECDSA_P256", 256)]
+        [InlineData("ECDSA_P384", 384)]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        public static void CreatePersisted_PlatformEccKeyHasKeySize(string algorithm, int expectedKeySize)
+        {
+            CngAlgorithm cngAlgorithm = new CngAlgorithm(algorithm);
+
+            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(cngAlgorithm))
+            {
+                Assert.Equal(expectedKeySize, platformKey.Key.KeySize);
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [InlineData(1024)]
+        [InlineData(2048)]
+        [OuterLoop("Hardware backed key generation takes several seconds.")]
+        public static void CreatePersisted_PlatformRsaKeyHasKeySize(int keySize)
+        {
+            CngProperty keyLengthProperty = new CngProperty("Length", BitConverter.GetBytes(keySize), CngPropertyOptions.None);
+            CngPlatformProviderKey platformKey = new CngPlatformProviderKey(
+                CngAlgorithm.Rsa,
+                keySuffix: keySize.ToString(),
+                additionalParameters: keyLengthProperty);
+
+            using (platformKey)
+            {
+                Assert.Equal(keySize, platformKey.Key.KeySize);
+            }
+        }
+
         [Fact]
         public static void GetProperty_NoSuchProperty()
         {

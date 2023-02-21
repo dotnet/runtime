@@ -168,11 +168,6 @@ ValueNumFuncDef(MUL_UN_OVF, 2, true, false, false)
 ValueNumFuncDef(SimdType, 2, false, false, false)  // A value number function to compose a SIMD type
 #endif
 
-#define SIMD_INTRINSIC(m, i, id, n, r, argCount, arg1, arg2, arg3, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10) \
-ValueNumFuncDef(SIMD_##id, argCount, false, false, false)   // All of the SIMD intrinsic
-#include "simdintrinsiclist.h"
-#define VNF_SIMD_FIRST VNF_SIMD_None
-
 #if defined(TARGET_XARCH)
 #define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for x86/x64

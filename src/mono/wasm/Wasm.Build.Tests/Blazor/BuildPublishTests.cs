@@ -84,7 +84,7 @@ public class BuildPublishTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public void WithDllImportInMainAssembly(string config)
+    public async Task WithDllImportInMainAssembly(string config)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
         string id = $"blz_dllimp_{config}";
@@ -124,12 +124,12 @@ public class BuildPublishTests : BuildTestBase
         BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
         CheckNativeFileLinked(forPublish: true);
 
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/79514")]
-        //await BlazorRun(config, async (page) => {
-            //await page.Locator("text=\"cpp_add\"").ClickAsync();
-            //var txt = await page.Locator("p[role='test']").InnerHTMLAsync();
-            //Assert.Equal("Output: 22", txt);
-        //});
+        await BlazorRun(config, async (page) =>
+        {
+            await page.Locator("text=\"cpp_add\"").ClickAsync();
+            var txt = await page.Locator("p[role='test']").InnerHTMLAsync();
+            Assert.Equal("Output: 22", txt);
+        });
 
         void CheckNativeFileLinked(bool forPublish)
         {

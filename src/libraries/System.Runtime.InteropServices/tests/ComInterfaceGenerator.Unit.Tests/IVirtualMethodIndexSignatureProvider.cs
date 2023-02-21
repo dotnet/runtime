@@ -19,19 +19,15 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
-        public const string INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl = $$"""
+        public const string INativeAPI_IUnmanagedInterfaceTypeImpl = $$"""
             partial interface INativeAPI
             {
-                {{INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl}}
+                {{INativeAPI_IUnmanagedInterfaceTypeMethodImpl}}
             }
             """;
 
-        public const string INativeAPI_NoCasting_IUnmanagedInterfaceTypeMethodImpl = """
-                static int IUnmanagedInterfaceType<INativeAPI, NoCasting>.VirtualMethodTableLength => 1;
-                static unsafe void* IUnmanagedInterfaceType<INativeAPI, NoCasting>.VirtualMethodTableManagedImplementation => null;
-                static unsafe void* IUnmanagedInterfaceType<INativeAPI, NoCasting>.GetUnmanagedWrapperForObject(INativeAPI obj) => null;
-                static unsafe INativeAPI IUnmanagedInterfaceType<INativeAPI, NoCasting>.GetObjectForUnmanagedWrapper(void* ptr) => null;
-                static NoCasting IUnmanagedInterfaceType<INativeAPI, NoCasting>.TypeKey => default;
+        public const string INativeAPI_IUnmanagedInterfaceTypeMethodImpl = """
+                static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
             """;
 
         public static abstract string NativeInterfaceUsage();
@@ -43,12 +39,12 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         static string ICustomMarshallingSignatureTestProvider.BasicParametersAndModifiersNoRef(string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -57,12 +53,12 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     {typeName} Method({typeName} value, in {typeName} inValue, out {typeName} outValue);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         static string ICustomMarshallingSignatureTestProvider.BasicParameterByValue(string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
@@ -70,12 +66,12 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     void Method({typeName} value);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         static string ICustomMarshallingSignatureTestProvider.BasicParameterWithByRefModifier(string modifier, string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
@@ -85,32 +81,32 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     void Method({modifier} {typeName} value);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         static string ICustomMarshallingSignatureTestProvider.BasicReturnType(string typeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     {typeName} Method();
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         static string ICustomMarshallingSignatureTestProvider.MarshalUsingParametersAndModifiers(string typeName, string marshallerTypeName, string preDeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {preDeclaration}
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     [return: MarshalUsing(typeof({marshallerTypeName}))]
@@ -119,15 +115,15 @@ partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
         [MarshalUsing(typeof({marshallerTypeName}))] in {typeName} pIn,
         [MarshalUsing(typeof({marshallerTypeName}))] ref {typeName} pRef,
         [MarshalUsing(typeof({marshallerTypeName}))] out {typeName} pOut);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         static string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     [return:MarshalUsing(ConstantElementCount=10)]
@@ -138,7 +134,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
         [MarshalUsing(CountElementName = ""pRefSize"")] ref {collectionType} pRef,
         [MarshalUsing(CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize);
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         static string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionParametersAndModifiers(string collectionType, string marshallerType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -146,8 +142,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     [return:MarshalUsing(typeof({marshallerType}), ConstantElementCount=10)]
@@ -159,7 +155,7 @@ partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
         [MarshalUsing(typeof({marshallerType}), CountElementName = ""pOutSize"")] out {collectionType} pOut,
         out int pOutSize
         );
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         static string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionReturnValueLength(string collectionType, string marshallerType) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -167,14 +163,14 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     int Method(
         [MarshalUsing(typeof({marshallerType}), CountElementName = MarshalUsingAttribute.ReturnsCountValue)] out {collectionType} pOut
         );
-}}" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+}}" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         static string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionOutConstantLength(string collectionType, string predeclaration) => $@"
 using System.Runtime.CompilerServices;
@@ -184,15 +180,15 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     int Method(
         [MarshalUsing(ConstantElementCount = 10)] out {collectionType} pOut
         );
 }}
-" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         static string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionReturnConstantLength(string collectionType, string predeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -201,14 +197,14 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     [return:MarshalUsing(ConstantElementCount = 10)]
     {collectionType} Method();
 }}
-" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         static string ICustomMarshallingSignatureTestProvider.CustomElementMarshalling(string collectionType, string elementMarshaller, string predeclaration) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -217,8 +213,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 
-readonly record struct NoCasting {{}}
-partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
+[UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+partial interface INativeAPI : IUnmanagedInterfaceType
 {{
     [VirtualMethodIndex(0, ImplicitThisParameter = {TProvider.ImplicitThisParameter.ToString().ToLowerInvariant()}, Direction = MarshalDirection.{TProvider.Direction})]
     [return:MarshalUsing(ConstantElementCount=10)]
@@ -232,6 +228,6 @@ partial interface INativeAPI : IUnmanagedInterfaceType<INativeAPI, NoCasting>
         out int pOutSize
         );
 }}
-" + TProvider.NativeInterfaceUsage() + INativeAPI_NoCasting_IUnmanagedInterfaceTypeImpl;
+" + TProvider.NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
     }
 }

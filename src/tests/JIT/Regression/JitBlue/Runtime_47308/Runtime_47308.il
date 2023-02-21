@@ -12,7 +12,7 @@
 .assembly 'Runtime_47308' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
-.class FullProof {
+.class public FullProof {
 .method static void Test() {
 .maxstack 500
 

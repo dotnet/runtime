@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly b102962a {}
+.class public auto ansi Test_b102962a extends [mscorlib] System.Object {
 .method public static int32
         main() cil managed
 {
@@ -33,4 +34,5 @@
   IL_0013:  call       void [System.Console]System.Console::WriteLine(char)
   IL_0018:  ldc.i4 100
   IL_0019:  ret
+}
 }

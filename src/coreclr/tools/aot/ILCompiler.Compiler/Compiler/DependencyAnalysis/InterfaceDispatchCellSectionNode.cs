@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
         private sealed class DispatchCellComparer : IComparer<InterfaceDispatchCellNode>
         {
             private readonly NodeFactory _factory;
-            private readonly TypeSystemComparer _comparer = TypeSystemComparer.Instance;
+            private readonly CompilerComparer _comparer = CompilerComparer.Instance;
 
             public DispatchCellComparer(NodeFactory factory)
             {
@@ -130,7 +130,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (result != 0)
                     return result;
 
-                result = StringComparer.Ordinal.Compare(x.CallSiteIdentifier, y.CallSiteIdentifier);
+                result = _comparer.Compare(x.CallSiteIdentifier, y.CallSiteIdentifier);
                 if (result != 0)
                     return result;
 

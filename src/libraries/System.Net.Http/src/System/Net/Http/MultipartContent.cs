@@ -23,6 +23,9 @@ namespace System.Net.Http
         private const int ColonSpaceLength = 2;
         private const int CommaSpaceLength = 2;
 
+        private static readonly IndexOfAnyValues<char> s_allowedBoundaryChars =
+            IndexOfAnyValues.Create(" '()+,-./0123456789:=?ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
+
         private readonly List<HttpContent> _nestedContent;
         private readonly string _boundary;
 
@@ -85,15 +88,9 @@ namespace System.Net.Http
                 throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }
 
-            const string AllowedMarks = @"'()+_,-./:=? ";
-
-            foreach (char ch in boundary)
+            if (boundary.AsSpan().IndexOfAnyExcept(s_allowedBoundaryChars) >= 0)
             {
-                if (!char.IsAsciiLetterOrDigit(ch) &&
-                    !AllowedMarks.Contains(ch)) // Marks.
-                {
-                    throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
-                }
+                throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }
         }
 
@@ -349,12 +346,12 @@ namespace System.Net.Http
             return stream.WriteAsync(new ReadOnlyMemory<byte>(buffer), cancellationToken);
         }
 
-        private static Stream EncodeStringToNewStream(string input)
+        private static MemoryStream EncodeStringToNewStream(string input)
         {
             return new MemoryStream(HttpRuleParser.DefaultHttpEncoding.GetBytes(input), writable: false);
         }
 
-        private Stream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
+        private MemoryStream EncodeHeadersToNewStream(HttpContent content, bool writeDivider)
         {
             var stream = new MemoryStream();
             SerializeHeadersToStream(stream, content, writeDivider);

@@ -8,7 +8,7 @@ using Mono.Linker;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	readonly partial struct MethodProxy : IEquatable<MethodProxy>
+	internal readonly partial struct MethodProxy : IEquatable<MethodProxy>
 	{
 		public MethodProxy (MethodDefinition method) => Method = method;
 

@@ -8,6 +8,9 @@
 // functionality (in particular there is no rank violation checking).
 //
 
+#ifndef __Crst_h__
+#define __Crst_h__
+
 enum CrstType
 {
     CrstHandleTable,
@@ -20,7 +23,7 @@ enum CrstType
     CrstRestrictedCallouts,
     CrstObjectiveCMarshalCallouts,
     CrstGcStressControl,
-    CrstSuspendEE,
+    CrstThreadStore,
     CrstCastCache,
     CrstYieldProcessorNormalized,
 };
@@ -126,3 +129,5 @@ public:
         return m_pLock;
     }
 };
+
+#endif //__Crst_h__

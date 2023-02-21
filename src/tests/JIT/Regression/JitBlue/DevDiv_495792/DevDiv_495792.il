@@ -8,7 +8,7 @@
 // This test originally triggered an assert Extra_flags_on_tree, because fgMorphCast did not reset an assignment flag, when
 // its children was optimized in the assertion propagation.
 
-.class ILGEN_CLASS
+.class public ILGEN_CLASS
 {
    .method static unsigned int64 ILGEN_METHOD(unsigned int8, unsigned int64, int32)
    {
@@ -102,7 +102,7 @@
         IL_00ac: ret
     }
 
-    .method private static int32 Main()
+    .method public static int32 Main()
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

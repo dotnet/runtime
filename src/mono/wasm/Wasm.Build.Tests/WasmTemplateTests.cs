@@ -340,7 +340,6 @@ namespace Wasm.Build.Tests
         {
             var data = new TheoryData<string, bool, bool>();
             data.Add("Debug", false, false);
-            data.Add("Debug", false, false);
             data.Add("Debug", false, true);
             data.Add("Release", false, false); // Release relinks by default
 
@@ -416,7 +415,6 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79514")]
         public async Task BlazorRunTest()
         {
             string config = "Debug";

@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -23,6 +25,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestStaticCtorMarkingIsTriggeredByFieldAccessOnExplicitLayout ();
 			TestStaticCtorTriggeredByMethodCall ();
 			TestTypeIsBeforeFieldInit ();
+			TestStaticCtorOnTypeWithRequires ();
+			TestRunClassConstructorOnTypeWithRequires ();
 			typeof (StaticCtor).RequiresNonPublicConstructors ();
 		}
 
@@ -42,6 +46,28 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		static void TestStaticCctorRequires ()
 		{
 			_ = new StaticCtor ();
+		}
+
+		[RequiresUnreferencedCode ("Message for --StaticCtorOnTypeWithRequires--")]
+		class StaticCtorOnTypeWithRequires
+		{
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = ProducedBy.Analyzer)]
+			static StaticCtorOnTypeWithRequires () => MethodWithRequires ();
+		}
+
+		[ExpectedWarning ("IL2026", "Message for --StaticCtorOnTypeWithRequires--")]
+		static void TestStaticCtorOnTypeWithRequires ()
+		{
+			var cctor = typeof (StaticCtorOnTypeWithRequires).GetConstructor (BindingFlags.Static | BindingFlags.NonPublic, new Type[0]);
+			cctor.Invoke (null, null);
+		}
+
+		[ExpectedWarning ("IL2026", "Message for --StaticCtorOnTypeWithRequires--")]
+		static void TestRunClassConstructorOnTypeWithRequires ()
+		{
+			var typeHandle = typeof (StaticCtorOnTypeWithRequires).TypeHandle;
+			RuntimeHelpers.RunClassConstructor (typeHandle);
 		}
 
 		class StaticCtorTriggeredByFieldAccess

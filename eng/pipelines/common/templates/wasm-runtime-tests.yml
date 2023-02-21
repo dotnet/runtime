@@ -27,8 +27,7 @@ jobs:
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true))
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_runtimetests.containsChange'], true))
           ]
     jobParameters:
       testGroup: innerloop
@@ -37,12 +36,6 @@ jobs:
       runtimeVariant: monointerpreter
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 180
-      # FIXME: will get triggered by only wbt/dbg changes
-      # if !alwaysRun, then:
-      #   if this is runtime-wasm (isWasmOnlyBuild):
-      #     - then run only if it would not have run on default pipelines (based
-      #       on path changes)
-      #     - else run based on path changes
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),

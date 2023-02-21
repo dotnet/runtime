@@ -126,7 +126,7 @@ HRESULT SigParser::SkipExactlyOne()
 //
 HRESULT
 SigParser::SkipMethodHeaderSignature(
-    uint32_t * pcArgs)
+    uint32_t * pcArgs, bool skipReturnType /*= true*/)
 {
     CONTRACTL
     {
@@ -157,8 +157,11 @@ SigParser::SkipMethodHeaderSignature(
     // Get arg count;
     IfFailRet(GetData(pcArgs));
 
-    // Skip return type;
-    IfFailRet(SkipExactlyOne());
+    if (skipReturnType)
+    {
+        // Skip return type;
+        IfFailRet(SkipExactlyOne());
+    }
 
     return hr;
 } // SigParser::SkipMethodHeaderSignature

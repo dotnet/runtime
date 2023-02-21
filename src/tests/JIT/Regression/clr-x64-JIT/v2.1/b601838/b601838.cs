@@ -7,7 +7,7 @@ using System.Security;
 using System.Collections.Generic;
 
 // [KeyContainerPermission(SecurityAction.Demand, Flags = KeyContainerPermissionFlags.Delete)]
-internal static class GenericSecurity
+public static class GenericSecurity
 {
     private static int s_result = 99;
 
@@ -24,7 +24,7 @@ internal static class GenericSecurity
         }
     }
 
-    private static int Main()
+    public static int Main()
     {
         try
         {

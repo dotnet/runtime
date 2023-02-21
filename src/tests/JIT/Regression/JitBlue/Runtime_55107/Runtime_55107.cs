@@ -7,13 +7,13 @@ using System.Runtime.CompilerServices;
 
 namespace Runtime_55107
 {
-    class Program
+    public class Program
     {
         class G
         {
         }
 
-        static int Main()
+        public static int Main()
         {
             G g = new G();
 

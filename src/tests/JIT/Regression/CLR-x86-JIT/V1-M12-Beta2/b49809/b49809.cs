@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         int[] m_an;
 
@@ -26,7 +26,7 @@ namespace Test
             return param1[0].m_an;
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

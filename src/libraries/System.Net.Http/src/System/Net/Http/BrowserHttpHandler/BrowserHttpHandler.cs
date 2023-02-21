@@ -317,10 +317,7 @@ namespace System.Net.Http
 
         public void ThrowIfDisposed()
         {
-            if (_isDisposed && FetchResponse.IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(WasmFetchResponse));
-            }
+            ObjectDisposedException.ThrowIf(_isDisposed && FetchResponse.IsDisposed, this);
         }
 
         public void Dispose()

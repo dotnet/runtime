@@ -55,6 +55,11 @@ namespace Internal.Runtime
                 flags |= (uint)EETypeFlags.HasComponentSizeFlag;
             }
 
+            if (type.HasVariance)
+            {
+                flags |= (uint)EETypeFlags.GenericVarianceFlag;
+            }
+
             if (type.IsGenericDefinition)
             {
                 flags |= (uint)EETypeKind.GenericTypeDefEEType;
@@ -86,11 +91,6 @@ namespace Internal.Runtime
             if (type.HasInstantiation)
             {
                 flags |= (uint)EETypeFlags.IsGenericFlag;
-
-                if (type.HasVariance)
-                {
-                    flags |= (uint)EETypeFlags.GenericVarianceFlag;
-                }
             }
 
             return flags;
@@ -113,7 +113,7 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.HasCriticalFinalizerFlag;
             }
 
-            if (type.Context.Target.IsOSX && IsTrackedReferenceWithFinalizer(type))
+            if (type.Context.Target.IsOSXLike && IsTrackedReferenceWithFinalizer(type))
             {
                 flagsEx |= (ushort)EETypeFlagsEx.IsTrackedReferenceWithFinalizerFlag;
             }

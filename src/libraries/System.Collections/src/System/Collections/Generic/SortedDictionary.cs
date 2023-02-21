@@ -320,13 +320,11 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (key == null)
+                ArgumentNullException.ThrowIfNull(key);
+                if (default(TValue) != null)
                 {
-                    throw new ArgumentNullException(nameof(key));
+                    ArgumentNullException.ThrowIfNull(value);
                 }
-
-                if (value == null && default(TValue) != null)
-                    throw new ArgumentNullException(nameof(value));
 
                 try
                 {

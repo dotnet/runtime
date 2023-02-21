@@ -356,7 +356,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
         return;
     }
 
-    if (!IsSafeToContainMem(blkNode, addrParent, addr))
+    if (!IsInvariantInRange(addr, blkNode, addrParent))
     {
         return;
     }
@@ -408,9 +408,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 
             src->ChangeOper(GT_OBJ);
             src->AsObj()->SetAddr(lclAddr);
-            src->AsObj()->SetLayout(layout);
-            src->AsObj()->gtBlkOpKind     = GenTreeBlk::BlkOpKindInvalid;
-            src->AsObj()->gtBlkOpGcUnsafe = false;
+            src->AsObj()->Initialize(layout);
 
             BlockRange().InsertBefore(src, lclAddr);
         }
@@ -504,19 +502,6 @@ void Lowering::LowerRotate(GenTree* tree)
     }
     ContainCheckShiftRotate(tree->AsOp());
 }
-
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// Lowering::LowerSIMD: Perform containment analysis for a SIMD intrinsic node.
-//
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
-//
-void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
-{
-    NYI_LOONGARCH64("LowerSIMD");
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 //----------------------------------------------------------------------------------------------
@@ -644,7 +629,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 #endif // FEATURE_SIMD
 
     GenTree* addr = indirNode->Addr();
-    if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
+    if ((addr->OperGet() == GT_LEA) && IsInvariantInRange(addr, indirNode))
     {
         MakeSrcContained(indirNode, addr);
     }
@@ -814,19 +799,6 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
         CheckImmedAndMakeContained(node, node->GetArrayLength());
     }
 }
-
-#ifdef FEATURE_SIMD
-//----------------------------------------------------------------------------------------------
-// ContainCheckSIMD: Perform containment analysis for a SIMD intrinsic node.
-//
-//  Arguments:
-//     simdNode - The SIMD intrinsic node.
-//
-void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
-{
-    NYI_LOONGARCH64("ContainCheckSIMD");
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 //----------------------------------------------------------------------------------------------

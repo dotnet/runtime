@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -58,7 +59,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_aeskeygenassist_si128 (__m128i a, const int imm8)
         ///   AESKEYGENASSIST xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<byte> KeygenAssist(Vector128<byte> value, byte control) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> KeygenAssist(Vector128<byte> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
     }
 

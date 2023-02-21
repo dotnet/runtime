@@ -13,9 +13,9 @@
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
-    <_TargetsAppleOS Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'MacCatalyst' or
-      '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or
-      '$(TargetOS)' == 'tvOSSimulator'">true</_TargetsAppleOS>
+    <_TargetsAppleOS Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or
+      '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or
+      '$(TargetOS)' == 'tvossimulator'">true</_TargetsAppleOS>
   </PropertyGroup>
 
   <!-- Until we use the live app host, use a prebuilt from the 7.0 SDK.
@@ -44,14 +44,14 @@
       <NativeCompiler Condition="'$(NativeCompiler)' == ''">clang</NativeCompiler>
     </PropertyGroup>
 
-    <Exec Command="bash -c 'source &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &quot;$(RepositoryEngineeringDir)/common/native&quot; $(TargetArchitecture) $(NativeCompiler) &amp;&amp; echo $CC' 2>/dev/null"
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(NativeCompiler)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
           EchoOff="true"
           ConsoleToMsBuild="true"
           StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="DnneCompilerCommand" />
     </Exec>
 
-    <Exec Command="bash -c 'source &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &quot;$(RepositoryEngineeringDir)/common/native&quot; $(TargetArchitecture) $(NativeCompiler) &amp;&amp; echo $LDFLAGS' 2>/dev/null"
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(NativeCompiler)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $LDFLAGS' 2>/dev/null"
           EchoOff="true"
           ConsoleToMsBuild="true"
           StandardOutputImportance="Low">
@@ -89,13 +89,13 @@
   </Target>
 
   <Target Name="GetAppleBuildArgumentsForDNNE" Condition="'$(_TargetsAppleOS)' == 'true'">
-    <PropertyGroup Condition=" '$(TargetOS)' == 'MacCatalyst'">
+    <PropertyGroup Condition=" '$(TargetOS)' == 'maccatalyst'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-ios14.2-macabi</TargetTriple>
       <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-ios13.5-macabi</TargetTriple>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(TargetOS)' == 'OSX'">
+    <PropertyGroup Condition="'$(TargetOS)' == 'osx'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-macos11</TargetTriple>
-      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos10.14</TargetTriple>
+      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos10.15</TargetTriple>
       <XCodeSdkName>macosx</XCodeSdkName>
     </PropertyGroup>
 

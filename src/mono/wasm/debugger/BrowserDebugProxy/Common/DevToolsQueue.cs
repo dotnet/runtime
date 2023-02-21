@@ -29,8 +29,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public Task? Send(byte[] bytes, CancellationToken token)
         {
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentNullException.ThrowIfNull(bytes);
 
             pending.Enqueue(bytes);
             TryPumpIfCurrentCompleted(token, out Task? sendTask);

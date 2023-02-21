@@ -17,7 +17,7 @@ namespace System.Drawing.Printing
     {
         private Graphics? _graphics;
         private DeviceContext? _dc;
-        private readonly IList _list = new ArrayList();
+        private readonly ArrayList _list = new ArrayList();
 
         public override bool IsPreview => true;
 

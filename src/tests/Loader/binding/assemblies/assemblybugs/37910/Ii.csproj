@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Test unsupported outside of linux -->
-    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'Linux'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'linux'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Ii.cs" />

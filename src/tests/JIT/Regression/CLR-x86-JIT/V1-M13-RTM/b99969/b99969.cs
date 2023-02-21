@@ -4,7 +4,7 @@
 using System;
 using System.Threading;
 
-internal class Test_b99969
+public class Test_b99969
 {
     public int i;
     private volatile bool _bSpoof = false;
@@ -55,7 +55,7 @@ internal class Test_b99969
         return result;
     }
 
-    private static int Main()
+    public static int Main()
     {
         Test_b99969 t = new Test_b99969();
 

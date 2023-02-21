@@ -34,7 +34,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Base class for specialized and universal canon types
     /// </summary>
-    public abstract partial class CanonBaseType : MetadataType
+    public abstract partial class CanonBaseType
     {
         private TypeSystemContext _context;
 
@@ -51,53 +51,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        protected override MethodImplRecord[] ComputeVirtualMethodImplsForType()
-        {
-            return Array.Empty<MethodImplRecord>();
-        }
-
-        public override MetadataType MetadataBaseType => (MetadataType)BaseType;
-
         public override DefType ContainingType => null;
-
-        public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
-
-        public override bool IsAbstract => false;
-
-        public override bool IsBeforeFieldInit => false;
-
-        public override bool IsSequentialLayout => false;
-
-        public override bool IsExplicitLayout => false;
-
-        public override ModuleDesc Module => _context.SystemModule;
-
-        public override bool IsModuleType => false;
-
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name)
-        {
-            return null;
-        }
-
-        public override ClassLayoutMetadata GetClassLayout()
-        {
-            return default(ClassLayoutMetadata);
-        }
-
-        public override MetadataType GetNestedType(string name)
-        {
-            return null;
-        }
-
-        public override IEnumerable<MetadataType> GetNestedTypes()
-        {
-            return Array.Empty<MetadataType>();
-        }
-
-        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
-        {
-            return false;
-        }
     }
 
     /// <summary>
@@ -126,8 +80,6 @@ namespace Internal.TypeSystem
                 return _Name;
             }
         }
-
-        public override bool IsSealed => false;
 
         public CanonType(TypeSystemContext context)
             : base(context)
@@ -217,8 +169,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override bool IsSealed => true;
-
         public UniversalCanonType(TypeSystemContext context)
             : base(context)
         {
@@ -262,6 +212,7 @@ namespace Internal.TypeSystem
 
             flags |= TypeFlags.HasFinalizerComputed;
             flags |= TypeFlags.AttributeCacheComputed;
+            flags |= TypeFlags.HasGenericVarianceComputed;
 
             return flags;
         }

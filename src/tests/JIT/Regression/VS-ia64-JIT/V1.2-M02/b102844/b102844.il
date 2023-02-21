@@ -34,7 +34,7 @@
 
 .namespace JitTest
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static void 
@@ -83,7 +83,7 @@
       IL_0023:  ret
     } // end of method Test::TestMain
 
-    .method private hidebysig static int32 
+    .method public hidebysig static int32 
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

@@ -10,8 +10,8 @@
 .assembly b07458
 {
 }
-.class ILGEN_940507601 {
-.method static int32 main() {
+.class public ILGEN_940507601 {
+.method public static int32 main() {
 .entrypoint
 .maxstack	6
  .locals ( int64, float64, int32, int64, float64, float32, int32, int32, float64, int32, float64, int32, int32, float32, float32, float32, int64, float32, int32, int32, int32, int32, int32, int64, float32, float64, float64, float64, float64, int32, int64, int64, float32, float64, int64, int32, float64, int64, int32, int64, int32)

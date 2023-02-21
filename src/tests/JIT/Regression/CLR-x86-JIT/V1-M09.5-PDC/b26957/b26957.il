@@ -12,7 +12,7 @@
 }
 
 
-.class EvenOdd
+.class public EvenOdd
 { 
 	.method static bool IsEven(int32 N)
   	{ 

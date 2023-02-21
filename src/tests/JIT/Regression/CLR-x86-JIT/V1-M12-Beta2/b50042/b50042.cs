@@ -12,7 +12,7 @@ namespace Test
 
     class AA { }
 
-    class BB
+    public class BB
     {
         static object Method1(String[] param3)
         {
@@ -20,7 +20,7 @@ namespace Test
             return L;
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

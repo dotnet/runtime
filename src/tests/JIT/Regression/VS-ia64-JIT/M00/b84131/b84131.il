@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly 'b84131'{}
+.class public auto ansi Test_b84131 extends [mscorlib] System.Object {
 .method public	static int32 main() {
 .entrypoint
 	ldc.r4		1.0
@@ -32,5 +33,6 @@ pass:
 	ldc.i4		100
 end:
 	ret
+}
 }
 

@@ -141,7 +141,7 @@ ULONG PEImage::Release()
         result=InterlockedDecrement(&m_refCount);
         if (result == 0 )
         {
-            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %S\n", (LPCWSTR) m_path));
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %s\n", m_path.GetUTF8()));
             if(m_bInHashMap)
             {
                 PEImageLocator locator(this);

@@ -1322,12 +1322,12 @@ namespace System.Diagnostics.Tracing
 
                     if (m_Dispatchers != null && metadata.EnabledForAnyListener)
                     {
-#if MONO && !TARGET_BROWSER
+#if MONO && !TARGET_BROWSER && !TARGET_WASI
                         // On Mono, managed events from NativeRuntimeEventSource are written using WriteEventCore which can be
                         // written doubly because EventPipe tries to pump it back up to EventListener via NativeRuntimeEventSource.ProcessEvents.
                         // So we need to prevent this from getting written directly to the Listeners.
                         if (this.GetType() != typeof(NativeRuntimeEventSource))
-#endif // MONO && !TARGET_BROWSER
+#endif // MONO && !TARGET_BROWSER && !TARGET_WASI
                         {
                             var eventCallbackArgs = new EventWrittenEventArgs(this, eventId, pActivityId, relatedActivityId);
                             WriteToAllListeners(eventCallbackArgs, eventDataCount, data);
@@ -5879,7 +5879,14 @@ namespace System.Diagnostics.Tracing
             if (type.IsEnum)
             {
                 string typeName = GetTypeName(type.GetEnumUnderlyingType());
-                return typeName.Replace("win:Int", "win:UInt"); // ETW requires enums to be unsigned.
+                return typeName switch // ETW requires enums to be unsigned.
+                {
+                    "win:Int8" => "win:UInt8",
+                    "win:Int16" => "win:UInt16",
+                    "win:Int32" => "win:UInt32",
+                    "win:Int64" => "win:UInt64",
+                    _ => typeName,
+                };
             }
 
             switch (Type.GetTypeCode(type))
@@ -6061,7 +6068,7 @@ namespace System.Diagnostics.Tracing
 #endif
         private readonly ResourceManager? resources;      // Look up localized strings here.
         private readonly EventManifestOptions flags;
-        private readonly IList<string> errors;           // list of currently encountered errors
+        private readonly List<string> errors;           // list of currently encountered errors
         private readonly Dictionary<string, List<int>> perEventByteArrayArgIndices;  // "event_name" -> List_of_Indices_of_Byte[]_Arg
 
         // State we track between StartEvent and EndEvent.

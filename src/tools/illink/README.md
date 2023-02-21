@@ -1,6 +1,6 @@
 # Trimming Tools
 
-This repository hosts various tools and msbuild tasks which are used when trimming managed applications with .NET 5 and newer.
+This project hosts various tools and msbuild tasks which are used when trimming managed applications with modern .NET.
 
 ## IL Trimmer
 
@@ -22,26 +22,4 @@ The [tlens](src/tlens/README.md) is another tool for developers which can be use
 Another tool available for developers is implemented as [Roslyn Analyzer](src/ILLink.RoslynAnalyzer) which runs on source code and warns developers about code patterns and APIs which are problematic when building code which could be used with trimmed apps.
 
 # Contributing
-
-We welcome contributions! Many developers have helped make this project better by reporting [issues](https://github.com/dotnet/linker/issues) or contributing [pull requests](https://github.com/dotnet/linker/pulls).
-
-## How to build all projects
-
-There is a shell script available in the root folder which can build the whole project and much more (build.cmd on Windows).
-
-```sh
-./build.sh
-```
-
-## Running tests from CLI
-
-The same script can be used to run all tests from the terminal. We also have integration into Visual Studio and individual tests or whole test suites can be run within IDE as well.
-
-```sh
-./build.sh -test
-```
-
-
-## CI Build & Test Status
-
-[![Build Status](https://dev.azure.com/dnceng-public/public/_apis/build/status/dotnet/linker-ci?definitionId=105&branchName=main)](https://dev.azure.com/dnceng-public/public/_build/latest?definitionId=105&branchName=main)
+We welcome contributions! Many developers have helped make this project better by reporting [issues](https://github.com/dotnet/runtime/issues) or contributing [pull requests](https://github.com/dotnet/runtime/pulls) and tagging with the label `area-Tools-ILLink`.

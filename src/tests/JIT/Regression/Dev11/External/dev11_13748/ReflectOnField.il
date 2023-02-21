@@ -40,10 +40,10 @@
   .field public static int32 StaticField
 } // end of class ReflectOnField.Container`1
 
-.class private abstract auto ansi sealed beforefieldinit ReflectOnField.App
+.class public abstract auto ansi sealed beforefieldinit ReflectOnField.App
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32  Main() cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

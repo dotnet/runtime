@@ -1546,15 +1546,6 @@ uint32_t WrapICorJitInfo::getFieldThreadLocalStoreID(
     return temp;
 }
 
-void WrapICorJitInfo::addActiveDependency(
-          CORINFO_MODULE_HANDLE moduleFrom,
-          CORINFO_MODULE_HANDLE moduleTo)
-{
-    API_ENTER(addActiveDependency);
-    wrapHnd->addActiveDependency(moduleFrom, moduleTo);
-    API_LEAVE(addActiveDependency);
-}
-
 CORINFO_METHOD_HANDLE WrapICorJitInfo::GetDelegateCtor(
           CORINFO_METHOD_HANDLE methHnd,
           CORINFO_CLASS_HANDLE clsHnd,

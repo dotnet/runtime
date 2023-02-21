@@ -1,20 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-MacCatalyst</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-maccatalyst</TargetFrameworks>
     <IsInterpreting>false</IsInterpreting>
     <DefineConstants> $(DefineConstants);FEATURE_FAST_CREATE</DefineConstants>
+    <NoWarn>$(NoWarn);CA1859</NoWarn>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <IsInterpreting Condition="'$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS' or '$(TargetPlatformIdentifier)' == 'MacCatalyst'">true</IsInterpreting>
+    <IsInterpreting Condition="'$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'maccatalyst'">true</IsInterpreting>
     <ILLinkSubstitutionsLibraryBuildXml Condition="'$(IsInterpreting)' == 'true'">ILLink\ILLink.Substitutions.IsInterpreting.LibraryBuild.xml</ILLinkSubstitutionsLibraryBuildXml>
     <!--
       Disable constant propagation so that methods referenced from ILLink.Substitutions.xml don't get inlined
       with a wrong value at library build time and the substitution can still be selected at publish time.
       For iOS/tvOS/Catalyst we prefer smaller size by default, so keep constprop enabled to get rid of the expression compiler.
     -->
-    <ILLinkDisableIPConstProp Condition="'$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'tvOS' and '$(TargetPlatformIdentifier)' != 'MacCatalyst'">true</ILLinkDisableIPConstProp>
+    <ILLinkDisableIPConstProp Condition="'$(TargetPlatformIdentifier)' != 'ios' and '$(TargetPlatformIdentifier)' != 'tvos' and '$(TargetPlatformIdentifier)' != 'maccatalyst'">true</ILLinkDisableIPConstProp>
   </PropertyGroup>
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />

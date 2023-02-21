@@ -10,11 +10,11 @@
 .assembly b14928
 {
 }
-.class ILGEN_622380794 {
+.class public ILGEN_622380794 {
 
 .field static	int32 field_0x0
 
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	12
 

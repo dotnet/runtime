@@ -4,7 +4,7 @@
 
 using System;
 
-class Bug
+public class Bug
 {
     public void Func(ref String str)
     {

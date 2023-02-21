@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly 'b115932a' {}
+.class public auto ansi Test_b115932a extends [mscorlib] System.Object {
 .method public static int32 Main() cil managed
 {
   .entrypoint
@@ -24,4 +25,5 @@
   call       void [System.Console]System.Console::WriteLine(string)
   ldc.i4 100
   ret
+}
 }

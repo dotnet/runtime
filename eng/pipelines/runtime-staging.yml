@@ -73,7 +73,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - iOSSimulator_x64
+            - iossimulator_x64
           variables:
             - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
               - name: _HelixSource
@@ -88,6 +88,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_RuntimeTests
+            runtimeVariant: minijit
             buildArgs: -s mono+libs -c $(_BuildConfig)
             timeoutInMinutes: 240
             condition: >-
@@ -97,7 +98,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
             ${{ if eq(variables['isRollingBuild'], true) }}:
               # extra steps, run tests
-              extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+              extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
               extraStepsParameters:
                 creator: dotnet-bot
                 testRunNamePrefixSuffix: Mono_$(_BuildConfig)

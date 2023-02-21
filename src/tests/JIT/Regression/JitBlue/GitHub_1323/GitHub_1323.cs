@@ -3,11 +3,11 @@
 
 using System;
 
-class Program
+public class Program
 {
     static ushort SkillLevel;
 
-    static int Main()
+    public static int Main()
     {
         SkillLevel = 0x2121;
         SkillLevel = (ushort)((byte)SkillLevel ^ 0x21);

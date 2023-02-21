@@ -256,7 +256,7 @@ namespace System.Data
         }
 
         // SDUB: GetListName and GetItemProperties almost the same in DataView and DataViewManager
-        string System.ComponentModel.ITypedList.GetListName(PropertyDescriptor[] listAccessors)
+        string System.ComponentModel.ITypedList.GetListName(PropertyDescriptor[]? listAccessors)
         {
             DataSet? dataSet = DataSet;
             if (dataSet == null)
@@ -279,7 +279,7 @@ namespace System.Data
             return string.Empty;
         }
 
-        PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
+        PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[]? listAccessors)
         {
             DataSet? dataSet = DataSet;
             if (dataSet == null)

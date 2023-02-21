@@ -701,7 +701,6 @@ private:
     VASigCookieBlock        *m_pVASigCookieBlock;
 
     PTR_Assembly            m_pAssembly;
-    mdFile                  m_moduleRef;
 
     CrstExplicitInit        m_Crst;
     CrstExplicitInit        m_FixupCrst;
@@ -739,9 +738,6 @@ private:
 
     #define GENERIC_TYPE_DEF_MAP_ALL_FLAGS            NO_MAP_FLAGS
 
-    #define FILE_REF_MAP_ALL_FLAGS                    NO_MAP_FLAGS
-        // For file ref map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
-
     #define MANIFEST_MODULE_MAP_ALL_FLAGS             NO_MAP_FLAGS
         // For manifest module map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
 
@@ -766,9 +762,6 @@ private:
     // space in order to use the LookupMap infrastructure, but what it buys us is IBC support and
     // a compressed format for NGen that makes up for it.
     LookupMap<PTR_MethodTable>      m_GenericTypeDefToCanonMethodTableMap;
-
-    // Mapping from File token to Module *
-    LookupMap<PTR_Module>           m_FileReferencesMap;
 
     // Mapping from MethodDef token to pointer-sized value encoding property information
     LookupMap<SIZE_T>           m_MethodDefToPropertyInfoMap;
@@ -887,10 +880,10 @@ protected:
 #endif // _DEBUG
 
  public:
-    static Module *Create(Assembly *pAssembly, mdFile kFile, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker);
+    static Module *Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker);
 
  protected:
-    Module(Assembly *pAssembly, mdFile moduleRef, PEAssembly *file);
+    Module(Assembly *pAssembly, PEAssembly *file);
 
 
  public:
@@ -924,13 +917,6 @@ protected:
 
     PTR_Assembly GetAssembly() const;
 
-    int GetClassLoaderIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return RidFromToken(m_moduleRef);
-    }
-
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
@@ -945,13 +931,6 @@ protected:
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager * GetCodeVersionManager();
 #endif
-
-    mdFile GetModuleRef()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_moduleRef;
-    }
 
     BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetPEAssembly()->IsDynamic(); }
     BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsDynamic(); }
@@ -1359,55 +1338,10 @@ public:
         SUPPORTS_DAC;
 
         _ASSERTE(TypeFromToken(token) == mdtFile);
-        return m_FileReferencesMap.GetElement(RidFromToken(token));
+
+        // We don't support multi-module, so just check if we are looking for this module
+        return token == mdFileNil ? dac_cast<PTR_Module>(this) : NULL;
     }
-
-
-#ifndef DACCESS_COMPILE
-    void EnsureFileCanBeStored(mdFile token)
-    {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        m_FileReferencesMap.EnsureElementCanBeStored(this, RidFromToken(token));
-    }
-
-    void EnsuredStoreFile(mdFile token, Module *value)
-    {
-        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT
-
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        m_FileReferencesMap.SetElement(RidFromToken(token), value);
-    }
-
-
-    void StoreFileThrowing(mdFile token, Module *value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        m_FileReferencesMap.AddElement(this, RidFromToken(token), value);
-    }
-
-    BOOL StoreFileNoThrow(mdFile token, Module *value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        return m_FileReferencesMap.TrySetElement(RidFromToken(token), value);
-    }
-
-    mdAssemblyRef FindManifestModule(Module *value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return m_ManifestModuleReferencesMap.Find(value) | mdtAssembly;
-    }
-#endif // !DACCESS_COMPILE
-
-    DWORD GetFileMax() { LIMITED_METHOD_DAC_CONTRACT;  return m_FileReferencesMap.GetSize(); }
 
 #ifndef DACCESS_COMPILE
     //
@@ -1499,7 +1433,7 @@ public:
     const SString &GetPath() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetPath(); }
 
 #ifdef LOGGING
-    LPCWSTR GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
+    LPCUTF8 GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
 #endif
 
     PEImageLayout * GetReadyToRunImage();
@@ -1531,33 +1465,6 @@ public:
     mdToken GetEntryPointToken();
 
     BYTE *GetProfilerBase();
-
-
-    // Active transition path management
-    //
-    // This list keeps track of module which we have active transition
-    // paths to.  An active transition path is where we move from
-    // active execution in one module to another module without
-    // involving triggering the file loader to ensure that the
-    // destination module is active.  We must explicitly list these
-    // relationships so the loader can ensure that the activation
-    // constraints are a priori satisfied.
-    //
-    // Conditional vs. Unconditional describes how we deal with
-    // activation failure of a dependency.  In the unconditional case,
-    // we propagate the activation failure to the depending module.
-    // In the conditional case, we activate a "trigger" in the active
-    // transition path which will cause the path to fail in particular
-    // app domains where the destination module failed to activate.
-    // (This trigger in the path typically has a perf cost even in the
-    // nonfailing case.)
-    //
-    // In either case we must try to perform the activation eagerly -
-    // even in the conditional case we have to know whether to turn on
-    // the trigger or not before we let the active transition path
-    // execute.
-
-    void AddActiveDependency(Module *pModule, BOOL unconditional);
 
     BYTE* GetNativeFixupBlobData(RVA fixup);
 
@@ -1906,7 +1813,7 @@ private:
     PTR_SBuffer m_pDynamicMetadata;
 
 #if !defined DACCESS_COMPILE
-    ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly *pPEAssembly);
+    ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly);
 #endif // !DACCESS_COMPILE
 
 public:

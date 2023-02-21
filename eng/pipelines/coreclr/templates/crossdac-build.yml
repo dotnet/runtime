@@ -8,7 +8,7 @@ parameters:
 steps:
   # Always build the crossdac, that way we know in CI/PR if things break to build.
   - ${{ if and(eq(parameters.osGroup, 'windows'), notin(parameters.archType, 'x86')) }}:
-    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) ${{ parameters.archType }} -hostarch ${{ parameters.hostArchType }} -ci -os Linux -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
+    - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) ${{ parameters.archType }} -hostarch ${{ parameters.hostArchType }} -ci -os linux -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
       displayName: Build Cross OS Linux DAC for Windows
 
     - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) ${{ parameters.archType }} -hostarch ${{ parameters.hostArchType }} -ci -os alpine -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
@@ -59,7 +59,7 @@ steps:
         isOfficialBuild: ${{ parameters.isOfficialBuild }}
         timeoutInMinutes: 30
 
-  - ${{ if eq(parameters.osGroup, 'Linux') }}:
+  - ${{ if eq(parameters.osGroup, 'linux') }}:
     - task: CopyFiles@2
       displayName: Gather runtime for CrossDac
       inputs:

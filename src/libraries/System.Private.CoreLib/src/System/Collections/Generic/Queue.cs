@@ -453,7 +453,7 @@ namespace System.Collections.Generic
 
                 // Cache some fields in locals to decrease code size
                 T[] array = _q._array;
-                int capacity = array.Length;
+                uint capacity = (uint)array.Length;
 
                 // _index represents the 0-based index into the queue, however the queue
                 // doesn't have to start from 0 and it may not even be stored contiguously in memory.
@@ -467,7 +467,7 @@ namespace System.Collections.Generic
                     // Replacing it with simple comparison/subtraction operations sped up
                     // the average foreach loop by 2x.
 
-                    arrayIndex -= (uint)capacity; // wrap around if needed
+                    arrayIndex -= capacity; // wrap around if needed
                 }
 
                 _currentElement = array[arrayIndex];

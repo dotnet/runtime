@@ -222,7 +222,7 @@ IF NOT DEFINED DoLink (
           DependsOnTargets="GetDisasmCheckData">
     <PropertyGroup>
       <HasBashDisasmCheck>false</HasBashDisasmCheck>
-      <HasBashDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</HasBashDisasmCheck>
+      <HasBashDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</HasBashDisasmCheck>
 
       <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
       <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
@@ -235,6 +235,7 @@ if [[ ( -z "$DOTNET_JitStress" ) && ( -z "$DOTNET_JitStressRegs" ) && ( -z "$DOT
     export DOTNET_JitDisasm=`cat $(BashDisasmListOutputFile)`
     export DOTNET_JitDiffableDasm=1
     export DOTNET_JitStdOutFile=$(BashDisasmOutputFile)
+    rm -f $(BashDisasmOutputFile)
     if [[ $ERRORLEVEL -ne 0 ]]
     then
       echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
@@ -281,6 +282,7 @@ IF "%DOTNET_JitStress%"=="" IF "%DOTNET_JitStressRegs%"=="" IF "%DOTNET_Tailcall
     for /F "delims=" %%g in ($(BatchDisasmListOutputFile)) do set DOTNET_JitDisasm=%%g
     set DOTNET_JitDiffableDasm=1
     set DOTNET_JitStdOutFile=$(BatchDisasmOutputFile)
+    del $(BatchDisasmOutputFile) >nul 2>&1
 )
 ]]>
       </CLRTestBatchPreCommands>

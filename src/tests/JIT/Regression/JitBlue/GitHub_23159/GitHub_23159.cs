@@ -11,7 +11,7 @@ using System.Text;
 
 public static class GitHub_23159
 {
-    static int Main()
+    public static int Main()
     {
         var str = "application/json,text/html;q=0.9,application/xhtml+xml;q=0.9,application/xml;q=0.8,*/*;q=0.7";
         var span = Encoding.ASCII.GetBytes(str).AsSpan();

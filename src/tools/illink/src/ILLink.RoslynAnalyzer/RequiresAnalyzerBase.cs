@@ -134,7 +134,7 @@ namespace ILLink.RoslynAnalyzer
 
 				context.RegisterSyntaxNodeAction (syntaxNodeAnalysisContext => {
 					var model = syntaxNodeAnalysisContext.SemanticModel;
-					if (syntaxNodeAnalysisContext.ContainingSymbol is not ISymbol containingSymbol || containingSymbol.IsInRequiresScope (RequiresAttributeName))
+					if (syntaxNodeAnalysisContext.ContainingSymbol is not ISymbol containingSymbol || containingSymbol.IsInRequiresScope (RequiresAttributeName, out _))
 						return;
 
 					GenericNameSyntax genericNameSyntaxNode = (GenericNameSyntax) syntaxNodeAnalysisContext.Node;
@@ -200,7 +200,7 @@ namespace ILLink.RoslynAnalyzer
 					ISymbol containingSymbol = FindContainingSymbol (operationContext, AnalyzerDiagnosticTargets);
 
 					// Do not emit any diagnostic if caller is annotated with the attribute too.
-					if (containingSymbol.IsInRequiresScope (RequiresAttributeName))
+					if (containingSymbol.IsInRequiresScope (RequiresAttributeName, out _))
 						return;
 
 					if (ReportSpecialIncompatibleMembersDiagnostic (operationContext, incompatibleMembers, member))
@@ -357,7 +357,7 @@ namespace ILLink.RoslynAnalyzer
 		/// </summary>
 		/// <param name="compilation">Compilation to search for members</param>
 		/// <returns>A list of special incomptaible members</returns>
-		protected virtual ImmutableArray<ISymbol> GetSpecialIncompatibleMembers (Compilation compilation) => new ImmutableArray<ISymbol> ();
+		protected virtual ImmutableArray<ISymbol> GetSpecialIncompatibleMembers (Compilation compilation) => default;
 
 		/// <summary>
 		/// Verifies that the MSBuild requirements to run the analyzer are fulfilled

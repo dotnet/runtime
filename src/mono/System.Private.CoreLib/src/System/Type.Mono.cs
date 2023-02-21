@@ -4,15 +4,18 @@
 using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System
 {
+    [StructLayout(LayoutKind.Sequential)]
     public partial class Type
     {
         #region keep in sync with object-internals.h
         internal RuntimeTypeHandle _impl;
+        internal LoaderAllocator? m_keepalive;
         #endregion
 
         internal IntPtr GetUnderlyingNativeHandle()

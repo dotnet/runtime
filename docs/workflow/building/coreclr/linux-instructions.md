@@ -76,7 +76,7 @@ To build CoreCLR on Linux, run `build.sh` while specifying the `clr` subset:
 ./build.sh --subset clr <other args>
 ```
 
-After the build is completed, there should be some files placed in `artifacts/bin/coreclr/Linux.<arch>.<configuration>` (for example `artifacts/bin/coreclr/Linux.x64.Release`). The most important binaries are the following:
+After the build is completed, there should be some files placed in `artifacts/bin/coreclr/linux.<arch>.<configuration>` (for example `artifacts/bin/coreclr/linux.x64.Release`). The most important binaries are the following:
 
 * `corerun`: The command line host.  This program loads and starts the CoreCLR runtime and passes the managed program (e.g. `program.dll`) you want to run with it.
 * `libcoreclr.so`: The CoreCLR runtime itself.

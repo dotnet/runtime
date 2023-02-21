@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-class C
+public class C
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static int[] M()
@@ -22,7 +22,7 @@ class C
         return true;
     }
 
-    static int Main()
+    public static int Main()
     {
         // The original repro of the bug associated with this test involved an assert after re-morphing a tree modified
         // by CSE: the original tree contained both a CSE def and a CSE use, and re-morphing eliminated the use, causing
