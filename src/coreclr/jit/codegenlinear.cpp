@@ -1869,11 +1869,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 #endif // FEATURE_SIMD
         {
             emitAttr attr = emitTypeSize(type);
-#ifdef TARGET_RISCV64
-            GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, REG_NA, outArgVarNum, thisFieldOffset);
-#else
             GetEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
-#endif
         }
 
 // We can't write beyond the arg area unless this is a tail call, in which case we use
@@ -2063,15 +2059,9 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
     // but the GTF_SPILL flag records the fact that the register value is going dead.
     if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || (!varDsc->IsAlwaysAliveInMemory()))
     {
-// Store local variable to its home location.
-// Ensure that lclVar stores are typed correctly.
-#ifdef TARGET_RISCV64
-        assert(!compiler->isSIMDTypeLocalAligned(varNum));
+        // Store local variable to its home location.
+        // Ensure that lclVar stores are typed correctly.
         GetEmitter()->emitIns_S_R(ins_Store(type, compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(type), regNum,
-                                  REG_NA,
-#else
-        GetEmitter()->emitIns_S_R(ins_Store(type, compiler->isSIMDTypeLocalAligned(varNum)), emitTypeSize(type), regNum,
-#endif
                                   varNum, 0);
     }
 }
@@ -2592,13 +2582,8 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 
     noway_assert((loVal->GetRegNum() != REG_NA) && (hiVal->GetRegNum() != REG_NA));
 
-#ifdef TARGET_RISCV64
-    emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->GetRegNum(), REG_NA, lclNum, 0);
-    emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->GetRegNum(), REG_NA, lclNum, genTypeSize(TYP_INT));
-#else
     emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->GetRegNum(), lclNum, 0);
     emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->GetRegNum(), lclNum, genTypeSize(TYP_INT));
-#endif
 }
 #endif // !defined(TARGET_64BIT)
 

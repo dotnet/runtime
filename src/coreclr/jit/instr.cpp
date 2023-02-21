@@ -598,11 +598,7 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
 #if CPU_LOAD_STORE_ARCH
     assert(GetEmitter()->emitInsIsStore(ins));
 #endif
-#ifdef TARGET_RISCV64
-    GetEmitter()->emitIns_S_R(ins, size, reg, REG_NA, varNum, 0);
-#else
     GetEmitter()->emitIns_S_R(ins, size, reg, varNum, 0);
-#endif
 }
 
 /*****************************************************************************
@@ -1080,11 +1076,7 @@ void CodeGen::inst_RV_RV_TT(
 
 void CodeGen::inst_ST_RV(instruction ins, TempDsc* tmp, unsigned ofs, regNumber reg, var_types type)
 {
-#ifdef TARGET_RISCV64
-    GetEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, REG_NA, tmp->tdTempNum(), ofs);
-#else
     GetEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, tmp->tdTempNum(), ofs);
-#endif
 }
 
 #ifdef TARGET_XARCH

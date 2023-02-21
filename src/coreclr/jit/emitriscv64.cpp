@@ -235,13 +235,18 @@ void emitter::emitIns(instruction ins)
 }
 
 /*****************************************************************************
- *  emitter::emitIns_S_R() and emitter::emitIns_R_S():
+ *  emitter::emitIns_S_R(), emitIns_S_R_R() and emitter::emitIns_R_S():
  *
  *  Add an Load/Store instruction(s): base+offset and base-addr-computing if needed.
  *  For referencing a stack-based local variable and a register
  *
  */
-void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, regNumber tmpReg, int varx, int offs)
+void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
+{
+    emitIns_S_R_R(ins, attr, reg1, REG_NA, varx, offs);
+}
+
+void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber tmpReg, int varx, int offs)
 {
     ssize_t imm;
 
@@ -261,7 +266,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, regNum
             break;
 
         default:
-            NYI("emitIns_S_R");
+            NYI("emitIns_S_R && emitIns_S_R_R");
             return;
 
     } // end switch (ins)
@@ -3730,7 +3735,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 unsigned             offset  = varNode->GetLclOffs();
                 if (emitInsIsStore(ins))
                 {
-                    emitIns_S_R(ins, attr, dataReg, REG_NA, lclNum, offset);
+                    emitIns_S_R(ins, attr, dataReg, lclNum, offset);
                 }
                 else
                 {

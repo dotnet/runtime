@@ -1018,7 +1018,7 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
     *pInitRegZeroed  = false;
 
     genInstrWithConstant(INS_addi, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta, REG_RA, false); // TODO R21 => RA
-    GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, regTmp, REG_NA, compiler->lvaPSPSym, 0);
+    GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
 }
 
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
@@ -1483,7 +1483,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     emitAttr attr = emitTypeSize(targetType);
 
-    emit->emitIns_S_R(ins, attr, dataReg, REG_NA, varNum, offset);
+    emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
 
     genUpdateLife(tree);
 
@@ -1584,7 +1584,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             instruction ins  = ins_StoreFromSrc(dataReg, targetType);
             emitAttr    attr = emitActualTypeSize(targetType);
 
-            emit->emitIns_S_R(ins, attr, dataReg, REG_NA, varNum, /* offset */ 0);
+            emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
 
             genUpdateLife(lclNode);
 
@@ -2307,8 +2307,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         if (dstLclNum != BAD_VAR_NUM)
         {
-            emit->emitIns_S_R(INS_sd, EA_8BYTE, srcReg, REG_NA, dstLclNum, dstOffset);
-            emit->emitIns_S_R(INS_sd, EA_8BYTE, srcReg, REG_NA, dstLclNum, dstOffset + 8);
+            emit->emitIns_S_R(INS_sd, EA_8BYTE, srcReg, dstLclNum, dstOffset);
+            emit->emitIns_S_R(INS_sd, EA_8BYTE, srcReg, dstLclNum, dstOffset + 8);
         }
         else
         {
@@ -2351,7 +2351,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
         if (dstLclNum != BAD_VAR_NUM)
         {
-            emit->emitIns_S_R(storeIns, attr, srcReg, REG_NA, dstLclNum, dstOffset);
+            emit->emitIns_S_R(storeIns, attr, srcReg, dstLclNum, dstOffset);
         }
         else
         {
@@ -4577,7 +4577,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
         noway_assert(compiler->gsGlobalSecurityCookieVal != 0);
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, compiler->gsGlobalSecurityCookieVal);
 
-        GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, initReg, REG_NA, compiler->lvaGSSecurityCookie, 0);
+        GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
     }
     else
     {
@@ -4592,7 +4592,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
             GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, initReg, initReg, 0);
         }
         regSet.verifyRegUsed(initReg);
-        GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, initReg, REG_NA, compiler->lvaGSSecurityCookie, 0);
+        GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
     }
 
     *pInitRegZeroed = false;
@@ -4755,7 +4755,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             assert(source->OperGet() == GT_CNS_INT);
             assert(source->AsIntConCommon()->IconValue() == 0);
 
-            emit->emitIns_S_R(storeIns, storeAttr, REG_R0, REG_NA, varNumOut, argOffsetOut);
+            emit->emitIns_S_R(storeIns, storeAttr, REG_R0, varNumOut, argOffsetOut);
         }
         else
         {
@@ -4766,7 +4766,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 storeIns  = INS_sd;
                 storeAttr = EA_8BYTE;
             }
-            emit->emitIns_S_R(storeIns, storeAttr, source->GetRegNum(), REG_NA, varNumOut, argOffsetOut);
+            emit->emitIns_S_R(storeIns, storeAttr, source->GetRegNum(), varNumOut, argOffsetOut);
         }
         argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
         assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing area
@@ -4952,7 +4952,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 // Emit a store instruction to store the register into the outgoing argument area
                 instruction storeIns = ins_Store(type);
-                emit->emitIns_S_R(storeIns, attr, loReg, REG_NA, varNumOut, argOffsetOut);
+                emit->emitIns_S_R(storeIns, attr, loReg, varNumOut, argOffsetOut);
                 argOffsetOut += moveSize;
                 assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
 
@@ -5626,8 +5626,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
             if (dstLclNum != BAD_VAR_NUM)
             {
-                emit->emitIns_S_R(INS_sd, EA_8BYTE, tempReg, REG_NA, dstLclNum, dstOffset);
-                emit->emitIns_S_R(INS_sd, EA_8BYTE, tempReg2, REG_NA, dstLclNum, dstOffset + 8);
+                emit->emitIns_S_R(INS_sd, EA_8BYTE, tempReg, dstLclNum, dstOffset);
+                emit->emitIns_S_R(INS_sd, EA_8BYTE, tempReg2, dstLclNum, dstOffset + 8);
             }
             else
             {
@@ -5685,7 +5685,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
         if (dstLclNum != BAD_VAR_NUM)
         {
-            emit->emitIns_S_R(storeIns, attr, tempReg, REG_NA, dstLclNum, dstOffset);
+            emit->emitIns_S_R(storeIns, attr, tempReg, dstLclNum, dstOffset);
         }
         else
         {
@@ -7453,7 +7453,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
             // First store the `varDsc->GetArgReg()` on stack.
             if (emitter::isValidSimm12(baseOffset))
             {
-                GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, REG_NA, varNum, 0);
+                GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, 0);
             }
             else
             {
@@ -7463,7 +7463,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 GetEmitter()->emitIns_I_la(EA_PTRSIZE, tmp_reg, baseOffset);
                 // The last parameter `int offs` of the `emitIns_S_R` is negtive,
                 // it means the offset imm had been stored within the `REG_T6`.
-                GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, tmp_reg, varNum, -8);
+                GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, tmp_reg, varNum, -8);
             }
 
             regArgMaskLive &= ~genRegMask(srcRegNum);
@@ -7502,7 +7502,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 {
                     if (emitter::isValidSimm12(baseOffset))
                     {
-                        GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, REG_NA, varNum, slotSize);
+                        GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, slotSize);
                     }
                     else
                     {
@@ -7511,14 +7511,14 @@ void CodeGen::genFnPrologCalleeRegArgs()
                             GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_T6, baseOffset); // TODO REG21 => REGT6
                             // The last parameter `int offs` of the `emitIns_S_R` is negtive,
                             // it means the offset imm had been stored within the `REG_T6`.
-                            GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, REG_T6, varNum,
+                            GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, REG_T6, varNum,
                                                       -slotSize - 8);
                         }
                         else
                         {
                             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_T6, REG_T6,
                                                         slotSize); // TODO REG21 => T6
-                            GetEmitter()->emitIns_S_R(ins_Store(storeType, true), size, srcRegNum, REG_T6, varNum,
+                            GetEmitter()->emitIns_S_R_R(ins_Store(storeType, true), size, srcRegNum, REG_T6, varNum,
                                                       -slotSize - 8); // TODO REG21 => T6
                         }
                     }
@@ -7549,7 +7549,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
                     if (emitter::isValidSimm12(baseOffset))
                     {
-                        GetEmitter()->emitIns_S_R(INS_sd, size, REG_SCRATCH, REG_NA, varNum, TARGET_POINTER_SIZE);
+                        GetEmitter()->emitIns_S_R(INS_sd, size, REG_SCRATCH, varNum, TARGET_POINTER_SIZE);
                     }
                     else
                     {
@@ -7558,12 +7558,12 @@ void CodeGen::genFnPrologCalleeRegArgs()
                             GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_T6, baseOffset); // TODO REG21 => T6
                             // The last parameter `int offs` of the `emitIns_S_R` is negtive,
                             // it means the offset imm had been stored within the `REG_T6`.
-                            GetEmitter()->emitIns_S_R(INS_sd, size, REG_SCRATCH, REG_T6, varNum, -8);
+                            GetEmitter()->emitIns_S_R_R(INS_sd, size, REG_SCRATCH, REG_T6, varNum, -8);
                         }
                         else
                         {
                             GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_T6, REG_T6, TARGET_POINTER_SIZE);
-                            GetEmitter()->emitIns_S_R(INS_sd, size, REG_SCRATCH, REG_T6, varNum, -slotSize - 8);
+                            GetEmitter()->emitIns_S_R_R(INS_sd, size, REG_SCRATCH, REG_T6, varNum, -slotSize - 8);
                         }
                     }
                 }
