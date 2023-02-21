@@ -435,7 +435,7 @@ namespace System.Globalization
                 {
                     foreach (string existingResult in callbackContext->Results)
                     {
-                        if (string.CompareOrdinal(calendarStringSpan, existingResult) == 0)
+                        if (calendarStringSpan.SequenceEquals(existingResult))
                         {
                             // the value is already in the results, so don't add it again
                             return;
