@@ -23,9 +23,6 @@ int main(int argc, char * argv[]) {
 	WASI_AFTER_RUNTIME_LOADED_CALLS
 #endif
 	mono_wasm_load_runtime("", 0);
-	printf ("main call mono_wasm_load_icu_data \n");
-
-	//mono_wasm_load_icu_data("");
 
 	const char* assembly_name = dotnet_wasi_getentrypointassemblyname();
 	MonoAssembly* assembly = mono_assembly_open(assembly_name, NULL);

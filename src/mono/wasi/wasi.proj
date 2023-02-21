@@ -90,8 +90,8 @@
     <ItemGroup>
       <_WasiFlags Include="@(_WasiCommonFlags)" />
 
-      <_WasiCompileFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'include').Replace('\','/'))"/>
-      <_WasiCompileFlags Condition="'$(MonoWasmThreads)' != 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'include').Replace('\','/'))"/>
+      <_WasiCompileFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'include').Replace('\','/'))"/>
+      <_WasiCompileFlags Condition="'$(MonoWasmThreads)' != 'true'" Include="-I$([MSBuild]::NormalizePath('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(MonoProjectRoot)', 'wasi', 'mono-include').Replace('\','/'))"/>
       <_WasiCompileFlags Include="-I$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'native', 'public').Replace('\','/'))"/>
@@ -146,9 +146,11 @@
           DependsOnTargets="GenerateWasiPropsAndRspFiles;GenerateManagedToNative;BundleTimeZones">
 
     <ItemGroup>
-      <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
-                                  $(ICULibDir)/libicui18n.a;
-                                  $(ICULibDir)/libicudata.a" />
+      <ICULibNativeFiles Include="$(WASI_SDK_PATH)share/wasi-sysroot/lib/wasm32-wasi/libc++.a;
+                                  $(WASI_SDK_PATH)share/wasi-sysroot/lib/wasm32-wasi/libc++abi.a;
+                                  $(ICULibDir)/libicudata.a;
+                                  $(ICULibDir)/libicuuc.a;
+                                  $(ICULibDir)/libicui18n.a"/>
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>

@@ -112,7 +112,6 @@ static int assembly_count;
 int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
 {
-	//check this
 	printf("wasi: mono_wasm_add_assembly: %s size: %u\n", name, size);
 	int len = strlen (name);
 	if (!strcasecmp (".pdb", &name [len - 4])) {
@@ -163,13 +162,20 @@ static void *sysglobal_native_handle;
 static void*
 wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 {
-	printf("wasi: wasm_dl_load:");
+	printf("wasi: wasm_dl_load: name is %s\n" , name);
 	void* handle = wasm_dl_lookup_pinvoke_table (name);
 	if (handle)
+	//&& !strcmp (name, "libSystem.Globalization.Native"))
+	{
+		printf("wasi: wasm_dl_load: handle is found, name is %s\n" , name);
 		return handle;
+	}
 
 	if (!strcmp (name, "System.Globalization.Native"))
+	{
+		printf("wasi: wasm_dl_load: not System.Globalization.Native, name is %s\n" , name);
 		return sysglobal_native_handle;
+	}
 
 #if WASM_SUPPORTS_DLOPEN
 	return dlopen(name, flags);
@@ -183,17 +189,23 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
 	if (handle == sysglobal_native_handle)
 		assert (0);
-
+printf("wasi: wasm_dl_symbol: name is %s\n" , name);
 #if WASM_SUPPORTS_DLOPEN
 	if (!wasm_dl_is_pinvoke_tables (handle)) {
+		printf("wasi: wasm_dl_symbol: is not wasm_dl_is_pinvoke_tables, name is%s\n" , name);
 		return dlsym (handle, name);
 	}
 #endif
-
+    printf("wasi: wasm_dl_symbol: PinvokeImport, name is %s\n" , name);
 	PinvokeImport *table = (PinvokeImport*)handle;
 	for (int i = 0; table [i].name; ++i) {
 		if (!strcmp (table [i].name, name))
-			return table [i].func;
+		{
+			printf("wasi: wasm_dl_symbol: PinvokeImport found case, name is %s\n" , name);
+			void* result = table [i].func;
+			printf("wasi: wasm_dl_symbol: PinvokeImport after call, result is %s\n" , table [i].name);
+			return result;
+		}
 	}
 	return NULL;
 }
@@ -219,7 +231,7 @@ compare_int (const void *k1, const void *k2)
 static void*
 icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *out_flags)
 {
-	printf("wasi: icall_table_lookup:");
+	printf("wasi: icall_table_lookup:\n");
 	uint32_t token = mono_method_get_token (method);
 	assert (token);
 	assert ((token & MONO_TOKEN_METHOD_DEF) == MONO_TOKEN_METHOD_DEF);
@@ -287,7 +299,7 @@ icall_table_lookup_symbol (void *func)
 void*
 get_native_to_interp (MonoMethod *method, void *extra_arg)
 {
-	printf("wasi: get_native_to_interp:");
+	printf("wasi: get_native_to_interp:\n");
 	void *addr;
 
 	MONO_ENTER_GC_UNSAFE;
@@ -673,10 +685,6 @@ void add_assembly(const char* base_dir, const char *name) {
 	fclose(fileptr);
 
 	assert(mono_wasm_add_assembly(name, buffer, filelen));
-	printf("Before loading icu data to load %s\n", filename);
-	if (!mono_wasm_load_icu_data(buffer))
-	    printf("Failed to load icu data %s\n", filename);
-            //Module.printErr(`MONO_WASM: Error loading ICU asset ${asset.name}`);
 }
 
 MonoMethod* lookup_dotnet_method(const char* assembly_name, const char* namespace, const char* type_name, const char* method_name, int num_params) {
