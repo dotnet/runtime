@@ -379,9 +379,10 @@ namespace System.Linq.Expressions.Interpreter
 #endif
         }
 
-        private static void ReturnCachedFrame(InterpretedFrame frame)
+        private static void ReturnCachedFrame(ref InterpretedFrame frame)
         {
-            frame.Clear();
+            // TODO: VS free Data and _continuations
+            frame = default;
         }
 
         private InterpretedFrame MakeFrame()
@@ -399,14 +400,14 @@ namespace System.Linq.Expressions.Interpreter
             var currentFrame = frame.Enter();
             try
             {
-                _interpreter.Run(frame);
+                _interpreter.Run(ref frame);
             }
             finally
             {
                 frame.Leave(currentFrame);
                 arg0 = (T0)frame.Data[0];
                 arg1 = (T1)frame.Data[1];
-                ReturnCachedFrame(frame);
+                ReturnCachedFrame(ref frame);
             }
         }
 #endif
@@ -421,7 +422,7 @@ namespace System.Linq.Expressions.Interpreter
             void* currentFrame = frame.Enter();
             try
             {
-                _interpreter.Run(frame);
+                _interpreter.Run(ref frame);
             }
             finally
             {
@@ -434,7 +435,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             object? result = frame.Pop();
 
-            ReturnCachedFrame(frame);
+            ReturnCachedFrame(ref frame);
             return result;
         }
 
@@ -448,7 +449,7 @@ namespace System.Linq.Expressions.Interpreter
             void* currentFrame = frame.Enter();
             try
             {
-                _interpreter.Run(frame);
+                _interpreter.Run(ref frame);
             }
             finally
             {
@@ -458,7 +459,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
 
                 InterpretedFrame.Leave(currentFrame);
-                ReturnCachedFrame(frame);
+                ReturnCachedFrame(ref frame);
             }
 
             return null;

@@ -15,14 +15,14 @@ namespace System.Linq.Expressions.Interpreter
         {
             var frame = MakeFrame();
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid0()
         {
             var frame = MakeFrame();
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 
 #if FEATURE_MAKE_RUN_METHODS
@@ -46,7 +46,7 @@ namespace System.Linq.Expressions.Interpreter
             var frame = MakeFrame();
             frame.Data[0] = arg0;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid1<T0>(T0 arg0)
@@ -54,7 +54,7 @@ namespace System.Linq.Expressions.Interpreter
             var frame = MakeFrame();
             frame.Data[0] = arg0;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun1<T0, TRet>(LightLambda lambda)
@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid2<T0, T1>(T0 arg0, T1 arg1)
@@ -81,7 +81,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[0] = arg0;
             frame.Data[1] = arg1;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun2<T0, T1, TRet>(LightLambda lambda)
@@ -100,7 +100,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -111,7 +111,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[1] = arg1;
             frame.Data[2] = arg2;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 
 #if FEATURE_MAKE_RUN_METHODS
@@ -132,7 +132,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[2] = arg2;
             frame.Data[3] = arg3;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid4<T0, T1, T2, T3>(T0 arg0, T1 arg1, T2 arg2, T3 arg3)
@@ -143,7 +143,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[2] = arg2;
             frame.Data[3] = arg3;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun4<T0, T1, T2, T3, TRet>(LightLambda lambda)
@@ -164,7 +164,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[3] = arg3;
             frame.Data[4] = arg4;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid5<T0, T1, T2, T3, T4>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
@@ -176,7 +176,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[3] = arg3;
             frame.Data[4] = arg4;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun5<T0, T1, T2, T3, T4, TRet>(LightLambda lambda)
@@ -198,7 +198,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[4] = arg4;
             frame.Data[5] = arg5;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -212,7 +212,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[4] = arg4;
             frame.Data[5] = arg5;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun6<T0, T1, T2, T3, T4, T5, TRet>(LightLambda lambda)
@@ -235,7 +235,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[5] = arg5;
             frame.Data[6] = arg6;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
 
@@ -250,7 +250,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[5] = arg5;
             frame.Data[6] = arg6;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun7<T0, T1, T2, T3, T4, T5, T6, TRet>(LightLambda lambda)
@@ -274,7 +274,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[6] = arg6;
             frame.Data[7] = arg7;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid8<T0, T1, T2, T3, T4, T5, T6, T7>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
@@ -289,7 +289,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[6] = arg6;
             frame.Data[7] = arg7;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun8<T0, T1, T2, T3, T4, T5, T6, T7, TRet>(LightLambda lambda)
@@ -314,7 +314,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[7] = arg7;
             frame.Data[8] = arg8;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid9<T0, T1, T2, T3, T4, T5, T6, T7, T8>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
@@ -330,7 +330,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[7] = arg7;
             frame.Data[8] = arg8;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun9<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>(LightLambda lambda)
@@ -356,7 +356,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[8] = arg8;
             frame.Data[9] = arg9;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
@@ -373,7 +373,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[8] = arg8;
             frame.Data[9] = arg9;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>(LightLambda lambda)
@@ -400,7 +400,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[9] = arg9;
             frame.Data[10] = arg10;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid11<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
@@ -418,7 +418,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[9] = arg9;
             frame.Data[10] = arg10;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun11<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TRet>(LightLambda lambda)
@@ -446,7 +446,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[10] = arg10;
             frame.Data[11] = arg11;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid12<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
@@ -465,7 +465,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[10] = arg10;
             frame.Data[11] = arg11;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun12<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TRet>(LightLambda lambda)
@@ -494,7 +494,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[11] = arg11;
             frame.Data[12] = arg12;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid13<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
@@ -514,7 +514,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[11] = arg11;
             frame.Data[12] = arg12;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun13<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TRet>(LightLambda lambda)
@@ -544,7 +544,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[12] = arg12;
             frame.Data[13] = arg13;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid14<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
@@ -565,7 +565,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[12] = arg12;
             frame.Data[13] = arg13;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun14<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TRet>(LightLambda lambda)
@@ -596,7 +596,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[13] = arg13;
             frame.Data[14] = arg14;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
             return (TRet)frame.Pop();
         }
         internal void RunVoid15<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
@@ -618,7 +618,7 @@ namespace System.Linq.Expressions.Interpreter
             frame.Data[13] = arg13;
             frame.Data[14] = arg14;
             var current = frame.Enter();
-            try { _interpreter.Run(frame); } finally { frame.Leave(current); }
+            try { _interpreter.Run(ref frame); } finally { frame.Leave(current); }
         }
 #if FEATURE_MAKE_RUN_METHODS
         internal static Delegate MakeRun15<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TRet>(LightLambda lambda)

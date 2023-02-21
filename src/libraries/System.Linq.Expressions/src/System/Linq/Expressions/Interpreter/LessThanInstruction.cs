@@ -28,7 +28,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -51,7 +51,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -74,7 +74,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -120,7 +120,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -143,7 +143,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -166,7 +166,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -189,7 +189,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -212,7 +212,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -235,7 +235,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -258,7 +258,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();

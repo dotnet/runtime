@@ -54,7 +54,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string InstructionName => "BranchFalse";
         public override int ConsumedStack => 1;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             Debug.Assert(_offset != Unknown);
 
@@ -76,7 +76,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string InstructionName => "BranchTrue";
         public override int ConsumedStack => 1;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             Debug.Assert(_offset != Unknown);
 
@@ -99,7 +99,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             Debug.Assert(_offset != Unknown);
 
@@ -143,7 +143,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => _hasValue ? 1 : 0;
         public override int ProducedStack => _hasResult ? 1 : 0;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             Debug.Assert(_offset != Unknown);
 
@@ -161,7 +161,7 @@ namespace System.Linq.Expressions.Interpreter
             _labelIndex = labelIndex;
         }
 
-        public RuntimeLabel GetLabel(InterpretedFrame frame)
+        public RuntimeLabel GetLabel(ref InterpretedFrame frame)
         {
             Debug.Assert(_labelIndex != UnknownInstrIndex);
             return frame.Interpreter._labels[_labelIndex];
@@ -244,7 +244,7 @@ namespace System.Linq.Expressions.Interpreter
             return new GotoInstruction(labelIndex, hasResult, hasValue, labelTargetGetsValue);
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             // Are we jumping out of catch/finally while aborting the current thread?
 #if FEATURE_THREAD_ABORT
@@ -288,7 +288,7 @@ namespace System.Linq.Expressions.Interpreter
             return new EnterTryCatchFinallyInstruction(UnknownInstrIndex, false);
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             Debug.Assert(_tryHandler != null, "the tryHandler must be set already");
 
@@ -308,7 +308,7 @@ namespace System.Linq.Expressions.Interpreter
                 int index = frame.InstructionIndex;
                 while (index >= _tryHandler.TryStartIndex && index < _tryHandler.TryEndIndex)
                 {
-                    index += instructions[index].Run(frame);
+                    index += instructions[index].Run(ref frame);
                     frame.InstructionIndex = index;
                 }
 
@@ -317,10 +317,10 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     // run the 'Goto' that jumps out of the try/catch/finally blocks
                     Debug.Assert(instructions[index] is GotoInstruction, "should be the 'Goto' instruction that jumps out the try/catch/finally");
-                    frame.InstructionIndex += instructions[index].Run(frame);
+                    frame.InstructionIndex += instructions[index].Run(ref frame);
                 }
             }
-            catch (Exception exception) when (_tryHandler.HasHandler(frame, exception, out ExceptionHandler? exHandler, out object? unwrappedException))
+            catch (Exception exception) when (_tryHandler.HasHandler(ref frame, exception, out ExceptionHandler? exHandler, out object? unwrappedException))
             {
                 Debug.Assert(!(unwrappedException is RethrowException));
                 frame.InstructionIndex += frame.Goto(exHandler.LabelIndex, unwrappedException, gotoExceptionHandler: true);
@@ -342,7 +342,7 @@ namespace System.Linq.Expressions.Interpreter
                     int index = frame.InstructionIndex;
                     while (index >= exHandler.HandlerStartIndex && index < exHandler.HandlerEndIndex)
                     {
-                        index += instructions[index].Run(frame);
+                        index += instructions[index].Run(ref frame);
                         frame.InstructionIndex = index;
                     }
 
@@ -351,7 +351,7 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         // run the 'Goto' that jumps out of the try/catch/finally blocks
                         Debug.Assert(instructions[index] is GotoInstruction, "should be the 'Goto' instruction that jumps out the try/catch/finally");
-                        frame.InstructionIndex += instructions[index].Run(frame);
+                        frame.InstructionIndex += instructions[index].Run(ref frame);
                     }
                 }
                 catch (RethrowException)
@@ -382,7 +382,7 @@ namespace System.Linq.Expressions.Interpreter
                     int index = frame.InstructionIndex = _tryHandler.FinallyStartIndex;
                     while (index >= _tryHandler.FinallyStartIndex && index < _tryHandler.FinallyEndIndex)
                     {
-                        index += instructions[index].Run(frame);
+                        index += instructions[index].Run(ref frame);
                         frame.InstructionIndex = index;
                     }
                 }
@@ -417,7 +417,7 @@ namespace System.Linq.Expressions.Interpreter
             _tryHandler = tryHandler;
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             Debug.Assert(_tryHandler != null, "the tryHandler must be set already");
 
@@ -443,7 +443,7 @@ namespace System.Linq.Expressions.Interpreter
                 int index = frame.InstructionIndex;
                 while (index >= _tryHandler.TryStartIndex && index < _tryHandler.TryEndIndex)
                 {
-                    index += instructions[index].Run(frame);
+                    index += instructions[index].Run(ref frame);
                     frame.InstructionIndex = index;
                 }
 
@@ -454,7 +454,7 @@ namespace System.Linq.Expressions.Interpreter
                 // pop the continuation for it here, before Gotoing the end of the try/fault.
                 ranWithoutFault = true;
                 frame.RemoveContinuation();
-                frame.InstructionIndex += instructions[index].Run(frame);
+                frame.InstructionIndex += instructions[index].Run(ref frame);
             }
             finally
             {
@@ -465,7 +465,7 @@ namespace System.Linq.Expressions.Interpreter
                     int index = frame.InstructionIndex = _tryHandler.FinallyStartIndex;
                     while (index >= _tryHandler.FinallyStartIndex && index < _tryHandler.FinallyEndIndex)
                     {
-                        index += instructions[index].Run(frame);
+                        index += instructions[index].Run(ref frame);
                         frame.InstructionIndex = index;
                     }
                 }
@@ -500,14 +500,14 @@ namespace System.Linq.Expressions.Interpreter
             return new EnterFinallyInstruction(labelIndex);
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             // If _pendingContinuation == -1 then we were getting into the finally block because an exception was thrown
             //      in this case we need to set the stack depth
             // Else we were getting into this finally block from a 'Goto' jump, and the stack depth is already set properly
             if (!frame.IsJumpHappened())
             {
-                frame.SetStackDepth(GetLabel(frame).StackDepth);
+                frame.SetStackDepth(GetLabel(ref frame).StackDepth);
             }
 
             frame.PushPendingContinuation();
@@ -528,7 +528,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 2;
         public override string InstructionName => "LeaveFinally";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.PopPendingContinuation();
 
@@ -562,11 +562,11 @@ namespace System.Linq.Expressions.Interpreter
             return new EnterFaultInstruction(labelIndex);
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             Debug.Assert(!frame.IsJumpHappened());
 
-            frame.SetStackDepth(GetLabel(frame).StackDepth);
+            frame.SetStackDepth(GetLabel(ref frame).StackDepth);
             frame.PushPendingContinuation();
             frame.RemoveContinuation();
             return 1;
@@ -583,7 +583,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedContinuations => 1;
         public override string InstructionName => "LeaveFault";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.PopPendingContinuation();
 
@@ -607,7 +607,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
 
         [ExcludeFromCodeCoverage(Justification = "Known to be a no-op, this instruction is skipped on execution")]
-        public override int Run(InterpretedFrame frame) => 1;
+        public override int Run(ref InterpretedFrame frame) => 1;
     }
 
     // no-op: we need this just to balance the stack depth and aid debugging of the instruction list.
@@ -623,7 +623,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 2;
 
         [ExcludeFromCodeCoverage(Justification = "Known to be a no-op, this instruction is skipped on execution")]
-        public override int Run(InterpretedFrame frame) => 1;
+        public override int Run(ref InterpretedFrame frame) => 1;
     }
 
     // no-op: we need this just to balance the stack depth.
@@ -654,7 +654,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
 
         [ExcludeFromCodeCoverage(Justification = "Known to be a no-op, this instruction is skipped on execution")]
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             // nop (the exception value is pushed by the interpreter in HandleCatch)
             return 1;
@@ -692,13 +692,13 @@ namespace System.Linq.Expressions.Interpreter
             return new LeaveExceptionHandlerInstruction(labelIndex, hasValue);
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             // CLR rethrows ThreadAbortException when leaving catch handler if abort is requested on the current thread.
 #if FEATURE_THREAD_ABORT
             Interpreter.AbortThreadIfRequested(frame, _labelIndex);
 #endif
-            return GetLabel(frame).Index - frame.InstructionIndex;
+            return GetLabel(ref frame).Index - frame.InstructionIndex;
         }
     }
 
@@ -721,7 +721,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => _hasResult ? 1 : 0;
         public override int ConsumedStack => 1;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             Exception? ex = WrapThrownObject(frame.Pop());
             if (_rethrow)
@@ -749,7 +749,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string InstructionName => "IntSwitch";
         public override int ConsumedStack => 1;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             int target;
             return _cases.TryGetValue((T)frame.Pop()!, out target) ? target : 1;
@@ -772,7 +772,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string InstructionName => "StringSwitch";
         public override int ConsumedStack => 1;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object? value = frame.Pop();
 

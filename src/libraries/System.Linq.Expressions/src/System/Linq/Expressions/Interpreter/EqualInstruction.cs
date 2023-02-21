@@ -20,7 +20,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualBoolean : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -42,7 +42,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualSByte : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -64,7 +64,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualInt16 : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualChar : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualInt32 : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -130,7 +130,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualInt64 : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -152,7 +152,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualByte : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -174,7 +174,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualUInt16 : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -196,7 +196,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualUInt32 : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -218,7 +218,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualUInt64 : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -240,7 +240,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualSingle : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -262,7 +262,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualDouble : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -284,7 +284,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualReference : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 frame.Push(frame.Pop() == frame.Pop());
                 return 1;
@@ -293,7 +293,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualBooleanLiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -311,7 +311,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualSByteLiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -329,7 +329,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualInt16LiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -347,7 +347,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualCharLiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -365,7 +365,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualInt32LiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -383,7 +383,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualInt64LiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -401,7 +401,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualByteLiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -419,7 +419,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualUInt16LiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -437,7 +437,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualUInt32LiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -455,7 +455,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualUInt64LiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -473,7 +473,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualSingleLiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -491,7 +491,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class EqualDoubleLiftedToNull : EqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();

@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "NewArrayInit";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             Array array = Array.CreateInstance(_elementType, _elementCount);
             for (int i = _elementCount - 1; i >= 0; i--)
@@ -43,7 +43,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "NewArray";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             int length = ConvertHelper.ToInt32NoNull(frame.Pop());
             // To make behavior aligned with array creation emitted by C# compiler if length is less than
@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "NewArrayBounds";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             var lengths = new int[_rank];
             for (int i = _rank - 1; i >= 0; i--)
@@ -100,7 +100,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "GetArrayItem";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             int index = ConvertHelper.ToInt32NoNull(frame.Pop());
             Array array = (Array)frame.Pop()!;
@@ -118,7 +118,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 3;
         public override string InstructionName => "SetArrayItem";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object? value = frame.Pop();
             int index = ConvertHelper.ToInt32NoNull(frame.Pop());
@@ -138,7 +138,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private ArrayLengthInstruction() { }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object obj = frame.Pop()!;
             frame.Push(((Array)obj).Length);

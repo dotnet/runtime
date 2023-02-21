@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubInt16 : SubInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubInt32 : SubInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -54,7 +54,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubInt64 : SubInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubUInt16 : SubInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -90,7 +90,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubUInt32 : SubInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubUInt64 : SubInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -126,7 +126,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubSingle : SubInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -144,7 +144,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubDouble : SubInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -190,7 +190,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubOvfInt16 : SubOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -208,7 +208,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubOvfInt32 : SubOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -226,7 +226,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubOvfInt64 : SubOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -244,7 +244,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubOvfUInt16 : SubOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -262,7 +262,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubOvfUInt32 : SubOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -280,7 +280,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class SubOvfUInt64 : SubOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;

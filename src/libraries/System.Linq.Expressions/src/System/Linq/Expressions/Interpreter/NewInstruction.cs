@@ -22,11 +22,11 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "New";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             int first = frame.StackIndex - _argumentCount;
 
-            object?[] args = GetArgs(frame, first);
+            object?[] args = GetArgs(ref frame, first);
 
             object ret;
             try
@@ -45,7 +45,7 @@ namespace System.Linq.Expressions.Interpreter
             return 1;
         }
 
-        protected object?[] GetArgs(InterpretedFrame frame, int first)
+        protected object?[] GetArgs(ref InterpretedFrame frame, int first)
         {
             if (_argumentCount > 0)
             {
@@ -79,11 +79,11 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string InstructionName => "ByRefNew";
 
-        public sealed override int Run(InterpretedFrame frame)
+        public sealed override int Run(ref InterpretedFrame frame)
         {
             int first = frame.StackIndex - _argumentCount;
 
-            object?[] args = GetArgs(frame, first);
+            object?[] args = GetArgs(ref frame, first);
 
             try
             {
@@ -105,7 +105,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 foreach (ByRefUpdater arg in _byrefArgs)
                 {
-                    arg.Update(frame, args[arg.ArgumentIndex]);
+                    arg.Update(ref frame, args[arg.ArgumentIndex]);
                 }
             }
 

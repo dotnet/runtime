@@ -13,7 +13,7 @@ namespace System.Linq.Expressions.Interpreter
     /// For code that is only run a small number of times this can be a
     /// sweet spot.
     ///
-    /// The core loop in the interpreter is the <see cref="Run(InterpretedFrame)"/>  method.
+    /// The core loop in the interpreter is the <see cref="Run(ref InterpretedFrame)"/>  method.
     /// </summary>
     internal sealed class Interpreter
     {
@@ -53,13 +53,13 @@ namespace System.Linq.Expressions.Interpreter
         /// Each group of subsequent frames of Run method corresponds to a single interpreted frame.
         /// </remarks>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void Run(InterpretedFrame frame)
+        public void Run(ref InterpretedFrame frame)
         {
             Instruction[] instructions = _instructions.Instructions;
             int index = frame.InstructionIndex;
             while (index < instructions.Length)
             {
-                index += instructions[index].Run(frame);
+                index += instructions[index].Run(ref frame);
                 frame.InstructionIndex = index;
             }
         }

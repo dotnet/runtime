@@ -25,7 +25,7 @@ namespace System.Linq.Expressions.Interpreter
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
             Justification = "_type is a ValueType. You can always get an uninitialized ValueType.")]
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.Push(RuntimeHelpers.GetUninitializedObject(_type));
             return 1;

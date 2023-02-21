@@ -296,7 +296,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int ProducedStack => _target.ReturnType == typeof(void) ? 0 : 1;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             int first = frame.StackIndex - _argumentCount;
 
@@ -304,7 +304,7 @@ namespace System.Linq.Expressions.Interpreter
             object?[] args;
             if (_target.IsStatic)
             {
-                args = GetArgs(frame, first, 0);
+                args = GetArgs(ref frame, first, 0);
                 try
                 {
                     ret = _target.Invoke(null, args);
@@ -320,7 +320,7 @@ namespace System.Linq.Expressions.Interpreter
                 object? instance = frame.Data[first];
                 NullCheck(instance);
 
-                args = GetArgs(frame, first, 1);
+                args = GetArgs(ref frame, first, 1);
 
                 if (TryGetLightLambdaTarget(instance, out LightLambda? targetLambda))
                 {
@@ -378,7 +378,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        protected object?[] GetArgs(InterpretedFrame frame, int first, int skip)
+        protected object?[] GetArgs(ref InterpretedFrame frame, int first, int skip)
         {
             int count = _argumentCount - skip;
 
@@ -414,7 +414,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int ProducedStack => _target.ReturnType == typeof(void) ? 0 : 1;
 
-        public sealed override int Run(InterpretedFrame frame)
+        public sealed override int Run(ref InterpretedFrame frame)
         {
             int first = frame.StackIndex - _argumentCount;
             object?[]? args = null;
@@ -425,7 +425,7 @@ namespace System.Linq.Expressions.Interpreter
                 object? ret;
                 if (_target.IsStatic)
                 {
-                    args = GetArgs(frame, first, 0);
+                    args = GetArgs(ref frame, first, 0);
                     try
                     {
                         ret = _target.Invoke(null, args);
@@ -441,7 +441,7 @@ namespace System.Linq.Expressions.Interpreter
                     instance = frame.Data[first];
                     NullCheck(instance);
 
-                    args = GetArgs(frame, first, 1);
+                    args = GetArgs(ref frame, first, 1);
 
                     if (TryGetLightLambdaTarget(instance, out LightLambda? targetLambda))
                     {
@@ -480,7 +480,7 @@ namespace System.Linq.Expressions.Interpreter
                     {
                         // -1: instance param, just copy back the exact instance invoked with, which
                         // gets passed by reference from reflection for value types.
-                        arg.Update(frame, arg.ArgumentIndex == -1 ? instance : args[arg.ArgumentIndex]);
+                        arg.Update(ref frame, arg.ArgumentIndex == -1 ? instance : args[arg.ArgumentIndex]);
                     }
 
                     ReturnCachedArgs(args);

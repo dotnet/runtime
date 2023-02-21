@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "LoadObject";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.Data[frame.StackIndex++] = _value;
             return 1;
@@ -39,7 +39,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "LoadCachedObject";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.Data[frame.StackIndex++] = frame.Interpreter._objects![_index];
             return 1;
@@ -60,7 +60,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 1;
         public override string InstructionName => "Pop";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.Pop();
             return 1;
@@ -77,7 +77,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string InstructionName => "Dup";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.Dup();
             return 1;

@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulInt16 : MulInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulInt32 : MulInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -54,7 +54,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulInt64 : MulInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulUInt16 : MulInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -90,7 +90,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulUInt32 : MulInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulUInt64 : MulInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -126,7 +126,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulSingle : MulInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -144,7 +144,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulDouble : MulInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -191,7 +191,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulOvfInt16 : MulOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -209,7 +209,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulOvfInt32 : MulOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -227,7 +227,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulOvfInt64 : MulOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -245,7 +245,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulOvfUInt16 : MulOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -263,7 +263,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulOvfUInt32 : MulOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -281,7 +281,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class MulOvfUInt64 : MulOvfInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;

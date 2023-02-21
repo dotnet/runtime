@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class ExclusiveOrSByte : ExclusiveOrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -33,7 +33,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class ExclusiveOrInt16 : ExclusiveOrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -49,7 +49,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class ExclusiveOrInt32 : ExclusiveOrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class ExclusiveOrInt64 : ExclusiveOrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -81,7 +81,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class ExclusiveOrByte : ExclusiveOrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class ExclusiveOrUInt16 : ExclusiveOrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class ExclusiveOrUInt32 : ExclusiveOrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class ExclusiveOrUInt64 : ExclusiveOrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class ExclusiveOrBoolean : ExclusiveOrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();

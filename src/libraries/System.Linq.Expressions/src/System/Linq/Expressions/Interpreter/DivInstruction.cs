@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class DivInt16 : DivInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class DivInt32 : DivInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -54,7 +54,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class DivInt64 : DivInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class DivUInt16 : DivInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -90,7 +90,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class DivUInt32 : DivInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class DivUInt64 : DivInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -126,7 +126,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class DivSingle : DivInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
@@ -144,7 +144,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class DivDouble : DivInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;

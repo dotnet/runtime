@@ -20,7 +20,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualBoolean : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -42,7 +42,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualSByte : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -64,7 +64,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualInt16 : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualChar : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualInt32 : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -130,7 +130,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualInt64 : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -152,7 +152,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualByte : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -174,7 +174,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualUInt16 : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -196,7 +196,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualUInt32 : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -218,7 +218,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualUInt64 : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -240,7 +240,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualSingle : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -262,7 +262,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualDouble : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -284,7 +284,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualReference : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 frame.Push(frame.Pop() != frame.Pop());
                 return 1;
@@ -293,7 +293,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualSByteLiftedToNull : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -311,7 +311,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualInt16LiftedToNull : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -329,7 +329,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualCharLiftedToNull : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -347,7 +347,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualInt32LiftedToNull : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -365,7 +365,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualInt64LiftedToNull : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -383,7 +383,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualByteLiftedToNull : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -401,7 +401,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualUInt16LiftedToNull : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -419,7 +419,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualUInt32LiftedToNull : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -437,7 +437,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualUInt64LiftedToNull : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -455,7 +455,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualSingleLiftedToNull : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();
@@ -473,7 +473,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotEqualDoubleLiftedToNull : NotEqualInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();

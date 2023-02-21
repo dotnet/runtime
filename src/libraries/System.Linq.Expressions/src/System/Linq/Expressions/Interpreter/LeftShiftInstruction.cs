@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class LeftShiftSByte : LeftShiftInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
@@ -35,7 +35,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class LeftShiftInt16 : LeftShiftInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
@@ -53,7 +53,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class LeftShiftInt32 : LeftShiftInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
@@ -71,7 +71,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class LeftShiftInt64 : LeftShiftInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
@@ -89,7 +89,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class LeftShiftByte : LeftShiftInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
@@ -107,7 +107,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class LeftShiftUInt16 : LeftShiftInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
@@ -125,7 +125,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class LeftShiftUInt32 : LeftShiftInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
@@ -143,7 +143,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class LeftShiftUInt64 : LeftShiftInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();

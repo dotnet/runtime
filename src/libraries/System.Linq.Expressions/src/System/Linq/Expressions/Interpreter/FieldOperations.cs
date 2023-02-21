@@ -30,7 +30,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string InstructionName => "LoadStaticField";
         public override int ProducedStack => 1;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.Push(_field.GetValue(obj: null));
             return 1;
@@ -48,7 +48,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 1;
         public override int ProducedStack => 1;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object? self = frame.Pop();
 
@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string InstructionName => "StoreField";
         public override int ConsumedStack => 2;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object? value = frame.Pop();
             object? self = frame.Pop();
@@ -92,7 +92,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int ConsumedStack => 1;
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object? value = frame.Pop();
             _field.SetValue(null, value);

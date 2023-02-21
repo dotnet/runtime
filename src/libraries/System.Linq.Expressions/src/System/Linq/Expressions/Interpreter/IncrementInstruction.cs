@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class IncrementInt16 : IncrementInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -35,7 +35,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class IncrementInt32 : IncrementInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class IncrementInt64 : IncrementInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class IncrementUInt16 : IncrementInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class IncrementUInt32 : IncrementInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -103,7 +103,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class IncrementUInt64 : IncrementInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -120,7 +120,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class IncrementSingle : IncrementInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -137,7 +137,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class IncrementDouble : IncrementInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)

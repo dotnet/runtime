@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotBoolean : NotInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value = frame.Pop();
                 if (value == null)
@@ -34,7 +34,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotInt64 : NotInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value = frame.Pop();
                 if (value == null)
@@ -51,7 +51,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotInt32 : NotInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value = frame.Pop();
                 if (value == null)
@@ -68,7 +68,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotInt16 : NotInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value = frame.Pop();
                 if (value == null)
@@ -85,7 +85,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotUInt64 : NotInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value = frame.Pop();
                 if (value == null)
@@ -102,7 +102,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotUInt32 : NotInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value = frame.Pop();
                 if (value == null)
@@ -119,7 +119,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotUInt16 : NotInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value = frame.Pop();
                 if (value == null)
@@ -136,7 +136,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotByte : NotInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value = frame.Pop();
                 if (value == null)
@@ -153,7 +153,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NotSByte : NotInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value = frame.Pop();
                 if (value == null)

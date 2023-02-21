@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
         public int StackBalance => ProducedStack - ConsumedStack;
         public int ContinuationsBalance => ProducedContinuations - ConsumedContinuations;
 
-        public abstract int Run(InterpretedFrame frame);
+        public abstract int Run(ref InterpretedFrame frame);
 
         public abstract string InstructionName { get; }
 

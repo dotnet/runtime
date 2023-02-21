@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
             _isLiftedToNull = isLiftedToNull;
         }
 
-        public sealed override int Run(InterpretedFrame frame)
+        public sealed override int Run(ref InterpretedFrame frame)
         {
             object? obj = frame.Pop();
             object? converted;

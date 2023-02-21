@@ -99,7 +99,7 @@ namespace System.Linq.Expressions.Interpreter
             _handlers = handlers;
         }
 
-        internal bool HasHandler(InterpretedFrame frame, Exception exception, [NotNullWhen(true)] out ExceptionHandler? handler, out object? unwrappedException)
+        internal bool HasHandler(ref InterpretedFrame frame, Exception exception, [NotNullWhen(true)] out ExceptionHandler? handler, out object? unwrappedException)
         {
 #if DEBUG
             if (exception is RethrowException)
@@ -121,7 +121,7 @@ namespace System.Linq.Expressions.Interpreter
                 Type exceptionType = unwrappedException.GetType();
                 foreach (ExceptionHandler candidate in _handlers!)
                 {
-                    if (candidate.Matches(exceptionType) && (candidate.Filter == null || FilterPasses(frame, ref unwrappedException, candidate.Filter)))
+                    if (candidate.Matches(exceptionType) && (candidate.Filter == null || FilterPasses(ref frame, ref unwrappedException, candidate.Filter)))
                     {
                         handler = candidate;
                         return true;
@@ -137,7 +137,7 @@ namespace System.Linq.Expressions.Interpreter
             return false;
         }
 
-        private static bool FilterPasses(InterpretedFrame frame, ref object? exception, ExceptionFilter filter)
+        private static bool FilterPasses(ref InterpretedFrame frame, ref object? exception, ExceptionFilter filter)
         {
             Interpreter interpreter = frame.Interpreter;
             Instruction[] instructions = interpreter.Instructions.Instructions;
@@ -150,7 +150,7 @@ namespace System.Linq.Expressions.Interpreter
                 frame.Push(exception);
                 while (index >= filter.StartIndex && index < filter.EndIndex)
                 {
-                    index += instructions[index].Run(frame);
+                    index += instructions[index].Run(ref frame);
                     frame.InstructionIndex = index;
                 }
 
@@ -3115,7 +3115,7 @@ namespace System.Linq.Expressions.Interpreter
             ArgumentIndex = argumentIndex;
         }
 
-        public abstract void Update(InterpretedFrame frame, object? value);
+        public abstract void Update(ref InterpretedFrame frame, object? value);
 
         public virtual void UndefineTemps(InstructionList instructions, LocalVariables locals)
         {
@@ -3132,7 +3132,7 @@ namespace System.Linq.Expressions.Interpreter
             _parameter = parameter;
         }
 
-        public override void Update(InterpretedFrame frame, object? value)
+        public override void Update(ref InterpretedFrame frame, object? value)
         {
             if (_parameter.InClosure)
             {
@@ -3162,7 +3162,7 @@ namespace System.Linq.Expressions.Interpreter
             _index = index;
         }
 
-        public override void Update(InterpretedFrame frame, object? value)
+        public override void Update(ref InterpretedFrame frame, object? value)
         {
             object? index = frame.Data[_index.Index];
             ((Array)frame.Data[_array.Index]!).SetValue(value, (int)index!);
@@ -3187,7 +3187,7 @@ namespace System.Linq.Expressions.Interpreter
             _field = field;
         }
 
-        public override void Update(InterpretedFrame frame, object? value)
+        public override void Update(ref InterpretedFrame frame, object? value)
         {
             object? obj = _object == null ? null : frame.Data[_object.GetValueOrDefault().Index];
             _field.SetValue(obj, value);
@@ -3214,7 +3214,7 @@ namespace System.Linq.Expressions.Interpreter
             _property = property;
         }
 
-        public override void Update(InterpretedFrame frame, object? value)
+        public override void Update(ref InterpretedFrame frame, object? value)
         {
             object? obj = _object == null ? null : frame.Data[_object.GetValueOrDefault().Index];
 
@@ -3252,7 +3252,7 @@ namespace System.Linq.Expressions.Interpreter
             _indexer = indexer;
         }
 
-        public override void Update(InterpretedFrame frame, object? value)
+        public override void Update(ref InterpretedFrame frame, object? value)
         {
             var args = new object?[_args.Length + 1];
             for (int i = 0; i < args.Length - 1; i++)

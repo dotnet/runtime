@@ -222,7 +222,7 @@ namespace System.Linq.Expressions.Interpreter
             _target = (Action)target.CreateDelegate(typeof(Action));
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             _target();
             frame.StackIndex -= 0;
@@ -245,7 +245,7 @@ namespace System.Linq.Expressions.Interpreter
             _target = (Action<T0>)target.CreateDelegate(typeof(Action<T0>));
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object firstArg = frame.Data[frame.StackIndex - 1];
 
@@ -284,7 +284,7 @@ namespace System.Linq.Expressions.Interpreter
             _target = (Action<T0, T1>)target.CreateDelegate(typeof(Action<T0, T1>));
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object firstArg = frame.Data[frame.StackIndex - 2];
 
@@ -323,7 +323,7 @@ namespace System.Linq.Expressions.Interpreter
             _target = (Action<T0, T1, T2>)target.CreateDelegate(typeof(Action<T0, T1, T2>));
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object firstArg = frame.Data[frame.StackIndex - 3];
 
@@ -362,7 +362,7 @@ namespace System.Linq.Expressions.Interpreter
             _target = (Action<T0, T1, T2, T3>)target.CreateDelegate(typeof(Action<T0, T1, T2, T3>));
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object firstArg = frame.Data[frame.StackIndex - 4];
 
@@ -399,7 +399,7 @@ namespace System.Linq.Expressions.Interpreter
             _target = (Func<TRet>)target.CreateDelegate(typeof(Func<TRet>));
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.Data[frame.StackIndex - 0] = _target();
             frame.StackIndex -= -1;
@@ -422,7 +422,7 @@ namespace System.Linq.Expressions.Interpreter
             _target = (Func<T0, TRet>)target.CreateDelegate(typeof(Func<T0, TRet>));
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object firstArg = frame.Data[frame.StackIndex - 1];
             object result;
@@ -463,7 +463,7 @@ namespace System.Linq.Expressions.Interpreter
             _target = (Func<T0, T1, TRet>)target.CreateDelegate(typeof(Func<T0, T1, TRet>));
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object firstArg = frame.Data[frame.StackIndex - 2];
             object result;
@@ -504,7 +504,7 @@ namespace System.Linq.Expressions.Interpreter
             _target = (Func<T0, T1, T2, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, TRet>));
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object firstArg = frame.Data[frame.StackIndex - 3];
             object result;
@@ -545,7 +545,7 @@ namespace System.Linq.Expressions.Interpreter
             _target = (Func<T0, T1, T2, T3, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, T3, TRet>));
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object firstArg = frame.Data[frame.StackIndex - 4];
             object result;

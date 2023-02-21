@@ -18,7 +18,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NegateInt16 : NegateInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -35,7 +35,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NegateInt32 : NegateInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NegateInt64 : NegateInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NegateSingle : NegateInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NegateDouble : NegateInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -128,7 +128,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NegateCheckedInt32 : NegateCheckedInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NegateCheckedInt16 : NegateCheckedInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)
@@ -162,7 +162,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class NegateCheckedInt64 : NegateCheckedInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 if (obj == null)

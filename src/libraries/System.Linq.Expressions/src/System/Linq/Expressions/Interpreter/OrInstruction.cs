@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class OrSByte : OrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -33,7 +33,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class OrInt16 : OrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -49,7 +49,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class OrInt32 : OrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class OrInt64 : OrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -81,7 +81,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class OrByte : OrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class OrUInt16 : OrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class OrUInt32 : OrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class OrUInt64 : OrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class OrBoolean : OrInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();

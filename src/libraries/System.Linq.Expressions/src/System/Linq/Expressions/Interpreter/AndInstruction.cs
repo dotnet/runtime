@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class AndSByte : AndInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -33,7 +33,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class AndInt16 : AndInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -49,7 +49,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class AndInt32 : AndInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class AndInt64 : AndInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -81,7 +81,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class AndByte : AndInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class AndUInt16 : AndInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class AndUInt32 : AndInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class AndUInt64 : AndInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class AndBoolean : AndInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? right = frame.Pop();
                 object? left = frame.Pop();

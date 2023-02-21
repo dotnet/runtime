@@ -23,7 +23,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "CreateDelegate";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             IStrongBox[]? closure;
             if (ConsumedStack > 0)
@@ -59,7 +59,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "TypeIs";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.Push(_type.IsInstanceOfType(frame.Pop()));
             return 1;
@@ -81,7 +81,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "TypeAs";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object? value = frame.Pop();
             frame.Push(_type.IsInstanceOfType(value) ? value : null);
@@ -101,7 +101,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private TypeEqualsInstruction() { }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object? type = frame.Pop();
             object? obj = frame.Pop();
@@ -122,7 +122,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class HasValue : NullableMethodCallInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 frame.Push(obj != null);
@@ -132,7 +132,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class GetValue : NullableMethodCallInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 if (frame.Peek() == null)
                 {
@@ -158,7 +158,7 @@ namespace System.Linq.Expressions.Interpreter
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
                 Justification = "_defaultValueType is a ValueType. You can always get an uninitialized ValueType.")]
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 if (frame.Peek() == null)
                 {
@@ -173,7 +173,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int ConsumedStack => 2;
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? dflt = frame.Pop();
                 object? obj = frame.Pop();
@@ -186,7 +186,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int ConsumedStack => 2;
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? other = frame.Pop();
                 object? obj = frame.Pop();
@@ -208,7 +208,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class ToStringClass : NullableMethodCallInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 frame.Push(obj == null ? "" : obj.ToString());
@@ -218,7 +218,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class GetHashCodeClass : NullableMethodCallInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
                 frame.Push(obj?.GetHashCode() ?? 0);
@@ -266,7 +266,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private sealed class CastInstructionT<T> : CastInstruction
         {
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value = frame.Pop();
                 frame.Push((T)value!);
@@ -295,7 +295,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value = frame.Pop();
                 if (value != null)
@@ -317,12 +317,12 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    ConvertNull(frame);
+                    ConvertNull(ref frame);
                 }
                 return 1;
             }
 
-            protected abstract void ConvertNull(InterpretedFrame frame);
+            protected abstract void ConvertNull(ref InterpretedFrame frame);
 
             private sealed class Ref : CastInstructionNoT
             {
@@ -331,7 +331,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                 }
 
-                protected override void ConvertNull(InterpretedFrame frame)
+                protected override void ConvertNull(ref InterpretedFrame frame)
                 {
                     frame.Push(null);
                 }
@@ -344,7 +344,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                 }
 
-                protected override void ConvertNull(InterpretedFrame frame)
+                protected override void ConvertNull(ref InterpretedFrame frame)
                 {
                     throw new NullReferenceException();
                 }
@@ -387,7 +387,7 @@ namespace System.Linq.Expressions.Interpreter
             _t = t;
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object? from = frame.Pop();
             Debug.Assert(
@@ -411,7 +411,7 @@ namespace System.Linq.Expressions.Interpreter
             _t = t;
         }
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object? from = frame.Pop();
             Debug.Assert(from != null);
@@ -477,7 +477,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string InstructionName => "Quote";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             Expression? operand = _operand;
             if (_hoistedVariables != null)

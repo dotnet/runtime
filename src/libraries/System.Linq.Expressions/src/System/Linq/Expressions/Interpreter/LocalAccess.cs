@@ -44,7 +44,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "LoadLocal";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.Data[frame.StackIndex++] = frame.Data[_index];
             return 1;
@@ -66,7 +66,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "LoadLocalBox";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             var box = (IStrongBox)frame.Data[_index]!;
             frame.Data[frame.StackIndex++] = box.Value;
@@ -84,7 +84,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "LoadLocalClosure";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             IStrongBox box = frame.Closure![_index];
             frame.Data[frame.StackIndex++] = box.Value;
@@ -102,7 +102,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "LoadLocal";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             IStrongBox box = frame.Closure![_index];
             frame.Data[frame.StackIndex++] = box;
@@ -125,7 +125,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "AssignLocal";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.Data[_index] = frame.Peek();
             return 1;
@@ -147,7 +147,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 1;
         public override string InstructionName => "StoreLocal";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             frame.Data[_index] = frame.Pop();
             return 1;
@@ -170,7 +170,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "AssignLocalBox";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             var box = (IStrongBox)frame.Data[_index]!;
             box.Value = frame.Peek();
@@ -188,7 +188,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => 1;
         public override string InstructionName => "StoreLocalBox";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             var box = (IStrongBox)frame.Data[_index]!;
             box.Value = frame.Data[--frame.StackIndex];
@@ -207,7 +207,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "AssignLocalClosure";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             IStrongBox box = frame.Closure![_index];
             box.Value = frame.Peek();
@@ -223,7 +223,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ProducedStack => 1;
         public override string InstructionName => "ValueTypeCopy";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             object? o = frame.Pop();
             frame.Push(o == null ? o : RuntimeHelpers.GetObjectValue(o));
@@ -249,7 +249,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 frame.Data[_index] = null;
                 return 1;
@@ -274,7 +274,7 @@ namespace System.Linq.Expressions.Interpreter
                 _defaultValue = defaultValue;
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 frame.Data[_index] = _defaultValue;
                 return 1;
@@ -300,7 +300,7 @@ namespace System.Linq.Expressions.Interpreter
                 _defaultValue = defaultValue;
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 frame.Data[_index] = new StrongBox<object>(_defaultValue);
                 return 1;
@@ -317,7 +317,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 frame.Data[_index] = new StrongBox<object>();
                 return 1;
@@ -333,7 +333,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 frame.Data[_index] = new StrongBox<object?>(frame.Data[_index]);
                 return 1;
@@ -349,7 +349,7 @@ namespace System.Linq.Expressions.Interpreter
             {
             }
 
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 // nop
                 return 1;
@@ -381,7 +381,7 @@ namespace System.Linq.Expressions.Interpreter
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
                 Justification = "_type is a ValueType. You can always get an uninitialized ValueType.")]
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 try
                 {
@@ -420,7 +420,7 @@ namespace System.Linq.Expressions.Interpreter
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
                 Justification = "_type is a ValueType. You can always get an uninitialized ValueType.")]
-            public override int Run(InterpretedFrame frame)
+            public override int Run(ref InterpretedFrame frame)
             {
                 object? value;
 
@@ -462,7 +462,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int ConsumedStack => _count;
         public override string InstructionName => "GetRuntimeVariables";
 
-        public override int Run(InterpretedFrame frame)
+        public override int Run(ref InterpretedFrame frame)
         {
             var ret = new IStrongBox[_count];
             for (int i = ret.Length - 1; i >= 0; i--)
