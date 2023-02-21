@@ -496,7 +496,7 @@ namespace Internal.IL.Stubs
             // We will generate the following code:
             //
             // object ret;
-            // object[] args = new object[parameterCount];
+            // object[] args = DelegateHelpers.GetObjectArray(parameterCount);
             // args[0] = param0;
             // args[1] = param1;
             //  ...
@@ -518,12 +518,14 @@ namespace Internal.IL.Stubs
             bool hasReturnValue = !Signature.ReturnType.IsVoid;
 
             bool hasRefArgs = false;
+
+            codeStream.EmitLdc(Signature.Length);
+            MethodDesc getObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers", "GetObjectArray");
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(getObjectArrayMethod));
+            codeStream.EmitStLoc(argsLocal);
+
             if (Signature.Length > 0)
             {
-                codeStream.EmitLdc(Signature.Length);
-                codeStream.Emit(ILOpcode.newarr, emitter.NewToken(objectType));
-                codeStream.EmitStLoc(argsLocal);
-
                 for (int i = 0; i < Signature.Length; i++)
                 {
                     TypeDesc paramType = Signature[i];
@@ -551,12 +553,6 @@ namespace Internal.IL.Stubs
                     codeStream.Emit(ILOpcode.box, paramToken);
                     codeStream.Emit(ILOpcode.stelem_ref);
                 }
-            }
-            else
-            {
-                MethodDesc emptyObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers", "GetEmptyObjectArray");
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(emptyObjectArrayMethod));
-                codeStream.EmitStLoc(argsLocal);
             }
 
             ILExceptionRegionBuilder tryFinallyRegion = null;
@@ -619,6 +615,13 @@ namespace Internal.IL.Stubs
                 codeStream.Emit(ILOpcode.endfinally);
                 codeStream.EndHandler(tryFinallyRegion);
                 codeStream.EmitLabel(returnLabel);
+            }
+
+            if (Signature.Length > 0)
+            {
+                codeStream.EmitLdLoc(argsLocal);
+                MethodDesc returnObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers", "ReturnObjectArray");
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(returnObjectArrayMethod));
             }
 
             if (hasReturnValue)
