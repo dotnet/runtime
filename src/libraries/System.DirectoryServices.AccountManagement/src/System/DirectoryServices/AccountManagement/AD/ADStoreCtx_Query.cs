@@ -523,7 +523,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (IntPtr.Zero != pBytePtr)
-                    Interop.Kernel32.LocalFree(pBytePtr);
+                    LocalFree(pBytePtr);
             }
 
             StringBuilder stringizedBinarySid = new StringBuilder();

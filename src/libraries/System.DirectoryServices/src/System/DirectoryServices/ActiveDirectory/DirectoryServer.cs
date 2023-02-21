@@ -669,7 +669,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // release the memory
                 if (errorInfo != (IntPtr)0)
-                    global::Interop.Kernel32.LocalFree(errorInfo);
+                    LocalFree(errorInfo);
             }
         }
 
@@ -686,6 +686,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 dsReplicaFreeInfo((int)type, value);
             }
         }
+
+        private static unsafe void LocalFree(nint ptr) =>
+            global::Interop.Kernel32.LocalFree((void*)ptr);
 
         internal unsafe void SyncReplicaHelper(IntPtr dsHandle, bool isADAM, string partition, string? sourceServer, int option, SafeLibraryHandle libHandle)
         {

@@ -14,29 +14,23 @@ namespace System.Data.ProviderBase
     {
         private readonly int _bufferLength;
 
-        private DbBuffer(int initialSize, bool zeroBuffer) : base(IntPtr.Zero, true)
+        protected DbBuffer(int initialSize) : base(IntPtr.Zero, true)
         {
             if (0 < initialSize)
             {
-                uint flags = ((zeroBuffer) ? Interop.Kernel32.LMEM_ZEROINIT : Interop.Kernel32.LMEM_FIXED);
-
                 _bufferLength = initialSize;
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
                 {
-                    base.handle = Interop.Kernel32.LocalAlloc(flags, (nuint)initialSize);
+                    base.handle = LocalAllocZeroed(initialSize);
                 }
                 if (IntPtr.Zero == base.handle)
                 {
                     throw new OutOfMemoryException();
                 }
             }
-        }
-
-        protected DbBuffer(int initialSize) : this(initialSize, true)
-        {
         }
 
         protected DbBuffer(IntPtr invalidHandleValue, bool ownsHandle) : base(invalidHandleValue, ownsHandle)
@@ -354,10 +348,16 @@ namespace System.Data.ProviderBase
             base.handle = IntPtr.Zero;
             if (IntPtr.Zero != ptr)
             {
-                Interop.Kernel32.LocalFree(ptr);
+                LocalFree(ptr);
             }
             return true;
         }
+
+        private static unsafe nint LocalAllocZeroed(int initialSize) =>
+            (nint)Interop.Kernel32.LocalAllocZeroed((uint)initialSize);
+
+        private static unsafe void LocalFree(nint ptr) =>
+            Interop.Kernel32.LocalFree((void*)ptr);
 
         private void StructureToPtr(int offset, object structure)
         {

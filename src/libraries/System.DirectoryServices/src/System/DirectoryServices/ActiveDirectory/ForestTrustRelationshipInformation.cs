@@ -289,7 +289,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     for (int i = 0; i < sidList.Count; i++)
                     {
-                        global::Interop.Kernel32.LocalFree((IntPtr)sidList[i]!);
+                        LocalFree((IntPtr)sidList[i]!);
                     }
 
                     if (records != (IntPtr)0)
@@ -446,5 +446,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             catch { throw; }
         }
+
+        private static unsafe void LocalFree(nint ptr) =>
+            global::Interop.Kernel32.LocalFree((void*)ptr);
     }
 }

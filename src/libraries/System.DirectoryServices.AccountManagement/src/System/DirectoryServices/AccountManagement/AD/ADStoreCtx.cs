@@ -1562,7 +1562,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 if (pGroupSid != IntPtr.Zero)
-                    Interop.Kernel32.LocalFree(pGroupSid);
+                    LocalFree(pGroupSid);
             }
 
             if (groupSid != null)

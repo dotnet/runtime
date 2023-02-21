@@ -353,6 +353,8 @@ namespace System.DirectoryServices.AccountManagement
             return qbeFilterDescription;
         }
 
+        protected static unsafe void LocalFree(nint ptr) => Interop.Kernel32.LocalFree((void*)ptr);
+
         // Applies to supplied propertySet to the supplied Principal, and adds any resulting filters
         // to qbeFilterDescription.
         private void BuildFilterSet(Principal p, string[] propertySet, QbeFilterDescription qbeFilterDescription)

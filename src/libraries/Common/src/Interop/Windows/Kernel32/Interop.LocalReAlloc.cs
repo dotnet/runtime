@@ -1,0 +1,21 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Runtime.InteropServices;
+
+internal static partial class Interop
+{
+    internal static partial class Kernel32
+    {
+        internal const uint LMEM_MOVEABLE = 0x0002;
+
+        [LibraryImport(Libraries.Kernel32)]
+        private static partial nint LocalReAlloc(
+            nint hMem,
+            nuint uBytes,
+            uint uFlags);
+
+        internal static unsafe void* LocalReAlloc(void* ptr, nuint byteCount) =>
+            (void*)LocalReAlloc((nint)ptr, byteCount, LMEM_MOVEABLE);
+    }
+}
