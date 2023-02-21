@@ -1988,16 +1988,16 @@
         "unix-loongarch64"
       ]
     },
-    "linux-riscv64": {
-      "#import": [
-        "linux",
-        "unix-riscv64"
-      ]
-    },
     "linux-mips64": {
       "#import": [
         "linux",
         "unix-mips64"
+      ]
+    },
+    "linux-riscv64": {
+      "#import": [
+        "linux",
+        "unix-riscv64"
       ]
     },
     "linux-musl": {
@@ -4063,11 +4063,6 @@
         "unix"
       ]
     },
-    "unix-riscv64": {
-      "#import": [
-        "unix"
-      ]
-    },
     "unix-mips64": {
       "#import": [
         "unix"
@@ -4089,6 +4084,11 @@
       ]
     },
     "unix-x86": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-riscv64": {
       "#import": [
         "unix"
       ]
