@@ -118,8 +118,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         public bool LoadRemote { get; set; }
     }
 
-    protected override bool ExecuteInternal()
+    protected override bool ValidateArguments()
     {
+        if (!base.ValidateArguments())
+            return false;
+
         if (!File.Exists(MainJS))
             throw new LogAsErrorException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
@@ -130,6 +133,14 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             Log.LogError("Cannot build Wasm app without any assemblies");
             return false;
         }
+
+        return true;
+    }
+
+    protected override bool ExecuteInternal()
+    {
+        if (!ValidateArguments())
+            return false;
 
         var _assemblies = new List<string>();
         foreach (var asm in Assemblies!)
@@ -183,6 +194,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
         }
+
         var mainFileName=Path.GetFileName(MainJS);
         Log.LogMessage(MessageImportance.Low, $"MainJS path: '{MainJS}', fileName : '{mainFileName}', destination: '{Path.Combine(AppDir, mainFileName)}'");
         FileCopyChecked(MainJS!, Path.Combine(AppDir, mainFileName), string.Empty);

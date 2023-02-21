@@ -65,6 +65,8 @@ public abstract class WasmAppBuilderBaseTask : Task
 
     protected abstract bool ExecuteInternal();
 
+    protected virtual bool ValidateArguments() => true;
+
     protected void ProcessSatelliteAssemblies(Action<(string fullPath, string culture)> fn)
     {
         foreach (var assembly in SatelliteAssemblies)

@@ -12,8 +12,11 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
 {
     public bool IsSingleFileBundle { get; set; }
 
-    protected override bool ExecuteInternal()
+    protected override bool ValidateArguments()
     {
+        if (!base.ValidateArguments())
+            return false;
+
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
             throw new LogAsErrorException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
@@ -22,6 +25,14 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
             Log.LogError("Cannot build Wasm app without any assemblies");
             return false;
         }
+
+        return true;
+    }
+
+    protected override bool ExecuteInternal()
+    {
+        if (!ValidateArguments())
+            return false;
 
         var _assemblies = new List<string>();
         foreach (string asm in Assemblies!)
