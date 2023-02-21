@@ -10681,7 +10681,7 @@ emit_code (MonoAotCompile *acfg)
 			continue;
 
 		/* Emit unbox trampoline */
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass)) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (method->klass) && m_method_is_virtual (method)) {
 			sprintf (symbol, "ut_%d", get_method_index (acfg, method));
 
 			emit_section_change (acfg, ".text", 0);
@@ -10816,7 +10816,7 @@ emit_code (MonoAotCompile *acfg)
 
 		method = cfg->orig_method;
 
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass)) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (method->klass) && m_method_is_virtual (method)) {
 			index = get_method_index (acfg, method);
 
 			emit_int32 (acfg, index);
@@ -10849,9 +10849,8 @@ emit_code (MonoAotCompile *acfg)
 			continue;
 
 		method = cfg->orig_method;
-		(void)method;
 
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass)) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (method->klass) && m_method_is_virtual (method)) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
 			const int index = get_method_index (acfg, method);
 			sprintf (symbol, "ut_%d", index);
