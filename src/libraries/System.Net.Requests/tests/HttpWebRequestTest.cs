@@ -438,11 +438,11 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        public void MaximumAutomaticRedirections_SetZeroOrNegative_ThrowsArgumentException(Uri remoteServer)
+        public void MaximumAutomaticRedirections_SetZeroOrNegative_ThrowsArgumentOutOfRangeException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            AssertExtensions.Throws<ArgumentException>("value", () => request.MaximumAutomaticRedirections = 0);
-            AssertExtensions.Throws<ArgumentException>("value", () => request.MaximumAutomaticRedirections = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => request.MaximumAutomaticRedirections = 0);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => request.MaximumAutomaticRedirections = -1);
         }
 
         [Theory, MemberData(nameof(EchoServers))]

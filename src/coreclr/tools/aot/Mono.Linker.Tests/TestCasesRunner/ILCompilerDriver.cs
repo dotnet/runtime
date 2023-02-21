@@ -62,15 +62,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				compilationRoots.Add (new ExportedMethodsRootProvider (module));
 			}
 
-			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options)));
+			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options), generateLibraryAndModuleInitializers: true));
 
 			ILProvider ilProvider = new NativeAotILProvider ();
-
-			foreach (var descriptor in options.Descriptors) {
-				if (!File.Exists (descriptor))
-					throw new FileNotFoundException ($"'{descriptor}' doesn't exist");
-				compilationRoots.Add (new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode (descriptor));
-			}
 
 			Logger logger = new Logger (
 				logWriter,
@@ -82,6 +76,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				singleWarnDisabledModules: Enumerable.Empty<string> (),
 				suppressedCategories: Enumerable.Empty<string> ());
 
+			foreach (var descriptor in options.Descriptors) {
+				if (!File.Exists (descriptor))
+					throw new FileNotFoundException ($"'{descriptor}' doesn't exist");
+				compilationRoots.Add (new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode (descriptor));
+			}
+			
 			ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches);
 
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);

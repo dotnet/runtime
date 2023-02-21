@@ -246,7 +246,7 @@ namespace Mono.Linker
 
 		public void SetFeatureValue (string feature, bool value)
 		{
-			Debug.Assert (!String.IsNullOrEmpty (feature));
+			Debug.Assert (!string.IsNullOrEmpty (feature));
 			FeatureSettings[feature] = value;
 		}
 

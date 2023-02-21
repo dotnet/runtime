@@ -5698,7 +5698,6 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
             if (isExact && !isCastClass)
             {
                 JITDUMP("Cast will fail, optimizing to return null\n");
-                GenTree* result = gtNewIconNode(0, TYP_REF);
 
                 // If the cast was fed by a box, we can remove that too.
                 if (op1->IsBoxedValue())
@@ -5707,7 +5706,11 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                     gtTryRemoveBoxUpstreamEffects(op1);
                 }
 
-                return result;
+                if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
+                {
+                    impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+                }
+                return gtNewNull();
             }
             else if (isExact)
             {
@@ -5934,8 +5937,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
 
     GenTree* op2Var = op2;
-    if (isCastClass && !partialExpand)
+    if (isCastClass && !partialExpand && (exactCls == NO_CLASS_HANDLE))
     {
+        // if exactCls is not null we won't have to clone op2 (it will be used only for the fallback)
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
     }
@@ -11009,15 +11013,18 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return"));
     impAssignTempGen(tmpNum, op, hClass, CHECK_SPILL_ALL);
-    GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
 
-    // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
-    ret->gtFlags |= GTF_DONT_CSE;
-
-    assert(IsMultiRegReturnedType(hClass, callConv) || op->IsMultiRegNode());
+    LclVarDsc* varDsc = lvaGetDesc(tmpNum);
 
     // Set "lvIsMultiRegRet" to block promotion under "!lvaEnregMultiRegVars".
-    lvaTable[tmpNum].lvIsMultiRegRet = true;
+    varDsc->lvIsMultiRegRet = true;
+
+    GenTreeLclVar* ret = gtNewLclvNode(tmpNum, varDsc->lvType);
+
+    // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
+    ret->SetDoNotCSE();
+
+    assert(IsMultiRegReturnedType(hClass, callConv) || op->IsMultiRegNode());
 
     return ret;
 }

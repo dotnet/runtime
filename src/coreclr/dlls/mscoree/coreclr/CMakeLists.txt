@@ -167,7 +167,7 @@ if(FEATURE_MERGE_JIT_AND_ENGINE)
     set(CLRJIT_STATIC clrjit_static)
 endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
-if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
+if (CLR_CMAKE_TARGET_OSX)
     include(CMakeFindFrameworks)
     find_library(FOUNDATION Foundation REQUIRED)
 endif()
