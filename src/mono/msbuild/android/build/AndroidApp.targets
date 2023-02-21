@@ -85,6 +85,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(_IsLibraryMode)' == 'true'" Include="direct-icalls" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(_IsLibraryMode)' == 'true'" Include="runtime-init-callback" />
 
       <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
       <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=10000" />

@@ -239,6 +239,9 @@ public class LibraryBuilderTask : AppBuilderTask
                 .Replace("%AotObjects%", aotObjects)
                 .Replace("%ExtraSources%", extraSources)
                 .Replace("%LIBRARY_LINKER_ARGS%", linkerArgs));
+
+        File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"),
+            Utils.GetEmbeddedResource("autoinit.c"));
     }
 
     private void WriteAssembliesToLoadList(List<string> assemblies)

@@ -13,6 +13,7 @@ set(DOTNET_AOT_OBJECTS
 set(DOTNET_EXTRA_SOURCES
     %ExtraSources%
     assembly_list.c
+    autoinit.c
 )
 
 include_directories("%MonoInclude%")
