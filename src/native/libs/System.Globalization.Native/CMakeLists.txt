@@ -61,7 +61,7 @@ set(NATIVEGLOBALIZATION_SOURCES
 
 if (DEFINED CMAKE_ICU_DIR)
     include_directories(${CMAKE_ICU_DIR}/include)
-    link_libraries(${CMAKE_ICU_DIR}/lib)
+    link_libraries(${CMAKE_ICU_DIR}/lib/libicuuc.a ${CMAKE_ICU_DIR}/lib/libicui18n.a ${CMAKE_ICU_DIR}/lib/libicudata.a)
 endif()
 
 if (LOCAL_BUILD)
