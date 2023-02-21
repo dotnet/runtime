@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-# SetCommands defined in eng\testing\tests.wasm.targets
-[[SetCommands]]
-[[SetCommandsEcho]]
+EXECUTION_DIR=$(dirname $0)
+SCENARIO=${SCENARIO-$3}
 
 EXECUTION_DIR=$(dirname $0)
 if [[ -n "$3" ]]; then
