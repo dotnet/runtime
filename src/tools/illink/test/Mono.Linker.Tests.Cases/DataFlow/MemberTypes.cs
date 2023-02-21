@@ -134,7 +134,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private PublicParameterlessConstructorType (int i, int j) { }
 
 			// Not implied by the DynamicallyAccessedMemberTypes logic, but
-			// explicit cctors would be kept by the linker.
+			// explicit cctors would be kept by ILLink.
 			// [Kept]
 			// static PublicParameterlessConstructorType () { }
 
@@ -207,7 +207,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private PublicConstructorsType (int i, int j) { }
 
 			// Not implied by the DynamicallyAccessedMemberTypes logic, but
-			// explicit cctors would be kept by the linker.
+			// explicit cctors would be kept by ILLink.
 			// [Kept]
 			// static PublicConstructorsType () { }
 

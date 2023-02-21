@@ -30,7 +30,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <!-- We disable features for trimmed apps here so that the feature
       switches can flow to the runtimeconfig.json. Features are disabled
       by default since they may require assemblies, types or members that
-      could be removed by the linker, causing a trimmed app to crash. -->
+      could be removed by the ILLink, causing a trimmed app to crash. -->
   <PropertyGroup Condition="'$(PublishTrimmed)' == 'true' And
                             $([MSBuild]::VersionGreaterThanOrEquals($(_TargetFrameworkVersionWithoutV), '6.0'))">
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
@@ -178,7 +178,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     using global ILLink options, or per-assembly IsTrimmable and TrimMode metadata.
 
     Note that adding items to or removing items from ManagedAssemblyToLink is unsupported. To change
-    the set of inputs to the linker, instead use a different extension point to
+    the set of inputs to ILLink, instead use a different extension point to
     set PostprocessAssembly metadata on ResolvedFileToPublish.
    -->
    <Target Name="PrepareForILLink"
@@ -325,7 +325,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     ============================================================
                      _ComputeManagedAssemblyToLink
 
-    Compute the set of inputs to the linker.
+    Compute the set of inputs to ILLink.
     ============================================================
     -->
   <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />

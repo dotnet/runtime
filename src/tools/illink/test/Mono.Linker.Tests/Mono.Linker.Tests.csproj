@@ -18,7 +18,7 @@
     <ProjectReference Include="$(RepoRoot)\src\coreclr\tools\ILVerification\ILVerification.csproj" />
     <PackageReference Include="nunit" Version="$(NUnitVersion)" />
     <PackageReference Include="NUnit3TestAdapter" Version="$(NUnitTestAdapterVersion)" />
-    <!-- This reference is purely so that the linker can resolve this
+    <!-- This reference is purely so that the ILLink can resolve this
          dependency of mscorlib. It is not actually required to build
          the tests. -->
     <PackageReference Include="System.Threading.AccessControl" Version="$(SystemThreadingAccessControlVersion)" />

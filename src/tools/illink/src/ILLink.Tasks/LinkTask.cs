@@ -95,7 +95,7 @@ namespace ILLink.Tasks
 		public string WarningsNotAsErrors { get; set; }
 
 		/// <summary>
-		///   A list of XML root descriptor files specifying linker
+		///   A list of XML root descriptor files specifying ILLink
 		///   roots at a granular level. See the dotnet/linker
 		///   documentation for details about the format.
 		///   Maps to '-x'.
@@ -162,7 +162,7 @@ namespace ILLink.Tasks
 		};
 
 		/// <summary>
-		///   Custom data key-value pairs to pass to the linker.
+		///   Custom data key-value pairs to pass to ILLink.
 		///   The name of the item is the key, and the required "Value"
 		///   metadata is the value. Maps to '--custom-data key=value'.
 		/// </summary>

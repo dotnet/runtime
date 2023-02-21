@@ -441,7 +441,7 @@ namespace Mono.Linker.Dataflow
 
 		private static bool IsPInvokeDangerous (MethodDefinition methodDefinition, LinkContext context, out bool comDangerousMethod)
 		{
-			// The method in linker only detects one condition - COM Dangerous, but it's structured like this
+			// The method in ILLink only detects one condition - COM Dangerous, but it's structured like this
 			// so that the code looks very similar to AOT which has more than one condition.
 
 			if (!methodDefinition.IsPInvokeImpl) {

@@ -557,7 +557,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					.MakeGenericMethod (types);
 			}
 
-			// https://github.com/dotnet/linker/issues/2158 - analyzer doesn't work the same as linker, it simply doesn't handle refs
+			// https://github.com/dotnet/linker/issues/2158 - analyzer doesn't work the same as ILLink, it simply doesn't handle refs
 			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = ProducedBy.Trimmer)]
 			static void TestWithArrayUnknownIndexSetByRef (int indexToSet)
 			{

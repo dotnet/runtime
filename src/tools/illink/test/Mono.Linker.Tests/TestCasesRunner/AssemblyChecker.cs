@@ -143,7 +143,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 
 		/// <summary>
-		/// Validates that all <see cref="KeptByAttribute"/> instances on a member are valid (i.e. the linker recorded a marked dependency described in the attribute)
+		/// Validates that all <see cref="KeptByAttribute"/> instances on a member are valid (i.e. ILLink recorded a marked dependency described in the attribute)
 		/// </summary>
 		void VerifyKeptByAttributes (IMemberDefinition src, IMemberDefinition linked)
 		{
@@ -152,7 +152,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		}
 
 		/// <summary>
-		/// Validates that all <see cref="KeptByAttribute"/> instances on an attribute provider are valid (i.e. the linker recorded a marked dependency described in the attribute)
+		/// Validates that all <see cref="KeptByAttribute"/> instances on an attribute provider are valid (i.e. ILLink recorded a marked dependency described in the attribute)
 		/// <paramref name="src"/> is the attribute provider that may have a <see cref="KeptByAttribute"/>, and <paramref name="attributeProviderFullName"/> is the 'FullName' of <paramref name="src"/>.
 		/// </summary>
 		void VerifyKeptByAttributes (ICustomAttributeProvider src, string attributeProviderFullName)

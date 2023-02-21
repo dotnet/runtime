@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.BaseProvidesInterfaceEd
 	/// Reproduces the issue found in https://github.com/dotnet/linker/issues/3112.
 	/// <see cref="Derived1"/> derives from <see cref="Base"/> and uses <see cref="Base"/>'s method to implement <see cref="IFoo"/>, 
 	/// creating a psuedo-circular assembly reference (but not quite since <see cref="Base"/> doesn't implement IFoo itself).
-	/// In the linker, IsMethodNeededByInstantiatedTypeDueToPreservedScope would iterate through <see cref="Base"/>'s method's base methods,
+	/// In ILLink, IsMethodNeededByInstantiatedTypeDueToPreservedScope would iterate through <see cref="Base"/>'s method's base methods,
 	/// and in the process would trigger the assembly of <see cref="IFoo"/> to be processed. Since that assembly also has <see cref="Derived2"/> that 
 	/// inherits from <see cref="Base"/> and implements <see cref="IBar"/> using <see cref="Base"/>'s methods, ILLink adds 
 	/// <see cref="IBar"/>'s method as a base to <see cref="Base"/>'s method, which modifies the collection as it's being iterated, causing an exception.
