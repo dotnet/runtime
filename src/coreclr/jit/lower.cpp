@@ -3334,15 +3334,6 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         // it has the condition flags indicating the comparing results.
         relop->gtType = TYP_VOID;
         relop->gtFlags |= GTF_SET_FLAGS;
-
-        if (relop->OperIs(GT_TEST_EQ))
-        {
-            relop->SetOper(GT_EQ);
-        }
-        else if (relop->OperIs(GT_TEST_NE))
-        {
-            relop->SetOper(GT_NE);
-        }
         assert(relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
     }
 
