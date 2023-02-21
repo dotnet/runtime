@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -577,14 +578,19 @@ namespace System.Reflection.Emit.Tests
         public static IEnumerable<object[]> NotSupportedObject_Constructor_TestData()
         {
             yield return new object[] { new int[0, 0] };
-            yield return new object[] { Enum.GetValues(CreateEnum(typeof(char), 'a')).GetValue(0) };
-            yield return new object[] { Enum.GetValues(CreateEnum(typeof(bool), true)).GetValue(0) };
+            if (PlatformDetection.IsRareEnumsSupported)
+            {
+                yield return new object[] { Enum.GetValues(CreateEnum(typeof(char), 'a')).GetValue(0) };
+            }
         }
 
         public static IEnumerable<object[]> FloatEnum_DoubleEnum_TestData()
         {
-            yield return new object[] { Enum.GetValues(CreateEnum(typeof(float), 0.0f)).GetValue(0) };
-            yield return new object[] { Enum.GetValues(CreateEnum(typeof(double), 0.0)).GetValue(0) };
+            if (PlatformDetection.IsRareEnumsSupported)
+            {
+                yield return new object[] { Enum.GetValues(CreateEnum(typeof(float), 0.0f)).GetValue(0) };
+                yield return new object[] { Enum.GetValues(CreateEnum(typeof(double), 0.0)).GetValue(0) };
+            }
         }
 
         public static IEnumerable<object[]> NotSupportedObject_Others_TestData()
@@ -639,12 +645,15 @@ namespace System.Reflection.Emit.Tests
         {
             yield return new object[] { typeof(Guid), new Guid() };
             yield return new object[] { typeof(int[,]), new int[5, 5] };
-            yield return new object[] { CreateEnum(typeof(char), 'a'), 'a' };
-            yield return new object[] { CreateEnum(typeof(bool), false), true };
-            yield return new object[] { CreateEnum(typeof(float), 1.0f), 1.0f };
-            yield return new object[] { CreateEnum(typeof(double), 1.0), 1.0 };
-            yield return new object[] { CreateEnum(typeof(IntPtr)), (IntPtr)1 };
-            yield return new object[] { CreateEnum(typeof(UIntPtr)), (UIntPtr)1 };
+            if (PlatformDetection.IsRareEnumsSupported)
+            {
+                yield return new object[] { CreateEnum(typeof(char), 'a'), 'a' };
+                yield return new object[] { CreateEnum(typeof(bool), false), true };
+                yield return new object[] { CreateEnum(typeof(float), 1.0f), 1.0f };
+                yield return new object[] { CreateEnum(typeof(double), 1.0), 1.0 };
+                yield return new object[] { CreateEnum(typeof(IntPtr)), (IntPtr)1 };
+                yield return new object[] { CreateEnum(typeof(UIntPtr)), (UIntPtr)1 };
+            }
         }
 
         [Theory]
@@ -1058,6 +1067,28 @@ namespace System.Reflection.Emit.Tests
 
             AssertExtensions.Throws<ArgumentException>(paramName, () => new CustomAttributeBuilder(con, new object[0], namedProperties, propertyValues));
             AssertExtensions.Throws<ArgumentException>(paramName, () => new CustomAttributeBuilder(con, new object[0], namedProperties, propertyValues, new FieldInfo[0], new object[0]));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ThrowsWhenDynamicCodeNotSupported()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", false.ToString());
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                ConstructorInfo con = typeof(TestAttribute).GetConstructor(new Type[0]);
+                object[] constructorArgs = new object[0];
+                PropertyInfo[] namedProperties = Helpers.GetProperties(typeof(TestAttribute), nameof(TestAttribute.ObjectProperty));
+                object[] propertyValues = new object[] { new int[0, 0] };
+                FieldInfo[] namedFields = new FieldInfo[0];
+                object[] fieldValues = new object[0];
+
+                Assert.Throws<PlatformNotSupportedException>(() => new CustomAttributeBuilder(con, constructorArgs));
+                Assert.Throws<PlatformNotSupportedException>(() => new CustomAttributeBuilder(con, constructorArgs, namedFields, fieldValues));
+                Assert.Throws<PlatformNotSupportedException>(() => new CustomAttributeBuilder(con, constructorArgs, namedProperties, propertyValues));
+                Assert.Throws<PlatformNotSupportedException>(() => new CustomAttributeBuilder(con, constructorArgs, namedProperties, propertyValues, namedFields, fieldValues));
+            }, options);
         }
 
         private static Type CreateEnum(Type underlyingType, params object[] literalValues)

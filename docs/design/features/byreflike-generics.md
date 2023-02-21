@@ -97,7 +97,7 @@ The expansion of metadata will impact at least the following:
 
 - ILDasm/ILAsm/`System.Reflection.Metadata`/`System.Reflection.Emit` &ndash; https://github.com/dotnet/runtime
 - Cecil &ndash; https://github.com/jbevain/cecil
-- IL Trimmer &ndash; https://github.com/dotnet/linker
+- IL Trimmer &ndash; https://github.com/dotnet/runtime/tree/main/src/tools/illink
 - F# &ndash; https://github.com/fsharp/fsharp
 - C++/CLI &ndash; The MSVC team
 

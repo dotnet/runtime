@@ -7,7 +7,7 @@ using System;
 
 namespace DefaultNamespace
 {
-    internal class X
+    public class X
     {
         public virtual int Blah(int what)
         {

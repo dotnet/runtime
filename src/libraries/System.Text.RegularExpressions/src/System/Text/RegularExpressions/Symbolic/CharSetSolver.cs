@@ -36,7 +36,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// This cache is necessary for the recursive operation algorithms to be guaranteed linear time.
         /// A well-crafted character class could otherwise cause execution time to be exponential.
         /// </remarks>
-        private readonly Dictionary<(BooleanOperation op, BDD a, BDD? b), BDD> _operationCache = new();
+        private readonly Dictionary<(int op, BDD a, BDD? b), BDD> _operationCache = new(); // op is BooleanOperation; using int to reuse generic instantiation with _bddCache
 
         /// <summary>Gets a BDD that contains every non-ASCII character.</summary>
         public BDD NonAscii =>
@@ -205,9 +205,10 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             Debug.Assert(!set.IsLeaf, "Did not expect multi-terminal");
-            if (!_operationCache.TryGetValue((BooleanOperation.Not, set, null), out BDD? result))
+            (int, BDD set, BDD?) key = ((int)BooleanOperation.Not, set, null);
+            if (!_operationCache.TryGetValue(key, out BDD? result))
             {
-                _operationCache[(BooleanOperation.Not, set, null)] = result = GetOrCreateBDD(set.Ordinal, Not(set.One), Not(set.Zero));
+                _operationCache[key] = result = GetOrCreateBDD(set.Ordinal, Not(set.One), Not(set.Zero));
             }
 
             return result;
@@ -254,7 +255,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             Debug.Assert(!set1.IsLeaf || !set2.IsLeaf, "Did not expect multi-terminal case");
-            if (!_operationCache.TryGetValue((op, set1, set2), out BDD? result))
+            if (!_operationCache.TryGetValue(((int)op, set1, set2), out BDD? result))
             {
                 BDD one, two;
                 int ordinal;
@@ -278,7 +279,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     ordinal = set1.Ordinal;
                 }
 
-                _operationCache[(op, set1, set2)] = result = one == two ? one : GetOrCreateBDD(ordinal, one, two);
+                _operationCache[((int)op, set1, set2)] = result = one == two ? one : GetOrCreateBDD(ordinal, one, two);
             }
 
             return result;

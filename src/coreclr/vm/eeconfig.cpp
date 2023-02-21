@@ -388,7 +388,7 @@ HRESULT EEConfig::sync()
                 if (WszGetModuleFileName(NULL, wszFileName) != 0)
                 {
                     // just keep the name
-                    LPCWSTR pwszName = wcsrchr(wszFileName, W('\\'));
+                    LPCWSTR pwszName = wcsrchr(wszFileName, DIRECTORY_SEPARATOR_CHAR_W);
                     pwszName = (pwszName == NULL) ? wszFileName.GetUnicode() : (pwszName + 1);
 
                     if (SString::_wcsicmp(pwszName,pszGCStressExe) == 0)

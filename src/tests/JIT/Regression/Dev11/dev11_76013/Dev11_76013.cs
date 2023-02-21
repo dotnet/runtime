@@ -16,9 +16,9 @@ namespace Test
         }
     }
 
-    internal class Program
+    public class Program
     {
-        private static int Main()
+        public static int Main()
         {
             bool flag = false;
             try

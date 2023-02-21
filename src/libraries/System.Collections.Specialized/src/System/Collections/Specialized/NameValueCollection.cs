@@ -199,10 +199,7 @@ namespace System.Collections.Specialized
                 throw new ArgumentException(SR.Arg_MultiRank, nameof(dest));
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (dest.Length - index < Count)
             {

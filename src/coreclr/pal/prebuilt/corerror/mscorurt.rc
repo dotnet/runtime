@@ -301,5 +301,6 @@ BEGIN
 	MSG_FOR_URT_HR(CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT) "GCHeapAffinitizeRanges configuration string has invalid format."
 	MSG_FOR_URT_HR(CLR_E_GC_BAD_HARD_LIMIT) "GC heap hard limit configuration is invalid."
 	MSG_FOR_URT_HR(CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT) "GC large page support requires hard limit settings."
+	MSG_FOR_URT_HR(CLR_E_GC_BAD_REGION_SIZE) "GC Region Size must be less than 2GB."
 	MSG_FOR_URT_HR(COR_E_BADIMAGEFORMAT) "The format of a DLL or executable being loaded is invalid."
 END

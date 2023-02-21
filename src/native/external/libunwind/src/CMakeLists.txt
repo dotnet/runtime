@@ -326,6 +326,38 @@ SET(libunwind_loongarch64_la_SOURCES_loongarch
 	loongarch64/Gis_signal_frame.c loongarch64/Gregs.c loongarch64/Gresume.c loongarch64/Gstep.c
 )
 
+# The list of files that go into libunwind and libunwind-riscv:
+SET(libunwind_la_SOURCES_riscv_common
+    ${libunwind_la_SOURCES_common}
+    riscv/is_fpreg.c
+    riscv/regname.c
+)
+
+# The list of files that go into libunwind:
+SET(libunwind_la_SOURCES_riscv
+    ${libunwind_la_SOURCES_riscv_common}
+    ${libunwind_la_SOURCES_local}
+    riscv/setcontext.S
+    riscv/Lapply_reg_state.c riscv/Lreg_states_iterate.c
+    riscv/Lcreate_addr_space.c riscv/Lget_proc_info.c
+    riscv/Lget_save_loc.c riscv/Lglobal.c riscv/Linit.c
+    riscv/Linit_local.c riscv/Linit_remote.c
+    riscv/Lis_signal_frame.c riscv/Lregs.c riscv/Lresume.c
+    riscv/Lstep.c riscv/getcontext.S
+)
+
+SET(libunwind_riscv_la_SOURCES_riscv
+    ${libunwind_la_SOURCES_riscv_common}
+    ${libunwind_la_SOURCES_generic}
+    riscv/Gapply_reg_state.c riscv/Greg_states_iterate.c
+    riscv/Gcreate_addr_space.c riscv/Gget_proc_info.c
+    riscv/Gget_save_loc.c riscv/Gglobal.c riscv/Ginit.c
+    riscv/Ginit_local.c riscv/Ginit_remote.c
+    riscv/Gis_signal_frame.c riscv/Gregs.c riscv/Gresume.c
+    riscv/Gstash_frame.c riscv/Gstep.c
+)
+
+
 if(TARGET_AARCH64)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_aarch64})
     SET(libunwind_remote_la_SOURCES             ${libunwind_aarch64_la_SOURCES_aarch64})
@@ -349,6 +381,11 @@ elseif(TARGET_LOONGARCH64)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_loongarch64})
     SET(libunwind_remote_la_SOURCES             ${libunwind_loongarch64_la_SOURCES_loongarch})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+elseif(TARGET_RISCV)
+    SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_riscv})
+    SET(libunwind_remote_la_SOURCES             ${libunwind_riscv_la_SOURCES_riscv})
+    SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+    list(APPEND libunwind_setjmp_la_SOURCES     riscv/siglongjmp.S)
 endif()
 
 add_library(libunwind

@@ -89,8 +89,7 @@ namespace System
 
         #region Private Data Members
         private readonly SafeTypeNameParserHandle m_NativeParser;
-        private const string SpecialChars = ",[]&*+\\"; // see typeparse.h
-        private static readonly IndexOfAnyValues<char> s_specialChars = IndexOfAnyValues.Create(SpecialChars);
+        private static readonly IndexOfAnyValues<char> s_specialChars = IndexOfAnyValues.Create(",[]&*+\\"); // see typeparse.h
         #endregion
 
         #region Constructor and Disposer
@@ -289,7 +288,7 @@ namespace System
 
             foreach (char c in name.AsSpan(specialCharIndex))
             {
-                if (SpecialChars.Contains(c))
+                if (s_specialChars.Contains(c))
                     sb.Append('\\');
 
                 sb.Append(c);

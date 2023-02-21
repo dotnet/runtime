@@ -1389,14 +1389,17 @@ typedef struct
 	char *aot_options;
 } MainThreadArgs;
 
-static void main_thread_handler (gpointer user_data)
+static void
+main_thread_handler (gpointer user_data)
 {
 	MainThreadArgs *main_args = (MainThreadArgs *)user_data;
 	MonoAssembly *assembly;
 
 	if (mono_compile_aot) {
 		int i, res;
-		gpointer *aot_state = NULL;
+		MonoAssembly **assemblies;
+
+		assemblies = g_new0 (MonoAssembly*, main_args->argc);
 
 		/* Treat the other arguments as assemblies to compile too */
 		for (i = 0; i < main_args->argc; ++i) {
@@ -1416,35 +1419,29 @@ static void main_thread_handler (gpointer user_data)
 					exit (1);
 				}
 			}
-			res = mono_compile_assembly (assembly, main_args->opts, main_args->aot_options, &aot_state);
-			if (res != 0) {
-				fprintf (stderr, "AOT of image %s failed.\n", main_args->argv [i]);
-				exit (1);
-			}
+			assemblies [i] = assembly;
 		}
-		if (aot_state) {
-			res = mono_compile_deferred_assemblies (main_args->opts, main_args->aot_options, &aot_state);
-			if (res != 0) {
-				fprintf (stderr, "AOT of mode-specific deferred assemblies failed.\n");
-				exit (1);
-			}
-		}
-	} else {
-		assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->file);
-		if (!assembly){
-			fprintf (stderr, "Can not open image %s\n", main_args->file);
+
+		res = mono_aot_assemblies (assemblies, main_args->argc, main_args->opts, main_args->aot_options);
+		if (res)
 			exit (1);
-		}
-
-		/*
-		 * This must be done in a thread managed by mono since it can invoke
-		 * managed code.
-		 */
-		if (main_args->opts & MONO_OPT_PRECOMP)
-			mono_precompile_assemblies ();
-
-		mono_jit_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
+		return;
 	}
+
+	assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->file);
+	if (!assembly){
+		fprintf (stderr, "Can not open image %s\n", main_args->file);
+		exit (1);
+	}
+
+	/*
+	 * This must be done in a thread managed by mono since it can invoke
+	 * managed code.
+	 */
+	if (main_args->opts & MONO_OPT_PRECOMP)
+		mono_precompile_assemblies ();
+
+	mono_jit_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
 }
 
 static int
@@ -2286,14 +2283,14 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--apply-bindings=", 17) == 0) {
 			extra_bindings_config_file = &argv[i][17];
 		} else if (strncmp (argv [i], "--aot-path=", 11) == 0) {
-			char **splitted;
+			char **split;
 
-			splitted = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
-			while (*splitted) {
-				char *tmp = *splitted;
+			split = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
+			while (*split) {
+				char *tmp = *split;
 				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (tmp));
 				g_free (tmp);
-				splitted++;
+				split++;
 			}
 		} else if (strncmp (argv [i], "--compile-all=", 14) == 0) {
 			action = DO_COMPILE;

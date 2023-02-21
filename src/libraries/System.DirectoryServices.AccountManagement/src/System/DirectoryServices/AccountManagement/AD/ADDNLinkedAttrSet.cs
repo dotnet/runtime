@@ -257,7 +257,7 @@ namespace System.DirectoryServices.AccountManagement
                 memberFound = _memberSearchResultsEnumerator.MoveNext();
 
                 // The search is complete.
-                // Dipose the searcher and search results.
+                // Dispose the searcher and search results.
                 if (!memberFound)
                 {
                     _currentMembersSearcher.Dispose();

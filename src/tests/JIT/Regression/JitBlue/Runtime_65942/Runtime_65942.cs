@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-unsafe class Runtime_65942
+public unsafe class Runtime_65942
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Test1(double* a, int i)
@@ -17,7 +17,7 @@ unsafe class Runtime_65942
         float unused1 = a[i];
     }
 
-    private static int Main()
+    public static int Main()
     {
         double d = 0;
         Test1(&d, 0);

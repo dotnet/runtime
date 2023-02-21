@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-class test
+public class test
 {
     static short si16;
     static uint su32;
-    static int Main()
+    public static int Main()
     {
         si16 = -1;
         su32 = (uint)si16;

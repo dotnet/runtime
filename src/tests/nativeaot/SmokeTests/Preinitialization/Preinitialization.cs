@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using BindingFlags = System.Reflection.BindingFlags;
@@ -46,6 +47,8 @@ internal class Program
         TestDuplicatedFields.Run();
         TestInstanceDelegate.Run();
         TestStringFields.Run();
+        TestSharedCode.Run();
+        TestReadOnlySpan.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -945,6 +948,113 @@ class TestStringFields
     }
 }
 
+class TestSharedCode
+{
+    class ClassWithTemplate<T>
+    {
+        public static int Cookie = 42;
+        public static T[] Array = new T[0];
+    }
+
+    class C1 { }
+    class C2 { }
+    class C3 { }
+    class C4 { }
+    class C5 { }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int AccessCookie<T>()
+        => ClassWithTemplate<T>.Cookie;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static object AccessArray<T>()
+        => ClassWithTemplate<T>.Array;
+
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050:MakeGeneric",
+        Justification = "MakeGeneric is over reference types")]
+    public static void Run()
+    {
+        {
+            int val = AccessCookie<C1>();
+            Assert.AreEqual(42, val);
+
+            val = (int)typeof(ClassWithTemplate<>).MakeGenericType(typeof(C2)).GetField("Cookie").GetValue(null);
+            Assert.AreEqual(42, val);
+
+            val = (int)typeof(TestSharedCode).GetMethod(nameof(AccessCookie)).MakeGenericMethod(typeof(C3)).Invoke(null, Array.Empty<object>());
+            Assert.AreEqual(42, val);
+        }
+
+        {
+            // Expecting this to be a frozen array, and reported as Gen2 by the GC
+            object val = AccessArray<C1>();
+            Assert.AreEqual(2, GC.GetGeneration(val));
+
+            val = typeof(ClassWithTemplate<>).MakeGenericType(typeof(C4)).GetField("Array").GetValue(null);
+            Assert.AreEqual(0, GC.GetGeneration(val));
+            Assert.AreEqual(nameof(C4), val.GetType().GetElementType().Name);
+
+            val = typeof(TestSharedCode).GetMethod(nameof(AccessArray)).MakeGenericMethod(typeof(C5)).Invoke(null, Array.Empty<object>());
+            Assert.AreEqual(0, GC.GetGeneration(val));
+            Assert.AreEqual(nameof(C5), val.GetType().GetElementType().Name);
+        }
+    }
+}
+
+class TestReadOnlySpan
+{
+    class SimpleReadOnlySpanAccess
+    {
+        private static ReadOnlySpan<int> Ints => new int[] { 5, 6, 7, 8 };
+
+        public /* not readonly on purpose */ static int Sum;
+
+        static SimpleReadOnlySpanAccess()
+        {
+            ReadOnlySpan<int> val = Ints;
+            Sum = val[0] + val[1] + val[2] + val[3];
+        }
+    }
+
+    class OutOfRangeAccess
+    {
+        private static ReadOnlySpan<int> Ints => new int[] { 5, 6, 7, 8 };
+
+        public readonly static int Sum;
+
+        static OutOfRangeAccess()
+        {
+            ReadOnlySpan<int> val = Ints;
+            Sum = val[4];
+        }
+    }
+
+    class DefaultInstanceAccess
+    {
+        public readonly static int Sum;
+
+        static DefaultInstanceAccess()
+        {
+            ReadOnlySpan<int> val = default;
+            Sum = val[0];
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(SimpleReadOnlySpanAccess));
+        Assert.AreEqual(26, SimpleReadOnlySpanAccess.Sum);
+
+        Assert.IsLazyInitialized(typeof(OutOfRangeAccess));
+        if (SimpleReadOnlySpanAccess.Sum == 1000) // never true
+            OutOfRangeAccess.Sum.ToString(); // make sure cctor is looked at
+
+        Assert.IsLazyInitialized(typeof(DefaultInstanceAccess));
+        if (SimpleReadOnlySpanAccess.Sum == 1000) // never true
+            DefaultInstanceAccess.Sum.ToString(); // make sure cctor is looked at
+    }
+}
+
 static class Assert
 {
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
@@ -979,6 +1089,12 @@ static class Assert
     }
 
     public static unsafe void AreEqual(int v1, int v2)
+    {
+        if (v1 != v2)
+            throw new Exception();
+    }
+
+    public static void AreEqual(string v1, string v2)
     {
         if (v1 != v2)
             throw new Exception();

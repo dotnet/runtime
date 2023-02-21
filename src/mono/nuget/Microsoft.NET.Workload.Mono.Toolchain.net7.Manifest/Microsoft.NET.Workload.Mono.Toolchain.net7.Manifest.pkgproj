@@ -6,9 +6,12 @@
   </PropertyGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles" Returns="@(PackageFile)">
+    <Error Condition="'$(SdkBandVersionForWorkload_FromRuntimeVersions)' == ''"
+           Text="%24(SdkBandVersionForWorkload_FromRuntimeVersions) is not set" />
+
     <!-- Override the id to include the sdk band as per the workload installer spec -->
     <PropertyGroup>
-      <Id>Microsoft.NET.Workload.Mono.ToolChain.net7.Manifest-$(SdkBandVersion)</Id>
+      <Id>Microsoft.NET.Workload.Mono.ToolChain.net7.Manifest-$(SdkBandVersionForWorkload_FromRuntimeVersions)</Id>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -38,11 +41,6 @@
       <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
       <_WorkloadManifestValues Include="PackageVersionNet7" Value="$(PackageVersionNet7)" Condition="'$(PackageVersionNet7)' != ''" />
       <_WorkloadManifestValues Include="PackageVersionNet7" Value="$(PackageVersion)" Condition="'$(PackageVersionNet7)' == ''" />
-
-      <!-- We need to use a different version for net7 templates, to differentiate from net8 ones -->
-      <_WorkloadManifestValues Include="PackageVersionForTemplates7" Value="$(PackageVersionForTemplates7)" Condition="'$(PackageVersionNet7)' == ''" />
-      <_WorkloadManifestValues Include="PackageVersionForTemplates7" Value="$(PackageVersionNet7)" Condition="'$(PackageVersionNet7)' != ''" />
-
       <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
       <_WorkloadManifestValues Include="NetCoreAppCurrent" Value="$(NetCoreAppCurrent)" />
     </ItemGroup>

@@ -90,9 +90,15 @@ struct ThreadLocalModule
 
     struct CollectibleDynamicEntry : public DynamicEntry
     {
-        LOADERHANDLE        m_hGCStatics;
-        LOADERHANDLE        m_hNonGCStatics;
-        PTR_LoaderAllocator m_pLoaderAllocator;
+        CollectibleDynamicEntry(PTR_LoaderAllocator pLoaderAllocator)
+            :m_pLoaderAllocator(pLoaderAllocator)
+        {
+            LIMITED_METHOD_CONTRACT;
+        }
+
+        LOADERHANDLE        m_hGCStatics = NULL;
+        LOADERHANDLE        m_hNonGCStatics = NULL;
+        PTR_LoaderAllocator m_pLoaderAllocator = NULL;
     };
     typedef DPTR(CollectibleDynamicEntry) PTR_CollectibleDynamicEntry;
 
@@ -132,6 +138,22 @@ struct ThreadLocalModule
             LIMITED_METHOD_CONTRACT;
             SUPPORTS_DAC;
             return dac_cast<PTR_BYTE>(this);
+        }
+
+        struct DynamicEntryStaticBytes
+        {
+            DWORD m_bytes;
+        };
+
+        static void* operator new(size_t) = delete;
+
+        static void* operator new(size_t baseSize, DynamicEntryStaticBytes dataBlobSize)
+        {
+            void* memory = ::operator new(baseSize + dataBlobSize.m_bytes);
+            // We want to zero out the data blob memory as the NormalDynamicEntry constructor
+            // will not zero it as it is outsize of the object.
+            memset((int8_t*)memory + baseSize, 0, dataBlobSize.m_bytes);
+            return memory;
         }
     };
     typedef DPTR(NormalDynamicEntry) PTR_NormalDynamicEntry;

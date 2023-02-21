@@ -11,6 +11,7 @@
 #include "utils.h"
 #include <type_traits>
 #include <minipal/utils.h>
+#include <coreclr_delegates.h>
 
 using comhost::clsid_map_entry;
 using comhost::clsid_map;
@@ -42,14 +43,59 @@ struct com_activation_context
     void **class_factory_dest;
 };
 
-using com_delegate_fn = int(STDMETHODCALLTYPE*)(com_activation_context*);
+#define ISOLATED_CONTEXT (void*)-1
+using com_delegate_fn = int(STDMETHODCALLTYPE*)(com_activation_context*, void*);
+using com_delegate_no_load_context_fn = int(STDMETHODCALLTYPE*)(com_activation_context*);
 
 namespace
 {
-    int get_com_delegate(hostfxr_delegate_type del_type, pal::string_t *app_path, com_delegate_fn *delegate)
+    struct com_delegates
     {
-        return load_fxr_and_get_delegate(
-            del_type,
+        com_delegate_fn delegate;
+
+        // Delegate that does not take a load context. This version has existed since COM support was
+        // added in .NET Core 3.0. It is used as a fallback when loading in an isolated load context
+        // in versions of .NET without the functions that take a load context.
+        com_delegate_no_load_context_fn delegate_no_load_cxt;
+    };
+
+    // Fallback for loading a COM server in an isolated context in versions of .NET that don't have the
+    // functions that take a load context.
+    int get_com_delegate_no_load_context(hostfxr_delegate_type del_type, get_function_pointer_fn get_function_pointer, com_delegate_no_load_context_fn *delegate)
+    {
+        const pal::char_t* method_name;
+        switch (del_type)
+        {
+        case hostfxr_delegate_type::hdt_com_activation:
+            method_name = _X("GetClassFactoryForTypeInternal");
+            break;
+        case hostfxr_delegate_type::hdt_com_register:
+            method_name = _X("RegisterClassForTypeInternal");
+            break;
+        case hostfxr_delegate_type::hdt_com_unregister:
+            method_name = _X("UnregisterClassForTypeInternal");
+            break;
+        default:
+            return StatusCode::InvalidArgFailure;
+        }
+
+        return get_function_pointer(
+            _X("Internal.Runtime.InteropServices.ComActivator, System.Private.CoreLib"),
+            method_name,
+            UNMANAGEDCALLERSONLY_METHOD,
+            nullptr, // load context
+            nullptr, // reserved
+            reinterpret_cast<void**>(delegate));
+    }
+
+    int get_com_delegate(hostfxr_delegate_type del_type, pal::string_t *app_path, com_delegates &delegates, void **load_context)
+    {
+        delegates.delegate = nullptr;
+        delegates.delegate_no_load_cxt = nullptr;
+
+        get_function_pointer_fn get_function_pointer;
+        int status = load_fxr_and_get_delegate(
+            hostfxr_delegate_type::hdt_get_function_pointer,
             [app_path](const pal::string_t& host_path, pal::string_t* config_path_out)
             {
                 // Strip the comhost suffix to get the 'app' and config
@@ -66,8 +112,61 @@ namespace
 
                 return StatusCode::Success;
             },
-            delegate
+            [load_context](pal::dll_t fxr, hostfxr_handle context)
+            {
+                *load_context = ISOLATED_CONTEXT;
+                auto get_runtime_property_value = reinterpret_cast<hostfxr_get_runtime_property_value_fn>(pal::get_symbol(fxr, "hostfxr_get_runtime_property_value"));
+                const pal::char_t* value;
+                if (get_runtime_property_value(context, _X("System.Runtime.InteropServices.COM.LoadComponentInDefaultContext"), &value) == StatusCode::Success
+                    && pal::strcasecmp(value, _X("true")) == 0)
+                {
+                    *load_context = nullptr; // Default context
+                }
+            },
+            reinterpret_cast<void**>(&get_function_pointer)
         );
+        if (status != StatusCode::Success)
+            return status;
+
+        const pal::char_t* method_name;
+        switch (del_type)
+        {
+        case hostfxr_delegate_type::hdt_com_activation:
+            method_name = _X("GetClassFactoryForTypeInContext");
+            break;
+        case hostfxr_delegate_type::hdt_com_register:
+            method_name = _X("RegisterClassForTypeInContext");
+            break;
+        case hostfxr_delegate_type::hdt_com_unregister:
+            method_name = _X("UnregisterClassForTypeInContext");
+            break;
+        default:
+            return StatusCode::InvalidArgFailure;
+        }
+
+        status = get_function_pointer(
+            _X("Internal.Runtime.InteropServices.ComActivator, System.Private.CoreLib"),
+            method_name,
+            UNMANAGEDCALLERSONLY_METHOD,
+            nullptr, // load context
+            nullptr, // reserved
+            (void**)&delegates.delegate);
+
+        if (status == StatusCode::Success)
+            return status;
+
+        // Newer methods with context not found and using isolated context.
+        // Fall back to methods without context.
+        // The runtime will throw MissingMethodException, so we check for the corresponding COR_E_MISSINGMETHOD HRESULT.
+        // We also need to check for COR_E_MISSINGMEMBER due to a pre-7.0 bug where the HRESULT was not correctly set on
+        // MissingMethodException and it ended up with the HRESULT for MissingMemberException
+        if ((status == 0x80131513 /*COR_E_MISSINGMETHOD*/ || status == 0x80131512 /*COR_E_MISSINGMEMBER*/)
+            && *load_context == ISOLATED_CONTEXT)
+        {
+            status = get_com_delegate_no_load_context(del_type, get_function_pointer, &delegates.delegate_no_load_cxt);
+        }
+
+        return status;
     }
 
     void report_com_error_info(const GUID& guid, pal::string_t errs)
@@ -108,20 +207,23 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
 
     HRESULT hr;
     pal::string_t app_path;
-    com_delegate_fn act;
+    com_delegates act;
+    void* load_context;
     {
         trace::setup();
         reset_redirected_error_writer();
 
         error_writer_scope_t writer_scope(redirected_error_writer);
 
-        int ec = get_com_delegate(hostfxr_delegate_type::hdt_com_activation, &app_path, &act);
+        int ec = get_com_delegate(hostfxr_delegate_type::hdt_com_activation, &app_path, act, &load_context);
         if (ec != StatusCode::Success)
         {
             report_com_error_info(rclsid, std::move(get_redirected_error_string()));
             return __HRESULT_FROM_WIN32(ec);
         }
     }
+
+    assert(act.delegate != nullptr || load_context == ISOLATED_CONTEXT);
 
     // Query the CLR for the type
 
@@ -135,7 +237,14 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
         iter->second.type.c_str(),
         (void**)&classFactory
     };
-    RETURN_IF_FAILED(act(&cxt));
+    if (act.delegate != nullptr)
+    {
+        RETURN_IF_FAILED(act.delegate(&cxt, load_context));
+    }
+    else
+    {
+        RETURN_IF_FAILED(act.delegate_no_load_cxt(&cxt));
+    }
     assert(classFactory != nullptr);
 
     hr = classFactory->QueryInterface(riid, ppv);
@@ -463,8 +572,10 @@ COM_API HRESULT STDMETHODCALLTYPE DllRegisterServer(void)
 
     HRESULT hr;
     pal::string_t app_path;
-    com_delegate_fn reg;
-    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_register, &app_path, &reg));
+    com_delegates reg;
+    void* load_context;
+    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_register, &app_path, reg, &load_context));
+    assert(reg.delegate != nullptr || load_context == ISOLATED_CONTEXT);
 
     com_activation_context cxt
     {
@@ -486,7 +597,14 @@ COM_API HRESULT STDMETHODCALLTYPE DllRegisterServer(void)
         cxt.class_id = p.first;
         cxt.assembly_name = p.second.assembly.c_str();
         cxt.type_name = p.second.type.c_str();
-        RETURN_IF_FAILED(reg(&cxt));
+        if (reg.delegate != nullptr)
+        {
+            RETURN_IF_FAILED(reg.delegate(&cxt, load_context));
+        }
+        else
+        {
+            RETURN_IF_FAILED(reg.delegate_no_load_cxt(&cxt));
+        }
     }
 
     return S_OK;
@@ -507,8 +625,10 @@ COM_API HRESULT STDMETHODCALLTYPE DllUnregisterServer(void)
 
     HRESULT hr;
     pal::string_t app_path;
-    com_delegate_fn unreg;
-    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_unregister, &app_path, &unreg));
+    com_delegates unreg;
+    void* load_context;
+    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_unregister, &app_path, unreg, &load_context));
+    assert(unreg.delegate != nullptr || load_context == ISOLATED_CONTEXT);
 
     com_activation_context cxt
     {
@@ -527,7 +647,14 @@ COM_API HRESULT STDMETHODCALLTYPE DllUnregisterServer(void)
         cxt.class_id = p.first;
         cxt.assembly_name = p.second.assembly.c_str();
         cxt.type_name = p.second.type.c_str();
-        RETURN_IF_FAILED(unreg(&cxt));
+        if (unreg.delegate != nullptr)
+        {
+            RETURN_IF_FAILED(unreg.delegate(&cxt, load_context));
+        }
+        else
+        {
+            RETURN_IF_FAILED(unreg.delegate_no_load_cxt(&cxt));
+        }
 
         // Unregister the CLSID from registry
         RETURN_IF_FAILED(RemoveClsid(p.second));

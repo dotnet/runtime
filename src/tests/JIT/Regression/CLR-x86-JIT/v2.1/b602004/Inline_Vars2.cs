@@ -2821,7 +2821,7 @@ public class Test_Inline_Vars2
         Console.WriteLine(a400);
         return 100;
     }
-    static int Main()
+    public static int Main()
     {
 
         (new Test_Inline_Vars2()).RunTest0_Inline();

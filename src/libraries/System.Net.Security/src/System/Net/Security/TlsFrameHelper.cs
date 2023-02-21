@@ -103,6 +103,7 @@ namespace System.Net.Security
             ServerName = 0x1,
             ApplicationProtocol = 0x2,
             Versions = 0x4,
+            RawApplicationProtocol = 0x8,
         }
 
         [Flags]
@@ -122,6 +123,7 @@ namespace System.Net.Security
             public string TargetName;
             public ApplicationProtocolInfo ApplicationProtocols;
             public TlsAlertDescription AlertDescription;
+            public byte[]? RawApplicationProtocols;
 
             public override string ToString()
             {
@@ -524,7 +526,7 @@ namespace System.Net.Security
                     info.SupportedVersions |= versions;
                 }
                 else if (extensionType == ExtensionType.ApplicationProtocols && (options == ProcessingOptions.All ||
-                          (options & ProcessingOptions.ApplicationProtocol) == ProcessingOptions.ApplicationProtocol))
+                          (options.HasFlag(ProcessingOptions.ApplicationProtocol) || options.HasFlag(ProcessingOptions.RawApplicationProtocol))))
                 {
                     if (!TryGetApplicationProtocolsFromExtension(extensionData, out ApplicationProtocolInfo alpn))
                     {
@@ -532,6 +534,13 @@ namespace System.Net.Security
                     }
 
                     info.ApplicationProtocols |= alpn;
+
+                    // Process RAW options only if explicitly set since that will allocate....
+                    if (options.HasFlag(ProcessingOptions.RawApplicationProtocol))
+                    {
+                        // Skip ALPN extension Length. We have that in span.
+                        info.RawApplicationProtocols = extensionData.Slice(sizeof(short)).ToArray();
+                    }
                 }
 
                 callback?.Invoke(ref info, extensionType, extensionData);

@@ -29,7 +29,7 @@ namespace System.IO.Pipelines
         // Mutable struct! Don't make this readonly
         private BufferSegmentStack _bufferSegmentPool;
 
-        private StreamPipeReaderOptions _options;
+        private readonly StreamPipeReaderOptions _options;
 
         /// <summary>
         /// Creates a new StreamPipeReader.

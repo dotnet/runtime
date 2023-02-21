@@ -858,7 +858,7 @@ namespace DebuggerTests
             Assert.False(source.Value["scriptSource"].Value<string>().Contains("// Unable to read document"));
         }
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [ConditionalFact(nameof(WasmSingleThreaded), nameof(RunningOnChrome))]
         public async Task InspectTaskAtLocals() => await CheckInspectLocalsAtBreakpointSite(
             "InspectTask",
             "RunInspectTask",
@@ -958,23 +958,39 @@ namespace DebuggerTests
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(
             "DebuggerTests.CheckSpecialCharactersInPath",
-            "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
+            "dotnet://debugger-test-special-char-in-path.dll/test%23.cs",
+            "debugger-test-special-char-in-path-%23%40/test%23.cs")]
         [InlineData(
             "DebuggerTests.CheckSNonAsciiCharactersInPath",
-            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-\u0105\u0142.cs")]
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-%C4%85%C5%82%C3%85.cs",
+            "debugger-test-special-char-in-path-%23%40/non-ascii-test-%C4%85%C5%82%C3%85.cs")]
         public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
-            string classWithNamespace, string expectedFileLocation)
+            string classWithNamespace, string expectedFileLocation, string expectedFileNameEscaped)
         {
             var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
-            await EvaluateAndCheck(
+            var ret = await EvaluateAndCheck(
                 $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
                 expectedFileLocation,
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"{classWithNamespace}.Evaluate");
+            Assert.EndsWith(expectedFileNameEscaped, ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
+        }
+
+        [ConditionalFact(nameof(RunningOnChromeAndLinux))]
+        public async Task SetBreakpointInProjectWithColonInSourceName()
+        {
+            var bp = await SetBreakpointInMethod("debugger-test-with-colon-in-source-name.dll", "DebuggerTests.CheckColonInSourceName", "Evaluate", 1);
+            var ret = await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-with-colon-in-source-name] DebuggerTests.CheckColonInSourceName:Evaluate'); }}, 1);",
+                "dotnet://debugger-test-with-colon-in-source-name.dll/test:.cs",
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                $"DebuggerTests.CheckColonInSourceName.Evaluate");
+            Assert.EndsWith("debugger-test-with-colon-in-source-name/test:.cs", ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
 
         [Theory]
@@ -1096,38 +1112,67 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task SetBreakpointInProjectWithChineseCharactereInPath()
         {
-            var bp = await SetBreakpointInMethod("debugger-test-chinese-char-in-path-\u3128.dll", "DebuggerTests.CheckChineseCharacterInPath", "Evaluate", 1);
-            await EvaluateAndCheck(
-                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-chinese-char-in-path-\u3128] DebuggerTests.CheckChineseCharacterInPath:Evaluate'); }}, 1);",
-                "dotnet://debugger-test-chinese-char-in-path-\u3128.dll/test.cs",
+            var bp = await SetBreakpointInMethod("debugger-test-chinese-char-in-path-ㄨ.dll", "DebuggerTests.CheckChineseCharacterInPath", "Evaluate", 1);
+            var ret = await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-chinese-char-in-path-ㄨ] DebuggerTests.CheckChineseCharacterInPath:Evaluate'); }}, 1);",
+                "dotnet://debugger-test-chinese-char-in-path-ㄨ.dll/test.cs",
                 bp.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp.Value["locations"][0]["columnNumber"].Value<int>(),
                 $"DebuggerTests.CheckChineseCharacterInPath.Evaluate");
+            Assert.EndsWith("debugger-test-chinese-char-in-path-%E3%84%A8/test.cs", ret["callFrames"][0]["url"].Value<string>(), StringComparison.InvariantCulture);
         }
 
         [Fact]
-        public async Task InspectReadOnlySpan()
+        public async Task InspectRefFields()
         {
             var expression = $"{{ invoke_static_method('[debugger-test] ReadOnlySpanTest:Run'); }}";
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1371, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 1427, 8,
                 "ReadOnlySpanTest.CheckArguments",
                 wait_for_event_fn: async (pause_location) =>
                 {
                     var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                     await EvaluateOnCallFrameAndCheck(id,
-                        ("parameters.ToString()", TString("System.ReadOnlySpan<Object>[1]"))
+                        ("parameters.ToString()", TString("System.ReadOnlySpan<Object>[1]")),
+                        ("myR1.Run()", TNumber(10)),
+                        ("r2.Run()", TNumber(456))
                     );
                 }
             );
-            await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1363, 8, "ReadOnlySpanTest.Run",
+            await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1406, 8, "ReadOnlySpanTest.Run",
                 locals_fn: async (locals) =>
                 {
                     await CheckValueType(locals, "var1", "System.ReadOnlySpan<object>", description: "System.ReadOnlySpan<Object>[0]");
                 }
             );
+        }
+
+        [ConditionalFact(nameof(WasmMultiThreaded))]
+        public async Task TestDebugUsingMultiThreadedRuntime()
+        {
+            var bp = await SetBreakpointInMethod("debugger-test.dll", "MultiThreadedTest", "Write", 2);
+            var expression = $"{{ invoke_static_method('[debugger-test] MultiThreadedTest:Run'); }}";
+
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1598, 8,
+                "MultiThreadedTest.Write");
+
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
+
+            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1598, 8, "MultiThreadedTest.Write");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
+
+            pause_location = await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1598, 8, "MultiThreadedTest.Write");
+            locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            Assert.Equal(locals[1]["value"]["type"], "number");
+            Assert.Equal(locals[1]["name"], "currentThread");
         }
     }
 }

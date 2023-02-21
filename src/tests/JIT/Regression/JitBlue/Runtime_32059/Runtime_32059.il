@@ -6,7 +6,7 @@
 .assembly Runtime_32059 {}
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit Runtime_32059 extends [System.Runtime]System.Object
+.class public auto ansi beforefieldinit Runtime_32059 extends [System.Runtime]System.Object
 {
 
 .method public hidebysig static int32 Main(string[] args) cil managed

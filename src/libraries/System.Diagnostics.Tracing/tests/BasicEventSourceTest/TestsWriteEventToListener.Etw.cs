@@ -14,10 +14,7 @@ namespace BasicEventSourceTests
 {
     public partial class TestsWriteEventToListener
     {
-        // Specifies whether the process is elevated or not.
-        private static bool IsProcessElevated => Environment.IsPrivilegedProcess;
-
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void Test_WriteEvent_TransferEvents()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");

@@ -45,8 +45,7 @@ namespace System.Threading.Tasks.Tests
             void AssertCanceled(Task t)
             {
                 Assert.True(t.IsCanceled);
-                var oce = Assert.ThrowsAny<OperationCanceledException>(() => t.GetAwaiter().GetResult());
-                Assert.Equal(cts.Token, oce.CancellationToken);
+                AssertExtensions.CanceledAsync(cts.Token, t).GetAwaiter().GetResult();
             }
 
             Func<int, CancellationToken, ValueTask> body = (item, cancellationToken) =>

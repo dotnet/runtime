@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
   <String Id="Caption">[WixBundleName] Yükleyicisi</String>
   <String Id="Title">[BUNDLEMONIKER]</String>
@@ -17,9 +17,9 @@ Hazır mısınız? Haydi başlayalım!</String>
 /norestart   - yeniden başlama denemelerini engeller. Varsayılan olarak UI yeniden başlatılmadan önce sorar.
 /log log.txt - belirli bir günlük dosyası tutar. Varsayılan olarak %TEMP% içinde bir günlük dosyası oluşturulur.</String>
   <String Id="HelpCloseButton">&amp;Kapat</String>
-  <String Id="InstallAcceptCheckbox">Lisans &amp;hüküm ve koşullarını kabul ediyorum</String>
+  <String Id="InstallAcceptCheckbox">Lisans hüküm ve koşullarını &amp;kabul ediyorum</String>
   <String Id="InstallOptionsButton">&amp;Seçenekler</String>
-  <String Id="InstallInstallButton">&amp;Yükle</String>
+  <String Id="InstallInstallButton">Yü&amp;kle</String>
   <String Id="InstallCloseButton">&amp;Kapat</String>
   <String Id="OptionsHeader">Kurulum Seçenekleri</String>
   <String Id="OptionsLocationLabel">Yükleme konumu:</String>
@@ -30,7 +30,7 @@ Hazır mısınız? Haydi başlayalım!</String>
   <String Id="ProgressLabel">İşleniyor:</String>
   <String Id="OverallProgressPackageText">Başlatılıyor...</String>
   <String Id="ProgressCancelButton">İ&amp;ptal</String>
-  <String Id="ModifyHeader">Kurulumu Değiştir</String>
+  <String Id="ModifyHeader">Kurulumu değiştir</String>
   <String Id="ModifyRepairButton">&amp;Onar</String>
   <String Id="ModifyUninstallButton">&amp;Kaldır</String>
   <String Id="ModifyCloseButton">&amp;Kapat</String>
@@ -39,14 +39,14 @@ Hazır mısınız? Haydi başlayalım!</String>
   <String Id="SuccessInstallHeader">Yükleme başarılı oldu</String>
   <String Id="SuccessHeader">Kurulum Başarılı</String>
   <String Id="SuccessLaunchButton">&amp;Başlat</String>
-  <String Id="SuccessRestartText">Yazılımı kullanabilmek için bilgisayarınızı yeniden başlatmanız gerekiyor.</String>
+  <String Id="SuccessRestartText">Yazılımı kullanabilmeniz için bilgisayarınızı yeniden başlatmanız gerekiyor.</String>
   <String Id="SuccessRestartButton">&amp;Yeniden Başlat</String>
   <String Id="SuccessCloseButton">&amp;Kapat</String>
   <String Id="FailureHeader">Kurulum Başarısız</String>
   <String Id="FailureInstallHeader">Kurulum Başarısız</String>
-  <String Id="FailureUninstallHeader">Yükleme Başarısız</String>
+  <String Id="FailureUninstallHeader">Kaldırma Başarısız</String>
   <String Id="FailureRepairHeader">Onarım Başarısız</String>
-  <String Id="FailureHyperlinkLogText">En az bir sorun nedeniyle kurulum başarısız oldu. Lütfen bu sorunları düzeltin ve kurulumu yeniden deneyin. Daha fazla bilgi için &lt;a href="#"&gt;günlük dosyasına&lt;/a&gt; bakın.</String>
+  <String Id="FailureHyperlinkLogText">Bir ya da daha fazla sorun nedeniyle kurulum başarısız oldu. Lütfen bu sorunları düzeltin ve kurulumu yeniden deneyin. Daha fazla bilgi için &lt;a href="#"&gt;günlük dosyasına&lt;/a&gt; bakın.</String>
   <String Id="FailureRestartText">Yazılımın geri alınmasını tamamlamak için bilgisayarınızı yeniden başlatmanız gerekiyor.</String>
   <String Id="FailureRestartButton">&amp;Yeniden Başlat</String>
   <String Id="FailureCloseButton">&amp;Kapat</String>
@@ -57,7 +57,7 @@ Hazır mısınız? Haydi başlayalım!</String>
   <String Id="FilesInUseCloseRadioButton">&amp;Uygulamaları kapatın ve yeniden başlatmayı deneyin.</String>
   <String Id="FilesInUseDontCloseRadioButton">&amp;Uygulamaları kapatmayın. Sistemi yeniden başlatmanız gerekir.</String>
   <String Id="FilesInUseOkButton">&amp;Tamam</String>
-  <String Id="FilesInUseCancelButton">&amp;İptal</String>
+  <String Id="FilesInUseCancelButton">İ&amp;ptal</String>
   <String Id="WelcomeHeaderMessage">.NET Çalışma Zamanı</String>
   <String Id="WelcomeDescription">.NET Çalışma Zamanı, Windows bilgisayarınızda .NET uygulamalarını çalıştırmak için kullanılır. .NET açık kaynaktır, platformlar arasında kullanılabilir ve Microsoft tarafından desteklenmektedir. Beğeneceğinizi umuyoruz!</String>
   <String Id="LearnMoreTitle">.NET hakkında daha fazla bilgi edinin</String>

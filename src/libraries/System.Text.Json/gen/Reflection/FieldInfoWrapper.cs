@@ -23,6 +23,8 @@ namespace System.Text.Json.Reflection
 
         private FieldAttributes? _attributes;
 
+        public IFieldSymbol Symbol => _field;
+
         public override FieldAttributes Attributes
         {
             get
@@ -81,7 +83,7 @@ namespace System.Text.Json.Reflection
             throw new NotImplementedException();
         }
 
-        public override object GetValue(object obj)
+        public override object? GetValue(object? obj)
         {
             throw new NotImplementedException();
         }
@@ -101,7 +103,7 @@ namespace System.Text.Json.Reflection
             throw new NotImplementedException();
         }
 
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             throw new NotImplementedException();
         }

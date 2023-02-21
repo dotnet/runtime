@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>1</CLRTestPriority>
+    <WarningsNotAsErrors>CS0649</WarningsNotAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test79022.cs" />
+  </ItemGroup>
+</Project>

@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    struct BB
+    public struct BB
     {
         private double[] m_adDummyField;
         private ulong[] m_aulField4;
@@ -16,7 +16,7 @@ namespace Test
         {
             param2.Method1(ref param2.m_aulField4);
         }
-        static int Main()
+        public static int Main()
         {
             Method1(new BB(), __arglist());
             return 100;

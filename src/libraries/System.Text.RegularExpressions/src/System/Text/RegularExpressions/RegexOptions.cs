@@ -4,10 +4,10 @@
 namespace System.Text.RegularExpressions
 {
     [Flags]
-#if REGEXGENERATOR
-    internal
-#else
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
     public
+#else
+    internal
 #endif
     enum RegexOptions
     {

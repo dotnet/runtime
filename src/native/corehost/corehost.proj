@@ -44,7 +44,8 @@
             @(InjectResourceTool)"
     Outputs="$(SingleFileHostDestinationPath);$(SingleFileHostSymbolsDestinationPath)"
     DependsOnTargets="ResolveProjectReferences"
-    Condition="'$(RuntimeFlavor)' != 'Mono'">
+    Condition="'$(RuntimeFlavor)' != 'Mono' and
+               Exists('$(SingleFileHostPath)')">
     <Copy SourceFiles="$(SingleFileHostPath)" DestinationFiles="$(SingleFileHostDestinationPath)" />
     <Exec Condition="'$(TargetOS)' == 'windows'"
           Command="&quot;$(DotNetTool)&quot; exec @(InjectResourceTool) --bin &quot;$(DacPath)&quot; --image &quot;$(SingleFileHostDestinationPath)&quot; --name MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER" />

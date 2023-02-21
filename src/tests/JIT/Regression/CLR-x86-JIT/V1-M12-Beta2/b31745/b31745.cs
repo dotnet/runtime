@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public static uint[] m_auStatic1 = new uint[7];
 
@@ -16,7 +16,7 @@ namespace Test
         public static int[] Test(ref double[] param1, ref float[] param3)
         { return Method1(m_auStatic1, ref param3[2], __arglist()); }
 
-        static int Main()
+        public static int Main()
         {
             double[] ad = new double[16];
             float[] af = new float[16];

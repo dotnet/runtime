@@ -37,6 +37,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type nullType4 = null;
 			TestAssigningToRefParameter_Mismatch (nullType4, ref nullType4);
 			TestPassingRefsWithImplicitThis ();
+			LocalMethodsAndLambdas.Test ();
 		}
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -188,6 +189,51 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class TestType
 		{
+		}
+
+		static class LocalMethodsAndLambdas
+		{
+			static ref Type GetTypeRefWithoutAnnotations () { throw null; }
+
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static ref Type GetTypeRefWithMethods () { throw null; }
+
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)]
+			static ref Type GetTypeRefWithMethodsAndFields () { throw null; }
+
+			[ExpectedWarning ("IL2067", "t", "InnerMethodWithDam")]
+			[ExpectedWarning ("IL2067", "tWithMethodsAndFields", "InnerMethodWithDam")]
+			[ExpectedWarning ("IL2072", nameof (GetTypeRefWithoutAnnotations), "InnerMethodWithDam")]
+			[ExpectedWarning ("IL2068", nameof (GetTypeRefWithMethodsAndFields), "InnerMethodWithDam")]
+			static void MethodWithLocaMethodWithDam (Type t, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type tWithMethods, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)] Type tWithMethodsAndFields)
+			{
+				// 2067
+				InnerMethodWithDam (ref t);
+
+				// Okay
+				InnerMethodWithDam (ref tWithMethods);
+
+				// 2067 (but parameter of inner method targets parameter of outer method)
+				InnerMethodWithDam (ref tWithMethodsAndFields);
+
+				// 2072
+				InnerMethodWithDam (ref GetTypeRefWithoutAnnotations ());
+
+				// No warn
+				InnerMethodWithDam (ref GetTypeRefWithMethods ());
+
+				// 2068
+				InnerMethodWithDam (ref GetTypeRefWithMethodsAndFields ());
+
+				void InnerMethodWithDam ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] ref Type typeWithMethods)
+				{
+				}
+			}
+
+			public static void Test ()
+			{
+				MethodWithLocaMethodWithDam (null, null, null);
+			}
 		}
 
 		#region InheritsFromType

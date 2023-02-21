@@ -484,25 +484,6 @@ GlobalMemoryStatusEx(
     return fRetVal;
 }
 
-PALIMPORT
-DWORD
-PALAPI
-GetCurrentProcessorNumber()
-{
-#if HAVE_SCHED_GETCPU
-    return sched_getcpu();
-#else //HAVE_SCHED_GETCPU
-    return -1;
-#endif //HAVE_SCHED_GETCPU
-}
-
-BOOL
-PALAPI
-PAL_HasGetCurrentProcessorNumber()
-{
-    return HAVE_SCHED_GETCPU;
-}
-
 bool
 PAL_ReadMemoryValueFromFile(const char* filename, uint64_t* val)
 {

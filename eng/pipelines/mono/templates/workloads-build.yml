@@ -10,7 +10,6 @@ parameters:
   platform: ''
   pool: ''
   runtimeVariant: ''
-  stagedBuild: false
   testGroup: ''
   timeoutInMinutes: ''
   variables: {}
@@ -27,7 +26,6 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
@@ -63,7 +61,7 @@ jobs:
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvos-*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvossimulator-*.nupkg
-          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.Manifest*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net6.Manifest*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net7.Manifest*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoTargets.Sdk*.nupkg

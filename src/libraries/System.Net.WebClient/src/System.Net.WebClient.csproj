@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'Browser'">SR.SystemNetWebClient_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == 'browser'">SR.SystemNetWebClient_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="System\Net\WebClient.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="Common\System\IO\DelegatingStream.cs" />
@@ -33,6 +33,8 @@
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.WebHeaderCollection" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Web.HttpUtility" />
   </ItemGroup>
 </Project>

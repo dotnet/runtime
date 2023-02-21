@@ -41,7 +41,7 @@ namespace System.Text.RegularExpressions.Generator
                 return null;
             }
 
-            IMethodSymbol regexMethodSymbol = context.TargetSymbol as IMethodSymbol;
+            IMethodSymbol? regexMethodSymbol = context.TargetSymbol as IMethodSymbol;
             if (regexMethodSymbol is null)
             {
                 return null;
@@ -95,7 +95,7 @@ namespace System.Text.RegularExpressions.Generator
                     // int matchTimeoutMilliseconds, or string cultureName.
                     else if (items.Length == 3)
                     {
-                        if (items[2].Type.SpecialType == SpecialType.System_Int32)
+                        if (items[2].Type?.SpecialType == SpecialType.System_Int32)
                         {
                             matchTimeout = items[2].Value as int?;
                         }

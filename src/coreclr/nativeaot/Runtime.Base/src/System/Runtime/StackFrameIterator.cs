@@ -23,12 +23,15 @@ namespace System.Runtime
         private REGDISPLAY _regDisplay;
         [FieldOffset(AsmOffsets.OFFSETOF__StackFrameIterator__m_OriginalControlPC)]
         private IntPtr _originalControlPC;
+        [FieldOffset(AsmOffsets.OFFSETOF__StackFrameIterator__m_pPreviousTransitionFrame)]
+        private IntPtr _pPreviousTransitionFrame;
 
         internal byte* ControlPC { get { return (byte*)_controlPC; } }
         internal byte* OriginalControlPC { get { return (byte*)_originalControlPC; } }
         internal void* RegisterSet { get { fixed (void* pRegDisplay = &_regDisplay) { return pRegDisplay; } } }
         internal UIntPtr SP { get { return _regDisplay.SP; } }
         internal UIntPtr FramePointer { get { return _framePointer; } }
+        internal IntPtr PreviousTransitionFrame { get { return _pPreviousTransitionFrame; } }
 
         internal bool Init(EH.PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault = false)
         {

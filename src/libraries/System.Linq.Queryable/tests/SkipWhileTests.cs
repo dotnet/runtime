@@ -34,14 +34,14 @@ namespace System.Linq.Tests
         [Fact]
         public void SkipWhile1()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().SkipWhile(n => n < 1).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().SkipWhile(n => n < 1).Count();
             Assert.Equal(2, count);
         }
 
         [Fact]
         public void SkipWhile2()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().SkipWhile((n, i) => n + i < 1).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().SkipWhile((n, i) => n + i < 1).Count();
             Assert.Equal(2, count);
         }
     }

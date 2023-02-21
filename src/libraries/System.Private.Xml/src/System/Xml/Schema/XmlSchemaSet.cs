@@ -665,8 +665,9 @@ namespace System.Xml.Schema
         {
             ArgumentNullException.ThrowIfNull(schemas);
 
-            if (index < 0 || index > schemas.Length - 1)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, schemas.Length - 1);
+
             _schemas.Values.CopyTo(schemas, index);
         }
 

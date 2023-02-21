@@ -10,8 +10,8 @@
 .assembly b13522
 {
 }
-.class I2 {
- .method static int32 main() {
+.class public I2 {
+ .method public static int32 main() {
 .entrypoint
 .maxstack	11
 .try {

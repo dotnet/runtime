@@ -17,8 +17,8 @@ namespace fxr_resolver
     bool try_get_existing_fxr(pal::dll_t *out_fxr, pal::string_t *out_fxr_path);
 }
 
-template<typename THostPathToConfigCallback, typename TDelegate>
-int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallback host_path_to_config_path, TDelegate* delegate)
+template<typename THostPathToConfigCallback, typename TBeforeRunCallback>
+int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallback host_path_to_config_path, TBeforeRunCallback on_before_run, void** delegate)
 {
     pal::dll_t fxr;
 
@@ -64,11 +64,8 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
 
     pal::string_t config_path;
     pal::hresult_t status = host_path_to_config_path(host_path, &config_path);
-
     if (status != StatusCode::Success)
-    {
         return status;
-    }
 
     hostfxr_initialize_parameters parameters {
         sizeof(hostfxr_initialize_parameters),
@@ -86,7 +83,9 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
         if (!STATUS_CODE_SUCCEEDED(rc))
             return rc;
 
-        rc = hostfxr_get_runtime_delegate(context, type, reinterpret_cast<void**>(delegate));
+        on_before_run(fxr, context);
+
+        rc = hostfxr_get_runtime_delegate(context, type, delegate);
 
         int rcClose = hostfxr_close(context);
         if (rcClose != StatusCode::Success)

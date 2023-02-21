@@ -76,7 +76,6 @@ void    SplitPathInterior(
      *  relative path:
      *      top\next\last\  ; or
      *      top/next/last/
-     *  Mixed use of '/' and '\' within a path is also tolerated
      *  fname:
      *  0 to _MAX_FNAME-1 characters not including the '.' character
      *  ext:
@@ -108,7 +107,7 @@ void    SplitPathInterior(
      */
 
     for (last_slash = NULL, p = (WCHAR *)wszPath; *p; p++) {
-        if (*p == _T('/') || *p == _T('\\'))
+        if (*p == DIRECTORY_SEPARATOR_CHAR_W)
             /* point to one beyond for later copy */
             last_slash = p + 1;
         else if (*p == _T('.'))

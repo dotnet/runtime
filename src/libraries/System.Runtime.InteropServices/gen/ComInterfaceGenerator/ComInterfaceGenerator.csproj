@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_4)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 
@@ -21,6 +21,7 @@
     <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <None Include="$(AssemblyName).props" Pack="true" PackagePath="build" />
     <Compile Include="..\Common\DefaultMarshallingInfoParser.cs" Link="Common\DefaultMarshallingInfoParser.cs" />
+    <Compile Include="..\..\tests\Common\ExceptionMarshalling.cs" Link="Common\ExceptionMarshalling.cs" />
   </ItemGroup>
 
   <ItemGroup>

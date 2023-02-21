@@ -348,10 +348,13 @@ private:
     float GetConstantSingle(ValueNum argVN);
 
 #if defined(FEATURE_SIMD)
+public:
     simd8_t GetConstantSimd8(ValueNum argVN);
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
     simd32_t GetConstantSimd32(ValueNum argVN);
+
+private:
 #endif // FEATURE_SIMD
 
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
@@ -461,6 +464,21 @@ public:
     void AddToEmbeddedHandleMap(ssize_t embeddedHandle, ssize_t compileTimeHandle)
     {
         m_embeddedToCompileTimeHandleMap.AddOrUpdate(embeddedHandle, compileTimeHandle);
+    }
+
+    void AddToFieldAddressToFieldSeqMap(ValueNum fldAddr, FieldSeq* fldSeq)
+    {
+        m_fieldAddressToFieldSeqMap.AddOrUpdate(fldAddr, fldSeq);
+    }
+
+    FieldSeq* GetFieldSeqFromAddress(ValueNum fldAddr)
+    {
+        FieldSeq* fldSeq;
+        if (m_fieldAddressToFieldSeqMap.TryGetValue(fldAddr, &fldSeq))
+        {
+            return fldSeq;
+        }
+        return nullptr;
     }
 
     // And the single constant for an object reference type.
@@ -1108,6 +1126,23 @@ public:
                             EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));
     }
 
+    ValueNum EvalHWIntrinsicFunUnary(var_types      type,
+                                     var_types      baseType,
+                                     NamedIntrinsic ni,
+                                     VNFunc         func,
+                                     ValueNum       arg0VN,
+                                     bool           encodeResultType,
+                                     ValueNum       resultTypeVN);
+
+    ValueNum EvalHWIntrinsicFunBinary(var_types      type,
+                                      var_types      baseType,
+                                      NamedIntrinsic ni,
+                                      VNFunc         func,
+                                      ValueNum       arg0VN,
+                                      ValueNum       arg1VN,
+                                      bool           encodeResultType,
+                                      ValueNum       resultTypeVN);
+
     // Returns "true" iff "vn" represents a function application.
     bool IsVNFunc(ValueNum vn);
 
@@ -1419,6 +1454,9 @@ private:
 
     typedef SmallHashTable<ssize_t, ssize_t> EmbeddedToCompileTimeHandleMap;
     EmbeddedToCompileTimeHandleMap m_embeddedToCompileTimeHandleMap;
+
+    typedef SmallHashTable<ValueNum, FieldSeq*> FieldAddressToFieldSeqMap;
+    FieldAddressToFieldSeqMap m_fieldAddressToFieldSeqMap;
 
     struct LargePrimitiveKeyFuncsFloat : public JitLargePrimitiveKeyFuncs<float>
     {

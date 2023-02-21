@@ -119,16 +119,15 @@ namespace System
 
         internal static TypeAttributes GetAttributes(RuntimeType type)
         {
-            return GetAttributes(new QCallTypeHandle(ref type));
+            return type.GetAttributes();
         }
 
         public ModuleHandle GetModuleHandle()
         {
-            // Although MS' runtime is crashing here, we prefer throwing an exception.
             // The check is needed because Type.GetTypeFromHandle returns null
             // for zero handles.
             if (value == IntPtr.Zero)
-                throw new InvalidOperationException("Object fields may not be properly initialized");
+                throw new ArgumentException(SR.Arg_InvalidHandle);
 
             return Type.GetTypeFromHandle(this)!.Module.ModuleHandle;
         }
@@ -224,7 +223,7 @@ namespace System
 
         internal static CorElementType GetCorElementType(RuntimeType type)
         {
-            return GetCorElementType (new QCallTypeHandle(ref type));
+            return type.GetCorElementType();
         }
 
         internal static bool HasInstantiation(RuntimeType type)
@@ -373,7 +372,7 @@ namespace System
 
             if (typeName.Length == 0)
                 if (throwOnError)
-                    throw new TypeLoadException("A null or zero length string does not represent a valid Type.");
+                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
                 else
                     return null;
 

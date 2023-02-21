@@ -11,13 +11,13 @@ namespace System.Runtime.InteropServices.JavaScript
         public Uint8Array(int length)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { length }))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         public Uint8Array(ArrayBuffer buffer)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { buffer }))
         {
-            JSHostImplementation.RegisterCSOwnedObject(this);
+            LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         internal Uint8Array(IntPtr jsHandle) : base(jsHandle)
@@ -36,7 +36,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static implicit operator Uint8Array(Span<byte> span) => From(span);
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public byte[] ToArray()
         {
             this.AssertNotDisposed();
@@ -48,13 +47,12 @@ namespace System.Runtime.InteropServices.JavaScript
             return (byte[])res;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static unsafe Uint8Array From(ReadOnlySpan<byte> span)
         {
             // source has to be instantiated.
             if (span == null)
             {
-                throw new System.ArgumentException(SR.Format(SR.ArgumentCannotBeNull, nameof(span)));
+                throw new System.ArgumentException(SR.Format(SR.ArgumentCannotBeNull, nameof(span)), nameof(span));
             }
 
             ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(span);

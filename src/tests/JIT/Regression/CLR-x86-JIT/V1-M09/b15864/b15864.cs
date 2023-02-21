@@ -9,7 +9,7 @@ namespace DefaultNamespace
     //@ENDRENAME; Verify this renames
     using System;
 
-    class TestClass
+    public class TestClass
     {
         public static int iExitCode;
 

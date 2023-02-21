@@ -465,11 +465,6 @@ int main(int argc, char* argv[])
     }
 #endif
 
-#ifdef HOST_WINDOWS
-    // SWI has requested that the exact form of the function call below be used. For details see http://swi/SWI%20Docs/Detecting%20Heap%20Corruption.doc
-    (void)HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-#endif
-
 #ifdef _DEBUG
     DisableThrowCheck();
 #endif

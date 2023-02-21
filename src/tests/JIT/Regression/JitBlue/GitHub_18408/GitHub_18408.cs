@@ -96,7 +96,7 @@ struct QMethodDefinition
     public MethodHandle NativeFormatHandle { get { return _handle.AsHandle().ToMethodHandle(NativeFormatReader); } }
 }
 
-class GitHub_18408
+public class GitHub_18408
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static object foo(QMethodDefinition methodHandle)

@@ -234,8 +234,6 @@ PAL_fopen(const char * fileName, const char * mode)
             goto done;
         }
 
-        FILEDosToUnixPathA( UnixFileName );
-
         /*I am not checking for the case where stat fails
          *as fopen will handle the error more gracefully in case
          *UnixFileName is invalid*/

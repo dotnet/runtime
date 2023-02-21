@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <TrimmingTestDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'trimmingTests'))</TrimmingTestDir>
+    <TrimmingTestProjectsDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestDir)', 'projects'))</TrimmingTestProjectsDir>
+    <ProjectTemplate>$(MSBuildThisFileDirectory)project.csproj.template</ProjectTemplate>
+    <UseLocalAppHostPack>true</UseLocalAppHostPack>
+  </PropertyGroup>
+</Project>

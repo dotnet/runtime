@@ -11,7 +11,7 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	sealed partial record MethodParameterValue : ValueWithDynamicallyAccessedMembers
+	internal sealed partial record MethodParameterValue : ValueWithDynamicallyAccessedMembers
 	{
 		// _overrideIsThis is needed for backwards compatibility with MakeGenericType/Method https://github.com/dotnet/linker/issues/2428
 		private readonly bool _overrideIsThis;
@@ -22,7 +22,7 @@ namespace ILLink.Shared.TrimAnalysis
 			=> Parameter.GetDiagnosticArgumentsForAnnotationMismatch ();
 
 		public override string ToString ()
-			=> this.ValueToString (Parameter.Method.Method, DynamicallyAccessedMemberTypes);
+			=> this.ValueToString (Parameter.Method.Method, Parameter.Index, DynamicallyAccessedMemberTypes);
 
 		public bool IsThisParameter () => _overrideIsThis || Parameter.IsImplicitThis;
 

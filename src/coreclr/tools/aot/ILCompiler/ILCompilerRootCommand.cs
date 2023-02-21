@@ -7,7 +7,6 @@ using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
 using System.IO;
-using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
 
@@ -35,6 +34,8 @@ namespace ILCompiler
             new(new[] { "--gdwarf-5" }, "Generate source-level debug information with dwarf version 5");
         public Option<bool> NativeLib { get; } =
             new(new[] { "--nativelib" }, "Compile as static or shared library");
+        public Option<bool> SplitExeInitialization { get; } =
+            new(new[] { "--splitinit" }, "Split initialization of an executable between the library entrypoint and a main entrypoint");
         public Option<string> ExportsFile { get; } =
             new(new[] { "--exportsfile" }, "File to write exported method definitions");
         public Option<string> DgmlLogFileName { get; } =
@@ -175,6 +176,7 @@ namespace ILCompiler
             AddOption(EnableDebugInfo);
             AddOption(UseDwarf5);
             AddOption(NativeLib);
+            AddOption(SplitExeInitialization);
             AddOption(ExportsFile);
             AddOption(DgmlLogFileName);
             AddOption(GenerateFullDgmlLog);
@@ -262,8 +264,9 @@ namespace ILCompiler
                         // + the original command line arguments
                         // + a rsp file that should work to directly run out of the zip file
 
-                        Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args,
-                            context.ParseResult, new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" });
+                        Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args, context.ParseResult,
+                            inputOptions : new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" },
+                            outputOptions : new[] { "o", "out", "exportsfile" });
                     }
 
                     context.ExitCode = new Program(this).Run();
@@ -306,7 +309,7 @@ namespace ILCompiler
                     "considered to be input files. If no input files begin with '--' then this option is not necessary.\n");
 
                 string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64" };
-                string[] ValidOS = new string[] { "windows", "linux", "osx" };
+                string[] ValidOS = new string[] { "windows", "linux", "freebsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator" };
 
                 Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
 

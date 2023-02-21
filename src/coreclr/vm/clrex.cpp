@@ -1554,10 +1554,7 @@ void EEFileLoadException::SetFileName(const SString &fileName, BOOL removePath)
     {
         SString::CIterator i = fileName.End();
 
-        if (fileName.FindBack(i, W('\\')))
-            i++;
-
-        if (fileName.FindBack(i, W('/')))
+        if (fileName.FindBack(i, DIRECTORY_SEPARATOR_CHAR_W))
             i++;
 
         m_name.Set(fileName, i, fileName.End());

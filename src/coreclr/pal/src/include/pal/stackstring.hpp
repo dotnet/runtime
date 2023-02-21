@@ -256,6 +256,3 @@ typedef StackString<MAX_PATH, WCHAR> PathWCharString;
 DWORD
 GetCurrentDirectoryA(
          PathCharString& lpBuffer);
-void
-FILEDosToUnixPathA(
-        PathCharString& lpPath);

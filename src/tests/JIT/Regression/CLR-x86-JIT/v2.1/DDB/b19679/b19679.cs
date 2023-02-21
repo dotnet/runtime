@@ -2815,7 +2815,7 @@ public class Test_b19679
         Console.WriteLine(a400);
         return 100;
     }
-    private static int Main()
+    public static int Main()
     {
         (new Test_b19679()).RunTest0_Inline();
 

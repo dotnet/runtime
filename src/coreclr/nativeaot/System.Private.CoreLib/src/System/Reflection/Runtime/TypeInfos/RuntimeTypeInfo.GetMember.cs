@@ -16,22 +16,20 @@ namespace System.Reflection.Runtime.TypeInfos
         [DynamicallyAccessedMembers(GetAllMembers)]
         public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
             return GetMemberImpl(name, MemberTypes.All, bindingAttr);
         }
 
         [DynamicallyAccessedMembers(GetAllMembers)]
         public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
             return GetMemberImpl(name, type, bindingAttr);
         }
 
         private MemberInfo[] GetMemberImpl(string optionalNameOrPrefix, MemberTypes type, BindingFlags bindingAttr)
         {
-            bool prefixSearch = optionalNameOrPrefix != null && optionalNameOrPrefix.EndsWith("*", StringComparison.Ordinal);
+            bool prefixSearch = optionalNameOrPrefix != null && optionalNameOrPrefix.EndsWith('*');
             string? optionalName = prefixSearch ? null : optionalNameOrPrefix;
 
             Func<MemberInfo, bool>? predicate = null;
@@ -53,21 +51,21 @@ namespace System.Reflection.Runtime.TypeInfos
 
             MemberInfo[] results;
 
-            if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.Method, out methods)) != null)
+            if ((results = QuerySpecificMemberTypeIfRequested(MethodPolicies.Instance, type, optionalName, bindingAttr, predicate, MemberTypes.Method, out methods)) != null)
                 return results;
-            if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.Constructor, out constructors)) != null)
+            if ((results = QuerySpecificMemberTypeIfRequested(ConstructorPolicies.Instance, type, optionalName, bindingAttr, predicate, MemberTypes.Constructor, out constructors)) != null)
                 return results;
-            if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.Property, out properties)) != null)
+            if ((results = QuerySpecificMemberTypeIfRequested(PropertyPolicies.Instance, type, optionalName, bindingAttr, predicate, MemberTypes.Property, out properties)) != null)
                 return results;
-            if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.Event, out events)) != null)
+            if ((results = QuerySpecificMemberTypeIfRequested(EventPolicies.Instance, type, optionalName, bindingAttr, predicate, MemberTypes.Event, out events)) != null)
                 return results;
-            if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.Field, out fields)) != null)
+            if ((results = QuerySpecificMemberTypeIfRequested(FieldPolicies.Instance, type, optionalName, bindingAttr, predicate, MemberTypes.Field, out fields)) != null)
                 return results;
-            if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.NestedType, out nestedTypes)) != null)
+            if ((results = QuerySpecificMemberTypeIfRequested(NestedTypePolicies.Instance, type, optionalName, bindingAttr, predicate, MemberTypes.NestedType, out nestedTypes)) != null)
                 return results;
             if ((type & (MemberTypes.NestedType | MemberTypes.TypeInfo)) == MemberTypes.TypeInfo)
             {
-                if ((results = QuerySpecificMemberTypeIfRequested(type, optionalName, bindingAttr, predicate, MemberTypes.TypeInfo, out nestedTypes)) != null)
+                if ((results = QuerySpecificMemberTypeIfRequested(NestedTypePolicies.Instance, type, optionalName, bindingAttr, predicate, MemberTypes.TypeInfo, out nestedTypes)) != null)
                     return results;
             }
 
@@ -98,7 +96,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return results;
         }
 
-        private M[] QuerySpecificMemberTypeIfRequested<M>(MemberTypes memberType, string optionalName, BindingFlags bindingAttr, Func<MemberInfo, bool> optionalPredicate, MemberTypes targetMemberType, out QueryResult<M> queryResult) where M : MemberInfo
+        private M[] QuerySpecificMemberTypeIfRequested<M>(MemberPolicies<M> policies, MemberTypes memberType, string optionalName, BindingFlags bindingAttr, Func<MemberInfo, bool> optionalPredicate, MemberTypes targetMemberType, out QueryResult<M> queryResult) where M : MemberInfo
         {
             if ((memberType & targetMemberType) == 0)
             {
@@ -107,7 +105,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 return null;
             }
 
-            queryResult = Query<M>(optionalName, bindingAttr, optionalPredicate);
+            queryResult = Query<M>(policies, optionalName, bindingAttr, optionalPredicate);
 
             // Desktop compat: If exactly one type of member was requested, the returned array has to be of that specific type (M[], not MemberInfo[]). Create it now and return it
             // to cause GetMember() to short-cut the search.
@@ -120,8 +118,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
-            if (member is null)
-                throw new ArgumentNullException(nameof(member));
+            ArgumentNullException.ThrowIfNull(member);
 
             // Need to walk up the inheritance chain if member is not found
             // Leverage the existing cache mechanism on per type to store members
@@ -140,19 +137,19 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             return member.MemberType switch
             {
-                MemberTypes.Method => QueryMemberWithSameMetadataDefinitionAs<MethodInfo>(member),
-                MemberTypes.Constructor => QueryMemberWithSameMetadataDefinitionAs<ConstructorInfo>(member),
-                MemberTypes.Property => QueryMemberWithSameMetadataDefinitionAs<PropertyInfo>(member),
-                MemberTypes.Field => QueryMemberWithSameMetadataDefinitionAs<FieldInfo>(member),
-                MemberTypes.Event => QueryMemberWithSameMetadataDefinitionAs<EventInfo>(member),
-                MemberTypes.NestedType => QueryMemberWithSameMetadataDefinitionAs<Type>(member),
+                MemberTypes.Method => QueryMemberWithSameMetadataDefinitionAs(MethodPolicies.Instance, member),
+                MemberTypes.Constructor => QueryMemberWithSameMetadataDefinitionAs(ConstructorPolicies.Instance, member),
+                MemberTypes.Property => QueryMemberWithSameMetadataDefinitionAs(PropertyPolicies.Instance, member),
+                MemberTypes.Field => QueryMemberWithSameMetadataDefinitionAs(FieldPolicies.Instance, member),
+                MemberTypes.Event => QueryMemberWithSameMetadataDefinitionAs(EventPolicies.Instance, member),
+                MemberTypes.NestedType => QueryMemberWithSameMetadataDefinitionAs(NestedTypePolicies.Instance, member),
                 _ => null,
             };
         }
 
-        private M QueryMemberWithSameMetadataDefinitionAs<M>(MemberInfo member) where M : MemberInfo
+        private M QueryMemberWithSameMetadataDefinitionAs<M>(MemberPolicies<M> policies, MemberInfo member) where M : MemberInfo
         {
-            QueryResult<M> members = Query<M>(member.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            QueryResult<M> members = Query<M>(policies, member.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             foreach (M candidate in members)
             {
                 if (candidate.HasSameMetadataDefinitionAs(member))

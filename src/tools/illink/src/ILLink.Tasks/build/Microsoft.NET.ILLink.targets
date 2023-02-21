@@ -64,7 +64,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
 
   <!-- Disable Redundant Warning Suppressions by default-->
-  <PropertyGroup Condition="'$(_TrimmerShowRedundantSuppressions)' != 'true'">
+  <PropertyGroup Condition="'$(_TrimmerShowRedundantSuppressions)' != 'true' And '$(PublishTrimmed)' == 'true'">
     <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 
@@ -279,9 +279,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <ManagedAssemblyToLink Include="@(_TrimmableManagedAssemblyToLink)" IsTrimmable="true" />
     </ItemGroup>
 
-    <!-- Root the main assembly, whether or not it has IsTrimmable set. -->
+    <!-- Root the main assembly entry point. -->
     <ItemGroup>
-      <TrimmerRootAssembly Include="@(IntermediateAssembly)" />
+      <TrimmerRootAssembly Include="@(IntermediateAssembly)" RootMode="EntryPoint" />
     </ItemGroup>
 
     <!-- For .NET < 6, root and copy assemblies without IsTrimmable=true MSBuild metadata. -->

@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    struct AA
+    public struct AA
     {
         void Method1() { }
 
@@ -15,7 +15,7 @@ namespace Test
             (new AA[137])[101].Method1();
             throw new DivideByZeroException();
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

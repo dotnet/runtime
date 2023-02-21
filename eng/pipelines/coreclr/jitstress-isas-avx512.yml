@@ -32,12 +32,10 @@ extends:
           jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
           buildConfig: checked
           platforms:
-          # Current Linux and OSX x64 pipelines do not have machines which support AVX-512.
-          # - Linux_x64
-          # - OSX_x64
+          - linux_x64
           - windows_x64
           - windows_x86
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: jitstress-isas-avx512
 
@@ -46,7 +44,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: checked
           platforms:
-          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
           jobParameters:
             testGroup: jitstress-isas-avx512
 
@@ -55,9 +53,7 @@ extends:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
           platforms:
-          # Current Linux and OSX x64 pipelines do not have machines which support AVX-512.
-          # - Linux_x64
-          # - OSX_x64
+          - linux_x64
           - windows_x64
           - windows_x86
           helixQueueGroup: ci

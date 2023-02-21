@@ -81,25 +81,4 @@ public:
     // Close the map and flush any remaining data.
     static void Destroy();
 };
-
-// Generates a perfmap file for a native image by running crossgen.
-class NativeImagePerfMap : PerfMap
-{
-private:
-    const WCHAR *strOFFSET = W("OFFSET");
-
-    // Specify the address format since it's now possible for 'perf script' to output file offsets or RVAs.
-    bool m_EmitRVAs;
-
-    // Log a pre-compiled method to the map.
-    void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode, PEImageLayout *pLoadedLayout, const char *optimizationTier);
-
-public:
-    // Construct a new map for a native image.
-    NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath);
-
-    // Log method information for each module.
-    void LogDataForModule(Module * pModule);
-};
-
 #endif // PERFPID_H

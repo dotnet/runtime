@@ -1,18 +1,17 @@
 parameters:
   buildConfig: ''
-  archType: 'wasm'
-  osGroup: 'Browser'
   osSubgroup: ''
   container: ''
-  testGroup: ''
+  testBuildArgs: ''
   crossBuild: false
   readyToRun: false
   liveLibrariesBuildConfig: ''
   compositeBuildMode: false
   helixQueues: ''
-  stagedBuild: false
   displayNameArgs: ''
   runInUnloadableContext: false
+  nativeAotTest: false
+  runtimeFlavor: 'mono'
   runtimeVariant: 'monointerpreter'
   variables: {}
   pool: ''
@@ -27,8 +26,13 @@ parameters:
   shouldContinueOnError: false
 
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=${{ parameters.runtimeVariant }} /p:LibrariesConfiguration=${{ parameters.buildConfig }} -mono -ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper)
-    displayName: Build Tests
+  - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=${{ parameters.runtimeVariant }} ${{ parameters.testBuildArgs }} -mono os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci
+      displayName: Build Tests
+
+  - ${{ if ne(parameters.runtimeFlavor, 'mono') }}:
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ${{ parameters.archType }} $(buildConfigUpper) ${{ parameters.testBuildArgs }} -ci
+      displayName: Build Tests
 
 
   # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
@@ -48,10 +52,10 @@ steps:
 
     - ${{ if eq(parameters.archType, 'x64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} 
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }}
           displayName: "LLVM AOT compile CoreCLR tests"
       - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }} 
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }}
           displayName: "LLVM AOT compile CoreCLR tests"
     - ${{ if eq(parameters.archType, 'arm64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
@@ -101,6 +105,7 @@ steps:
         runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+        nativeAotTest: ${{ parameters.nativeAotTest }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the

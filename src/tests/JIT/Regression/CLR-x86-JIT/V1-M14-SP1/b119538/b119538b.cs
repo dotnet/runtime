@@ -13,7 +13,7 @@ class B
     public string t = "This is safe";
 }
 
-class Class1
+public class Class1
 {
     public static int Main()
     {

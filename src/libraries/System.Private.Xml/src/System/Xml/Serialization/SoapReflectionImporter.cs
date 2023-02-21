@@ -134,7 +134,7 @@ namespace System.Xml.Serialization
             return xmlMapping;
         }
 
-        private static Exception ReflectionException(string context, Exception e)
+        private static InvalidOperationException ReflectionException(string context, Exception e)
         {
             return new InvalidOperationException(SR.Format(SR.XmlReflectionError, context), e);
         }

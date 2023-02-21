@@ -964,7 +964,7 @@ namespace System.Xml.Serialization
         {
             if (value == null)
             {
-                throw new ArgumentNullException(SR.Format(SR.XmlMissingArrayType, CurrentTag()));
+                throw new ArgumentNullException(nameof(value), SR.Format(SR.XmlMissingArrayType, CurrentTag()));
             }
 
             if (value.Length == 0)
@@ -1548,7 +1548,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetArrayElementType")]
-        private object? ReadArray(string? typeName, string? typeNs)
+        private Array? ReadArray(string? typeName, string? typeNs)
         {
             SoapArrayInfo arrayInfo;
             Type? fallbackElementType = null;

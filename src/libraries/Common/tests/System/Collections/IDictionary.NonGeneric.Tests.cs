@@ -156,7 +156,7 @@ namespace System.Collections.Tests
                     IDictionary casted = ((IDictionary)enumerable);
                     if (casted.Count > 0)
                     {
-                        var keys = casted.Keys.GetEnumerator();
+                        IEnumerator keys = casted.Keys.GetEnumerator();
                         keys.MoveNext();
                         casted[keys.Current] = CreateTValue(12);
                         return true;
@@ -171,7 +171,7 @@ namespace System.Collections.Tests
                     IDictionary casted = ((IDictionary)enumerable);
                     if (casted.Count > 0)
                     {
-                        var keys = casted.Keys.GetEnumerator();
+                        IEnumerator keys = casted.Keys.GetEnumerator();
                         keys.MoveNext();
                         casted.Remove(keys.Current);
                         return true;
@@ -402,7 +402,7 @@ namespace System.Collections.Tests
                     keysEnum.MoveNext();
                     if (count > 0)
                     {
-                        var cur = keysEnum.Current;
+                        _ = keysEnum.Current;
                     }
                     keysEnum.Reset();
                 }
@@ -498,7 +498,7 @@ namespace System.Collections.Tests
                     valuesEnum.MoveNext();
                     if (count > 0)
                     {
-                        var cur = valuesEnum.Current;
+                        _ = valuesEnum.Current;
                     }
                     valuesEnum.Reset();
                 }

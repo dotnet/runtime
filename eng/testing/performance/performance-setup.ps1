@@ -3,7 +3,7 @@ Param(
     [string] $CoreRootDirectory,
     [string] $BaselineCoreRootDirectory,
     [string] $Architecture="x64",
-    [string] $Framework="net5.0",
+    [string] $Framework,
     [string] $CompilationMode="Tiered",
     [string] $Repository=$env:BUILD_REPOSITORY_NAME,
     [string] $Branch=$env:BUILD_SOURCEBRANCH,
@@ -162,14 +162,7 @@ if ($AndroidMono) {
     {
         mkdir $WorkItemDirectory
     }
-    if($Kind -ne "android_scenarios_net6") 
-    {
-        Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose
-    }
-        Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory -Verbose
-        Copy-Item -path "$SourceDirectory\MauiBlazorAndroidDefault.apk" $PayloadDirectory -Verbose
-        Copy-Item -path "$SourceDirectory\MauiAndroidPodcast.apk" $PayloadDirectory -Verbose
-
+    Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 

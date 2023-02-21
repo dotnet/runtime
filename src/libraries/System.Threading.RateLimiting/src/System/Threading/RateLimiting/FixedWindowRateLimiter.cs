@@ -209,7 +209,7 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private RateLimitLease CreateFailedWindowLease(int permitCount)
+        private FixedWindowLease CreateFailedWindowLease(int permitCount)
         {
             int replenishAmount = permitCount - _permitCount + _queueCount;
             // can't have 0 replenish window, that would mean it should be a successful lease

@@ -54,6 +54,6 @@ namespace System.Reflection.Runtime.Dispensers
         }
 
 
-        private static readonly DispenserPolicy s_dispenserPolicy = new DefaultDispenserPolicy();
+        private static readonly DefaultDispenserPolicy s_dispenserPolicy = new DefaultDispenserPolicy();
     }
 }

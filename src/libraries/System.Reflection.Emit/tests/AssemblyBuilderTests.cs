@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -442,5 +443,20 @@ namespace System.Reflection.Emit.Tests
         Assert.Empty(internalAssemblyBuilder.Location);
     }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ThrowsWhenDynamicCodeNotSupported()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", false.ToString());
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var assemblyName = new AssemblyName("TestName");
+                AssemblyBuilderAccess access = AssemblyBuilderAccess.Run;
+
+                Assert.Throws<PlatformNotSupportedException>(() => AssemblyBuilder.DefineDynamicAssembly(assemblyName, access));
+                Assert.Throws<PlatformNotSupportedException>(() => AssemblyBuilder.DefineDynamicAssembly(assemblyName, access, assemblyAttributes: null));
+            }, options);
+        }
     }
 }

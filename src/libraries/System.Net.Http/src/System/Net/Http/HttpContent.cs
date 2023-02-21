@@ -624,7 +624,7 @@ namespace System.Net.Http
             return true;
         }
 
-        private MemoryStream? CreateMemoryStream(long maxBufferSize, out Exception? error)
+        private LimitMemoryStream? CreateMemoryStream(long maxBufferSize, out Exception? error)
         {
             error = null;
 
@@ -832,7 +832,7 @@ namespace System.Net.Http
             return returnFunc(state);
         }
 
-        private static Exception CreateOverCapacityException(int maxBufferSize)
+        private static HttpRequestException CreateOverCapacityException(int maxBufferSize)
         {
             return new HttpRequestException(SR.Format(SR.net_http_content_buffersize_exceeded, maxBufferSize));
         }

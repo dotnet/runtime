@@ -40,11 +40,11 @@ Use this attribute on test methods to specify that this test may only be run on 
 
 When running tests by building a test project, tests that don't apply to the `TargetOS` are not run. For example, to run Linux-specific tests on a Linux box, use the following command line:
 ```sh
-dotnet build <csproj_file> /t:Test /p:TargetOS=Linux
+dotnet build <csproj_file> /t:Test /p:TargetOS=linux
 ```
 To run all Linux-compatible tests that are failing:
 ```sh
-dotnet build <csproj_file> /t:Test /p:TargetOS=Linux /p:WithCategories=failing
+dotnet build <csproj_file> /t:Test /p:TargetOS=linux /p:WithCategories=failing
 ```
 
 This attribute is defined [here](https://github.com/dotnet/arcade/blob/main/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/PlatformSpecificAttribute.cs).
@@ -232,7 +232,7 @@ dotnet build <csproj_file> /t:Test /p:TargetOS=windows
 ```
 - Run all outer loop tests acceptable on OS X that are currently associated with active issues:
 ```sh
-dotnet build <csproj_file> /t:Test /p:TargetOS=OSX /p:WithCategories="OuterLoop;failing""
+dotnet build <csproj_file> /t:Test /p:TargetOS=osx /p:WithCategories="OuterLoop;failing""
 ```
 
 ## SkipOnCoreClrAttribute

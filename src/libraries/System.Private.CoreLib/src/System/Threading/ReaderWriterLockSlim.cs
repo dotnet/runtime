@@ -238,24 +238,24 @@ namespace System.Threading
             public TimeoutTracker(TimeSpan timeout)
             {
                 long ltm = (long)timeout.TotalMilliseconds;
-                if (ltm < -1 || ltm > (long)int.MaxValue)
-                    throw new ArgumentOutOfRangeException(nameof(timeout));
+                ArgumentOutOfRangeException.ThrowIfLessThan(ltm, -1, nameof(timeout));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(ltm, int.MaxValue, nameof(timeout));
+
                 _total = (int)ltm;
                 if (_total != -1 && _total != 0)
+                {
                     _start = Environment.TickCount;
-                else
-                    _start = 0;
+                }
             }
 
             public TimeoutTracker(int millisecondsTimeout)
             {
-                if (millisecondsTimeout < -1)
-                    throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
+                ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
                 _total = millisecondsTimeout;
                 if (_total != -1 && _total != 0)
+                {
                     _start = Environment.TickCount;
-                else
-                    _start = 0;
+                }
             }
 
             public int RemainingMilliseconds
@@ -294,8 +294,7 @@ namespace System.Threading
 
         private bool TryEnterReadLockCore(TimeoutTracker timeout)
         {
-            if (_fDisposed)
-                throw new ObjectDisposedException(null);
+            ObjectDisposedException.ThrowIf(_fDisposed, this);
 
             ReaderWriterCount lrwc;
             int id = Environment.CurrentManagedThreadId;
@@ -441,8 +440,7 @@ namespace System.Threading
 
         private bool TryEnterWriteLockCore(TimeoutTracker timeout)
         {
-            if (_fDisposed)
-                throw new ObjectDisposedException(null);
+            ObjectDisposedException.ThrowIf(_fDisposed, this);
 
             int id = Environment.CurrentManagedThreadId;
             ReaderWriterCount? lrwc;
@@ -649,8 +647,7 @@ namespace System.Threading
 
         private bool TryEnterUpgradeableReadLockCore(TimeoutTracker timeout)
         {
-            if (_fDisposed)
-                throw new ObjectDisposedException(null);
+            ObjectDisposedException.ThrowIf(_fDisposed, this);
 
             int id = Environment.CurrentManagedThreadId;
             ReaderWriterCount? lrwc;

@@ -43,7 +43,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestParameterOverwrite (typeof (TestType));
 
+#if !NATIVEAOT
 			TestVarargsMethod (typeof (TestType), __arglist (0, 1, 2));
+#endif
 
 			WriteCapturedParameter.Test ();
 		}

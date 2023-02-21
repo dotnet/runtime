@@ -127,10 +127,8 @@ Running this little app should yield an output like the following:
 
 ```text
 Hello World from .NET 8.0.0-dev
-The location of System.Private.CoreLib.dll is '/path/to/your/app/bin/Debug/net7.0/win-x64/publish/System.Private.CoreLib.dll'
+The location of System.Private.CoreLib.dll is '/path/to/your/app/bin/Debug/net8.0/win-x64/publish/System.Private.CoreLib.dll'
 ```
-
-You might be wondering why it says `net7.0` if we are using an `8.0.0` SDK. At the time of writing, we are still preparing all that's needed to fully migrate development to .NET 8. In the not so distant future, the path should be `net8.0` as you might expect, and this doc will be updated accordingly.
 
 ## Making Changes and Consuming Updated Packages
 

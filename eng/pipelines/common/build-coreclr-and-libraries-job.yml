@@ -9,7 +9,6 @@ parameters:
   crossBuild: false
   timeoutInMinutes: ''
   signBinaries: false
-  stagedBuild: false
   variables: {}
   pool: ''
   platform: ''
@@ -28,7 +27,6 @@ jobs:
     crossBuild: ${{ parameters.crossBuild }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
     signBinaries: ${{ parameters.signBinaries }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
 

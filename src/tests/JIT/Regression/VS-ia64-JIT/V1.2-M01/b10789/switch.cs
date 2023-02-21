@@ -4,7 +4,7 @@
 
 using System;
 
-class foo
+public class foo
 {
 
     public static int Main()

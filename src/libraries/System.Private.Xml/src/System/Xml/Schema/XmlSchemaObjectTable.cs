@@ -190,8 +190,7 @@ namespace System.Xml.Schema
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+                ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
 
                 Debug.Assert(array.Length >= _size, "array is not big enough to hold all the items in the ICollection");
 
@@ -244,8 +243,7 @@ namespace System.Xml.Schema
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+                ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
 
                 Debug.Assert(array.Length >= _size, "array is not big enough to hold all the items in the ICollection");
 

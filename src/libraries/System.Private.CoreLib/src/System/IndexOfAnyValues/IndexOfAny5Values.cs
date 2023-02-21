@@ -6,6 +6,8 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#pragma warning disable 8500 // address of managed types
+
 namespace System.Buffers
 {
     internal sealed class IndexOfAny5Values<T, TImpl> : IndexOfAnyValues<T>
@@ -21,11 +23,19 @@ namespace System.Buffers
             (_e0, _e1, _e2, _e3, _e4) = (values[0], values[1], values[2], values[3], values[4]);
         }
 
-        internal override T[] GetValues()
+        internal override unsafe T[] GetValues()
         {
             TImpl e0 = _e0, e1 = _e1, e2 = _e2, e3 = _e3, e4 = _e4;
-            return new[] { Unsafe.As<TImpl, T>(ref e0), Unsafe.As<TImpl, T>(ref e1), Unsafe.As<TImpl, T>(ref e2), Unsafe.As<TImpl, T>(ref e3), Unsafe.As<TImpl, T>(ref e4) };
+            return new[] { *(T*)&e0, *(T*)&e1, *(T*)&e2, *(T*)&e3, *(T*)&e4 };
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal override unsafe bool ContainsCore(T value) =>
+            *(TImpl*)&value == _e0 ||
+            *(TImpl*)&value == _e1 ||
+            *(TImpl*)&value == _e2 ||
+            *(TImpl*)&value == _e3 ||
+            *(TImpl*)&value == _e4;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<T> span) =>

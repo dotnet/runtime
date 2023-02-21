@@ -429,14 +429,6 @@ mono_native_thread_os_id_get (void)
 	return (guint64)GetCurrentThreadId ();
 }
 
-gint32
-mono_native_thread_processor_id_get (void)
-{
-	PROCESSOR_NUMBER proc_num;
-	GetCurrentProcessorNumberEx (&proc_num);
-	return ((proc_num.Group << 6) | proc_num.Number);
-}
-
 gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 {

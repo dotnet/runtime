@@ -77,14 +77,8 @@ namespace System.Threading
         internal static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
             long timeoutMilliseconds = (long)timeout.TotalMilliseconds;
-            if (timeoutMilliseconds < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
-            if (timeoutMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeoutMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(timeoutMilliseconds, int.MaxValue, nameof(timeout));
             return (int)timeoutMilliseconds;
         }
 
@@ -103,10 +97,7 @@ namespace System.Threading
 
         public virtual bool WaitOne(int millisecondsTimeout)
         {
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             return WaitOneNoCheck(millisecondsTimeout);
         }
@@ -117,7 +108,8 @@ namespace System.Threading
 
             // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
             // to ensure that one instance is used in all places in this method
-            SafeWaitHandle waitHandle = _waitHandle ?? throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
+            SafeWaitHandle? waitHandle = _waitHandle;
+            ObjectDisposedException.ThrowIf(waitHandle is null, this);
 
             bool success = false;
             try
@@ -199,9 +191,8 @@ namespace System.Threading
                         throw new ArgumentNullException($"waitHandles[{i}]", SR.ArgumentNull_ArrayElement);
                     }
 
-                    SafeWaitHandle safeWaitHandle = waitHandle._waitHandle ??
-                        // Throw ObjectDisposedException for backward compatibility even though it is not representative of the issue
-                        throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
+                    SafeWaitHandle? safeWaitHandle = waitHandle._waitHandle;
+                    ObjectDisposedException.ThrowIf(safeWaitHandle is null, waitHandle); // throw ObjectDisposedException for backward compatibility even though it is not representative of the issue
 
                     lastSafeWaitHandle = safeWaitHandle;
                     lastSuccess = false;
@@ -255,10 +246,7 @@ namespace System.Threading
             {
                 throw new NotSupportedException(SR.NotSupported_MaxWaitHandles);
             }
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             SynchronizationContext? context = SynchronizationContext.Current;
             bool useWaitContext = context != null && context.IsWaitNotificationRequired();
@@ -355,20 +343,14 @@ namespace System.Threading
             ArgumentNullException.ThrowIfNull(toSignal);
             ArgumentNullException.ThrowIfNull(toWaitOn);
 
-            if (millisecondsTimeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
             // to ensure that one instance is used in all places in this method
             SafeWaitHandle? safeWaitHandleToSignal = toSignal._waitHandle;
             SafeWaitHandle? safeWaitHandleToWaitOn = toWaitOn._waitHandle;
-            if (safeWaitHandleToSignal == null || safeWaitHandleToWaitOn == null)
-            {
-                // Throw ObjectDisposedException for backward compatibility even though it is not be representative of the issue
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
-            }
+            ObjectDisposedException.ThrowIf(safeWaitHandleToSignal is null, toSignal); // throw ObjectDisposedException for backward compatibility even though it is not representative of the issue
+            ObjectDisposedException.ThrowIf(safeWaitHandleToWaitOn is null, toWaitOn);
 
             bool successSignal = false, successWait = false;
             try

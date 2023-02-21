@@ -136,8 +136,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentException(
                     SR.Cryptography_CertReq_IssuerRequiresPrivateKey,
                     nameof(issuerCertificate));
-            if (crlNumber < 0)
-                throw new ArgumentOutOfRangeException(nameof(crlNumber), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(crlNumber);
             if (nextUpdate <= thisUpdate)
                 throw new ArgumentException(SR.Cryptography_CRLBuilder_DatesReversed);
 
@@ -321,8 +320,7 @@ namespace System.Security.Cryptography.X509Certificates
             ArgumentNullException.ThrowIfNull(issuerName);
             ArgumentNullException.ThrowIfNull(generator);
 
-            if (crlNumber < 0)
-                throw new ArgumentOutOfRangeException(nameof(crlNumber), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(crlNumber);
             if (nextUpdate <= thisUpdate)
                 throw new ArgumentException(SR.Cryptography_CRLBuilder_DatesReversed);
 

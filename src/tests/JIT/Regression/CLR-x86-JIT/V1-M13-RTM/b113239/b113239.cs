@@ -134,7 +134,7 @@ public class B
 
 
 
-internal class Test_b113239
+public class Test_b113239
 {
     public static int Main()
     {

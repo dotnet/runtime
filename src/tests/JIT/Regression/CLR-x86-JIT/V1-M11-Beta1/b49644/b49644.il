@@ -9,7 +9,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly globals
+.assembly 'b49644'
 {
 }
 
@@ -81,7 +81,7 @@
 } 
 
 
-.class auto ansi glob
+.class public auto ansi glob
 {
   .field public static int32 s1
   .field public static int32 bob

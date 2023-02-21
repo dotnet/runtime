@@ -74,7 +74,7 @@ namespace UninitializedHighWord
     }
 
 
-    internal static class App
+    public static class App
     {
 
 
@@ -238,7 +238,7 @@ namespace UninitializedHighWord
         }
 
 
-        private static int Main()
+        public static int Main()
         {
             App.PrepareMethods();
 

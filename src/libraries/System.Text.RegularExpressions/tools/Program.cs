@@ -56,7 +56,7 @@ namespace GenerateRegexCasingTable
             if (generateTable)
             {
                 DataTable dataTable = new(equivalenceMap, equivalenceValues);
-                var fileName = "RegexCaseFolding.Data.cs";
+                string fileName = "RegexCaseEquivalences.Data.cs";
                 Console.WriteLine("Generating Regex case folding table...");
                 dataTable.GenerateDataTableWithPartitions(64, fileName);
                 Console.WriteLine($"Regex case folding table file was generated at: {Path.Combine(Directory.GetCurrentDirectory(), fileName)}");

@@ -33,6 +33,7 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 extern const std::string GetFileName(const std::string& fileName);
 extern const std::string GetDirectory(const std::string& fileName);
 extern std::string FormatString(const char* format, ...);
+extern std::string ConvertString(const WCHAR* str);
 extern std::string FormatGuid(const GUID* guid);
 
 class CrashInfo : public ICLRDataEnumMemoryRegionsCallback, public ICLRDataLoggingCallback,
@@ -58,7 +59,8 @@ private:
     vm_map_t m_task;                                // the mach task for the process
 #else
     bool m_canUseProcVmReadSyscall;
-    int m_fd;                                       // /proc/<pid>/mem handle
+    int m_fdMem;                                    // /proc/<pid>/mem handle
+    int m_fdPagemap;                                // /proc/<pid>/pagemap handle
 #endif
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
     uint64_t m_runtimeBaseAddress;
@@ -142,7 +144,6 @@ private:
 #ifdef __APPLE__
     bool EnumerateMemoryRegions();
     void InitializeOtherMappings();
-    bool TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool* found);
     void VisitModule(MachOModule& module);
     void VisitSegment(MachOModule& module, const segment_command_64& segment);
     void VisitSection(MachOModule& module, const section_64& section);
@@ -159,7 +160,8 @@ private:
     void AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);
     int InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
-    bool ValidRegion(const MemoryRegion& region);
+    bool PageCanBeRead(uint64_t start);
+    bool PageMappedToPhysicalMemory(uint64_t start);
     void Trace(const char* format, ...);
     void TraceVerbose(const char* format, ...);
 };

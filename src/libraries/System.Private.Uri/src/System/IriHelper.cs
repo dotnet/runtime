@@ -184,7 +184,7 @@ namespace System
 
                         foreach (byte b in encodedBytes)
                         {
-                            UriHelper.EscapeAsciiChar(b, ref dest);
+                            UriHelper.PercentEncodeByte(b, ref dest);
                         }
                     }
 

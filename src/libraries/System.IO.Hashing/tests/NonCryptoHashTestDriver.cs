@@ -297,7 +297,7 @@ namespace System.IO.Hashing.Tests
 
         protected static void AssertEqualHashNumber(string hex, uint hash, bool littleEndian = false)
         {
-            if (littleEndian == BitConverter.IsLittleEndian)
+            if (littleEndian)
             {
                 hash = BinaryPrimitives.ReverseEndianness(hash);
             }
@@ -306,7 +306,7 @@ namespace System.IO.Hashing.Tests
 
         protected static void AssertEqualHashNumber(string hex, ulong hash, bool littleEndian = false)
         {
-            if (littleEndian == BitConverter.IsLittleEndian)
+            if (littleEndian)
             {
                 hash = BinaryPrimitives.ReverseEndianness(hash);
             }

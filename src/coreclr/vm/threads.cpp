@@ -2526,7 +2526,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
             CONTRACT_VIOLATION(ModeViolation);
 
             // Clear the handle and leave the lock.
-            // We do not have to to DisablePreemptiveGC here, because
+            // We do not have to DisablePreemptiveGC here, because
             // we just want to put NULL into a handle.
             StoreObjectInHandle(m_StrongHndToExposedObject, NULL);
 

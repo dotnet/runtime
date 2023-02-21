@@ -30,7 +30,7 @@
 #define DEFINE_CUSTOM_DUPCHECK      2
 #define SET_CUSTOM                  3
 
-#if defined(_DEBUG) && defined(_TRACE_REMAPS)
+#if defined(_DEBUG)
 #define LOGGING
 #endif
 #include <log.h>
@@ -159,9 +159,6 @@ RegMeta::ResolveTypeRef(
     TypeRefRec * pTypeRefRec;
     WCHAR        wzNameSpace[_MAX_PATH];
     CMiniMdRW *  pMiniMd = NULL;
-
-    LOG((LOGMD, "{%08x} RegMeta::ResolveTypeRef(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        this, tr, riid, ppIScope, ptd));
 
     LOCKREAD();
 

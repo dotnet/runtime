@@ -34,7 +34,6 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/metadata/mono-config.h>
-#include <mono/metadata/mono-config-internals.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
@@ -136,30 +135,30 @@ mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *p
 void
 mono_set_assemblies_path (const char* path)
 {
-	char **splitted, **dest;
+	char **split, **dest;
 
-	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
+	split = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
 	if (assemblies_path)
 		g_strfreev (assemblies_path);
-	assemblies_path = dest = splitted;
-	while (*splitted) {
-		char *tmp = *splitted;
+	assemblies_path = dest = split;
+	while (*split) {
+		char *tmp = *split;
 		if (*tmp)
 			*dest++ = mono_path_canonicalize (tmp);
 		g_free (tmp);
-		splitted++;
+		split++;
 	}
-	*dest = *splitted;
+	*dest = *split;
 
 	if (g_hasenv ("MONO_DEBUG"))
 		return;
 
-	splitted = assemblies_path;
-	while (*splitted) {
-		if (**splitted && !g_file_test (*splitted, G_FILE_TEST_IS_DIR))
-			g_warning ("'%s' in MONO_PATH doesn't exist or has wrong permissions.", *splitted);
+	split = assemblies_path;
+	while (*split) {
+		if (**split && !g_file_test (*split, G_FILE_TEST_IS_DIR))
+			g_warning ("'%s' in MONO_PATH doesn't exist or has wrong permissions.", *split);
 
-		splitted++;
+		split++;
 	}
 }
 
@@ -641,7 +640,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 	if (aname->name == NULL || !(aname->flags & ASSEMBLYREF_RETARGETABLE_FLAG))
 		return aname;
 
-	// Retargeting was mainly done on .NET Framework or Portable Class Libraries, remap to version 4.0.0.0 
+	// Retargeting was mainly done on .NET Framework or Portable Class Libraries, remap to version 4.0.0.0
 	// so the .NET Framework compatibility facades like mscorlib.dll can kick in
 	memcpy (dest_aname, aname, sizeof(MonoAssemblyName));
 	dest_aname->major = 4;
@@ -721,6 +720,7 @@ search_bundle_for_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *anam
 	if (!image && !g_str_has_suffix (aname->name, ".dll")) {
 		char *name = g_strdup_printf ("%s.dll", aname->name);
 		image = mono_assembly_open_from_bundle (alc, name, &status, aname->culture);
+		g_free (name);
 	}
 	if (image) {
 		mono_assembly_request_prepare_load (&req, alc);
@@ -1450,6 +1450,25 @@ absolute_dir (const gchar *filename)
 	return res;
 }
 
+static gboolean
+bundled_assembly_match (const char *bundled_name, const char *name)
+{
+#ifndef ENABLE_WEBCIL
+	return strcmp (bundled_name, name) == 0;
+#else
+	if (strcmp (bundled_name, name) == 0)
+		return TRUE;
+	/* if they want a .dll and we have the matching .webcil, return it */
+	if (g_str_has_suffix (bundled_name, ".webcil") && g_str_has_suffix (name, ".dll")) {
+		size_t bprefix = strlen (bundled_name) - strlen (".webcil");
+		size_t nprefix = strlen (name) - strlen (".dll");
+		if (bprefix == nprefix && strncmp (bundled_name, name, bprefix) == 0)
+			return TRUE;
+	}
+	return FALSE;
+#endif
+}
+
 static MonoImage *
 open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, gboolean is_satellite)
 {
@@ -1459,7 +1478,7 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	MonoImage *image = NULL;
 	char *name = is_satellite ? g_strdup (filename) : g_path_get_basename (filename);
 	for (int i = 0; !image && bundles [i]; ++i) {
-		if (strcmp (bundles [i]->name, name) == 0) {
+		if (bundled_assembly_match (bundles[i]->name, name)) {
 			// Since bundled images don't exist on disk, don't give them a legit filename
 			image = mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, FALSE, name, NULL);
 			break;
@@ -1480,7 +1499,7 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 	char *name = g_strdup (filename);
 
 	for (int i = 0; !image && satellite_bundles [i]; ++i) {
-		if (strcmp (satellite_bundles [i]->name, name) == 0 && strcmp (satellite_bundles [i]->culture, culture) == 0) {
+		if (bundled_assembly_match (satellite_bundles[i]->name, name) && strcmp (satellite_bundles [i]->culture, culture) == 0) {
 			char *bundle_name = g_strconcat (culture, "/", name, (const char *)NULL);
 			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, FALSE, bundle_name, NULL);
 			g_free (bundle_name);
@@ -2024,6 +2043,8 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	if (m_image_is_module_handle (image))
 		mono_image_fixup_vtable (image);
 #endif
+
+	*status = MONO_IMAGE_OK;
 
 	mono_assembly_invoke_load_hook_internal (req->alc, ass);
 
@@ -2709,6 +2730,14 @@ mono_assembly_load_corlib (void)
 		corlib = mono_assembly_request_open (corlib_name, &req, &status);
 		g_free (corlib_name);
 	}
+#ifdef ENABLE_WEBCIL
+	if (!corlib) {
+		/* Maybe its in a bundle */
+		char *corlib_name = g_strdup_printf ("%s.webcil", MONO_ASSEMBLY_CORLIB_NAME);
+		corlib = mono_assembly_request_open (corlib_name, &req, &status);
+		g_free (corlib_name);
+	}
+#endif
 	g_assert (corlib);
 
 	// exit the process if we weren't able to load corlib

@@ -2,11 +2,15 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <UnicodeUcdVersion>14.0</UnicodeUcdVersion>
+    <TargetFramework>net6.0</TargetFramework>
+    <UnicodeUcdVersion>15.0</UnicodeUcdVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="*.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\tests\TestUtilities.Unicode\**\*.cs" />
   </ItemGroup>
 
@@ -41,7 +45,7 @@
       <LogicalName>emoji-data.txt</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />

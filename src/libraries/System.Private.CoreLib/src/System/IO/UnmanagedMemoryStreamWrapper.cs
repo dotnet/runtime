@@ -141,8 +141,7 @@ namespace System.IO
         {
             ArgumentNullException.ThrowIfNull(destination);
 
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             if (!CanRead && !CanWrite)
                 ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);

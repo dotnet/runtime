@@ -6,6 +6,10 @@ Scenarios:
   2. include paths are specified
       Will only include paths specified in the list.
   3. exclude + include:
+     a. `--combined` is passed:
+      Will use the include paths, then use exclude paths on that set, and if that has any changes
+      then a variable will be set to true.
+     b. `--combined` is not passed (default):
       1st we evaluate changes for all paths except ones in excluded list. If we can not find
       any applicable changes like that, then we evaluate changes for included paths
       if any of these two finds changes, then a variable will be set to true.
@@ -33,6 +37,7 @@ usage()
   echo "  --difftarget <value>       SHA or branch to diff against. (i.e: HEAD^1, origin/main, 0f4hd36, etc.)"
   echo "  --excludepaths <value>     Escaped list of paths to exclude from diff separated by '+'. (i.e: 'src/libraries/*+'src/installer/*')"
   echo "  --includepaths <value>     Escaped list of paths to include on diff separated by '+'. (i.e: 'src/libraries/System.Private.CoreLib/*')"
+  echo "  --combined                 Uses both exclude, and include paths"
   echo "  --subset                   Subset name for which we're evaluating in order to include it in logs"
   echo "  --azurevariable            Name of azure devops variable to create if change meets filter criteria"
   echo ""
@@ -59,6 +64,7 @@ include_paths=()
 subset_name=''
 azure_variable=''
 diff_target=''
+combined=false
 
 while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
@@ -80,6 +86,9 @@ while [[ $# > 0 ]]; do
       IFS='+' read -r -a tmp <<< $2
       include_paths+=(${tmp[@]})
       shift
+      ;;
+    -combined)
+      combined=true
       ;;
     -subset)
       subset_name=$2
@@ -138,7 +147,7 @@ probePaths() {
 
   if [[ ${#exclude_paths[@]} -gt 0 ]]; then
     echo ""
-    echo "******* Probing $_subset exclude paths *******";
+    echo "******* Collecting $_subset exclude paths *******";
     for _path in "${exclude_paths[@]}"; do
       echo "$_path"
       if [[ -z "$exclude_path_string" ]]; then
@@ -147,16 +156,11 @@ probePaths() {
         exclude_path_string="$exclude_path_string :!$_path"
       fi
     done
-
-    if ! probePathsWithExitCode $exclude_path_string; then
-      found_applying_changes=true
-      printMatchedPaths $exclude_path_string
-    fi
   fi
 
-  if [[ $found_applying_changes != true && ${#include_paths[@]} -gt 0 ]]; then
+  if [[ ${#include_paths[@]} -gt 0 ]]; then
     echo ""
-    echo "******* Probing $_subset include paths *******";
+    echo "******* Collecting $_subset include paths *******";
     for _path in "${include_paths[@]}"; do
       echo "$_path"
       if [[ -z "$include_path_string" ]]; then
@@ -165,10 +169,34 @@ probePaths() {
         include_path_string="$include_path_string :$_path"
       fi
     done
+  fi
 
-    if ! probePathsWithExitCode $include_path_string; then
+  if [[ "$combined" == "true" ]]; then
+    # Try both include, and exclude
+    # finds all the changes in include files, then excludes the exclude files
+    local combined_path_string="$include_path_string $exclude_path_string"
+    echo "******* Probing $_subset combined paths *******";
+    if ! probePathsWithExitCode $combined_path_string; then
       found_applying_changes=true
-      printMatchedPaths $include_path_string
+      printMatchedPaths $combined_path_string
+    fi
+  else
+    # First try exclude
+    if [[ ${#exclude_paths[@]} -gt 0 ]]; then
+      echo "******* Probing $_subset exclude paths *******";
+      if ! probePathsWithExitCode $exclude_path_string; then
+        found_applying_changes=true
+        printMatchedPaths $exclude_path_string
+      fi
+    fi
+
+    # if no changes found, then try include
+    if [[ $found_applying_changes != true && ${#include_paths[@]} -gt 0 ]]; then
+      echo "******* Probing $_subset include paths *******";
+      if ! probePathsWithExitCode $include_path_string; then
+        found_applying_changes=true
+        printMatchedPaths $include_path_string
+      fi
     fi
   fi
 

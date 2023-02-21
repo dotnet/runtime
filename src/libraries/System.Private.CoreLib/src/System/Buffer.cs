@@ -42,12 +42,9 @@ namespace System
                 }
             }
 
-            if (srcOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(srcOffset), SR.ArgumentOutOfRange_MustBeNonNegInt32);
-            if (dstOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(dstOffset), SR.ArgumentOutOfRange_MustBeNonNegInt32);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_MustBeNonNegInt32);
+            ArgumentOutOfRangeException.ThrowIfNegative(srcOffset);
+            ArgumentOutOfRangeException.ThrowIfNegative(dstOffset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             nuint uCount = (nuint)count;
             nuint uSrcOffset = (nuint)srcOffset;

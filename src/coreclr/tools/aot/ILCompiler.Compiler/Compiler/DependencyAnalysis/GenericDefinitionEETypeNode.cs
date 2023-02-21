@@ -24,8 +24,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencyList = null;
 
-            // Ask the metadata manager if we have any dependencies due to reflectability.
-            factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
+            // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
 
             return dependencyList;
         }
@@ -43,8 +43,6 @@ namespace ILCompiler.DependencyAnalysis
             EETypeRareFlags rareFlags = 0;
 
             uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
-            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
-                rareFlags |= EETypeRareFlags.HasCctorFlag;
             if (_type.IsByRefLike)
                 rareFlags |= EETypeRareFlags.IsByRefLikeFlag;
 
@@ -66,6 +64,10 @@ namespace ILCompiler.DependencyAnalysis
             OutputTypeManagerIndirection(factory, ref dataBuilder);
             OutputWritableData(factory, ref dataBuilder);
             OutputOptionalFields(factory, ref dataBuilder);
+
+            // Generic composition only meaningful if there's variance
+            if ((flags & (uint)EETypeFlags.GenericVarianceFlag) != 0)
+                OutputGenericInstantiationDetails(factory, ref dataBuilder);
 
             return dataBuilder.ToObjectData();
         }

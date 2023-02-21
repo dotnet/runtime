@@ -15,7 +15,7 @@ namespace System.Threading.RateLimiting
     {
         private int _permitCount;
         private int _queueCount;
-        private int[] _requestsPerSegment;
+        private readonly int[] _requestsPerSegment;
         private int _currentSegmentIndex;
         private long _lastReplenishmentTick;
         private long? _idleSince;

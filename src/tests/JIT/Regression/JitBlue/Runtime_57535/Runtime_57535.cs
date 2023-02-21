@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Runtime_57535
+public class Runtime_57535
 {
     static long z;
 

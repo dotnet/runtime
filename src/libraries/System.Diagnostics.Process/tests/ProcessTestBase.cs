@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTestBase : FileCleanupTestBase
     {
-        protected readonly int WaitInMS = 30 * 1000 * PlatformDetection.SlowRuntimeTimeoutModifier;
+        protected static readonly int WaitInMS = 30 * 1000 * PlatformDetection.SlowRuntimeTimeoutModifier;
         protected Process _process;
         protected readonly List<Process> _processes = new List<Process>();
 

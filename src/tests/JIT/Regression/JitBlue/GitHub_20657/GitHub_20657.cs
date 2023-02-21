@@ -8,9 +8,9 @@ using System.Numerics;
 
 namespace GitHub_20657
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        public static int Main()
         {
             var v1 = new Vector4();
             var v2 = Oops(v1);

@@ -168,7 +168,7 @@ namespace System.Reflection
         public bool IsAssembly => TokenType == MetadataTokenType.Assembly;
         public bool IsGenericPar => TokenType == MetadataTokenType.GenericPar;
 
-        public override string ToString() => string.Format(CultureInfo.InvariantCulture, "0x{0:x8}", Value);
+        public override string ToString() => string.Create(CultureInfo.InvariantCulture, stackalloc char[64], $"0x{Value:x8}");
     }
 
     internal unsafe struct MetadataEnumResult
@@ -556,9 +556,9 @@ namespace System.Reflection
 
     internal sealed class MetadataException : Exception
     {
-        private int m_hr;
+        private readonly int m_hr;
         internal MetadataException(int hr) { m_hr = hr; }
 
-        public override string ToString() => $"MetadataException HResult = {m_hr:x}.";
+        public override string ToString() => $"{nameof(MetadataException)} HResult = {m_hr:x}.";
     }
 }

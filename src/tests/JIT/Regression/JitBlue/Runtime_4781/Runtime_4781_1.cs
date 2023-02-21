@@ -37,11 +37,11 @@ class Foo : IDisposable
     public void Dispose() => GC.SuppressFinalize(this);
 }
 
-class Runtime_4781_1
+public class Runtime_4781_1
 {
     static Bar s_bar = new Bar();
 
-    static int Main()
+    public static int Main()
     {
         var f = new Foo(s_bar);
         return Observer.failed ? -1 : 100;

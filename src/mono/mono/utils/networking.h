@@ -76,16 +76,6 @@ typedef union {
 	struct sockaddr addr;
 } MonoSocketAddress;
 
-typedef struct {
-	int family;
-	union {
-		struct in_addr v4;
-#ifdef HAVE_STRUCT_SOCKADDR_IN6
-		struct in6_addr v6;
-#endif
-	} addr;
-} MonoAddress;
-
 /* This only supports IPV4 / IPV6 and tcp */
 MONO_COMPONENT_API int mono_get_address_info (const char *hostname, int port, int flags, MonoAddressInfo **res);
 
@@ -96,9 +86,6 @@ MONO_COMPONENT_API void mono_socket_address_init (MonoSocketAddress *sa, socklen
 #ifndef HAVE_INET_PTON
 int inet_pton (int family, const char *address, void *inaddrp);
 #endif
-
-void mono_address_init (MonoAddress *out_addr, int family, void *in_addr);
-int mono_address_size_for_family (int family);
 
 MONO_COMPONENT_API void mono_networking_init (void);
 void mono_networking_shutdown (void);

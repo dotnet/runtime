@@ -28,7 +28,7 @@ namespace Runtime_49489
 
         }
 
-        static int Main()
+        public static int Main()
         {
             return Caller();
         }

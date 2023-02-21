@@ -1023,7 +1023,7 @@ namespace System.Speech.Recognition
 
         private void AppendSml(XmlDocument document, int i, NumberFormatInfo nfo)
         {
-            XmlNode root = document.DocumentElement;
+            XmlElement root = document.DocumentElement;
             XmlElement alternateNode = document.CreateElement("alternate");
             root.AppendChild(alternateNode);
 

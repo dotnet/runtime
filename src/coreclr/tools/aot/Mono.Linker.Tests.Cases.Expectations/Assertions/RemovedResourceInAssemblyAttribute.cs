@@ -13,11 +13,8 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public RemovedResourceInAssemblyAttribute (string assemblyFileName, string resourceName)
 		{
-			if (string.IsNullOrEmpty (assemblyFileName))
-				throw new ArgumentNullException (nameof (assemblyFileName));
-
-			if (string.IsNullOrEmpty (resourceName))
-				throw new ArgumentNullException (nameof (resourceName));
+			ArgumentException.ThrowIfNullOrEmpty (assemblyFileName);
+			ArgumentException.ThrowIfNullOrEmpty (resourceName);
 		}
 	}
 }

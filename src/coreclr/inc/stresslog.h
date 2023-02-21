@@ -379,8 +379,9 @@ public:
         Volatile<ThreadStressLog*>  logs;       // the list of logs for every thread.
         uint64_t      tickFrequency;            // number of ticks per second
         uint64_t      startTimeStamp;           // start time from when tick counter started
-        uint64_t      threadsWithNoLog;         // threads that didn't get a log
-        uint64_t      reserved[15];             // for future expansion
+        uint32_t      threadsWithNoLog;         // threads that didn't get a log
+        uint32_t      reserved1;
+        uint64_t      reserved2[15];             // for future expansion
         ModuleDesc    modules[MAX_MODULES];     // descriptor of the modules images
         uint8_t       moduleImage[64*1024*1024];// copy of the module images described by modules field
     };

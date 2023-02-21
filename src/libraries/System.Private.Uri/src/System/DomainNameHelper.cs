@@ -50,11 +50,6 @@ namespace System
         private const string Localhost = "localhost";
         private const string Loopback = "loopback";
 
-        // TODO https://github.com/dotnet/runtime/issues/28230: Replace once Ascii is available
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsAscii(ReadOnlySpan<char> chars) =>
-            chars.IndexOfAnyExceptInRange((char)0, (char)127) < 0;
-
         internal static string ParseCanonicalName(string str, int start, int end, ref bool loopback)
         {
             // Do a quick search for the colon or uppercase letters
@@ -151,7 +146,7 @@ namespace System
                 if (iri)
                 {
                     ReadOnlySpan<char> label = hostname.Slice(0, labelLength);
-                    if (!IsAscii(label))
+                    if (!Ascii.IsValid(label))
                     {
                         // s_iriInvalidAsciiChars confirmed everything in [0, 7F] range.
                         // Chars in [80, 9F] range are also invalid, check for them now.
@@ -200,7 +195,7 @@ namespace System
         {
             // check if only ascii chars
             // special case since idnmapping will not lowercase if only ascii present
-            if (IsAscii(hostname))
+            if (Ascii.IsValid(hostname))
             {
                 // just lowercase for ascii
                 return hostname.ToLowerInvariant();
@@ -247,7 +242,7 @@ namespace System
                     label = label.Slice(0, dotIndex);
                 }
 
-                if (!IsAscii(label))
+                if (!Ascii.IsValid(label))
                 {
                     try
                     {

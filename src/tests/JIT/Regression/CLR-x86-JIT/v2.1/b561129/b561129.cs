@@ -77,7 +77,7 @@ public class ProgressConsumerBuilder
 
 public class MainApp
 {
-    private static int Main()
+    public static int Main()
     {
         try
         {

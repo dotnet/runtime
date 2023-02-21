@@ -143,4 +143,42 @@ namespace Microsoft.Interop
     /// the forwarder marshaller.
     /// </remarks>
     public sealed record MissingSupportCollectionMarshallingInfo(CountInfo CountInfo, MarshallingInfo ElementMarshallingInfo) : MissingSupportMarshallingInfo;
+
+
+    /// <summary>
+    /// Marshal an exception based on the same rules as the built-in COM system based on the unmanaged type of the native return marshaller.
+    /// </summary>
+    public sealed record ComExceptionMarshalling : MarshallingInfo
+    {
+        internal static MarshallingInfo CreateSpecificMarshallingInfo(ManagedTypeInfo unmanagedReturnType)
+        {
+            return unmanagedReturnType switch
+            {
+                SpecialTypeInfo(_, _, SpecialType.System_Void) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.SwallowExceptionMarshaller}", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_Int32) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionHResultMarshaller}<int>", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_UInt32) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionHResultMarshaller}<uint>", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_Single) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionNaNMarshaller}<float>", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_Double) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionNaNMarshaller}<double>", unmanagedReturnType),
+                _ => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionDefaultMarshaller}<{unmanagedReturnType.FullTypeName}>", unmanagedReturnType),
+            };
+
+            static NativeMarshallingAttributeInfo CreateWellKnownComExceptionMarshallingData(string marshallerName, ManagedTypeInfo unmanagedType)
+            {
+                ManagedTypeInfo marshallerTypeInfo = new ReferenceTypeInfo(marshallerName, marshallerName);
+                return new NativeMarshallingAttributeInfo(marshallerTypeInfo,
+                    new CustomTypeMarshallers(ImmutableDictionary<MarshalMode, CustomTypeMarshallerData>.Empty.Add(
+                        MarshalMode.UnmanagedToManagedOut,
+                        new CustomTypeMarshallerData(
+                            marshallerTypeInfo,
+                            unmanagedType,
+                            HasState: false,
+                            MarshallerShape.ToUnmanaged,
+                            IsStrictlyBlittable: true,
+                            BufferElementType: null,
+                            CollectionElementType: null,
+                            CollectionElementMarshallingInfo: null
+                            ))));
+            }
+        }
+    }
 }

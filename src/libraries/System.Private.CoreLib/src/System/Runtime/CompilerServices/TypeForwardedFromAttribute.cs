@@ -8,9 +8,7 @@ namespace System.Runtime.CompilerServices
     {
         public TypeForwardedFromAttribute(string assemblyFullName)
         {
-            if (string.IsNullOrEmpty(assemblyFullName))
-                throw new ArgumentNullException(nameof(assemblyFullName));
-
+            ArgumentException.ThrowIfNullOrEmpty(assemblyFullName);
             AssemblyFullName = assemblyFullName;
         }
 

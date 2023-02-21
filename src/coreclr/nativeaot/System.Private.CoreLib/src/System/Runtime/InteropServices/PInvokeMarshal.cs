@@ -10,6 +10,8 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
+using System.Text;
+using System.Buffers;
 
 namespace System.Runtime.InteropServices
 {
@@ -457,8 +459,7 @@ namespace System.Runtime.InteropServices
                 return;
 
             // Desktop CLR crash (AV at runtime) - we can do better in .NET Native
-            if (managedArray == null)
-                throw new ArgumentNullException(nameof(managedArray));
+            ArgumentNullException.ThrowIfNull(managedArray);
 
             // COMPAT: Use the managed array length as the maximum length of native buffer
             // This obviously doesn't make sense but desktop CLR does that
@@ -502,17 +503,7 @@ namespace System.Runtime.InteropServices
         internal static unsafe byte* StringToAnsiString(char* pManaged, int lenUnicode, byte* pNative, bool terminateWithNull,
             bool bestFit, bool throwOnUnmappableChar)
         {
-            bool allAscii = true;
-
-            for (int i = 0; i < lenUnicode; i++)
-            {
-                if (pManaged[i] >= 128)
-                {
-                    allAscii = false;
-                    break;
-                }
-            }
-
+            bool allAscii = Ascii.IsValid(new ReadOnlySpan<char>(pManaged, lenUnicode));
             int length;
 
             if (allAscii) // If all ASCII, map one UNICODE character to one ANSI char
@@ -530,17 +521,8 @@ namespace System.Runtime.InteropServices
             }
             if (allAscii) // ASCII conversion
             {
-                byte* pDst = pNative;
-                char* pSrc = pManaged;
-
-                while (lenUnicode > 0)
-                {
-                    unchecked
-                    {
-                        *pDst++ = (byte)(*pSrc++);
-                        lenUnicode--;
-                    }
-                }
+                OperationStatus conversionStatus = Ascii.FromUtf16(new ReadOnlySpan<char>(pManaged, length), new Span<byte>(pNative, length), out _);
+                Debug.Assert(conversionStatus == OperationStatus.Done);
             }
             else // Let OS convert
             {
@@ -566,26 +548,9 @@ namespace System.Runtime.InteropServices
         /// </summary>
         private static unsafe bool CalculateStringLength(byte* pchBuffer, out int ansiBufferLen, out int unicodeBufferLen)
         {
-            ansiBufferLen = 0;
-
-            bool allAscii = true;
-
-            {
-                byte* p = pchBuffer;
-                byte b = *p++;
-
-                while (b != 0)
-                {
-                    if (b >= 128)
-                    {
-                        allAscii = false;
-                    }
-
-                    ansiBufferLen++;
-
-                    b = *p++;
-                }
-            }
+            ReadOnlySpan<byte> span = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pchBuffer);
+            ansiBufferLen = span.Length;
+            bool allAscii = Ascii.IsValid(span);
 
             if (allAscii)
             {

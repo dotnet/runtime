@@ -371,7 +371,7 @@ namespace System.Drawing.Printing
             get { return _printRange; }
             set
             {
-                if (!Enum.IsDefined(typeof(PrintRange), value))
+                if (!Enum.IsDefined(value))
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(PrintRange));
 
                 _printRange = value;

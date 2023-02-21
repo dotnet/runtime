@@ -496,10 +496,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, value);
             }
@@ -514,10 +511,7 @@ namespace System.Net.Sockets
 
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendBuffer, value);
             }
@@ -531,10 +525,7 @@ namespace System.Net.Sockets
             }
             set
             {
-                if (value < -1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
                 if (value == -1)
                 {
                     value = 0;
@@ -553,10 +544,7 @@ namespace System.Net.Sockets
 
             set
             {
-                if (value < -1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
                 if (value == -1)
                 {
                     value = 0;
@@ -612,10 +600,8 @@ namespace System.Net.Sockets
             set
             {
                 // Valid values are from 0 to 255 since TTL is really just a byte value on the wire.
-                if (value < 0 || value > 255)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 255);
 
                 if (_addressFamily == AddressFamily.InterNetwork)
                 {
@@ -958,10 +944,7 @@ namespace System.Net.Sockets
 
         public void Close(int timeout)
         {
-            if (timeout < -1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeout, -1);
 
             _closeTimeout = timeout;
 
@@ -2245,16 +2228,10 @@ namespace System.Net.Sockets
                 return -1;
             }
 
-            if (timeout < TimeSpan.Zero)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeout, TimeSpan.Zero);
             long totalMicroseconds = (long)timeout.TotalMicroseconds;
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMicroseconds, int.MaxValue, nameof(timeout));
 
-            if (totalMicroseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
             return (int)totalMicroseconds;
         }
 
@@ -2538,10 +2515,7 @@ namespace System.Net.Sockets
         // There's no direct equivalent of this in the Task APIs, so we mimic it here.
         private async Task<(Socket s, byte[] buffer, int bytesReceived)> AcceptAndReceiveHelperAsync(Socket? acceptSocket, int receiveSize)
         {
-            if (receiveSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(receiveSize);
 
             Socket s = await AcceptAsync(acceptSocket).ConfigureAwait(false);
 

@@ -14,7 +14,7 @@
 .assembly Runtime_39424 {}
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit Runtime_39424
+.class public auto ansi beforefieldinit Runtime_39424
        extends [System.Runtime]System.Object
 {
   .class sequential ansi sealed nested private beforefieldinit Container

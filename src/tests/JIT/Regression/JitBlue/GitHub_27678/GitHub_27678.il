@@ -77,7 +77,7 @@
   .field public valuetype EStruct d
 } // end of class FStruct
 
-.class private auto ansi beforefieldinit GitHub_27678
+.class public auto ansi beforefieldinit GitHub_27678
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static bool  JumpTarget(int64 a,

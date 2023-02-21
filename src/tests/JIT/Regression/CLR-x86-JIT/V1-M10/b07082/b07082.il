@@ -10,8 +10,8 @@
 .assembly b07082
 {
 }
-.class ILGEN_939796994 {
-.method static int32 main() {
+.class public ILGEN_939796994 {
+.method public static int32 main() {
 .entrypoint
 .maxstack	2
 

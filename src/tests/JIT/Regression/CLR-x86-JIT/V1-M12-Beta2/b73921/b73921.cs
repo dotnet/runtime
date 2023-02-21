@@ -19,7 +19,7 @@ namespace Test
             catch (Exception) { }
             return 103;
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

@@ -98,7 +98,7 @@ ep_event_source_init (EventPipeEventSource *event_source)
 
 	EP_ASSERT (event_source != NULL);
 
-	event_source->provider = ep_create_provider (ep_provider_get_default_name_utf8 (), NULL, NULL, NULL);
+	event_source->provider = ep_create_provider (ep_provider_get_default_name_utf8 (), NULL, NULL);
 	ep_raise_error_if_nok (event_source->provider != NULL);
 
 	event_source->provider_name = ep_provider_get_default_name_utf8 ();

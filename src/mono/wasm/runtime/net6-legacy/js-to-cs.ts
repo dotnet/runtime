@@ -5,7 +5,7 @@ import { isThenable } from "../cancelable-promise";
 import cwraps from "../cwraps";
 import { js_owned_gc_handle_symbol, assert_not_disposed, cs_owned_js_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, mono_wasm_release_cs_owned_object, teardown_managed_proxy, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
 import { Module } from "../imports";
-import { wrap_error_root } from "../invoke-js";
+import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { setI32_unchecked, setU32_unchecked, setF64, setB32 } from "../memory";
 import { mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../roots";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "../strings";
@@ -274,6 +274,7 @@ export function mono_wasm_typed_array_to_array_ref(js_handle: JSHandle, is_excep
 
         // returns pointer to C# array
         js_typed_array_to_array_root(js_obj, resultRoot);
+        wrap_no_error_root(is_exception);
     } catch (exc) {
         wrap_error_root(is_exception, String(exc), resultRoot);
     } finally {

@@ -9,7 +9,7 @@
 }
 .assembly 'b71722' {}
 .assembly extern xunit.core {}
-.class ILGEN_0xee5a2e00 {
+.class public ILGEN_0xee5a2e00 {
 .method static unsigned int64  Method_0x28374f71(native int Arg_0x0) {
 .maxstack	5
 .locals (unsigned int32 LOCAL_0x0)
@@ -31,7 +31,7 @@ Branch_0x2:
 Branch_0x3:
  ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

@@ -11,11 +11,9 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
 	public class KeptAssemblyAttribute : KeptAttribute
 	{
-
 		public KeptAssemblyAttribute (string fileName)
 		{
-			if (string.IsNullOrEmpty (fileName))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (fileName));
+			ArgumentException.ThrowIfNullOrEmpty (fileName);
 		}
 	}
 }

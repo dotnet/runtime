@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using ILCompiler.Logging;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
+using Internal.TypeSystem;
 
 #nullable enable
 
@@ -14,6 +15,8 @@ namespace ILCompiler.Dataflow
     {
         private readonly Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
         private readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;
+        private readonly Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
+        private readonly Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisGenericInstantiationAccessPattern> GenericInstantiations;
         private readonly ValueSetLattice<SingleValue> Lattice;
         private readonly Logger _logger;
 
@@ -21,6 +24,8 @@ namespace ILCompiler.Dataflow
         {
             AssignmentPatterns = new Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern>();
             MethodCallPatterns = new Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern>();
+            ReflectionAccessPatterns = new Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisReflectionAccessPattern>();
+            GenericInstantiations = new Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisGenericInstantiationAccessPattern>();
             Lattice = lattice;
             _logger = logger;
         }
@@ -53,12 +58,34 @@ namespace ILCompiler.Dataflow
             MethodCallPatterns[pattern.Origin] = pattern.Merge(Lattice, existingPattern);
         }
 
+        public void Add(TrimAnalysisReflectionAccessPattern pattern)
+        {
+            ReflectionAccessPatterns.TryAdd((pattern.Origin, pattern.Entity), pattern);
+
+            // No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
+            // and there's only one way to "access" a generic instantiation.
+        }
+
+        public void Add(TrimAnalysisGenericInstantiationAccessPattern pattern)
+        {
+            GenericInstantiations.TryAdd((pattern.Origin, pattern.Entity), pattern);
+
+            // No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
+            // and there's only one way to "access" a generic instantiation.
+        }
+
         public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker)
         {
             foreach (var pattern in AssignmentPatterns.Values)
                 pattern.MarkAndProduceDiagnostics(reflectionMarker, _logger);
 
             foreach (var pattern in MethodCallPatterns.Values)
+                pattern.MarkAndProduceDiagnostics(reflectionMarker, _logger);
+
+            foreach (var pattern in ReflectionAccessPatterns.Values)
+                pattern.MarkAndProduceDiagnostics(reflectionMarker, _logger);
+
+            foreach (var pattern in GenericInstantiations.Values)
                 pattern.MarkAndProduceDiagnostics(reflectionMarker, _logger);
         }
     }

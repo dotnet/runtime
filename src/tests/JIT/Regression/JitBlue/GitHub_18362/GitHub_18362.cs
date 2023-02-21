@@ -12,7 +12,7 @@ struct S
     public double d2;
 };
 
-static class GitHub_18362
+public static class GitHub_18362
 {
     private static bool AreSameInfinity(double d1, double d2)
     {
@@ -96,7 +96,7 @@ static class GitHub_18362
     }
 
     [MethodImpl(MethodImplOptions.NoOptimization)]
-    static int Main()
+    public static int Main()
     {
         try
         {

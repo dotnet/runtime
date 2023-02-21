@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal class bug1
+public class bug1
 {
     public struct VT
     {

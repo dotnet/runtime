@@ -161,7 +161,6 @@ struct JitInterfaceCallbacks
     bool (* canAccessFamily)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType);
     bool (* isRIDClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, void** ppIndirection);
-    void* (* getFieldAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, void** ppIndirection);
     bool (* getReadonlyStaticFieldValue)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
     CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, void** ppIndirection);
@@ -169,7 +168,6 @@ struct JitInterfaceCallbacks
     InfoAccessType (* constructStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned int metaTok, void** ppValue);
     InfoAccessType (* emptyStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppValue);
     uint32_t (* getFieldThreadLocalStoreID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, void** ppIndirection);
-    void (* addActiveDependency)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo);
     CORINFO_METHOD_HANDLE (* GetDelegateCtor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE methHnd, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE targetMethodHnd, DelegateCtorArgs* pCtorData);
     void (* MethodCompileComplete)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE methHnd);
     bool (* getTailCallHelpers)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
@@ -1651,16 +1649,6 @@ public:
     return temp;
 }
 
-    virtual void* getFieldAddress(
-          CORINFO_FIELD_HANDLE field,
-          void** ppIndirection)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    void* temp = _callbacks->getFieldAddress(_thisHandle, &pException, field, ppIndirection);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
     virtual bool getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
@@ -1731,15 +1719,6 @@ public:
     uint32_t temp = _callbacks->getFieldThreadLocalStoreID(_thisHandle, &pException, field, ppIndirection);
     if (pException != nullptr) throw pException;
     return temp;
-}
-
-    virtual void addActiveDependency(
-          CORINFO_MODULE_HANDLE moduleFrom,
-          CORINFO_MODULE_HANDLE moduleTo)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->addActiveDependency(_thisHandle, &pException, moduleFrom, moduleTo);
-    if (pException != nullptr) throw pException;
 }
 
     virtual CORINFO_METHOD_HANDLE GetDelegateCtor(

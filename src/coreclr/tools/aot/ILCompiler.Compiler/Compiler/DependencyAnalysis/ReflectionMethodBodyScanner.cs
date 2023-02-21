@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
             StringBuilder typeName = new StringBuilder();
             StringBuilder typeNamespace = new StringBuilder();
             string containingTypeName = null;
-            while (i < name.Length && (char.IsLetterOrDigit(name[i]) || name[i] == '.' || name[i] == '`' || name[i] == '+'))
+            while (i < name.Length && (char.IsLetterOrDigit(name[i]) || name[i] == '.' || name[i] == '_' || name[i] == '`' || name[i] == '+'))
             {
                 if (name[i] == '.')
                 {
@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Consume assembly name
             StringBuilder assemblyName = new StringBuilder();
-            while (i < name.Length && (char.IsLetterOrDigit(name[i]) || name[i] == '.'))
+            while (i < name.Length && (char.IsLetterOrDigit(name[i]) || name[i] == '.' || name[i] == '_'))
             {
                 assemblyName.Append(name[i]);
                 i++;

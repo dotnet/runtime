@@ -245,7 +245,7 @@ namespace Microsoft.Extensions.Configuration.Xml
             return name;
         }
 
-        private static IDictionary<string, string?> ProvideConfiguration(XmlConfigurationElement? root)
+        private static Dictionary<string, string?> ProvideConfiguration(XmlConfigurationElement? root)
         {
             Dictionary<string, string?> configuration = new(StringComparer.OrdinalIgnoreCase);
 
@@ -352,7 +352,7 @@ namespace Microsoft.Extensions.Configuration.Xml
                 var hasName = !string.IsNullOrEmpty(child.Name);
                 if (hasName)
                 {
-                    prefix.Push(child.Name);
+                    prefix.Push(child.Name!);
                 }
 
                 // Add index to the prefix

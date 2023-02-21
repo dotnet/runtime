@@ -617,7 +617,7 @@ namespace System.Runtime.Serialization.DataContracts
             /// in serialization/deserialization we base the decision whether to Demand SerializationFormatter permission on this value and hasDataContract
             /// </SecurityNote>
             private bool _hasDataContract;
-            private bool _hasExtensionData;
+            private readonly bool _hasExtensionData;
 
             internal XmlDictionaryString[]? ContractNamespaces;
             internal XmlDictionaryString[]? MemberNames;

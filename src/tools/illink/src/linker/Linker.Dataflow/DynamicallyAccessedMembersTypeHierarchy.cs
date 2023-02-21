@@ -65,7 +65,7 @@ namespace Mono.Linker.Dataflow
 			}
 
 			// For the purposes of the DynamicallyAccessedMembers type hierarchies
-			// we consider interfaces of marked types to be also "marked" in that 
+			// we consider interfaces of marked types to be also "marked" in that
 			// their annotations will be applied to the type regardless if later on
 			// we decide to remove the interface. This is to keep the complexity of the implementation
 			// relatively low. In the future it could be possibly optimized.

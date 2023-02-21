@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.assembly Conv_ovf_u4_Bug {}
+.assembly 'conv_ovf_i4' {}
 .assembly extern System.Console { auto }
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern mscorlib { auto }
 
 
+.class public auto ansi Test_conv_ovf_i4 extends [mscorlib] System.Object {
 .method static public int32 main() il managed
 {
 .entrypoint
@@ -67,4 +68,5 @@ leave.s EXIT
 EXIT:
 ldloc result
 ret
+}
 }

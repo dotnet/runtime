@@ -586,7 +586,7 @@ public struct BB
 
 public class App
 {
-    static int Main()
+    public static int Main()
     {
         try
         {

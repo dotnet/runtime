@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         {
             RunTest(new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
-                        .WithTfm(Constants.Tfm.Net6)
+                        .WithTfm("net6.0")
                         .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
                     .WithWorkingDirectory(SharedState.DotNetCurrentHive.BinPath),
                 multiLevelLookup: true)

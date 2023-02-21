@@ -114,6 +114,17 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int GetHashCode(object? o);
 
+        /// <summary>
+        /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
+        /// returned.
+        /// </summary>
+        /// <remarks>
+        /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
+        /// code to the object if it does not already have one.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int TryGetHashCode(object o);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern new bool Equals(object? o1, object? o2);
 
@@ -314,8 +325,7 @@ namespace System.Runtime.CompilerServices
             if (type is not RuntimeType rt)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
-            if (size < 0)
-                throw new ArgumentOutOfRangeException(nameof(size));
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             return AllocateTypeAssociatedMemory(new QCallTypeHandle(ref rt), (uint)size);
         }
@@ -371,7 +381,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-#pragma warning disable 0414
+#pragma warning disable 0414, IDE0044
         // Type that represents a managed view of the unmanaged GCFrame
         // data structure in coreclr. The type layouts between the two should match.
         internal unsafe ref struct GCFrameRegistration
@@ -391,7 +401,7 @@ namespace System.Runtime.CompilerServices
                 m_MaybeInterior = areByRefs ? 1 : 0;
             }
         }
-#pragma warning restore 0414
+#pragma warning restore 0414, IDE0044
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration);

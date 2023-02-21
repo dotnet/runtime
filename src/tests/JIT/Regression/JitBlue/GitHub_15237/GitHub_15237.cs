@@ -7,7 +7,7 @@ namespace UnsafeTesting
 {
     public class Program
     {
-        static int Main()
+        public static int Main()
         {
             float UnsafeAs = LengthSquaredUnsafeAs();
             Console.WriteLine($"Unsafe.As           : {UnsafeAs}");

@@ -41,7 +41,7 @@ namespace GcHole1
     }
 
 
-    internal static class App
+    public static class App
     {
         private static bool CheckString(string element)
         {
@@ -50,7 +50,7 @@ namespace GcHole1
         }
 
 
-        private static int Main()
+        public static int Main()
         {
             string result;
             IEnumerable<string> sequence;

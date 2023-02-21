@@ -10,7 +10,7 @@ namespace GitHub_21854
 {
     public class test
     {
-        static int Main()
+        public static int Main()
         {
             try {
                 var unused = new object[] { Vector<int>.Zero };

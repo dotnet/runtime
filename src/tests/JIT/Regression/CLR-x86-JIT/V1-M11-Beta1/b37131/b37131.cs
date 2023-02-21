@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         int[] an = null;
         object obj = null;
@@ -31,7 +31,7 @@ namespace Test
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

@@ -25,9 +25,8 @@ namespace BasicEventSourceTests
     public partial class TestsManifestGeneration
     {
         // Specifies whether the process is elevated or not.
-        private static bool IsProcessElevated => Environment.IsPrivilegedProcess;
         private static bool IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported =>
-            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+            PlatformDetection.IsPrivilegedProcess && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
 
         /// ETW only works with elevated process
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]

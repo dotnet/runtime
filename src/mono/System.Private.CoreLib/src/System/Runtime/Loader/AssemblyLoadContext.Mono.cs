@@ -24,10 +24,18 @@ namespace System.Runtime.Loader
         [DynamicDependency(nameof(_nativeAssemblyLoadContext))]
         private IntPtr InitializeAssemblyLoadContext(IntPtr thisHandlePtr, bool representsTPALoadContext, bool isCollectible)
         {
+            if (isCollectible)
+                KeepLoaderAllocator();
             using (SafeStringMarshal handle = RuntimeMarshal.MarshalString(Name))
             {
                 return InternalInitializeNativeALC(thisHandlePtr, handle.Value, representsTPALoadContext, isCollectible);
             }
+        }
+
+        // Keep the type alive since instances are created by the runtime
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(LoaderAllocator))]
+        private static void KeepLoaderAllocator()
+        {
         }
 
         [MethodImplAttribute (MethodImplOptions.InternalCall)]

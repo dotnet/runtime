@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public class TarReader_Tests : TarTestsBase
+    public partial class TarReader_Tests : TarTestsBase
     {
         [Fact]
         public void TarReader_NullArchiveStream() => Assert.Throws<ArgumentNullException>(() => new TarReader(archiveStream: null));
@@ -38,6 +38,8 @@ namespace System.Formats.Tar.Tests
                 }
             }
 
+            Assert.Throws<ObjectDisposedException>(() => ms.ReadByte());
+
             Assert.True(dataStreams.Any());
             foreach (Stream ds in dataStreams)
             {
@@ -61,6 +63,8 @@ namespace System.Formats.Tar.Tests
                     }
                 }
             }
+
+            ms.ReadByte(); // Should not throw
 
             Assert.True(dataStreams.Any());
             foreach (Stream ds in dataStreams)

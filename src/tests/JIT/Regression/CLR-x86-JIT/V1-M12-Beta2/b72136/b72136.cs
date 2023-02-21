@@ -17,9 +17,9 @@ namespace Test
         public void Method1(float[] param5) { }
     }
 
-    class App
+    public class App
     {
-        static int Main()
+        public static int Main()
         {
             try
             {

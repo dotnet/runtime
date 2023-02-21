@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.X86
@@ -476,7 +477,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_shuffle_ps (__m128 a,  __m128 b, unsigned int control)
         ///   SHUFPS xmm, xmm/m128, imm8
         /// </summary>
-        public static Vector128<float> Shuffle(Vector128<float> left, Vector128<float> right, byte control) => Shuffle(left, right, control);
+        public static Vector128<float> Shuffle(Vector128<float> left, Vector128<float> right, [ConstantExpected] byte control) => Shuffle(left, right, control);
 
         /// <summary>
         /// __m128 _mm_sqrt_ps (__m128 a)

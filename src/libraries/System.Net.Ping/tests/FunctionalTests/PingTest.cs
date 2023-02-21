@@ -793,13 +793,13 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(IPStatus.TimedOut, reply.Status);
         }
 
-        private static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
+        private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
-        [OuterLoop] // Depends on sudo
+        [OuterLoop("Requires sudo access")]
         public void SendPingWithIPAddressAndTimeoutAndBufferAndPingOptions_ElevatedUnix(AddressFamily addressFamily)
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress(addressFamily);

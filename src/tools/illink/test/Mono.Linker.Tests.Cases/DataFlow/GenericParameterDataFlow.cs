@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -318,6 +321,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			new InterfaceImplementationTypeWithInstantiationOverSelfOnBase ();
 			new InterfaceImplementationTypeWithOpenGenericOnBase<TestType> ();
 			new InterfaceImplementationTypeWithOpenGenericOnBaseWithRequirements<TestType> ();
+
+			RecursiveGenericWithInterfacesRequirement.Test ();
 		}
 
 		interface IGenericInterfaceTypeWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
@@ -343,6 +348,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class InterfaceImplementationTypeWithOpenGenericOnBaseWithRequirements<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
 			: IGenericInterfaceTypeWithRequirements<T>
 		{
+		}
+
+		class RecursiveGenericWithInterfacesRequirement
+		{
+			interface IFace<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] T>
+			{
+			}
+
+			class TestType : IFace<TestType>
+			{
+			}
+
+			public static void Test ()
+			{
+				var a = typeof (IFace<string>);
+				var t = new TestType ();
+			}
 		}
 
 		static void TestTypeGenericRequirementsOnMembers ()

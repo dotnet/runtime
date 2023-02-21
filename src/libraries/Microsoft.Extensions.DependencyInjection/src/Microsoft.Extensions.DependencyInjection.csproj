@@ -1,13 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.1;netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>false</ILEmitBackendSaveAssemblies>
     <!-- Type 'Microsoft.Extensions.DependencyInjection.ServiceCollection' has been forwarded down.-->
     <NoWarn>$(NoWarn);CP0001</NoWarn>
     <IsPackable>true</IsPackable>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</PackageDescription>
   </PropertyGroup>
 

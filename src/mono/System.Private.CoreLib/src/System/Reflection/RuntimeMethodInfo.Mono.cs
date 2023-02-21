@@ -340,7 +340,7 @@ namespace System.Reflection
 
             // Have to clone because GetParametersInfo icall returns cached value
             var dest = new ParameterInfo[src.Length];
-            Array.FastCopy(src, 0, dest, 0, src.Length);
+            Array.FastCopy(ObjectHandleOnStack.Create (ref src), 0, ObjectHandleOnStack.Create (ref dest), 0, src.Length);
             return dest;
         }
 
@@ -476,7 +476,7 @@ namespace System.Reflection
             return attrs;
         }
 
-        private Attribute GetDllImportAttribute()
+        private DllImportAttribute GetDllImportAttribute()
         {
             string entryPoint;
             string? dllName;
@@ -555,7 +555,7 @@ namespace System.Reflection
             return attrsData;
         }
 
-        private CustomAttributeData? GetDllImportAttributeData()
+        private RuntimeCustomAttributeData? GetDllImportAttributeData()
         {
             if ((Attributes & MethodAttributes.PinvokeImpl) == 0)
                 return null;
@@ -640,7 +640,7 @@ namespace System.Reflection
             if (hasUserType)
             {
                 if (RuntimeFeature.IsDynamicCodeSupported)
-                    return new MethodOnTypeBuilderInst(this, methodInstantiation);
+                    return new MethodOnTypeBuilderInstantiation(this, methodInstantiation);
 
                 throw new NotSupportedException("User types are not supported under full aot");
             }

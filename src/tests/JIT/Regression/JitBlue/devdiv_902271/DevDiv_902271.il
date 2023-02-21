@@ -11,7 +11,7 @@
 .assembly 'DevDiv_902271' {}
 .assembly extern xunit.core {}
 
-.class Repro
+.class public Repro
 {
     .field private static class [mscorlib]System.Func`2<int32,int32> d1
     .field private static class [mscorlib]System.Func`6<int32,int32,int32,int32,int32,int32> d2
@@ -62,7 +62,7 @@
         ret
     } 
 
-    .method private hidebysig static int32  Main() cil managed
+    .method public hidebysig static int32  Main() cil managed
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -37,7 +36,7 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
-            WriteCore(writer, value, jsonTypeInfo);
+            jsonTypeInfo.Serialize(writer, value);
         }
 
         /// <summary>
@@ -72,7 +71,7 @@ namespace System.Text.Json
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
-            WriteCoreAsObject(writer, value, jsonTypeInfo);
+            jsonTypeInfo.SerializeAsObject(writer, value);
         }
 
         /// <summary>
@@ -84,10 +83,6 @@ namespace System.Text.Json
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="writer"/> or <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
-        /// </exception>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
@@ -101,7 +96,34 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            WriteCore(writer, value, jsonTypeInfo);
+            jsonTypeInfo.Serialize(writer, value);
+        }
+
+        /// <summary>
+        /// Writes one JSON value (including objects or arrays) to the provided writer.
+        /// </summary>
+        /// <param name="writer">The writer to write.</param>
+        /// <param name="value">The value to convert and write.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="writer"/> or <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidCastException">
+        /// <paramref name="value"/> does not match the type of <paramref name="jsonTypeInfo"/>.
+        /// </exception>
+        public static void Serialize(Utf8JsonWriter writer, object? value, JsonTypeInfo jsonTypeInfo)
+        {
+            if (writer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            jsonTypeInfo.SerializeAsObject(writer, value);
         }
 
         /// <summary>
@@ -138,7 +160,7 @@ namespace System.Text.Json
 
             ValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);
-            WriteCoreAsObject(writer, value, jsonTypeInfo);
+            jsonTypeInfo.SerializeAsObject(writer, value);
         }
     }
 }

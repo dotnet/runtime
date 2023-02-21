@@ -26,8 +26,7 @@ namespace System.Text
 
         internal unsafe void ReplaceBufferInternal(char* newBuffer, int newLength)
         {
-            if (newLength > m_MaxCapacity)
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_Capacity);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(newLength, m_MaxCapacity, "capacity");
 
             if (newLength > m_ChunkChars.Length)
             {
@@ -42,8 +41,7 @@ namespace System.Text
 
         internal void ReplaceBufferUtf8Internal(ReadOnlySpan<byte> source)
         {
-            if (source.Length > m_MaxCapacity)
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_Capacity);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(source.Length, m_MaxCapacity, "capacity");
 
             int numChars = Encoding.UTF8.GetCharCount(source);
             if (numChars > m_ChunkChars.Length)
@@ -58,8 +56,7 @@ namespace System.Text
 
         internal unsafe void ReplaceBufferAnsiInternal(sbyte* newBuffer, int newLength)
         {
-            if (newLength > m_MaxCapacity)
-                throw new ArgumentOutOfRangeException("capacity", SR.ArgumentOutOfRange_Capacity);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(newLength, m_MaxCapacity, "capacity");
 
             if (newLength > m_ChunkChars.Length)
             {

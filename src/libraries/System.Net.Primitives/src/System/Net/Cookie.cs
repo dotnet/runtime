@@ -688,10 +688,7 @@ namespace System.Net
             }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 m_version = value;
                 if (value > 0 && m_cookieVariant < CookieVariant.Rfc2109)
                 {
@@ -702,9 +699,7 @@ namespace System.Net
 
         public override bool Equals([NotNullWhen(true)] object? comparand)
         {
-            Cookie? other = comparand as Cookie;
-
-            return other != null
+            return comparand is Cookie other
                     && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase)
                     && string.Equals(Value, other.Value, StringComparison.Ordinal)
                     && string.Equals(Path, other.Path, StringComparison.Ordinal)
@@ -714,7 +709,12 @@ namespace System.Net
 
         public override int GetHashCode()
         {
-            return (Name + "=" + Value + ";" + Path + "; " + Domain + "; " + Version).GetHashCode();
+            return HashCode.Combine(
+                StringComparer.OrdinalIgnoreCase.GetHashCode(Name),
+                StringComparer.Ordinal.GetHashCode(Value),
+                StringComparer.Ordinal.GetHashCode(Path),
+                StringComparer.OrdinalIgnoreCase.GetHashCode(Domain),
+                Version);
         }
 
         public override string ToString()

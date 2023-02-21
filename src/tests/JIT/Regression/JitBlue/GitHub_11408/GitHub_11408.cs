@@ -9,7 +9,7 @@ class GitHub_11408
     const int Pass = 100;
     const int Fail = -1;
 
-    unsafe class Program
+    public unsafe class Program
     {
         static int save = 7;
 

@@ -31,6 +31,8 @@ mono_change_log_level (int new_log_level);
 void
 mono_wasm_save_thread_context (void);
 
+bool
+mono_wasm_is_breakpoint_and_stepping_disabled (void);
 #endif
 
 void
@@ -70,4 +72,7 @@ mono_de_frame_async_id (DbgEngineStackFrame *frame);
 
 bool
 mono_debugger_agent_receive_and_process_command (void);
+
+bool
+mono_begin_breakpoint_processing (void *the_tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal);
 #endif

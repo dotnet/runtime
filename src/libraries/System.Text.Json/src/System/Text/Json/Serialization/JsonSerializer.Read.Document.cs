@@ -35,8 +35,9 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(document));
             }
 
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
-            return ReadDocument<TValue>(document, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -70,7 +71,8 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
-            return ReadDocument<object?>(document, jsonTypeInfo);
+            ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -90,10 +92,6 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         /// <typeparamref name="TValue" /> is not compatible with the JSON.
         /// </exception>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
-        /// </exception>
         public static TValue? Deserialize<TValue>(this JsonDocument document, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             if (document is null)
@@ -106,7 +104,36 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return ReadDocument<TValue>(document, jsonTypeInfo);
+            ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
+            return ReadFromSpan(utf8Json, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Converts the <see cref="JsonDocument"/> representing a single JSON value into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <param name="document">The <see cref="JsonDocument"/> to convert.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="document"/> is <see langword="null"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        public static object? Deserialize(this JsonDocument document, JsonTypeInfo jsonTypeInfo)
+        {
+            if (document is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(document));
+            }
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
@@ -161,13 +188,8 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
-            return ReadDocument<object?>(document, jsonTypeInfo);
-        }
-
-        private static TValue? ReadDocument<TValue>(JsonDocument document, JsonTypeInfo jsonTypeInfo)
-        {
             ReadOnlySpan<byte> utf8Json = document.GetRootRawValue().Span;
-            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpanAsObject(utf8Json, jsonTypeInfo);
         }
     }
 }

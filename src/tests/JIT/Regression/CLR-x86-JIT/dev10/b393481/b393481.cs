@@ -13,9 +13,9 @@ namespace TestAnonymousTypes
         public int Zip;
     }
 
-    internal class Program
+    public class Program
     {
-        private static int Main()
+        public static int Main()
         {
             Customer c = new Customer { Name = "Sree", Address = "something somethwere", Zip = 98007 };
 

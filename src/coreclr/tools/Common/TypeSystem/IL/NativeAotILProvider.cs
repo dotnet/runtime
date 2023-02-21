@@ -58,12 +58,6 @@ namespace Internal.IL
                             return UnsafeIntrinsics.EmitIL(method);
                     }
                     break;
-                case "MemoryMarshal":
-                    {
-                        if (owningType.Namespace == "System.Runtime.InteropServices")
-                            return MemoryMarshalIntrinsics.EmitIL(method);
-                    }
-                    break;
                 case "Volatile":
                     {
                         if (owningType.Namespace == "System.Threading")

@@ -29,6 +29,24 @@ sgen_vtable_get_descriptor (GCVTable vtable)
 	return (SgenDescriptor)vtable->gc_descr;
 }
 
+static inline gboolean
+sgen_vtable_has_class_obj (GCVTable vtable)
+{
+	MonoGCHandle *handle = vtable->loader_alloc;
+	return handle != NULL;
+}
+
+static inline GCObject*
+sgen_vtable_get_class_obj (GCVTable vtable)
+{
+	MonoGCHandle *handle = vtable->loader_alloc;
+	if (handle)
+		/* This could return NULL during unloading */
+		return (GCObject*)mono_gchandle_get_target_internal (handle);
+	else
+		return NULL;
+}
+
 typedef struct _SgenClientThreadInfo SgenClientThreadInfo;
 struct _SgenClientThreadInfo {
 	MonoThreadInfo info;

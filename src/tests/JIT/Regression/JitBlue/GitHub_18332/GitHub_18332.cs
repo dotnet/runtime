@@ -11,7 +11,7 @@ internal class Foo : IDisposable
     }
 }
 
-class GitHub_18332
+public class GitHub_18332
 {
     // In Aargh there is a finally with two distinct exit paths.
     // Finally cloning may choose the non-fall through ("wibble") exit

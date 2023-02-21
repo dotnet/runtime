@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace N
 {
-    class C
+    public class C
     {
         // Simple search loop: should move the "return true" out of the loop
         static bool Simple(int[] values)

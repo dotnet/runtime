@@ -2373,10 +2373,9 @@ namespace System.Linq.Expressions.Tests
             yield return typeof(Int64Enum);
             yield return typeof(UInt64Enum);
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 yield return NonCSharpTypes.CharEnumType;
-                yield return NonCSharpTypes.BoolEnumType;
             }
         }
 

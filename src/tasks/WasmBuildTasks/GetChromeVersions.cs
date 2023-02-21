@@ -22,7 +22,7 @@ public class GetChromeVersions : MBU.Task
     private const string s_allJsonUrl = "http://omahaproxy.appspot.com/all.json";
     private const string s_snapshotBaseUrl = $"https://storage.googleapis.com/chromium-browser-snapshots";
     private const int s_versionCheckThresholdDays = 3;
-    private const int s_numBranchPositionsToTry = 30;
+    private const int s_numBranchPositionsToTry = 50;
     private static readonly HttpClient s_httpClient = new();
 
     public string Channel { get; set; } = "stable";
@@ -103,7 +103,8 @@ public class GetChromeVersions : MBU.Task
 
         throw new LogAsErrorException($"Could not find a chrome snapshot folder under {baseUrl}, " +
                                         $"for branch positions {version.branch_base_position} to " +
-                                        $"{branchPosition}, for version {version.version}.");
+                                        $"{branchPosition}, for version {version.version}. " +
+                                        "A fixed version+url can be set in eng/testing/ProvisioningVersions.props .");
     }
 
     private async Task<ChromeVersionSpec> GetChromeVersionAsync()

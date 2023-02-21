@@ -523,13 +523,13 @@ namespace System.Globalization
 
             internal bool SetArgumentNullFailure(string argumentName)
             {
-                if (!_throwOnFailure)
+                if (_throwOnFailure)
                 {
-                    return false;
+                    Debug.Assert(argumentName != null);
+                    ArgumentNullException.Throw(argumentName);
                 }
 
-                Debug.Assert(argumentName != null);
-                throw new ArgumentNullException(argumentName, SR.ArgumentNull_String);
+                return false;
             }
 
             internal bool SetOverflowFailure()

@@ -3216,7 +3216,7 @@ check_gmethod (gpointer key, gpointer value, gpointer data)
 static void
 free_generic_inst (MonoGenericInst *ginst)
 {
-	/* The ginst itself is allocated from the image set mempool */
+	/* The ginst itself is allocated from the mem manager */
 	for (guint i = 0; i < ginst->type_argc; ++i)
 		mono_metadata_free_type (ginst->type_argv [i]);
 }
@@ -3224,7 +3224,7 @@ free_generic_inst (MonoGenericInst *ginst)
 static void
 free_generic_class (MonoGenericClass *gclass)
 {
-	/* The gclass itself is allocated from the image set mempool */
+	/* The gclass itself is allocated from the mem manager */
 	if (gclass->cached_class && m_class_get_interface_id (gclass->cached_class))
 		mono_unload_interface_id (gclass->cached_class);
 }
@@ -3269,9 +3269,11 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 
 	if (!mm->gsignature_cache)
 		mm->gsignature_cache = g_hash_table_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature);
+	// FIXME: The lookup is done on the newly allocated sig so it always fails
 	res = (MonoInflatedMethodSignature *)g_hash_table_lookup (mm->gsignature_cache, &helper);
 	if (!res) {
 		res = mono_mem_manager_alloc0 (mm, sizeof (MonoInflatedMethodSignature));
+		// FIXME: sig is an inflated signature not owned by the mem manager
 		res->sig = sig;
 		res->context.class_inst = context->class_inst;
 		res->context.method_inst = context->method_inst;
@@ -3867,6 +3869,9 @@ mono_metadata_get_shared_type (MonoType *type)
 	switch (type->type){
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
+		if (m_class_get_mem_manager (type->data.klass)->collectible)
+			/* These can be unloaded, so references to them shouldn't be shared */
+			return NULL;
 		if (type == m_class_get_byval_arg (type->data.klass))
 			return type;
 		if (type == m_class_get_this_arg (type->data.klass))

@@ -54,7 +54,7 @@ namespace System.ComponentModel
             IServiceProvider? provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type objectType,
             Type[]? argTypes,
-            object[]? args)
+            object?[]? args)
         {
             if (_parent != null)
             {

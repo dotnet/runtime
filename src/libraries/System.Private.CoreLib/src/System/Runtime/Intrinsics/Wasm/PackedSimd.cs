@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -87,123 +88,123 @@ namespace System.Runtime.Intrinsics.Wasm
         ///   i8x16.extract_lane_s
         /// </summary>
         [Intrinsic]
-        public static int    ExtractLane(Vector128<sbyte>  value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx16
+        public static int    ExtractLane(Vector128<sbyte>  value, [ConstantExpected(Max = (byte)(15))] byte index) => ExtractLane(value, index);    // takes ImmLaneIdx16
         /// <summary>
         ///   i8x16.extract_lane_u
         /// </summary>
         [Intrinsic]
-        public static uint   ExtractLane(Vector128<byte>   value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx16
+        public static uint   ExtractLane(Vector128<byte>   value, [ConstantExpected(Max = (byte)(15))] byte index) => ExtractLane(value, index);    // takes ImmLaneIdx16
         /// <summary>
         ///   i16x8.extract_lane_s
         /// </summary>
         [Intrinsic]
-        public static int    ExtractLane(Vector128<short>  value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx8
+        public static int    ExtractLane(Vector128<short>  value, [ConstantExpected(Max = (byte)(7))] byte index) => ExtractLane(value, index);    // takes ImmLaneIdx8
         /// <summary>
         ///   i16x8.extract_lane_u
         /// </summary>
         [Intrinsic]
-        public static uint   ExtractLane(Vector128<ushort> value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx8
+        public static uint   ExtractLane(Vector128<ushort> value, [ConstantExpected(Max = (byte)(7))] byte index) => ExtractLane(value, index);    // takes ImmLaneIdx8
         /// <summary>
         ///   i32x4.extract_lane
         /// </summary>
         [Intrinsic]
-        public static int    ExtractLane(Vector128<int>    value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx4
+        public static int    ExtractLane(Vector128<int>    value, [ConstantExpected(Max = (byte)(3))] byte index) => ExtractLane(value, index);    // takes ImmLaneIdx4
         /// <summary>
         ///   i32x4.extract_lane
         /// </summary>
         [Intrinsic]
-        public static uint   ExtractLane(Vector128<uint>   value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx4
+        public static uint   ExtractLane(Vector128<uint>   value, [ConstantExpected(Max = (byte)(3))] byte index) => ExtractLane(value, index);    // takes ImmLaneIdx4
         /// <summary>
         ///   i64x2.extract_lane
         /// </summary>
         [Intrinsic]
-        public static long   ExtractLane(Vector128<long>   value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx2
+        public static long   ExtractLane(Vector128<long>   value, [ConstantExpected(Max = (byte)(1))] byte index) => ExtractLane(value, index);    // takes ImmLaneIdx2
         /// <summary>
         ///   i64x2.extract_lane
         /// </summary>
         [Intrinsic]
-        public static ulong  ExtractLane(Vector128<ulong>  value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx2
+        public static ulong  ExtractLane(Vector128<ulong>  value, [ConstantExpected(Max = (byte)(1))] byte index) => ExtractLane(value, index);    // takes ImmLaneIdx2
         /// <summary>
         ///   f32x4.extract_lane
         /// </summary>
         [Intrinsic]
-        public static float  ExtractLane(Vector128<float>  value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx4
+        public static float  ExtractLane(Vector128<float>  value, [ConstantExpected(Max = (byte)(3))] byte index) => ExtractLane(value, index);    // takes ImmLaneIdx4
         /// <summary>
         ///   f64x2.extract_lane
         /// </summary>
         [Intrinsic]
-        public static double ExtractLane(Vector128<double> value, byte index) => ExtractLane(value, index);    // takes ImmLaneIdx2
+        public static double ExtractLane(Vector128<double> value, [ConstantExpected(Max = (byte)(1))] byte index) => ExtractLane(value, index);    // takes ImmLaneIdx2
         /// <summary>
         ///   i32x4.extract_lane
         /// </summary>
         [Intrinsic]
-        public static nint   ExtractLane(Vector128<nint>   value, byte index) => ExtractLane(value, index);
+        public static nint   ExtractLane(Vector128<nint>   value, [ConstantExpected(Max = (byte)(3))] byte index) => ExtractLane(value, index);
         /// <summary>
         ///   i32x4.extract_lane
         /// </summary>
         [Intrinsic]
-        public static nuint  ExtractLane(Vector128<nuint>  value, byte index) => ExtractLane(value, index);
+        public static nuint  ExtractLane(Vector128<nuint>  value, [ConstantExpected(Max = (byte)(3))] byte index) => ExtractLane(value, index);
 
         /// <summary>
         ///   i8x16.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<sbyte>  ReplaceLane(Vector128<sbyte>  vector, byte imm, int    value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx16
+        public static Vector128<sbyte>  ReplaceLane(Vector128<sbyte>  vector, [ConstantExpected(Max = (byte)(15))] byte imm, int    value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx16
         /// <summary>
         ///   i8x16.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<byte>   ReplaceLane(Vector128<byte>   vector, byte imm, uint   value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx16
+        public static Vector128<byte>   ReplaceLane(Vector128<byte>   vector, [ConstantExpected(Max = (byte)(15))] byte imm, uint   value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx16
         /// <summary>
         ///   i16x8.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<short>  ReplaceLane(Vector128<short>  vector, byte imm, int    value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx8
+        public static Vector128<short>  ReplaceLane(Vector128<short>  vector, [ConstantExpected(Max = (byte)(7))] byte imm, int    value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx8
         /// <summary>
         ///   i16x8.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<ushort> ReplaceLane(Vector128<ushort> vector, byte imm, uint   value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx8
+        public static Vector128<ushort> ReplaceLane(Vector128<ushort> vector, [ConstantExpected(Max = (byte)(7))] byte imm, uint   value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx8
         /// <summary>
         ///   i32x4.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<int>    ReplaceLane(Vector128<int>    vector, byte imm, int    value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx4
+        public static Vector128<int>    ReplaceLane(Vector128<int>    vector, [ConstantExpected(Max = (byte)(3))] byte imm, int    value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx4
         /// <summary>
         ///   i32x4.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<int>    ReplaceLane(Vector128<uint>   vector, byte imm, uint   value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx4
+        public static Vector128<int>    ReplaceLane(Vector128<uint>   vector, [ConstantExpected(Max = (byte)(3))] byte imm, uint   value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx4
         /// <summary>
         ///   i64x2.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<long>   ReplaceLane(Vector128<long>   vector, byte imm, long   value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx2
+        public static Vector128<long>   ReplaceLane(Vector128<long>   vector, [ConstantExpected(Max = (byte)(1))] byte imm, long   value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx2
         /// <summary>
         ///   i64x2.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<ulong>  ReplaceLane(Vector128<ulong>  vector, byte imm, ulong  value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx2
+        public static Vector128<ulong>  ReplaceLane(Vector128<ulong>  vector, [ConstantExpected(Max = (byte)(1))] byte imm, ulong  value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx2
         /// <summary>
         ///   f32x4.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<float>  ReplaceLane(Vector128<float>  vector, byte imm, float  value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx4
+        public static Vector128<float>  ReplaceLane(Vector128<float>  vector, [ConstantExpected(Max = (byte)(3))] byte imm, float  value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx4
         /// <summary>
         ///   f64x2.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<double> ReplaceLane(Vector128<double> vector, byte imm, double value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx2
+        public static Vector128<double> ReplaceLane(Vector128<double> vector, [ConstantExpected(Max = (byte)(1))] byte imm, double value) => ReplaceLane(vector, imm, value);   // takes ImmLaneIdx2
         /// <summary>
         ///   i32x4.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<nint>   ReplaceLane(Vector128<nint>   vector, byte imm, nint   value) => ReplaceLane(vector, imm, value);
+        public static Vector128<nint>   ReplaceLane(Vector128<nint>   vector, [ConstantExpected(Max = (byte)(3))] byte imm, nint   value) => ReplaceLane(vector, imm, value);
         /// <summary>
         ///   i32x4.replace_lane
         /// </summary>
         [Intrinsic]
-        public static Vector128<nuint>  ReplaceLane(Vector128<nuint>  vector, byte imm, nuint  value) => ReplaceLane(vector, imm, value);
+        public static Vector128<nuint>  ReplaceLane(Vector128<nuint>  vector, [ConstantExpected(Max = (byte)(3))] byte imm, nuint  value) => ReplaceLane(vector, imm, value);
 
         /// <summary>
         ///   i8x16.shuffle

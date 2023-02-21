@@ -7,8 +7,6 @@ namespace System
 {
     public static partial class Environment
     {
-        internal static int CurrentNativeThreadId => unchecked((int)Interop.Kernel32.GetCurrentThreadId());
-
         public static long TickCount64 => (long)Interop.Kernel32.GetTickCount64();
 
         [DoesNotReturn]

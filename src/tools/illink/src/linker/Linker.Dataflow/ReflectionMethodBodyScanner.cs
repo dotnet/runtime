@@ -33,7 +33,7 @@ namespace Mono.Linker.Dataflow
 			return Intrinsics.GetIntrinsicIdForMethod (methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
 				context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (methodDefinition) ||
 				context.Annotations.DoesMethodRequireUnreferencedCode (methodDefinition, out _) ||
-				methodDefinition.IsPInvokeImpl && ComDangerousMethod (methodDefinition, context);
+				IsPInvokeDangerous (methodDefinition, context, out _);
 		}
 
 		public static bool RequiresReflectionMethodBodyScannerForMethodBody (LinkContext context, MethodDefinition methodDefinition)
@@ -120,16 +120,18 @@ namespace Mono.Linker.Dataflow
 
 		public override bool HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams, out MultiValue methodReturnValue)
 		{
-			methodReturnValue = new ();
-
 			var reflectionProcessed = _markStep.ProcessReflectionDependency (callingMethodBody, operation);
-			if (reflectionProcessed)
+			if (reflectionProcessed) {
+				methodReturnValue = default;
 				return false;
+			}
 
 			Debug.Assert (callingMethodBody.Method == _origin.Provider);
 			var calledMethodDefinition = _context.TryResolve (calledMethod);
-			if (calledMethodDefinition == null)
+			if (calledMethodDefinition == null) {
+				methodReturnValue = default;
 				return false;
+			}
 
 			_origin = _origin.WithInstructionOffset (operation.Offset);
 
@@ -239,8 +241,10 @@ namespace Mono.Linker.Dataflow
 				}
 
 			case IntrinsicId.None: {
-					if (calledMethodDefinition.IsPInvokeImpl && ComDangerousMethod (calledMethodDefinition, context))
+					if (IsPInvokeDangerous (calledMethodDefinition, context, out bool comDangerousMethod)) {
+						Debug.Assert (comDangerousMethod); // Currently COM dangerous is the only one we detect
 						diagnosticContext.AddDiagnostic (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethodDefinition.GetDisplayName ());
+					}
 					if (context.Annotations.DoesMethodRequireUnreferencedCode (calledMethodDefinition, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
 						MarkStep.ReportRequiresUnreferencedCode (calledMethodDefinition.GetDisplayName (), requiresUnreferencedCode, diagnosticContext);
 
@@ -435,9 +439,17 @@ namespace Mono.Linker.Dataflow
 			TrimAnalysisPatterns.Add (new TrimAnalysisAssignmentPattern (value, targetValue, origin));
 		}
 
-		private static bool ComDangerousMethod (MethodDefinition methodDefinition, LinkContext context)
+		private static bool IsPInvokeDangerous (MethodDefinition methodDefinition, LinkContext context, out bool comDangerousMethod)
 		{
-			bool comDangerousMethod = IsComInterop (methodDefinition.MethodReturnType, methodDefinition.ReturnType, context);
+			// The method in linker only detects one condition - COM Dangerous, but it's structured like this
+			// so that the code looks very similar to AOT which has more than one condition.
+
+			if (!methodDefinition.IsPInvokeImpl) {
+				comDangerousMethod = false;
+				return false;
+			}
+
+			comDangerousMethod = IsComInterop (methodDefinition.MethodReturnType, methodDefinition.ReturnType, context);
 #pragma warning disable RS0030 // MethodDefinition.Parameters is banned. Here we iterate through the parameters and don't need to worry about the 'this' parameter.
 			foreach (ParameterDefinition pd in methodDefinition.Parameters) {
 				comDangerousMethod |= IsComInterop (pd, pd.ParameterType, context);

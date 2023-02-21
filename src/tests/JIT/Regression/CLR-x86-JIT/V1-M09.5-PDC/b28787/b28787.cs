@@ -6,7 +6,7 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public bool m_bField1 = false;
         public static double m_dStatic2 = -127.46;
@@ -41,7 +41,7 @@ namespace Test
             return 1;
         }
 
-        static int Main()
+        public static int Main()
         {
             try
             {

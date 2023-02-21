@@ -106,8 +106,10 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static byte[] EncodeExtension(bool certificateAuthority, bool hasPathLengthConstraint, int pathLengthConstraint)
         {
-            if (hasPathLengthConstraint && pathLengthConstraint < 0)
-                throw new ArgumentOutOfRangeException(nameof(pathLengthConstraint), SR.ArgumentOutOfRange_NeedNonNegNum);
+            if (hasPathLengthConstraint)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(pathLengthConstraint);
+            }
 
             return X509Pal.Instance.EncodeX509BasicConstraints2Extension(certificateAuthority, hasPathLengthConstraint, pathLengthConstraint);
         }

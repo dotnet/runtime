@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public SetupLinkerResponseFileAttribute (string relativePathToFile, string destinationFileName = null)
 		{
-			if (string.IsNullOrEmpty (relativePathToFile))
-				throw new ArgumentException ("Value cannot be null or empty.", nameof (relativePathToFile));
+			ArgumentException.ThrowIfNullOrEmpty (relativePathToFile);
 		}
 	}
 }
