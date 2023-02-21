@@ -259,7 +259,12 @@ namespace CoreclrTestLib
             using (var crashDump = File.OpenWrite(crashDumpPath))
             {
                 var flags = DbgHelp.MiniDumpType.MiniDumpWithFullMemory | DbgHelp.MiniDumpType.MiniDumpIgnoreInaccessibleMemory;
-                return DbgHelp.MiniDumpWriteDump(process.Handle, process.Id, crashDump.SafeFileHandle, flags, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                bool success = DbgHelp.MiniDumpWriteDump(process.Handle, process.Id, crashDump.SafeFileHandle, flags, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                if (success)
+                {
+                    TryPrintStackTraceFromDmp(crashDumpPath, outputWriter);
+                }
+                return success;
             }
         }
 
