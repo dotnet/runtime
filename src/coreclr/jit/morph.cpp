@@ -12770,8 +12770,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             break;
 
         case GT_SELECT:
-            assert(opts.OptimizationEnabled());
-
             tree->AsConditional()->gtCond = fgMorphTree(tree->AsConditional()->gtCond);
             tree->AsConditional()->gtOp1  = fgMorphTree(tree->AsConditional()->gtOp1);
             tree->AsConditional()->gtOp2  = fgMorphTree(tree->AsConditional()->gtOp2);
@@ -12782,8 +12780,11 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             tree->gtFlags |= tree->AsConditional()->gtOp1->gtFlags & GTF_ALL_EFFECT;
             tree->gtFlags |= tree->AsConditional()->gtOp2->gtFlags & GTF_ALL_EFFECT;
 
-            // Try to fold away any constants etc.
-            tree = gtFoldExpr(tree);
+            if (opts.OptimizationEnabled())
+            {
+                // Try to fold away any constants etc.
+                tree = gtFoldExpr(tree);
+            }
 
             break;
 
