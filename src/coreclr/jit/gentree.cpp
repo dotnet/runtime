@@ -1033,7 +1033,6 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
         return AsCopyOrReload()->GetRegCount();
     }
 
-
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
     {
