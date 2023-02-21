@@ -2209,8 +2209,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		cfg->ret->dreg = cinfo->ret.reg;
 		break;
 	case ArgVtypeInIRegs:
-	case ArgHFA:
+	case ArgHFA: {
 		/* Allocate a local to hold the result, the epilog will copy it to the correct place */
+		MonoType *ret_type = mini_get_underlying_type (sig->ret);
+		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (ret_type))) {
+			int align = 16;
+			offset = (offset + (align - 1)) & ~(align -1);
+		}
+
 		cfg->ret->opcode = OP_REGOFFSET;
 		cfg->ret->inst_basereg = cfg->frame_reg;
 		cfg->ret->inst_offset = offset;
@@ -2220,6 +2226,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		else
 			offset += 16;
 		break;
+	}
 	case ArgVtypeByRef:
 		/* This variable will be initialized in the prolog from R8 */
 		cfg->vret_addr->opcode = OP_REGOFFSET;
@@ -2377,7 +2384,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			ins->opcode = OP_REGOFFSET;
 			ins->inst_basereg = cfg->frame_reg;
 			ins->inst_offset = offset + offsets [i];
-			//printf ("allocated local %d to ", i); mono_print_tree_nl (ins);
+			//printf ("allocated local %d to ", i); mono_print_ins (ins);
 		}
 	}
 	offset += locals_stack_size;
@@ -3235,6 +3242,52 @@ emit_branch_island (MonoCompile *cfg, guint8 *code, int start_offset)
 	return code;
 }
 
+static int
+get_vector_size_macro (MonoInst *ins)
+{
+	int size = mono_class_value_size (ins->klass, NULL);
+	switch (size) {
+	case 16:
+		return VREG_FULL;
+	case 8:
+		return VREG_LOW;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static int
+get_type_size_macro (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return TYPE_I8;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return TYPE_I16;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return TYPE_I32;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return TYPE_I64;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return TYPE_I64;
+#else
+		return TYPE_I32;
+#endif
+	case MONO_TYPE_R4:
+		return TYPE_F32;
+	case MONO_TYPE_R8:
+		return TYPE_F64;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -3499,10 +3552,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XBINOP:
 			switch (ins->inst_c0) {
 			case OP_IADD:
-				arm_neon_add (code, VREG_FULL, SIZE_2, dreg, sreg1, sreg2);
+				arm_neon_add (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
 				break;
-			case OP_ISUB:
-				arm_neon_sub_8h (code, dreg, sreg1, sreg2);
+			case OP_FADD:
+				arm_neon_fadd (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
 				break;
 			default:
 				g_assert_not_reached ();
