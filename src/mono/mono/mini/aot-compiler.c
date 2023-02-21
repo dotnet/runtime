@@ -8810,8 +8810,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    mibc-profile=<string>                - \n");
 			printf ("    print-skipped-methods                - \n");
 			printf ("    readonly-value=<value>               - \n");
-			printf ("    runtime-init-callback                - \n");
-			printf ("    runtime-init-callback=<value>        - \n");
+			printf ("    runtime-init-callback                - Enable default runtime init callback support for UnmanagedCallersOnly+EntryPoint native-to-managed wrappers. Requires 'static' option.\n");
+			printf ("    runtime-init-callback=<value>        - Enable custom runtime init callback support for UnmanagedCallersOnly+EntryPoint native-to-managed wrappers. Requires 'static' option. Wrapper makes a direct call to <value> symbol, initializing runtime.\n");
 			printf ("    save-temps                           - \n");
 			printf ("    soft-debug                           - \n");
 			printf ("    static                               - \n");
