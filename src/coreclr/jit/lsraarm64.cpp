@@ -171,12 +171,12 @@ regMaskTP LinearScan::getFreeCandidates(regMaskTP candidates, RefPosition* refPo
 
     regMaskTP overallResult          = RBM_NONE;
     regMaskTP consecutiveResult      = RBM_NONE;
-    DWORD  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    DWORD     regAvailableStartIndex = 0, regAvailableEndIndex = 0;
     do
     {
         // From LSB, find the first available register (bit `1`)
         BitScanForward64(&regAvailableStartIndex, static_cast<DWORD64>(currAvailableRegs));
-        regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
+        regMaskTP startMask = (1ULL << regAvailableStartIndex) - 1;
 
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
         regMaskTP maskProcessed = ~(currAvailableRegs | startMask);
