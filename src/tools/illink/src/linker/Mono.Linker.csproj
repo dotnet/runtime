@@ -24,16 +24,9 @@
 
   <!-- The default pack logic will include the implementation assembly in lib.
        This also adds the reference assembly under ref. -->
-  <Target Name="_AddReferenceAssemblyToPackage">
-    <!-- Get the build output of the reference project, which has been built due to the ProjectReference. -->
-    <MSBuild Projects="$(ContractProject)" Targets="BuiltProjectOutputGroup" Properties="TargetFramework=$(TargetFramework)">
-      <Output TaskParameter="TargetOutputs" ItemName="_ReferenceAssemblies" />
-    </MSBuild>
-    <!-- Check just to be safe. -->
-    <Error Condition="!Exists('%(_ReferenceAssemblies.Identity)')" Text="Reference assembly %(Identity) does not exist. Ensure it has been built before packaging." />
-    <!-- Add it to the package. -->
+  <Target Name="_AddReferenceAssemblyToPackage" DependsOnTargets="ResolveProjectReferences">
     <ItemGroup>
-      <TfmSpecificPackageFile Include="@(_ReferenceAssemblies)" PackagePath="ref\$(TargetFramework)" />
+      <TfmSpecificPackageFile Include="@(ResolvedMatchingContract)" PackagePath="ref\$(TargetFramework)" />
     </ItemGroup>
   </Target>
 
