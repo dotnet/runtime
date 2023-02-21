@@ -24,6 +24,7 @@
       <BinPlaceItem Include="$(NativeBinDir)*.dwarf" />
       <BinPlaceItem Include="$(NativeBinDir)*.dex" />
       <BinPlaceItem Include="$(NativeBinDir)*.jar" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dat" />
       <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
   </Target>
