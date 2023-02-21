@@ -2,6 +2,9 @@ parameters:
   - name: stages
     type: stageList
 
+variables:
+- template: /eng/common/templates/variables/pool-providers.yml
+
 resources:
   containers:
     - container: linux_arm
