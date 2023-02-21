@@ -3574,7 +3574,8 @@ HRESULT ClrDataAccess::GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, C
 }
 
 // The ordering of these entries must match the order enumerated in GetLoaderAllocatorHeaps
-static const char *LoaderAllocatorLoaderHeapNames[] = 
+const int LoaderHeapArrayCount = 12;
+static const char *LoaderAllocatorLoaderHeapNames[LoaderHeapArrayCount] = 
 {
     "LowFrequencyHeap",
     "HighFrequencyHeap",
@@ -3590,7 +3591,6 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
     "VtableHeap",
 };
 
-const int LoaderHeapCount = 12;
 
 HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAddress, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded)
 {
@@ -3602,11 +3602,11 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
     PTR_LoaderAllocator pLoaderAllocator = PTR_LoaderAllocator(TO_TADDR(loaderAllocatorAddress));
 
     if (pNeeded)
-        *pNeeded = LoaderHeapCount;
+        *pNeeded = LoaderHeapArrayCount;
 
     if (pLoaderHeaps)
     {
-        if (count < LoaderHeapCount)
+        if (count < LoaderHeapArrayCount)
         {
             hr = E_INVALIDARG;
         }
@@ -3624,7 +3624,7 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             VirtualCallStubManager *pVcsMgr = pLoaderAllocator->GetVirtualCallStubManager();
             if (pVcsMgr == nullptr)
             {
-                for (; i < min(count, LoaderHeapCount); i++)
+                for (; i < min(count, LoaderHeapArrayCount); i++)
                     pLoaderHeaps[i] = 0;
             }
             else
@@ -3653,13 +3653,13 @@ ClrDataAccess::GetLoaderAllocatorHeapNames(int count, const char **ppNames, int 
     SOSDacEnter();
 
     if (pNeeded)
-        *pNeeded = LoaderHeapCount;
+        *pNeeded = LoaderHeapArrayCount;
 
     if (ppNames)
-        for (int i = 0; i < min(count, LoaderHeapCount); i++)
+        for (int i = 0; i < min(count, LoaderHeapArrayCount); i++)
             ppNames[i] = LoaderAllocatorLoaderHeapNames[i];
 
-    if (count < LoaderHeapCount)
+    if (count < LoaderHeapArrayCount)
         hr = S_FALSE;
 
     SOSDacLeave();
