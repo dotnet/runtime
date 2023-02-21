@@ -69,6 +69,9 @@
   <data name="AttributeStore_Unknown_Property" xml:space="preserve">
     <value>The type '{0}' does not contain a public property named '{1}'.</value>
   </data>
+  <data name="Base64StringAttribute_Invalid" xml:space="preserve">
+    <value>The {0} field is not a valid Base64 encoding.</value>
+  </data>
   <data name="Common_PropertyNotFound" xml:space="preserve">
     <value>The property {0}.{1} could not be found.</value>
   </data>

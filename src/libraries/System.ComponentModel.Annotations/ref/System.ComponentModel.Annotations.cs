@@ -32,6 +32,12 @@ namespace System.ComponentModel.DataAnnotations
         public string ThisKey { get { throw null; } }
         public System.Collections.Generic.IEnumerable<string> ThisKeyMembers { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
+    public class Base64StringAttribute : ValidationAttribute
+    {
+        public Base64StringAttribute() { }
+        public override bool IsValid(object? value) { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class CompareAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
