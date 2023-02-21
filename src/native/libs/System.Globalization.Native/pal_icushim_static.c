@@ -65,6 +65,9 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)
 }
 
 
+
+#endif
+
 /*
  * driver.c calls this to make sure this file is linked, otherwise
  * its not, meaning the EMSCRIPTEN_KEEPALIVE functions above
@@ -75,8 +78,6 @@ void mono_wasm_link_icu_shim(void);
 void mono_wasm_link_icu_shim(void)
 {
 }
-
-#endif
 
 static int32_t load_icu_data(const void* pData)
 {
