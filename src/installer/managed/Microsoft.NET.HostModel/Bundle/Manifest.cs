@@ -75,7 +75,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public const uint BundleMinorVersion = 0;
         private FileEntry DepsJsonEntry;
         private FileEntry RuntimeConfigJsonEntry;
-        private HeaderFlags Flags;
+        private readonly HeaderFlags Flags;
         public List<FileEntry> Files;
         public string BundleVersion => $"{BundleMajorVersion}.{BundleMinorVersion}";
 
