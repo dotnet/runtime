@@ -4889,11 +4889,6 @@ mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *i
 }
 #endif /*defined(TARGET_WIN32) && defined(TARGET_AMD64)*/
 
-void
-mono_simd_simplify_indirection (MonoCompile *cfg)
-{
-}
-
 #endif /* DISABLE_JIT */
 #endif /* MONO_ARCH_SIMD_INTRINSICS */
 

@@ -7782,8 +7782,8 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_XCONST: {
-			guint32 ecount;
-			MonoTypeEnum etype = mini_get_simd_type_info (ins->klass, &ecount);
+			int ecount;
+			MonoTypeEnum etype = mini_get_simd_type_info (ins->klass, (guint32*)&ecount);
 
 			LLVMTypeRef llvm_type = primitive_type_to_llvm_type (etype);
 			LLVMValueRef vals [64];
