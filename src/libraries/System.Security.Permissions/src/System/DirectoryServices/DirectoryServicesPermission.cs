@@ -5,7 +5,9 @@ using System.Security.Permissions;
 
 namespace System.DirectoryServices
 {
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
     public sealed class DirectoryServicesPermission : ResourcePermissionBase
     {
         public DirectoryServicesPermission() { }
