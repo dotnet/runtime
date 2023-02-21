@@ -27,6 +27,7 @@ target_link_libraries(dotnet
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-aot.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-browser.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
+    ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
 
 set_target_properties(dotnet PROPERTIES
