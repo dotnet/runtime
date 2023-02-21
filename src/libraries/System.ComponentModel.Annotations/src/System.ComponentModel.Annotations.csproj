@@ -8,6 +8,7 @@
     <GenerateResxSourceIncludeDefaultValues>true</GenerateResxSourceIncludeDefaultValues>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\ComponentModel\DataAnnotations\AllowedValuesAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProvider.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\AssociationAttribute.cs" />
@@ -17,6 +18,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\CustomValidationAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DataType.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DataTypeAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DeniedValuesAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayColumnAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttribute.cs" />

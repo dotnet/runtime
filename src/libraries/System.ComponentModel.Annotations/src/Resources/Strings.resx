@@ -57,6 +57,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AllowedValuesAttribute_Invalid" xml:space="preserve">
+    <value>The {0} field does not equal any of the values specified in AllowedValuesAttribute.</value>
+  </data>
   <data name="ArgumentIsNullOrWhitespace" xml:space="preserve">
     <value>The argument '{0}' cannot be null, empty or contain only whitespace.</value>
   </data>
@@ -104,6 +107,9 @@
   </data>
   <data name="DataTypeAttribute_EmptyDataTypeString" xml:space="preserve">
     <value>The custom DataType string cannot be null or empty.</value>
+  </data>
+  <data name="DeniedValuesAttribute_Invalid" xml:space="preserve">
+    <value>The {0} field equals one of the values specified in DeniedValuesAttribute.</value>
   </data>
   <data name="DisplayAttribute_PropertyNotSet" xml:space="preserve">
     <value>The {0} property has not been set.  Use the {1} method to get the value.</value>

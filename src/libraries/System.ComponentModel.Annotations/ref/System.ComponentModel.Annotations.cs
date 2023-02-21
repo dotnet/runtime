@@ -6,6 +6,14 @@
 
 namespace System.ComponentModel.DataAnnotations
 {
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.CLSCompliant(false)]
+    public partial class AllowedValuesAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        public AllowedValuesAttribute(params object?[] values) { }
+        public object?[] Values { get { throw null; } }
+        public override bool IsValid(object? value) { throw null; }
+    }
     public partial class AssociatedMetadataTypeTypeDescriptionProvider : System.ComponentModel.TypeDescriptionProvider
     {
         public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type) { }
@@ -85,6 +93,14 @@ namespace System.ComponentModel.DataAnnotations
         public System.ComponentModel.DataAnnotations.DataType DataType { get { throw null; } }
         public System.ComponentModel.DataAnnotations.DisplayFormatAttribute? DisplayFormat { get { throw null; } protected set { } }
         public virtual string GetDataTypeName() { throw null; }
+        public override bool IsValid(object? value) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.CLSCompliant(false)]
+    public partial class DeniedValuesAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        public DeniedValuesAttribute(params object?[] values) { }
+        public object?[] Values { get { throw null; } }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
