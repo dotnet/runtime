@@ -200,7 +200,8 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'iOS'">
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
-    <PublishTrimmed>true</PublishTrimmed> 
+    <PublishTrimmed>true</PublishTrimmed>
+    <SkipTestUtilitiesReference>true</<SkipTestUtilitiesReference>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />
