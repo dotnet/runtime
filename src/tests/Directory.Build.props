@@ -198,6 +198,11 @@
     <TestFramework>GeneratedRunner</TestFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'iOS'">
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <PublishTrimmed>true</PublishTrimmed> 
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />
   <Import Project="$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\test_dependencies.*.props" Condition="'$(IsTestsCommonProject)' != 'true'" />
 </Project>
