@@ -12,7 +12,7 @@
     <!-- windows.winmd is not part of the framework -->
     <IgnoredReference Include="Windows" />
 
-    <!-- System.Configuration.ConfigurationManager drops this reference because it is not needed at runtime -->
+    <!-- intentional dangling ref in System.Configuration.ConfigurationManager and System.DirectoryServices -->
     <IgnoredReference Include="System.Security.Permissions" />
   </ItemGroup>
 
