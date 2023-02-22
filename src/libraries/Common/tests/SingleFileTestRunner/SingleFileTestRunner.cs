@@ -27,6 +27,9 @@ public class SingleFileTestRunner : XunitTestFramework
         var asm = typeof(SingleFileTestRunner).Assembly;
         Console.WriteLine("Running assembly:" + asm.FullName);
 
+        // The current RemoteExecutor implementation is not compatible with the SingleFileTestRunner.
+        Environment.SetEnvironmentVariable("DOTNET_REMOTEEXECUTOR_SUPPORTED", "0");
+
         var diagnosticSink = new ConsoleDiagnosticMessageSink();
         var testsFinished = new TaskCompletionSource();
         var testSink = new TestMessageSink();
@@ -68,16 +71,77 @@ public class SingleFileTestRunner : XunitTestFramework
         {
             if (args[i].Equals("-notrait", StringComparison.OrdinalIgnoreCase))
             {
-                var traitKeyValue=args[i + 1].Split("=", StringSplitOptions.TrimEntries);
+                var traitKeyValue = args[i + 1].Split("=", StringSplitOptions.TrimEntries);
+                
                 if (!noTraits.TryGetValue(traitKeyValue[0], out List<string> values))
                 {
                     noTraits.Add(traitKeyValue[0], values = new List<string>());
                 }
+                
                 values.Add(traitKeyValue[1]);
+                i++;
             }
+            
             if (args[i].Equals("-xml", StringComparison.OrdinalIgnoreCase))
             {
-                xmlResultFileName=args[i + 1].Trim();
+                xmlResultFileName = args[i + 1].Trim();
+                i++;
+            }
+
+            if (args[i].Equals("-class", StringComparison.OrdinalIgnoreCase))
+            {
+                filters.IncludedClasses.Add(args[i + 1].Trim());
+                i++;
+            }
+
+            if (args[i].Equals("-noclass", StringComparison.OrdinalIgnoreCase) ||
+                args[i].Equals("-class-", StringComparison.OrdinalIgnoreCase))
+            {
+                filters.ExcludedClasses.Add(args[i + 1].Trim());
+                i++;
+            }
+
+            if (args[i].Equals("-method", StringComparison.OrdinalIgnoreCase))
+            {
+                filters.IncludedMethods.Add(args[i + 1].Trim());
+                i++;
+            }
+
+            if (args[i].Equals("-nomethod", StringComparison.OrdinalIgnoreCase) ||
+                args[i].Equals("-method-", StringComparison.OrdinalIgnoreCase))
+            {
+                filters.ExcludedMethods.Add(args[i + 1].Trim());
+                i++;
+            }
+
+            if (args[i].Equals("-namespace", StringComparison.OrdinalIgnoreCase))
+            {
+                filters.IncludedNamespaces.Add(args[i + 1].Trim());
+                i++;
+            }
+
+            if (args[i].Equals("-nonamespace", StringComparison.OrdinalIgnoreCase) ||
+                args[i].Equals("-namespace-", StringComparison.OrdinalIgnoreCase))
+            {
+                filters.ExcludedNamespaces.Add(args[i + 1].Trim());
+                i++;
+            }
+
+            if (args[i].Equals("-parallel", StringComparison.OrdinalIgnoreCase))
+            {
+                string parallelismArg = args[i + 1].Trim().ToLower();
+                var (parallelizeAssemblies, parallelizeTestCollections) = parallelismArg switch
+                {
+                    "all" => (true, true),
+                    "assemblies" => (true, false),
+                    "collections" => (false, true),
+                    "none" => (false, false),
+                    _ => throw new ArgumentException($"Unknown parallelism option '{parallelismArg}'.")
+                };
+
+                assemblyConfig.ParallelizeAssembly = parallelizeAssemblies;
+                assemblyConfig.ParallelizeTestCollections = parallelizeTestCollections;
+                i++;
             }
         }
 

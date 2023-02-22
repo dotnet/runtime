@@ -1206,7 +1206,11 @@ public:
         CLRDATA_ADDRESS *allocPtr,
         CLRDATA_ADDRESS *allocLimit);
 
-    virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);
+    // ISOSDacInterface13
+    virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);        
+    virtual HRESULT STDMETHODCALLTYPE GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, CLRDATA_ADDRESS *pLoaderAllocator);
+    virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeapNames(int count, const char **ppNames, int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocator, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded);
 
     //
     // ClrDataAccess.

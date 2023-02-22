@@ -39,6 +39,7 @@
     <Compile Include="..\..\src\System\Net\Quic\Internal\ThrowHelper.cs" Link="ProductionCode\System\Net\Quic\Internal\ThrowHelper.cs" />
     <Compile Include="..\..\src\System\Net\Quic\Interop\*.cs" Link="ProductionCode\System\Net\Quic\Interop\*.cs" />
     <Compile Include="..\..\src\System\Net\Quic\NetEventSource.Quic.cs" Link="ProductionCode\System\Net\Quic\NetEventSource.Quic.cs" />
+    <Compile Include="..\..\src\System\Net\Quic\QuicDefaults.cs" Link="ProductionCode\System\Net\Quic\QuicDefaults.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs" Link="Common\Interop\Linux\Interop.Libraries.cs" Condition="'$(TargetPlatformIdentifier)' == 'linux'" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs" Link="Common\Interop\OSX\Interop.Libraries.cs" Condition="'$(TargetPlatformIdentifier)' == 'osx'" />

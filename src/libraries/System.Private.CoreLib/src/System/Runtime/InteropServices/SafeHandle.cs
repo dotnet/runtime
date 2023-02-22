@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Whether we can release this handle.</summary>
         private readonly bool _ownsHandle;
         /// <summary>Whether constructor completed.</summary>
-        private volatile bool _fullyInitialized;
+        private readonly bool _fullyInitialized;
 
         /// <summary>Bitmasks for the <see cref="_state"/> field.</summary>
         /// <remarks>
@@ -80,7 +80,7 @@ namespace System.Runtime.InteropServices
             }
 #endif
 
-            _fullyInitialized = true;
+            Volatile.Write(ref _fullyInitialized, true);
         }
 
         ~SafeHandle()

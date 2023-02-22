@@ -5,8 +5,8 @@ namespace System.Diagnostics.Metrics
 {
     internal sealed class RateSumAggregator : Aggregator
     {
+        private readonly bool _isMonotonic;
         private double _sum;
-        private bool _isMonotonic;
 
         public RateSumAggregator(bool isMonotonic)
         {
@@ -34,9 +34,9 @@ namespace System.Diagnostics.Metrics
 
     internal sealed class RateAggregator : Aggregator
     {
+        private readonly bool _isMonotonic;
         private double? _prevValue;
         private double _value;
-        private bool _isMonotonic;
 
         public RateAggregator(bool isMonotonic)
         {

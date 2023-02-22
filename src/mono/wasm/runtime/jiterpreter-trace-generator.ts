@@ -14,10 +14,10 @@ import {
     MintOpcodePtr, WasmValtype, WasmBuilder,
     copyIntoScratchBuffer, append_memset_dest,
     append_memmove_dest_src, try_append_memset_fast,
-    try_append_memmove_fast, counters
+    try_append_memmove_fast, counters,
+    getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
 import {
-    offsetOfDataItems, offsetOfImethod,
     sizeOfDataItem, maxModuleSize,
 
     disabledOpcodes, countCallTargets,
@@ -109,8 +109,8 @@ function getArgF64 (ip: MintOpcodePtr, indexPlusOne: number) {
 
 function get_imethod_data (frame: NativePointer, index: number) {
     // FIXME: Encoding this data directly into the trace will prevent trace reuse
-    const iMethod = getU32(<any>frame + offsetOfImethod);
-    const pData = getU32(iMethod + offsetOfDataItems);
+    const iMethod = getU32(<any>frame + getMemberOffset(JiterpMember.Imethod));
+    const pData = getU32(iMethod + getMemberOffset(JiterpMember.DataItems));
     const dataOffset = pData + (index * sizeOfDataItem);
     return getU32(dataOffset);
 }
@@ -247,7 +247,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_TIER_PATCHPOINT: {
                 // We need to make sure to notify the interpreter about tiering opcodes
                 //  so that tiering up will still happen
-                const iMethod = getU32(<any>frame + offsetOfImethod);
+                const iMethod = getU32(<any>frame + getMemberOffset(JiterpMember.Imethod));
                 builder.ptr_const(iMethod);
                 // increase_entry_count will return 1 if we can continue, otherwise
                 //  we need to bail out into the interpreter so it can perform tiering
@@ -371,56 +371,107 @@ export function generate_wasm_body (
                 break;
             }
 
-            case MintOpcode.MINT_STRLEN:
-                builder.block();
-                append_ldloca(builder, getArgU16(ip, 2), 0, true);
-                append_ldloca(builder, getArgU16(ip, 1), 4, true);
-                builder.callImport("strlen");
-                builder.appendU8(WasmOpcode.br_if);
-                builder.appendULeb(0);
-                append_bailout(builder, ip, BailoutReason.StringOperationFailed);
-                builder.endBlock();
+            case MintOpcode.MINT_STRLEN: {
+                builder.local("pLocals");
+                append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
+                builder.appendU8(WasmOpcode.i32_load);
+                builder.appendMemarg(getMemberOffset(JiterpMember.StringLength), 2);
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
-            case MintOpcode.MINT_GETCHR:
-                builder.block();
-                append_ldloca(builder, getArgU16(ip, 2), 0, true);
-                append_ldloca(builder, getArgU16(ip, 3), 0, true);
-                append_ldloca(builder, getArgU16(ip, 1), 4, true);
-                builder.callImport("getchr");
-                builder.appendU8(WasmOpcode.br_if);
-                builder.appendULeb(0);
-                append_bailout(builder, ip, BailoutReason.StringOperationFailed);
-                builder.endBlock();
-                break;
+            }
 
-                /*
-                EMSCRIPTEN_KEEPALIVE int mono_jiterp_getitem_span (
-                    void **destination, MonoSpanOfVoid *span, int index, size_t element_size
-                ) {
-                */
+            case MintOpcode.MINT_GETCHR: {
+                builder.block();
+                // index
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+                // stash it, we'll be using it multiple times
+                builder.local("math_lhs32", WasmOpcode.tee_local);
+                // str
+                append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
+                // get string length
+                builder.appendU8(WasmOpcode.i32_load);
+                builder.appendMemarg(getMemberOffset(JiterpMember.StringLength), 2);
+                // index < length
+                builder.appendU8(WasmOpcode.i32_lt_s);
+                // index >= 0
+                builder.local("math_lhs32");
+                builder.i32_const(0);
+                builder.appendU8(WasmOpcode.i32_ge_s);
+                // (index >= 0) && (index < length)
+                builder.appendU8(WasmOpcode.i32_and);
+                // If either of the index checks failed we will fall through to the bailout
+                builder.appendU8(WasmOpcode.br_if);
+                builder.appendULeb(0);
+                append_bailout(builder, ip, BailoutReason.StringOperationFailed);
+                builder.endBlock();
+
+                // The null check and range check both passed so we can load the character now
+                // Pre-load destination for the stloc at the end (we can't do this inside the block above)
+                builder.local("pLocals");
+                // (index * 2) + offsetof(MonoString, chars) + pString
+                builder.local("math_lhs32");
+                builder.i32_const(2);
+                builder.appendU8(WasmOpcode.i32_mul);
+                builder.local("cknull_ptr");
+                builder.appendU8(WasmOpcode.i32_add);
+                // Load char
+                builder.appendU8(WasmOpcode.i32_load16_u);
+                builder.appendMemarg(getMemberOffset(JiterpMember.StringData), 1);
+                // Store into result
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                break;
+            }
+
             case MintOpcode.MINT_GETITEM_SPAN:
             case MintOpcode.MINT_GETITEM_LOCALSPAN: {
                 const elementSize = getArgI16(ip, 4);
-                // FIXME
                 builder.block();
-                // destination = &locals[1]
-                append_ldloca(builder, getArgU16(ip, 1), elementSize, true);
+                // Load index and stash it in lhs32
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+                builder.local("math_lhs32", WasmOpcode.tee_local);
+
+                // Load address of the span structure
                 if (opcode === MintOpcode.MINT_GETITEM_SPAN) {
-                    // span = (MonoSpanOfVoid *)locals[2]
-                    append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                    // span = *(MonoSpanOfVoid *)locals[2]
+                    append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
                 } else {
                     // span = (MonoSpanOfVoid)locals[2]
                     append_ldloca(builder, getArgU16(ip, 2), 0);
+                    builder.local("cknull_ptr", WasmOpcode.tee_local);
+                    cknullOffset = -1;
                 }
-                // index = locals[3]
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-                // element_size = ip[4]
-                builder.i32_const(elementSize);
-                builder.callImport("getspan");
+
+                // length = span->length
+                builder.appendU8(WasmOpcode.i32_load);
+                builder.appendMemarg(getMemberOffset(JiterpMember.SpanLength), 2);
+                // index < length
+                builder.appendU8(WasmOpcode.i32_lt_u);
+                // index >= 0
+                builder.local("math_lhs32");
+                builder.i32_const(0);
+                builder.appendU8(WasmOpcode.i32_ge_s);
+                // (index >= 0) && (index < length)
+                builder.appendU8(WasmOpcode.i32_and);
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
                 append_bailout(builder, ip, BailoutReason.SpanOperationFailed);
                 builder.endBlock();
+
+                // We successfully null checked and bounds checked. Now compute
+                //  the address and store it to the destination
+                builder.local("pLocals");
+
+                // src = span->_reference + (index * element_size);
+                builder.local("cknull_ptr");
+                builder.appendU8(WasmOpcode.i32_load);
+                builder.appendMemarg(getMemberOffset(JiterpMember.SpanData), 2);
+
+                builder.local("math_lhs32");
+                builder.i32_const(elementSize);
+                builder.appendU8(WasmOpcode.i32_mul);
+                builder.appendU8(WasmOpcode.i32_add);
+
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
             }
 
@@ -450,6 +501,7 @@ export function generate_wasm_body (
                 builder.appendMemarg(4, 0);
                 break;
             }
+
             case MintOpcode.MINT_LD_DELEGATE_METHOD_PTR: {
                 // FIXME: ldloca invalidation size
                 append_ldloca(builder, getArgU16(ip, 1), 8, true);
@@ -493,7 +545,7 @@ export function generate_wasm_body (
                 break;
             }
             case MintOpcode.MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF: {
-                const offset = cwraps.mono_jiterp_get_offset_of_array_data();
+                const offset = getMemberOffset(JiterpMember.ArrayData);
                 builder.local("pLocals");
                 append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
                 builder.i32_const(offset);
@@ -1289,17 +1341,6 @@ function emit_mov (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) 
     return true;
 }
 
-let _offset_of_vtable_initialized_flag = 0;
-
-function get_offset_of_vtable_initialized_flag () {
-    if (!_offset_of_vtable_initialized_flag) {
-        // Manually calculating this by reading the code did not yield the correct result,
-        //  so we ask the compiler (at runtime)
-        _offset_of_vtable_initialized_flag = cwraps.mono_jiterp_get_offset_of_vtable_initialized_flag();
-    }
-    return _offset_of_vtable_initialized_flag;
-}
-
 function append_vtable_initialize (builder: WasmBuilder, pVtable: NativePointer, ip: MintOpcodePtr) {
     // TODO: Actually initialize the vtable instead of just checking and bailing out?
     builder.block();
@@ -1308,7 +1349,7 @@ function append_vtable_initialize (builder: WasmBuilder, pVtable: NativePointer,
     //  in the trace as a constant visible in the wasm
     builder.ptr_const(<any>pVtable);
     builder.appendU8(WasmOpcode.i32_load8_u);
-    builder.appendMemarg(get_offset_of_vtable_initialized_flag(), 0);
+    builder.appendMemarg(getMemberOffset(JiterpMember.VtableInitialized), 0);
     builder.appendU8(WasmOpcode.br_if);
     builder.appendULeb(0);
     append_bailout(builder, ip, BailoutReason.VtableNotInitialized);
