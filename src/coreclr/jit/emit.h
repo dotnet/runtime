@@ -2378,7 +2378,7 @@ private:
                     insGroup* savedInsIG = curInsIG;
                     if (emitPrevID(curInsIG, id))
                     {
-                        if (isInsIGSafeForPeepholeOptimization(savedInsIG, curInsIG))
+                        if (isInsIGSafeForPeepholeOptimization(curInsIG, savedInsIG))
                         {
                             continue;
                         }
