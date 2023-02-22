@@ -11896,9 +11896,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	char *method_name;
 	gboolean is_linkonce = FALSE;
 
-	if (cfg->skip)
-		return;
-
 	/* The code below might acquire the loader lock, so use it for global locking */
 	mono_loader_lock ();
 
