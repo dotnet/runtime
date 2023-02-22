@@ -5686,14 +5686,6 @@
     "any",
     "base"
   ],
-  "linux-riscv64": [
-    "linux-riscv64",
-    "linux",
-    "unix-riscv64",
-    "unix",
-    "any",
-    "base"
-  ],
   "linux-musl": [
     "linux-musl",
     "linux",
@@ -5785,6 +5777,14 @@
     "linux-ppc64le",
     "linux",
     "unix-ppc64le",
+    "unix",
+    "any",
+    "base"
+  ],
+  "linux-riscv64": [
+    "linux-riscv64",
+    "linux",
+    "unix-riscv64",
     "unix",
     "any",
     "base"
@@ -10573,6 +10573,12 @@
     "any",
     "base"
   ],
+  "unix-riscv64": [
+    "unix-riscv64",
+    "unix",
+    "any",
+    "base"
+  ],
   "unix-s390x": [
     "unix-s390x",
     "unix",
@@ -10599,9 +10605,6 @@
   "wasi-wasm": [
     "wasi-wasm",
     "wasi",
-  "unix-riscv64": [
-    "unix-riscv64",
-    "unix",
     "any",
     "base"
   ],
