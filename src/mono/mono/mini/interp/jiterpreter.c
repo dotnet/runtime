@@ -195,6 +195,7 @@ mono_jiterp_value_copy (void *dest, void *src, MonoClass *klass) {
 	mono_value_copy_internal(dest, src, klass);
 }
 
+/*
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_strlen_ref (MonoString **ppString, int *result) {
 	MonoString *pString = *ppString;
@@ -204,6 +205,7 @@ mono_jiterp_strlen_ref (MonoString **ppString, int *result) {
 	*result = mono_string_length_internal(pString);
 	return 1;
 }
+*/
 
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_getchr_ref (MonoString **ppString, int *pIndex, int *result) {
@@ -511,15 +513,32 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 
 #undef JITERP_RELOP
 
+#define JITERP_MEMBER_VT_INITIALIZED 0
+#define JITERP_MEMBER_ARRAY_DATA 1
+#define JITERP_MEMBER_STRING_LENGTH 2
+#define JITERP_MEMBER_STRING_DATA 3
+#define JITERP_MEMBER_IMETHOD 4
+#define JITERP_MEMBER_DATA_ITEMS 5
+
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
-mono_jiterp_get_offset_of_vtable_initialized_flag () {
-	return offsetof(MonoVTable, initialized);
-}
-
-EMSCRIPTEN_KEEPALIVE size_t
-mono_jiterp_get_offset_of_array_data () {
-	return MONO_STRUCT_OFFSET (MonoArray, vector);
+mono_jiterp_get_member_offset (int member) {
+	switch (member) {
+		case JITERP_MEMBER_VT_INITIALIZED:
+			return MONO_STRUCT_OFFSET (MonoVTable, initialized);
+		case JITERP_MEMBER_ARRAY_DATA:
+			return MONO_STRUCT_OFFSET (MonoArray, vector);
+		case JITERP_MEMBER_STRING_LENGTH:
+			return MONO_STRUCT_OFFSET (MonoString, length);
+		case JITERP_MEMBER_STRING_DATA:
+			return MONO_STRUCT_OFFSET (MonoString, chars);
+		case JITERP_MEMBER_IMETHOD:
+			return offsetof (InterpFrame, imethod);
+		case JITERP_MEMBER_DATA_ITEMS:
+			return offsetof (InterpMethod, data_items);
+		default:
+			g_assert_not_reached();
+	}
 }
 
 EMSCRIPTEN_KEEPALIVE size_t

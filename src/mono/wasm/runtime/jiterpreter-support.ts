@@ -936,6 +936,25 @@ export function recordFailure () : void {
     }
 }
 
+export const enum JiterpMember {
+    VtableInitialized = 0,
+    ArrayData = 1,
+    StringLength = 2,
+    StringData = 3,
+    Imethod = 4,
+    DataItems = 5
+}
+
+const memberOffsets : { [index: number] : number } = {};
+
+export function getMemberOffset (member: JiterpMember) {
+    const cached = memberOffsets[member];
+    if (cached === undefined)
+        return memberOffsets[member] = cwraps.mono_jiterp_get_member_offset(<any>member);
+    else
+        return cached;
+}
+
 export function getRawCwrap (name: string): Function {
     const result = (<any>Module)["asm"][name];
     if (typeof (result) !== "function")

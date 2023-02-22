@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -14,10 +15,10 @@ import {
     MintOpcodePtr, WasmValtype, WasmBuilder,
     copyIntoScratchBuffer, append_memset_dest,
     append_memmove_dest_src, try_append_memset_fast,
-    try_append_memmove_fast, counters
+    try_append_memmove_fast, counters,
+    getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
 import {
-    offsetOfDataItems, offsetOfImethod,
     sizeOfDataItem, maxModuleSize,
 
     disabledOpcodes, countCallTargets,
@@ -109,8 +110,8 @@ function getArgF64 (ip: MintOpcodePtr, indexPlusOne: number) {
 
 function get_imethod_data (frame: NativePointer, index: number) {
     // FIXME: Encoding this data directly into the trace will prevent trace reuse
-    const iMethod = getU32(<any>frame + offsetOfImethod);
-    const pData = getU32(iMethod + offsetOfDataItems);
+    const iMethod = getU32(<any>frame + getMemberOffset(JiterpMember.Imethod));
+    const pData = getU32(iMethod + getMemberOffset(JiterpMember.DataItems));
     const dataOffset = pData + (index * sizeOfDataItem);
     return getU32(dataOffset);
 }
@@ -247,7 +248,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_TIER_PATCHPOINT: {
                 // We need to make sure to notify the interpreter about tiering opcodes
                 //  so that tiering up will still happen
-                const iMethod = getU32(<any>frame + offsetOfImethod);
+                const iMethod = getU32(<any>frame + getMemberOffset(JiterpMember.Imethod));
                 builder.ptr_const(iMethod);
                 // increase_entry_count will return 1 if we can continue, otherwise
                 //  we need to bail out into the interpreter so it can perform tiering
@@ -371,16 +372,15 @@ export function generate_wasm_body (
                 break;
             }
 
-            case MintOpcode.MINT_STRLEN:
-                builder.block();
-                append_ldloca(builder, getArgU16(ip, 2), 0, true);
-                append_ldloca(builder, getArgU16(ip, 1), 4, true);
-                builder.callImport("strlen");
-                builder.appendU8(WasmOpcode.br_if);
-                builder.appendULeb(0);
-                append_bailout(builder, ip, BailoutReason.StringOperationFailed);
-                builder.endBlock();
+            case MintOpcode.MINT_STRLEN: {
+                builder.local("pLocals");
+                append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
+                builder.appendU8(WasmOpcode.i32_load);
+                builder.appendMemarg(getMemberOffset(JiterpMember.StringLength), 2);
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
+            }
+
             case MintOpcode.MINT_GETCHR:
                 builder.block();
                 append_ldloca(builder, getArgU16(ip, 2), 0, true);
@@ -493,7 +493,7 @@ export function generate_wasm_body (
                 break;
             }
             case MintOpcode.MINT_INTRINS_MEMORYMARSHAL_GETARRAYDATAREF: {
-                const offset = cwraps.mono_jiterp_get_offset_of_array_data();
+                const offset = getMemberOffset(JiterpMember.ArrayData);
                 builder.local("pLocals");
                 append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
                 builder.i32_const(offset);
@@ -1289,17 +1289,6 @@ function emit_mov (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) 
     return true;
 }
 
-let _offset_of_vtable_initialized_flag = 0;
-
-function get_offset_of_vtable_initialized_flag () {
-    if (!_offset_of_vtable_initialized_flag) {
-        // Manually calculating this by reading the code did not yield the correct result,
-        //  so we ask the compiler (at runtime)
-        _offset_of_vtable_initialized_flag = cwraps.mono_jiterp_get_offset_of_vtable_initialized_flag();
-    }
-    return _offset_of_vtable_initialized_flag;
-}
-
 function append_vtable_initialize (builder: WasmBuilder, pVtable: NativePointer, ip: MintOpcodePtr) {
     // TODO: Actually initialize the vtable instead of just checking and bailing out?
     builder.block();
@@ -1308,7 +1297,7 @@ function append_vtable_initialize (builder: WasmBuilder, pVtable: NativePointer,
     //  in the trace as a constant visible in the wasm
     builder.ptr_const(<any>pVtable);
     builder.appendU8(WasmOpcode.i32_load8_u);
-    builder.appendMemarg(get_offset_of_vtable_initialized_flag(), 0);
+    builder.appendMemarg(getMemberOffset(JiterpMember.VtableInitialized), 0);
     builder.appendU8(WasmOpcode.br_if);
     builder.appendULeb(0);
     append_bailout(builder, ip, BailoutReason.VtableNotInitialized);
