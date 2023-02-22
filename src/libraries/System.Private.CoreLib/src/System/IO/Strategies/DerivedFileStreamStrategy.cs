@@ -146,7 +146,11 @@ namespace System.IO.Strategies
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => _fileStream.BaseCopyToAsync(destination, bufferSize, cancellationToken);
 
-        public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
+        public override async ValueTask DisposeAsync()
+        {
+            await _strategy.DisposeAsync().ConfigureAwait(false);
+            await _fileStream.BaseDisposeAsync().ConfigureAwait(false);
+        }
 
         protected sealed override void Dispose(bool disposing) => _strategy.DisposeInternal(disposing);
     }

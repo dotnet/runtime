@@ -41,22 +41,30 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async Task DerivedFileStreamDisposeUsedForDisposeAsync()
+        public async Task DerivedFileStreamDisposeAndCloseUsedForDisposeAsync()
         {
-            var fs = new OverridesDisposeFileStream(GetTestFilePath(), FileMode.Create);
+            var fs = new OverridesDisposeAndCloseFileStream(GetTestFilePath(), FileMode.Create);
             Assert.False(fs.DisposeInvoked);
+            Assert.False(fs.CloseInvoked);
             await fs.DisposeAsync();
             Assert.True(fs.DisposeInvoked);
+            Assert.True(fs.CloseInvoked);
         }
 
-        private sealed class OverridesDisposeFileStream : FileStream
+        private sealed class OverridesDisposeAndCloseFileStream : FileStream
         {
+            public bool CloseInvoked;
             public bool DisposeInvoked;
-            public OverridesDisposeFileStream(string path, FileMode mode) : base(path, mode) { }
+            public OverridesDisposeAndCloseFileStream(string path, FileMode mode) : base(path, mode) { }
             protected override void Dispose(bool disposing)
             {
                 DisposeInvoked = true;
                 base.Dispose(disposing);
+            }
+            public override void Close()
+            {
+                CloseInvoked = true;
+                base.Close();
             }
         }
     }

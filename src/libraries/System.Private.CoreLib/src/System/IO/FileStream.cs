@@ -622,6 +622,9 @@ namespace System.IO
         internal ValueTask BaseWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => base.WriteAsync(buffer, cancellationToken);
 
+        internal ValueTask BaseDisposeAsync()
+            => base.DisposeAsync();
+
         internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => base.CopyToAsync(destination, bufferSize, cancellationToken);
 
