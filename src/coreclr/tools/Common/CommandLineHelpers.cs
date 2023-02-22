@@ -74,14 +74,14 @@ namespace System.CommandLine
             return lowerToken switch
             {
                 "linux" or "linux-musl" => TargetOS.Linux,
-                _ when lowerToken.StartsWith("win") => TargetOS.Windows,
-                _ when lowerToken.StartsWith("osx") => TargetOS.OSX,
-                _ when lowerToken.StartsWith("freebsd") => TargetOS.FreeBSD,
-                _ when lowerToken.StartsWith("maccatalyst") => TargetOS.MacCatalyst,
-                _ when lowerToken.StartsWith("iossimulator") => TargetOS.iOSSimulator,
-                _ when lowerToken.StartsWith("ios") => TargetOS.iOS,
-                _ when lowerToken.StartsWith("tvossimulator") => TargetOS.tvOSSimulator,
-                _ when lowerToken.StartsWith("tvos") => TargetOS.tvOS,
+                "win" or "windows" => TargetOS.Windows,
+                "osx" => TargetOS.OSX,
+                "freebsd" => TargetOS.FreeBSD,
+                "maccatalyst" => TargetOS.MacCatalyst,
+                "iossimulator" => TargetOS.iOSSimulator,
+                "ios" => TargetOS.iOS,
+                "tvossimulator" => TargetOS.tvOSSimulator,
+                "tvos" => TargetOS.tvOS,
                 _ => throw new CommandLineException($"Target OS '{token}' is not supported")
             };
         }
