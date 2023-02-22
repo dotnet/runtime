@@ -1356,7 +1356,7 @@ instruction CodeGen::JumpKindToCmov(emitJumpKind condition)
 }
 
 //------------------------------------------------------------------------
-// genCodeForCompare: Produce code for a GT_SELECT/GT_SELECT_HI node.
+// genCodeForCompare: Produce code for a GT_SELECT/GT_SELECTCC node.
 //
 // Arguments:
 //    select - the node
