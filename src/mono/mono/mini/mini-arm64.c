@@ -582,7 +582,7 @@ emit_strfpx (guint8 *code, int rt, int rn, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_strfpq (guint8 *code, int rt, int rn, int imm)
 {
-	if (arm_is_strx_imm (imm)) {
+	if (arm_is_pimm12_scaled (imm, 16)) {
 		arm_strfpq (code, rt, rn, imm);
 	} else {
 		g_assert (rn != ARMREG_IP0);
@@ -734,7 +734,7 @@ emit_ldrfpx (guint8 *code, int rt, int rn, int imm)
 static WARN_UNUSED_RESULT guint8*
 emit_ldrfpq (guint8 *code, int rt, int rn, int imm)
 {
-	if (arm_is_pimm12_scaled (imm, 8)) {
+	if (arm_is_pimm12_scaled (imm, 16)) {
 		arm_ldrfpq (code, rt, rn, imm);
 	} else {
 		g_assert (rn != ARMREG_IP0);
