@@ -1178,15 +1178,17 @@ namespace Internal.IL
 
         private void ImportNewArray(int token)
         {
-            var type = ((TypeDesc)_methodIL.GetObject(token)).MakeArrayType();
-            if (type.IsRuntimeDeterminedSubtype)
+            var elementType = (TypeDesc)_methodIL.GetObject(token);
+            if (elementType.IsRuntimeDeterminedSubtype)
             {
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "newarr");
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType.MakeArrayType()), "newarr");
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewArray), "newarr");
             }
             else
             {
-                _dependencies.Add(_factory.ConstructedTypeSymbol(type), "newarr");
+                if (elementType.IsVoid)
+                    ThrowHelper.ThrowInvalidProgramException();
+                _dependencies.Add(_factory.ConstructedTypeSymbol(elementType.MakeArrayType()), "newarr");
             }
         }
 

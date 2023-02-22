@@ -5,9 +5,7 @@
 // Once we're able to do `stackalloc object[n]`, these can be removed.
 
 // Suppress warnings for unused private fields
-#pragma warning disable CS0169
-#pragma warning disable CA1823
-#pragma warning disable IDE0051
+#pragma warning disable CS0169, CA1823, IDE0051, IDE0044
 
 namespace System
 {

@@ -640,6 +640,7 @@ mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *repl
 	//
 	// To avoid scanning the entire offset_to_bb array, we scan only in the vicinity
 	// of the IL offset of bb. We can stop search when we encounter a different bblock.
+	g_assert (bb->il_offset >= 0);
 	for (int il_offset = bb->il_offset; il_offset >= 0; il_offset--) {
 		if (td->offset_to_bb [il_offset] == bb)
 			td->offset_to_bb [il_offset] = replace_bb;
@@ -1366,12 +1367,12 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_method_access;
 
 	/* Inject code throwing MethodAccessException */
-	interp_add_ins (td, MINT_MONO_LDPTR);
+	interp_add_ins (td, MINT_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 	td->last_ins->data [0] = get_data_item_index (td, method);
 
-	interp_add_ins (td, MINT_MONO_LDPTR);
+	interp_add_ins (td, MINT_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 	td->last_ins->data [0] = get_data_item_index (td, target_method);
@@ -1418,7 +1419,7 @@ interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 
 	char *msg = mono_mem_manager_strdup (td->mem_manager, mono_error_get_message (error_msg));
 
-	interp_add_ins (td, MINT_MONO_LDPTR);
+	interp_add_ins (td, MINT_LDPTR);
 	push_simple_type (td, STACK_TYPE_I);
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 	td->last_ins->data [0] = get_data_item_index (td, msg);
@@ -2396,9 +2397,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			td->ip += 5;
 			return TRUE;
-		} else if (!strcmp (tm, "InternalGetHashCode")) {
+		} else if (!strcmp (tm, "GetHashCode") || !strcmp (tm, "InternalGetHashCode")) {
 			*op = MINT_INTRINS_GET_HASHCODE;
-		} else if (!strcmp (tm, "InternalTryGetHashCode")) {
+		} else if (!strcmp (tm, "TryGetHashCode") || !strcmp (tm, "InternalTryGetHashCode")) {
 			*op = MINT_INTRINS_TRY_GET_HASHCODE;
 		} else if (!strcmp (tm, "GetRawData")) {
 			interp_add_ins (td, MINT_LDFLDA_UNSAFE);
@@ -2445,6 +2446,42 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				has_refs = m_class_has_references (klass);
 
 			*op = has_refs ? MINT_LDC_I4_1 : MINT_LDC_I4_0;
+		} else if (!strcmp (tm, "CreateSpan") && csignature->param_count == 1 &&
+				td->last_ins->opcode == MINT_LDPTR && td->last_ins->dreg == td->sp [-1].local) {
+			MonoGenericContext* ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			MonoType *span_arg_type = mini_get_underlying_type (ctx->method_inst->type_argv [0]);
+
+			MonoClassField *field = (MonoClassField*)td->data_items [td->last_ins->data [0]];
+			int alignment = 0;
+			int element_size = mono_type_size (span_arg_type, &alignment);
+			int num_elements = mono_type_size (field->type, &alignment) / element_size;
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+			const int swizzle = 1;
+#else
+			const int swizzle = element_size;
+#endif
+			gpointer data_ptr = (gpointer)mono_field_get_rva (field, swizzle);
+			// instead of the field, we push directly the associated data
+			td->last_ins->data [0] = get_data_item_index (td, data_ptr);
+
+			// push the length of this span
+			push_simple_type (td, STACK_TYPE_I4);
+			interp_get_ldc_i4_from_const (td, NULL, num_elements, td->sp [-1].local);
+
+			// create span
+			interp_add_ins (td, MINT_INTRINS_SPAN_CTOR);
+			td->sp -= 2;
+			interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
+
+			MonoClass *ret_class = mono_class_from_mono_type_internal (csignature->ret);
+			push_type_vt (td, ret_class, mono_class_value_size (ret_class, NULL));
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+
+			td->ip += 5;
+			return TRUE;
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "RuntimeMethodHandle") && !strcmp (tm, "GetFunctionPointer") && csignature->param_count == 1) {
 		// We must intrinsify this method on interp so we don't return a pointer to native code entering interpreter
@@ -2467,7 +2504,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				return_val_if_nok (error, FALSE);
 
 				td->sp--;
-				interp_add_ins (td, MINT_MONO_LDPTR);
+				interp_add_ins (td, MINT_LDPTR);
 				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, systype);
@@ -2555,6 +2592,14 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_MONO_MEMORY_BARRIER;
 		else if (!strcmp (tm, "Exchange") && csignature->param_count == 2 && csignature->params [0]->type == MONO_TYPE_I8 && csignature->params [1]->type == MONO_TYPE_I8)
 			*op = MINT_MONO_EXCHANGE_I8;
+		else if (!strcmp (tm, "CompareExchange") && csignature->param_count == 3 &&
+			 (csignature->params[1]->type == MONO_TYPE_I4 ||
+			  csignature->params[1]->type == MONO_TYPE_I8)) {
+			if (csignature->params[1]->type == MONO_TYPE_I4)
+				*op = MINT_MONO_CMPXCHG_I4;
+			else
+				*op = MINT_MONO_CMPXCHG_I8;
+		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Thread")) {
 		if (!strcmp (tm, "MemoryBarrier") && csignature->param_count == 0)
 			*op = MINT_MONO_MEMORY_BARRIER;
@@ -3486,7 +3531,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	target_method = interp_transform_internal_calls (method, target_method, csignature, is_virtual);
+	if (op == -1)
+		target_method = interp_transform_internal_calls (method, target_method, csignature, is_virtual);
 
 	if (csignature->call_convention == MONO_CALL_VARARG)
 		csignature = mono_method_get_signature_checked (target_method, image, token, generic_context, error);
@@ -7198,7 +7244,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					break;
 				}
 
-				interp_add_ins (td, MINT_MONO_LDPTR);
+				interp_add_ins (td, MINT_LDPTR);
 				gpointer systype = mono_type_get_object_checked ((MonoType*)handle, error);
 				goto_if_nok (error, exit);
 				push_type (td, STACK_TYPE_O, mono_defaults.runtimetype_class);
@@ -7206,7 +7252,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->last_ins->data [0] = get_data_item_index (td, systype);
 				td->ip = next_ip + 5;
 			} else {
-				interp_add_ins (td, MINT_LDTOKEN);
+				interp_add_ins (td, MINT_LDPTR);
 				push_type_vt (td, klass, sizeof (gpointer));
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, handle);
@@ -7420,7 +7466,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_MONO_METHODCONST:
 				token = read32 (td->ip + 1);
 				td->ip += 5;
-				interp_add_ins (td, MINT_MONO_LDPTR);
+				interp_add_ins (td, MINT_LDPTR);
 				push_simple_type (td, STACK_TYPE_I);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, mono_method_get_wrapper_data (method, token));
@@ -7428,7 +7474,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_MONO_PINVOKE_ADDR_CACHE: {
 				token = read32 (td->ip + 1);
 				td->ip += 5;
-				interp_add_ins (td, MINT_MONO_LDPTR);
+				interp_add_ins (td, MINT_LDPTR);
 				g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 				push_simple_type (td, STACK_TYPE_I);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
@@ -7493,7 +7539,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				++td->ip;
 				break;
 			case CEE_MONO_LDPTR_INT_REQ_FLAG:
-				interp_add_ins (td, MINT_MONO_LDPTR);
+				interp_add_ins (td, MINT_LDPTR);
 				push_type (td, STACK_TYPE_MP, NULL);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, &mono_thread_interruption_request_flag);
@@ -7525,12 +7571,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				MonoJitICallInfo const * const info = mono_find_jit_icall_info (jit_icall_id);
 
 				if (info->sig->ret->type != MONO_TYPE_VOID) {
+					g_assert_checked (jit_icall_id == MONO_JIT_ICALL_mono_threads_enter_gc_safe_region_unbalanced);
 					// Push a dummy coop gc var
 					interp_add_ins (td, MINT_LDNULL);
 					push_simple_type (td, STACK_TYPE_I);
 					td->last_ins->dreg = td->sp [-1].local;
 					interp_add_ins (td, MINT_MONO_ENABLE_GCTRANS);
 				} else {
+					g_assert_checked (jit_icall_id == MONO_JIT_ICALL_mono_threads_exit_gc_safe_region_unbalanced);
 					// Pop the unused gc var
 					td->sp--;
 				}
@@ -8594,6 +8642,7 @@ interp_reorder_bblocks (TransformData *td)
 					InterpBasicBlock *new_bb = alloc_bb (td);
 					new_bb->next_bb = in_bb->next_bb;
 					in_bb->next_bb = new_bb;
+					new_bb->il_offset = in_bb->il_offset;
 					interp_link_bblocks (td, in_bb, new_bb);
 
 					InterpInst *new_inst = interp_insert_ins_bb (td, new_bb, NULL, MINT_BR);
@@ -9340,7 +9389,7 @@ retry:
 			} else if (MINT_IS_LDC_I8 (opcode)) {
 				local_defs [dreg].type = LOCAL_VALUE_I8;
 				local_defs [dreg].l = interp_get_const_from_ldc_i8 (ins);
-			} else if (ins->opcode == MINT_MONO_LDPTR) {
+			} else if (ins->opcode == MINT_LDPTR) {
 #if SIZEOF_VOID_P == 8
 				local_defs [dreg].type = LOCAL_VALUE_I8;
 				local_defs [dreg].l = (gint64)td->data_items [ins->data [0]];

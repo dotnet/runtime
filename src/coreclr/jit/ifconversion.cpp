@@ -625,15 +625,6 @@ bool OptIfConversionDsc::IsHWIntrinsicCC(GenTree* node)
 //
 bool OptIfConversionDsc::optIfConvert()
 {
-    // Don't optimise the block if it is inside a loop
-    // When inside a loop, branches are quicker than selects.
-    // Detect via the block weight as that will be high when inside a loop.
-    if ((m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT) &&
-        !m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
-    {
-        return false;
-    }
-
     // Does the block end by branching via a JTRUE after a compare?
     if (m_startBlock->bbJumpKind != BBJ_COND || m_startBlock->NumSucc() != 2)
     {
@@ -769,6 +760,25 @@ bool OptIfConversionDsc::optIfConvert()
         }
     }
 
+    if (!m_comp->compStressCompile(Compiler::STRESS_IF_CONVERSION_INNER_LOOPS, 25))
+    {
+        // Don't optimise the block if it is inside a loop
+        // When inside a loop, branches are quicker than selects.
+        // Detect via the block weight as that will be high when inside a loop.
+        if (m_startBlock->getBBWeight(m_comp) > BB_UNITY_WEIGHT)
+        {
+            JITDUMP("Skipping if-conversion inside loop (via weight)\n");
+            return false;
+        }
+
+        // We may be inside an unnatural loop, so do the expensive check.
+        if (m_comp->optReachable(m_finalBlock, m_startBlock, nullptr))
+        {
+            JITDUMP("Skipping if-conversion inside loop (via FG walk)\n");
+            return false;
+        }
+    }
+
     // Get the select node inputs.
     var_types selectType;
     GenTree*  selectTrueInput;
@@ -878,10 +888,8 @@ PhaseStatus Compiler::optIfConversion()
 
     // This phase does not repect SSA: assignments are deleted/moved.
     assert(!fgDomsComputed);
+    optReachableBitVecTraits = nullptr;
 
-    // Currently only enabled on arm64 and under debug on xarch, since we only
-    // do it under stress.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_ARM64) || defined(TARGET_XARCH)
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;

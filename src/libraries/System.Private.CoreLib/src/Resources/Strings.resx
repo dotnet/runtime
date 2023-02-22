@@ -3992,4 +3992,13 @@
   <data name="Argument_DirectorySeparatorInvalid" xml:space="preserve">
     <value>The value may not contain directory separator characters.</value>
   </data>
+  <data name="InvalidOperation_NotFunctionPointer" xml:space="preserve">
+    <value>Method may only be called on a Type for which Type.IsFunctionPointer is true.</value>
+  </data>
+  <data name="NotSupported_ModifiedType" xml:space="preserve">
+    <value>Modified types do not support this member. Use the UnderlyingSystemType property to call this member.</value>
+  </data>
+  <data name="Argument_UnexpectedStateForKnownCallback" xml:space="preserve">
+    <value>An unexpected state object was encountered. This is usually a sign of a bug in async method custom infrastructure, such as a custom awaiter or IValueTaskSource implementation.</value>
+  </data>
 </root>

@@ -11089,13 +11089,10 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 {
     currentInterval = interval;
     refPosition     = refPos;
-    score           = 0;
 
-    regType         = linearScan->getRegisterType(currentInterval, refPosition);
-    currentLocation = refPosition->nodeLocation;
-    nextRefPos      = refPosition->nextRefPosition;
-    candidates      = refPosition->registerAssignment;
-    preferences     = currentInterval->registerPreferences;
+    regType     = linearScan->getRegisterType(currentInterval, refPosition);
+    candidates  = refPosition->registerAssignment;
+    preferences = currentInterval->registerPreferences;
 
     // This is not actually a preference, it's merely to track the lclVar that this
     // "specialPutArg" is using.
@@ -11105,25 +11102,21 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     rangeEndLocation    = refPosition->getRangeEndLocation();
     relatedLastLocation = rangeEndLocation;
     preferCalleeSave    = currentInterval->preferCalleeSave;
-    rangeEndRefPosition = nullptr;
     lastRefPosition     = currentInterval->lastRefPosition;
-    lastLocation        = MinLocation;
-    prevRegRec          = currentInterval->assignedReg;
 
     // These are used in the post-selection updates, and must be set for any selection.
-    freeCandidates    = RBM_NONE;
-    matchingConstants = RBM_NONE;
-    unassignedSet     = RBM_NONE;
-
-    coversSet        = RBM_NONE;
-    preferenceSet    = RBM_NONE;
-    coversRelatedSet = RBM_NONE;
-    coversFullSet    = RBM_NONE;
-
-    foundRegBit          = REG_NA;
-    found                = false;
-    skipAllocation       = false;
-    coversSetsCalculated = false;
+    freeCandidates        = RBM_NONE;
+    matchingConstants     = RBM_NONE;
+    unassignedSet         = RBM_NONE;
+    coversSet             = RBM_NONE;
+    preferenceSet         = RBM_NONE;
+    coversRelatedSet      = RBM_NONE;
+    coversFullSet         = RBM_NONE;
+    coversSetsCalculated  = false;
+    found                 = false;
+    skipAllocation        = false;
+    coversFullApplied     = false;
+    constAvailableApplied = false;
 }
 
 // ----------------------------------------------------------
@@ -11141,7 +11134,6 @@ bool LinearScan::RegisterSelection::applySelection(int selectionScore, regMaskTP
     regMaskTP newCandidates = candidates & selectionCandidates;
     if (newCandidates != RBM_NONE)
     {
-        score += selectionScore;
         candidates = newCandidates;
         return LinearScan::isSingleRegister(candidates);
     }
@@ -11199,7 +11191,13 @@ void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 
     if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
     {
-        found = applySelection(CONST_AVAILABLE, matchingConstants);
+        regMaskTP newCandidates = candidates & matchingConstants;
+        if (newCandidates != RBM_NONE)
+        {
+            candidates            = newCandidates;
+            constAvailableApplied = true;
+            found                 = isSingleRegister(newCandidates);
+        }
     }
 }
 
@@ -11214,7 +11212,7 @@ void LinearScan::RegisterSelection::try_THIS_ASSIGNED()
         return;
     }
 
-    if (prevRegRec != nullptr)
+    if (currentInterval->assignedReg != nullptr)
     {
         found = applySelection(THIS_ASSIGNED, freeCandidates & preferences & prevRegBit);
     }
@@ -11307,7 +11305,13 @@ void LinearScan::RegisterSelection::try_COVERS_FULL()
     calculateCoversSets();
 #endif
 
-    found = applySelection(COVERS_FULL, (coversFullSet & freeCandidates));
+    regMaskTP newCandidates = candidates & coversFullSet & freeCandidates;
+    if (newCandidates != RBM_NONE)
+    {
+        candidates        = newCandidates;
+        found             = isSingleRegister(candidates);
+        coversFullApplied = true;
+    }
 }
 
 // ----------------------------------------------------------
@@ -11325,7 +11329,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
     regMaskTP bestFitSet = RBM_NONE;
     // If the best score includes COVERS_FULL, pick the one that's killed soonest.
     // If none cover the full range, the BEST_FIT is the one that's killed later.
-    bool         earliestIsBest  = ((score & COVERS_FULL) != 0);
+    bool         earliestIsBest  = coversFullApplied;
     LsraLocation bestFitLocation = earliestIsBest ? MaxLocation : MinLocation;
     for (regMaskTP bestFitCandidates = candidates; bestFitCandidates != RBM_NONE;)
     {
@@ -11393,7 +11397,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
 void LinearScan::RegisterSelection::try_IS_PREV_REG()
 {
     // TODO: We do not check found here.
-    if ((prevRegRec != nullptr) && ((score & COVERS_FULL) != 0))
+    if ((currentInterval->assignedReg != nullptr) && coversFullApplied)
     {
         found = applySingleRegSelection(IS_PREV_REG, prevRegBit);
     }
@@ -11460,7 +11464,7 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
 
         // Can and should the interval in this register be spilled for this one,
         // if we don't find a better alternative?
-        if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == currentLocation) &&
+        if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == refPosition->nodeLocation) &&
             !assignedInterval->getNextRefPosition()->RegOptional())
         {
             continue;
@@ -11751,6 +11755,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     // process data-structures
     if (RefTypeIsDef(refPosition->refType))
     {
+        RefPosition* nextRefPos = refPosition->nextRefPosition;
         if (currentInterval->hasConflictingDefUse)
         {
             linearScan->resolveConflictingDefAndUse(currentInterval, refPosition);
@@ -11960,8 +11965,8 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
             regNumber    checkConflictReg      = genRegNumFromMask(checkConflictBit);
             LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
 
-            if ((checkConflictLocation == currentLocation) ||
-                (refPosition->delayRegFree && (checkConflictLocation == (currentLocation + 1))))
+            if ((checkConflictLocation == refPosition->nodeLocation) ||
+                (refPosition->delayRegFree && (checkConflictLocation == (refPosition->nodeLocation + 1))))
             {
                 candidates &= ~checkConflictBit;
             }
@@ -11974,9 +11979,10 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     // been restored as inactive after a kill?
     // NOTE: this is not currently considered one of the selection criteria - it always wins
     // if it is the assignedInterval of 'prevRegRec'.
-    if (!found && (prevRegRec != nullptr))
+    if (!found && (currentInterval->assignedReg != nullptr))
     {
-        prevRegBit = genRegMask(prevRegRec->regNum);
+        RegRecord* prevRegRec = currentInterval->assignedReg;
+        prevRegBit            = genRegMask(prevRegRec->regNum);
         if ((prevRegRec->assignedInterval == currentInterval) && ((candidates & prevRegBit) != RBM_NONE))
         {
             candidates = prevRegBit;
@@ -12070,6 +12076,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 Selection_Done:
     if (skipAllocation)
     {
+        foundRegBit = RBM_NONE;
         return RBM_NONE;
     }
 

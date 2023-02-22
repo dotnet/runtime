@@ -1765,7 +1765,9 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         MethodDesc *pMD = (MethodDesc *)arg;
         if (pMD->IsNDirect())
         {
-            target = (PCODE)((NDirectMethodDesc *)pMD)->GetNativeNDirectTarget();
+            NDirectMethodDesc* pNMD = reinterpret_cast<NDirectMethodDesc*>(pMD);
+            _ASSERTE_IMPL(!pNMD->NDirectTargetIsImportThunk());
+            target = (PCODE)pNMD->GetNDirectTarget();
             LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward P/Invoke case 0x%p\n", target));
             trace->InitForUnmanaged(target);
         }
