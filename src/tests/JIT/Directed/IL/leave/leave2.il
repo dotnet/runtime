@@ -133,6 +133,7 @@ ldstr "In Catch"
   IL_005b:  ret
 } // end of global method 'test'
 
+.class public auto ansi leave1 {
 .method public static int32 main() il managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -197,4 +198,4 @@ ldstr "!!! HMM...."
   IL_006c:  ldc.i4.0
   IL_006d:  ret
 } // end of global method 'main'
-
+}

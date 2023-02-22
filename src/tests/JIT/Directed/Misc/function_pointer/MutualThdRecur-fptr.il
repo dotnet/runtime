@@ -2984,6 +2984,7 @@ call void Thread_EA::Dispatch(method explicit instance void *(int32), int32)
   IL_003d:  ret
 }
 
+.class public auto ansi MutualThdRecur_fptr {
 .method public static int32 main() il managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -3053,4 +3054,5 @@ call void Thread_EA::Dispatch(method explicit instance void *(int32), int32)
   IL_009e:  callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(class [mscorlib]System.String)
   IL_00a3:  ldc.i4     0x64
   IL_00a8:  ret
+}
 }
