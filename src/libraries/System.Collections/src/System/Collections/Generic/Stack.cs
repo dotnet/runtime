@@ -152,21 +152,14 @@ namespace System.Collections.Generic
         }
 
         // Returns an IEnumerator for this Stack.
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <internalonly/>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
+            Count == 0 ? ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator() :
+            GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new Enumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         public void TrimExcess()
         {

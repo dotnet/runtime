@@ -32,6 +32,8 @@ namespace System.Collections.Tests
 
         protected override Type IGenericSharedAPI_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
+
         #endregion
 
         protected override IEnumerable<T> GenericIEnumerableFactory()

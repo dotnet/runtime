@@ -9,6 +9,7 @@ namespace System.Collections.Tests
 {
     public class SortedDictionary_Generic_Tests_Keys : ICollection_Generic_Tests<string>
     {
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
         protected override bool DefaultValueAllowed => false;
         protected override bool DuplicateValuesAllowed => false;
         protected override bool IsReadOnly => true;

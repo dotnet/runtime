@@ -12,6 +12,8 @@ namespace System.Collections.Tests
 {
     public partial class Dictionary_IDictionary_NonGeneric_Tests : IDictionary_NonGeneric_Tests
     {
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
+
         protected override IDictionary NonGenericIDictionaryFactory()
         {
             return new Dictionary<string, string>();
