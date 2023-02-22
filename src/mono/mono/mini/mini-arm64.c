@@ -30,6 +30,43 @@
 
 #include "interp/interp.h"
 
+// The following defines are here to support the inclusion of simd-arm64.h
+#define EXPAND(x) x
+#define PARENTHESIZE(...) (__VA_ARGS__)
+#define EXPAND_FUN(m, ...) EXPAND(m PARENTHESIZE(__VA_ARGS__))
+
+#define OPFMT_DS dreg, sreg1
+#define OPFMT_WDS _w, dreg, sreg1
+#define OPFMT_WTDS _w, _t, dreg, sreg1
+#define OPFMT_WTDSS _w, _t, dreg, sreg1, sreg2
+#define OPFMT_WTDSS_REV _w, _t, dreg, sreg2, sreg1
+#define OPFMT_WTDI(imm) _w, _t, dreg, (imm)
+#define OPFMT_WDDD _w, dreg, dreg, dreg
+#define _UNDEF(...) g_assert_not_reached ()
+#define SIMD_OP_CODE(reg_w, op, c) (reg_w << 31) | (op) << 16 | (c) 
+#define SIMD_TYPE_CODE(t,f) ((f) << (t))
+#define VREG_64 VREG_LOW
+#define VREG_128 VREG_FULL
+
+#define SIMD_OP_INTERNAL(code, reg_w, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) \
+	if (_f) { \
+		if (_t == TYPE_I8) { \
+			EXPAND_FUN (i8fun, code, OPFMT_##fmt); \
+		} else if (_t == TYPE_I16) { \
+			EXPAND_FUN (i16fun, code, OPFMT_##fmt); \
+		} else if (_t == TYPE_I32) { \
+			EXPAND_FUN (i32fun, code, OPFMT_##fmt); \
+		} else { \
+			EXPAND_FUN (i64fun, code, OPFMT_##fmt); \
+		} \
+	} else { \
+		if (_t == TYPE_F32) { \
+			EXPAND_FUN (f32fun, code, OPFMT_##fmt); \
+		} else { \
+			EXPAND_FUN (f64fun, code, OPFMT_##fmt); \
+		} \
+	}
+
 // Several of the 32-bit bit shifts must remain 32-bit, since they assume possible wrap around.
 // result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
 MONO_DISABLE_WARNING(4334)
@@ -3270,7 +3307,49 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		sreg2 = ins->sreg2;
 		imm = ins->inst_imm;
 
-		switch (ins->opcode) {
+		gboolean is_unhandled = FALSE;
+		{
+			// these are required for the macros from simd-arm64-h
+			const int _t = get_size_type_macro (ins->inst_c1);
+    	const gboolean _f = mono_type_is_float (ins->inst_c1);
+    	const guint32 _w = (mono_class_value_size (ins->klass, NULL) == 16) ? VREG_FULL : VREG_LOW;
+
+			#undef SIMD_OP
+			#undef SIMD_OP_EX
+			#define SIMD_OP(reg_w, op, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) \
+				case SIMD_OP_CODE (VREG_##reg_w, (op), 0): { \
+					SIMD_OP_INTERNAL (code, reg_w, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun); \
+					} break;
+			#define SIMD_OP_EX(reg_w, op, c, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) 
+
+			switch (SIMD_OP_CODE (_w, ins->opcode, 0)) {
+				#include "simd-arm64.h"
+			default:
+				is_unhandled = TRUE;
+				break;
+			}
+
+			#undef SIMD_OP
+			#undef SIMD_OP_EX
+			#define SIMD_OP(reg_w, op, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun)
+			#define SIMD_OP_EX(reg_w, op, c, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun) \
+				case SIMD_OP_CODE (VREG_##reg_w, (op), (c)): { \
+					SIMD_OP_INTERNAL (code, reg_w, fmt, i8fun, i16fun, i32fun, i64fun, f32fun, f64fun); \
+					} break;
+
+			if (is_unhandled) {
+				is_unhandled = FALSE;
+				switch (SIMD_OP_CODE (_w, ins->opcode, ins->inst_c0)) {
+					#include "simd-arm64.h"
+				default:
+					is_unhandled = TRUE;
+					break;
+				}
+			}
+		}
+
+		if (is_unhandled) {
+			switch (ins->opcode) {
 		case OP_ICONST:
 			code = emit_imm (code, dreg, ins->inst_c0);
 			break;
@@ -4714,15 +4793,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				if ((MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) || i == ARMREG_SP || i == ARMREG_FP)
 					arm_strx (code, i, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, regs) + i * sizeof (target_mgreg_t));
 			break;
+
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
+		}
 		}
 
 		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
 			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
 				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
 			g_assert_not_reached ();
+		
 		}
 	}
 	set_code_cursor (cfg, code);
