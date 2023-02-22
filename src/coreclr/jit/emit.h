@@ -2375,10 +2375,10 @@ private:
                     return;
                 case PEEPHOLE_CONTINUE:
                 {
-                    insGroup* prevInsIG = curInsIG;
+                    insGroup* savedInsIG = curInsIG;
                     if (emitPrevID(curInsIG, id))
                     {
-                        if (isInsIGSafeForPeepholeOptimization(prevInsIG, curInsIG))
+                        if (isInsIGSafeForPeepholeOptimization(savedInsIG, curInsIG))
                         {
                             continue;
                         }
