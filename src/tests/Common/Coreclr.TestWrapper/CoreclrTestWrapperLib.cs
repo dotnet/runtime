@@ -738,7 +738,7 @@ namespace CoreclrTestLib
                                         if (dmpFile.CreationTime < startTime)
                                         {
                                             // No new files since test started.
-                                            outputWriter.WriteLine("Finish looking for *.dmp. No new files created.");
+                                            outputWriter.WriteLine("Finished looking for *.dmp. No new files created.");
                                             break;
                                         }
                                         outputWriter.WriteLine($"Processing {dmpFile.FullName}");
