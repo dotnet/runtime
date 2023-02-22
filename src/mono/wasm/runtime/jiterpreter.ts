@@ -114,10 +114,10 @@ export let countLimitedPrintCounter = 10;
 export const abortCounts : { [key: string] : number } = {};
 export const traceInfo : { [key: string] : TraceInfo } = {};
 
-export const // offsetOfStack = 12,
-    offsetOfImethod = 4,
-    offsetOfDataItems = 20,
+export const
     sizeOfDataItem = 4,
+    sizeOfObjectHeader = 8,
+
     // HACK: Typically we generate ~12 bytes of extra gunk after the function body so we are
     //  subtracting 20 from the maximum size to make sure we don't produce too much
     // Also subtract some more size since the wasm we generate for one opcode could be big
@@ -244,9 +244,6 @@ function getTraceImports () {
         importDef("array_address", getRawCwrap("mono_jiterp_array_get_element_address_with_size_ref")),
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
-        importDef("strlen", getRawCwrap("mono_jiterp_strlen_ref")),
-        importDef("getchr", getRawCwrap("mono_jiterp_getchr_ref")),
-        importDef("getspan", getRawCwrap("mono_jiterp_getitem_span")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
         importDef("cast", getRawCwrap("mono_jiterp_cast_ref")),
         importDef("try_unbox", getRawCwrap("mono_jiterp_try_unbox_ref")),
