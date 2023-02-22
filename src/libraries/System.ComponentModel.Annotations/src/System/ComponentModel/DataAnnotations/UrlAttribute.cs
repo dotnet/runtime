@@ -22,7 +22,9 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            return value is string valueAsString &&
+            string? valueAsString = value as string ?? (value as Uri)?.OriginalString;
+
+            return valueAsString is not null &&
                 (valueAsString.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
                 || valueAsString.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
                 || valueAsString.StartsWith("ftp://", StringComparison.OrdinalIgnoreCase));
