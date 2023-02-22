@@ -64,8 +64,11 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
-extern const char* dotnet_wasi_getbundledfile(const char* name, int* out_length);
-extern void dotnet_wasi_registerbundledassemblies();
+extern void mono_wasm_register_bundle_timezones();
+#ifdef GEN_ASSEMBLIES
+extern void mono_wasm_register_bundle_assemblies();
+#endif
+
 extern const char* dotnet_wasi_getentrypointassemblyname();
 
 int mono_wasm_enable_gc = 1;
@@ -401,6 +404,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
+	mono_wasm_register_bundle_timezones();
+#ifdef GEN_ASSEMBLIES
+	mono_wasm_register_bundle_assemblies();
+#endif
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
