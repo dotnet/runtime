@@ -352,11 +352,7 @@ if(HOST_WIN32)
 set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "/wd4005;/wd4127;/wd4131;/wd4244")
 endif()
 
-<<<<<<< HEAD
-set(monosgen-sources "${icu_shim_sources};${mini_sources};${ZLIB_SOURCES}")
-=======
-set(monosgen-sources "${metadata_sources};${utils_sources};${sgen_sources};${mini_sources};${ZLIB_SOURCES}")
->>>>>>> 819cdfa264a (Mono: Link static ICU shim only into Mono shared libraries)
+set(monosgen-sources "${mini_sources};${ZLIB_SOURCES}")
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
 target_link_libraries (monosgen-objects PRIVATE monoapi eglib_api utils_objects sgen_objects metadata_objects)
