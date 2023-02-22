@@ -495,6 +495,8 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 #define JITERP_MEMBER_IMETHOD 4
 #define JITERP_MEMBER_DATA_ITEMS 5
 #define JITERP_MEMBER_RMETHOD 6
+#define JITERP_MEMBER_SPAN_LENGTH 7
+#define JITERP_MEMBER_SPAN_DATA 8
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -514,6 +516,10 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (InterpMethod, data_items);
 		case JITERP_MEMBER_RMETHOD:
 			return offsetof (JiterpEntryDataHeader, rmethod);
+		case JITERP_MEMBER_SPAN_LENGTH:
+			return offsetof (MonoSpanOfVoid, _length);
+		case JITERP_MEMBER_SPAN_DATA:
+			return offsetof (MonoSpanOfVoid, _reference);
 		default:
 			g_assert_not_reached();
 	}

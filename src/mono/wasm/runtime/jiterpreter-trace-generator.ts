@@ -423,34 +423,56 @@ export function generate_wasm_body (
                 break;
             }
 
-            /*
-            EMSCRIPTEN_KEEPALIVE int mono_jiterp_getitem_span (
-                void **destination, MonoSpanOfVoid *span, int index, size_t element_size
-            ) {
-            */
             case MintOpcode.MINT_GETITEM_SPAN:
             case MintOpcode.MINT_GETITEM_LOCALSPAN: {
                 const elementSize = getArgI16(ip, 4);
-                // FIXME
                 builder.block();
-                // destination = &locals[1]
-                append_ldloca(builder, getArgU16(ip, 1), elementSize, true);
+                // Load index and stash it in lhs32
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+                builder.local("math_lhs32", WasmOpcode.tee_local);
+
+                // Load address of the span structure
                 if (opcode === MintOpcode.MINT_GETITEM_SPAN) {
-                    // span = (MonoSpanOfVoid *)locals[2]
-                    append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                    // span = *(MonoSpanOfVoid *)locals[2]
+                    append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
                 } else {
                     // span = (MonoSpanOfVoid)locals[2]
                     append_ldloca(builder, getArgU16(ip, 2), 0);
+                    builder.local("cknull_ptr", WasmOpcode.tee_local);
+                    cknullOffset = -1;
                 }
-                // index = locals[3]
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-                // element_size = ip[4]
-                builder.i32_const(elementSize);
-                builder.callImport("getspan");
+
+                // length = span->length
+                builder.appendU8(WasmOpcode.i32_load);
+                builder.appendMemarg(getMemberOffset(JiterpMember.SpanLength), 2);
+                // index < length
+                builder.appendU8(WasmOpcode.i32_lt_u);
+                // index >= 0
+                builder.local("math_lhs32");
+                builder.i32_const(0);
+                builder.appendU8(WasmOpcode.i32_ge_s);
+                // (index >= 0) && (index < length)
+                builder.appendU8(WasmOpcode.i32_and);
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
                 append_bailout(builder, ip, BailoutReason.SpanOperationFailed);
                 builder.endBlock();
+
+                // We successfully null checked and bounds checked. Now compute
+                //  the address and store it to the destination
+                builder.local("pLocals");
+
+                // src = span->_reference + (index * element_size);
+                builder.local("cknull_ptr");
+                builder.appendU8(WasmOpcode.i32_load);
+                builder.appendMemarg(getMemberOffset(JiterpMember.SpanData), 2);
+
+                builder.local("math_lhs32");
+                builder.i32_const(elementSize);
+                builder.appendU8(WasmOpcode.i32_mul);
+                builder.appendU8(WasmOpcode.i32_add);
+
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
             }
 
@@ -480,6 +502,7 @@ export function generate_wasm_body (
                 builder.appendMemarg(4, 0);
                 break;
             }
+
             case MintOpcode.MINT_LD_DELEGATE_METHOD_PTR: {
                 // FIXME: ldloca invalidation size
                 append_ldloca(builder, getArgU16(ip, 1), 8, true);
