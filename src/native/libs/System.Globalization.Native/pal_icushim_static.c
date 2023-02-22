@@ -45,10 +45,10 @@ static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int
     printf("[ICUDT] %s: %s\n", utrace_functionName(fnNumber), buf);
 }
 
+static int32_t load_icu_data(const void* pData);
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-
-static int32_t load_icu_data(const void* pData);
 
 EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
 
@@ -64,8 +64,6 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)
     return load_icu_data(pData);
 }
 
-
-
 #endif
 
 /*
@@ -77,6 +75,13 @@ void mono_wasm_link_icu_shim(void);
 
 void mono_wasm_link_icu_shim(void)
 {
+}
+
+int32_t mono_wasi_load_icu_data(const void* pData);
+
+int32_t mono_wasi_load_icu_data(const void* pData)
+{
+    return load_icu_data(pData);
 }
 
 static int32_t load_icu_data(const void* pData)

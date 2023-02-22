@@ -328,6 +328,35 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 }
 
 void mono_wasm_link_icu_shim (void);
+int32_t mono_wasi_load_icu_data(const void* pData);
+void load_icu_data (void);
+void load_icu_data (void)
+{
+	FILE *fileptr;
+	unsigned char *buffer;
+	long filelen;
+	char filename[256];
+	sprintf(filename, "%s/%s", ".", "icudt.dat");
+
+	fileptr = fopen(filename, "rb");
+	if (fileptr == 0) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
+
+	fseek(fileptr, 0, SEEK_END);
+	filelen = ftell(fileptr);
+	rewind(fileptr);
+
+	buffer = (unsigned char *)malloc(filelen * sizeof(char));
+	if(!fread(buffer, filelen, 1, fileptr)) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
+	fclose(fileptr);
+
+	assert(mono_wasi_load_icu_data(buffer));
+}
 
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -343,6 +372,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 #ifndef INVARIANT_GLOBALIZATION
 	mono_wasm_link_icu_shim ();
+	load_icu_data();
 #else
 	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true", 1);
 #endif
