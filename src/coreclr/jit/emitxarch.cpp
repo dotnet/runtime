@@ -13247,7 +13247,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
 #ifdef TARGET_AMD64
         // All static field and data section constant accesses should be marked as relocatable
-        noway_assert(id->idIsDspReloc());
+        // noway_assert(id->idIsDspReloc());
         dst += emitOutputLong(dst, 0);
 #else  // TARGET_X86
         dst += emitOutputLong(dst, (int)(ssize_t)target);

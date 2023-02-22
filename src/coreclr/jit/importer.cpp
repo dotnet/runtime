@@ -9203,6 +9203,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         case CORINFO_FIELD_INSTANCE_ADDR_HELPER:
                         case CORINFO_FIELD_STATIC_ADDR_HELPER:
                         case CORINFO_FIELD_STATIC_TLS:
+                        case CORINFO_FIELD_STATIC_TLS_MANAGED: // TODO: Revisit this.
 
                             compInlineResult->NoteFatal(InlineObservation::CALLEE_LDFLD_NEEDS_HELPER);
                             return;
@@ -9342,6 +9343,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     break;
 
+                    case CORINFO_FIELD_STATIC_TLS_MANAGED:
+                        op1 =
+                            impThreadLocalFieldAccess(resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo, lclTyp);
+                        break;
                     case CORINFO_FIELD_STATIC_TLS:
 #ifdef TARGET_X86
                         // Legacy TLS access is implemented as intrinsic on x86 only
@@ -9532,6 +9537,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         case CORINFO_FIELD_INSTANCE_ADDR_HELPER:
                         case CORINFO_FIELD_STATIC_ADDR_HELPER:
                         case CORINFO_FIELD_STATIC_TLS:
+                        case CORINFO_FIELD_STATIC_TLS_MANAGED: // TODO: Revisit this.
 
                             compInlineResult->NoteFatal(InlineObservation::CALLEE_STFLD_NEEDS_HELPER);
                             return;
@@ -9609,7 +9615,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                     }
                     break;
-
+                    case CORINFO_FIELD_STATIC_TLS_MANAGED:
+                        op1 =
+                            impThreadLocalFieldAccess(resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo, lclTyp);
+                        break;
                     case CORINFO_FIELD_STATIC_TLS:
 #ifdef TARGET_X86
                         // Legacy TLS access is implemented as intrinsic on x86 only.
@@ -14208,4 +14217,163 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// impThreadLocalFieldAccess: Import a TLS field address.
+//
+// Expands ".tls"-style statics, for [ThreadStatics] variables.
+// An overview of the underlying native
+// mechanism can be found here: http://www.nynaeve.net/?p=180.
+//
+// Arguments:
+//    token      - The resolution token
+//    access     - access of the field
+//    pFieldInfo - field information
+//    fieldType  - type of field
+//
+// Return Value:
+//    The expanded tree - a GT_ADD.
+//
+//
+// Expands ".tls"-style statics, for [ThreadStatics] variables.
+// An overview of the underlying native
+// mechanism can be found here: http://www.nynaeve.net/?p=180.
+GenTree* Compiler::impThreadLocalFieldAccess(CORINFO_RESOLVED_TOKEN& token,
+                                             CORINFO_ACCESS_FLAGS    access,
+                                             CORINFO_FIELD_INFO*     pFieldInfo,
+                                             var_types               fieldType)
+{
+    JITDUMP("Inside impThreadLocalFieldAccess\n");
+    CORINFO_THREAD_LOCAL_FIELD_INFO threadLocalInfo;
+    CORINFO_FIELD_HANDLE            fieldHandle = token.hField;
+    int                             fieldOffset = pFieldInfo->offset;
+
+    info.compCompHnd->getThreadLocalFieldInfo(fieldHandle, &threadLocalInfo);
+
+    // Thread Local Storage static field reference
+    //
+    // Field ref is a TLS 'Thread-Local-Storage' reference
+    //
+    // Build this tree:  ADD(I_IMPL) #
+    //                   / \.
+    //                  /  CNS(fldOffset)
+    //                 /
+    //                /
+    //               /
+    //             IND(I_IMPL) == [Base of this DLL's TLS]
+    //              |
+    //             ADD(I_IMPL)
+    //             / \.
+    //            /   CNS(IdValue*4) or MUL
+    //           /                      / \.
+    //          IND(I_IMPL)            /  CNS(4)
+    //           |                    /
+    //          CNS(TLS_HDL,0x2C)    IND
+    //                                |
+    //                               CNS(pIdAddr)
+    //
+    // # Denotes the original node
+    //
+    void**   pIdAddr = nullptr;
+    unsigned IdValue = threadLocalInfo.tlsIndex;
+
+    //
+    // If we can we access the TLS DLL index ID value directly
+    // then pIdAddr will be NULL and
+    //      IdValue will be the actual TLS DLL index ID
+    //
+    GenTree* dllRef = nullptr;
+    if (pIdAddr == nullptr)
+    {
+        if (IdValue != 0)
+        {
+            dllRef = gtNewIconNode(IdValue * 4, TYP_I_IMPL);
+        }
+    }
+    else
+    {
+        dllRef = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pIdAddr, GTF_ICON_CONST_PTR, true);
+
+        // Next we multiply by 4
+        dllRef = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(4, TYP_I_IMPL));
+    }
+
+    // Mark this ICON as a TLS_HDL, codegen will use FS:[cns]
+    GenTree* tlsRef = gtNewIconHandleNode(threadLocalInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+
+    tlsRef = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+    if (dllRef != nullptr)
+    {
+        // Add the dllRef.
+        tlsRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRef, dllRef);
+    }
+
+    GenTree* tlsForMaxThreadStaticBlockAccess = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    GenTree* tlsForThreadStaticBlockAccess    = gtCloneExpr(tlsForMaxThreadStaticBlockAccess);
+
+    FieldSeq* innerFldSeq = GetFieldSeqStore()->Create(token.hField, fieldOffset, FieldSeq::FieldKind::SharedStatic);
+    GenTree*  slowPathForThreadStaticBlockNull =
+        fgGetStaticsCCtorHelper(token.hClass, CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR); // TODO: fix this
+    slowPathForThreadStaticBlockNull =
+        gtNewOperNode(GT_ADD, slowPathForThreadStaticBlockNull->TypeGet(), slowPathForThreadStaticBlockNull,
+                      gtNewIconNode(pFieldInfo->offset, innerFldSeq));
+    slowPathForThreadStaticBlockNull = gtNewIndir(fieldType, slowPathForThreadStaticBlockNull);
+
+    GenTree* slowPathForMaxThreadStaticBlock = gtCloneExpr(slowPathForThreadStaticBlockNull);
+
+    // Value of maxThreadStaticBlocks
+    GenTree* offsetOfMaxThreadStaticBlocks = gtNewIconNode(threadLocalInfo.offsetOfMaxThreadStaticBlocks, TYP_I_IMPL);
+    GenTree* maxThreadStaticBlocksRef =
+        gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsForMaxThreadStaticBlockAccess, offsetOfMaxThreadStaticBlocks);
+    GenTree* maxThreadStaticBlocksValue =
+        gtNewIndir(TYP_I_IMPL, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+    // Value of threadStaticBlocks
+    GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(threadLocalInfo.offsetOfThreadStaticBlocks, TYP_I_IMPL);
+    GenTree* threadStaticBlocksRef =
+        gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsForThreadStaticBlockAccess, offsetOfThreadStaticBlocks);
+    GenTree* threadStaticBlocksValue =
+        gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+    // Value of typeThreadStaticBlockIndex
+    GenTree* typeThreadStaticBlockIndexValue = gtNewIconNode(threadLocalInfo.threadStaticBlockIndex, TYP_I_IMPL);
+    GenTree* typeThreadStaticBlockBase =
+        gtNewOperNode(GT_MUL, TYP_I_IMPL, typeThreadStaticBlockIndexValue, gtNewIconNode(4, TYP_I_IMPL));
+    GenTree* typeThreadStaticBlockRef =
+        gtNewOperNode(GT_ADD, TYP_I_IMPL, threadStaticBlocksValue, typeThreadStaticBlockBase);
+    GenTree* typeThreadStaticBlockValueForFastPath =
+        gtNewIndir(TYP_I_IMPL, typeThreadStaticBlockRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    GenTree* typeThreadStaticBlockValueForCond = gtCloneExpr(typeThreadStaticBlockValueForFastPath);
+
+    // Add the TLS static field offset to the address.assert(!tree->AsField()->gtFldMayOverlap);
+    FieldSeq* fieldSeq   = GetFieldSeqStore()->Create(fieldHandle, fieldOffset, FieldSeq::FieldKind::SharedStatic);
+    GenTree*  offsetNode = gtNewIconNode(fieldOffset, fieldSeq);
+
+    GenTree* fastPath =
+        gtNewIndir(fieldType, gtNewOperNode(GT_ADD, TYP_I_IMPL, typeThreadStaticBlockValueForFastPath, offsetNode));
+
+    GenTree* maxThreadStaticBlocksCond =
+        gtNewOperNode(GT_GE, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
+    GenTree* threadStaticBlockNullCond =
+        gtNewOperNode(GT_EQ, TYP_INT, typeThreadStaticBlockValueForCond,
+                      gtNewIconNode(0, TYP_I_IMPL)); // TODO: should this be gtNewNull()?
+
+    GenTreeColon* threadStaticBlockColon =
+        new (this, GT_COLON) GenTreeColon(TYP_VOID, slowPathForThreadStaticBlockNull, fastPath);
+
+    GenTreeQmark* threadStaticBlockNullQmark =
+        gtNewQmarkNode(fieldType, threadStaticBlockNullCond, threadStaticBlockColon);
+
+    GenTreeColon* maxThreadStaticBlockColon =
+        new (this, GT_COLON) GenTreeColon(TYP_VOID, slowPathForMaxThreadStaticBlock, threadStaticBlockNullQmark);
+    GenTreeQmark* maxThreadStaticBlocksQmark =
+        gtNewQmarkNode(fieldType, maxThreadStaticBlocksCond, maxThreadStaticBlockColon);
+
+    const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("TLS field access"));
+    impAssignTempGen(tmpNum, maxThreadStaticBlocksQmark, token.hClass, CHECK_SPILL_ALL);
+    var_types type = genActualType(lvaTable[tmpNum].TypeGet());
+
+    return gtNewLclvNode(tmpNum, type);
 }
