@@ -8,7 +8,6 @@
   .ver 4:0:0:0
 }
 .assembly byrefconvert {}
-.module byrefconvert.exe
 .method public static int32 Main() cil managed
 {
   .entrypoint

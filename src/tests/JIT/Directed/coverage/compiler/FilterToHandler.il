@@ -11,7 +11,6 @@
 .assembly extern mscorlib {}
 .assembly extern common {}
 .assembly test {}
-.module test.exe
 
 .method public static int32 MoveBetweenFilterAndHandler() {
   .maxstack  2

@@ -9,7 +9,6 @@
   .ver 4:0:0:0
 }
 .assembly sysinfo { }
-.module sysinfo.exe
 .namespace JitTest
 {
   .class private sequential ansi sealed beforefieldinit SYSTEM_INFO
