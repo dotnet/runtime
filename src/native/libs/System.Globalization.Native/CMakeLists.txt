@@ -131,7 +131,7 @@ add_library(System.Globalization.Native-Static
     entrypoints.c
 )
 
-if(CLR_CMAKE_TARGET_UNIX)
+if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME System.Globalization.Native  CLEAN_DIRECT_OUTPUT 1)
 endif()
 
