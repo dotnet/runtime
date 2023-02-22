@@ -438,8 +438,7 @@
         DiagnosticPorts="$(DiagnosticPorts)"
         InvariantGlobalization="true"
         ForceInterpreter="$(MonoForceInterpreter)"
-        EnableAppSandbox="$(EnableAppSandbox)"
-        GenerateCMakeProject="false">
+        EnableAppSandbox="$(EnableAppSandbox)">
       <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
       <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
