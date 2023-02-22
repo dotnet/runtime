@@ -93,6 +93,8 @@ System.Diagnostics.PerformanceCounter</PackageDescription>
              Link="Common\Interop\Windows\Kernel32\Interop.HandleOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibrary.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MapViewOfFile.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.MapViewOfFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs"
@@ -119,8 +121,6 @@ System.Diagnostics.PerformanceCounter</PackageDescription>
              Link="Common\Interop\Windows\Pdh\Interop.PdhFormatFromRawValue.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\PerfCounter\Interop.PerformanceData.cs"
              Link="Common\Interop\Windows\PerfCounter\Interop.PerformanceData.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafePerfProviderHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafePerfProviderHandle.cs" />
     <Compile Include="$(CommonPath)System\Diagnostics\NetFrameworkUtils.cs"

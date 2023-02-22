@@ -586,7 +586,7 @@ namespace System.IO.Pipes
                 pinningHandle = GCHandle.Alloc(securityDescriptor, GCHandleType.Pinned);
                 fixed (byte* pSecurityDescriptor = securityDescriptor)
                 {
-                    secAttrs.lpSecurityDescriptor = (IntPtr)pSecurityDescriptor;
+                    secAttrs.lpSecurityDescriptor = pSecurityDescriptor;
                 }
             }
 
