@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly array_tests{}
+.assembly 'array_tests_unaligned_4'{}
 
 .class value sealed valClass {
 	.field		int32 Field

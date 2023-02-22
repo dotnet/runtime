@@ -8,7 +8,7 @@
 }
 
 .assembly extern legacy library mscorlib {}
-.assembly pinvoketail
+.assembly 'PInvokeTail'
 {
 }
 

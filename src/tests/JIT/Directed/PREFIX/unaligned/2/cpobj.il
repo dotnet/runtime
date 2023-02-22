@@ -7,7 +7,7 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly 'cpobj' {}
+.assembly 'cpobj_unaligned_2' {}
 
 .class		public	_cpobj {
 

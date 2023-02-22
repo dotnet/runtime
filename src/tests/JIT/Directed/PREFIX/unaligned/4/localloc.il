@@ -8,7 +8,7 @@
 }
 
 .assembly extern legacy library mscorlib {}
-.assembly 'localloc' {
+.assembly 'localloc_unaligned_4' {
                         }
 
 

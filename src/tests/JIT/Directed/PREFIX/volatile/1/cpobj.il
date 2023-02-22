@@ -8,7 +8,7 @@
 }
 
 .assembly extern legacy library mscorlib {}
-.assembly 'cpobj' {}
+.assembly 'cpobj_volatile' {}
 
 .class	public		_cpobj {
 

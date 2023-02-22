@@ -10,7 +10,7 @@
 }
 .assembly extern mscorlib {}
 .assembly extern common {}
-.assembly test {}
+.assembly 'FilterToHandler' {}
 
 .method public static int32 MoveBetweenFilterAndHandler() {
   .maxstack  2

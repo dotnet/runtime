@@ -1,5 +1,5 @@
 .assembly extern legacy library mscorlib {}
-.assembly  testtls
+.assembly  'test-tls_'
 {
 }
 .data tls FieldData = int32(51966)

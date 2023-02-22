@@ -9,7 +9,7 @@
 .assembly extern xunit.core {}
 
 .assembly extern mscorlib { }
-.assembly 'tail' { }
+.assembly 'tail_pinvoke' { }
 .namespace JitTest
 {
   .class private auto ansi beforefieldinit Test
