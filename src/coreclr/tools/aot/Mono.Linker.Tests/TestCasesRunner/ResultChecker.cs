@@ -209,7 +209,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							if ((bool) attr.ConstructorArguments[1].Value)
 								matchedMessages = loggedMessages.Where (m => Regex.IsMatch (m.ToString (), expectedMessage)).ToList ();
 							else
-								matchedMessages = loggedMessages.Where (m => MessageTextContains (m.ToString (), expectedMessage)).ToList (); ;
+								matchedMessages = loggedMessages.Where (m => MessageTextContains (m.ToString (), expectedMessage)).ToList ();
 							Assert.True (
 								matchedMessages.Count > 0,
 								$"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
