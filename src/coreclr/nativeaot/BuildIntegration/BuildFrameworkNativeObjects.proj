@@ -8,8 +8,6 @@
     <BuildingFrameworkLibrary>true</BuildingFrameworkLibrary>
     <Optimize Condition="'$(Configuration)' == 'Release' and '$(Optimize)' == ''">true</Optimize>
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
-    <_targetOS>$(TargetOS)</_targetOS>
-    <_targetOS Condition="$(_targetOS.StartsWith('win'))">win</_targetOS>
     <_targetArchitecture>$(TargetArchitecture)</_targetArchitecture>
   </PropertyGroup>
 
