@@ -8038,8 +8038,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
 
 // Represents GT_COPY or GT_RELOAD node
 //
-// As it turns out, these are only needed on targets that happen to have multi-reg returns.
-// However, they are actually needed on any target that has any multi-reg ops.
+// Needed to support multi-reg ops.
 //
 struct GenTreeCopyOrReload : public GenTreeUnOp
 {
