@@ -266,7 +266,7 @@ GenTree* Lowering::TryLowerAndNegativeOne(GenTreeOp* node)
         return nullptr;
 
 #ifdef TARGET_64BIT
-    if (!node->TypeIs(TYP_LONG) || !op2->TypeIs(TYP_LONG))
+    if (!node->TypeIs(TYP_INT, TYP_LONG))
         return nullptr;
 #else  // TARGET_64BIT
     assert(op2->TypeIs(TYP_INT));
