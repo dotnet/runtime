@@ -90,12 +90,6 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
     }
     args.push_back(NULL);
 
-    // This is just for development. Will remove it when it's ready to be submitted :)
-    for (int j = 0; j < proc_argc; j++)
-    {
-        printf("[%d]: %s\n", j, args[j]);
-    }
-
     child_pid = fork();
 
     if (child_pid < 0)
@@ -107,7 +101,6 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
     else if (child_pid == 0)
     {
         // Instructions for child process!
-        printf("Running child process...\n");
         execv(args[0], const_cast<char* const*>(args.data()));
     }
     else
