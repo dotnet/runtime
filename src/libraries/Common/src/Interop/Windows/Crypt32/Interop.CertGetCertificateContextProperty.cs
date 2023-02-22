@@ -19,7 +19,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Crypt32, SetLastError = true, EntryPoint = "CertGetCertificateContextProperty")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool CertGetCertificateContextPropertyPtr(
+        internal static partial bool CertGetCertificateContextPropertyPtr(
             SafeCertContextHandle pCertContext,
             CertContextPropId dwPropId,
             byte* pvData,

@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Advapi32, EntryPoint = "CreateProcessWithLogonW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool CreateProcessWithLogonW(
+        internal static partial bool CreateProcessWithLogonW(
             string userName,
             string domain,
             IntPtr password,

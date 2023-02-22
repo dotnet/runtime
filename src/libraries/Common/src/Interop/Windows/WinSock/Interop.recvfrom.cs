@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         // This method is always blocking, so it uses an IntPtr.
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static unsafe partial int recvfrom(
+        internal static partial int recvfrom(
             SafeSocketHandle socketHandle,
             byte* pinnedBuffer,
             int len,

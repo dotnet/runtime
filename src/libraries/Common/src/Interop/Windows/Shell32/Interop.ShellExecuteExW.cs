@@ -52,7 +52,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Shell32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool ShellExecuteExW(
+        internal static partial bool ShellExecuteExW(
             SHELLEXECUTEINFO* pExecInfo);
     }
 }

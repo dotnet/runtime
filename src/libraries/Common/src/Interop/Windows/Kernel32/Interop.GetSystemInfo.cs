@@ -8,6 +8,6 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32)]
-        internal static unsafe partial void GetSystemInfo(SYSTEM_INFO* lpSystemInfo);
+        internal static partial void GetSystemInfo(SYSTEM_INFO* lpSystemInfo);
     }
 }

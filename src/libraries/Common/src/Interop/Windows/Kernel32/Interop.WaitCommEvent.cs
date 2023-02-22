@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool WaitCommEvent(
+        internal static partial bool WaitCommEvent(
             SafeFileHandle hFile,
             int* lpEvtMask,
             NativeOverlapped* lpOverlapped);

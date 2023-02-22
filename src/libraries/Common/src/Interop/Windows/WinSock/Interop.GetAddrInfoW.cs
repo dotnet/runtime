@@ -10,14 +10,14 @@ internal static partial class Interop
     internal static partial class Winsock
     {
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        internal static unsafe partial int GetAddrInfoW(
+        internal static partial int GetAddrInfoW(
             string pNameName,
             string? pServiceName,
             AddressInfo* pHints,
             AddressInfo** ppResult);
 
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static unsafe partial void FreeAddrInfoW(AddressInfo* info);
+        internal static partial void FreeAddrInfoW(AddressInfo* info);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         internal unsafe struct AddressInfo

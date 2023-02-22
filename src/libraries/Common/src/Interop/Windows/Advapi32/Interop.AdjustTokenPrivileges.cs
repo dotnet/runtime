@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool AdjustTokenPrivileges(
+        internal static partial bool AdjustTokenPrivileges(
             SafeTokenHandle TokenHandle,
             [MarshalAs(UnmanagedType.Bool)] bool DisableAllPrivileges,
             TOKEN_PRIVILEGE* NewState,

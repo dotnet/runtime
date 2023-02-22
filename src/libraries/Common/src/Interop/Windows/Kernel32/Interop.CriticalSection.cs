@@ -20,15 +20,15 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.Kernel32)]
-        internal static unsafe partial void InitializeCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        internal static partial void InitializeCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
         [LibraryImport(Libraries.Kernel32)]
-        internal static unsafe partial void EnterCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        internal static partial void EnterCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
         [LibraryImport(Libraries.Kernel32)]
-        internal static unsafe partial void LeaveCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        internal static partial void LeaveCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
         [LibraryImport(Libraries.Kernel32)]
-        internal static unsafe partial void DeleteCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        internal static partial void DeleteCriticalSection(CRITICAL_SECTION* lpCriticalSection);
     }
 }

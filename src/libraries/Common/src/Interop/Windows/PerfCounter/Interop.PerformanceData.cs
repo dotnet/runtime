@@ -61,7 +61,7 @@ internal static partial class Interop
         );
 
         [LibraryImport(Libraries.Advapi32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        internal static unsafe partial PerfCounterSetInstanceStruct* PerfCreateInstance(
+        internal static partial PerfCounterSetInstanceStruct* PerfCreateInstance(
             SafePerfProviderHandle hProvider,
             ref Guid CounterSetGuid,
             string szInstanceName,
@@ -69,20 +69,20 @@ internal static partial class Interop
         );
 
         [LibraryImport(Libraries.Advapi32)]
-        internal static unsafe partial uint PerfSetCounterSetInfo(
+        internal static partial uint PerfSetCounterSetInfo(
             SafePerfProviderHandle hProvider,
             PerfCounterSetInfoStruct* pTemplate,
             uint dwTemplateSize
         );
 
         [LibraryImport(Libraries.Advapi32)]
-        internal static unsafe partial uint PerfDeleteInstance(
+        internal static partial uint PerfDeleteInstance(
             SafePerfProviderHandle hProvider,
             PerfCounterSetInstanceStruct* InstanceBlock
         );
 
         [LibraryImport(Libraries.Advapi32)]
-        internal static unsafe partial uint PerfSetCounterRefValue(
+        internal static partial uint PerfSetCounterRefValue(
             SafePerfProviderHandle hProvider,
             PerfCounterSetInstanceStruct* pInstance,
             uint CounterId,

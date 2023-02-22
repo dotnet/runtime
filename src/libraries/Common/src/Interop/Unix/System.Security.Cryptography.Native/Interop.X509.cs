@@ -248,7 +248,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetAppData")]
-        internal static unsafe partial void* X509StoreCtxGetAppData(SafeX509StoreCtxHandle ctx);
+        internal static partial void* X509StoreCtxGetAppData(SafeX509StoreCtxHandle ctx);
 
         internal static string GetX509VerifyCertErrorString(int n)
         {

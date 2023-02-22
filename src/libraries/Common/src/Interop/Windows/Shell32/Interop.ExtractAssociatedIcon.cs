@@ -12,7 +12,7 @@ internal static partial class Interop
     internal static partial class Shell32
     {
         [LibraryImport(Libraries.Shell32, EntryPoint = "ExtractAssociatedIconW")]
-        internal static unsafe partial IntPtr ExtractAssociatedIcon(
+        internal static partial IntPtr ExtractAssociatedIcon(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif

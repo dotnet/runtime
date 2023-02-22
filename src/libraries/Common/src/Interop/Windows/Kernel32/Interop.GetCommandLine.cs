@@ -3,7 +3,7 @@
 
 using System.Runtime.InteropServices;
 
-internal static unsafe partial class Interop
+internal static partial class Interop
 {
     internal static partial class Kernel32
     {

@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool SetFileInformationByHandle(
+        internal static partial bool SetFileInformationByHandle(
             SafeFileHandle hFile,
             int FileInformationClass,
             void* lpFileInformation,

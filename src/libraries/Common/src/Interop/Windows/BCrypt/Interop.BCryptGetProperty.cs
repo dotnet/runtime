@@ -11,7 +11,7 @@ internal static partial class Interop
     internal static partial class BCrypt
     {
         [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
-        internal static unsafe partial NTSTATUS BCryptGetProperty(
+        internal static partial NTSTATUS BCryptGetProperty(
             SafeBCryptHandle hObject,
             string pszProperty,
             void* pbOutput,

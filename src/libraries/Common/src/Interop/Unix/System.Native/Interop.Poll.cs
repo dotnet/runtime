@@ -18,7 +18,7 @@ internal static partial class Interop
         /// <param name="triggered">The number of events triggered (i.e. the number of entries in pollEvents with a non-zero TriggeredEvents). May be zero in the event of a timeout.</param>
         /// <returns>An error or Error.SUCCESS.</returns>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Poll")]
-        internal static unsafe partial Error Poll(PollEvent* pollEvents, uint eventCount, int timeout, uint* triggered);
+        internal static partial Error Poll(PollEvent* pollEvents, uint eventCount, int timeout, uint* triggered);
 
         /// <summary>
         /// Polls a File Descriptor for the passed in flags.

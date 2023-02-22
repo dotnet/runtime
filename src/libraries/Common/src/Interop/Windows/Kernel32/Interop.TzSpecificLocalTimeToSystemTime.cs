@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32)]
-        internal static unsafe partial Interop.BOOL TzSpecificLocalTimeToSystemTime(
+        internal static partial Interop.BOOL TzSpecificLocalTimeToSystemTime(
             IntPtr lpTimeZoneInformation,
             Interop.Kernel32.SYSTEMTIME* lpLocalTime,
             Interop.Kernel32.SYSTEMTIME* lpUniversalTime);

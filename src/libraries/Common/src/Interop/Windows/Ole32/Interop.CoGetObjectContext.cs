@@ -18,6 +18,6 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.Ole32)]
-        internal static unsafe partial int CoGetObjectContext(Guid* riid, IntPtr* ppv);
+        internal static partial int CoGetObjectContext(Guid* riid, IntPtr* ppv);
     }
 }

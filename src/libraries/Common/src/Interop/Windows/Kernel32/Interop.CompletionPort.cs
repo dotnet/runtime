@@ -22,7 +22,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool GetQueuedCompletionStatusEx(
+        internal static partial bool GetQueuedCompletionStatusEx(
             IntPtr CompletionPort,
             OVERLAPPED_ENTRY* lpCompletionPortEntries,
             int ulCount,

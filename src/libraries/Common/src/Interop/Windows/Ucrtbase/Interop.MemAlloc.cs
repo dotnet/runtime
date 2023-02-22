@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static unsafe partial class Ucrtbase
+    internal static partial class Ucrtbase
     {
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(Libraries.Ucrtbase)]

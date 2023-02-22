@@ -29,7 +29,7 @@ internal static partial class Interop
         internal static partial int EvpDigestCurrent(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestOneShot")]
-        internal static unsafe partial int EvpDigestOneShot(IntPtr type, byte* source, int sourceSize, byte* md, uint* mdSize);
+        internal static partial int EvpDigestOneShot(IntPtr type, byte* source, int sourceSize, byte* md, uint* mdSize);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdSize")]
         internal static partial int EvpMdSize(IntPtr md);

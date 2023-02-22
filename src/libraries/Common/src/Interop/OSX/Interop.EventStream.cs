@@ -100,7 +100,7 @@ internal static partial class Interop
         /// <returns>On success, returns a pointer to an FSEventStream object; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
         [LibraryImport(Interop.Libraries.CoreServicesLibrary, StringMarshalling = StringMarshalling.Utf8)]
-        internal static unsafe partial SafeEventStreamHandle FSEventStreamCreate(
+        internal static partial SafeEventStreamHandle FSEventStreamCreate(
             IntPtr                      allocator,
             delegate* unmanaged<FSEventStreamRef, IntPtr, size_t, byte**, FSEventStreamEventFlags*, FSEventStreamEventId*, void> callback,
             FSEventStreamContext*       context,

@@ -170,7 +170,7 @@ internal static partial class Interop
             out SafeCFErrorHandle pErrorOut);
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeyCopyPublicKey")]
-        internal static unsafe partial SafeSecKeyRefHandle CopyPublicKey(SafeSecKeyRefHandle privateKey);
+        internal static partial SafeSecKeyRefHandle CopyPublicKey(SafeSecKeyRefHandle privateKey);
     }
 }
 

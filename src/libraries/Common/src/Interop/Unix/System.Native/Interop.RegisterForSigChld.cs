@@ -8,6 +8,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_RegisterForSigChld")]
-        internal static unsafe partial void RegisterForSigChld(delegate* unmanaged<int, int, int> handler);
+        internal static partial void RegisterForSigChld(delegate* unmanaged<int, int, int> handler);
     }
 }

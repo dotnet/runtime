@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool CryptImportKey(
+        internal static partial bool CryptImportKey(
             SafeProvHandle hProv,
             byte* pbData,
             int dwDataLen,

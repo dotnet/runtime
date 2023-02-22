@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static unsafe partial class Kernel32
+    internal static partial class Kernel32
     {
         internal const int LOCALE_NAME_MAX_LENGTH = 85;
 

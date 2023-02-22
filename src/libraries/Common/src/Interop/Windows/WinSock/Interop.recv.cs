@@ -10,7 +10,7 @@ internal static partial class Interop
     internal static partial class Winsock
     {
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static unsafe partial int recv(
+        internal static partial int recv(
             SafeSocketHandle socketHandle,
             byte* pinnedBuffer,
             int len,

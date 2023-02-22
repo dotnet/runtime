@@ -16,6 +16,6 @@ internal static partial class Interop
         // We don't set last error since we don't need the extended error info.
 
         [LibraryImport(Libraries.Kernel32)]
-        internal static unsafe partial BOOL QueryPerformanceFrequency(long* lpFrequency);
+        internal static partial BOOL QueryPerformanceFrequency(long* lpFrequency);
     }
 }

@@ -43,11 +43,11 @@ internal static partial class Interop
         // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32first
         [LibraryImport(Libraries.Kernel32, EntryPoint = "Process32FirstW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool Process32First(nint hSnapshot, PROCESSENTRY32* lppe);
+        internal static partial bool Process32First(nint hSnapshot, PROCESSENTRY32* lppe);
 
         // https://docs.microsoft.com/windows/desktop/api/tlhelp32/nf-tlhelp32-process32next
         [LibraryImport(Libraries.Kernel32, EntryPoint = "Process32NextW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool Process32Next(nint hSnapshot, PROCESSENTRY32* lppe);
+        internal static partial bool Process32Next(nint hSnapshot, PROCESSENTRY32* lppe);
     }
 }

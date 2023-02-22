@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, EntryPoint = "ReadDirectoryChangesW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool ReadDirectoryChangesW(
+        internal static partial bool ReadDirectoryChangesW(
             SafeFileHandle hDirectory,
             byte[] lpBuffer,
             uint nBufferLength,

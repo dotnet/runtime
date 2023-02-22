@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool GetOverlappedResult(
+        internal static partial bool GetOverlappedResult(
             SafeFileHandle hFile,
             NativeOverlapped* lpOverlapped,
             ref int lpNumberOfBytesTransferred,

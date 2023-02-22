@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
-        internal static unsafe partial CERT_EXTENSION* CertFindExtension([MarshalAs(UnmanagedType.LPStr)] string pszObjId, int cExtensions, IntPtr rgExtensions);
+        internal static partial CERT_EXTENSION* CertFindExtension([MarshalAs(UnmanagedType.LPStr)] string pszObjId, int cExtensions, IntPtr rgExtensions);
     }
 }

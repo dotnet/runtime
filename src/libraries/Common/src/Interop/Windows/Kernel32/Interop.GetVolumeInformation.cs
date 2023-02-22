@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, EntryPoint = "GetVolumeInformationW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool GetVolumeInformation(
+        internal static partial bool GetVolumeInformation(
             string drive,
             char* volumeName,
             int volumeNameBufLen,

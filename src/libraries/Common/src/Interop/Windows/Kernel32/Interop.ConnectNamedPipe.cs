@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool ConnectNamedPipe(SafePipeHandle handle, NativeOverlapped* overlapped);
+        internal static partial bool ConnectNamedPipe(SafePipeHandle handle, NativeOverlapped* overlapped);
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]

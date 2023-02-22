@@ -8,7 +8,7 @@ using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-    internal static unsafe partial class Kernel32
+    internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32)]
         internal static partial IntPtr GetProcAddress(IntPtr hModule, byte* lpProcName);

@@ -15,6 +15,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool SetConsoleCtrlHandler(delegate* unmanaged<int, BOOL> handler, [MarshalAs(UnmanagedType.Bool)] bool Add);
+        internal static partial bool SetConsoleCtrlHandler(delegate* unmanaged<int, BOOL> handler, [MarshalAs(UnmanagedType.Bool)] bool Add);
     }
 }

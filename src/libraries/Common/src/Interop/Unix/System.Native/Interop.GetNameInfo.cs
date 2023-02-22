@@ -16,7 +16,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNameInfo")]
-        internal static unsafe partial int GetNameInfo(
+        internal static partial int GetNameInfo(
             byte* address,
             uint addressLength,
             byte isIpv6,

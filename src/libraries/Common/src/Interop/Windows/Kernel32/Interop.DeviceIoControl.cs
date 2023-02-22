@@ -17,7 +17,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Kernel32, EntryPoint = "DeviceIoControl", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool DeviceIoControl(
+        internal static partial bool DeviceIoControl(
             SafeHandle hDevice,
             uint dwIoControlCode,
             void* lpInBuffer,

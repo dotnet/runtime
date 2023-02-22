@@ -9,7 +9,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Crypt32, EntryPoint = "CryptDecodeObject",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool CryptDecodeObjectPointer(
+        internal static partial bool CryptDecodeObjectPointer(
             CertEncodingType dwCertEncodingType,
             [MarshalAs(UnmanagedType.LPStr)] string lpszStructType,
             byte[] pbEncoded, int cbEncoded,

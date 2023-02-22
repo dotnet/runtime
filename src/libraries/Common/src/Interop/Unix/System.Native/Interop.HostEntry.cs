@@ -33,9 +33,9 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostEntryForName", StringMarshalling = StringMarshalling.Utf8)]
-        internal static unsafe partial int GetHostEntryForName(string address, AddressFamily family, HostEntry* entry);
+        internal static partial int GetHostEntryForName(string address, AddressFamily family, HostEntry* entry);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeHostEntry")]
-        internal static unsafe partial void FreeHostEntry(HostEntry* entry);
+        internal static partial void FreeHostEntry(HostEntry* entry);
     }
 }

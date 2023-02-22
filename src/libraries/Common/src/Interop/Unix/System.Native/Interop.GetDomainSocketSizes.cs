@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDomainSocketSizes")]
         [SuppressGCTransition]
-        internal static unsafe partial void GetDomainSocketSizes(int* pathOffset, int* pathSize, int* addressSize);
+        internal static partial void GetDomainSocketSizes(int* pathOffset, int* pathSize, int* addressSize);
     }
 }

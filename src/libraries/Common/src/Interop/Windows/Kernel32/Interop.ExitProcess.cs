@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static unsafe partial class Kernel32
+    internal static partial class Kernel32
     {
         [DoesNotReturn]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "ExitProcess")]

@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static unsafe partial int ReadFile(
+        internal static partial int ReadFile(
             IntPtr handle,
             byte* bytes,
             int numBytesToRead,

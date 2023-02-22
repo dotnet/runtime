@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool CryptQueryObject(
+        internal static partial bool CryptQueryObject(
             CertQueryObjectType dwObjectType,
             void* pvObject,
             ExpectedContentTypeFlags dwExpectedContentTypeFlags,
@@ -27,7 +27,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool CryptQueryObject(
+        internal static partial bool CryptQueryObject(
             CertQueryObjectType dwObjectType,
             void* pvObject,
             ExpectedContentTypeFlags dwExpectedContentTypeFlags,
@@ -43,7 +43,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool CryptQueryObject(
+        internal static partial bool CryptQueryObject(
             CertQueryObjectType dwObjectType,
             void* pvObject,
             ExpectedContentTypeFlags dwExpectedContentTypeFlags,

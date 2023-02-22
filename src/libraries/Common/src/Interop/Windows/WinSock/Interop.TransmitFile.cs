@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         [LibraryImport(Interop.Libraries.Mswsock, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool TransmitFile(
+        internal static partial bool TransmitFile(
             SafeHandle socket,
             IntPtr fileHandle,
             int numberOfBytesToWrite,

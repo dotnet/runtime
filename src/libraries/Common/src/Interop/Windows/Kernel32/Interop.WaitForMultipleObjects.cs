@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static unsafe partial int WaitForMultipleObjects(uint nCount, nint* handles, [MarshalAs(UnmanagedType.Bool)] bool waitAll, uint timeout);
+        internal static partial int WaitForMultipleObjects(uint nCount, nint* handles, [MarshalAs(UnmanagedType.Bool)] bool waitAll, uint timeout);
     }
 }

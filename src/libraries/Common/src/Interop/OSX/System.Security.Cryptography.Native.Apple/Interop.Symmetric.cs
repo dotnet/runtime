@@ -46,7 +46,7 @@ internal static partial class Interop
         internal static partial void CryptorFree(IntPtr handle);
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorCreate")]
-        internal static unsafe partial int CryptorCreate(
+        internal static partial int CryptorCreate(
             PAL_SymmetricOperation operation,
             PAL_SymmetricAlgorithm algorithm,
             PAL_ChainingMode chainingMode,
@@ -59,7 +59,7 @@ internal static partial class Interop
             out int ccStatus);
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorUpdate")]
-        internal static unsafe partial int CryptorUpdate(
+        internal static partial int CryptorUpdate(
             SafeAppleCryptorHandle cryptor,
             byte* pbData,
             int cbData,
@@ -69,7 +69,7 @@ internal static partial class Interop
             out int ccStatus);
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorReset")]
-        internal static unsafe partial int CryptorReset(SafeAppleCryptorHandle cryptor, byte* pbIv, out int ccStatus);
+        internal static partial int CryptorReset(SafeAppleCryptorHandle cryptor, byte* pbIv, out int ccStatus);
     }
 }
 

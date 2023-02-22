@@ -16,7 +16,7 @@ internal static partial class Interop
         // and pass in an address for the numBytesRead parameter.
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static unsafe partial int WriteFile(
+        internal static partial int WriteFile(
             SafeHandle handle,
             byte* bytes,
             int numBytesToWrite,

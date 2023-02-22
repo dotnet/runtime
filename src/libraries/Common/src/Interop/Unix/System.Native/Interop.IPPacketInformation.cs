@@ -22,6 +22,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryGetIPPacketInformation")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool TryGetIPPacketInformation(MessageHeader* messageHeader, [MarshalAs(UnmanagedType.Bool)] bool isIPv4, IPPacketInformation* packetInfo);
+        internal static partial bool TryGetIPPacketInformation(MessageHeader* messageHeader, [MarshalAs(UnmanagedType.Bool)] bool isIPv4, IPPacketInformation* packetInfo);
     }
 }
