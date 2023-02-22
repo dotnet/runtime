@@ -2316,22 +2316,17 @@ private:
     // We have the following checks:
     // 1. Looking backwards across an IG boundary can only be done if we're in an extension IG.
     // 2. The IG of the previous instruction must have the same GC interrupt status as the current IG.
-    //    This is related to #2; it disallows peephole when the previous IG is GC and the current is NOGC.
-    inline bool canPeepholeCrossIGBoundaries(insGroup* prevIG, insGroup* ig) const
+    inline bool isInsIGSafeForPeepholeOptimization(insGroup* prevInsIG, insGroup* curInsIG) const
     {
-        if (emitCurIG == ig)
+        if (prevInsIG == curInsIG)
         {
-            return (((emitCurIGinsCnt > 0) || (ig->igFlags & IGF_EXTEND)) && // We're not at the start of a new
-                                                                             // IG or we are at the start of a
-                                                                             // new IG, and it's an extension IG.
-                    ((prevIG->igFlags & IGF_NOGCINTERRUPT) == (ig->igFlags & IGF_NOGCINTERRUPT)));
+            return true;
         }
-        else if (prevIG != ig)
+        else
         {
-            return ((prevIG->igFlags & IGF_EXTEND) &&
-                    ((prevIG->igFlags & IGF_NOGCINTERRUPT) == (ig->igFlags & IGF_NOGCINTERRUPT)));
+            return (curInsIG->igFlags & IGF_EXTEND) &&
+                   ((prevInsIG->igFlags & IGF_NOGCINTERRUPT) == (curInsIG->igFlags & IGF_NOGCINTERRUPT));
         }
-        return true;
     }
 
     // Check if a peephole optimization involving emitLastIns is safe.
@@ -2346,7 +2341,7 @@ private:
 
         return emitHasLastIns() && // there is an emitLastInstr
                !emitForceNewIG &&  // and we're not about to start a new IG.
-               canPeepholeCrossIGBoundaries(emitLastInsIG, emitCurIG);
+               isInsIGSafeForPeepholeOptimization(emitLastInsIG, emitCurIG);
     }
 
     enum emitPeepholeResult
@@ -2374,33 +2369,16 @@ private:
         {
             assert(id != nullptr);
 
-#if !defined(TARGET_LOONGARCH64)
-            switch ((ID_OPS)emitFmtToOps[id->idInsFmt()])
-            {
-                // We cannot safely look at previous instructions at these boundaries.
-                case ID_OP_JMP:
-                case ID_OP_CALL:
-#if !defined(TARGET_ARM64)
-                case ID_OP_LBL:
-#endif // !TARGET_ARM64
-                    return;
-
-                default:
-                    break;
-            }
-#endif // !TARGET_LOONGARCH64
-
             switch (action(id))
             {
                 case PEEPHOLE_ABORT:
                     return;
                 case PEEPHOLE_CONTINUE:
                 {
-#if !defined(TARGET_LOONGARCH64)
                     insGroup* prevIG = ig;
                     if (emitPrevID(ig, id))
                     {
-                        if (canPeepholeCrossIGBoundaries(prevIG, ig))
+                        if (isInsIGSafeForPeepholeOptimization(prevIG, ig))
                         {
                             continue;
                         }
@@ -2409,7 +2387,6 @@ private:
                             return;
                         }
                     }
-#endif // !TARGET_LOONGARCH64
                     return;
                 }
 

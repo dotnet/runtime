@@ -504,6 +504,16 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
     bool result = false;
 
     emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        switch ((ID_OPS)emitFmtToOps[id->idInsFmt()])
+        {
+            // This is conservative.
+            case ID_OP_CALL:
+                return PEEPHOLE_ABORT;
+
+            default:
+                break;
+        }
+
         switch (id->idInsFmt())
         {
             case IF_RWR:
