@@ -1506,11 +1506,11 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			}
 
 			if (backward) {
-				offset = ALIGN_TO (size, align);
+				offset = ALIGN_TO (offset + size, align);
 				slot = offset;
 			}
 			else {
-				offset = ALIGN_TO (0, align);
+				offset = ALIGN_TO (offset, align);
 				slot = offset;
 				offset += size;
 			}
