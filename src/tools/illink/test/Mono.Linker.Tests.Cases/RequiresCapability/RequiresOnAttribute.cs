@@ -11,6 +11,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = ProducedBy.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	class RequiresOnAttribute
