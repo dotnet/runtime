@@ -1,18 +1,25 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include <cstdio>
 #include <cstdlib>
 #include <errno.h>
 #include <signal.h>
 
 #ifdef _WIN32
+
 #include <windows.h>
 #include <string>
-#else
+
+#else // !_WIN32
+
 #include <chrono>
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
 #include <vector>
-#endif
+
+#endif // _WIN32
 
 int run_timed_process(const long, const int, const char *[]);
 

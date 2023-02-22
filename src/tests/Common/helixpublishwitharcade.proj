@@ -718,9 +718,15 @@
     <XUnitRunnerDll>$CORE_ROOT/xunit/xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <TestWatcherPath>$(ArtifactsDir)obj/coreclr/$(OSPlatformConfig)/test-watchdog/watchdog</TestWatcherPath>
+    <TestWatcherPath>$([MSBuild]::NormalizePath($(TestWatcherDirectory)))</TestWatcherPath>
+  </PropertyGroup>
+
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
     <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" />
+    <HelixCorrelationPayload Include="$(TestWatcherPath)" />
 
     <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
     <LegacyPayloads Update="@(LegacyPayloads)">

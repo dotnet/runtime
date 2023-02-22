@@ -104,7 +104,6 @@ public class TestSummary
 
     private readonly List<TestResult> _testResults = new();
     private DateTime _testRunStart = DateTime.Now;
-    private string _assemblyName = "NoSpecifiedAssembly";
 
     public void ReportPassedTest(string name,
                                  string containingTypeName,
