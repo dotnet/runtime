@@ -70,10 +70,9 @@ namespace System.CommandLine
                 throw new NotImplementedException();
             }
 
-            string lowerToken = token.ToLowerInvariant();
-            return lowerToken switch
+            return token.ToLowerInvariant() switch
             {
-                "linux" or "linux-musl" => TargetOS.Linux,
+                "linux" => TargetOS.Linux,
                 "win" or "windows" => TargetOS.Windows,
                 "osx" => TargetOS.OSX,
                 "freebsd" => TargetOS.FreeBSD,
