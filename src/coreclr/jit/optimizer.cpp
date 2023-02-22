@@ -4304,17 +4304,19 @@ PhaseStatus Compiler::optUnrollLoops()
         // Heuristic: Estimated cost in code size of the unrolled loop.
 
         {
-            ClrSafeInt<unsigned> loopCostSz; // Cost is size of one iteration
-            auto                 tryIndex = loop.lpTop->bbTryIndex;
+            ClrSafeInt<unsigned>    loopCostSz; // Cost is size of one iteration
+            const BasicBlock* const top = loop.lpTop;
 
             // Besides calculating the loop cost, also ensure that all loop blocks are within the same EH
             // region, and count the number of BBJ_RETURN blocks in the loop.
             loopRetCount = 0;
             for (BasicBlock* const block : loop.LoopBlocks())
             {
-                if (block->bbTryIndex != tryIndex)
+                if (!BasicBlock::sameEHRegion(block, top))
                 {
                     // Unrolling would require cloning EH regions
+                    // Note that only non-funclet model (x86) could actually have a loop including a handler
+                    // but not it's corresponding `try`, if its `try` was moved due to being marked "rare".
                     JITDUMP("Failed to unroll loop " FMT_LP ": EH constraint\n", lnum);
                     goto DONE_LOOP;
                 }
@@ -8806,6 +8808,12 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                 }
             }
         }
+
+        // Clear the Value Number from the statement root node, if it was set above. This is to
+        // ensure that for those blocks that are unreachable, which we still handle in this loop
+        // but not during Value Numbering, fgDebugCheckExceptionSets() will skip the trees. Ideally,
+        // we wouldn't be touching the gtVNPair at all (here) before actual Value Numbering.
+        stmt->GetRootNode()->gtVNPair.SetBoth(ValueNumStore::NoVN);
     }
 
     if (memoryHavoc != emptyMemoryKindSet)
