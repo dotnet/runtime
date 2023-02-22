@@ -150,24 +150,16 @@ namespace System
                 public static USER_INFO_1 ConvertToManaged(USER_INFO_1Native native) => native.ToManaged();
                 public static void Free(USER_INFO_1Native native) => native.FreeNative();
 
-                [StructLayout(LayoutKind.Explicit)]
+                [StructLayout(LayoutKind.Sequential)]
                 public struct USER_INFO_1Native
                 {
-                    [FieldOffset(0)]
                     private IntPtr usri1_name;
-                    [FieldOffset(8)]
                     private IntPtr usri1_password;
-                    [FieldOffset(16)]
                     private uint usri1_password_age;
-                    [FieldOffset(20)]
                     private uint usri1_priv;
-                    [FieldOffset(24)]
                     private IntPtr usri1_home_dir;
-                    [FieldOffset(32)]
                     private IntPtr usri1_comment;
-                    [FieldOffset(40)]
                     private uint usri1_flags;
-                    [FieldOffset(44)]
                     private IntPtr usri1_script_path;
 
                     public USER_INFO_1Native(USER_INFO_1 managed)
