@@ -34,7 +34,7 @@ private:
     bool m_ErrorEncountered;
 
     // Set to true if an error is encountered when writing to the file.
-    unsigned m_StubsMapped;
+    static unsigned s_StubsMapped;
 
     // Construct a new map for the specified pid.
     PerfMap(int pid);
