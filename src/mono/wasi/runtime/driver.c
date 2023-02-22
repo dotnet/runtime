@@ -65,6 +65,8 @@ char *mono_method_get_full_name (MonoMethod *method);
 extern const char* dotnet_wasi_getbundledfile(const char* name, int* out_length);
 extern void dotnet_wasi_registerbundledassemblies();
 extern const char* dotnet_wasi_getentrypointassemblyname();
+int32_t mono_wasi_load_icu_data(const void* pData);
+void load_icu_data (void);
 
 int mono_wasm_enable_gc = 1;
 
@@ -327,9 +329,6 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 	}
 }
 
-void mono_wasm_link_icu_shim (void);
-int32_t mono_wasi_load_icu_data(const void* pData);
-void load_icu_data (void);
 void load_icu_data (void)
 {
 	FILE *fileptr;
@@ -371,7 +370,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	const char *interp_opts = "";
 
 #ifndef INVARIANT_GLOBALIZATION
-	mono_wasm_link_icu_shim ();
 	load_icu_data();
 #else
 	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true", 1);
