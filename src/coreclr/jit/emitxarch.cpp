@@ -514,6 +514,17 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                 break;
         }
 
+        // This is a special case for idiv, div, imul, and mul.
+        // They always write to RAX and RDX.
+        if (instrHasImplicitRegPairDest(id->idIns()))
+        {
+            if (reg == REG_RAX || reg == REG_RDX)
+            {
+                result = (id->idOpSize() == EA_4BYTE);
+                return PEEPHOLE_ABORT;
+            }
+        }
+
         switch (id->idInsFmt())
         {
             case IF_RWR:
@@ -580,15 +591,6 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
                         default:
                             break;
-                    }
-
-                    if (instrHasImplicitRegPairDest(id->idIns()))
-                    {
-                        if (id->idReg2() == reg)
-                        {
-                            result = (id->idOpSize() == EA_4BYTE);
-                            return PEEPHOLE_ABORT;
-                        }
                     }
 
                     return PEEPHOLE_CONTINUE;
