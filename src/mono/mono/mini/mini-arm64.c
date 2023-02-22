@@ -2242,8 +2242,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		MonoType *ret_type = mini_get_underlying_type (sig->ret);
 		MonoClass *klass = mono_class_from_mono_type_internal (ret_type);
 		if (MONO_CLASS_IS_SIMD (cfg, klass)) {
-			int align = mono_type_size (m_class_get_byval_arg (klass), NULL);
-			offset = ALIGN_TO (offset, align);
+			int align_simd = mono_type_size (m_class_get_byval_arg (klass), NULL);
+			offset = ALIGN_TO (offset, align_simd);
 		}
 
 		cfg->ret->opcode = OP_REGOFFSET;
