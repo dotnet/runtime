@@ -3307,21 +3307,8 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     assert(relop->gtNext == jtrue);
     assert(jtrue->gtNext == nullptr);
 
-    GenCondition cond       = GenCondition::FromRelop(relop);
-    bool         optimizing = comp->opts.OptimizationEnabled();
-
-#ifdef TARGET_XARCH
-    // Optimize FP x != x to only check parity flag. This is a common way of
-    // checking NaN and avoids two branches that we would otherwise emit.
-    if (optimizing && (cond.GetCode() == GenCondition::FNEU) && relopOp1->OperIsLocal() &&
-        GenTree::Compare(relopOp1, relopOp2) && IsInvariantInRange(relopOp1, relop) &&
-        IsInvariantInRange(relopOp2, relop))
-    {
-        cond = GenCondition(GenCondition::P);
-    }
-#endif
-
 #if defined(TARGET_LOONGARCH64)
+    GenCondition cond = GenCondition::FromRelop(relop);
     // for LA64's integer compare and condition-branch instructions,
     // it's very similar to the IL instructions.
     if (!varTypeIsFloating(relopOp1->TypeGet()))
