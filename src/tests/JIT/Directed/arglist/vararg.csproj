@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);WIN32</DefineConstants>
     <DebugType>PdbOnly</DebugType>

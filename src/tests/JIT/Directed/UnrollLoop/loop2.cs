@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 public class A
 {
     public virtual int f0(int i)
@@ -927,7 +928,8 @@ public unsafe class B : A
         return sum + i;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool failed = false;
 

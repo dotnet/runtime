@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 // Do a complex 5 dimensional Jagged array.
 struct Complex
@@ -16,7 +17,8 @@ struct Complex
 
 public class Complex_Array_Test
 {
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Console.WriteLine("Starting...");
 		int SIZE = 10;

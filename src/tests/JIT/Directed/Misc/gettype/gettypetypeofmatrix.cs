@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 internal class Foo
 {
@@ -15,7 +16,8 @@ public class Test_gettypetypeofmatrix
     private static Foo s_foo = new Foo();
     private static Foo[] s_fooArray = new Foo[10];
 
-    static public int Main()
+    [Fact]
+    static public int TestEntryPoint()
     {
         int iReturn = 100;
         try

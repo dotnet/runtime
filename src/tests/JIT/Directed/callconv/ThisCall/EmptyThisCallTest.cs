@@ -16,7 +16,8 @@ unsafe class ThisCallNative
 
 public unsafe class EmptyThisCallTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

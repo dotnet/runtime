@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly 'subovfun1_Desktop' { }
 .method public static uint32 f(uint32 arg)
 {
@@ -14,6 +15,9 @@ ret
 .class public auto ansi subovfun1 {
 .method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 ldc.i4 101
 call uint32 f(uint32)

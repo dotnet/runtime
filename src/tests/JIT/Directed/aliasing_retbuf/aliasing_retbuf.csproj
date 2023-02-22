@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <Optimize>True</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>

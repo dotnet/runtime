@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <DebugType>PdbOnly</DebugType>
     <Optimize>False</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>

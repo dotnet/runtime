@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace JitTest
 {
     using System;
@@ -15,7 +16,8 @@ namespace JitTest
         [DllImport("msvcrt", EntryPoint = "acos", CallingConvention = CallingConvention.Cdecl)]
         private static extern double acos(double x);
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             for (double x = 0.0; x <= 3.1415926535897; x += 0.14)
             {

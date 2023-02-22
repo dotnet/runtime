@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System;
+using Xunit;
 
 public class TestAssignFieldsBetweenPromotedNotPromotedStructs
 {
@@ -74,7 +75,8 @@ public class TestAssignFieldsBetweenPromotedNotPromotedStructs
         Debug.Assert(c.anotherOverlappingStruct.b == 0x5);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestStructCasts();
         return 100;

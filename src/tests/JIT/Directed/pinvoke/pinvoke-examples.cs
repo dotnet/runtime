@@ -8,6 +8,7 @@ using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 
 namespace PInvokeTest
@@ -214,7 +215,8 @@ namespace PInvokeTest
             return result1 && result2;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool result = true;
 

@@ -6,11 +6,15 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
 .assembly ref2byref {}
 .class public auto ansi ref2byref {
 .method public static int32 Main()
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack 10
 	.locals init (string V_0,

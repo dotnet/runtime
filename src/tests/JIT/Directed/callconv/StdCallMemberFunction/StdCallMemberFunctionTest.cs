@@ -65,7 +65,8 @@ unsafe class StdCallMemberFunctionNative
 
 public unsafe class StdCallMemberFunctionTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly volatilldind {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib { }
 .assembly extern System.Console
 {
@@ -19,6 +20,9 @@ ret
 .class public auto ansi volatilldind {
 .method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .try
 {

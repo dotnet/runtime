@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class TypeMismatchedArgs
 {
@@ -14,7 +15,8 @@ public unsafe class TypeMismatchedArgs
     private static readonly FourDblLngUnion s_fourDblLngHfa = new FourDblLngUnion { Lngs = { LongOne = 30 } };
     private static readonly Vtor128Union s_vtor128 = new Vtor128Union { Vtor4 = new Vector4(4, 3, 2, 1) };
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (ProblemWithHfasMismatch(s_hfaDblFlt.FltHfa))
         {

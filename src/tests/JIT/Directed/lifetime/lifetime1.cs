@@ -5,6 +5,7 @@
 // testing the JIT handling and GC reporting of "liveness" of GC variable
 
 using System;
+using Xunit;
 
 public class Test_lifetime1
 {
@@ -102,7 +103,8 @@ public class Test_lifetime1
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (f1() != 100) return -1;
         CleanGC();

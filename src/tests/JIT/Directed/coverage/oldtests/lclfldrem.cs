@@ -5,6 +5,7 @@
 
 #pragma warning disable 0414
 using System;
+using Xunit;
 public class lclfldrem
 {
     //user-defined class that overloads operator %
@@ -248,7 +249,8 @@ public class lclfldrem
         public numHolder nHldr_vt_op2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
         //initialize class

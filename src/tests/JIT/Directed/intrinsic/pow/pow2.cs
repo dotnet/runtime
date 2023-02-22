@@ -5,6 +5,7 @@
 //testing plain double, array member, struct member or class member
 
 using System;
+using Xunit;
 
 internal struct vt
 {
@@ -70,7 +71,8 @@ public class pow2
         return (a - b) / 2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = true;
 

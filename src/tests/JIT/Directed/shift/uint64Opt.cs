@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 // Test long and ulong shifts by 0, 32 and 64 constants that can be optimized.
 namespace ShiftTest
@@ -152,7 +153,8 @@ namespace ShiftTest
 
     public class Test
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool passed = true;
             ulong ulongArg = 0x3F134;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public sealed class TestException : Exception
 {
@@ -47,7 +48,8 @@ public static class Test_nullabletypes
             throw new TestException(counter, "Failure while Comparing {1} to {2}", obj1, obj2);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -4,6 +4,7 @@
 
 using System.Runtime.CompilerServices;
 using System;
+using Xunit;
 
 public class SP1a2
 {
@@ -30,7 +31,8 @@ public class SP1a2
         return Foo(i0, s, i3);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int res = M(1, 2, 3, 4);
         Console.WriteLine("M(1, 2, 3, 4) is {0}.", res);

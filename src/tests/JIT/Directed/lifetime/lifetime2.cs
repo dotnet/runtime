@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 public class Test_lifetime2
 {
@@ -180,7 +181,8 @@ public class Test_lifetime2
         return 100;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (f1() != 100)
             return -1;

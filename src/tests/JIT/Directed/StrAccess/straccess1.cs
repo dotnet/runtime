@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 internal struct VT
 {
@@ -35,7 +36,8 @@ public class StrAccess1
     };
 
     public static Random rand = new Random(Seed);
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
         String str2 = "test string";

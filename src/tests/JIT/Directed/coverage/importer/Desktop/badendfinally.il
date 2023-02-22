@@ -1,4 +1,5 @@
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
 .assembly badendfinally { }
 .method public static int32 f() noinlining
 {
@@ -9,6 +10,9 @@ ret
 .class public auto ansi badendfinally {
 .method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .try
 {

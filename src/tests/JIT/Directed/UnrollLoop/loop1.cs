@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 namespace A
 {
     public class B
@@ -161,7 +162,8 @@ namespace A
             return sum + i;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool failed = false;
 

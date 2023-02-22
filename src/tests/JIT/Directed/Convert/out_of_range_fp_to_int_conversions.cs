@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Numerics;
+using Xunit;
 
 namespace FPBehaviorApp
 {
@@ -371,7 +372,8 @@ namespace FPBehaviorApp
             }
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             switch (RuntimeInformation.ProcessArchitecture)
             {

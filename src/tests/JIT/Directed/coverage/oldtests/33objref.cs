@@ -4,6 +4,7 @@
 //testing more than 32 (>33) objref's on the stack and as function arguments
 
 using System;
+using Xunit;
 
 internal class ratnl
 {
@@ -82,7 +83,8 @@ public class Test33objref
             (a33 - a30) * (a31 + a32);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 public unsafe class testout1
 {
     public struct VT_0_1_1_1_1_1
@@ -234,7 +235,8 @@ public unsafe class testout1
         return retval_0;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_arr3d_0[4, 0, 3] = 112.75552824827484409018782981M;
 

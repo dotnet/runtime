@@ -28,6 +28,7 @@ ARM is closer to the native ABI:
 */
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly 'arglist_Target_ARM_unaligned_1'{ //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
                         }
@@ -90,6 +91,9 @@ REALLYDONE:
 //-------------------------
 .class public auto ansi arglistARM {
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .locals	()
 .maxstack	10
