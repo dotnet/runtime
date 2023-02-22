@@ -8,7 +8,6 @@
       - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
       Public properties (optional):
-      - $(WasmMainJSPath)    - Main JavaScript for execution on V8/node
       - $(WasmAppDir)        - AppBundle dir (Defaults to `$(OutputPath)\$(Configuration)\AppBundle`)
       - $(WasmMainAssemblyFileName)- Defaults to $(TargetFileName)
       - $(WasmBuildNative)   - Whenever to build the native executable. Defaults to false.
