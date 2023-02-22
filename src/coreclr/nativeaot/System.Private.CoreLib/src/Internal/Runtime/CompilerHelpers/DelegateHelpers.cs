@@ -14,7 +14,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         private const int CacheLength = 16;
         [ThreadStatic]
-        private static object[][] _arrayCache;
+        private static object[][] t_arrayCache;
 
         internal static object[] GetObjectArray(int length)
         {
@@ -22,10 +22,10 @@ namespace Internal.Runtime.CompilerHelpers
                 return s_emptyObjectArray;
 
             object[] result = null!;
-            if (length < CacheLength)
+            if (length <= CacheLength)
             {
-                _arrayCache ??= new object[CacheLength][];
-                result = _arrayCache[length];
+                t_arrayCache ??= new object[CacheLength][];
+                result = t_arrayCache[length - 1];
             }
 
             return result ?? new object[length];
@@ -34,10 +34,10 @@ namespace Internal.Runtime.CompilerHelpers
         internal static void ReturnObjectArray(object[] array)
         {
             int length = array.Length;
-            if (length < CacheLength)
+            if (length <= CacheLength)
             {
                 Array.Clear(array);
-                _arrayCache[length] = array;
+                t_arrayCache[length - 1] = array;
             }
         }
     }

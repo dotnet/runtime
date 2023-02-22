@@ -284,7 +284,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private const int CacheLength = 16;
         [ThreadStatic]
-        private static object?[]?[]? _argsCache;
+        private static object?[]?[]? t_argsCache;
 
         public override int ArgumentCount => _argumentCount;
 
@@ -359,10 +359,10 @@ namespace System.Linq.Expressions.Interpreter
         private static object?[]? GetCachedArgs(int length)
         {
             object?[]? result = null;
-            if (length < CacheLength)
+            if (length <= CacheLength)
             {
-                _argsCache ??= new object?[CacheLength][];
-                result = _argsCache[length];
+                t_argsCache ??= new object?[CacheLength][];
+                result = t_argsCache[length - 1];
             }
 
             return result;
@@ -371,10 +371,10 @@ namespace System.Linq.Expressions.Interpreter
         protected static void ReturnCachedArgs(object?[] args)
         {
             int length = args.Length;
-            if (length > 0 && length < CacheLength)
+            if (length > 0 && length <= CacheLength)
             {
                 Array.Clear(args);
-                _argsCache![length] = args;
+                t_argsCache![length - 1] = args;
             }
         }
 
