@@ -1049,7 +1049,7 @@ protected:
             varDsc->SetRegNum(REG_STK);
         }
     }
-    
+
     // Do liveness update for register produced by the current node in codegen after
     // code has been emitted for it.
     void genProduceReg(GenTree* tree);
