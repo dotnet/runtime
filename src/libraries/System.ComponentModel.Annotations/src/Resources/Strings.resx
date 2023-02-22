@@ -154,7 +154,7 @@
     <value>LengthAttribute must have a MaximumLength value that is greater than or equal to MinimumLength.</value>
   </data>
   <data name="LengthAttribute_ValidationError" xml:space="preserve">
-    <value>The field {0} must be a string or collection type with a minimum length of '{0}' and maximum length of '{1}'.</value>
+    <value>The field {0} must be a string or collection type with a minimum length of '{1}' and maximum length of '{2}'.</value>
   </data>
   <data name="LengthAttribute_InvalidValueType" xml:space="preserve">
     <value>The field of type {0} must be a string, array or ICollection type.</value>
