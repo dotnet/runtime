@@ -65,7 +65,7 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
         return error_code;
     }
 
-    WaitForSingleObject(proc_info.hProcess, timeout);
+    WaitForSingleObject(proc_info.hProcess, timeout_ms);
     GetExitCodeProcess(proc_info.hProcess, &exit_code);
 
     CloseHandle(proc_info.hProcess);
