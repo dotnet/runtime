@@ -40,9 +40,10 @@ namespace Wasm.Build.Tests
         protected string _nugetPackagesDir = string.Empty;
 
         private static bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        // changing Windows's language programistically is complicated and Node is using OS's language to determine 
+        // changing Windows's language programistically is complicated and Node is using OS's language to determine
         // what is client's preferred locale and then to load corresponding ICU => skip automatic icu testing with Node
-        protected static RunHost hostsForOSLocaleSensitiveTests = isWindows ? RunHost.Chrome : RunHost.NodeJS | RunHost.Chrome;
+        // on Linux sharding does not work because we rely on LANG env var to check locale and emcc is overwriting it
+        protected static RunHost hostsForOSLocaleSensitiveTests = RunHost.Chrome;
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = isWindows ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
@@ -1146,7 +1147,7 @@ namespace Wasm.Build.Tests
                     return 42;
                 }
             }";
-        
+
         private IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
         {
             RunHost.V8 => new V8HostRunner(),

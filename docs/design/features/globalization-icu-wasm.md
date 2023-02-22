@@ -16,10 +16,16 @@ Only one value for `WasmIcuDataFileName` can be set. It can also be a custom fil
 
 ## Custom ICU
 
-Clone https://github.com/dotnet/icu . See files in https://github.com/dotnet/icu/tree/dotnet/main/icu-filters, and read https://unicode-org.github.io/icu/userguide/icu_data/buildtool.html#locale-slicing. Build your own filter or edit the existing file. Choose what filters to build in `eng/icu.mk`. Choose the platform:
+The easiest way to build ICU is to open https://github.com/dotnet/icu/ it in [Codespaces](docs\workflow\Codespaces.md). See files in https://github.com/dotnet/icu/tree/dotnet/main/icu-filters, and read https://unicode-org.github.io/icu/userguide/icu_data/buildtool.html#locale-slicing. Build your own filter or edit the existing file.
+We advise to edit the filters **only by adding/removing locales** from the `localeFilter/whitelist` to avoid removing important data. We recommend not to remove "en-US" locale from the localeFilter/whitelist because it is used as a fallback. Removing it for when
+- `<PredefinedCulturesOnly>true</PredefinedCulturesOnly>`: results in `Encountered infinite recursion while looking for resource in System.Private.Corelib.` exception
+- when predefined cultures only is not set: results in resolving data from ICU's `root.txt` files, e.g. `CultureInfo.DateTimeFormat.GetDayName(DateTime.Today.DayOfWeek)` will return an abbreviated form: `Mon` instead of `Monday`.
+Removing specific feature data might result in an exception that starts with `[CultureData.IcuGetLocaleInfo(LocaleStringData)] Failed`. It means you removed data necessary to extract basic information about the locale.
+
+ In the file `eng/icu.mk`, you can choose what filters to build. Choose the platform:
 
 ### Building for Browser:
-* For prerequisites run `.devcontainer/postCreateCommand.sh`.
+* For prerequisites run `.devcontainer/postCreateCommand.sh` (it is run automatically on creation if using Codespaces)
 * Building:
     ```
     ./build.sh /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:IcuTracing=true
