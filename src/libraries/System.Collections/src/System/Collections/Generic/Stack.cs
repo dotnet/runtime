@@ -174,7 +174,6 @@ namespace System.Collections.Generic
             if (_size < threshold)
             {
                 Array.Resize(ref _array, _size);
-                _version++;
             }
         }
 
@@ -296,7 +295,6 @@ namespace System.Collections.Generic
             if (_array.Length < capacity)
             {
                 Grow(capacity);
-                _version++;
             }
 
             return _array.Length;

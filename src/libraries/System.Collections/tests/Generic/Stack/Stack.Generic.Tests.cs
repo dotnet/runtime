@@ -289,7 +289,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void Stack_Generic_EnsureCapacity_RequestingLargerCapacity_DoesInvalidateEnumeration(int count)
+        public void Stack_Generic_EnsureCapacity_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
         {
             Stack<T> stack = GenericStackFactory(count);
             IEnumerator<T> copiedEnumerator = new List<T>(stack).GetEnumerator();
@@ -297,7 +297,7 @@ namespace System.Collections.Tests
 
             stack.EnsureCapacity(count + 1);
 
-            Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
+            enumerator.MoveNext();
         }
 
         [Fact]
