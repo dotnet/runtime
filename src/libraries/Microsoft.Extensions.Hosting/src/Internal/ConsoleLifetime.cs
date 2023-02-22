@@ -80,8 +80,10 @@ namespace Microsoft.Extensions.Hosting.Internal
             Logger.LogInformation("Application started. Press Ctrl+C to shut down.");
             Logger.LogInformation("Hosting environment: {EnvName}", Environment.EnvironmentName);
             Logger.LogInformation("Content root path: {ContentRoot}", Environment.ContentRootPath);
+            string contentRootFullPath = Path.GetFullPath(Environment.ContentRootPath);
 
-            if (Path.GetFullPath(Environment.ContentRootPath).Equals(Path.GetFullPath("."), StringComparison.InvariantCultureIgnoreCase))
+            if (contentRootFullPath.Equals(System.Environment.CurrentDirectory, StringComparison.Ordinal)
+                || contentRootFullPath.Equals(AppContext.BaseDirectory, StringComparison.Ordinal))
             {
                 Logger.LogWarning("Current working directory is /. If Content root path is not set explicitly, then working directory is used by default.");
             }
