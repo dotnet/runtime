@@ -7002,7 +7002,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
     int loopVarCount;
     int varInOutCount;
 
-    if (varTypeIsFloating(tree))
+    if (varTypeUsesFloatReg(tree))
     {
         hoistedExprCount = pLoopDsc->lpHoistedFPExprCount;
         loopVarCount     = pLoopDsc->lpLoopVarFPCount;
@@ -8509,7 +8509,7 @@ void Compiler::optComputeInterestingVarSets()
         LclVarDsc* varDsc = lvaGetDesc(i);
         if (varDsc->lvTracked)
         {
-            if (varTypeIsFloating(varDsc->lvType))
+            if (varTypeUsesFloatReg(varDsc->lvType))
             {
                 VarSetOps::AddElemD(this, lvaFloatVars, varDsc->lvVarIndex);
             }
