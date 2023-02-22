@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System;
 
-class TestReadIntAsDouble
+public class TestReadIntAsDouble
 {
 	private struct Dec
 	{
