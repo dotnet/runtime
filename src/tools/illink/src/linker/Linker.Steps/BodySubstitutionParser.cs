@@ -128,7 +128,7 @@ namespace Mono.Linker.Steps
 					continue;
 
 				string name = GetAttribute (resourceNav, "name");
-				if (String.IsNullOrEmpty (name)) {
+				if (string.IsNullOrEmpty (name)) {
 					LogWarning (resourceNav, DiagnosticId.XmlMissingNameAttributeInResource);
 					continue;
 				}

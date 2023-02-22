@@ -243,7 +243,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\DefaultValueHolder.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonCollectionInfoValuesOfTCollection.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Converters.cs" />
@@ -349,6 +348,11 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
+    <Compile Include="System\Text\Json\Reader\JsonReaderHelper.sn.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="System\Text\Json\Reader\JsonReaderHelper.sri.cs" />
   </ItemGroup>
 
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
@@ -366,6 +370,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />

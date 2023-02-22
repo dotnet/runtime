@@ -26,7 +26,7 @@ namespace Mono.Linker.Dataflow
 
 		public override int GetHashCode ()
 		{
-			HashCode hashCode = new HashCode ();
+			HashCode hashCode = default;
 			foreach (var item in this)
 				hashCode.Add (item.GetHashCode ());
 			return hashCode.ToHashCode ();

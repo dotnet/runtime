@@ -5,9 +5,10 @@ using Xunit;
 
 namespace System.Drawing.Text.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported))]
     public class InstalledFontCollectionTests
     {
-        [ConditionalFact(Helpers.GdiPlusIsAvailableNotRedhat73)]
+        [Fact]
         public void Ctor_Default()
         {
             using (var fontCollection = new InstalledFontCollection())
@@ -16,7 +17,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiPlusIsAvailableNotRedhat73)]
+        [Fact]
         public void Families_GetWhenDisposed_ReturnsNonEmpty()
         {
             var fontCollection = new InstalledFontCollection();
@@ -25,7 +26,7 @@ namespace System.Drawing.Text.Tests
             Assert.NotEmpty(fontCollection.Families);
         }
 
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [Fact]
         public void Dispose_MultipleTimes_Nop()
         {
             var fontCollection = new InstalledFontCollection();

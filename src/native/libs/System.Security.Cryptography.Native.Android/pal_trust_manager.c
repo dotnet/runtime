@@ -1,11 +1,11 @@
 #include "pal_trust_manager.h"
+#include <stdatomic.h>
 
-static RemoteCertificateValidationCallback verifyRemoteCertificate;
+static _Atomic RemoteCertificateValidationCallback verifyRemoteCertificate;
 
 ARGS_NON_NULL_ALL void AndroidCryptoNative_RegisterRemoteCertificateValidationCallback(RemoteCertificateValidationCallback callback)
 {
-    abort_unless(verifyRemoteCertificate == NULL, "AndroidCryptoNative_RegisterRemoteCertificateValidationCallback can only be used once");
-    verifyRemoteCertificate = callback;
+    atomic_store(&verifyRemoteCertificate, callback);
 }
 
 ARGS_NON_NULL_ALL jobjectArray GetTrustManagers(JNIEnv* env, intptr_t sslStreamProxyHandle)
@@ -31,6 +31,7 @@ cleanup:
 ARGS_NON_NULL_ALL jboolean Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
     JNIEnv* env, jobject thisHandle, jlong sslStreamProxyHandle)
 {
-    abort_unless(verifyRemoteCertificate, "verifyRemoteCertificate callback has not been registered");
-    return verifyRemoteCertificate((intptr_t)sslStreamProxyHandle);
+    RemoteCertificateValidationCallback verify = atomic_load(&verifyRemoteCertificate);
+    abort_unless(verify, "verifyRemoteCertificate callback has not been registered");
+    return verify((intptr_t)sslStreamProxyHandle);
 }

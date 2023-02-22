@@ -3925,6 +3925,7 @@ protected:
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
     GenTree* addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound);
+
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                      CORINFO_SIG_INFO*    sig,
@@ -5319,11 +5320,9 @@ public:
 
     void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
 
-    FlowEdge* fgAddRefPred(BasicBlock* block,
-                           BasicBlock* blockPred,
-                           FlowEdge*   oldEdge           = nullptr,
-                           bool        initializingPreds = false); // Only set to 'true' when we are computing preds in
-                                                                   // fgLinkBasicBlocks()
+    // initializingPreds is only 'true' when we are computing preds in fgLinkBasicBlocks()
+    template <bool initializingPreds = false>
+    FlowEdge* fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge = nullptr);
 
     void fgFindBasicBlocks();
 
@@ -6137,6 +6136,9 @@ protected:
     // Records the set of "side effects" of all loops: fields (object instance and static)
     // written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopSideEffects();
+
+    // Compute the sets of long and float vars (lvaLongVars, lvaFloatVars).
+    void optComputeInterestingVarSets();
 
 #ifdef DEBUG
     bool optAnyChildNotRemoved(unsigned loopNum);
@@ -10453,6 +10455,8 @@ public:
 
     bool compJitHaltMethod();
 
+    void dumpRegMask(regMaskTP regs) const;
+
 #endif
 
     /*
@@ -10727,6 +10731,47 @@ public:
     GenTree* fgMorphMultiregStructArg(CallArg* arg);
 
     bool killGCRefs(GenTree* tree);
+
+#if defined(TARGET_AMD64)
+private:
+    // The following are for initializing register allocator "constants" defined in targetamd64.h
+    // that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which increases
+    // the number of SIMD (xmm, ymm, and zmm) registers from 16 to 32.
+    // As only 64-bit xarch has the capability to have the additional registers, we limit the changes
+    // to TARGET_AMD64 only.
+    //
+    // Users of these values need to define four accessor functions:
+    //
+    //    regMaskTP get_RBM_ALLFLOAT();
+    //    regMaskTP get_RBM_FLT_CALLEE_TRASH();
+    //    unsigned get_CNT_CALLEE_TRASH_FLOAT();
+    //    unsigned get_AVAILABLE_REG_COUNT();
+    //
+    // which return the values of these variables.
+    //
+    // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
+    // TARGET_AMD64 requires one.
+    //
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+    unsigned  cntCalleeTrashFloat;
+
+public:
+    regMaskTP get_RBM_ALLFLOAT() const
+    {
+        return this->rbmAllFloat;
+    }
+    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    {
+        return this->rbmFltCalleeTrash;
+    }
+    unsigned get_CNT_CALLEE_TRASH_FLOAT() const
+    {
+        return this->cntCalleeTrashFloat;
+    }
+
+#endif // TARGET_AMD64
+
 }; // end of class Compiler
 
 //---------------------------------------------------------------------------------------------------------------------

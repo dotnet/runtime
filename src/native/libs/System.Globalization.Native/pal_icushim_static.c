@@ -169,6 +169,14 @@ error:
 int32_t
 GlobalizationNative_LoadICUData(const char* path)
 {
+#if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+    if (!path)
+    {
+        // fallback to icudt.dat in the app bundle root in case the path isn't set
+        path = GlobalizationNative_GetICUDataPathFallback();
+    }
+#endif
+
     const char *icu_data = cstdlib_load_icu_data(path);
 
     if (icu_data == NULL)

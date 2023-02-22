@@ -6012,8 +6012,174 @@ void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
 }
 
 #ifdef FEATURE_HW_INTRINSICS
-ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
-    var_types type, NamedIntrinsic ni, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN)
+ValueNum EvaluateUnarySimd(
+    ValueNumStore* vns, genTreeOps oper, bool scalar, var_types simdType, var_types baseType, ValueNum arg0VN)
+{
+    switch (simdType)
+    {
+        case TYP_SIMD8:
+        {
+            simd8_t result = {};
+            EvaluateUnarySimd<simd8_t>(oper, scalar, baseType, &result, vns->GetConstantSimd8(arg0VN));
+            return vns->VNForSimd8Con(result);
+        }
+
+        case TYP_SIMD12:
+        {
+            simd12_t result = {};
+            EvaluateUnarySimd<simd12_t>(oper, scalar, baseType, &result, vns->GetConstantSimd12(arg0VN));
+            return vns->VNForSimd12Con(result);
+        }
+
+        case TYP_SIMD16:
+        {
+            simd16_t result = {};
+            EvaluateUnarySimd<simd16_t>(oper, scalar, baseType, &result, vns->GetConstantSimd16(arg0VN));
+            return vns->VNForSimd16Con(result);
+        }
+
+        case TYP_SIMD32:
+        {
+            simd32_t result = {};
+            EvaluateUnarySimd<simd32_t>(oper, scalar, baseType, &result, vns->GetConstantSimd32(arg0VN));
+            return vns->VNForSimd32Con(result);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+ValueNum EvaluateBinarySimd(ValueNumStore* vns,
+                            genTreeOps     oper,
+                            bool           scalar,
+                            var_types      simdType,
+                            var_types      baseType,
+                            ValueNum       arg0VN,
+                            ValueNum       arg1VN)
+{
+    switch (simdType)
+    {
+        case TYP_SIMD8:
+        {
+            simd8_t result = {};
+            EvaluateBinarySimd<simd8_t>(oper, scalar, baseType, &result, vns->GetConstantSimd8(arg0VN),
+                                        vns->GetConstantSimd8(arg1VN));
+            return vns->VNForSimd8Con(result);
+        }
+
+        case TYP_SIMD12:
+        {
+            simd12_t result = {};
+            EvaluateBinarySimd<simd12_t>(oper, scalar, baseType, &result, vns->GetConstantSimd12(arg0VN),
+                                         vns->GetConstantSimd12(arg1VN));
+            return vns->VNForSimd12Con(result);
+        }
+
+        case TYP_SIMD16:
+        {
+            simd16_t result = {};
+            EvaluateBinarySimd<simd16_t>(oper, scalar, baseType, &result, vns->GetConstantSimd16(arg0VN),
+                                         vns->GetConstantSimd16(arg1VN));
+            return vns->VNForSimd16Con(result);
+        }
+
+        case TYP_SIMD32:
+        {
+            simd32_t result = {};
+            EvaluateBinarySimd<simd32_t>(oper, scalar, baseType, &result, vns->GetConstantSimd32(arg0VN),
+                                         vns->GetConstantSimd32(arg1VN));
+            return vns->VNForSimd32Con(result);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd>
+ValueNum EvaluateSimdGetElement(ValueNumStore* vns, var_types baseType, TSimd arg0, int arg1)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        {
+            float result = arg0.f32[arg1];
+            return vns->VNForFloatCon(static_cast<float>(result));
+        }
+
+        case TYP_DOUBLE:
+        {
+            double result = arg0.f64[arg1];
+            return vns->VNForDoubleCon(static_cast<double>(result));
+        }
+
+        case TYP_BYTE:
+        {
+            int8_t result = arg0.i8[arg1];
+            return vns->VNForIntCon(static_cast<int32_t>(result));
+        }
+
+        case TYP_SHORT:
+        {
+            int16_t result = arg0.i16[arg1];
+            return vns->VNForIntCon(static_cast<int32_t>(result));
+        }
+
+        case TYP_INT:
+        {
+            int32_t result = arg0.i32[arg1];
+            return vns->VNForIntCon(static_cast<int32_t>(result));
+        }
+
+        case TYP_LONG:
+        {
+            int64_t result = arg0.i64[arg1];
+            return vns->VNForLongCon(static_cast<int64_t>(result));
+        }
+
+        case TYP_UBYTE:
+        {
+            uint8_t result = arg0.u8[arg1];
+            return vns->VNForIntCon(static_cast<int32_t>(result));
+        }
+
+        case TYP_USHORT:
+        {
+            uint16_t result = arg0.u16[arg1];
+            return vns->VNForIntCon(static_cast<int32_t>(result));
+        }
+
+        case TYP_UINT:
+        {
+            uint32_t result = arg0.u32[arg1];
+            return vns->VNForIntCon(static_cast<int32_t>(result));
+        }
+
+        case TYP_ULONG:
+        {
+            uint64_t result = arg0.u64[arg1];
+            return vns->VNForLongCon(static_cast<int64_t>(result));
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
+                                                var_types      baseType,
+                                                NamedIntrinsic ni,
+                                                VNFunc         func,
+                                                ValueNum       arg0VN,
+                                                bool           encodeResultType,
+                                                ValueNum       resultTypeVN)
 {
     if (IsVNConstant(arg0VN))
     {
@@ -6074,6 +6240,18 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
                 uint64_t result = BitOperations::ReverseBits(static_cast<uint64_t>(value));
 
                 return VNForLongCon(static_cast<int64_t>(result));
+            }
+
+            case NI_AdvSimd_Negate:
+            case NI_AdvSimd_Arm64_Negate:
+            {
+                return EvaluateUnarySimd(this, GT_NEG, /* scalar */ false, type, baseType, arg0VN);
+            }
+
+            case NI_AdvSimd_NegateScalar:
+            case NI_AdvSimd_Arm64_NegateScalar:
+            {
+                return EvaluateUnarySimd(this, GT_NEG, /* scalar */ true, type, baseType, arg0VN);
             }
 #endif // TARGET_ARM64
 
@@ -6189,6 +6367,198 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
         return VNForFunc(type, func, arg0VN, resultTypeVN);
     }
     return VNForFunc(type, func, arg0VN);
+}
+
+ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
+                                                 var_types      baseType,
+                                                 NamedIntrinsic ni,
+                                                 VNFunc         func,
+                                                 ValueNum       arg0VN,
+                                                 ValueNum       arg1VN,
+                                                 bool           encodeResultType,
+                                                 ValueNum       resultTypeVN)
+{
+    ValueNum cnsVN = NoVN;
+    ValueNum argVN = NoVN;
+
+    if (IsVNConstant(arg0VN))
+    {
+        cnsVN = arg0VN;
+
+        if (!IsVNConstant(arg1VN))
+        {
+            argVN = arg1VN;
+        }
+    }
+    else
+    {
+        argVN = arg0VN;
+
+        if (IsVNConstant(arg1VN))
+        {
+            cnsVN = arg1VN;
+        }
+    }
+
+    if (argVN == NoVN)
+    {
+        assert(IsVNConstant(arg0VN) && IsVNConstant(arg1VN));
+
+        switch (ni)
+        {
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Add:
+            case NI_AdvSimd_Arm64_Add:
+#else
+            case NI_SSE_Add:
+            case NI_SSE2_Add:
+            case NI_AVX_Add:
+            case NI_AVX2_Add:
+#endif
+            {
+                return EvaluateBinarySimd(this, GT_ADD, /* scalar */ false, type, baseType, arg0VN, arg1VN);
+            }
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_AddScalar:
+#else
+            case NI_SSE_AddScalar:
+            case NI_SSE2_AddScalar:
+#endif
+            {
+                return EvaluateBinarySimd(this, GT_ADD, /* scalar */ true, type, baseType, arg0VN, arg1VN);
+            }
+
+#ifdef TARGET_ARM64
+            case NI_Vector64_GetElement:
+#endif
+            case NI_Vector128_GetElement:
+#ifdef TARGET_XARCH
+            case NI_Vector256_GetElement:
+#endif
+            {
+                switch (TypeOfVN(arg0VN))
+                {
+                    case TYP_SIMD8:
+                    {
+                        return EvaluateSimdGetElement<simd8_t>(this, baseType, GetConstantSimd8(arg0VN),
+                                                               GetConstantInt32(arg1VN));
+                    }
+
+                    case TYP_SIMD12:
+                    {
+                        return EvaluateSimdGetElement<simd12_t>(this, baseType, GetConstantSimd12(arg0VN),
+                                                                GetConstantInt32(arg1VN));
+                    }
+
+                    case TYP_SIMD16:
+                    {
+                        return EvaluateSimdGetElement<simd16_t>(this, baseType, GetConstantSimd16(arg0VN),
+                                                                GetConstantInt32(arg1VN));
+                    }
+
+                    case TYP_SIMD32:
+                    {
+                        return EvaluateSimdGetElement<simd32_t>(this, baseType, GetConstantSimd32(arg0VN),
+                                                                GetConstantInt32(arg1VN));
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+            }
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Subtract:
+            case NI_AdvSimd_Arm64_Subtract:
+#else
+            case NI_SSE_Subtract:
+            case NI_SSE2_Subtract:
+            case NI_AVX_Subtract:
+            case NI_AVX2_Subtract:
+#endif
+            {
+                return EvaluateBinarySimd(this, GT_SUB, /* scalar */ false, type, baseType, arg0VN, arg1VN);
+            }
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_SubtractScalar:
+#else
+            case NI_SSE_SubtractScalar:
+            case NI_SSE2_SubtractScalar:
+#endif
+            {
+                return EvaluateBinarySimd(this, GT_SUB, /* scalar */ true, type, baseType, arg0VN, arg1VN);
+            }
+
+            default:
+                break;
+        }
+    }
+    else if (cnsVN != NoVN)
+    {
+        switch (ni)
+        {
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Add:
+            case NI_AdvSimd_Arm64_Add:
+#else
+            case NI_SSE_Add:
+            case NI_SSE2_Add:
+            case NI_AVX_Add:
+            case NI_AVX2_Add:
+#endif
+            {
+                // Handle `x + 0` and `0 + x`
+
+                ValueNum zeroVN = VNZeroForType(type);
+
+                if (cnsVN == zeroVN)
+                {
+                    return argVN;
+                }
+                break;
+            }
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Subtract:
+            case NI_AdvSimd_Arm64_Subtract:
+#else
+            case NI_SSE_Subtract:
+            case NI_SSE2_Subtract:
+            case NI_AVX_Subtract:
+            case NI_AVX2_Subtract:
+#endif
+            {
+                // Handle `x - 0`
+
+                if (cnsVN != arg1VN)
+                {
+                    // This is `0 - x` which is `NEG(x)`
+                    break;
+                }
+
+                ValueNum zeroVN = VNZeroForType(type);
+
+                if (cnsVN == zeroVN)
+                {
+                    return argVN;
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    if (encodeResultType)
+    {
+        return VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
+    }
+    return VNForFunc(type, func, arg0VN, arg1VN);
 }
 #endif
 
@@ -9851,12 +10221,13 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             if (tree->GetOperandCount() == 1)
             {
-                ValueNum normalLVN =
-                    vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), intrinsicId, func, op1vnp.GetLiberal(),
-                                                     encodeResultType, resultTypeVNPair.GetLiberal());
+                ValueNum normalLVN = vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), tree->GetSimdBaseType(),
+                                                                      intrinsicId, func, op1vnp.GetLiberal(),
+                                                                      encodeResultType, resultTypeVNPair.GetLiberal());
                 ValueNum normalCVN =
-                    vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), intrinsicId, func, op1vnp.GetConservative(),
-                                                     encodeResultType, resultTypeVNPair.GetConservative());
+                    vnStore->EvalHWIntrinsicFunUnary(tree->TypeGet(), tree->GetSimdBaseType(), intrinsicId, func,
+                                                     op1vnp.GetConservative(), encodeResultType,
+                                                     resultTypeVNPair.GetConservative());
 
                 normalPair = ValueNumPair(normalLVN, normalCVN);
                 excSetPair = op1Xvnp;
@@ -9866,17 +10237,18 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
                 ValueNumPair op2vnp;
                 ValueNumPair op2Xvnp;
                 getOperandVNs(tree->Op(2), &op2vnp, &op2Xvnp);
+
+                ValueNum normalLVN =
+                    vnStore->EvalHWIntrinsicFunBinary(tree->TypeGet(), tree->GetSimdBaseType(), intrinsicId, func,
+                                                      op1vnp.GetLiberal(), op2vnp.GetLiberal(), encodeResultType,
+                                                      resultTypeVNPair.GetLiberal());
+                ValueNum normalCVN =
+                    vnStore->EvalHWIntrinsicFunBinary(tree->TypeGet(), tree->GetSimdBaseType(), intrinsicId, func,
+                                                      op1vnp.GetConservative(), op2vnp.GetConservative(),
+                                                      encodeResultType, resultTypeVNPair.GetConservative());
+
+                normalPair = ValueNumPair(normalLVN, normalCVN);
                 excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
-                if (encodeResultType)
-                {
-                    normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, op2vnp, resultTypeVNPair);
-                    assert((vnStore->VNFuncArity(func) == 3) || isVariableNumArgs);
-                }
-                else
-                {
-                    normalPair = vnStore->VNPairForFunc(tree->TypeGet(), func, op1vnp, op2vnp);
-                    assert((vnStore->VNFuncArity(func) == 2) || isVariableNumArgs);
-                }
             }
         }
     }
