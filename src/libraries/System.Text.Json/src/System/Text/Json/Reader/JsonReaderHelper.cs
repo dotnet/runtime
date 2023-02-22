@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -10,6 +11,15 @@ namespace System.Text.Json
 {
     internal static partial class JsonReaderHelper
     {
+        private const string SpecialCharacters = ". '/\"[]()\t\n\r\f\b\\\u0085\u2028\u2029";
+#if NET8_0_OR_GREATER
+        private static readonly IndexOfAnyValues<char> s_specialCharacters = IndexOfAnyValues.Create(SpecialCharacters);
+#else
+        private static ReadOnlySpan<char> s_specialCharacters => SpecialCharacters.AsSpan();
+#endif
+        public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text)
+            => text.IndexOfAny(s_specialCharacters) >= 0;
+
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
             int lastLineFeedIndex = data.LastIndexOf(JsonConstants.LineFeed);

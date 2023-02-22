@@ -34,8 +34,8 @@ namespace System.Runtime.Serialization.DataContracts
             DynamicallyAccessedMemberTypes.PublicFields |
             DynamicallyAccessedMemberTypes.PublicProperties;
 
-        private XmlDictionaryString _name;
-        private XmlDictionaryString _ns;
+        private readonly XmlDictionaryString _name;
+        private readonly XmlDictionaryString _ns;
         private readonly DataContractCriticalHelper _helper;
 
         internal DataContract(DataContractCriticalHelper helper)
@@ -303,7 +303,7 @@ namespace System.Runtime.Serialization.DataContracts
             private static Dictionary<Type, DataContract?>? s_typeToBuiltInContract;
             private static Dictionary<XmlQualifiedName, DataContract?>? s_nameToBuiltInContract;
             private static Dictionary<string, DataContract?>? s_typeNameToBuiltInContract;
-            private static Hashtable s_namespaces = new Hashtable();
+            private static readonly Hashtable s_namespaces = new Hashtable();
             private static Dictionary<string, XmlDictionaryString>? s_clrTypeStrings;
             private static XmlDictionary? s_clrTypeStringsDictionary;
 
@@ -2404,10 +2404,10 @@ namespace System.Runtime.Serialization.DataContracts
 
     internal sealed class GenericInfo : IGenericNameProvider
     {
-        private string? _genericTypeName;
-        private XmlQualifiedName _xmlName;
+        private readonly string? _genericTypeName;
+        private readonly XmlQualifiedName _xmlName;
         private List<GenericInfo>? _paramGenericInfos;
-        private List<int> _nestedParamCounts;
+        private readonly List<int> _nestedParamCounts;
 
         internal GenericInfo(XmlQualifiedName xmlName, string? genericTypeName)
         {
@@ -2515,8 +2515,8 @@ namespace System.Runtime.Serialization.DataContracts
 
     internal sealed class DataContractPairKey
     {
-        private object _object1;
-        private object _object2;
+        private readonly object _object1;
+        private readonly object _object2;
 
         internal DataContractPairKey(object object1, object object2)
         {

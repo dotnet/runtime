@@ -62,9 +62,8 @@ namespace System.Reflection.Emit
 
         private static bool IsBoundedVector(Type type)
         {
-            ArrayType? at = type as ArrayType;
-            if (at != null)
-                return at.GetEffectiveRank() == 1;
+            if (type is SymbolType st && st.IsArray)
+                return st.GetArrayRank() == 1;
             return type.ToString().EndsWith("[*]", StringComparison.Ordinal); /*Super uggly hack, SR doesn't allow one to query for it */
         }
 

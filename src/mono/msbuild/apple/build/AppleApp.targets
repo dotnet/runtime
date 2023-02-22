@@ -197,11 +197,31 @@ _monovm_runtimeconfig_initialize;" />
     
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
 
+    <PropertyGroup Condition="'$(iOSLikeDedup)' == 'true'">
+      <_iOSLikeDedupAssembly>$(AppleAppDir)\aot-instances.dll</_iOSLikeDedupAssembly>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'$(iOSLikeDedup)' == 'true'" File="$(_MobileIntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
+    <Csc Condition="'$(iOSLikeDedup)' == 'true'"
+      Sources="$(_MobileIntermediateOutputPath)\aot-instances.cs"
+      OutputAssembly="$(_iOSLikeDedupAssembly)"
+      TargetType="library"
+      Deterministic="true"
+      References="@(ReferencePath)"
+      ToolExe="$(CscToolExe)"
+      ToolPath="$(CscToolPath)" />
+    <ItemGroup Condition="'$(iOSLikeDedup)' == 'true'">
+      <_AotInputAssemblies Include="$(_iOSLikeDedupAssembly)">
+        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      </_AotInputAssemblies>
+    </ItemGroup>
+
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         AotModulesTablePath="$(_AotModuleTablePath)"
         AotModulesTableLanguage="ObjC"
         Assemblies="@(_AotInputAssemblies)"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        DedupAssembly="$(_iOSLikeDedupAssembly)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
         LLVMPath="$(MonoAotCrossDir)"

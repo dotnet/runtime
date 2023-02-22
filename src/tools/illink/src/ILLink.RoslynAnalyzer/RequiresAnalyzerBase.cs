@@ -357,7 +357,7 @@ namespace ILLink.RoslynAnalyzer
 		/// </summary>
 		/// <param name="compilation">Compilation to search for members</param>
 		/// <returns>A list of special incomptaible members</returns>
-		protected virtual ImmutableArray<ISymbol> GetSpecialIncompatibleMembers (Compilation compilation) => new ImmutableArray<ISymbol> ();
+		protected virtual ImmutableArray<ISymbol> GetSpecialIncompatibleMembers (Compilation compilation) => default;
 
 		/// <summary>
 		/// Verifies that the MSBuild requirements to run the analyzer are fulfilled

@@ -29,7 +29,7 @@ namespace System.Drawing
             private readonly bool _animated;
             private EventHandler? _onFrameChangedHandler;
             private readonly long[]? _frameEndTimes;
-            private long _totalAnimationTime;
+            private readonly long _totalAnimationTime;
             private long _frameTimer;
 
             public ImageInfo(Image image)

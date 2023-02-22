@@ -25,12 +25,12 @@ namespace System.IO.Ports
         private StopBits _stopBits;
         private Parity _parity;
         private int _dataBits = 8;
-        private bool _rtsEnable;
+        private readonly bool _rtsEnable;
         private int _readTimeout;
         private int _writeTimeout;
-        private byte[] _tempBuf = new byte[1];
+        private readonly byte[] _tempBuf = new byte[1];
         private Task _ioLoop;
-        private object _ioLoopLock = new object();
+        private readonly object _ioLoopLock = new object();
         private bool _hasCancelledTasksToProcess;
         // Use a Queue with locking instead of ConcurrentQueue because ConcurrentQueue preserves segments for
         // observation when using TryPeek(). These segments will not clear out references after a dequeue
@@ -772,8 +772,8 @@ namespace System.IO.Ports
 
         // should return non-negative integer meaning numbers of bytes read/written (0 for errors)
         private delegate int RequestProcessor(SerialStreamIORequest r);
-        private RequestProcessor _processReadDelegate;
-        private RequestProcessor _processWriteDelegate;
+        private readonly RequestProcessor _processReadDelegate;
+        private readonly RequestProcessor _processWriteDelegate;
 
         private unsafe int ProcessRead(SerialStreamIORequest r)
         {
