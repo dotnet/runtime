@@ -20,7 +20,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool CryptMsgGetParam(
+        internal static unsafe partial bool CryptMsgGetParam(
             SafeCryptMsgHandle hCryptMsg,
             CryptMsgParamType dwParamType,
             int dwIndex,

@@ -14,7 +14,7 @@ internal static partial class Interop
     internal static partial class NCrypt
     {
         [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial ErrorCode NCryptGetProperty(
+        internal static unsafe partial ErrorCode NCryptGetProperty(
             SafeNCryptHandle hObject,
             string pszProperty,
             void* pbOutput,
@@ -23,7 +23,7 @@ internal static partial class Interop
             CngPropertyOptions dwFlags);
 
         [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial ErrorCode NCryptSetProperty(
+        internal static unsafe partial ErrorCode NCryptSetProperty(
             SafeNCryptHandle hObject,
             string pszProperty,
             void* pbInput,

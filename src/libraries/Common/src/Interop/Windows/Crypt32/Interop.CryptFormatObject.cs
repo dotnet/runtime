@@ -14,7 +14,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool CryptFormatObject(
+        internal static unsafe partial bool CryptFormatObject(
             int dwCertEncodingType,   // only valid value is X509_ASN_ENCODING
             int dwFormatType,         // unused - pass 0.
             int dwFormatStrType,      // select multiline

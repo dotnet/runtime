@@ -18,6 +18,6 @@ internal static partial class Interop
         /// Returns the number of bytes written on success; otherwise, returns -1 and sets errno
         /// </returns>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Write", SetLastError = true)]
-        internal static partial int Write(SafePipeHandle fd, byte* buffer, int bufferSize);
+        internal static unsafe partial int Write(SafePipeHandle fd, byte* buffer, int bufferSize);
     }
 }

@@ -10,7 +10,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial int ReadFileScatter(
+        internal static unsafe partial int ReadFileScatter(
             SafeHandle hFile,
             long* aSegmentArray,
             int nNumberOfBytesToRead,
@@ -18,7 +18,7 @@ internal static partial class Interop
             NativeOverlapped* lpOverlapped);
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial int WriteFileGather(
+        internal static unsafe partial int WriteFileGather(
             SafeHandle hFile,
             long* aSegmentArray,
             int nNumberOfBytesToWrite,

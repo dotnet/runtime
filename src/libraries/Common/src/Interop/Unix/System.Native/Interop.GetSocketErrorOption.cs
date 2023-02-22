@@ -10,6 +10,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSocketErrorOption")]
-        internal static partial Error GetSocketErrorOption(SafeHandle socket, Error* socketError);
+        internal static unsafe partial Error GetSocketErrorOption(SafeHandle socket, Error* socketError);
     }
 }

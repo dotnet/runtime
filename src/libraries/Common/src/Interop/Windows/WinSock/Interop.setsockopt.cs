@@ -26,7 +26,7 @@ internal static partial class Interop
             int optionLength);
 
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static partial SocketError setsockopt(
+        internal static unsafe partial SocketError setsockopt(
             SafeSocketHandle socketHandle,
             SocketOptionLevel optionLevel,
             SocketOptionName optionName,

@@ -46,7 +46,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Interop.Libraries.Advapi32)]
-        internal static partial int EnumerateTraceGuidsEx(
+        internal static unsafe partial int EnumerateTraceGuidsEx(
             TRACE_QUERY_INFO_CLASS TraceQueryInfoClass,
             void* InBuffer,
             int InBufferSize,

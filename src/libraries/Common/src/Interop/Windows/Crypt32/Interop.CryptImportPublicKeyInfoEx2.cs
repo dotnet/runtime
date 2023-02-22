@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool CryptImportPublicKeyInfoEx2(
+        internal static unsafe partial bool CryptImportPublicKeyInfoEx2(
             CertEncodingType dwCertEncodingType,
             CERT_PUBLIC_KEY_INFO* pInfo,
             CryptImportPublicKeyInfoFlags dwFlags,

@@ -15,13 +15,13 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.Kernel32)]
-        internal static partial void InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
+        internal static unsafe partial void InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
 
         [LibraryImport(Libraries.Kernel32)]
-        internal static partial void WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
+        internal static unsafe partial void WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
 
         [LibraryImport(Libraries.Kernel32)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool SleepConditionVariableCS(CONDITION_VARIABLE* ConditionVariable, CRITICAL_SECTION* CriticalSection, int dwMilliseconds);
+        internal static unsafe partial bool SleepConditionVariableCS(CONDITION_VARIABLE* ConditionVariable, CRITICAL_SECTION* CriticalSection, int dwMilliseconds);
     }
 }

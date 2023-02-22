@@ -11,7 +11,7 @@ internal static partial class Interop
         // identical to the wincrypt CERT_*_USAGE values.
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool CertGetIntendedKeyUsage(
+        internal static unsafe partial bool CertGetIntendedKeyUsage(
             CertEncodingType dwCertEncodingType,
             CERT_INFO* pCertInfo,
             out X509KeyUsageFlags pbKeyUsage,

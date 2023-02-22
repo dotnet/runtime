@@ -14,7 +14,7 @@ internal static partial class Interop
 
         // https://docs.microsoft.com/windows/desktop/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew (kernel32)
         [LibraryImport(Libraries.Kernel32, EntryPoint = "GetFinalPathNameByHandleW", SetLastError = true)]
-        internal static partial uint GetFinalPathNameByHandle(
+        internal static unsafe partial uint GetFinalPathNameByHandle(
             SafeFileHandle hFile,
             char* lpszFilePath,
             uint cchFilePath,

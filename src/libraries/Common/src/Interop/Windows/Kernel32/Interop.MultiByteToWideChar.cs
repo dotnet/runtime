@@ -8,7 +8,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32)]
-        internal static partial int MultiByteToWideChar(
+        internal static unsafe partial int MultiByteToWideChar(
             uint CodePage, uint dwFlags,
             byte* lpMultiByteStr, int cbMultiByte,
             char* lpWideCharStr, int cchWideChar);

@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool GetNamedPipeHandleStateW(
+        internal static unsafe partial bool GetNamedPipeHandleStateW(
             SafePipeHandle hNamedPipe,
             uint* lpState,
             uint* lpCurInstances,

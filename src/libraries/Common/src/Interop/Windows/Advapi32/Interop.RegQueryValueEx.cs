@@ -22,7 +22,7 @@ internal static partial class Interop
             ref int lpcbData);
 
         [LibraryImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int RegQueryValueEx(
+        internal static unsafe partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
             int* lpReserved,

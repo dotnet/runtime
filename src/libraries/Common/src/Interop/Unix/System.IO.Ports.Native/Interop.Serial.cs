@@ -30,7 +30,7 @@ internal static partial class Interop
         /// Note - on fail. the position of the stream may change depending on the platform; consult man 2 read for more info
         /// </returns>
         [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Read", SetLastError = true)]
-        internal static partial int Read(SafeHandle fd, byte* buffer, int count);
+        internal static unsafe partial int Read(SafeHandle fd, byte* buffer, int count);
 
         /// <summary>
         /// Writes the specified buffer to the provided open file descriptor
@@ -42,7 +42,7 @@ internal static partial class Interop
         /// Returns the number of bytes written on success; otherwise, returns -1 and sets errno
         /// </returns>
         [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Write", SetLastError = true)]
-        internal static partial int Write(SafeHandle fd, byte* buffer, int bufferSize);
+        internal static unsafe partial int Write(SafeHandle fd, byte* buffer, int bufferSize);
 
         /// <summary>
         /// Polls a set of file descriptors for signals and returns what signals have been set

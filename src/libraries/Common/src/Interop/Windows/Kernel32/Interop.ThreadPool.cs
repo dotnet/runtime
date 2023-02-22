@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32)]
-        internal static partial IntPtr CreateThreadpoolWork(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void> pfnwk, IntPtr pv, IntPtr pcbe);
+        internal static unsafe partial IntPtr CreateThreadpoolWork(delegate* unmanaged<IntPtr, IntPtr, IntPtr, void> pfnwk, IntPtr pv, IntPtr pcbe);
 
         [LibraryImport(Libraries.Kernel32)]
         internal static partial void SubmitThreadpoolWork(IntPtr pwk);
@@ -18,7 +18,7 @@ internal static partial class Interop
         internal static partial void CloseThreadpoolWork(IntPtr pwk);
 
         [LibraryImport(Libraries.Kernel32)]
-        internal static partial IntPtr CreateThreadpoolWait(delegate* unmanaged<IntPtr, IntPtr, IntPtr, uint, void> pfnwa, IntPtr pv, IntPtr pcbe);
+        internal static unsafe partial IntPtr CreateThreadpoolWait(delegate* unmanaged<IntPtr, IntPtr, IntPtr, uint, void> pfnwa, IntPtr pv, IntPtr pcbe);
 
         [LibraryImport(Libraries.Kernel32)]
         internal static partial void SetThreadpoolWait(IntPtr pwa, IntPtr h, IntPtr pftTimeout);

@@ -17,6 +17,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
-        internal static partial BOOL QueryPerformanceCounter(long* lpPerformanceCount);
+        internal static unsafe partial BOOL QueryPerformanceCounter(long* lpPerformanceCount);
     }
 }

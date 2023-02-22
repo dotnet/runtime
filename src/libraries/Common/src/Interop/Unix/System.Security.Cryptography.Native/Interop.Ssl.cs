@@ -46,7 +46,7 @@ internal static partial class Interop
         internal static partial void SslSetAcceptState(SafeSslHandle ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetAlpnProtos")]
-        internal static partial int SslSetAlpnProtos(SafeSslHandle ssl, byte* protos, int len);
+        internal static unsafe partial int SslSetAlpnProtos(SafeSslHandle ssl, byte* protos, int len);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetVersion")]
         internal static partial IntPtr SslGetVersion(SafeSslHandle ssl);
@@ -56,10 +56,10 @@ internal static partial class Interop
         internal static partial bool SslSetTlsExtHostName(SafeSslHandle ssl, string host);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetServerName")]
-        internal static partial IntPtr SslGetServerName(IntPtr ssl);
+        internal static unsafe partial IntPtr SslGetServerName(IntPtr ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetSession")]
-        internal static partial int SslSetSession(SafeSslHandle ssl, IntPtr session);
+        internal static unsafe partial int SslSetSession(SafeSslHandle ssl, IntPtr session);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGet0AlpnSelected")]
         internal static partial void SslGetAlpnSelected(SafeSslHandle ssl, out IntPtr protocol, out int len);
@@ -107,7 +107,7 @@ internal static partial class Interop
 
         // NOTE: this is just an (unsafe) overload to the BioWrite method from Interop.Bio.cs.
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
-        internal static partial int BioWrite(SafeBioHandle b, byte* data, int len);
+        internal static unsafe partial int BioWrite(SafeBioHandle b, byte* data, int len);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
         internal static partial int BioWrite(SafeBioHandle b, ref byte data, int len);
@@ -140,7 +140,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool SslSetCiphers(SafeSslHandle ssl, byte* cipherList, byte* cipherSuites);
+        internal static unsafe partial bool SslSetCiphers(SafeSslHandle ssl, byte* cipherList, byte* cipherSuites);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyPeer")]
         internal static partial void SslSetVerifyPeer(SafeSslHandle ssl);
@@ -164,7 +164,7 @@ internal static partial class Interop
         internal static partial int SslUsePrivateKey(SafeSslHandle ssl, SafeEvpPKeyHandle keyPtr);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetClientCertCallback")]
-        internal static partial void SslSetClientCertCallback(SafeSslHandle ssl, int set);
+        internal static unsafe partial void SslSetClientCertCallback(SafeSslHandle ssl, int set);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetPostHandshakeAuth")]
         internal static partial void SslSetPostHandshakeAuth(SafeSslHandle ssl, int value);

@@ -9,6 +9,6 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetDelayedSigChildConsoleConfigurationHandler")]
         [SuppressGCTransition]
-        internal static partial void SetDelayedSigChildConsoleConfigurationHandler(delegate* unmanaged<void> callback);
+        internal static unsafe partial void SetDelayedSigChildConsoleConfigurationHandler(delegate* unmanaged<void> callback);
     }
 }

@@ -8,6 +8,6 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32)]
-        internal static partial BOOL GlobalMemoryStatusEx(MEMORYSTATUSEX* lpBuffer);
+        internal static unsafe partial BOOL GlobalMemoryStatusEx(MEMORYSTATUSEX* lpBuffer);
     }
 }

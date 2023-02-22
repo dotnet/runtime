@@ -10,6 +10,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SendMessage")]
-        internal static partial Error SendMessage(SafeHandle socket, MessageHeader* messageHeader, SocketFlags flags, long* sent);
+        internal static unsafe partial Error SendMessage(SafeHandle socket, MessageHeader* messageHeader, SocketFlags flags, long* sent);
     }
 }

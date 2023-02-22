@@ -12,7 +12,7 @@ internal static partial class Interop
     internal static partial class BCrypt
     {
         [LibraryImport(Libraries.BCrypt)]
-        internal static partial NTSTATUS BCryptKeyDerivation(
+        internal static unsafe partial NTSTATUS BCryptKeyDerivation(
             SafeBCryptKeyHandle hKey,
             BCryptBufferDesc* pParameterList,
             byte* pbDerivedKey,

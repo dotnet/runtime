@@ -18,7 +18,7 @@ internal static partial class Interop
         internal const int NS_ALL = 0;
 
         [LibraryImport(Libraries.Ws2_32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int GetAddrInfoExW(
+        internal static unsafe partial int GetAddrInfoExW(
             string pName,
             string? pServiceName,
             int dwNamespace,
@@ -31,10 +31,10 @@ internal static partial class Interop
             IntPtr* lpNameHandle);
 
         [LibraryImport(Libraries.Ws2_32)]
-        internal static partial int GetAddrInfoExCancel(IntPtr* lpHandle);
+        internal static unsafe partial int GetAddrInfoExCancel(IntPtr* lpHandle);
 
         [LibraryImport(Libraries.Ws2_32)]
-        internal static partial void FreeAddrInfoExW(AddressInfoEx* pAddrInfo);
+        internal static unsafe partial void FreeAddrInfoExW(AddressInfoEx* pAddrInfo);
 
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct AddressInfoEx

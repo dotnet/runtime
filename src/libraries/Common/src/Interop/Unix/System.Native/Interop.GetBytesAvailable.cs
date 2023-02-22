@@ -9,9 +9,9 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetBytesAvailable")]
-        internal static partial Error GetBytesAvailable(SafeHandle socket, int* available);
+        internal static unsafe partial Error GetBytesAvailable(SafeHandle socket, int* available);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAtOutOfBandMark")]
-        internal static partial Error GetAtOutOfBandMark(SafeHandle socket, int* atMark);
+        internal static unsafe partial Error GetAtOutOfBandMark(SafeHandle socket, int* atMark);
     }
 }

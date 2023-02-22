@@ -45,7 +45,7 @@ internal static partial class Interop
         private static partial int HmacCurrent(SafeHmacHandle ctx, ref byte pbOutput, int cbOutput);
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacOneShot")]
-        internal static partial int HmacOneShot(
+        internal static unsafe partial int HmacOneShot(
             PAL_HashAlgorithm algorithm,
             byte* pKey,
             int cbKey,

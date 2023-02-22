@@ -19,6 +19,6 @@ internal static partial class Interop
         /// Note - on fail. the position of the stream may change depending on the platform; consult man 2 read for more info
         /// </returns>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Read", SetLastError = true)]
-        internal static partial int Read(SafePipeHandle fd, byte* buffer, int count);
+        internal static unsafe partial int Read(SafePipeHandle fd, byte* buffer, int count);
     }
 }

@@ -12,7 +12,7 @@ internal static partial class Interop
     internal static partial class BCrypt
     {
         [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial NTSTATUS BCryptDeriveKeyPBKDF2(
+        internal static unsafe partial NTSTATUS BCryptDeriveKeyPBKDF2(
             SafeBCryptAlgorithmHandle hPrf,
             byte* pbPassword,
             int cbPassword,

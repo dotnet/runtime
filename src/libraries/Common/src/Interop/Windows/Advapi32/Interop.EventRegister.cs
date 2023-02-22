@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [LibraryImport(Libraries.Advapi32)]
-        internal static partial uint EventRegister(
+        internal static unsafe partial uint EventRegister(
             Guid* providerId,
             delegate* unmanaged<Guid*, int, byte, long, long, EVENT_FILTER_DESCRIPTOR*, void*, void> enableCallback,
             void* callbackContext,

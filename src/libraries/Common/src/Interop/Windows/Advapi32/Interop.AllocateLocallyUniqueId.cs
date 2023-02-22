@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Advapi32)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool AllocateLocallyUniqueId(LUID* Luid);
+        internal static unsafe partial bool AllocateLocallyUniqueId(LUID* Luid);
     }
 }

@@ -24,7 +24,7 @@ internal static partial class Interop
         internal const uint STACK_SIZE_PARAM_IS_A_RESERVATION = 0x00010000;
 
         [LibraryImport(Libraries.Kernel32)]
-        internal static partial SafeWaitHandle CreateThread(
+        internal static unsafe partial SafeWaitHandle CreateThread(
             IntPtr lpThreadAttributes,
             IntPtr dwStackSize,
             delegate* unmanaged<IntPtr, uint> lpStartAddress,

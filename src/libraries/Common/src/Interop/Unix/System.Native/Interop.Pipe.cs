@@ -25,6 +25,6 @@ internal static partial class Interop
         internal const int WriteEndOfPipe = 1;
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Pipe", SetLastError = true)]
-        internal static partial int Pipe(int* pipefd, PipeFlags flags = 0); // pipefd is an array of two ints
+        internal static unsafe partial int Pipe(int* pipefd, PipeFlags flags = 0); // pipefd is an array of two ints
     }
 }

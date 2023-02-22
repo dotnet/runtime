@@ -8,6 +8,6 @@ internal static partial class Interop
     internal static partial class Crypt32
     {
         [LibraryImport(Libraries.Crypt32, SetLastError = true)]
-        internal static partial int CertVerifyTimeValidity(ref FILETIME pTimeToVerify, CERT_INFO* pCertInfo);
+        internal static unsafe partial int CertVerifyTimeValidity(ref FILETIME pTimeToVerify, CERT_INFO* pCertInfo);
     }
 }

@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool WSAGetOverlappedResult(
+        internal static unsafe partial bool WSAGetOverlappedResult(
             SafeSocketHandle socketHandle,
             NativeOverlapped* overlapped,
             out uint bytesTransferred,
