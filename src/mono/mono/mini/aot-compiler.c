@@ -482,12 +482,6 @@ static void
 encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, guint8 **endbuf);
 
 static gboolean
-ignore_cfg (MonoCompile *cfg)
-{
-	return !cfg || cfg->skip;
-}
-
-static gboolean
 mono_aot_mode_is_full (MonoAotOptions *opts)
 {
 	return opts->mode == MONO_AOT_MODE_FULL;
@@ -6825,7 +6819,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 	int func_alignment = AOT_FUNC_ALIGNMENT;
 	char *export_name;
 
-	g_assert (!ignore_cfg (cfg));
+	g_assert (cfg);
 
 	method = cfg->orig_method;
 	code = cfg->native_code;
@@ -6883,7 +6877,7 @@ emit_method_code (MonoAotCompile *acfg, MonoCompile *cfg)
 		emit_label (acfg, export_name);
 	}
 
-	if (cfg->verbose_level > 0 && !ignore_cfg (cfg))
+	if (cfg->verbose_level > 0 && cfg)
 		g_print ("Method %s emitted as %s\n", mono_method_get_full_name (method), cfg->asm_symbol);
 
 	acfg->stats.code_size += cfg->code_len;
@@ -10582,55 +10576,6 @@ emit_llvm_file (MonoAotCompile *acfg)
 }
 #endif
 
-/* Set the skip flag for methods which do not need to be emitted because of dedup */
-static void
-dedup_skip_methods (MonoAotCompile *acfg)
-{
-	int i;
-
-	if (acfg->aot_opts.llvm_only)
-		return;
-
-	for (guint oindex = 0; oindex < acfg->method_order->len; ++oindex) {
-		MonoCompile *cfg;
-		MonoMethod *method;
-
-		i = GPOINTER_TO_UINT (g_ptr_array_index (acfg->method_order, oindex));
-
-		cfg = acfg->cfgs [i];
-
-		if (!cfg)
-			continue;
-
-		method = cfg->orig_method;
-
-		gboolean dedup_collect = acfg->aot_opts.dedup || (acfg->aot_opts.dedup_include && !acfg->dedup_emit_mode);
-		gboolean dedupable = mono_aot_can_dedup (method);
-
-		// cfg->skip is vital for LLVM to work, can't just continue in this loop
-		if (dedupable && strcmp (method->name, "wbarrier_conc") && dedup_collect) {
-			// Don't compile inflated methods if we're in first phase of
-			// dedup
-			//
-			// In second phase, we emit methods that
-			// are dedupable. We also emit later methods
-			// which are referenced by them and added later.
-			// For this reason, when in the dedup_include mode,
-			// we never set skip.
-			if (acfg->aot_opts.dedup)
-				cfg->skip = TRUE;
-		}
-
-		// Don't compile anything in this mode
-		if (acfg->aot_opts.dedup_include && !acfg->dedup_emit_mode)
-			cfg->skip = TRUE;
-
-		// Compile everything in this mode
-		if (acfg->aot_opts.dedup_include && acfg->dedup_emit_mode)
-			cfg->skip = FALSE;
-	}
-}
-
 static void
 emit_code (MonoAotCompile *acfg)
 {
@@ -10677,7 +10622,7 @@ emit_code (MonoAotCompile *acfg)
 
 		method = cfg->orig_method;
 
-		if (ignore_cfg (cfg))
+		if (!cfg)
 			continue;
 
 		/* Emit unbox trampoline */
@@ -10780,16 +10725,15 @@ emit_code (MonoAotCompile *acfg)
 	for (guint32 i = 0; i < acfg->nmethods; ++i) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
 		if (acfg->flags & MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY) {
-			if (!ignore_cfg (acfg->cfgs [i]))
+			if (acfg->cfgs [i])
 				emit_pointer (acfg, acfg->cfgs [i]->asm_symbol);
 			else
 				emit_pointer (acfg, NULL);
 		} else {
-			if (!ignore_cfg (acfg->cfgs [i])) {
+			if (acfg->cfgs [i])
 				arch_emit_label_address (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &acfg->call_table_entry_size);
-			} else {
+			else
 				arch_emit_label_address (acfg, symbol, FALSE, FALSE, NULL, &acfg->call_table_entry_size);
-			}
 		}
 #endif
 	}
@@ -10811,7 +10755,7 @@ emit_code (MonoAotCompile *acfg)
 		int index;
 
 		cfg = acfg->cfgs [i];
-		if (ignore_cfg (cfg))
+		if (!cfg)
 			continue;
 
 		method = cfg->orig_method;
@@ -10845,7 +10789,7 @@ emit_code (MonoAotCompile *acfg)
 		MonoMethod *method;
 
 		cfg = acfg->cfgs [i];
-		if (ignore_cfg (cfg))
+		if (!cfg)
 			continue;
 
 		method = cfg->orig_method;
@@ -11153,7 +11097,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 		MonoMethod *method = (MonoMethod *)g_ptr_array_index (acfg->extra_methods, i);
 		MonoCompile *cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, method);
 
-		if (ignore_cfg (cfg))
+		if (!cfg)
 			continue;
 
 		buf_size = 10240;
@@ -11187,7 +11131,7 @@ emit_extra_methods (MonoAotCompile *acfg)
 		MonoCompile *cfg = (MonoCompile *)g_hash_table_lookup (acfg->method_to_cfg, method);
 		guint32 key, value;
 
-		if (ignore_cfg (cfg))
+		if (!cfg)
 			continue;
 
 		key = info_offsets [i];
@@ -12187,7 +12131,7 @@ emit_dwarf_info (MonoAotCompile *acfg)
 	for (guint32 i = 0; i < acfg->nmethods; ++i) {
 		MonoCompile *cfg = acfg->cfgs [i];
 
-		if (ignore_cfg (cfg))
+		if (!cfg)
 			continue;
 
 		// FIXME: LLVM doesn't define .Lme_...
@@ -14038,7 +13982,7 @@ static void aot_dump (MonoAotCompile *acfg)
 		MonoClass *klass;
 
 		cfg = acfg->cfgs [i];
-		if (ignore_cfg (cfg))
+		if (!cfg)
 			continue;
 
 		method = cfg->orig_method;
