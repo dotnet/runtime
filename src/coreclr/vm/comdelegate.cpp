@@ -1572,21 +1572,19 @@ uint32_t MethodDescToNumFixedArgs(MethodDesc *pMD)
 {
     WRAPPER_NO_CONTRACT;
 
-    PCCOR_SIGNATURE pSig;
-    DWORD cbSigSize;
-    pMD->GetSig(&pSig, &cbSigSize);
+    SigParser sig = pMD->GetSigParser();
 
-    // Since the signature is known to be valid if we've loaded the Method, we can use the
-    // non-error checking parser here.
-    uint32_t data = CorSigUncompressCallingConv(pSig);
+    uint32_t data;
+    IfFailThrow(sig.GetCallingConvInfo(&data));
     if (data & IMAGE_CEE_CS_CALLCONV_GENERIC)
     {
         // Skip over generic argument count
-        CorSigUncompressData(pSig);
+        IfFailThrow(sig.GetData(&data));
     }
 
     // Return argument count
-    return CorSigUncompressData(pSig);
+    IfFailThrow(sig.GetData(&data));
+    return data;
 }
 
 // This is the single constructor for all Delegates.  The compiler

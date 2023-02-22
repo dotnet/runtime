@@ -721,7 +721,7 @@ struct RangeSection
 #endif // defined(TARGET_AMD64)
 
 
-    RangeSection* _pRangeSectionNextForDelete = nullptr; // Used for adding to the cleanup list
+    RangeSection* _pRangeSectionNextForDelete = NULL; // Used for adding to the cleanup list
 };
 
 enum class RangeSectionLockState
@@ -782,9 +782,9 @@ class RangeSectionMap
     private:
         TADDR _ptr;
 
-        TADDR FragmentToPtr(RangeSectionFragment* fragment)
+        static TADDR FragmentToPtr(RangeSectionFragment* fragment)
         {
-            TADDR ptr = (TADDR)fragment;
+            TADDR ptr = dac_cast<TADDR>(fragment);
             if (ptr == 0)
                 return ptr;
 
@@ -855,9 +855,9 @@ class RangeSectionMap
     private:
         TADDR _ptr;
 
-        TADDR LevelToPtr(TPtr level, bool collectible)
+        static TADDR LevelToPtr(TPtr level, bool collectible)
         {
-            TADDR ptr = (TADDR)level;
+            TADDR ptr = dac_cast<TADDR>(level);
             if (ptr == 0)
                 return ptr;
 
@@ -978,9 +978,9 @@ class RangeSectionMap
     };
 
 #ifdef TARGET_64BIT
-    static const uintptr_t entriesPerMapLevel = 256;
+    static constexpr uintptr_t entriesPerMapLevel = 256;
 #else
-    static const uintptr_t entriesPerMapLevel = 256;
+    static constexpr uintptr_t entriesPerMapLevel = 256;
 #endif
 
     typedef RangeSectionFragmentPointer RangeSectionList;
@@ -992,14 +992,14 @@ class RangeSectionMap
 
 #ifdef TARGET_64BIT
     typedef RangeSectionL5 RangeSectionTopLevel;
-    static const uintptr_t mapLevels = 5;
-    static const uintptr_t maxSetBit = 56; // This is 0 indexed
-    static const uintptr_t bitsPerLevel = 8;
+    static constexpr uintptr_t mapLevels = 5;
+    static constexpr uintptr_t maxSetBit = 56; // This is 0 indexed
+    static constexpr uintptr_t bitsPerLevel = 8;
 #else
     typedef RangeSectionL2 RangeSectionTopLevel;
-    static const uintptr_t mapLevels = 2;
-    static const uintptr_t maxSetBit = 31; // This is 0 indexed
-    static const uintptr_t bitsPerLevel = 8;
+    static constexpr uintptr_t mapLevels = 2;
+    static constexpr uintptr_t maxSetBit = 31; // This is 0 indexed
+    static constexpr uintptr_t bitsPerLevel = 8;
 #endif
 
     BYTE _topLevelData[sizeof(RangeSectionTopLevel)];
@@ -1010,8 +1010,8 @@ class RangeSectionMap
 
     RangeSection* _pCleanupList;
 
-    const uintptr_t bitsAtLastLevel = maxSetBit - (bitsPerLevel * mapLevels) + 1;
-    const uintptr_t bytesAtLastLevel = (((uintptr_t)1) << bitsAtLastLevel);
+    static constexpr uintptr_t bitsAtLastLevel = maxSetBit - (bitsPerLevel * mapLevels) + 1;
+    static constexpr uintptr_t bytesAtLastLevel = (((uintptr_t)1) << bitsAtLastLevel);
 
     RangeSection* EndOfCleanupListMarker() { return (RangeSection*)1; }
 
@@ -1019,6 +1019,8 @@ class RangeSectionMap
     {
         size_t size = entriesPerMapLevel * sizeof(void*);
         void *buf = malloc(size);
+        if (buf == NULL)
+            return NULL;
         memset(buf, 0, size);
         return buf;
     }
@@ -1056,7 +1058,7 @@ class RangeSectionMap
             {
                 levelToGetPointerIn = levelNew;
             }
-            assert(levelToGetPointerIn != nullptr);
+            assert(levelToGetPointerIn != NULL);
         }
         else if (!collectible && outerLevel->PointerIsCollectible())
         {
@@ -1072,20 +1074,20 @@ class RangeSectionMap
         uintptr_t topLevelIndex = EffectiveBitsForLevel(address, --level);
         auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
 #ifdef TARGET_64BIT
-        auto _RangeSectionL4 = nextLevelAddress;
-        auto _RangeSectionL3 = EnsureLevel(address, _RangeSectionL4, --level, collectible);
-        if (_RangeSectionL3 == NULL)
+        auto rangeSectionL4 = nextLevelAddress;
+        auto rangeSectionL3 = EnsureLevel(address, rangeSectionL4, --level, collectible);
+        if (rangeSectionL3 == NULL)
             return NULL; // Failure case
-        auto _RangeSectionL2 = EnsureLevel(address, _RangeSectionL3, --level, collectible);
-        if (_RangeSectionL2 == NULL)
+        auto rangeSectionL2 = EnsureLevel(address, rangeSectionL3, --level, collectible);
+        if (rangeSectionL2 == NULL)
             return NULL; // Failure case
-        auto _RangeSectionL1 = EnsureLevel(address, _RangeSectionL2, --level, collectible);
-        if (_RangeSectionL1 == NULL)
+        auto rangeSectionL1 = EnsureLevel(address, rangeSectionL2, --level, collectible);
+        if (rangeSectionL1 == NULL)
             return NULL; // Failure case
 #else
-        auto _RangeSectionL1 = nextLevelAddress;
+        auto rangeSectionL1 = nextLevelAddress;
 #endif
-        auto result = EnsureLevel(address, _RangeSectionL1, --level, collectible);
+        auto result = EnsureLevel(address, rangeSectionL1, --level, collectible);
         if (result == NULL)
             return NULL; // Failure case
 
@@ -1101,28 +1103,28 @@ class RangeSectionMap
         if (level == 4)
             return nextLevelAddress;
 
-        auto _RangeSectionL4 = nextLevelAddress->VolatileLoad(pLockState);
-        if (_RangeSectionL4 == NULL)
+        auto rangeSectionL4 = nextLevelAddress->VolatileLoad(pLockState);
+        if (rangeSectionL4 == NULL)
             return NULL;
-        auto _RangeSectionL3Ptr = &((*_RangeSectionL4)[EffectiveBitsForLevel(address, 4)]);
+        auto rangeSectionL3Ptr = &((*rangeSectionL4)[EffectiveBitsForLevel(address, 4)]);
         if (level == 3)
-            return _RangeSectionL3Ptr;
+            return rangeSectionL3Ptr;
 
-        auto _RangeSectionL3 = _RangeSectionL3Ptr->VolatileLoadWithoutBarrier(pLockState);
-        if (_RangeSectionL3 == NULL)
+        auto rangeSectionL3 = rangeSectionL3Ptr->VolatileLoadWithoutBarrier(pLockState);
+        if (rangeSectionL3 == NULL)
             return NULL;
         
-        auto _RangeSectionL2Ptr = &((*_RangeSectionL3)[EffectiveBitsForLevel(address, 3)]);
+        auto rangeSectionL2Ptr = &((*rangeSectionL3)[EffectiveBitsForLevel(address, 3)]);
         if (level == 2)
-            return _RangeSectionL2Ptr;
+            return rangeSectionL2Ptr;
 
-        auto _RangeSectionL2 = _RangeSectionL2Ptr->VolatileLoadWithoutBarrier(pLockState);
-        if (_RangeSectionL2 == NULL)
+        auto rangeSectionL2 = rangeSectionL2Ptr->VolatileLoadWithoutBarrier(pLockState);
+        if (rangeSectionL2 == NULL)
             return NULL;
 
-        auto _RangeSectionL1Ptr = &((*_RangeSectionL2)[EffectiveBitsForLevel(address, 2)]);
+        auto rangeSectionL1Ptr = &((*rangeSectionL2)[EffectiveBitsForLevel(address, 2)]);
         if (level == 1)
-            return _RangeSectionL1Ptr;
+            return rangeSectionL1Ptr;
 #else
         if (level == 1)
         {
@@ -1138,39 +1140,39 @@ class RangeSectionMap
         uintptr_t topLevelIndex = EffectiveBitsForLevel(address, mapLevels);
         auto nextLevelAddress = &(GetTopLevel()[topLevelIndex]);
 #ifdef TARGET_64BIT
-        auto _RangeSectionL4 = nextLevelAddress->VolatileLoad(pLockState);
-        if (_RangeSectionL4 == NULL)
+        auto rangeSectionL4 = nextLevelAddress->VolatileLoad(pLockState);
+        if (rangeSectionL4 == NULL)
             return NULL;
-        auto _RangeSectionL3 = (*_RangeSectionL4)[EffectiveBitsForLevel(address, 4)].VolatileLoadWithoutBarrier(pLockState);
-        if (_RangeSectionL3 == NULL)
+        auto rangeSectionL3 = (*rangeSectionL4)[EffectiveBitsForLevel(address, 4)].VolatileLoadWithoutBarrier(pLockState);
+        if (rangeSectionL3 == NULL)
             return NULL;
-        auto _RangeSectionL2 = (*_RangeSectionL3)[EffectiveBitsForLevel(address, 3)].VolatileLoadWithoutBarrier(pLockState);
-        if (_RangeSectionL2 == NULL)
+        auto rangeSectionL2 = (*rangeSectionL3)[EffectiveBitsForLevel(address, 3)].VolatileLoadWithoutBarrier(pLockState);
+        if (rangeSectionL2 == NULL)
             return NULL;
-        auto _RangeSectionL1 = (*_RangeSectionL2)[EffectiveBitsForLevel(address, 2)].VolatileLoadWithoutBarrier(pLockState);
+        auto rangeSectionL1 = (*rangeSectionL2)[EffectiveBitsForLevel(address, 2)].VolatileLoadWithoutBarrier(pLockState);
 #else
-        auto _RangeSectionL1 = nextLevelAddress->VolatileLoad(pLockState);
+        auto rangeSectionL1 = nextLevelAddress->VolatileLoad(pLockState);
 #endif
-        if (_RangeSectionL1 == NULL)
+        if (rangeSectionL1 == NULL)
             return NULL;
 
-        return ((*_RangeSectionL1)[EffectiveBitsForLevel(address, 1)]).VolatileLoadWithoutBarrier(pLockState);
+        return ((*rangeSectionL1)[EffectiveBitsForLevel(address, 1)]).VolatileLoadWithoutBarrier(pLockState);
     }
 
-    uintptr_t RangeSectionFragmentCount(PTR_RangeSection pRangeSection)
+    static uintptr_t RangeSectionFragmentCount(PTR_RangeSection pRangeSection)
     {
         uintptr_t rangeSize = pRangeSection->_range.RangeSize();
         if (rangeSize == 0)
             return 0;
 
         // Account for the range not starting at the beginning of a last level fragment
-        rangeSize += pRangeSection->_range.RangeStart() & (this->bytesAtLastLevel - 1);
+        rangeSize += pRangeSection->_range.RangeStart() & (bytesAtLastLevel - 1);
         
         uintptr_t fragmentCount = ((rangeSize - 1) / bytesAtLastLevel) + 1;
         return fragmentCount;
     }
 
-    TADDR IncrementAddressByMaxSizeOfFragment(TADDR input)
+    static TADDR IncrementAddressByMaxSizeOfFragment(TADDR input)
     {
         return input + bytesAtLastLevel;
     }
@@ -1188,23 +1190,24 @@ class RangeSectionMap
         uintptr_t rangeSectionFragmentCount = RangeSectionFragmentCount(pRangeSection);
         size_t fragmentsSize = rangeSectionFragmentCount * sizeof(RangeSectionFragment);
         void* fragmentsMemory = (RangeSectionFragment*)malloc(fragmentsSize);
+        if (fragmentsMemory == NULL)
+        {
+            return false;
+        }
         memset(fragmentsMemory, 0, fragmentsSize);
 
         RangeSectionFragment* fragments = (RangeSectionFragment*)fragmentsMemory;
 
-        if (fragments == NULL)
-        {
-            return false;
-        }
 
         size_t entryUpdateSize = rangeSectionFragmentCount * sizeof(RangeSectionFragmentPointer*);
         RangeSectionFragmentPointer** entriesInMapToUpdate = (RangeSectionFragmentPointer**)malloc(entryUpdateSize);
-        memset(entriesInMapToUpdate, 0, entryUpdateSize);
         if (entriesInMapToUpdate == NULL)
         {
             free(fragments);
             return false;
         }
+
+        memset(entriesInMapToUpdate, 0, entryUpdateSize);
 
         fragments[0].isPrimaryRangeSectionFragment = true;
 
@@ -1281,11 +1284,6 @@ public:
         memset(&_topLevelData, 0, sizeof(_topLevelData));
     }
 
-    bool Init()
-    {
-        return true;
-    }
-
 #ifndef DACCESS_COMPILE
 
 #ifdef FEATURE_READYTORUN
@@ -1357,7 +1355,7 @@ public:
 #ifndef DACCESS_COMPILE
     void RemoveRangeSection(RangeSection* pRangeSection)
     {
-        assert(pRangeSection->_pRangeSectionNextForDelete == nullptr);
+        assert(pRangeSection->_pRangeSectionNextForDelete == NULL);
         assert(pRangeSection->_flags & RangeSection::RANGE_SECTION_COLLECTIBLE);
 #ifdef FEATURE_READYTORUN
         assert(pRangeSection->_pR2RModule == NULL);
@@ -1379,7 +1377,7 @@ public:
         while (this->_pCleanupList != EndOfCleanupListMarker())
         {
             PTR_RangeSection pRangeSectionToCleanup(this->_pCleanupList);
-            RangeSectionFragment* pRangeSectionFragmentToFree = nullptr;
+            RangeSectionFragment* pRangeSectionFragmentToFree = NULL;
             this->_pCleanupList = pRangeSectionToCleanup->_pRangeSectionNextForDelete;
 
             uintptr_t rangeSectionFragmentCount = RangeSectionFragmentCount(pRangeSectionToCleanup);
