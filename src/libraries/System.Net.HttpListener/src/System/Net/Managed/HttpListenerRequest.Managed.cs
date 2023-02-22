@@ -59,10 +59,10 @@ namespace System.Net
 
         private long _contentLength;
         private bool _clSet;
-        private WebHeaderCollection _headers;
+        private readonly WebHeaderCollection _headers;
         private string? _method;
         private Stream? _inputStream;
-        private HttpListenerContext _context;
+        private readonly HttpListenerContext _context;
         private bool _isChunked;
         private static readonly IndexOfAnyValues<char> s_validMethodChars = IndexOfAnyValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
         private static readonly byte[] s_100continue = "HTTP/1.1 100 Continue\r\n\r\n"u8.ToArray();

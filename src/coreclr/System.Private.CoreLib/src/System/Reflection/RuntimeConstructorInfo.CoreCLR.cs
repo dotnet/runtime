@@ -16,18 +16,18 @@ namespace System.Reflection
     internal sealed partial class RuntimeConstructorInfo : ConstructorInfo, IRuntimeMethodInfo
     {
         #region Private Data Members
-        private volatile RuntimeType m_declaringType;
-        private RuntimeTypeCache m_reflectedTypeCache;
+        private readonly RuntimeType m_declaringType;
+        private readonly RuntimeTypeCache m_reflectedTypeCache;
         private string? m_toString;
         private ParameterInfo[]? m_parameters; // Created lazily when GetParameters() is called.
-#pragma warning disable CA1823, 414, 169
+#pragma warning disable CA1823, 414, 169, IDE0044
         private object? _empty1; // These empties are used to ensure that RuntimeConstructorInfo and RuntimeMethodInfo are have a layout which is sufficiently similar
         private object? _empty2;
         private object? _empty3;
-#pragma warning restore CA1823, 414, 169
-        private IntPtr m_handle;
-        private MethodAttributes m_methodAttributes;
-        private BindingFlags m_bindingFlags;
+#pragma warning restore CA1823, 414, 169, IDE0044
+        private readonly IntPtr m_handle;
+        private readonly MethodAttributes m_methodAttributes;
+        private readonly BindingFlags m_bindingFlags;
         private Signature? m_signature;
         private ConstructorInvoker? m_invoker;
 

@@ -21,9 +21,9 @@ namespace System.Reflection.Emit
 {
     public class CustomAttributeBuilder
     {
-        internal ConstructorInfo m_con;
-        private object?[] m_constructorArgs;
-        private byte[] m_blob;
+        internal readonly ConstructorInfo m_con;
+        private readonly object?[] m_constructorArgs;
+        private readonly byte[] m_blob;
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.

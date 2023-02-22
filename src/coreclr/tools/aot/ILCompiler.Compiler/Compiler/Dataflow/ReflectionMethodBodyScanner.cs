@@ -30,13 +30,14 @@ namespace ILCompiler.Dataflow
 
         private MessageOrigin _origin;
 
-        public static bool RequiresReflectionMethodBodyScannerForCallSite(FlowAnnotations flowAnnotations, MethodDesc methodDefinition)
+        public static bool RequiresReflectionMethodBodyScannerForCallSite(FlowAnnotations flowAnnotations, MethodDesc method)
         {
-            return Intrinsics.GetIntrinsicIdForMethod(methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
-                flowAnnotations.RequiresDataflowAnalysis(methodDefinition) ||
-                methodDefinition.DoesMethodRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
-                methodDefinition.DoesMethodRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
-                IsPInvokeDangerous(methodDefinition, out _, out _);
+            return Intrinsics.GetIntrinsicIdForMethod(method) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
+                flowAnnotations.RequiresDataflowAnalysis(method) ||
+                GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, method) ||
+                method.DoesMethodRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                method.DoesMethodRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
+                IsPInvokeDangerous(method, out _, out _);
         }
 
         public static bool RequiresReflectionMethodBodyScannerForMethodBody(FlowAnnotations flowAnnotations, MethodDesc methodDefinition)
@@ -45,11 +46,12 @@ namespace ILCompiler.Dataflow
                 flowAnnotations.RequiresDataflowAnalysis(methodDefinition);
         }
 
-        public static bool RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations flowAnnotations, FieldDesc fieldDefinition)
+        public static bool RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations flowAnnotations, FieldDesc field)
         {
-            return flowAnnotations.RequiresDataflowAnalysis(fieldDefinition) ||
-                fieldDefinition.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
-                fieldDefinition.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
+            return flowAnnotations.RequiresDataflowAnalysis(field) ||
+                GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, field) ||
+                field.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
         }
 
         internal static void CheckAndReportRequires(in DiagnosticContext diagnosticContext, TypeSystemEntity calledMember, string requiresAttributeName)
@@ -139,7 +141,19 @@ namespace ILCompiler.Dataflow
         private MethodParameterValue GetMethodParameterValue(ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
             => _annotations.GetMethodParameterValue(parameter, dynamicallyAccessedMemberTypes);
 
-        protected override MultiValue GetFieldValue(FieldDesc field) => _annotations.GetFieldValue(field);
+        /// <summary>
+        /// HandleGetField is called every time the scanner needs to represent a value of the field
+        /// either as a source or target. It is not called when just a reference to field is created,
+        /// But if such reference is dereferenced then it will get called.
+        /// </summary>
+        protected override MultiValue HandleGetField(MethodIL methodBody, int offset, FieldDesc field)
+        {
+            _origin = _origin.WithInstructionOffset(methodBody, offset);
+
+            ProcessGenericArgumentDataFlow(field);
+
+            return _annotations.GetFieldValue(field);
+        }
 
         private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, string reason)
         {
@@ -160,16 +174,33 @@ namespace ILCompiler.Dataflow
         protected override void HandleStoreMethodReturnValue(MethodIL methodBody, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
             => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, returnValue.Method.GetDisplayName());
 
+        protected override void HandleTypeReflectionAccess(MethodIL methodBody, int offset, TypeDesc accessedType)
+        {
+            // Note that ldtoken alone is technically a reflection access to the type
+            // it doesn't lead to full reflection marking of the type
+            // since we implement full dataflow for type values and accesses to them.
+            _origin = _origin.WithInstructionOffset(methodBody, offset);
+
+            // Only check for generic instantiations.
+            ProcessGenericArgumentDataFlow(accessedType);
+        }
+
         protected override void HandleMethodReflectionAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod)
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
+
             TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedMethod, _origin));
+
+            ProcessGenericArgumentDataFlow(accessedMethod);
         }
 
         protected override void HandleFieldReflectionAccess(MethodIL methodBody, int offset, FieldDesc accessedField)
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
+
             TrimAnalysisPatterns.Add(new TrimAnalysisReflectionAccessPattern(accessedField, _origin));
+
+            ProcessGenericArgumentDataFlow(accessedField);
         }
 
         public override bool HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams, out MultiValue methodReturnValue)
@@ -200,6 +231,8 @@ namespace ILCompiler.Dataflow
                 arguments,
                 _origin
             ));
+
+            ProcessGenericArgumentDataFlow(calledMethod);
 
             var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: false, _logger);
             return HandleCall(
@@ -632,6 +665,41 @@ namespace ILCompiler.Dataflow
             string reason)
         {
             TrimAnalysisPatterns.Add(new TrimAnalysisAssignmentPattern(value, targetValue, origin, reason));
+        }
+
+        private void ProcessGenericArgumentDataFlow(MethodDesc method)
+        {
+            // We only need to validate static methods and then all generic methods
+            // Instance non-generic methods don't need validation because the creation of the instance
+            // is the place where the validation will happen.
+            if (!method.Signature.IsStatic && !method.HasInstantiation && !method.IsConstructor)
+                return;
+
+            if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(_annotations, method))
+            {
+                TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationAccessPattern(method, _origin));
+            }
+        }
+
+        private void ProcessGenericArgumentDataFlow(FieldDesc field)
+        {
+            // We only need to validate static field accesses, instance field accesses don't need generic parameter validation
+            // because the create of the instance would do that instead.
+            if (!field.IsStatic)
+                return;
+
+            if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(_annotations, field))
+            {
+                TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationAccessPattern(field, _origin));
+            }
+        }
+
+        private void ProcessGenericArgumentDataFlow(TypeDesc type)
+        {
+            if (type.HasInstantiation && _annotations.HasGenericParameterAnnotation(type))
+            {
+                TrimAnalysisPatterns.Add(new TrimAnalysisGenericInstantiationAccessPattern(type, _origin));
+            }
         }
 
         private static bool IsPInvokeDangerous(MethodDesc calledMethod, out bool comDangerousMethod, out bool aotUnsafeDelegate)
