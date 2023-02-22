@@ -2359,10 +2359,10 @@ private:
         assert(emitCanPeepholeLastIns());
 
 #if EMIT_BACKWARDS_NAVIGATION
-        insGroup*  ig;
+        insGroup*  curInsIG;
         instrDesc* id;
 
-        if (!emitGetLastIns(&ig, &id))
+        if (!emitGetLastIns(&curInsIG, &id))
             return;
 
         for (unsigned i = 0; i < EMIT_MAX_PEEPHOLE_INS_COUNT; i++)
@@ -2375,10 +2375,10 @@ private:
                     return;
                 case PEEPHOLE_CONTINUE:
                 {
-                    insGroup* prevIG = ig;
-                    if (emitPrevID(ig, id))
+                    insGroup* prevInsIG = curInsIG;
+                    if (emitPrevID(curInsIG, id))
                     {
-                        if (isInsIGSafeForPeepholeOptimization(ig, prevIG))
+                        if (isInsIGSafeForPeepholeOptimization(prevInsIG, curInsIG))
                         {
                             continue;
                         }
