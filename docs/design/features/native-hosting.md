@@ -375,7 +375,7 @@ Starts the runtime and returns a function pointer to specified functionality of 
   * `hdt_winrt_activation` **[.NET 3.\* only]** - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/runtime/tree/main/docs/design/features/WinRT-activation.md) for more details. The delegate is not supported for .NET 5 and above.
   * `hdt_get_function_pointer` **[.NET 5 and above]** - entry-point which finds a managed method and returns a function pointer to it. See [calling managed functions](#calling-managed-function-net-5-and-above) for details.
   * `hdt_load_assembly` **[.NET 8 and above]** - entry-point which loads an assembly by its path. See [loading managed components](#loading-managed-components-net-8-and-above) for details.
-  * `hdt_load_assembly_bytes` **[.NET 8 and above]** - entry-point which finds a managed method and returns a function pointer to it. See [loading managed components](#loading-managed-components-net-8-and-above) for details.
+  * `hdt_load_assembly_bytes` **[.NET 8 and above]** - entry-point which loads an assembly from a byte array. See [loading managed components](#loading-managed-components-net-8-and-above) for details.
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
 In .NET Core 3.0 the function only works if `hostfxr_initialize_for_runtime_config` was used to initialize the host context.
@@ -490,7 +490,7 @@ int load_assembly_bytes(
     void       *reserved);
 ```
 
-Calling this function will load the specified assembly in the default load context.
+Calling this function will load the specified assembly in the default load context. It does not provide a mechanism for registering additional dependency resolution, as mechanisms like `.deps.json` and `AssemblyDependencyResolver` are file-based. Dependencies can be pre-loaded (for example, via a previous call to this function) or the specified assembly can explicitly register its own resolution logic (for example, via the [`AssemblyLodContext.Resolving`](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext.resolving) event).
 * `assembly_bytes` - Bytes of the assembly to load.
 * `assembly_bytes_len` - Byte length of the assembly to load.
 * `symbols_bytes` - Bytes of the symbols for the assembly to load.
@@ -498,7 +498,7 @@ Calling this function will load the specified assembly in the default load conte
 * `load_context` - the load context that will be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
 * `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
 
-These runtime delegates simply load the assembly and do not execute code in the assembly. The delegate for [calling a managed function](#calling-managed-function-net-5-and-above) can be used to get a function pointer to a method in a loaded assembly.
+These runtime delegates simply load the assembly. They do not return any representation of the loaded assembly and do not execute code in the assembly. To run code from the assembly, the delegate for [calling a managed function](#calling-managed-function-net-5-and-above) can be used to get a function pointer to a method in a loaded assembly by specifying the assembly-qualified type name containing the method.
 
 It is allowed to ask for this helper on any valid host context. The returned runtime helper can be called multiple times for different assemblies. It is not required to get the helper every time.
 
