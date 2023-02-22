@@ -476,7 +476,7 @@ int load_assembly(
 
 Calling this function will load the specified assembly in the default load context. It uses `AssemblyDependencyResolver` to register additional dependency resolution for the load context.
 * `assembly_path` - Path to the assembly to load - requirements match the `assemblyPath` parameter of [AssemblyLoadContext.LoadFromAssemblyPath](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext.loadfromassemblypath). This path will also be used for dependency resolution via any `.deps.json` corresponding to the assembly.
-* `load_context` - the load context that be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
+* `load_context` - the load context that will be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
 * `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
 
 The runtime delegate type `hdt_load_assembly_bytes` allows loading a managed assembly from a byte array. Calling `hostfxr_get_runtime_delegate(handle, hdt_load_assembly_bytes, &helper)` returns a function pointer to the runtime helper with this signature:
@@ -495,7 +495,7 @@ Calling this function will load the specified assembly in the default load conte
 * `assembly_bytes_len` - Byte length of the assembly to load.
 * `symbols_bytes` - Bytes of the symbols for the assembly to load.
 * `symbols_bytes_len` - Byte length of the symbols for the assembly to load.
-* `load_context` - the load context that be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
+* `load_context` - the load context that will be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
 * `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
 
 These runtime delegates simply load the assembly and do not execute code in the assembly. The delegate for [calling a managed function](#calling-managed-function-net-5-and-above) can be used to get a function pointer to a method in a loaded assembly.
