@@ -78,6 +78,29 @@
       "label": "os-wasi"
     }
   ],
+  "trimming": [
+    {
+      "lead": "",
+      "owners": [
+        "eerhardt",
+        "vitek-karas",
+        "LakshanF",
+        "sbomer",
+        "joperezr",
+        "marek-safar"
+      ],
+      "label": "linkable-framework"
+    },
+    {
+      "lead": "",
+      "owners": [
+        "eerhardt",
+        "SamMonoRT",
+        "marek-safar"
+      ],
+      "label": "size-reduction"
+    }
+  ],
   "areas": [
     {
       "lead": "agocke",

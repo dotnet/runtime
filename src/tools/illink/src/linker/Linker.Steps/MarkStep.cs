@@ -2196,7 +2196,7 @@ namespace Mono.Linker.Steps
 
 					// Remove ",nq" suffix if present
 					// (it asks the expression evaluator to remove the quotes when displaying the final value)
-					if (ContainsNqSuffixRegex ().IsMatch(realMatch)) {
+					if (ContainsNqSuffixRegex ().IsMatch (realMatch)) {
 						realMatch = realMatch.Substring (0, realMatch.LastIndexOf (','));
 					}
 
@@ -3204,11 +3204,15 @@ namespace Mono.Linker.Steps
 			}
 
 			if (method.HasOverrides) {
+				var assembly = Context.Resolve (method.DeclaringType.Scope);
+				// If this method is in a Copy or CopyUsed assembly, .overrides won't get swept and we need to keep all of them
+				bool markAllOverrides = assembly != null && Annotations.GetAction (assembly) is AssemblyAction.Copy or AssemblyAction.CopyUsed;
 				foreach (MethodReference @base in method.Overrides) {
 					// Method implementing a static interface method will have an override to it - note instance methods usually don't unless they're explicit.
 					// Calling the implementation method directly has no impact on the interface, and as such it should not mark the interface or its method.
 					// Only if the interface method is referenced, then all the methods which implemented must be kept, but not the other way round.
-					if (Context.Resolve (@base) is MethodDefinition baseDefinition
+					if (!markAllOverrides &&
+						Context.Resolve (@base) is MethodDefinition baseDefinition
 						&& new OverrideInformation.OverridePair (baseDefinition, method).IsStaticInterfaceMethodPair ())
 						continue;
 					MarkMethod (@base, new DependencyInfo (DependencyKind.MethodImplOverride, method), ScopeStack.CurrentScope.Origin);

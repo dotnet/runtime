@@ -336,13 +336,20 @@ namespace Microsoft.Interop
 
             var interfaceType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
 
-            INamedTypeSymbol expectedUnmanagedInterfaceType = iUnmanagedInterfaceTypeType.Construct(symbol.ContainingType);
+            INamedTypeSymbol expectedUnmanagedInterfaceType = iUnmanagedInterfaceTypeType;
 
             bool implementsIUnmanagedInterfaceOfSelf = symbol.ContainingType.AllInterfaces.Any(iface => SymbolEqualityComparer.Default.Equals(iface, expectedUnmanagedInterfaceType));
             if (!implementsIUnmanagedInterfaceOfSelf)
             {
                 // TODO: Report invalid configuration
             }
+
+            var unmanagedObjectUnwrapper = symbol.ContainingType.GetAttributes().FirstOrDefault(att => att.AttributeClass.IsOfType(TypeNames.UnmanagedObjectUnwrapperAttribute));
+            if (unmanagedObjectUnwrapper is null)
+            {
+                // TODO: report invalid configuration - or ensure that this will never happen at this point
+            }
+            var unwrapperSyntax = ParseTypeName(unmanagedObjectUnwrapper.AttributeClass.TypeArguments[0].ToDisplayString());
 
             MarshallingInfo exceptionMarshallingInfo = CreateExceptionMarshallingInfo(virtualMethodIndexAttr, symbol, environment.Compilation, generatorDiagnostics, virtualMethodIndexData);
 
@@ -357,7 +364,8 @@ namespace Microsoft.Interop
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
                 interfaceType,
-                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
+                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
+                unwrapperSyntax);
         }
 
         private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnostics diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)
@@ -497,7 +505,7 @@ namespace Microsoft.Interop
 
             var elements = ImmutableArray.CreateBuilder<TypePositionInfo>(originalElements.Length + 2);
 
-            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, NativeThisInfo.Instance)
+            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, new NativeThisInfo(methodStub.UnwrapperSyntax))
             {
                 InstanceIdentifier = ThisParameterIdentifier,
                 NativeIndex = 0,
@@ -553,6 +561,15 @@ namespace Microsoft.Interop
                 return Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, methodSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
             }
 
+            // Verify there is an [UnmanagedObjectUnwrapperAttribute<TMapper>]
+            if (!method.ContainingType.GetAttributes().Any(att => att.AttributeClass.IsOfType(TypeNames.UnmanagedObjectUnwrapperAttribute)))
+            //!method.ContainingType.GetAttributes().Any(att =>
+            //att.AttributeClass.MetadataName == TypeNames.UnmanagedObjectUnwrapperAttribute.Substring(TypeNames.UnmanagedObjectUnwrapperAttribute.LastIndexOf('.') + 1)
+            //&& att.AttributeClass.OriginalDefinition.ToDisplayString().Substring(0, att.AttributeClass.OriginalDefinition.ToDisplayString().LastIndexOf(att.AttributeClass.ToDisplayString())) == TypeNames.UnmanagedObjectUnwrapperAttribute.Substring(0, TypeNames.UnmanagedObjectUnwrapperAttribute.LastIndexOf('.'))))
+            {
+                return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute, methodSyntax.Identifier.GetLocation(), method.Name);
+            }
+
             return null;
         }
 
@@ -574,20 +591,20 @@ namespace Microsoft.Interop
                 .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword)))
                 .AddParameterListParameters(
                     Parameter(Identifier(vtableParameter))
-                    .WithType(GenericName(TypeNames.System_Span).AddTypeArgumentListArguments(IdentifierName("nint"))));
+                    .WithType(PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))))));
 
             foreach (var method in vtableMethods)
             {
                 FunctionPointerTypeSyntax functionPointerType = GenerateUnmanagedFunctionPointerTypeForMethod(method);
 
-                // <vtableParameter>[<index>] = (nint)(<functionPointerType>)&ABI_<methodIdentifier>;
+                // <vtableParameter>[<index>] = (void*)(<functionPointerType>)&ABI_<methodIdentifier>;
                 populateVtableMethod = populateVtableMethod.AddBodyStatements(
                     ExpressionStatement(
                         AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                             ElementAccessExpression(
                                 IdentifierName(vtableParameter))
                             .AddArgumentListArguments(Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(method.VtableIndexData.Index)))),
-                            CastExpression(IdentifierName("nint"),
+                            CastExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
                                 CastExpression(functionPointerType,
                                     PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
                                         IdentifierName($"ABI_{method.StubMethodSyntaxTemplate.Identifier}")))))));

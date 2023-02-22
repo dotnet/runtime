@@ -3267,21 +3267,12 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     GenTree* relopOp1 = relop->gtGetOp1();
     GenTree* relopOp2 = relop->gtGetOp2();
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-
-    if ((relop->gtNext == jtrue) && relopOp2->IsCnsIntOrI())
+#if defined(TARGET_ARM64)
+    if (relopOp2->IsCnsIntOrI())
     {
         bool         useJCMP = false;
         GenTreeFlags flags   = GTF_EMPTY;
 
-#if defined(TARGET_LOONGARCH64)
-        if (relop->OperIs(GT_EQ, GT_NE))
-        {
-            // Codegen will use beq or bne.
-            flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
-            useJCMP = true;
-        }
-#else  // TARGET_ARM64
         if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
         {
             // Codegen will use cbz or cbnz in codegen which do not affect the flag register
@@ -3294,7 +3285,6 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             flags   = GTF_JCMP_TST | (relop->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : GTF_EMPTY);
             useJCMP = true;
         }
-#endif // TARGET_ARM64
 
         if (useJCMP)
         {
@@ -3311,15 +3301,65 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             return nullptr;
         }
     }
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM64
 
     assert(relop->OperIsCompare());
     assert(relop->gtNext == jtrue);
     assert(jtrue->gtNext == nullptr);
 
+    GenCondition cond       = GenCondition::FromRelop(relop);
+    bool         optimizing = comp->opts.OptimizationEnabled();
+
+#ifdef TARGET_XARCH
+    // Optimize FP x != x to only check parity flag. This is a common way of
+    // checking NaN and avoids two branches that we would otherwise emit.
+    if (optimizing && (cond.GetCode() == GenCondition::FNEU) && relopOp1->OperIsLocal() &&
+        GenTree::Compare(relopOp1, relopOp2) && IsInvariantInRange(relopOp1, relop) &&
+        IsInvariantInRange(relopOp2, relop))
+    {
+        cond = GenCondition(GenCondition::P);
+    }
+#endif
+
+#if defined(TARGET_LOONGARCH64)
+    // for LA64's integer compare and condition-branch instructions,
+    // it's very similar to the IL instructions.
+    if (!varTypeIsFloating(relopOp1->TypeGet()))
+    {
+        relop->SetOper(GT_JCMP);
+        relop->gtType = TYP_VOID;
+
+        relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
+        relop->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
+
+        if ((cond.GetCode() == GenCondition::EQ) || (cond.GetCode() == GenCondition::NE))
+        {
+            relop->gtFlags &= ~GTF_UNSIGNED;
+        }
+
+        if (relopOp2->IsCnsIntOrI())
+        {
+            relopOp2->SetContained();
+        }
+
+        BlockRange().Remove(jtrue);
+
+        assert(relop->gtNext == nullptr);
+        return nullptr;
+    }
+    else
+    {
+        // But the LA64's float compare and condition-branch instructions,
+        // it has the condition flags indicating the comparing results.
+        relop->gtType = TYP_VOID;
+        relop->gtFlags |= GTF_SET_FLAGS;
+        assert(relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+    }
+#else
     GenCondition cond;
     bool         lowered = TryLowerConditionToFlagsNode(jtrue, relop, &cond);
     assert(lowered); // Should succeed since relop is right before jtrue
+#endif // TARGET_LOONGARCH64
 
     jtrue->SetOperRaw(GT_JCC);
     jtrue->AsCC()->gtCondition = cond;
@@ -5176,11 +5216,12 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
         {
             case IAT_VALUE:
                 // IsCallTargetInRange always return true on x64. It wants to use rip-based addressing
-                // for this call. Unfortunately, in case of pinvokes (+suppressgctransition) to external libs
-                // (e.g. kernel32.dll) the relative offset is unlikely to fit into int32 and we will have to
-                // turn fAllowRel32 off globally.
-                if ((call->IsSuppressGCTransition() && !comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)) ||
-                    !IsCallTargetInRange(addr))
+                // for this call. Unfortunately, in case of already resolved pinvokes to external libs,
+                // which are identified via accessType: IAT_VALUE, the relative offset is unlikely to
+                // fit into int32 and we will have to turn fAllowRel32 off globally. To prevent that
+                // we'll create a wrapper node and force LSRA to allocate a register so RIP relative
+                // isn't used and we don't need to pessimize other callsites.
+                if (!comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) || !IsCallTargetInRange(addr))
                 {
                     result = AddrGen(addr);
                 }

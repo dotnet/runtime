@@ -3794,6 +3794,31 @@ max_d (double lhs, double rhs)
 		return fmax (lhs, rhs);
 }
 
+#ifdef HOST_BROWSER
+MONO_ALWAYS_INLINE static ptrdiff_t
+mono_interp_tier_enter_jiterpreter (
+	JiterpreterThunk thunk, InterpFrame *frame, unsigned char *locals, ThreadContext *context,
+	const guint16 *ip
+)
+{
+	// g_assert(thunk);
+	ptrdiff_t offset = thunk(frame, locals);
+	/*
+	* Verify that the offset returned by the thunk is not total garbage
+	* FIXME: These constants might actually be too small since a method
+	*  could have massive amounts of IL - maybe we should disable the jiterpreter
+	*  for methods that big
+	*/
+	// g_assertf((offset >= -0xFFFFF) && (offset <= 0xFFFFF), "thunk returned an obviously invalid offset: %i", offset);
+#ifdef ENABLE_EXPERIMENT_TIERED
+	if (offset < 0) {
+		mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
+	}
+#endif
+	return offset;
+}
+#endif // HOST_BROWSER
+
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
@@ -7640,6 +7665,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				 *  table. when growing the function pointer table we will also need to synchronize that.
 				 */
 				JiterpreterThunk prepare_result = mono_interp_tier_prepare_jiterpreter_fast(frame, frame->imethod->method, ip, frame->imethod->jinfo->code_start, frame->imethod->jinfo->code_size);
+				ptrdiff_t offset;
 				switch ((guint32)(void*)prepare_result) {
 					case JITERPRETER_TRAINING:
 						// jiterpreter still updating hit count before deciding to generate a trace,
@@ -7648,9 +7674,9 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						break;
 					case JITERPRETER_NOT_JITTED:
 						// Patch opcode to disable it because this trace failed to JIT.
-						mono_memory_barrier();
+						mono_memory_barrier ();
 						*mutable_ip = MINT_TIER_NOP_JITERPRETER;
-						mono_memory_barrier();
+						mono_memory_barrier ();
 						ip += 3;
 						break;
 					default:
@@ -7663,11 +7689,17 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						 *  here so that implementing thread support will be easier later.)
 						 */
 						*mutable_ip = MINT_TIER_NOP_JITERPRETER;
-						mono_memory_barrier();
+						mono_memory_barrier ();
 						*(volatile JiterpreterThunk*)(ip + 1) = prepare_result;
-						mono_memory_barrier();
+						mono_memory_barrier ();
 						*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
-						ip += 3;
+						// now execute the trace
+						// this isn't important for performance, but it makes it easier to use the
+						//  jiterpreter early in automated tests where code only runs once
+						offset = mono_interp_tier_enter_jiterpreter (
+							prepare_result, frame, locals, context, ip
+						);
+						ip = (guint16*) (((guint8*)ip) + offset);
 						break;
 				}
 			} else {
@@ -7679,31 +7711,9 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER) {
 			JiterpreterThunk thunk = (void*)READ32(ip + 1);
-			gboolean trace_requires_safepoint = FALSE;
-			g_assert(thunk);
-			ptrdiff_t offset = thunk(frame, locals);
-			/*
-			 * The trace signals that we need to perform a safepoint by adding a very
-			 *  large amount to the relative displacement. This is because setting a bit
-			 *  in JS via the | operator doesn't work for negative numbers
-			 */
-			if (offset >= 0xE000000) {
-				offset -= 0xF000000;
-				trace_requires_safepoint = TRUE;
-			}
-			/*
-			 * Verify that the offset returned by the thunk is not total garbage
-			 * FIXME: These constants might actually be too small since a method
-			 *  could have massive amounts of IL - maybe we should disable the jiterpreter
-			 *  for methods that big
-			 */
-			g_assertf((offset >= -0xFFFFF) && (offset <= 0xFFFFF), "thunk returned an obviously invalid offset: %i", offset);
-			if (offset <= 0) {
-				BACK_BRANCH_PROFILE (offset);
-			}
-			if (trace_requires_safepoint) {
-				SAFEPOINT;
-			}
+			ptrdiff_t offset = mono_interp_tier_enter_jiterpreter (
+				thunk, frame, locals, context, ip
+			);
 			ip = (guint16*) (((guint8*)ip) + offset);
 			MINT_IN_BREAK;
 		}

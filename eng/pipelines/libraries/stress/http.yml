@@ -36,7 +36,7 @@ extends:
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
         pool:
-          name: NetCore-Public
+          name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-ubuntu-1804-open
 
         steps:
@@ -102,7 +102,7 @@ extends:
         variables:
           DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
         pool:
-          name: NetCore-Public
+          name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-windows-2022-open
 
         steps:

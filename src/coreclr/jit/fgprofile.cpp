@@ -1452,7 +1452,20 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                         //
                         if (m_comp->opts.IsInstrumentedOptimized())
                         {
-                            JITDUMP(" -- assuming this is ok\n");
+                            JITDUMP(" -- assuming this edge was folded away by the importer\n");
+
+                            // Placate the asserts below
+                            //
+                            instrumentedBlock = source;
+                            edgesIgnored++;
+                        }
+                        // If the source block is a partial compilation patchpoint
+                        // then the edge will have been removed.
+                        //
+                        else if ((block->bbFlags & BBF_PARTIAL_COMPILATION_PATCHPOINT) ==
+                                 BBF_PARTIAL_COMPILATION_PATCHPOINT)
+                        {
+                            JITDUMP(" -- source block is partial compilation patchpoint\n");
 
                             // Placate the asserts below
                             //
@@ -3430,7 +3443,17 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
         nEdges++;
     }
 
-    assert(pseudoEdge != nullptr);
+    // However, if the OSR entry is also the first block (which can happen if the first
+    // block in the method is a self-loop and we put a patchpoint there), we won't have
+    // a pseudo-edge.
+    //
+    if ((block != m_comp->fgFirstBB) && (pseudoEdge == nullptr))
+    {
+        JITDUMP("Missing special OSR pseudo-edge from " FMT_BB "-> " FMT_BB "\n", block->bbNum,
+                m_comp->fgFirstBB->bbNum);
+        assert(pseudoEdge != nullptr);
+    }
+
     assert(nEdges == nSucc);
     assert(info->m_weight > BB_ZERO_WEIGHT);
 

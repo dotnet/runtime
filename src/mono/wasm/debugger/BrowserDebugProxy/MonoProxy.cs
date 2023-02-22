@@ -22,7 +22,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         internal List<string> UrlSymbolServerList { get; private set; }
         internal string CachePathSymbolServer { get; private set; }
-        private HashSet<SessionId> sessions = new HashSet<SessionId>();
+        private readonly HashSet<SessionId> sessions = new HashSet<SessionId>();
         private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty", "DotnetDebugger.runTests" };
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 
@@ -154,52 +154,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Debugger.paused":
                     {
-                        if (args["asyncStackTraceId"] != null)
-                        {
-                            if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
-                                return false;
-                            if (context.CopyDataFromParentContext())
-                            {
-                                var store = await LoadStore(sessionId, true, token);
-                                foreach (var source in store.AllSources())
-                                {
-                                    await OnSourceFileAdded(sessionId, source, context, token, false);
-                                }
-                            }
-                        }
-
-                        //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
-                        string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
-                        switch (top_func) {
-                            // keep function names un-mangled via src\mono\wasm\runtime\rollup.config.js
-                            case "mono_wasm_set_entrypoint_breakpoint":
-                            case "_mono_wasm_set_entrypoint_breakpoint":
-                                {
-                                    await OnSetEntrypointBreakpoint(sessionId, args, token);
-                                    return true;
-                                }
-                            case "mono_wasm_runtime_ready":
-                            case "_mono_wasm_runtime_ready":
-                                {
-                                    await RuntimeReady(sessionId, token);
-                                    await SendResume(sessionId, token);
-                                    if (!JustMyCode)
-                                        await ReloadSymbolsFromSymbolServer(sessionId, GetContext(sessionId), token);
-                                    return true;
-                                }
-                            case "mono_wasm_fire_debugger_agent_message_with_data_to_pause":
-                            case "_mono_wasm_fire_debugger_agent_message_with_data_to_pause":
-                                try
-                                {
-                                    return await OnReceiveDebuggerAgentEvent(sessionId, args, await GetLastDebuggerAgentBuffer(sessionId, args, token), token);
-                                }
-                                catch (Exception) //if the page is refreshed maybe it stops here.
-                                {
-                                    await SendResume(sessionId, token);
-                                    return true;
-                                }
-                        }
-                        break;
+                        return await OnDebuggerPaused(sessionId, args, token);
                     }
 
                 case "Debugger.breakpointResolved":
@@ -223,7 +178,74 @@ namespace Microsoft.WebAssembly.Diagnostics
                         break;
                     }
             }
+            return false;
+        }
 
+        protected async Task<bool> OnDebuggerPaused(SessionId sessionId, JObject args, CancellationToken token)
+        {
+            if (args["asyncStackTraceId"] != null)
+            {
+                if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                    return false;
+                if (context.CopyDataFromParentContext())
+                {
+                    var store = await LoadStore(sessionId, true, token);
+                    foreach (var source in store.AllSources())
+                    {
+                        await OnSourceFileAdded(sessionId, source, context, token, false);
+                    }
+                }
+            }
+
+            //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
+            string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
+            switch (top_func) {
+                // keep function names un-mangled via src\mono\wasm\runtime\rollup.config.js
+                case "mono_wasm_set_entrypoint_breakpoint":
+                case "_mono_wasm_set_entrypoint_breakpoint":
+                    {
+                        await OnSetEntrypointBreakpoint(sessionId, args, token);
+                        return true;
+                    }
+                case "mono_wasm_runtime_ready":
+                case "_mono_wasm_runtime_ready":
+                    {
+                        await RuntimeReady(sessionId, token);
+                        await SendResume(sessionId, token);
+                        if (!JustMyCode)
+                            await ReloadSymbolsFromSymbolServer(sessionId, GetContext(sessionId), token);
+                        return true;
+                    }
+                case "mono_wasm_fire_debugger_agent_message_with_data_to_pause":
+                case "_mono_wasm_fire_debugger_agent_message_with_data_to_pause":
+                    try
+                    {
+                        return await OnReceiveDebuggerAgentEvent(sessionId, args, await GetLastDebuggerAgentBuffer(sessionId, args, token), token);
+                    }
+                    catch (Exception) //if the page is refreshed maybe it stops here.
+                    {
+                        await SendResume(sessionId, token);
+                        return true;
+                    }
+                case "mono_wasm_fire_debugger_agent_message_with_data":
+                case "_mono_wasm_fire_debugger_agent_message_with_data":
+                    {
+                        //the only reason that we would get pause in this method is because the user is stepping out
+                        //and as we don't want to pause in a debugger related function we continue stepping out
+                        await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                        return true;
+                    }
+                default:
+                    {
+                        //avoid pausing when justMyCode is enabled and it's a wasm function
+                        if (JustMyCode && args?["callFrames"]?[0]?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true)
+                        {
+                            await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                            return true;
+                        }
+                        break;
+                    }
+            }
             return false;
         }
 
@@ -945,7 +967,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        protected virtual async Task<bool> ShouldSkipMethod(SessionId sessionId, ExecutionContext context, EventKind event_kind, int frameNumber, MethodInfoWithDebugInformation method, CancellationToken token)
+        protected virtual async Task<bool> ShouldSkipMethod(SessionId sessionId, ExecutionContext context, EventKind event_kind, int frameNumber, int totalFrames, MethodInfoWithDebugInformation method, CancellationToken token)
         {
             var shouldReturn = await SkipMethod(
                     isSkippable: context.IsSkippingHiddenMethod,
@@ -1006,8 +1028,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (isSkippable && shouldBeSkipped)
                 {
-                    await context.SdbAgent.Step(context.ThreadId, stepKind, token);
-                    await SendResume(sessionId, token);
+                    if (frameNumber + 1 == totalFrames && stepKind == StepKind.Out) //is the last managed frame
+                        await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                    else
+                        await TryStepOnManagedCodeAndStepOutIfNotPossible(sessionId, context, stepKind, token);
                     return true;
                 }
                 return false;
@@ -1035,7 +1059,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DebugStore store = await LoadStore(sessionId, true, token);
                 var method = await context.SdbAgent.GetMethodInfo(methodId, token);
 
-                if (await ShouldSkipMethod(sessionId, context, event_kind, j, method, token))
+                if (await ShouldSkipMethod(sessionId, context, event_kind, j, frame_count, method, token))
                     return true;
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);
@@ -1092,10 +1116,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 string function_name = frame["functionName"]?.Value<string>();
                 string url = frame["url"]?.Value<string>();
+                var isWasmExpressionStack = frame["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true;
                 if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||
                         url.StartsWith("wasm://", StringComparison.Ordinal) ||
                         url.EndsWith(".wasm", StringComparison.Ordinal) ||
-                        function_name == "_mono_wasm_fire_debugger_agent_message"))
+                        JustMyCode && isWasmExpressionStack ||
+                        function_name.StartsWith("_mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal) ||
+                        function_name.StartsWith("mono_wasm_fire_debugger_agent_message", StringComparison.Ordinal)))
                 {
                     callFrames.Add(frame);
                 }
@@ -1255,7 +1282,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             //discard managed frames
             GetContext(msg_id).ClearState();
         }
+        protected async Task<bool> TryStepOnManagedCodeAndStepOutIfNotPossible(SessionId sessionId, ExecutionContext context, StepKind kind, CancellationToken token)
+        {
+            var step = await context.SdbAgent.Step(context.ThreadId, kind, token);
+            if (step == false) //it will return false if it's the last managed frame and the runtime added the single step breakpoint in a MONO_WRAPPER_RUNTIME_INVOKE
+            {
+                context.ClearState();
+                await SendCommand(sessionId, "Debugger.stepOut", new JObject(), token);
+                return false;
+            }
 
+            context.ClearState();
+
+            await SendResume(sessionId, token);
+            return true;
+        }
 
         protected async Task<bool> Step(MessageId msgId, StepKind kind, CancellationToken token)
         {
@@ -1265,20 +1306,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (context.CallStack.Count <= 1 && kind == StepKind.Out)
                 return false;
-
-            var step = await context.SdbAgent.Step(context.ThreadId, kind, token);
-            if (step == false) {
-                context.ClearState();
-                await SendCommand(msgId, "Debugger.stepOut", new JObject(), token);
-                return false;
-            }
-
-            SendResponse(msgId, Result.Ok(new JObject()), token);
-
-            context.ClearState();
-
-            await SendResume(msgId, token);
-            return true;
+            var ret = await TryStepOnManagedCodeAndStepOutIfNotPossible(msgId, context, kind, token);
+            if (ret)
+                SendResponse(msgId, Result.Ok(new JObject()), token);
+            return ret;
         }
 
         private async Task<bool> OnJSEventRaised(SessionId sessionId, JObject eventArgs, CancellationToken token)
