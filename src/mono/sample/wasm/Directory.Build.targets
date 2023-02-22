@@ -45,19 +45,19 @@
     </PropertyGroup>
     <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=browser $(_AOTFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
   </Target>
-  <Target Name="_ComputeMainJSPath">
+  <Target Name="_ComputeMainJSFileName">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
     <PropertyGroup>
       <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
     </PropertyGroup>
   </Target>
-  <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree;_ComputeMainJSPath">
+  <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
     <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>
-  <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSPath">
+  <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
     <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>
-  <Target Name="DebugSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSPath">
+  <Target Name="DebugSampleWithNode" DependsOnTargets="BuildSampleInTree;_ComputeMainJSFileName">
     <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args) --inspect=9222" IgnoreExitCode="true" />
   </Target>
   <Target Name="CheckServe">

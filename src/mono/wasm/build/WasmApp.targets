@@ -341,7 +341,7 @@
   </Target>
 
   <Target Name="_WasmGenerateAppBundle"
-          Inputs="@(_WasmAssembliesInternal);$(WasmIcuDataFileName);@(WasmNativeAsset)"
+          Inputs="@(_WasmAssembliesInternal);@(WasmExtraFilesToDeploy);$(WasmIcuDataFileName);@(WasmNativeAsset)"
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
           DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies">
@@ -351,6 +351,10 @@
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.js -->
       <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == '' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">-1</_WasmPThreadPoolSize>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(WasmMainHTMLPath)' != ''">
+      <WasmExtraFilesToDeploy Include="$(WasmMainHTMLPath)" />
+    </ItemGroup>
 
     <RemoveDir Directories="$(WasmAppDir)" />
     <WasmAppBuilder
