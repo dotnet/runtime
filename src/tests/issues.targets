@@ -1318,9 +1318,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Regressions/Regression4/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ThrowHelper/NonVoidThrowHelper/*">
-            <Issue>https://github.com/dotnet/runtime/issues/82030</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/*">
             <Issue>https://github.com/dotnet/runtime/issues/71883</Issue>
         </ExcludeList>

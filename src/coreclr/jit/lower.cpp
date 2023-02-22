@@ -3249,21 +3249,12 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     GenTree* relopOp1 = relop->gtGetOp1();
     GenTree* relopOp2 = relop->gtGetOp2();
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-
-    if ((relop->gtNext == jtrue) && relopOp2->IsCnsIntOrI())
+#if defined(TARGET_ARM64)
+    if (relopOp2->IsCnsIntOrI())
     {
         bool         useJCMP = false;
         GenTreeFlags flags   = GTF_EMPTY;
 
-#if defined(TARGET_LOONGARCH64)
-        if (relop->OperIs(GT_EQ, GT_NE))
-        {
-            // Codegen will use beq or bne.
-            flags   = relop->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
-            useJCMP = true;
-        }
-#else  // TARGET_ARM64
         if (relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
         {
             // Codegen will use cbz or cbnz in codegen which do not affect the flag register
@@ -3276,7 +3267,6 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             flags   = GTF_JCMP_TST | (relop->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : GTF_EMPTY);
             useJCMP = true;
         }
-#endif // TARGET_ARM64
 
         if (useJCMP)
         {
@@ -3293,7 +3283,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             return nullptr;
         }
     }
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM64
 
     assert(relop->OperIsCompare());
     assert(relop->gtNext == jtrue);
@@ -3311,6 +3301,43 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         cond = GenCondition(GenCondition::P);
     }
 #endif
+
+#if defined(TARGET_LOONGARCH64)
+    // for LA64's integer compare and condition-branch instructions,
+    // it's very similar to the IL instructions.
+    if (!varTypeIsFloating(relopOp1->TypeGet()))
+    {
+        relop->SetOper(GT_JCMP);
+        relop->gtType = TYP_VOID;
+
+        relop->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
+        relop->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
+
+        if ((cond.GetCode() == GenCondition::EQ) || (cond.GetCode() == GenCondition::NE))
+        {
+            relop->gtFlags &= ~GTF_UNSIGNED;
+        }
+
+        if (relopOp2->IsCnsIntOrI())
+        {
+            relopOp2->SetContained();
+        }
+
+        BlockRange().Remove(jtrue);
+
+        assert(relop->gtNext == nullptr);
+        return nullptr;
+    }
+    else
+    {
+        // But the LA64's float compare and condition-branch instructions,
+        // it has the condition flags indicating the comparing results.
+        relop->gtType = TYP_VOID;
+        relop->gtFlags |= GTF_SET_FLAGS;
+        assert(relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+    }
+
+#else
 
     // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS.
     if (optimizing && relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0) &&
@@ -3351,6 +3378,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             relop->SetOper(GT_TEST);
         }
     }
+#endif // TARGET_LOONGARCH64
 
     jtrue->SetOperRaw(GT_JCC);
     jtrue->AsCC()->gtCondition = cond;

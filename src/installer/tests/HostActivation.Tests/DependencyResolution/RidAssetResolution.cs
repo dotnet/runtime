@@ -24,30 +24,99 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             string excludedNativeLibraryPaths,
             Action<NetCoreAppBuilder> appCustomizer = null);
 
+        private const string LinuxAssembly = "linux/LinuxAssembly.dll";
+        private const string MacOSAssembly = "osx/MacOSAssembly.dll";
+        private const string WindowsAssembly = "win/WindowsAssembly.dll";
+
         [Theory]
-        [InlineData("win", "win/WindowsAssembly.dll", "linux/LinuxAssembly.dll")]
-        [InlineData("win10-x64", "win/WindowsAssembly.dll", "linux/LinuxAssembly.dll")]
-        [InlineData("linux-x64", "linux/LinuxAssembly.dll", "win/WindowsAssembly.dll")]
+        [InlineData("win", WindowsAssembly, $"{LinuxAssembly};{MacOSAssembly}")]
+        [InlineData("win10-x64", WindowsAssembly, $"{LinuxAssembly};{MacOSAssembly}")]
+        [InlineData("linux-x64", LinuxAssembly, $"{MacOSAssembly};{WindowsAssembly}")]
+        [InlineData("osx-x64", MacOSAssembly, $"{LinuxAssembly};{WindowsAssembly}")]
         public void RidSpecificAssembly(string rid, string includedPath, string excludedPath)
         {
             RunTest(
                 p => p
-                    .WithAssemblyGroup("win", g => g.WithAsset("win/WindowsAssembly.dll"))
-                    .WithAssemblyGroup("linux", g => g.WithAsset("linux/LinuxAssembly.dll")),
+                    .WithAssemblyGroup("win", g => g.WithAsset(WindowsAssembly))
+                    .WithAssemblyGroup("linux", g => g.WithAsset(LinuxAssembly))
+                    .WithAssemblyGroup("osx", g => g.WithAsset(MacOSAssembly)),
                 rid, includedPath, excludedPath, null, null);
         }
 
+        [Fact]
+        public void RidSpecificAssembly_UnknownRid()
+        {
+            string includedPath = null;
+            string excludedPath = null;
+
+            // When the RID is unknown, the host uses a compile-time fallback based on the target OS
+            if (OperatingSystem.IsLinux())
+            {
+                includedPath = LinuxAssembly;
+                excludedPath = $"{MacOSAssembly};{WindowsAssembly}";
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                includedPath = MacOSAssembly;
+                excludedPath = $"{LinuxAssembly};{WindowsAssembly}";
+            }
+            else if (OperatingSystem.IsWindows())
+            {
+                includedPath = WindowsAssembly;
+                excludedPath = $"{LinuxAssembly};{MacOSAssembly}";
+            }
+            else
+            {
+                includedPath = null;
+                excludedPath = $"{LinuxAssembly};{MacOSAssembly};{WindowsAssembly}";
+            }
+
+            RidSpecificAssembly("unknown-rid", includedPath, excludedPath);
+        }
+
         [Theory]
-        [InlineData("win", "win", "linux")]
-        [InlineData("win10-x64", "win", "linux")]
-        [InlineData("linux-x64", "linux", "win")]
+        [InlineData("win", "win", "linux;osx")]
+        [InlineData("win10-x64", "win", "linux;osx")]
+        [InlineData("linux-x64", "linux", "osx;win")]
+        [InlineData("osx-x64", "osx", "linux;win")]
         public void RidSpecificNativeLibrary(string rid, string includedPath, string excludedPath)
         {
             RunTest(
                 p => p
                     .WithNativeLibraryGroup("win", g => g.WithAsset("win/WindowsNativeLibrary.dll"))
-                    .WithNativeLibraryGroup("linux", g => g.WithAsset("linux/LinuxNativeLibrary.so")),
+                    .WithNativeLibraryGroup("linux", g => g.WithAsset("linux/LinuxNativeLibrary.so"))
+                    .WithNativeLibraryGroup("osx", g => g.WithAsset("osx/MacOSNativeLibrary.dylib")),
                 rid, null, null, includedPath, excludedPath);
+        }
+
+        [Fact]
+        public void RidSpecificNativeLibrary_UnknownRid()
+        {
+            // When the RID is unknown, the host uses a compile-time fallback based on the target OS
+            string includedPath;
+            string excludedPath;
+            if (OperatingSystem.IsLinux())
+            {
+                includedPath = "linux";
+                excludedPath = "osx;win";
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                includedPath = "osx";
+                excludedPath = "linux;win";
+            }
+            else if (OperatingSystem.IsWindows())
+            {
+                includedPath = "win";
+                excludedPath = "linux;osx";
+            }
+            else
+            {
+                includedPath = null;
+                excludedPath = "linux;osx;win";
+            }
+
+            RidSpecificNativeLibrary("unknown-rid", includedPath, excludedPath);
         }
 
         [Theory]

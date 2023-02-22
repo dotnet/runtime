@@ -15,11 +15,9 @@ namespace System.Text.RegularExpressions
         /// <summary>This field will only be set if the pattern contains backreferences and has RegexOptions.IgnoreCase</summary>
         private readonly CultureInfo? _culture;
 
-#pragma warning disable CA1823 // Avoid unused private fields. Justification: Used via reflection to cache the Case behavior if needed.
-#pragma warning disable CS0169
+#pragma warning disable CA1823, CS0169, IDE0044 // Used via reflection to cache the Case behavior if needed.
         private RegexCaseBehavior _caseBehavior;
-#pragma warning restore CS0169
-#pragma warning restore CA1823
+#pragma warning restore CA1823, CS0169, IDE0044
 
         internal delegate void ScanDelegate(RegexRunner runner, ReadOnlySpan<char> text);
 
