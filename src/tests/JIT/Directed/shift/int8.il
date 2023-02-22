@@ -91,8 +91,7 @@
       IL_000b:  ret
     } // end of method byte32Test::f2
 
-    .method public hidebysig static int32
-            Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

@@ -132,8 +132,7 @@ ldstr "In Catch"
   IL_005b:  ret
 } // end of global method 'test'
 
-.method public static int32 
-        main() il managed
+.method public static int32 main() il managed
 {
   .vtentry 1 : 1
 .entrypoint
