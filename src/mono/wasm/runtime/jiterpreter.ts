@@ -244,7 +244,6 @@ function getTraceImports () {
         importDef("array_address", getRawCwrap("mono_jiterp_array_get_element_address_with_size_ref")),
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
-        importDef("getspan", getRawCwrap("mono_jiterp_getitem_span")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
         importDef("cast", getRawCwrap("mono_jiterp_cast_ref")),
         importDef("try_unbox", getRawCwrap("mono_jiterp_try_unbox_ref")),

@@ -209,22 +209,6 @@ mono_jiterp_try_newobj_inlined (MonoObject **destination, MonoVTable *vtable) {
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_getitem_span (
-	void **destination, MonoSpanOfVoid *span, int index, size_t element_size
-) {
-	if (!span)
-		return 0;
-
-	const gint32 length = span->_length;
-	if ((index < 0) || (index >= length))
-		return 0;
-
-	unsigned char * pointer = (unsigned char *)span->_reference;
-	*destination = pointer + (index * element_size);
-	return 1;
-}
-
-EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_gettype_ref (
 	MonoObject **destination, MonoObject **source
 ) {
@@ -716,6 +700,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_STRLEN:
 		case MINT_GETCHR:
 		case MINT_GETITEM_SPAN:
+		case MINT_GETITEM_LOCALSPAN:
 		case MINT_INTRINS_SPAN_CTOR:
 		case MINT_INTRINS_UNSAFE_BYTE_OFFSET:
 		case MINT_INTRINS_GET_TYPE:
