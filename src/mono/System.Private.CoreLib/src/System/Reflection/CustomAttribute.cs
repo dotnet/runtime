@@ -784,8 +784,8 @@ namespace System.Reflection
 
         private sealed class AttributeInfo
         {
-            private AttributeUsageAttribute _usage;
-            private int _inheritanceLevel;
+            private readonly AttributeUsageAttribute _usage;
+            private readonly int _inheritanceLevel;
 
             public AttributeInfo(AttributeUsageAttribute usage, int inheritanceLevel)
             {

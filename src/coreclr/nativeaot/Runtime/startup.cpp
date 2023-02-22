@@ -189,63 +189,63 @@ bool DetectCPUFeatures()
 
     int cpuidInfo[4];
 
-    const int EAX = 0;
-    const int EBX = 1;
-    const int ECX = 2;
-    const int EDX = 3;
+    const int CPUID_EAX = 0;
+    const int CPUID_EBX = 1;
+    const int CPUID_ECX = 2;
+    const int CPUID_EDX = 3;
 
     __cpuid(cpuidInfo, 0x00000000);
-    uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[EAX]);
+    uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
 
     if (maxCpuId >= 1)
     {
         __cpuid(cpuidInfo, 0x00000001);
 
-        if (((cpuidInfo[EDX] & (1 << 25)) != 0) && ((cpuidInfo[EDX] & (1 << 26)) != 0))                     // SSE & SSE2
+        if (((cpuidInfo[CPUID_EDX] & (1 << 25)) != 0) && ((cpuidInfo[CPUID_EDX] & (1 << 26)) != 0))                     // SSE & SSE2
         {
-            if ((cpuidInfo[ECX] & (1 << 25)) != 0)                                                          // AESNI
+            if ((cpuidInfo[CPUID_ECX] & (1 << 25)) != 0)                                                          // AESNI
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Aes;
             }
 
-            if ((cpuidInfo[ECX] & (1 << 1)) != 0)                                                           // PCLMULQDQ
+            if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                                                           // PCLMULQDQ
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Pclmulqdq;
             }
 
-            if ((cpuidInfo[ECX] & (1 << 0)) != 0)                                                           // SSE3
+            if ((cpuidInfo[CPUID_ECX] & (1 << 0)) != 0)                                                           // SSE3
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Sse3;
 
-                if ((cpuidInfo[ECX] & (1 << 9)) != 0)                                                       // SSSE3
+                if ((cpuidInfo[CPUID_ECX] & (1 << 9)) != 0)                                                       // SSSE3
                 {
                     g_cpuFeatures |= XArchIntrinsicConstants_Ssse3;
 
-                    if ((cpuidInfo[ECX] & (1 << 19)) != 0)                                                  // SSE4.1
+                    if ((cpuidInfo[CPUID_ECX] & (1 << 19)) != 0)                                                  // SSE4.1
                     {
                         g_cpuFeatures |= XArchIntrinsicConstants_Sse41;
 
-                        if ((cpuidInfo[ECX] & (1 << 20)) != 0)                                              // SSE4.2
+                        if ((cpuidInfo[CPUID_ECX] & (1 << 20)) != 0)                                              // SSE4.2
                         {
                             g_cpuFeatures |= XArchIntrinsicConstants_Sse42;
 
-                            if ((cpuidInfo[ECX] & (1 << 22)) != 0)                                          // MOVBE
+                            if ((cpuidInfo[CPUID_ECX] & (1 << 22)) != 0)                                          // MOVBE
                             {
                                 g_cpuFeatures |= XArchIntrinsicConstants_Movbe;
                             }
 
-                            if ((cpuidInfo[ECX] & (1 << 23)) != 0)                                          // POPCNT
+                            if ((cpuidInfo[CPUID_ECX] & (1 << 23)) != 0)                                          // POPCNT
                             {
                                 g_cpuFeatures |= XArchIntrinsicConstants_Popcnt;
                             }
 
-                            if (((cpuidInfo[ECX] & (1 << 27)) != 0) && ((cpuidInfo[ECX] & (1 << 28)) != 0)) // OSXSAVE & AVX
+                            if (((cpuidInfo[CPUID_ECX] & (1 << 27)) != 0) && ((cpuidInfo[CPUID_ECX] & (1 << 28)) != 0)) // OSXSAVE & AVX
                             {
                                 if (PalIsAvxEnabled() && (xmmYmmStateSupport() == 1))
                                 {
                                     g_cpuFeatures |= XArchIntrinsicConstants_Avx;
 
-                                    if ((cpuidInfo[ECX] & (1 << 12)) != 0)                                  // FMA
+                                    if ((cpuidInfo[CPUID_ECX] & (1 << 12)) != 0)                                  // FMA
                                     {
                                         g_cpuFeatures |= XArchIntrinsicConstants_Fma;
                                     }
@@ -254,30 +254,30 @@ bool DetectCPUFeatures()
                                     {
                                         __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-                                        if ((cpuidInfo[EBX] & (1 << 5)) != 0)                               // AVX2
+                                        if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                               // AVX2
                                         {
                                             g_cpuFeatures |= XArchIntrinsicConstants_Avx2;
 
                                             __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
-                                            if ((cpuidInfo[EAX] & (1 << 4)) != 0)                           // AVX-VNNI
+                                            if ((cpuidInfo[CPUID_EAX] & (1 << 4)) != 0)                           // AVX-VNNI
                                             {
                                                 g_cpuFeatures |= XArchIntrinsicConstants_AvxVnni;
                                             }
 
                                             if (PalIsAvx512Enabled() && (avx512StateSupport() == 1))       // XGETBV XRC0[7:5] == 111
                                             {
-                                                if ((cpuidInfo[EBX] & (1 << 16)) != 0)                     // AVX512F
+                                                if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                     // AVX512F
                                                 {
                                                     g_cpuFeatures |= XArchIntrinsicConstants_Avx512f;
 
                                                     bool isAVX512_VLSupported = false;
-                                                    if ((cpuidInfo[EBX] & (1 << 31)) != 0)                 // AVX512VL
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                 // AVX512VL
                                                     {
                                                         g_cpuFeatures |= XArchIntrinsicConstants_Avx512f_vl;
                                                         isAVX512_VLSupported = true;
                                                     }
 
-                                                    if ((cpuidInfo[EBX] & (1 << 30)) != 0)                 // AVX512BW
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0)                 // AVX512BW
                                                     {
                                                         g_cpuFeatures |= XArchIntrinsicConstants_Avx512bw;
                                                         if (isAVX512_VLSupported)
@@ -286,7 +286,7 @@ bool DetectCPUFeatures()
                                                         }
                                                     }
 
-                                                    if ((cpuidInfo[EBX] & (1 << 28)) != 0)                 // AVX512CD
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0)                 // AVX512CD
                                                     {
                                                         g_cpuFeatures |= XArchIntrinsicConstants_Avx512cd;
                                                         if (isAVX512_VLSupported)
@@ -295,7 +295,7 @@ bool DetectCPUFeatures()
                                                         }
                                                     }
 
-                                                    if ((cpuidInfo[EBX] & (1 << 17)) != 0)                 // AVX512DQ
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)                 // AVX512DQ
                                                     {
                                                         g_cpuFeatures |= XArchIntrinsicConstants_Avx512dq;
                                                         if (isAVX512_VLSupported)
@@ -319,12 +319,12 @@ bool DetectCPUFeatures()
         {
             __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-            if ((cpuidInfo[EBX] & (1 << 3)) != 0)                                                           // BMI1
+            if ((cpuidInfo[CPUID_EBX] & (1 << 3)) != 0)                                                           // BMI1
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Bmi1;
             }
 
-            if ((cpuidInfo[EBX] & (1 << 8)) != 0)                                                           // BMI2
+            if ((cpuidInfo[CPUID_EBX] & (1 << 8)) != 0)                                                           // BMI2
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Bmi2;
             }
@@ -332,13 +332,13 @@ bool DetectCPUFeatures()
     }
 
     __cpuid(cpuidInfo, 0x80000000);
-    uint32_t maxCpuIdEx = static_cast<uint32_t>(cpuidInfo[EAX]);
+    uint32_t maxCpuIdEx = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
 
     if (maxCpuIdEx >= 0x80000001)
     {
         __cpuid(cpuidInfo, 0x80000001);
 
-        if ((cpuidInfo[ECX] & (1 << 5)) != 0)                                                               // LZCNT
+        if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                               // LZCNT
         {
             g_cpuFeatures |= XArchIntrinsicConstants_Lzcnt;
         }
@@ -346,8 +346,8 @@ bool DetectCPUFeatures()
 #ifdef HOST_AMD64
         // AMD has a "fast" mode for fxsave/fxrstor, which omits the saving of xmm registers.  The OS will enable this mode
         // if it is supported.  So if we continue to use fxsave/fxrstor, we must manually save/restore the xmm registers.
-        // fxsr_opt is bit 25 of EDX
-        if ((cpuidInfo[EDX] & (1 << 25)) != 0)
+        // fxsr_opt is bit 25 of CPUID_EDX
+        if ((cpuidInfo[CPUID_EDX] & (1 << 25)) != 0)
             g_fHasFastFxsave = true;
 #endif
     }

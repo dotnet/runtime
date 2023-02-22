@@ -67,7 +67,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--")]
-		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL3002", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL3050", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 		[DynamicDependency ("RequiresInDynamicDependency")]

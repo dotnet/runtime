@@ -240,6 +240,26 @@ public:
     void *operator new(size_t size, LoaderHeap *pHeap);
     void operator delete(void *pMem);
 
+#ifndef DACCESS_COMPILE
+    MethodDesc* LookupStructILStubSpeculative(MethodTable* pMT)
+    {
+        WRAPPER_NO_CONTRACT;
+        HashDatum res = 0;
+        m_structILStubCache.GetValueSpeculative(pMT, &res);
+        return (MethodDesc*)res;
+    }
+
+    MethodDesc* LookupStructILStub(MethodTable* pMT)
+    {
+        WRAPPER_NO_CONTRACT;
+        HashDatum res = 0;
+        m_structILStubCache.GetValue(pMT, &res);
+        return (MethodDesc*)res;
+    }
+
+    void CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD);
+#endif
+
     // This method returns the custom marshaling helper associated with the name cookie pair. If the
     // CM info has not been created yet for this pair then it will be created and returned.
     CustomMarshalerHelper *GetCustomMarshalerHelper(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
@@ -250,11 +270,10 @@ public:
 #ifdef FEATURE_COMINTEROP
     // This method retrieves OLE_COLOR marshaling info.
     OleColorMarshalingInfo *GetOleColorMarshalingInfo();
-
-
 #endif // FEATURE_COMINTEROP
 
 private:
+    EEPtrHashTable                      m_structILStubCache;
     EECMHelperHashTable                 m_CMHelperHashtable;
     EEPtrHashTable                      m_SharedCMHelperToCMInfoMap;
     LoaderAllocator*                    m_pAllocator;

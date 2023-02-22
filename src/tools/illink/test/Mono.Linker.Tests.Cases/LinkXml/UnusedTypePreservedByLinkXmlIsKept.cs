@@ -16,4 +16,20 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 	class UnusedTypePreservedByLinkXmlIsKeptUnusedType
 	{
 	}
+
+	[Kept]
+	public class UnusedGenericTypePreservedByLinkXmlIsKept<T>
+	{
+		[Kept]
+		public class UnusedNestedTypePreservedByLinkXmlIsKept { }
+
+		[Kept]
+		public class UnusedNestedGenericTypePreservedByLinkXmlIsKept<U, V>
+		{
+			[Kept]
+			public class UnusedNestedNestedGenericTypePreservedByLinkXmlIsKept<W> { }
+		}
+
+		public class UnusedNestedTypeNotPreserved { }
+	}
 }
