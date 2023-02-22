@@ -594,9 +594,9 @@ namespace CoreclrTestLib
             }
 
             string cdbPath = $@"C:\Program Files (x86)\Windows Kits\10\Debuggers\{targetArchitecture}\cdb.exe";
-            if (!Directory.Exists(cdbPath))
+            if (!File.Exists(cdbPath))
             {
-                outputWriter.WriteLine($"Unable to find cdb.exe in {cdbPath}");
+                outputWriter.WriteLine($"Unable to find cdb.exe at {cdbPath}");
                 return false;
             }
 
