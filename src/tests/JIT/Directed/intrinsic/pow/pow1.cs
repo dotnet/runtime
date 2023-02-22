@@ -7,7 +7,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal class pow1
+public class pow1
 {
     public static int Main()
     {

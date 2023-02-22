@@ -5,7 +5,7 @@
 
 #pragma warning disable 0414
 using System;
-internal class lclfldadd
+public class lclfldadd
 {
     //user-defined class that overloads operator +
     public class numHolder

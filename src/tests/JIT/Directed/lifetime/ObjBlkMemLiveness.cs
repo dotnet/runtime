@@ -8,7 +8,7 @@ using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
 
-unsafe class ObjBlkLiveness
+public unsafe class ObjBlkLiveness
 {
     public static int Main()
     {

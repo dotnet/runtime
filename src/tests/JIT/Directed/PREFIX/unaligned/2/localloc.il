@@ -12,7 +12,7 @@
 
 
 
-.class			_localloc {
+.class public			_localloc {
 
 .method void .ctor() {
 
@@ -22,7 +22,7 @@
 	ret
 }
 
-.method static	int32 main() {
+.method public static	int32 main() {
 .locals		(class [mscorlib]System.IO.TextWriter,int32*,int32,class [mscorlib]System.Text.StringBuilder,int32,class [mscorlib]System.String)
 .entrypoint
 //INITIALIZATION

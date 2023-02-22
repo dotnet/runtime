@@ -2153,7 +2153,7 @@ public static partial class StructABI
 		return ok;
 	}
 
-	static int Main()
+	public static int Main()
 	{
 		var ok = true;
 	

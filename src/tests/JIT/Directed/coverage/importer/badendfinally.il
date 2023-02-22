@@ -14,6 +14,7 @@ endfinally
 ldc.i4 100
 ret
 }
+.class public auto ansi badendfinally {
 .method public static int32 Main()
 {
 .entrypoint
@@ -32,4 +33,5 @@ PASS:
 FAIL:
 	ldc.i4 1
 	ret
+}
 }

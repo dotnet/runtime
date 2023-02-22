@@ -13,6 +13,7 @@
 .emitbyte 0xee
 ret
 }
+.class public auto ansi ceeillegal {
 .method public static int32 Main()
 {
 .entrypoint
@@ -35,4 +36,5 @@ ret
 PASS:
 ldc.i4 100
 ret
+}
 }

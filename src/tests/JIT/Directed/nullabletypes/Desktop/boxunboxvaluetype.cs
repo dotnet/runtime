@@ -4693,9 +4693,9 @@ internal class NullableTest45
 }
 
 
-internal class Test_boxunboxvaluetype
+public class Test_boxunboxvaluetype
 {
-    private static int Main()
+    public static int Main()
     {
         try
         {

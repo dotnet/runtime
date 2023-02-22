@@ -88,7 +88,8 @@ REALLYDONE:
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main() {
+.class public auto ansi arglistARM {
+.method public static int32 main() {
 .entrypoint
 .locals	()
 .maxstack	10
@@ -118,4 +119,5 @@ PASS:
 FAIL:
 	ldc.i4	0x0
 	ret
+}
 }

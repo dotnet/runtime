@@ -7,7 +7,7 @@ namespace JitTest
     using System.Text;
     using System.Runtime.InteropServices;
 
-    internal class Test
+    public class Test
     {
         [DllImport("msvcrt", EntryPoint = "sin", CallingConvention = CallingConvention.Cdecl)]
         private static extern double sin(double x);
@@ -15,7 +15,7 @@ namespace JitTest
         [DllImport("msvcrt", EntryPoint = "acos", CallingConvention = CallingConvention.Cdecl)]
         private static extern double acos(double x);
 
-        private static int Main()
+        public static int Main()
         {
             for (double x = 0.0; x <= 3.1415926535897; x += 0.14)
             {

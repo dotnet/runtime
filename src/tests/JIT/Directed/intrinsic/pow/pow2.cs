@@ -19,7 +19,7 @@ internal class cl
         x = new double[6, 5, 4];
     }
 }
-internal class pow2
+public class pow2
 {
     public static double CalculateSinh(double x)
     {

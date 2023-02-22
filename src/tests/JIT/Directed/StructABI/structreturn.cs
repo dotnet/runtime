@@ -1809,7 +1809,7 @@ class TestNon2PowerStructs
     }
 }
 
-class TestStructs
+public class TestStructs
 {
     public static int Main()
     {

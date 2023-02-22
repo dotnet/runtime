@@ -4,7 +4,7 @@
 
 using System;
 
-internal class Simple2_Array_Test
+public class Simple2_Array_Test
 {
     public static int Main()
     {

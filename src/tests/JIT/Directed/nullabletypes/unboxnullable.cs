@@ -5,7 +5,7 @@ using System;
 
 public class Program
 {
-    private static int Main()
+    public static int Main()
     {
         try
         {

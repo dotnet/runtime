@@ -5,7 +5,7 @@ using System;
 namespace PrimitiveVT
 {
 
-    unsafe class CallConv1
+    public unsafe class CallConv1
     {
         public const int DefaultSeed = 20010415;
         public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
@@ -35,7 +35,7 @@ namespace PrimitiveVT
         int f10(params VT1B[] args) { int sum = 0; for (int i = 0; i < args.Length; sum += args[i], i++) { }; return sum; }
 
 
-        static int Main()
+        public static int Main()
         {
             int a = rand.Next();
 

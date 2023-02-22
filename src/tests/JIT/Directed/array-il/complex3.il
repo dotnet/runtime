@@ -39,7 +39,7 @@
 
 } // end of class 'Yak'
 
-.class auto ansi Complex2_Array_Test
+.class public auto ansi Complex2_Array_Test
 {
    .method public static int32 TestRank(value class Yak[,,,,,,] Odd_Variable) il managed
   {

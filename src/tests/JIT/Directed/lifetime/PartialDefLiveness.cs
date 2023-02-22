@@ -9,7 +9,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-class PartialDefLiveness
+public class PartialDefLiveness
 {
     public static int Main()
     {

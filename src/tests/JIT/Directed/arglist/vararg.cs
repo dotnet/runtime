@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace NativeVarargTest
 {
-    class VarArg
+    public class VarArg
     {
         ////////////////////////////////////////////////////////////////////////////
         // Member Variables
@@ -4550,7 +4550,7 @@ namespace NativeVarargTest
         ////////////////////////////////////////////////////////////////////////////
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int Main()
+        public static int Main()
         {
             int success = 100;
             m_testCount = 0;

@@ -8,6 +8,7 @@
 }
 .assembly extern legacy library mscorlib {}
 .assembly ref2byref {}
+.class public auto ansi ref2byref {
 .method public static int32 Main()
 {
 	.entrypoint
@@ -98,4 +99,5 @@
 	call void [System.Console]System.Console::WriteLine(string)
 	ldc.i4 100
 	ret
+}
 }

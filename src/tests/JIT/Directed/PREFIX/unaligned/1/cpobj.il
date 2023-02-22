@@ -15,7 +15,7 @@
 .field static	value class valClass Instance1
 .field static	value class valClass Instance2
 
-.method static	int32 main() {
+.method public static	int32 main() {
 .entrypoint
 .locals		(class [mscorlib]System.IO.TextWriter)
 .maxstack		2

@@ -6,7 +6,7 @@ using System;
 public 
 // Do a simple 5 dimensional Jagged array.
 
-class Simple_Array_Test
+public class Simple_Array_Test
 {
 	public static int Main()
 	{

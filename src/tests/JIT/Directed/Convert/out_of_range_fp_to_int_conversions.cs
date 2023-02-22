@@ -259,7 +259,7 @@ namespace FPBehaviorApp
         }
     }
 
-    class Program
+    public class Program
     {
         static int failures = 0;
         static FPtoIntegerConversionType ManagedConversionRule = FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64;
@@ -371,7 +371,7 @@ namespace FPBehaviorApp
             }
         }
 
-        static int Main()
+        public static int Main()
         {
             switch (RuntimeInformation.ProcessArchitecture)
             {

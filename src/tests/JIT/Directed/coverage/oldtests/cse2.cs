@@ -4,7 +4,7 @@
 //Testing common sub-expression elimination in random code
 
 using System;
-internal unsafe class testout1
+public unsafe class testout1
 {
     public static int sa = 2;
     public static int sb = 1;

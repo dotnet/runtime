@@ -22,7 +22,7 @@ internal class CL
     public int[,] idx2darr = { { 5, 6 } };
 }
 
-internal unsafe class StrAccess2
+public unsafe class StrAccess2
 {
     public static String str1 = "test string";
     public static int idx1 = 2;

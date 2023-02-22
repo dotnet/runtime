@@ -4,9 +4,9 @@
 
 using System;
 
-internal class AA
+public class AA
 {
-    private static int Main()
+    public static int Main()
     {
         uint SMALL1 = 0x00000100;
         uint SMALL2 = 0x7fffffff;

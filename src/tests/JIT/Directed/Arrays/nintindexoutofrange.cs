@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class NintIndexOutOfRangeTest
+public class NintIndexOutOfRangeTest
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Stelem_Ref(object[] arr, nint i, Object value)

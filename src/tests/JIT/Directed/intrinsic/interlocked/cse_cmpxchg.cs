@@ -5,7 +5,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
-internal class Foo
+public class Foo
 {
     private static int s_taskIdCounter;
     private int _taskId = 0;

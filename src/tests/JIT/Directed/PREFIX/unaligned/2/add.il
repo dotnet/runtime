@@ -15,7 +15,7 @@
                         }
 
 
-.class explicit _add {
+.class public explicit _add {
 
 .field [2] int32 global0
 .field [6] int32 global1
@@ -25,7 +25,7 @@
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	6
 .locals init	(class _add target)

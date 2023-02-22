@@ -10,7 +10,7 @@
 .assembly 'jitTailcall1_'
 {
 }
-.class EvenOdd
+.class public EvenOdd
 { .method static bool IsEven(int32 N)
   { .maxstack   2
     ldarg.0             // N

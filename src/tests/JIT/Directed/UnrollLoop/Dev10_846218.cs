@@ -30,7 +30,7 @@ namespace Test
         }
     }
 
-    internal class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Test(IDoSomething oDoesSomething)
@@ -46,7 +46,7 @@ namespace Test
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int Main()
+        public static int Main()
         {
             DoSomething doSomething = new DoSomething();
             Test(doSomething);

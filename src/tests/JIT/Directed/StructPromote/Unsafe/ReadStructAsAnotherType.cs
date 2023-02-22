@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System;
 
-class TestAssignFieldsBetweenPromotedNotPromotedStructs
+public class TestAssignFieldsBetweenPromotedNotPromotedStructs
 {
 
     struct PrimitiveStruct // a struct of single field of scalar types aligned at their natural boundary.

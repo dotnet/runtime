@@ -11,7 +11,7 @@
 .assembly 'minopts_convu1' {}
 .assembly extern mscorlib{auto}
 
-.class ILGEN_0xb0847955 {
+.class public ILGEN_0xb0847955 {
 
 
 .method static unsigned int8  Method_0xbf6432ff() {
@@ -24,7 +24,7 @@
    //If the conversion fails, we get a non 100 (Failing) return code.
 }
 
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

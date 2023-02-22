@@ -12,7 +12,7 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly legacy library 'stfldstatic1_Desktop' { }
-.class private auto ansi beforefieldinit stfldstatic1
+.class public auto ansi beforefieldinit stfldstatic1
        extends [mscorlib]System.Object
 {
   .field private static int32 fld

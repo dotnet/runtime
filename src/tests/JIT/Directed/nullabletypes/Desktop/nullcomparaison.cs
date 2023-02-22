@@ -1553,9 +1553,9 @@ internal class NullableTest45
 
 
 
-internal class Test_nullcomparaison
+public class Test_nullcomparaison
 {
-    private static int Main()
+    public static int Main()
     {
         try
         {

@@ -21,7 +21,7 @@ using System.Runtime.CompilerServices;
 //
 // The fix was to reuse the address for the last field instead.
 
-class FldSeqsInPromotedCpBlk
+public class FldSeqsInPromotedCpBlk
 {
     public static int Main()
     {

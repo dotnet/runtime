@@ -23,7 +23,7 @@ namespace PInvokeTest
         private extern static int GetConstantInternal();
     }
 
-    internal class Test
+    public class Test
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static int AsForceInline()
@@ -214,7 +214,7 @@ namespace PInvokeTest
             return result1 && result2;
         }
 
-        private static int Main()
+        public static int Main()
         {
             bool result = true;
 

@@ -4,7 +4,7 @@
 .assembly HandlesInAddrModes { }
 .assembly extern System.Runtime { }
 
-.class HandlesInAddrModes
+.class public HandlesInAddrModes
 {
   .method public static int32 Main()
   {

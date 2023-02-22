@@ -5,7 +5,7 @@
 #pragma warning disable
 
 using System;
-class testout1
+public class testout1
 {
     static double static_field_double;
     static bool sfb_false;

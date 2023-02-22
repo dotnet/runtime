@@ -9,7 +9,7 @@
 }
 .assembly 'field_tests_unaligned_2'{}
 
-.class field_tests {
+.class public field_tests {
 
 .field			int8 i1Field
 .field			int16 i2Field
@@ -107,7 +107,7 @@
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
 .locals	(class field_tests)

@@ -8,6 +8,7 @@
 }
 .assembly extern legacy library mscorlib {}
 .assembly 'refpinned2iu' {}
+.class public auto ansi refpinned2iu {
 .method public static int32 Main()
 {
 	.entrypoint
@@ -108,4 +109,5 @@
 
 	ldc.i4 100
 	ret
+}
 }

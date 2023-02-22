@@ -7,7 +7,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal class Program
+public class Program
 {
     private static void Eval(int testCase, bool b1, bool b2)
     {
@@ -636,7 +636,7 @@ internal class Program
         }
     }  // end of test case 0003
 
-    private static int Main()
+    public static int Main()
     {
         try
         {

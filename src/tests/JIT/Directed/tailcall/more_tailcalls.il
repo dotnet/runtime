@@ -255,7 +255,7 @@
 
 } // end of class HeapInt
 
-.class private auto ansi Program
+.class public auto ansi Program
        extends [System.Runtime]System.Object
 {
   .class auto ansi nested private beforefieldinit GenericInstance`1<T>
@@ -946,7 +946,7 @@
     IL_0052:  ret
   } // end of method Program::.cctor
 
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

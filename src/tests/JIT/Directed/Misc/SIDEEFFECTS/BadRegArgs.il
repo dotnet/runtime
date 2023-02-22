@@ -11,7 +11,7 @@
 {
 }
 // Original test by sborde modified by bwadswor
-.class BadRegArgs
+.class public BadRegArgs
 {
   .field public static int32 s_i
   .field public static class [mscorlib]System.Object s_Obj

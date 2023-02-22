@@ -54,7 +54,7 @@
   .size 40
 } // end of class '$MultiByte$40'
 
-.class value explicit ansi sealed $MultiByte$28
+.class public value explicit ansi sealed $MultiByte$28
 {
   .pack 1
   .size 28

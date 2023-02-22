@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System;
 
-class TestStructAccessThroughRef
+public class TestStructAccessThroughRef
 {
 
     [StructLayout(LayoutKind.Explicit)]
@@ -53,7 +53,7 @@ class TestStructAccessThroughRef
         Debug.Assert(a.smallField == 0x7);
     }
 
-    static int Main()
+    public static int Main()
     {
         TestStructCasts();
         return 100;

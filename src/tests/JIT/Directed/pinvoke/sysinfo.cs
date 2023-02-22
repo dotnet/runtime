@@ -7,7 +7,7 @@ namespace JitTest
     using System.Runtime.InteropServices;
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct SYSTEM_INFO
+    public struct SYSTEM_INFO
     {
         private uint _dwOemId;
         private uint _dwPageSize;

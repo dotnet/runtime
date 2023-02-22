@@ -15,6 +15,7 @@ ldc.i4 1
 sub.ovf.un
 ret
 }
+.class public auto ansi subovfun1 {
 .method public static int32 Main()
 {
 .entrypoint
@@ -22,4 +23,5 @@ ldc.i4 101
 call uint32 f(uint32)
 conv.i4
 ret
+}
 }

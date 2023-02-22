@@ -9,6 +9,7 @@
 .assembly extern legacy library mscorlib {}
 .assembly byref2iu {}
 .field static char c
+.class public auto ansi byref2iu {
 .method public static int32 Main()
 {
 	.entrypoint
@@ -152,4 +153,5 @@
 
 	ldc.i4 100
 	ret
+}
 }

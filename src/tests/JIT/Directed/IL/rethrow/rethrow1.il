@@ -75,6 +75,7 @@
   // Exception count 1
 } // end of global method '?test@@YAHXZ'
 
+.class public auto ansi rethrow1 {
 .method public static int32 main() il managed
 {
   // Method begins at RVA 0x10a0
@@ -140,3 +141,4 @@
   IL_0090:  ret
   // Exception count 1
 } // end of global method 'main'
+}

@@ -13,7 +13,7 @@
 	.field		int32 Field
 }
 
-.class	array_tests {
+.class public	array_tests {
 
 .field static	int8[] i1
 .field static	unsigned int8[] u1
@@ -194,7 +194,7 @@ END:
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
 .locals	(int32)

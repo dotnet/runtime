@@ -35,7 +35,7 @@ internal class ratnl
     }
 }
 
-internal class Test33objref
+public class Test33objref
 {
     public static ratnl f1(ratnl a1, ratnl a2, ratnl a3, ratnl a4, ratnl a5, ratnl a6, ratnl a7, ratnl a8, ratnl a9, ratnl a10,
         ratnl a11, ratnl a12, ratnl a13, ratnl a14, ratnl a15, ratnl a16, ratnl a17, ratnl a18, ratnl a19, ratnl a20,

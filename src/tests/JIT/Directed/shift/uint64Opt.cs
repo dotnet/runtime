@@ -150,7 +150,7 @@ namespace ShiftTest
         }
     }
 
-    class Test
+    public class Test
     {
         public static int Main()
         {

@@ -129,7 +129,7 @@ public class IntrinsicTest
         return fail;
     }
 
-    private static int Main()
+    public static int Main()
     {
         if (MainTest())
         {
