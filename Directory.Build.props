@@ -115,6 +115,19 @@
     <TargetFrameworkForNETCoreTasks>$(NetCoreAppToolCurrent)</TargetFrameworkForNETCoreTasks>
   </PropertyGroup>
 
+  <PropertyGroup Label="CalculateConfiguration">
+    <!-- The RuntimeConfiguration property allows to pass in/specify a configuration that applies to both CoreCLR and Mono. -->
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(Configuration)</RuntimeConfiguration>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == '' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release')">$(Configuration)</RuntimeConfiguration>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">Debug</RuntimeConfiguration>
+    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(RuntimeConfiguration)</CoreCLRConfiguration>
+    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' != 'checked'">$(RuntimeConfiguration)</MonoConfiguration>
+    <!-- There's no checked configuration on Mono. -->
+    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
+    <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
+    <HostConfiguration Condition="'$(HostConfiguration)' == ''">$(Configuration)</HostConfiguration>
+  </PropertyGroup>
+
   <PropertyGroup>
     <LibrariesProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'libraries'))</LibrariesProjectRoot>
     <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'coreclr'))</CoreClrProjectRoot>
@@ -156,19 +169,6 @@
     <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>
 
     <WasmtimeDir>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
-  </PropertyGroup>
-
-  <PropertyGroup Label="CalculateConfiguration">
-    <!-- The RuntimeConfiguration property allows to pass in/specify a configuration that applies to both CoreCLR and Mono. -->
-    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(Configuration)</RuntimeConfiguration>
-    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == '' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release')">$(Configuration)</RuntimeConfiguration>
-    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">Debug</RuntimeConfiguration>
-    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(RuntimeConfiguration)</CoreCLRConfiguration>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' != 'checked'">$(RuntimeConfiguration)</MonoConfiguration>
-    <!-- There's no checked configuration on Mono. -->
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
-    <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
-    <HostConfiguration Condition="'$(HostConfiguration)' == ''">$(Configuration)</HostConfiguration>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateOS">

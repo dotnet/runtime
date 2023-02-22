@@ -1984,6 +1984,12 @@
         "unix-mips64"
       ]
     },
+    "linux-riscv64": {
+      "#import": [
+        "linux",
+        "unix-riscv64"
+      ]
+    },
     "linux-musl": {
       "#import": [
         "linux"
@@ -4109,6 +4115,9 @@
     "wasi-wasm": {
       "#import": [
         "wasi"
+    "unix-riscv64": {
+      "#import": [
+        "unix"
       ]
     },
     "win": {

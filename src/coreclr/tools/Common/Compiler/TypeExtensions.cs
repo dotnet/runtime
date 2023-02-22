@@ -100,9 +100,9 @@ namespace ILCompiler
         /// </summary>
         public static bool HasGenericVirtualMethods(this TypeDesc type)
         {
-            foreach (var method in type.GetAllMethods())
+            foreach (var method in type.GetAllVirtualMethods())
             {
-                if (method.IsVirtual && method.HasInstantiation)
+                if (method.HasInstantiation)
                     return true;
             }
 
