@@ -2993,7 +2993,7 @@ inline emitAttr emitActualTypeSize(T type)
     assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE || size == EA_16BYTE ||
            size == EA_32BYTE || size == EA_64BYTE);
 
-    return emitSizeEncode[genLog2(size)];
+    return static_cast<emitter::opSize>(genLog2(size));
 }
 
 /* static */ inline emitAttr emitter::emitDecodeSize(emitter::opSize ensz)

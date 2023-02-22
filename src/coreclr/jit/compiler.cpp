@@ -2291,9 +2291,13 @@ void Compiler::compSetProcessor()
         if (!DoJitStressEvexEncoding())
         {
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
-            instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
         }
         else
         {
