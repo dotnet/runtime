@@ -37,6 +37,8 @@
 
       <_RuntimeVariant />
       <_RuntimeVariant Condition="'$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">-threads</_RuntimeVariant>
+      <_UsePThreads />
+      <_UsePThreads Condition="'$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'"> -usepthreads</_UsePThreads>
 
       <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
       <_IcuDirArg Condition="'$(_IcuDir)' != ''"> -icudir "$(_IcuDir)"</_IcuDirArg>
@@ -46,7 +48,7 @@
         used to force a specific compiler toolset.
       -->
       <_BuildNativeCompilerArg Condition="'$(BuildNativeCompiler)' != ''"> $(BuildNativeCompiler)</_BuildNativeCompilerArg>
-      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg)$(_CMakeArgs)$(_IcuDirArg) $(Compiler)</_BuildNativeUnixArgs>
+      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg)$(_CMakeArgs)$(_IcuDirArg)$(_UsePThreads) $(Compiler)</_BuildNativeUnixArgs>
     </PropertyGroup>
 
     <ItemGroup>
