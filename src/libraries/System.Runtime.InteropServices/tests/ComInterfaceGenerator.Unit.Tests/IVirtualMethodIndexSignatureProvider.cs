@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Interop;
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Interop.UnitTests;
 
 namespace ComInterfaceGenerator.Unit.Tests

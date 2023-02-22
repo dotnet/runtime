@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Interop.UnitTests;
 using Xunit;
 
@@ -18,37 +20,75 @@ namespace ComInterfaceGenerator.Unit.Tests
             [CallerFilePath] string? filePath = null)
             => TestUtils.GetFileLineName(lineNumber, filePath);
 
-        public static IEnumerable<object[]> CodeSnippetsToCompile()
+        public static IEnumerable<object[]> SharedCodeSnippets(int generator)
         {
-            yield return new[] { ID(), CodeSnippets.SpecifiedMethodIndexNoExplicitParameters };
-            yield return new[] { ID(), CodeSnippets.SpecifiedMethodIndexNoExplicitParametersNoImplicitThis };
-            yield return new[] { ID(), CodeSnippets.SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions };
+            var codeSnippets = new CodeSnippets((CodeSnippets.GeneratorKind)generator);
+            yield return new[] { ID(), codeSnippets.SpecifiedMethodIndexNoExplicitParameters };
+            yield return new[] { ID(), codeSnippets.SpecifiedMethodIndexNoExplicitParametersNoImplicitThis };
+            yield return new[] { ID(), codeSnippets.SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions };
 
             // Basic marshalling validation
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<sbyte>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<short>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<ushort>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<int>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<uint>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<long>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<ulong>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<float>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<double>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<IntPtr>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<byte>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<sbyte>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<short>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<ushort>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<int>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<uint>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<long>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<ulong>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<float>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<double>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<IntPtr>() };
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersNoImplicitThis<UIntPtr>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<byte>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<sbyte>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<short>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<ushort>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<int>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<uint>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<long>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<ulong>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<float>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<double>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<IntPtr>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<UIntPtr>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<byte>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<sbyte>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<short>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<ushort>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<int>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<uint>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<long>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<ulong>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<float>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<double>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<IntPtr>() };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersNoImplicitThis<UIntPtr>() };
+
+            // SafeHandles
+            if (generator == (int)CodeSnippets.GeneratorKind.VTableIndexStubGenerator)
+                yield return new[] { ID(), codeSnippets.BasicParametersAndModifiersManagedToUnmanaged("Microsoft.Win32.SafeHandles.SafeFileHandle") };
+
+            // Exception Handling
+            // HResult
+            yield return new[] { ID(), codeSnippets.BasicReturnTypeComExceptionHandling("int") };
+            yield return new[] { ID(), codeSnippets.BasicReturnTypeComExceptionHandling("uint") };
+            // NaN
+            yield return new[] { ID(), codeSnippets.BasicReturnTypeComExceptionHandling("float") };
+            yield return new[] { ID(), codeSnippets.BasicReturnTypeComExceptionHandling("double") };
+            // Default Value
+            yield return new[] { ID(), codeSnippets.BasicReturnTypeComExceptionHandling("nint") };
+            // Void
+            yield return new[] { ID(), codeSnippets.BasicReturnTypeComExceptionHandling("void") };
+
+        }
+        public static IEnumerable<object[]> SharedCustomCollectionsSnippets(int generator)
+        {
+            var codeSnippets = new CodeSnippets((CodeSnippets.GeneratorKind)generator);
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<byte[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<sbyte[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<short[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<ushort[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<int[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<uint[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<long[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<ulong[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<float[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<double[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<IntPtr[]>() };
+            yield return new[] { ID(), codeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<UIntPtr[]>() };
+
+        }
+        public static IEnumerable<object[]> CodeSnippetsToCompile()
+        {
 
             // Custom type marshalling managed-to-unmanaged
             yield return new[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets.ManagedToUnmanaged>.Stateless.ParametersAndModifiers };
@@ -113,21 +153,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets.Bidirectional>.Stateful.MarshalUsingParametersAndModifiers };
             yield return new[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets.Bidirectional>.Stateful.RefParameter };
             yield return new[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets.Bidirectional>.Stateful.OptionalStackallocParametersAndModifiers };
-
-            // SafeHandles
-            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiersManagedToUnmanaged("Microsoft.Win32.SafeHandles.SafeFileHandle") };
-
-            // Exception Handling
-            // HResult
-            yield return new[] { ID(), CodeSnippets.BasicReturnTypeComExceptionHandling("int") };
-            yield return new[] { ID(), CodeSnippets.BasicReturnTypeComExceptionHandling("uint") };
-            // NaN
-            yield return new[] { ID(), CodeSnippets.BasicReturnTypeComExceptionHandling("float") };
-            yield return new[] { ID(), CodeSnippets.BasicReturnTypeComExceptionHandling("double") };
-            // Default Value
-            yield return new[] { ID(), CodeSnippets.BasicReturnTypeComExceptionHandling("nint") };
-            // Void
-            yield return new[] { ID(), CodeSnippets.BasicReturnTypeComExceptionHandling("void") }; 
         }
 
         public static IEnumerable<object[]> CustomCollections()
@@ -215,18 +240,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new[] { ID(), CustomCollectionMarshallingCodeSnippets<CodeSnippets.ManagedToUnmanaged>.Stateful.NonBlittableElementByValue };
             yield return new[] { ID(), CustomCollectionMarshallingCodeSnippets<CodeSnippets.ManagedToUnmanaged>.Stateful.NonBlittableElementNativeToManagedOnlyOutParameter };
             yield return new[] { ID(), CustomCollectionMarshallingCodeSnippets<CodeSnippets.ManagedToUnmanaged>.Stateful.NonBlittableElementNativeToManagedOnlyReturnValue };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<byte[]>() };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<sbyte[]>() };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<short[]>() };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<ushort[]>() };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<int[]>() };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<uint[]>() };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<long[]>() };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<ulong[]>() };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<float[]>() };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<double[]>() };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<IntPtr[]>() };
-            yield return new[] { ID(), CodeSnippets.MarshalUsingCollectionCountInfoParametersAndModifiers<UIntPtr[]>() };
             yield return new[] { ID(), CustomCollectionMarshallingCodeSnippets<CodeSnippets.Bidirectional>.Stateless.DefaultMarshallerParametersAndModifiers<byte>() };
             yield return new[] { ID(), CustomCollectionMarshallingCodeSnippets<CodeSnippets.Bidirectional>.Stateless.DefaultMarshallerParametersAndModifiers<sbyte>() };
             yield return new[] { ID(), CustomCollectionMarshallingCodeSnippets<CodeSnippets.Bidirectional>.Stateless.DefaultMarshallerParametersAndModifiers<short>() };
@@ -287,6 +300,8 @@ namespace ComInterfaceGenerator.Unit.Tests
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompile))]
         [MemberData(nameof(CustomCollections))]
+        [MemberData(nameof(SharedCodeSnippets), (int)CodeSnippets.GeneratorKind.VTableIndexStubGenerator)]
+        [MemberData(nameof(SharedCustomCollectionsSnippets), (int)CodeSnippets.GeneratorKind.VTableIndexStubGenerator)]
         public async Task ValidateVTableIndexSnippets(string id, string source)
         {
             _ = id;
@@ -299,6 +314,26 @@ namespace ComInterfaceGenerator.Unit.Tests
             Assert.Empty(generatorDiags);
 
             TestUtils.AssertPostSourceGeneratorCompilation(newComp, "CS0105");
+        }
+
+        [Theory]
+        [MemberData(nameof(SharedCodeSnippets), (int)CodeSnippets.GeneratorKind.ComInterfaceGenerator)]
+        // Bug: https://github.com/dotnet/runtime/issues/82504
+        // [MemberData(nameof(SharedCustomCollectionsSnippets), (int)CodeSnippets.GeneratorKind.ComInterfaceGenerator)]
+        public async Task ValidateComInterfaceSnippets(string id, string source)
+        {
+            _ = id;
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            // Allow the Native nested type name to be missing in the pre-source-generator compilation
+            // We allow duplicate usings here since some of the shared snippets add a using for System.Runtime.InteropServices.Marshalling when we already have one in our base snippets.
+            TestUtils.AssertPreSourceGeneratorCompilation(comp, "CS0426", "CS0105");
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.ComInterfaceGenerator());
+            Assert.Empty(generatorDiags);
+
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp, "CS0105",
+                // ComWrappersUnwrapper is inaccessible due to its protection level
+                "CS0122");
         }
     }
 }
