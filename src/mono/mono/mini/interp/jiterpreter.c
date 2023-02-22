@@ -195,31 +195,6 @@ mono_jiterp_value_copy (void *dest, void *src, MonoClass *klass) {
 	mono_value_copy_internal(dest, src, klass);
 }
 
-/*
-EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_strlen_ref (MonoString **ppString, int *result) {
-	MonoString *pString = *ppString;
-	if (!pString)
-		return 0;
-
-	*result = mono_string_length_internal(pString);
-	return 1;
-}
-*/
-
-EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_getchr_ref (MonoString **ppString, int *pIndex, int *result) {
-	int index = *pIndex;
-	MonoString *pString = *ppString;
-	if (!pString)
-		return 0;
-	if ((index < 0) || (index >= mono_string_length_internal(pString)))
-		return 0;
-
-	*result = mono_string_chars_internal(pString)[index];
-	return 1;
-}
-
 EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_try_newobj_inlined (MonoObject **destination, MonoVTable *vtable) {
 	*destination = 0;
@@ -519,6 +494,7 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 #define JITERP_MEMBER_STRING_DATA 3
 #define JITERP_MEMBER_IMETHOD 4
 #define JITERP_MEMBER_DATA_ITEMS 5
+#define JITERP_MEMBER_RMETHOD 6
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -536,6 +512,8 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (InterpFrame, imethod);
 		case JITERP_MEMBER_DATA_ITEMS:
 			return offsetof (InterpMethod, data_items);
+		case JITERP_MEMBER_RMETHOD:
+			return offsetof (JiterpEntryDataHeader, rmethod);
 		default:
 			g_assert_not_reached();
 	}

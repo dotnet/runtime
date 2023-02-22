@@ -381,23 +381,53 @@ export function generate_wasm_body (
                 break;
             }
 
-            case MintOpcode.MINT_GETCHR:
+            case MintOpcode.MINT_GETCHR: {
                 builder.block();
-                append_ldloca(builder, getArgU16(ip, 2), 0, true);
-                append_ldloca(builder, getArgU16(ip, 3), 0, true);
-                append_ldloca(builder, getArgU16(ip, 1), 4, true);
-                builder.callImport("getchr");
+                // index
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+                // stash it, we'll be using it multiple times
+                builder.local("math_lhs32", WasmOpcode.tee_local);
+                // str
+                append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
+                // get string length
+                builder.appendU8(WasmOpcode.i32_load);
+                builder.appendMemarg(getMemberOffset(JiterpMember.StringLength), 2);
+                // index < length
+                builder.appendU8(WasmOpcode.i32_lt_s);
+                // index >= 0
+                builder.local("math_lhs32");
+                builder.i32_const(0);
+                builder.appendU8(WasmOpcode.i32_ge_s);
+                // (index >= 0) && (index < length)
+                builder.appendU8(WasmOpcode.i32_and);
+                // If either of the index checks failed we will fall through to the bailout
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
                 append_bailout(builder, ip, BailoutReason.StringOperationFailed);
                 builder.endBlock();
-                break;
 
-                /*
-                EMSCRIPTEN_KEEPALIVE int mono_jiterp_getitem_span (
-                    void **destination, MonoSpanOfVoid *span, int index, size_t element_size
-                ) {
-                */
+                // The null check and range check both passed so we can load the character now
+                // Pre-load destination for the stloc at the end (we can't do this inside the block above)
+                builder.local("pLocals");
+                // (index * 2) + offsetof(MonoString, chars) + pString
+                builder.local("math_lhs32");
+                builder.i32_const(2);
+                builder.appendU8(WasmOpcode.i32_mul);
+                builder.local("cknull_ptr");
+                builder.appendU8(WasmOpcode.i32_add);
+                // Load char
+                builder.appendU8(WasmOpcode.i32_load16_u);
+                builder.appendMemarg(getMemberOffset(JiterpMember.StringData), 1);
+                // Store into result
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                break;
+            }
+
+            /*
+            EMSCRIPTEN_KEEPALIVE int mono_jiterp_getitem_span (
+                void **destination, MonoSpanOfVoid *span, int index, size_t element_size
+            ) {
+            */
             case MintOpcode.MINT_GETITEM_SPAN:
             case MintOpcode.MINT_GETITEM_LOCALSPAN: {
                 const elementSize = getArgI16(ip, 4);

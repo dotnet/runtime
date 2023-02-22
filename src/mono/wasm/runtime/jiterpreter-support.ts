@@ -942,7 +942,8 @@ export const enum JiterpMember {
     StringLength = 2,
     StringData = 3,
     Imethod = 4,
-    DataItems = 5
+    DataItems = 5,
+    Rmethod = 6
 }
 
 const memberOffsets : { [index: number] : number } = {};
