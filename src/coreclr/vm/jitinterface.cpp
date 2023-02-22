@@ -1748,7 +1748,7 @@ void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
 
     pInfo->tlsIndex = _tls_index;
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-    pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
+    pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks);
     pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
 
     //pInfo->tlsIndex.accessType = IAT_VALUE;
@@ -1762,7 +1762,7 @@ void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
     //pInfo->offsetOfThreadStaticBlocks.accessType = IAT_VALUE;
     //pInfo->offsetOfThreadStaticBlocks.addr = PTR_VOID(dac_cast<PTR_BYTE>(CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks)));
 
-    pInfo->threadStaticBlockIndex = 0;
+    pInfo->threadStaticBlockIndex = 9999;
 
     EE_TO_JIT_TRANSITION();
 }
