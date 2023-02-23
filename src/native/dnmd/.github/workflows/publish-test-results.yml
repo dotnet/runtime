@@ -1,0 +1,41 @@
+name: Publish Test Results
+
+on:
+  workflow_run:
+    workflows: ["DNMD"]
+    types:
+      - completed
+
+jobs:
+  unit-test-results:
+    name: Unit Test Results
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
+      issues: read
+    if: github.event.workflow_run.conclusion != 'skipped'
+
+    steps:
+      - name: Download and Extract Artifacts
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        run: |
+           mkdir -p artifacts && cd artifacts
+
+           artifacts_url=${{ github.event.workflow_run.artifacts_url }}
+
+           gh api "$artifacts_url" -q '.artifacts[] | select(.name | contains(\"TestResults\")) | [.name, .archive_download_url] | @tsv' | while read artifact
+           do
+             IFS=$'\t' read name url <<< "$artifact"
+             gh api $url > "$name.zip"
+             unzip -d "$name" "$name.zip"
+           done
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        with:
+          commit: ${{ github.event.workflow_run.head_sha }}
+          event_file: artifacts/Event File/event.json
+          event_name: ${{ github.event.workflow_run.event }}
+          files: "artifacts/**/*.xml"
