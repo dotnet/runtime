@@ -3116,58 +3116,75 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_CALL_INFO*      pCallInfo)
 {
-    if ((pCallInfo->methodFlags & CORINFO_FLG_EnC) && !(pCallInfo->classFlags & CORINFO_FLG_INTERFACE))
+    const bool isInterface = (pCallInfo->classFlags & CORINFO_FLG_INTERFACE) == CORINFO_FLG_INTERFACE;
+
+    if ((pCallInfo->methodFlags & CORINFO_FLG_EnC) && !isInterface)
     {
         NO_WAY("Virtual call to a function added via EnC is not supported");
     }
+
+    GenTreeCall* call = nullptr;
 
     // NativeAOT generic virtual method
     if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         GenTree* runtimeMethodHandle =
             impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
-        return gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
+        call = gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
     }
 
 #ifdef FEATURE_READYTORUN
-    if (opts.IsReadyToRun())
+    else if (opts.IsReadyToRun())
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
         {
-            GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr);
-
+            call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr);
             call->setEntryPoint(pCallInfo->codePointerLookup.constLookup);
-
-            return call;
         }
-
         // We need a runtime lookup. NativeAOT has a ReadyToRun helper for that too.
-        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        else if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             GenTree* ctxTree = getRuntimeContextTree(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind);
 
-            return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
+            call = impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
                                              &pCallInfo->codePointerLookup.lookupKind, ctxTree);
         }
     }
 #endif
 
-    // Get the exact descriptor for the static callsite
-    GenTree* exactTypeDesc = impParentClassTokenToHandle(pResolvedToken);
-    if (exactTypeDesc == nullptr)
-    { // compDonotInline()
-        return nullptr;
+    if (call == nullptr)
+    {
+        // Get the exact descriptor for the static callsite
+        GenTree* exactTypeDesc = impParentClassTokenToHandle(pResolvedToken);
+        if (exactTypeDesc == nullptr)
+        {
+            assert(compIsForInlining());
+            return nullptr;
+        }
+
+        GenTree* exactMethodDesc = impTokenToHandle(pResolvedToken);
+        if (exactMethodDesc == nullptr)
+        {
+            assert(compIsForInlining());
+            return nullptr;
+        }
+
+        // Call helper function.  This gets the target address of the final destination callsite.
+        //
+        call = gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
     }
 
-    GenTree* exactMethodDesc = impTokenToHandle(pResolvedToken);
-    if (exactMethodDesc == nullptr)
-    { // compDonotInline()
-        return nullptr;
+    assert(call != nullptr);
+
+    if (isInterface)
+    {
+        // Annotate helper so later on if helper result is unconsumed we know it is not sound
+        // to optimize the call into a null check.
+        //
+        call->gtCallMoreFlags |= GTF_CALL_M_LDVIRTFTN_INTERFACE;
     }
 
-    // Call helper function.  This gets the target address of the final destination callsite.
-
-    return gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
+    return call;
 }
 
 //------------------------------------------------------------------------
