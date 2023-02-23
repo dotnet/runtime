@@ -146,9 +146,7 @@
           DependsOnTargets="GenerateWasiPropsAndRspFiles;GenerateManagedToNative;BundleTimeZones">
 
     <ItemGroup>
-      <ICULibNativeFiles Include="$(WASI_SDK_PATH)share/wasi-sysroot/lib/wasm32-wasi/libc++.a;
-                                  $(WASI_SDK_PATH)share/wasi-sysroot/lib/wasm32-wasi/libc++abi.a;
-                                  $(ICULibDir)/libicuuc.a;
+      <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a;
                                   $(ICULibDir)/libicudata.a" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
