@@ -11260,8 +11260,6 @@ void CEEJitInfo::allocUnwindInfo (
     ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
 
-;
-
 #endif
 
     EE_TO_JIT_TRANSITION();

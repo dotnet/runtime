@@ -426,7 +426,6 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
         *(&pCtxPtrs->Edi + i) = (&pCtx->Edi + i);
     }
 #elif defined(TARGET_RISCV64) // TARGET_X86
-    // *(&pCtxPtrs->S0) = &pCtx->S0;
     *(&pCtxPtrs->S1) = &pCtx->S1;
     *(&pCtxPtrs->S2) = &pCtx->S2;
     *(&pCtxPtrs->S3) = &pCtx->S3;
