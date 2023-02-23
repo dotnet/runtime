@@ -24,8 +24,8 @@ namespace DebuggerTests
     DebuggerTestFirefox
 #endif
     {
-        public DebuggerTests(ITestOutputHelper testOutput, string driver = "debugger-driver.html", string locale = "en-US")
-                : base(testOutput, driver, locale)
+        public DebuggerTests(ITestOutputHelper testOutput, string locale = "en-US", string driver = "debugger-driver.html")
+                : base(testOutput, locale, driver)
         {}
     }
 
@@ -130,7 +130,7 @@ namespace DebuggerTests
                 Directory.Delete(TempPath, recursive: true);
         }
 
-        public DebuggerTestBase(ITestOutputHelper testOutput, string driver = "debugger-driver.html", string locale)
+        public DebuggerTestBase(ITestOutputHelper testOutput, string locale, string driver = "debugger-driver.html")
         {
             _env = new TestEnvironment(testOutput);
             _testOutput = testOutput;
