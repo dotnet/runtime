@@ -256,16 +256,17 @@ namespace CoreclrTestLib
 
         static bool CollectCrashDumpWithMiniDumpWriteDump(Process process, string crashDumpPath, StreamWriter outputWriter)
         {
+            bool collectedDump = false;
             using (var crashDump = File.OpenWrite(crashDumpPath))
             {
                 var flags = DbgHelp.MiniDumpType.MiniDumpWithFullMemory | DbgHelp.MiniDumpType.MiniDumpIgnoreInaccessibleMemory;
-                bool success = DbgHelp.MiniDumpWriteDump(process.Handle, process.Id, crashDump.SafeFileHandle, flags, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-                if (success)
-                {
-                    TryPrintStackTraceFromDmp(crashDumpPath, outputWriter);
-                }
-                return success;
+                collectedDump = DbgHelp.MiniDumpWriteDump(process.Handle, process.Id, crashDump.SafeFileHandle, flags, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
             }
+            if (collectedDump)
+            {
+                TryPrintStackTraceFromDmp(crashDumpPath, outputWriter);
+            }
+            return collectedDump;
         }
 
         static bool CollectCrashDumpWithCreateDump(Process process, string crashDumpPath, StreamWriter outputWriter)
