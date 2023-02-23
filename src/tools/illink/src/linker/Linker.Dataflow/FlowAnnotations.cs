@@ -126,7 +126,7 @@ namespace ILLink.Shared.TrimAnalysis
 			//   class DerivedAtRuntimeFromBase
 			//   {
 			//       // No point in adding annotation on the return value - nothing will look at it anyway
-			//       // Linker will not see this code, so there are no checks
+			//       // Trimming will not see this code, so there are no checks
 			//       public override Type GetTypeWithFields() { return typeof(TestType); }
 			//   }
 			//
@@ -719,7 +719,7 @@ namespace ILLink.Shared.TrimAnalysis
 			return GetMethodParameterValue (new ParameterProxy (method, (ParameterIndex) 0), damt);
 		}
 
-		// Linker-specific dataflow value creation. Eventually more of these should be shared.
+		// Trimming dataflow value creation. Eventually more of these should be shared.
 		internal SingleValue GetFieldValue (FieldDefinition field)
 			=> field.Name switch {
 				"EmptyTypes" when field.DeclaringType.IsTypeOf (WellKnownType.System_Type) => ArrayValue.Create (0, field.DeclaringType),
