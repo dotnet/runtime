@@ -20,30 +20,34 @@ public class IcuShardingTests : BuildTestBase
     // custom file contains only locales "cy-GB", "is-IS", "bs-BA", "lb-LU" and fallback locale: "en-US":
     private static string s_customIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
     public record SundayNames {
+        public static string English = "Sunday";
         public static string French = "dimanche";
         public static string Spanish = "domingo";
         public static string Chinese = "星期日";
         public static string Japanese = "日曜日";
         public static string Slovak = "nedeľa";
     }
+
+    private const string FallbackSundayNameEnUS = "Sunday";
+
     private static readonly string s_customIcuTestedLocales = $@"new Locale[] {{
         new Locale(""cy-GB"",  ""Dydd Sul""), new Locale(""is-IS"",  ""sunnudagur""), new Locale(""bs-BA"",  ""nedjelja""), new Locale(""lb-LU"",  ""Sonndeg""),
-        new Locale(""fr-FR""), new Locale(""hr-HR""), new Locale(""ko-KR"")
+        new Locale(""fr-FR"", null), new Locale(""hr-HR"", null), new Locale(""ko-KR"", null)
     }}";
-    private static string GetEfigsTestedLocales(string fallbackSundayName="Sunday") =>  $@"new Locale[] {{
-        new Locale(""en-US""), new Locale(""fr-FR"", ""{SundayNames.French}""), new Locale(""es-ES"", ""{SundayNames.Spanish}""),
+    private static string GetEfigsTestedLocales(string fallbackSundayName=FallbackSundayNameEnUS) =>  $@"new Locale[] {{
+        new Locale(""en-US"", ""{SundayNames.English}""), new Locale(""fr-FR"", ""{SundayNames.French}""), new Locale(""es-ES"", ""{SundayNames.Spanish}""),
         new Locale(""pl-PL"", ""{fallbackSundayName}""), new Locale(""ko-KR"", ""{fallbackSundayName}""), new Locale(""cs-CZ"", ""{fallbackSundayName}"")
     }}";
-    private static string GetCjkTestedLocales(string fallbackSundayName="Sunday") =>  $@"new Locale[] {{
-        new Locale(""en-GB""), new Locale(""zh-CN"", ""{SundayNames.Chinese}""), new Locale(""ja-JP"", ""{SundayNames.Japanese}""),
+    private static string GetCjkTestedLocales(string fallbackSundayName=FallbackSundayNameEnUS) =>  $@"new Locale[] {{
+        new Locale(""en-GB"", ""{SundayNames.English}""), new Locale(""zh-CN"", ""{SundayNames.Chinese}""), new Locale(""ja-JP"", ""{SundayNames.Japanese}""),
         new Locale(""fr-FR"", ""{fallbackSundayName}""), new Locale(""hr-HR"", ""{fallbackSundayName}""), new Locale(""it-IT"", ""{fallbackSundayName}"")
     }}";
-    private static string GetNocjkTestedLocales(string fallbackSundayName="Sunday") =>  $@"new Locale[] {{
-        new Locale(""en-AU""), new Locale(""fr-FR"", ""{SundayNames.French}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""),
+    private static string GetNocjkTestedLocales(string fallbackSundayName=FallbackSundayNameEnUS) =>  $@"new Locale[] {{
+        new Locale(""en-AU"", ""{SundayNames.English}""), new Locale(""fr-FR"", ""{SundayNames.French}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""),
         new Locale(""ja-JP"", ""{fallbackSundayName}""), new Locale(""ko-KR"", ""{fallbackSundayName}""), new Locale(""zh-CN"", ""{fallbackSundayName}"")
     }}";
     private static readonly string s_fullIcuTestedLocales = $@"new Locale[] {{
-        new Locale(""en-GB""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""), new Locale(""zh-CN"", ""{SundayNames.Chinese}"")
+        new Locale(""en-GB"", ""{SundayNames.English}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""), new Locale(""zh-CN"", ""{SundayNames.Chinese}"")
     }}";
 
     public static IEnumerable<object?[]> IcuExpectedAndMissingCustomShardTestData(bool aot, RunHost host)
@@ -59,8 +63,8 @@ public class IcuShardingTests : BuildTestBase
             .Multiply(
                 new object[] { "icudt.dat",
                                 $@"new Locale[] {{
-                                    new Locale(""en-GB""), new Locale(""zh-CN"", ""{SundayNames.Chinese}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""),
-                                    new Locale(""xx-yy"") }}" },
+                                    new Locale(""en-GB"", ""{SundayNames.English}""), new Locale(""zh-CN"", ""{SundayNames.Chinese}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""),
+                                    new Locale(""xx-yy"", null) }}" },
                 new object[] { "icudt_EFIGS.dat", GetEfigsTestedLocales() },
                 new object[] { "icudt_CJK.dat", GetCjkTestedLocales() },
                 new object[] { "icudt_no_CJK.dat", GetNocjkTestedLocales() })
@@ -95,41 +99,56 @@ public class IcuShardingTests : BuildTestBase
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
-    private static string GetProgramText(string testedLocales, bool onlyPredefinedCultures=false) => $@"
+    private static string GetProgramText(string testedLocales, bool onlyPredefinedCultures=false, string fallbackSundayName=FallbackSundayNameEnUS) => $@"
+        #nullable enable
+
         using System;
         using System.Globalization;
 
-        bool onlyPredefinedCultures = {onlyPredefinedCultures.ToString().ToLower()};
-        Locale[] locales = {testedLocales};
-        foreach (var loc in locales)
+        Console.WriteLine($""Current culture: '{{CultureInfo.CurrentCulture.Name}}'"");
+
+        string fallbackSundayName = ""{fallbackSundayName}"";
+        bool onlyPredefinedCultures = {(onlyPredefinedCultures ? "true" : "false")};
+        Locale[] localesToTest = {testedLocales};
+
+        bool fail = false;
+        foreach (var testLocale in localesToTest)
         {{
+            bool expectMissing = string.IsNullOrEmpty(testLocale.SundayName);
+            bool ctorShouldFail = expectMissing && onlyPredefinedCultures;
+            CultureInfo culture;
+
             try
             {{
-                var culture = new CultureInfo(loc.Code);
-                var localizedSundayName = culture.DateTimeFormat.GetDayName(new DateTime(2000,01,02).DayOfWeek);
-                if (loc.SundayName != localizedSundayName)
+                culture = new CultureInfo(testLocale.Code);
+                if (ctorShouldFail)
                 {{
-                    Console.WriteLine($""Error: incorrect localized value for Sunday in locale {{loc.Code}}. Expected {{loc.SundayName}} but got {{localizedSundayName}}."");
-                    return -1;
+                    Console.WriteLine($""CultureInfo..ctor did not throw an exception for {{testLocale.Code}} as was expected."");
+                    fail = true;
+                    continue;
                 }}
             }}
-            catch(Exception ex)
+            catch(CultureNotFoundException cnfe) when (ctorShouldFail && cnfe.Message.Contains($""{{testLocale.Code}} is an invalid culture identifier.""))
             {{
-                if (!onlyPredefinedCultures)
-                {{
-                    Console.WriteLine($""Error: for locale {{loc.Code}} encountered an exception. This is expected only when OnlyPredefinedCultures=true. Ex: {{ex}}."");
-                    return -1;
-                }}
-                if (!ex.Message.Contains(""Culture is not supported""))
-                {{
-                    Console.WriteLine($""Error: for locale {{loc.Code}} encountered an exception from different reason than expected. Ex: {{ex}}."");
-                    return -1;
-                }}
+                Console.WriteLine($""{{testLocale.Code}}: Success. .ctor failed as expected."");
+                continue;
             }}
-        }}
-        return 42;
 
-        public record Locale(string Code, string SundayName=""Sunday"");
+            string expectedSundayName = (expectMissing && !onlyPredefinedCultures)
+                                            ? fallbackSundayName
+                                            : testLocale.SundayName;
+            var actualLocalizedSundayName = culture.DateTimeFormat.GetDayName(new DateTime(2000,01,02).DayOfWeek);
+            if (expectedSundayName != actualLocalizedSundayName)
+            {{
+                Console.WriteLine($""Error: incorrect localized value for Sunday in locale {{testLocale.Code}}. Expected '{{expectedSundayName}}' but got '{{actualLocalizedSundayName}}'."");
+                fail = true;
+                continue;
+            }}
+            Console.WriteLine($""{{testLocale.Code}}: Success. Sunday name: {{actualLocalizedSundayName}}"");
+        }}
+        return fail ? -1 : 42;
+
+        public record Locale(string Code, string? SundayName);
         ";
 
     private void TestIcuShards(BuildArgs buildArgs, string shardName, string testedLocales, RunHost host, string id, bool onlyPredefinedCultures=false)
@@ -144,6 +163,7 @@ public class IcuShardingTests : BuildTestBase
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: extraProperties);
 
         string programText = GetProgramText(testedLocales, onlyPredefinedCultures);
+        _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
         (_, string output) = BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
@@ -179,6 +199,7 @@ public class IcuShardingTests : BuildTestBase
         buildArgs = ExpandBuildArgs(buildArgs);
 
         string programText = GetProgramText(testedLocales);
+        _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
         (_, string output) = BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
@@ -199,6 +220,7 @@ public class IcuShardingTests : BuildTestBase
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<InvariantGlobalization>{invariant}</InvariantGlobalization><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
         string programText = GetProgramText(testedLocales);
+        _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
         (_, string output) = BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
@@ -222,6 +244,7 @@ public class IcuShardingTests : BuildTestBase
 
         string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
         string programText = GetProgramText(testedLocales);
+        _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
         (_, string output) = BuildProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
