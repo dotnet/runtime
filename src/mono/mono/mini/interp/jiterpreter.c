@@ -1229,6 +1229,26 @@ mono_jiterp_math_tan (double value)
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_stelem_ref (
+	MonoArray *o, gint32 aindex, MonoObject *ref
+) {
+	if (!o)
+		return 0;
+	if (aindex >= mono_array_length_internal (o))
+		return 0;
+
+	if (ref) {
+		// FIXME push/pop LMF
+		gboolean isinst = mono_jiterp_isinst (ref, m_class_get_element_class (mono_object_class (o)));
+		if (!isinst)
+			return 0;
+	}
+
+	mono_array_setref_fast ((MonoArray *) o, aindex, ref);
+	return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_trace_transfer (
 	int displacement, JiterpreterThunk trace, void *frame, void *pLocals
 ) {
