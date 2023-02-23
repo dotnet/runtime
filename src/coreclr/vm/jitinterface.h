@@ -407,7 +407,6 @@ extern "C"
 };
 
 
-
 /*********************************************************************/
 /*********************************************************************/
 class CEEInfo : public ICorJitInfo
@@ -439,6 +438,16 @@ public:
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
                             _Out_writes_ (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
     static uint32_t ThreadLocalOffset(void* p);
+    static TypeIDMap g_threadStaticBlockTypeIDMap;
+    FORCEINLINE static void InitTypeMap()
+    {
+        g_threadStaticBlockTypeIDMap.Init();
+    }
+
+    FORCEINLINE static UINT32 GetTypeIndex(PTR_MethodTable pMT)
+    {
+        return g_threadStaticBlockTypeIDMap.GetTypeID(pMT);
+    }
 
 
     DWORD getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftnHnd);

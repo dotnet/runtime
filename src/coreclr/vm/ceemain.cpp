@@ -613,6 +613,8 @@ void EEStartupHelper()
         // This needs to be done before config because config uses SString::Empty()
         SString::Startup();
 
+        CEEInfo::InitTypeMap();
+
         IfFailGo(EEConfig::Setup());
 
 

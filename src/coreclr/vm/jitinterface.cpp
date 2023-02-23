@@ -66,8 +66,13 @@
 #include "tailcallhelp.h"
 
 EXTERN_C uint32_t _tls_index;
+#ifdef _MSC_VER
 __declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks;
 __declspec(selectany) __declspec(thread) void** t_threadStaticBlocks;
+#else
+EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
+EXTERN_C __thread void** t_threadStaticBlocks;
+#endif
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
@@ -1732,6 +1737,8 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 }
 
 /*********************************************************************/
+TypeIDMap CEEInfo::g_threadStaticBlockTypeIDMap;
+
 void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
                                        CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
 {
@@ -1750,7 +1757,7 @@ void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
     pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks);
     pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
-
+     
     //pInfo->tlsIndex.accessType = IAT_VALUE;
     //pInfo->tlsIndex.addr = PTR_VOID(dac_cast<PTR_BYTE>(_tls_index));
 
@@ -1762,8 +1769,10 @@ void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
     //pInfo->offsetOfThreadStaticBlocks.accessType = IAT_VALUE;
     //pInfo->offsetOfThreadStaticBlocks.addr = PTR_VOID(dac_cast<PTR_BYTE>(CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks)));
 
-    pInfo->threadStaticBlockIndex = 9999;
-
+    UINT32 typeIndex =  CEEInfo::GetTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
+    pInfo->threadStaticBlockIndex = typeIndex;
+    
     EE_TO_JIT_TRANSITION();
 }
 
