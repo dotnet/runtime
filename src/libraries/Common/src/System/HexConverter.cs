@@ -296,14 +296,15 @@ namespace System
                 }
                 else
                 {
-                    // MultiplyAddAdjacent doesn't exist on ARM
-                    Vector128<int> evens = AdvSimd.ShiftLeftLogicalWideningLower(
-                        AdvSimd.Arm64.UnzipEven(nibbles.AsInt16(),
-                        Vector128.Create((byte)1).AsInt16()).GetLower(), 12);
-                    Vector128<int> odds = AdvSimd.Arm64.TransposeOdd(
-                        nibbles.AsInt16(),
-                        Vector128<short>.Zero).AsInt32();
-                    output = Vector128.Add(evens, odds).AsByte();
+                    // Workaround for missing MultiplyAddAdjacent on ARM
+                    Vector128<short> ones = Vector128.Create(0x10010).AsInt16();
+                    Vector128<short> vl = AdvSimd.Multiply(
+                        AdvSimd.ZeroExtendWideningLower(nibbles.GetLower()).AsInt16(), ones).AsInt16();
+                    Vector128<short> vu = AdvSimd.Multiply(
+                        AdvSimd.ZeroExtendWideningLower(nibbles.GetUpper()).AsInt16(), ones).AsInt16();
+                    output = AdvSimd.AddSaturate(
+                        AdvSimd.Arm64.UnzipEven(vl, vu),
+                        AdvSimd.Arm64.UnzipOdd(vl, vu)).AsByte();
                 }
                 // Accumulate output in lower INT64 half and take care about endianness
                 output = Vector128.Shuffle(output, Vector128.Create((byte)0, 2, 4, 6, 8, 10, 12, 14, 0, 0, 0, 0, 0, 0, 0, 0));
