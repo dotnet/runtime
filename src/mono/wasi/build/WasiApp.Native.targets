@@ -168,7 +168,7 @@
 
     <ItemGroup>
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
-      <_WasmCommonCFlags Include="-DGEN_ASSEMBLIES=1" />
+      <_WasmCommonCFlags Condition="'$(WasmSingleFileBundle)' == 'true'" Include="-DGEN_ASSEMBLIES=1" />
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <!--<_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />-->
