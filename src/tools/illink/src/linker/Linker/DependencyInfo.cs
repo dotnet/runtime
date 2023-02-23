@@ -112,13 +112,13 @@ namespace Mono.Linker
 		InstantiatedByCtor = 65, // ctor -> its declaring type (indicating that it was marked instantiated due to the ctor)
 		OverrideOnInstantiatedType = 66, // instantiated type -> override method on the type
 
-		// Linker-specific behavior (preservation hints, patterns, user inputs, linker outputs, etc.)
+		// Trimming-specific behavior (preservation hints, patterns, user inputs, trimming outputs, etc.)
 		DynamicDependency = 67, // DynamicDependency attribute -> member
 		PreservedDependency = 67, // PreserveDependency attribute -> member
 		AccessedViaReflection = 68, // method -> detected member accessed via reflection from that method
 		PreservedMethod = 69, // type/method -> preserved method (explicitly preserved in Annotations by XML or other steps)
 		TypePreserve = 70, // type -> field/method preserved for the type (explicitly set in Annotations by XML or other steps)
-		DisablePrivateReflection = 71, // type/method -> DisablePrivateReflection attribute added by linkerf
+		DisablePrivateReflection = 71, // type/method -> DisablePrivateReflection attribute added by trimming
 		DynamicallyAccessedMember = 72, // DynamicallyAccessedMember attribute -> member
 
 		// Built-in knowledge of special runtime/diagnostic subsystems
@@ -129,7 +129,7 @@ namespace Mono.Linker
 		EventSourceProviderField = 76, // EventSource derived type -> fields on nested Keywords/Tasks/Opcodes provider classes
 		MethodForSpecialType = 77, // type -> methods kept (currently used for MulticastDelegate)
 
-		// Linker internals, requirements for certain optimizations
+		// Trimming internals, requirements for certain optimizations
 		UnreachableBodyRequirement = 78, // method -> well-known type required for unreachable bodies optimization
 		DisablePrivateReflectionRequirement = 79, // null -> DisablePrivateReflectionAttribute type/methods (note that no specific source is reported)
 		DynamicInterfaceCastableImplementation = 80, // type -> type is marked with IDynamicInterfaceCastableImplementationAttribute and implements the provided interface
