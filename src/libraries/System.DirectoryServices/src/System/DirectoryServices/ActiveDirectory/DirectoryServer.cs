@@ -626,14 +626,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal unsafe void SyncReplicaAllHelper(IntPtr handle, SyncReplicaFromAllServersCallback syncAllCallback, string partition, SyncFromAllServersOptions option, SyncUpdateCallback? callback, SafeLibraryHandle libHandle)
         {
-            IntPtr errorInfo = (IntPtr)0;
+            void* errorInfo = null;
 
             if (!Partitions.Contains(partition))
                 throw new ArgumentException(SR.ServerNotAReplica, nameof(partition));
 
             // we want to return the dn instead of DNS guid
             // call DsReplicaSyncAllW
-            var dsReplicaSyncAllW = (delegate* unmanaged<IntPtr, char*, int, IntPtr, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
+            var dsReplicaSyncAllW = (delegate* unmanaged<IntPtr, char*, int, IntPtr, IntPtr, void**, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
             if (dsReplicaSyncAllW == null)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
@@ -650,9 +650,9 @@ namespace System.DirectoryServices.ActiveDirectory
             try
             {
                 // error happens during the synchronization
-                if (errorInfo != (IntPtr)0)
+                if (errorInfo is not null)
                 {
-                    SyncFromAllServersOperationException? e = ExceptionHelper.CreateSyncAllException(errorInfo, false);
+                    SyncFromAllServersOperationException? e = ExceptionHelper.CreateSyncAllException((IntPtr)errorInfo, false);
                     if (e == null)
                         return;
                     else
@@ -668,8 +668,8 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 // release the memory
-                if (errorInfo != (IntPtr)0)
-                    LocalFree(errorInfo);
+                if (errorInfo is not null)
+                    global::Interop.Kernel32.LocalFree(errorInfo);
             }
         }
 
@@ -686,9 +686,6 @@ namespace System.DirectoryServices.ActiveDirectory
                 dsReplicaFreeInfo((int)type, value);
             }
         }
-
-        private static unsafe void LocalFree(nint ptr) =>
-            global::Interop.Kernel32.LocalFree((void*)ptr);
 
         internal unsafe void SyncReplicaHelper(IntPtr dsHandle, bool isADAM, string partition, string? sourceServer, int option, SafeLibraryHandle libHandle)
         {

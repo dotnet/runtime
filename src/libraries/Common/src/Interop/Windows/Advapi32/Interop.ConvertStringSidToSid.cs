@@ -12,5 +12,10 @@ internal static partial class Interop
         internal static partial BOOL ConvertStringSidToSid(
             string stringSid,
             out IntPtr ByteArray);
+
+        [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertStringSidToSidW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial BOOL ConvertStringSidToSid(
+            string StringSid,
+            out void* Sid);
     }
 }

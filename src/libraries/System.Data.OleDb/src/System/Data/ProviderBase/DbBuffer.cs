@@ -14,7 +14,7 @@ namespace System.Data.ProviderBase
     {
         private readonly int _bufferLength;
 
-        protected DbBuffer(int initialSize) : base(IntPtr.Zero, true)
+        protected unsafe DbBuffer(int initialSize) : base(IntPtr.Zero, true)
         {
             if (0 < initialSize)
             {
@@ -24,7 +24,7 @@ namespace System.Data.ProviderBase
                 { }
                 finally
                 {
-                    base.handle = LocalAllocZeroed(initialSize);
+                    base.handle = (IntPtr)Interop.Kernel32.LocalAllocZeroed((uint)initialSize);
                 }
                 if (IntPtr.Zero == base.handle)
                 {
@@ -341,23 +341,17 @@ namespace System.Data.ProviderBase
             return BitConverter.Int32BitsToSingle(value);
         }
 
-        protected override bool ReleaseHandle()
+        protected override unsafe bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once.
-            IntPtr ptr = base.handle;
+            void* ptr = (void*)base.handle;
             base.handle = IntPtr.Zero;
-            if (IntPtr.Zero != ptr)
+            if (ptr is not null)
             {
-                LocalFree(ptr);
+                Interop.Kernel32.LocalFree(ptr);
             }
             return true;
         }
-
-        private static unsafe nint LocalAllocZeroed(int initialSize) =>
-            (nint)Interop.Kernel32.LocalAllocZeroed((uint)initialSize);
-
-        private static unsafe void LocalFree(nint ptr) =>
-            Interop.Kernel32.LocalFree((void*)ptr);
 
         private void StructureToPtr(int offset, object structure)
         {
