@@ -524,35 +524,32 @@ namespace Internal.IL.Stubs
             codeStream.Emit(ILOpcode.call, emitter.NewToken(getObjectArrayMethod));
             codeStream.EmitStLoc(argsLocal);
 
-            if (Signature.Length > 0)
+            for (int i = 0; i < Signature.Length; i++)
             {
-                for (int i = 0; i < Signature.Length; i++)
+                TypeDesc paramType = Signature[i];
+                bool paramIsByRef = false;
+
+                if (paramType.IsByRef)
                 {
-                    TypeDesc paramType = Signature[i];
-                    bool paramIsByRef = false;
-
-                    if (paramType.IsByRef)
-                    {
-                        hasRefArgs |= paramType.IsByRef;
-                        paramIsByRef = true;
-                        paramType = ((ByRefType)paramType).ParameterType;
-                    }
-
                     hasRefArgs |= paramType.IsByRef;
-
-                    codeStream.EmitLdLoc(argsLocal);
-                    codeStream.EmitLdc(i);
-                    codeStream.EmitLdArg(i + 1);
-
-                    ILToken paramToken = emitter.NewToken(paramType);
-
-                    if (paramIsByRef)
-                    {
-                        codeStream.Emit(ILOpcode.ldobj, paramToken);
-                    }
-                    codeStream.Emit(ILOpcode.box, paramToken);
-                    codeStream.Emit(ILOpcode.stelem_ref);
+                    paramIsByRef = true;
+                    paramType = ((ByRefType)paramType).ParameterType;
                 }
+
+                hasRefArgs |= paramType.IsByRef;
+
+                codeStream.EmitLdLoc(argsLocal);
+                codeStream.EmitLdc(i);
+                codeStream.EmitLdArg(i + 1);
+
+                ILToken paramToken = emitter.NewToken(paramType);
+
+                if (paramIsByRef)
+                {
+                    codeStream.Emit(ILOpcode.ldobj, paramToken);
+                }
+                codeStream.Emit(ILOpcode.box, paramToken);
+                codeStream.Emit(ILOpcode.stelem_ref);
             }
 
             ILExceptionRegionBuilder tryFinallyRegion = null;
