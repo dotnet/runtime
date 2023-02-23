@@ -1918,7 +1918,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				}
 
 				if (vtable [im_slot] == NULL) {
-					if (!(im->flags & METHOD_ATTRIBUTE_ABSTRACT) & !mono_class_is_abstract(klass)) {
+					if (!(im->flags & METHOD_ATTRIBUTE_ABSTRACT) && !mono_class_is_abstract(klass)) {
 						TRACE_INTERFACE_VTABLE (printf ("    Using default iface method %s.\n", mono_method_full_name (im, 1)));
 						vtable [im_slot] = im;
 					}
