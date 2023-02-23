@@ -134,8 +134,7 @@
       <WorkloadIdForTesting Include="wasi-experimental"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
                             Variant="latest"
-                            Version="$(PackageVersionForWorkloadManifests)"
-                            VersionBand="$(SdkBandVersion)" />
+                            Version="$(PackageVersionForWorkloadManifests)" />
       <WorkloadCombinationsToInstall Include="latest" Variants="latest" />
     </ItemGroup>
   </Target>
