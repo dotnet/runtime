@@ -118,8 +118,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         public bool LoadRemote { get; set; }
     }
 
-    protected override bool ExecuteInternal()
+    protected override bool ValidateArguments()
     {
+        if (!base.ValidateArguments())
+            return false;
+
         if (!File.Exists(MainJS))
             throw new LogAsErrorException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
@@ -130,6 +133,14 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             Log.LogError("Cannot build Wasm app without any assemblies");
             return false;
         }
+
+        return true;
+    }
+
+    protected override bool ExecuteInternal()
+    {
+        if (!ValidateArguments())
+            return false;
 
         var _assemblies = new List<string>();
         foreach (var asm in Assemblies!)
@@ -183,6 +194,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
         }
+
         var mainFileName=Path.GetFileName(MainJS);
         Log.LogMessage(MessageImportance.Low, $"MainJS path: '{MainJS}', fileName : '{mainFileName}', destination: '{Path.Combine(AppDir, mainFileName)}'");
         FileCopyChecked(MainJS!, Path.Combine(AppDir, mainFileName), string.Empty);
@@ -226,43 +238,30 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         config.DebugLevel = DebugLevel;
 
-        if (SatelliteAssemblies != null)
+        ProcessSatelliteAssemblies(args =>
         {
-            foreach (var assembly in SatelliteAssemblies)
+            string name = Path.GetFileName(args.fullPath);
+            string directory = Path.Combine(AppDir, config.AssemblyRootFolder, args.culture);
+            Directory.CreateDirectory(directory);
+            if (UseWebcil)
             {
-                string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
-                string fullPath = assembly.GetMetadata("Identity");
-                if (string.IsNullOrEmpty(culture))
-                {
-                    Log.LogWarning(null, "WASM0002", "", "", 0, 0, 0, 0, $"Missing CultureName metadata for satellite assembly {fullPath}");
-                    continue;
-                }
-                // FIXME: validate the culture?
-
-                string name = Path.GetFileName(fullPath);
-                string directory = Path.Combine(AppDir, config.AssemblyRootFolder, culture);
-                Directory.CreateDirectory(directory);
-                if (UseWebcil)
-                {
-                    var tmpWebcil = Path.GetTempFileName();
-                    var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: fullPath, outputPath: tmpWebcil, logger: Log);
-                    webcilWriter.ConvertToWebcil();
-                    var finalWebcil = Path.Combine(directory, Path.ChangeExtension(name, ".webcil"));
-                    if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
-                        Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
-                    else
-                        Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
-                    _fileWrites.Add(finalWebcil);
-                    config.Assets.Add(new SatelliteAssemblyEntry(Path.GetFileName(finalWebcil), culture));
-                }
+                var tmpWebcil = Path.GetTempFileName();
+                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: args.fullPath, outputPath: tmpWebcil, logger: Log);
+                webcilWriter.ConvertToWebcil();
+                var finalWebcil = Path.Combine(directory, Path.ChangeExtension(name, ".webcil"));
+                if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
+                    Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
                 else
-                {
-                    FileCopyChecked(fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
-                    config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
-                }
-
+                    Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+                _fileWrites.Add(finalWebcil);
+                config.Assets.Add(new SatelliteAssemblyEntry(Path.GetFileName(finalWebcil), args.culture));
             }
-        }
+            else
+            {
+                FileCopyChecked(args.fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
+                config.Assets.Add(new SatelliteAssemblyEntry(name, args.culture));
+            }
+        });
 
         if (FilesToIncludeInFileSystem != null)
         {

@@ -2,8 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
 
-    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
-
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
@@ -16,6 +14,11 @@
     <PublishSingleFile>true</PublishSingleFile>
     <UseAppHost>true</UseAppHost>
     <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TestReadyToRun)' == 'true'">
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSingleFile>false</PublishSingleFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
@@ -33,6 +36,10 @@
 
     <!-- Forced by ILLink targets; we should fix the SDK -->
     <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true' or '$(TestNativeAot)' == 'true'">
+    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
   </PropertyGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestNativeAot)' == 'true'" />
@@ -93,16 +100,29 @@
   <Target Name="LocateNativeCompiler"
           Condition="'$(TestNativeAot)' == 'true' and '$(HostOS)' != 'windows'"
           BeforeTargets="SetupOSSpecificProps">
-      <PropertyGroup>
-        <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
-      </PropertyGroup>
+    <PropertyGroup>
+      <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+    </PropertyGroup>
 
-      <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
-            EchoOff="true"
-            ConsoleToMsBuild="true"
-            StandardOutputImportance="Low">
-        <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
-      </Exec>
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
+    </Exec>
+  </Target>
+
+  <Target Name="__ReplaceCrossgen2ExecutableWithFreshlyBuiltOne"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <PropertyGroup>
+      <Crossgen2ArtifactPath>$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)</Crossgen2ArtifactPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(Crossgen2ArtifactPath)')" />
+      <Crossgen2Tool Remove="@(Crossgen2Tool)" />
+      <Crossgen2Tool Include="@(Crossgen2CurrentTool)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="PublishTestAsSingleFile"

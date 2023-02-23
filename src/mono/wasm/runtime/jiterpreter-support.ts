@@ -194,15 +194,9 @@ export class WasmBuilder {
         }
     }
 
-    ip_const (value: MintOpcodePtr, highBit?: boolean) {
+    ip_const (value: MintOpcodePtr) {
         this.appendU8(WasmOpcode.i32_const);
-        let relativeValue = <any>value - <any>this.base;
-        if (highBit) {
-            // it is impossible to do this in JS as far as i can tell
-            // relativeValue |= 0x80000000;
-            relativeValue += 0xF000000;
-        }
-        this.appendLeb(relativeValue);
+        this.appendLeb(<any>value - <any>this.base);
     }
 
     i52_const (value: number) {
@@ -940,6 +934,28 @@ export function recordFailure () : void {
             enableJitCall: false
         });
     }
+}
+
+export const enum JiterpMember {
+    VtableInitialized = 0,
+    ArrayData = 1,
+    StringLength = 2,
+    StringData = 3,
+    Imethod = 4,
+    DataItems = 5,
+    Rmethod = 6,
+    SpanLength = 7,
+    SpanData = 8,
+}
+
+const memberOffsets : { [index: number] : number } = {};
+
+export function getMemberOffset (member: JiterpMember) {
+    const cached = memberOffsets[member];
+    if (cached === undefined)
+        return memberOffsets[member] = cwraps.mono_jiterp_get_member_offset(<any>member);
+    else
+        return cached;
 }
 
 export function getRawCwrap (name: string): Function {

@@ -18,5 +18,6 @@ namespace Microsoft.Interop
         MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> ManagedToUnmanagedGeneratorFactory,
         MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
         ManagedTypeInfo TypeKeyOwner,
-        SequenceEqualImmutableArray<Diagnostic> Diagnostics);
+        SequenceEqualImmutableArray<Diagnostic> Diagnostics,
+        TypeSyntax UnwrapperSyntax);
 }

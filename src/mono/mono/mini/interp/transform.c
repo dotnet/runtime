@@ -640,6 +640,7 @@ mark_bb_as_dead (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock *repl
 	//
 	// To avoid scanning the entire offset_to_bb array, we scan only in the vicinity
 	// of the IL offset of bb. We can stop search when we encounter a different bblock.
+	g_assert (bb->il_offset >= 0);
 	for (int il_offset = bb->il_offset; il_offset >= 0; il_offset--) {
 		if (td->offset_to_bb [il_offset] == bb)
 			td->offset_to_bb [il_offset] = replace_bb;
@@ -8641,6 +8642,7 @@ interp_reorder_bblocks (TransformData *td)
 					InterpBasicBlock *new_bb = alloc_bb (td);
 					new_bb->next_bb = in_bb->next_bb;
 					in_bb->next_bb = new_bb;
+					new_bb->il_offset = in_bb->il_offset;
 					interp_link_bblocks (td, in_bb, new_bb);
 
 					InterpInst *new_inst = interp_insert_ins_bb (td, new_bb, NULL, MINT_BR);

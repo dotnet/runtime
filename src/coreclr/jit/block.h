@@ -471,41 +471,39 @@ enum BasicBlockFlags : unsigned __int64
 #define MAKE_BBFLAG(bit) (1ULL << (bit))
     BBF_EMPTY                = 0,
 
-    BBF_VISITED              = MAKE_BBFLAG( 0), // BB visited during optimizations
+    BBF_IS_LIR               = MAKE_BBFLAG( 0), // Set if the basic block contains LIR (as opposed to HIR)
     BBF_MARKED               = MAKE_BBFLAG( 1), // BB marked  during optimizations
-    BBF_CHANGED              = MAKE_BBFLAG( 2), // input/output of this block has changed
-    BBF_REMOVED              = MAKE_BBFLAG( 3), // BB has been removed from bb-list
-
-    BBF_DONT_REMOVE          = MAKE_BBFLAG( 4), // BB should not be removed during flow graph optimizations
-    BBF_IMPORTED             = MAKE_BBFLAG( 5), // BB byte-code has been imported
-    BBF_INTERNAL             = MAKE_BBFLAG( 6), // BB has been added by the compiler
-    BBF_FAILED_VERIFICATION  = MAKE_BBFLAG( 7), // BB has verification exception
-
-    BBF_TRY_BEG              = MAKE_BBFLAG( 8), // BB starts a 'try' block
-    BBF_FUNCLET_BEG          = MAKE_BBFLAG( 9), // BB is the beginning of a funclet
-    BBF_HAS_NULLCHECK        = MAKE_BBFLAG(10), // BB contains a null check
-    BBF_HAS_SUPPRESSGC_CALL  = MAKE_BBFLAG(11), // BB contains a call to a method with SuppressGCTransitionAttribute
-
-    BBF_RUN_RARELY           = MAKE_BBFLAG(12), // BB is rarely run (catch clauses, blocks with throws etc)
-    BBF_LOOP_HEAD            = MAKE_BBFLAG(13), // BB is the head of a loop
-    BBF_LOOP_CALL0           = MAKE_BBFLAG(14), // BB starts a loop that sometimes won't call
-    BBF_LOOP_CALL1           = MAKE_BBFLAG(15), // BB starts a loop that will always     call
-
-    BBF_HAS_LABEL            = MAKE_BBFLAG(16), // BB needs a label
-    BBF_LOOP_ALIGN           = MAKE_BBFLAG(17), // Block is lexically the first block in a loop we intend to align.
-    BBF_HAS_JMP              = MAKE_BBFLAG(18), // BB executes a JMP instruction (instead of return)
-    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(19), // BB has a GC safe point (a call).  More abstractly, BB does not require a
+    BBF_REMOVED              = MAKE_BBFLAG( 2), // BB has been removed from bb-list
+    BBF_DONT_REMOVE          = MAKE_BBFLAG( 3), // BB should not be removed during flow graph optimizations
+    BBF_IMPORTED             = MAKE_BBFLAG( 4), // BB byte-code has been imported
+    BBF_INTERNAL             = MAKE_BBFLAG( 5), // BB has been added by the compiler
+    BBF_FAILED_VERIFICATION  = MAKE_BBFLAG( 6), // BB has verification exception
+    BBF_TRY_BEG              = MAKE_BBFLAG( 7), // BB starts a 'try' block
+    BBF_FUNCLET_BEG          = MAKE_BBFLAG( 8), // BB is the beginning of a funclet
+    BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 9), // First block of a cloned finally region
+    BBF_CLONED_FINALLY_END   = MAKE_BBFLAG(10), // Last block of a cloned finally region
+    BBF_HAS_NULLCHECK        = MAKE_BBFLAG(11), // BB contains a null check
+    BBF_HAS_SUPPRESSGC_CALL  = MAKE_BBFLAG(12), // BB contains a call to a method with SuppressGCTransitionAttribute
+    BBF_RUN_RARELY           = MAKE_BBFLAG(13), // BB is rarely run (catch clauses, blocks with throws etc)
+    BBF_LOOP_HEAD            = MAKE_BBFLAG(14), // BB is the head of a loop
+    BBF_LOOP_CALL0           = MAKE_BBFLAG(15), // BB starts a loop that sometimes won't call
+    BBF_LOOP_CALL1           = MAKE_BBFLAG(16), // BB starts a loop that will always     call
+    BBF_HAS_LABEL            = MAKE_BBFLAG(17), // BB needs a label
+    BBF_LOOP_ALIGN           = MAKE_BBFLAG(18), // Block is lexically the first block in a loop we intend to align.
+    BBF_HAS_ALIGN            = MAKE_BBFLAG(19), // BB ends with 'align' instruction
+    BBF_HAS_JMP              = MAKE_BBFLAG(20), // BB executes a JMP instruction (instead of return)
+    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(21), // BB has a GC safe point (a call).  More abstractly, BB does not require a
                                                 // (further) poll -- this may be because this BB has a call, or, in some
                                                 // cases, because the BB occurs in a loop, and we've determined that all
                                                 // paths in the loop body leading to BB include a call.
-
-    BBF_HAS_IDX_LEN          = MAKE_BBFLAG(20), // BB contains simple index or length expressions on an SD array local var.
-    BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(21), // BB contains simple index, length, or lower bound expressions on an MD array local var.
-    BBF_HAS_NEWOBJ           = MAKE_BBFLAG(22), // BB contains 'new' of an object type.
+    BBF_HAS_IDX_LEN          = MAKE_BBFLAG(22), // BB contains simple index or length expressions on an SD array local var.
+    BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(23), // BB contains simple index, length, or lower bound expressions on an MD array local var.
+    BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(24), // Block has a multi-dimensional array reference
+    BBF_HAS_NEWOBJ           = MAKE_BBFLAG(25), // BB contains 'new' of an object type.
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-    BBF_FINALLY_TARGET       = MAKE_BBFLAG(23), // BB is the target of a finally return: where a finally will return during
+    BBF_FINALLY_TARGET       = MAKE_BBFLAG(26), // BB is the target of a finally return: where a finally will return during
                                                 // non-exceptional flow. Because the ARM calling sequence for calling a
                                                 // finally explicitly sets the return address to the finally target and jumps
                                                 // to the finally, instead of using a call instruction, ARM needs this to
@@ -514,35 +512,25 @@ enum BasicBlockFlags : unsigned __int64
 
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(24), // BB is surrounded by a backward jump/switch arc
-    BBF_RETLESS_CALL                   = MAKE_BBFLAG(25), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+    BBF_RETLESS_CALL                   = MAKE_BBFLAG(27), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
                                                           // BBJ_ALWAYS); see isBBCallAlwaysPair().
-    BBF_LOOP_PREHEADER                 = MAKE_BBFLAG(26), // BB is a loop preheader block
-    BBF_COLD                           = MAKE_BBFLAG(27), // BB is cold
-
-    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(28), // BB weight is computed from profile data
-    BBF_IS_LIR                         = MAKE_BBFLAG(29), // Set if the basic block contains LIR (as opposed to HIR)
-    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(30), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+    BBF_LOOP_PREHEADER                 = MAKE_BBFLAG(28), // BB is a loop preheader block
+    BBF_COLD                           = MAKE_BBFLAG(29), // BB is cold
+    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(30), // BB weight is computed from profile data
+    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(31), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
                                                           // as BBJ_ALWAYS. Used for the paired BBJ_ALWAYS block following the
                                                           // BBJ_CALLFINALLY block, as well as, on x86, the final step block out of a
                                                           // finally.
-    BBF_CLONED_FINALLY_BEGIN           = MAKE_BBFLAG(31), // First block of a cloned finally region
-
-    BBF_CLONED_FINALLY_END             = MAKE_BBFLAG(32), // Last block of a cloned finally region
-    BBF_HAS_CALL                       = MAKE_BBFLAG(33), // BB contains a call
-    BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(34), // Block is dominated by exceptional entry.
-    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(35), // Block is a target of a backward jump
-
-    BBF_PATCHPOINT                     = MAKE_BBFLAG(36), // Block is a patchpoint
-    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(37), // BB contains a call needing a histogram profile
+    BBF_HAS_CALL                       = MAKE_BBFLAG(32), // BB contains a call
+    BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(33), // Block is dominated by exceptional entry.
+    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(34), // BB is surrounded by a backward jump/switch arc
+    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(35), // Block is a source of a backward jump
+    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(36), // Block is a target of a backward jump
+    BBF_PATCHPOINT                     = MAKE_BBFLAG(37), // Block is a patchpoint
     BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(38), // Block is a partial compilation patchpoint
-    BBF_HAS_ALIGN                      = MAKE_BBFLAG(39), // BB ends with 'align' instruction
+    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(39), // BB contains a call needing a histogram profile
     BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(40), // BB has pred that has potential tail call
-
-    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(41), // Block is a source of a backward jump
-    BBF_HAS_MDARRAYREF                 = MAKE_BBFLAG(42), // Block has a multi-dimensional array reference
-
-    BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(43), // Block has recursive tailcall that may turn into a loop
+    BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(41), // Block has recursive tailcall that may turn into a loop
 
     // The following are sets of flags.
 
@@ -552,12 +540,12 @@ enum BasicBlockFlags : unsigned __int64
 
     // Flags to update when two blocks are compacted
 
-    BBF_COMPACT_UPD = BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
+    BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
                       BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF,
 
     // Flags a block should not have had before it is split.
 
-    BBF_SPLIT_NONEXIST = BBF_CHANGED | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_RETLESS_CALL | BBF_LOOP_PREHEADER | BBF_COLD,
+    BBF_SPLIT_NONEXIST = BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_RETLESS_CALL | BBF_LOOP_PREHEADER | BBF_COLD,
 
     // Flags lost by the top block when a block is split.
     // Note, this is a conservative guess.

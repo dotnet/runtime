@@ -6137,6 +6137,9 @@ protected:
     // written to, and SZ-array element type equivalence classes updated.
     void optComputeLoopSideEffects();
 
+    // Compute the sets of long and float vars (lvaLongVars, lvaFloatVars).
+    void optComputeInterestingVarSets();
+
 #ifdef DEBUG
     bool optAnyChildNotRemoved(unsigned loopNum);
 #endif // DEBUG
