@@ -403,8 +403,9 @@ bool
 ep_rt_config_value_get_output_streaming (void);
 
 static
+inline
 bool
-ep_rt_config_value_get_disable_stacks (void);
+ep_rt_config_value_get_enable_stackwalk (void);
 
 /*
  * EventPipeSampleProfiler.
