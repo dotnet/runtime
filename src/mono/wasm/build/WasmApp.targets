@@ -351,8 +351,9 @@
       <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == '' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">-1</_WasmPThreadPoolSize>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(WasmMainHTMLPath)' != ''">
-      <WasmExtraFilesToDeploy Include="$(WasmMainHTMLPath)" />
+    <ItemGroup>
+      <WasmExtraFilesToDeploy Include="$(WasmMainHTMLPath)" Condition="'$(WasmMainHTMLPath)' != ''" />
+      <WasmExtraFilesToDeploy Include="$(WasmMainJSPath)" Condition="'$(WasmMainJSPath)' != ''" />
     </ItemGroup>
 
     <RemoveDir Directories="$(WasmAppDir)" />
