@@ -134,10 +134,14 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Derive key raw material.
+        /// Derive raw key material.
         /// </summary>
         /// <param name="otherPartyPublicKey">The public key of the party with which to derive a mutual secret.</param>
         /// <returns>The raw key agreement.</returns>
+        /// <remarks>
+        /// Care must be taking when using the raw derived secret agreement value. The raw value is expected to be used
+        /// as input in to a Key Derivation Function, and not used directly as key material.
+        /// </remarks>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="otherPartyPublicKey"/> is <see langword="null" />.
         /// </exception>
@@ -150,7 +154,10 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         ///  The current platform does not support raw key agreement.
         /// </exception>
-        public virtual byte[] DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey)
+        /// <exception cref="ObjectDisposedException">
+        ///  The object has already been disposed.
+        /// </exception>
+        public virtual byte[] DeriveRawSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey)
         {
             throw DerivedClassMustOverride();
         }

@@ -165,7 +165,7 @@ namespace System.Security.Cryptography
                     DeriveSecretAgreement);
             }
 
-            public override byte[] DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey)
+            public override byte[] DeriveRawSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey)
             {
                 ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
                 ThrowIfDisposed();

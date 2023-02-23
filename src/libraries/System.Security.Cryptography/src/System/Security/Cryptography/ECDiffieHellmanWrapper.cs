@@ -43,8 +43,8 @@ namespace System.Security.Cryptography
         public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed) =>
             _wrapped.DeriveKeyTls(Unwrap(otherPartyPublicKey), prfLabel, prfSeed);
 
-        public override byte[] DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey) =>
-            _wrapped.DeriveSecretAgreement(Unwrap(otherPartyPublicKey));
+        public override byte[] DeriveRawSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey) =>
+            _wrapped.DeriveRawSecretAgreement(Unwrap(otherPartyPublicKey));
 
         public override void FromXmlString(string xmlString) => _wrapped.FromXmlString(xmlString);
 
