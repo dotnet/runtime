@@ -922,7 +922,7 @@ namespace System.Net.Sockets
             /// <summary>The owning socket.</summary>
             private readonly Socket _owner;
             /// <summary>Whether this should be cached as a read or a write on the <see cref="_owner"/></summary>
-            private bool _isReadForCaching;
+            private readonly bool _isReadForCaching;
             /// <summary>
             /// <see cref="s_completedSentinel"/> if it has completed. Another delegate if OnCompleted was called before the operation could complete,
             /// in which case it's the delegate to invoke when the operation does complete.

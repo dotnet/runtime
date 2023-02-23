@@ -450,6 +450,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowUnexpectedStateForKnownCallback(object? state)
+        {
+            throw new ArgumentOutOfRangeException(nameof(state), state, SR.Argument_UnexpectedStateForKnownCallback);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowInvalidOperationException_InvalidOperation_EnumNotStarted()
         {
             throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
@@ -796,8 +802,6 @@ namespace System
                     return "comparable";
                 case ExceptionArgument.source:
                     return "source";
-                case ExceptionArgument.state:
-                    return "state";
                 case ExceptionArgument.length:
                     return "length";
                 case ExceptionArgument.comparisonType:
@@ -1130,7 +1134,6 @@ namespace System
         comparer,
         comparable,
         source,
-        state,
         length,
         comparisonType,
         manager,

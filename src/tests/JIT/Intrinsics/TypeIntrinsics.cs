@@ -208,6 +208,18 @@ public class GenericEnumClass<T> where T : Enum
     public T field;
 }
 
+public interface IGenericInterface<T>
+{
+}
+
+public struct ImplementingStruct1 : IGenericInterface<ImplementingStruct1>
+{
+}
+
+public struct ImplementingStruct2 : IGenericInterface<ImplementingStruct2>
+{
+}
+
 public struct GenericStruct<T>
 {
     public T field;

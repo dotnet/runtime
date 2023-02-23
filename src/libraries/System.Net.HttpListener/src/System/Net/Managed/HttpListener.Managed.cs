@@ -12,10 +12,10 @@ namespace System.Net
     {
         public static bool IsSupported => true;
 
-        private Dictionary<HttpListenerContext, HttpListenerContext> _listenerContexts = new Dictionary<HttpListenerContext, HttpListenerContext>();
-        private List<HttpListenerContext> _contextQueue = new List<HttpListenerContext>();
-        private List<ListenerAsyncResult> _asyncWaitQueue = new List<ListenerAsyncResult>();
-        private Dictionary<HttpConnection, HttpConnection> _connections = new Dictionary<HttpConnection, HttpConnection>();
+        private readonly Dictionary<HttpListenerContext, HttpListenerContext> _listenerContexts = new Dictionary<HttpListenerContext, HttpListenerContext>();
+        private readonly List<HttpListenerContext> _contextQueue = new List<HttpListenerContext>();
+        private readonly List<ListenerAsyncResult> _asyncWaitQueue = new List<ListenerAsyncResult>();
+        private readonly Dictionary<HttpConnection, HttpConnection> _connections = new Dictionary<HttpConnection, HttpConnection>();
         private bool _unsafeConnectionNtlmAuthentication;
 
         public HttpListenerTimeoutManager TimeoutManager

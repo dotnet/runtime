@@ -9,11 +9,11 @@ namespace System.Reflection.Emit
     internal sealed class RuntimeFieldBuilder : FieldBuilder
     {
         #region Private Data Members
-        private int m_fieldTok;
-        private RuntimeTypeBuilder m_typeBuilder;
-        private string m_fieldName;
-        private FieldAttributes m_Attributes;
-        private Type m_fieldType;
+        private readonly int m_fieldTok;
+        private readonly RuntimeTypeBuilder m_typeBuilder;
+        private readonly string m_fieldName;
+        private readonly FieldAttributes m_Attributes;
+        private readonly Type m_fieldType;
         #endregion
 
         #region Constructor

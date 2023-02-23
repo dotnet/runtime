@@ -1257,13 +1257,9 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     regNumber targetReg = tree->GetRegNum();
     emitter*  emit      = GetEmitter();
 
-    genConsumeIfReg(op1);
-    genConsumeIfReg(op2);
-
     if (varTypeIsFloating(op1Type))
     {
         assert(op1Type == op2Type);
-        assert(!tree->OperIs(GT_CMP));
         emit->emitInsBinary(INS_vcmp, emitTypeSize(op1Type), op1, op2);
         // vmrs with register 0xf has special meaning of transferring flags
         emit->emitIns_R(INS_vmrs, EA_4BYTE, REG_R15);

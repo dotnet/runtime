@@ -718,4 +718,12 @@ void mini_register_sigterm_handler (void);
 	MONO_RESTORE_WARNING \
 	} while (0)
 
+typedef void (*MonoRuntimeInitCallback) (void);
+
+MONO_COMPONENT_API void
+mono_set_runtime_init_callback (MonoRuntimeInitCallback callback);
+
+MONO_COMPONENT_API void
+mono_invoke_runtime_init_callback (void);
+
 #endif /* __MONO_MINI_RUNTIME_H__ */

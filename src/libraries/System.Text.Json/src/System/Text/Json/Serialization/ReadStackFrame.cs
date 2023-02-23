@@ -143,7 +143,7 @@ namespace System.Text.Json
             {
                 Debug.Assert(RequiredPropertiesSet != null);
 
-                if (!RequiredPropertiesSet.AllBitsEqual(true))
+                if (!RequiredPropertiesSet.HasAllSet())
                 {
                     ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesSet);
                 }

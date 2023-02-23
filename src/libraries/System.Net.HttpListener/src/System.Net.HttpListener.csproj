@@ -159,8 +159,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" />
     <!-- Add NTAuthentication -->
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
              Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />

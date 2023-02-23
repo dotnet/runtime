@@ -2283,9 +2283,9 @@ gc_heap::etw_loh_compact_info* gc_heap::loh_compact_info;
 #endif //FEATURE_LOH_COMPACTION
 #endif //FEATURE_EVENT_TRACE
 
-#ifdef SHORT_PLUGS
+#if defined(SHORT_PLUGS) && !defined(USE_REGIONS)
 double      gc_heap::short_plugs_pad_ratio = 0;
-#endif //SHORT_PLUGS
+#endif //SHORT_PLUGS && !USE_REGIONS
 
 int         gc_heap::generation_skip_ratio_threshold = 0;
 int         gc_heap::conserve_mem_setting = 0;
@@ -2379,8 +2379,6 @@ BOOL        gc_heap::do_concurrent_p = FALSE;
 
 size_t      gc_heap::ephemeral_fgc_counts[max_generation];
 
-BOOL        gc_heap::alloc_wait_event_p = FALSE;
-
 VOLATILE(c_gc_state) gc_heap::current_c_gc_state = c_gc_state_free;
 
 VOLATILE(BOOL) gc_heap::gc_background_running = FALSE;
@@ -2446,16 +2444,14 @@ BOOL        gc_heap::ro_segments_in_range;
 #ifndef USE_REGIONS
 uint8_t*    gc_heap::ephemeral_low;
 uint8_t*    gc_heap::ephemeral_high;
+BOOL        gc_heap::ephemeral_promotion;
+uint8_t*    gc_heap::saved_ephemeral_plan_start[ephemeral_generation_count];
+size_t      gc_heap::saved_ephemeral_plan_start_size[ephemeral_generation_count];
 #endif //!USE_REGIONS
 
 uint8_t*    gc_heap::lowest_address;
 
 uint8_t*    gc_heap::highest_address;
-
-BOOL        gc_heap::ephemeral_promotion;
-
-uint8_t*    gc_heap::saved_ephemeral_plan_start[ephemeral_generation_count];
-size_t      gc_heap::saved_ephemeral_plan_start_size[ephemeral_generation_count];
 
 short*      gc_heap::brick_table;
 
@@ -2473,11 +2469,11 @@ uint8_t*    gc_heap::gc_high = 0;
 uint8_t*    gc_heap::demotion_low;
 
 uint8_t*    gc_heap::demotion_high;
-#endif //!USE_REGIONS
 
 BOOL        gc_heap::demote_gen1_p = TRUE;
 
 uint8_t*    gc_heap::last_gen1_pin_end;
+#endif //!USE_REGIONS
 
 gen_to_condemn_tuning gc_heap::gen_to_condemn_reasons;
 
@@ -2515,8 +2511,6 @@ int         gc_heap::regions_per_gen[max_generation + 1];
 int         gc_heap::sip_maxgen_regions_per_gen[max_generation + 1];
 
 heap_segment* gc_heap::reserved_free_regions_sip[max_generation];
-
-int         gc_heap::num_sip_regions = 0;
 
 size_t      gc_heap::end_gen0_region_space = 0;
 
@@ -2590,8 +2584,6 @@ uint64_t    gc_heap::loh_a_bgc_planning = 0;
 size_t      gc_heap::bgc_maxgen_end_fl_size = 0;
 #endif //BGC_SERVO_TUNING
 
-uint32_t    gc_heap::bgc_alloc_spin_uoh = 0;
-
 size_t      gc_heap::bgc_loh_size_increased = 0;
 
 size_t      gc_heap::bgc_poh_size_increased = 0;
@@ -2660,6 +2652,7 @@ uint8_t*    gc_heap::shigh = 0;
 
 uint8_t*    gc_heap::slow = MAX_PTR;
 
+#ifndef USE_REGIONS
 size_t      gc_heap::ordered_free_space_indices[MAX_NUM_BUCKETS];
 
 size_t      gc_heap::saved_ordered_free_space_indices[MAX_NUM_BUCKETS];
@@ -2689,6 +2682,7 @@ size_t      gc_heap::total_ephemeral_plugs = 0;
 seg_free_spaces* gc_heap::bestfit_seg = 0;
 
 size_t      gc_heap::total_ephemeral_size = 0;
+#endif //!USE_REGIONS
 
 #ifdef HEAP_ANALYZE
 
@@ -2720,11 +2714,11 @@ GCSpinLock gc_heap::gc_lock;
 uint64_t gc_heap::total_loh_a_last_bgc = 0;
 #endif //BGC_SERVO_TUNING
 
-size_t gc_heap::eph_gen_starts_size = 0;
-#if defined(USE_REGIONS)
+#ifdef USE_REGIONS
 region_free_list gc_heap::global_regions_to_decommit[count_free_region_kinds];
 region_free_list gc_heap::global_free_huge_regions;
-#else
+#else //USE_REGIONS
+size_t gc_heap::eph_gen_starts_size = 0;
 heap_segment* gc_heap::segment_standby_list;
 #endif //USE_REGIONS
 bool          gc_heap::use_large_pages_p = 0;
@@ -2766,7 +2760,9 @@ size_t gc_heap::full_gc_counts[gc_type_max];
 
 bool gc_heap::maxgen_size_inc_p = false;
 
+#ifndef USE_REGIONS
 BOOL gc_heap::should_expand_in_full_gc = FALSE;
+#endif //!USE_REGIONS
 
 // Provisional mode related stuff.
 bool gc_heap::provisional_mode_triggered = false;
@@ -10584,6 +10580,7 @@ void gc_heap::grow_mark_list ()
 #endif //MULTIPLE_HEAPS
 }
 
+#ifndef USE_REGIONS
 class seg_free_spaces
 {
     struct seg_free_space
@@ -11048,7 +11045,7 @@ retry:
         }
     }
 };
-
+#endif //!USE_REGIONS
 
 #define marked(i) header(i)->IsMarked()
 #define set_marked(i) header(i)->SetMarked()
@@ -13844,10 +13841,12 @@ gc_heap::init_semi_shared()
     uint32_t sweep_flr_goal_loh = 0;
 #endif //BGC_SERVO_TUNING
 
+#ifndef USE_REGIONS
     // This is used for heap expansion - it's to fix exactly the start for gen 0
     // through (max_generation-1). When we expand the heap we allocate all these
     // gen starts at the beginning of the new ephemeral seg.
     eph_gen_starts_size = (Align (min_obj_size)) * max_generation;
+#endif //!USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
     mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
@@ -13906,7 +13905,10 @@ gc_heap::init_semi_shared()
 
     memset (full_gc_counts, 0, sizeof (full_gc_counts));
 
+#ifndef USE_REGIONS
     should_expand_in_full_gc = FALSE;
+#endif //!USE_REGIONS
+
 
 #ifdef FEATURE_LOH_COMPACTION
     loh_compaction_always_p = GCConfig::GetLOHCompactionMode() != 0;
@@ -14017,9 +14019,9 @@ gc_heap::init_semi_shared()
     compact_or_sweep_gcs[1] = 0;
 #endif //GC_CONFIG_DRIVEN
 
-#ifdef SHORT_PLUGS
+#if defined(SHORT_PLUGS) && !defined(USE_REGIONS)
     short_plugs_pad_ratio = (double)DESIRED_PLUG_LENGTH / (double)(DESIRED_PLUG_LENGTH - Align (min_obj_size));
-#endif //SHORT_PLUGS
+#endif //SHORT_PLUGS && !USE_REGIONS
 
     generation_skip_ratio_threshold = (int)GCConfig::GetGCLowSkipRatio();
 
@@ -14349,7 +14351,9 @@ gc_heap::init_gc_heap (int h_number)
 
     loh_alloc_since_cg = 0;
 
+#ifndef USE_REGIONS
     new_heap_segment = NULL;
+#endif //!USE_REGIONS
 
     gen0_allocated_after_gc_p = false;
 
@@ -14597,6 +14601,7 @@ gc_heap::init_gc_heap (int h_number)
         return 0;
 #endif // FEATURE_PREMORTEM_FINALIZATION
 
+#ifndef USE_REGIONS
     max_free_space_items = MAX_NUM_FREE_SPACES;
 
     bestfit_seg = new (nothrow) seg_free_spaces (heap_number);
@@ -14610,6 +14615,7 @@ gc_heap::init_gc_heap (int h_number)
     {
         return 0;
     }
+#endif //!USE_REGIONS
 
     last_gc_before_oom = FALSE;
 
@@ -17233,12 +17239,14 @@ allocation_state gc_heap::allocate_soh (int gen_number,
                     {
                         if (short_seg_end_p)
                         {
+#ifndef USE_REGIONS
                             if (should_expand_in_full_gc)
                             {
                                 dprintf (2, ("gen1 GC wanted to expand!"));
                                 soh_alloc_state = a_state_trigger_full_compact_gc;
                             }
                             else
+#endif //!USE_REGIONS
                             {
                                 soh_alloc_state = (bgc_in_progress_p ?
                                                         a_state_check_and_wait_for_bgc :
@@ -17358,6 +17366,12 @@ void gc_heap::bgc_untrack_uoh_alloc()
     }
 }
 
+// We need to throttle the UOH allocations during BGC since we can't
+// collect UOH when BGC is in progress (when BGC sweeps UOH allocations on UOH are disallowed)
+// We allow the UOH heap size to double during a BGC. And for every
+// 10% increase we will have the UOH allocating thread sleep for one more
+// ms. So we are already 30% over the original heap size the thread will
+// sleep for 3ms.
 int bgc_allocate_spin(size_t min_gc_size, size_t bgc_begin_size, size_t bgc_size_increased, size_t end_size)
 {
     if ((bgc_begin_size + bgc_size_increased) < (min_gc_size * 10))
@@ -19883,7 +19897,11 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             }
             *blocking_collection_p = TRUE;
         }
-        else if (should_expand_in_full_gc || joined_last_gc_before_oom)
+        else if (
+#ifndef USE_REGIONS
+                 should_expand_in_full_gc ||
+#endif //!USE_REGIONS
+                 joined_last_gc_before_oom)
         {
             dprintf (GTC_LOG, ("need full blocking GCs to expand heap or avoid OOM, not reducing gen"));
             assert (*blocking_collection_p);
@@ -19896,10 +19914,12 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         }
     }
 
+#ifndef USE_REGIONS
     if (should_expand_in_full_gc)
     {
         should_expand_in_full_gc = FALSE;
     }
+#endif //!USE_REGIONS
 
     if (heap_hard_limit)
     {
@@ -20726,6 +20746,7 @@ int gc_heap::generation_to_condemn (int n_initial,
                  heap_number, low_ephemeral_space, high_memory_load, v_high_memory_load,
                  high_fragmentation));
 
+#ifndef USE_REGIONS
     if (should_expand_in_full_gc)
     {
         dprintf (GTC_LOG, ("h%d: expand_in_full - BLOCK", heap_number));
@@ -20734,6 +20755,7 @@ int gc_heap::generation_to_condemn (int n_initial,
         n = max_generation;
         local_condemn_reasons->set_condition (gen_expand_fullgc_p);
     }
+#endif //!USE_REGIONS
 
     if (last_gc_before_oom)
     {
@@ -24072,9 +24094,9 @@ inline void Prefetch(void* addr)
     __prefetch((const char*)addr);
 #endif //defined(TARGET_AMD64) || defined(TARGET_X86)
 
-#elif defined(TARGET_UNIX) || defined(TARGET_OSX)
+#elif defined(TARGET_UNIX)
     __builtin_prefetch(addr);
-#else //!(TARGET_WINDOWS || TARGET_UNIX || TARGET_OSX)
+#else //!(TARGET_WINDOWS || TARGET_UNIX)
     UNREFERENCED_PARAMETER(addr);
 #endif //TARGET_WINDOWS
 }
@@ -26393,14 +26415,14 @@ void gc_heap::compute_gc_and_ephemeral_range (int condemned_gen_number, bool end
     {
         for (int gen_number = soh_gen0; gen_number <= soh_gen1; gen_number++)
         {
-    #ifdef MULTIPLE_HEAPS
+#ifdef MULTIPLE_HEAPS
             for (int i = 0; i < n_heaps; i++)
             {
                 gc_heap* hp = g_heaps[i];
-    #else //MULTIPLE_HEAPS
+#else //MULTIPLE_HEAPS
             {
                 gc_heap* hp = pGenGCHeap;
-    #endif //MULTIPLE_HEAPS
+#endif //MULTIPLE_HEAPS
                 generation *gen = hp->generation_of (gen_number);
                 for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
                 {
@@ -29540,15 +29562,14 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #else
     demotion_low = MAX_PTR;
     demotion_high = heap_segment_allocated (ephemeral_heap_segment);
-#endif //!USE_REGIONS
-
     // If we are doing a gen1 only because of cards, it means we should not demote any pinned plugs
     // from gen1. They should get promoted to gen2.
     demote_gen1_p = !(settings.promotion &&
-                      (settings.condemned_generation == (max_generation - 1)) &&
-                      gen_to_condemn_reasons.is_only_condition (gen_low_card_p));
+        (settings.condemned_generation == (max_generation - 1)) &&
+        gen_to_condemn_reasons.is_only_condition(gen_low_card_p));
 
     total_ephemeral_size = 0;
+#endif //!USE_REGIONS
 
     print_free_and_plug ("BP");
 
@@ -30025,10 +30046,12 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 dd_added_pinned_size (dd_active_old) += added_pinning_size;
                 dd_artificial_pinned_survived_size (dd_active_old) += artificial_pinned_size;
 
+#ifndef USE_REGIONS
                 if (!demote_gen1_p && (active_old_gen_number == (max_generation - 1)))
                 {
                     last_gen1_pin_end = plug_end;
                 }
+#endif //!USE_REGIONS
             }
 
 #ifdef _DEBUG
@@ -30319,7 +30342,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
     BOOL should_expand = FALSE;
     BOOL should_compact= FALSE;
+
+#ifndef USE_REGIONS
     ephemeral_promotion = FALSE;
+#endif //!USE_REGIONS
 
 #ifdef HOST_64BIT
     if ((!settings.concurrent) &&
@@ -30378,8 +30404,9 @@ void gc_heap::plan_phase (int condemned_gen_number)
     }
 
 #ifdef MULTIPLE_HEAPS
-
+#ifndef USE_REGIONS
     new_heap_segment = NULL;
+#endif //!USE_REGIONS
 
     if (should_compact && should_expand)
         gc_policy = policy_expand;
@@ -31794,8 +31821,6 @@ bool gc_heap::should_sweep_in_plan (heap_segment* region)
 
     if (sip_p)
     {
-        num_sip_regions++;
-
         if ((new_gen_num < max_generation) &&
             (sip_maxgen_regions_per_gen[gen_num] == regions_per_gen[gen_num]))
         {
@@ -34816,7 +34841,7 @@ BOOL gc_heap::commit_new_mark_array (uint32_t* new_mark_array_addr)
         }
     }
 
-#ifdef MULTIPLE_HEAPS
+#if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
     if (new_heap_segment)
     {
         if (!commit_mark_array_with_check (new_heap_segment, new_mark_array_addr))
@@ -34824,7 +34849,7 @@ BOOL gc_heap::commit_new_mark_array (uint32_t* new_mark_array_addr)
             return FALSE;
         }
     }
-#endif //MULTIPLE_HEAPS
+#endif //MULTIPLE_HEAPS && !USE_REGIONS
 
     return TRUE;
 }
@@ -40615,6 +40640,7 @@ size_t  gc_heap::compute_in (int gen_number)
 
     size_t in = generation_allocation_size (generation_of (gen_number));
 
+#ifndef USE_REGIONS
     if (gen_number == max_generation && ephemeral_promotion)
     {
         in = 0;
@@ -40628,6 +40654,7 @@ size_t  gc_heap::compute_in (int gen_number)
             }
         }
     }
+#endif //!USE_REGIONS
 
     dd_gc_new_allocation (dd) -= in;
     dd_new_allocation (dd) = dd_gc_new_allocation (dd);
@@ -47511,17 +47538,6 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
         END_TIMING(gc_during_log);
     }
 #endif //MULTIPLE_HEAPS
-
-#ifdef BACKGROUND_GC
-    // We are deciding whether we should fire the alloc wait end event here
-    // because in begin_foreground we could be calling end_foreground
-    // if we need to retry.
-    if (gc_heap::alloc_wait_event_p)
-    {
-        hpt->fire_alloc_wait_event_end (awr_fgc_wait_for_bgc);
-        gc_heap::alloc_wait_event_p = FALSE;
-    }
-#endif //BACKGROUND_GC
 
 #ifndef MULTIPLE_HEAPS
 #ifdef BACKGROUND_GC
