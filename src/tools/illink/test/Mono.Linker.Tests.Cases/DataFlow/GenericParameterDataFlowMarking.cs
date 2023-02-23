@@ -20,16 +20,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class NestedGenerics
 		{
 			[Kept]
-			interface IUse { void Use (); }
+			interface IUse {
+				[Kept (By = ProducedBy.Trimmer)]
+				void Use ();
+			}
 
 			[Kept]
-			class RequiresMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> : IUse
+			[KeptInterfaceAttribute (typeof (IUse), By = ProducedBy.Trimmer)]
+			class RequiresMethods<
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = ProducedBy.Trimmer)]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> : IUse
 			{
 				[Kept]
 				public void Use () { }
 			}
 
 			[Kept]
+			[KeptInterfaceAttribute (typeof (IUse), By = ProducedBy.Trimmer)]
 			class RequiresNothing<T> : IUse
 			{
 				[Kept]
@@ -37,7 +44,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			class RequiresFields<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> : IUse
+			[KeptInterfaceAttribute (typeof (IUse), By = ProducedBy.Trimmer)]
+			class RequiresFields<
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = ProducedBy.Trimmer)]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> : IUse
 			{
 				[Kept]
 				public void Use () { }
@@ -81,16 +91,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				static void GenericMethod<T> (T value) where T : IUse { value.Use (); }
 
 				[Kept]
+				[KeptInterfaceAttribute (typeof (IUse), By = ProducedBy.Trimmer)]
 				class TargetTypeForNothing : IUse
 				{
 					public int PublicField;
 					public static void PublicMethod () { }
 					static void PrivateMethod () { }
 
+					[Kept(By = ProducedBy.Trimmer)]
 					public void Use () { }
 				}
 
 				[Kept]
+				[KeptInterfaceAttribute (typeof (IUse), By = ProducedBy.Trimmer)]
 				class TargetType : IUse
 				{
 					public int PublicField;
@@ -272,6 +285,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				[Kept]
+				[KeptBaseTypeAttribute (typeof (Base<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = ProducedBy.Trimmer)]
 				class DerivedWithTarget
 					: Base<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>
 				{ }
@@ -301,6 +315,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				[Kept]
+				[KeptBaseTypeAttribute (typeof(IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = ProducedBy.Trimmer)]
 				class DerivedWithTarget
 					: IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>
 				{ }

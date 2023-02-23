@@ -600,16 +600,9 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	int element_size;
 
 	// FIXME: Support Vector3
-
-	const char *class_name = m_class_get_name (vector_class);
-	if (!strcmp ("Vector2", class_name)) {
-		element_size = vector_size / 2;
-	} else if (!strcmp ("Vector4", class_name) || !strcmp ("Quaternion", class_name) || !strcmp ("Plane", class_name)) {
-		element_size = vector_size / 4;
-	} else {
-		MonoClass *element_class = mono_class_from_mono_type_internal (get_vector_t_elem_type (vector_type));
-		element_size = mono_class_value_size (element_class, NULL);
-	}
+	guint32 nelems;
+	mini_get_simd_type_info (vector_class, &nelems);
+	element_size = vector_size / nelems;
 	gboolean has_single_element = vector_size == element_size;
 
 	// If there's just one element we need to extract it instead of summing the whole array
@@ -4900,11 +4893,6 @@ mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *i
 {
 }
 #endif /*defined(TARGET_WIN32) && defined(TARGET_AMD64)*/
-
-void
-mono_simd_simplify_indirection (MonoCompile *cfg)
-{
-}
 
 #endif /* DISABLE_JIT */
 #endif /* MONO_ARCH_SIMD_INTRINSICS */
