@@ -50,7 +50,7 @@ jobs:
 
     variables:
     - ${{ each variable in parameters.variables }}:
-          - ${{insert}}: ${{ variable }}
+      - ${{insert}}: ${{ variable }}
 
     - IsInternal: ''
     - HelixApiAccessToken: ''
