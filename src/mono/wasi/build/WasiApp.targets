@@ -355,7 +355,7 @@
       DefaultHostConfig="$(DefaultWasmHostConfig)"
       InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
-      IcuDataFileNames="$(WasmIcuDataFileNames)"
+      IcuDataFileNames="@(WasmIcuDataFileNames)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
