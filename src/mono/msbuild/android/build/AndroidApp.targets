@@ -146,6 +146,7 @@ mono_thread_interruption_request_flag;" />
 
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
+      <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
 
       <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
       <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=10000" />
@@ -198,6 +199,16 @@ mono_thread_interruption_request_flag;" />
       <ProfiledAOTProfilePaths Include="$(MibcFilePath)" />
     </ItemGroup>
 
+    <!-- 
+      In order for the runtime to work when static linking, we must supply 
+      a list of direct pinvokes otherwise the runtime will crash
+    -->
+    <ItemGroup>
+      <_DirectPInvokeLibs Include="libSystem.Native" />
+      <_DirectPInvokeLibs Include="libSystem.IO.Compression.Native" />
+      <_DirectPInvokeLibs Include="libSystem.Security.Cryptography.Native.Android" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_EnableUnmanagedCallersOnlyMethodsExport Condition="'$(_IsLibraryMode)' == 'true'">true</_EnableUnmanagedCallersOnlyMethodsExport>
     </PropertyGroup>
@@ -206,6 +217,7 @@ mono_thread_interruption_request_flag;" />
         AotModulesTablePath="$(_AotModuleTablePath)"
         Assemblies="@(_AotInputAssemblies)"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        DirectPInvokes="@(_DirectPInvokeLibs)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
         LLVMPath="$(MonoAotCrossDir)"
