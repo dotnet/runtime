@@ -421,23 +421,6 @@ UINT32 NativeFieldDescriptor::AlignmentRequirement() const
     }
 }
 
-#if 0
-PTR_MethodTable NativeFieldDescriptor::GetNestedNativeMethodTable() const
-{
-    CONTRACT(PTR_MethodTable)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(IsNestedType());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    RETURN nestedTypeAndCount.m_pNestedType;
-}
-#endif
-
 PTR_FieldDesc NativeFieldDescriptor::GetFieldDesc() const
 {
     CONTRACT(PTR_FieldDesc)
