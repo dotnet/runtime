@@ -9,13 +9,20 @@ set(CMAKE_EXECUTABLE_SUFFIX ".wasm")
 add_executable(dotnet driver.c pinvoke.c stubs.c synthetic-pthread.c)
 
 target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/include/wasm)
+if(INVARIANT_GLOBALIZATION)
+target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/wasi-default.rsp @${NATIVE_BIN_DIR}/src/wasi-compile.rsp -DCORE_BINDINGS -DGEN_PINVOKE=1 -DINVARIANT_GLOBALIZATION=1)
+else()
 target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/wasi-default.rsp @${NATIVE_BIN_DIR}/src/wasi-compile.rsp -DCORE_BINDINGS -DGEN_PINVOKE=1)
+endif()
 
 set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_WASICC_FLAGS})
 
 target_link_libraries(dotnet
-    #TODOWASI ${ICU_LIB_DIR}/libicuuc.a
-    #TODOWASI ${ICU_LIB_DIR}/libicui18n.a
+    ${CMAKE_SYSROOT}/lib/wasm32-wasi/libc++.a
+    ${CMAKE_SYSROOT}/lib/wasm32-wasi/libc++abi.a
+    ${ICU_LIB_DIR}/libicudata.a
+    ${ICU_LIB_DIR}/libicuuc.a
+    ${ICU_LIB_DIR}/libicui18n.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-hot_reload-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-debugger-static.a
     ${MONO_ARTIFACTS_DIR}/libmono-component-diagnostics_tracing-stub-static.a
