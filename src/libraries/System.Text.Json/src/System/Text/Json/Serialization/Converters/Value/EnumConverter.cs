@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
@@ -103,21 +104,27 @@ namespace System.Text.Json.Serialization.Converters
 
             if (token == JsonTokenType.String)
             {
-                if (!_converterOptions.HasFlag(EnumConverterOptions.AllowStrings))
+                if ((_converterOptions & EnumConverterOptions.AllowStrings) == 0)
                 {
                     ThrowHelper.ThrowJsonException();
                     return default;
                 }
 
-#if NETCOREAPP
-                if (TryParseEnumCore(ref reader, options, out T value))
-#else
+#if !NETCOREAPP
                 string? enumString = reader.GetString();
-                if (TryParseEnumCore(enumString, options, out T value))
 #endif
+                if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0 || !IsNumericString(ref reader))
                 {
-                    return value;
+#if NETCOREAPP
+                    if (TryParseEnumCore(ref reader, options, out T value))
+#else
+                    if (TryParseEnumCore(enumString, options, out T value))
+#endif
+                    {
+                        return value;
+                    }
                 }
+
 #if NETCOREAPP
                 return ReadEnumUsingNamingPolicy(reader.GetString());
 #else
@@ -125,7 +132,7 @@ namespace System.Text.Json.Serialization.Converters
 #endif
             }
 
-            if (token != JsonTokenType.Number || !_converterOptions.HasFlag(EnumConverterOptions.AllowNumbers))
+            if (token != JsonTokenType.Number || (_converterOptions & EnumConverterOptions.AllowNumbers) == 0)
             {
                 ThrowHelper.ThrowJsonException();
                 return default;
@@ -187,6 +194,101 @@ namespace System.Text.Json.Serialization.Converters
 
             ThrowHelper.ThrowJsonException();
             return default;
+        }
+
+        private static bool IsNumericString(ref Utf8JsonReader reader)
+        {
+            ReadOnlySpan<byte> span = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+
+            // Numeric value with Leading and trailing whitespaces should be treated as valid based on behavior of Enum.TryParse()
+#if NETCOREAPP
+            span = span.Trim((byte)' ');
+#else
+            int leftIdx = 0;
+            for (; leftIdx < span.Length; leftIdx++)
+            {
+                if (span[leftIdx] != ' ')
+                {
+                    break;
+                }
+            }
+
+            int rightIdx = span.Length - 1;
+            for (; rightIdx > leftIdx; rightIdx--)
+            {
+                if (span[leftIdx] != ' ')
+                {
+                    break;
+                }
+            }
+
+            span = span.Slice(leftIdx, rightIdx - leftIdx + 1);
+#endif
+            if (span.Length > 1 && span[0] == '+')
+            {
+                if ((uint)(span[1] - '0') > 9)
+                {
+                    return false;
+                }
+
+                // Utf8Parser.TryParse() doesn't treat "+1" as a valid unsigned numeric value but Enum.TryParse() does, so need to remove '+' to align behavior
+                span = span.Slice(1);
+            }
+
+            switch (s_enumTypeCode)
+            {
+                // Switch cases ordered by expected frequency
+                case TypeCode.Int32:
+                    if (Utf8Parser.TryParse(span, out int _, out int bytesConsumed) && span.Length == bytesConsumed)
+                    {
+                        return true;
+                    }
+                    break;
+                case TypeCode.UInt32:
+                    if (Utf8Parser.TryParse(span, out uint _, out bytesConsumed) && span.Length == bytesConsumed)
+                    {
+                        return true;
+                    }
+                    break;
+                case TypeCode.UInt64:
+                    if (Utf8Parser.TryParse(span, out ulong _, out bytesConsumed) && span.Length == bytesConsumed)
+                    {
+                        return true;
+                    }
+                    break;
+                case TypeCode.Int64:
+                    if (Utf8Parser.TryParse(span, out long _, out bytesConsumed) && span.Length == bytesConsumed)
+                    {
+                        return true;
+                    }
+                    break;
+                case TypeCode.SByte:
+                    if (Utf8Parser.TryParse(span, out sbyte _, out bytesConsumed) && span.Length == bytesConsumed)
+                    {
+                        return true;
+                    }
+                    break;
+                case TypeCode.Byte:
+                    if (Utf8Parser.TryParse(span, out byte _, out bytesConsumed) && span.Length == bytesConsumed)
+                    {
+                        return true;
+                    }
+                    break;
+                case TypeCode.Int16:
+                    if (Utf8Parser.TryParse(span, out short _, out bytesConsumed) && span.Length == bytesConsumed)
+                    {
+                        return true;
+                    }
+                    break;
+                case TypeCode.UInt16:
+                    if (Utf8Parser.TryParse(span, out ushort _, out bytesConsumed) && span.Length == bytesConsumed)
+                    {
+                        return true;
+                    }
+                    break;
+            }
+
+            return false;
         }
 
         public override unsafe void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
