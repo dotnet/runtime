@@ -352,7 +352,7 @@ namespace System.Threading.Tasks
             /// <summary>The <see cref="ExecutionContext"/> present at the time of the ForEachAsync invocation.  This is only used if on the default scheduler.</summary>
             private readonly ExecutionContext? _executionContext;
             /// <summary>Semaphore used to provide exclusive access to the enumerator.</summary>
-            private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+            private readonly SemaphoreSlim _lock = new SemaphoreSlim(initialCount: 1, maxCount: 1);
 
             /// <summary>The number of outstanding workers.  When this hits 0, the operation has completed.</summary>
             private int _completionRefCount;
