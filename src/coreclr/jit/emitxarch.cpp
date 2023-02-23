@@ -511,40 +511,8 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
             case ID_OP_CALL:
                 return PEEPHOLE_ABORT;
 
-                    default:
-                        break;
-                }
-
-                if (instrHasImplicitRegPairDest(id->idIns()))
-                {
-                    if (id->idReg2() == reg)
-                    {
-                        return (id->idOpSize() == EA_4BYTE);
-                    }
-                }
-
-                return false;
-            }
-
-            // movsx always sign extends to 8 bytes.
-            if (id->idIns() == INS_movsx)
-            {
-                return false;
-            }
-
-            if (id->idIns() == INS_movsxd)
-            {
-                return false;
-            }
-
-            // movzx always zeroes the upper 32 bits.
-            if (id->idIns() == INS_movzx)
-            {
-                return true;
-            }
-
-            // otherwise rely on operation size.
-            return (id->idOpSize() == EA_4BYTE);
+            default:
+                break;
         }
 
         // This is a special case for idiv, div, imul, and mul.
