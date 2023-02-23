@@ -57,7 +57,10 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""1""", options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""+1""", options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""-1""", options));
-            
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@""" 1 """, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@""" +1 """, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@""" -1 """, options));
+
             day = JsonSerializer.Deserialize<DayOfWeek>(@"""Monday""", options);
             Assert.Equal(DayOfWeek.Monday, day);
 
@@ -138,7 +141,10 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@"""1""", options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@"""+1""", options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@"""-1""", options));
-            
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@""" 1 """, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@""" +1 """, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<FileAttributes>(@""" -1 """, options));
+
             attributes = JsonSerializer.Deserialize<FileAttributes>(@"""ReadOnly""", options);
             Assert.Equal(FileAttributes.ReadOnly, attributes);
 
@@ -659,6 +665,34 @@ namespace System.Text.Json.Serialization.Tests
 }";
 
             JsonTestHelper.AssertJsonEqual(expected, JsonSerializer.Serialize(dict, options));
+        }
+
+        [Theory]
+        [InlineData(typeof(SampleEnumByte))]
+        [InlineData(typeof(SampleEnumSByte))]
+        [InlineData(typeof(SampleEnumInt16))]
+        [InlineData(typeof(SampleEnumUInt16))]
+        [InlineData(typeof(SampleEnumInt32))]
+        [InlineData(typeof(SampleEnumUInt32))]
+        [InlineData(typeof(SampleEnumInt64))]
+        [InlineData(typeof(SampleEnumUInt64))]
+        public static void DeserializeNumericStringWithAllowIntegerValuesAsFalse(Type enumType)
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@"""1""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@"""+1""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@"""-1""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@""" 1 """, enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@""" +1 """, enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@""" -1 """, enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$"""{ulong.MaxValue}""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$""" {ulong.MaxValue} """, enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$"""+{ulong.MaxValue}""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$""" +{ulong.MaxValue} """, enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$"""{long.MinValue}""", enumType, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@$""" {long.MinValue} """, enumType, options));
         }
 
         private class ToEnumNumberNamingPolicy<T> : JsonNamingPolicy where T : struct, Enum
