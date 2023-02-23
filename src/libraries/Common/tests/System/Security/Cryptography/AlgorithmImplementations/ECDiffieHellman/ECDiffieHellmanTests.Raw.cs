@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             {
                 AssertExtensions.Throws<ArgumentNullException>(
                     "otherPartyPublicKey",
-                    () => ecdh.DeriveSecretAgreement(null));
+                    () => ecdh.DeriveRawSecretAgreement(null));
             }
         }
 
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             {
                 AssertExtensions.Throws<ArgumentException>(
                     "otherPartyPublicKey",
-                    () => alice.DeriveSecretAgreement(bobPublic));
+                    () => alice.DeriveRawSecretAgreement(bobPublic));
             }
         }
 
@@ -45,8 +45,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             using (ECDiffieHellmanPublicKey alicePublic = alice.PublicKey)
             using (ECDiffieHellmanPublicKey bobPublic = bob.PublicKey)
             {
-                byte[] aliceDerived = alice.DeriveSecretAgreement(bobPublic);
-                byte[] bobDerived = bob.DeriveSecretAgreement(alicePublic);
+                byte[] aliceDerived = alice.DeriveRawSecretAgreement(bobPublic);
+                byte[] bobDerived = bob.DeriveRawSecretAgreement(alicePublic);
                 Assert.Equal(aliceDerived, bobDerived);
             }
         }
@@ -60,8 +60,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             using (ECDiffieHellmanPublicKey bobPublic = bob.PublicKey)
             using (ECDiffieHellmanPublicKey evePublic = eve.PublicKey)
             {
-                byte[] aliceDerived = alice.DeriveSecretAgreement(bobPublic);
-                byte[] eveDerived = alice.DeriveSecretAgreement(evePublic);
+                byte[] aliceDerived = alice.DeriveRawSecretAgreement(bobPublic);
+                byte[] eveDerived = alice.DeriveRawSecretAgreement(evePublic);
 
                 Assert.NotEqual(aliceDerived, eveDerived);
             }
@@ -74,8 +74,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create(ECCurve.NamedCurves.nistP256))
             using (ECDiffieHellmanPublicKey bobPublic = bob.PublicKey)
             {
-                byte[] aliceDerived1 = alice.DeriveSecretAgreement(bobPublic);
-                byte[] aliceDerived2 = alice.DeriveSecretAgreement(bobPublic);
+                byte[] aliceDerived1 = alice.DeriveRawSecretAgreement(bobPublic);
+                byte[] aliceDerived2 = alice.DeriveRawSecretAgreement(bobPublic);
                 Assert.Equal(aliceDerived1, aliceDerived2);
             }
         }
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create(ECCurve.NamedCurves.nistP256))
             using (ECDiffieHellmanPublicKey bobPublic = bob.PublicKey)
             {
-                Assert.Throws<PlatformNotSupportedException>(() => alice.DeriveSecretAgreement(bobPublic));
+                Assert.Throws<PlatformNotSupportedException>(() => alice.DeriveRawSecretAgreement(bobPublic));
             }
         }
     }

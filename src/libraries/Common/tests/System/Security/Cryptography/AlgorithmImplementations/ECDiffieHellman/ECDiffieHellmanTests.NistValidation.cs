@@ -229,12 +229,12 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
             if (ECDiffieHellmanFactory.SupportsRawDerivation)
             {
-                byte[] rawDerived = iut.DeriveSecretAgreement(cavsPublic);
+                byte[] rawDerived = iut.DeriveRawSecretAgreement(cavsPublic);
                 Assert.Equal(iutZ.ByteArrayToHex(), rawDerived.ByteArrayToHex());
             }
             else
             {
-                Assert.Throws<PlatformNotSupportedException>(() => iut.DeriveSecretAgreement(cavsPublic));
+                Assert.Throws<PlatformNotSupportedException>(() => iut.DeriveRawSecretAgreement(cavsPublic));
             }
         }
     }
