@@ -262,11 +262,6 @@ namespace System
                 // single UTF8 ASCII vector - the implementation can be shared with UTF8 paths.
                 Vector128<ushort> vec1 = Vector128.LoadUnsafe(ref srcRef, offset);
                 Vector128<ushort> vec2 = Vector128.LoadUnsafe(ref srcRef, offset + (nuint)Vector128<ushort>.Count);
-                if (!Utf16Utility.AllCharsInVector128AreAscii(vec1 | vec2))
-                {
-                    // Invalid input
-                    break;
-                }
                 Vector128<byte> vec = Vector128.Narrow(vec1, vec2);
 
                 // Based on "Algorithm #3" https://github.com/WojciechMula/toys/blob/master/simd-parse-hex/geoff_algorithm.cpp
@@ -287,9 +282,10 @@ namespace System
                 // or some byte greater than 0x0f.
                 Vector128<byte> nibbles = Vector128.Min(t2 - Vector128.Create((byte)0xF0), t4);
                 // Any high bit is a sign that input is not a valid hex data
-                if (AddSaturate(nibbles, Vector128.Create((byte)(127 - 15))).ExtractMostSignificantBits() != 0)
+                if (!Utf16Utility.AllCharsInVector128AreAscii(vec1 | vec2) ||
+                    AddSaturate(nibbles, Vector128.Create((byte)(127 - 15))).ExtractMostSignificantBits() != 0)
                 {
-                    // Invalid input
+                    // Input is either non-ASCII or invalid hex data
                     break;
                 }
                 Vector128<byte> output;
