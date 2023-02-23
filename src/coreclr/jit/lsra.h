@@ -1242,7 +1242,7 @@ private:
         // Did we apply CONST_AVAILABLE heuristics
         FORCEINLINE bool isConstAvailable()
         {
-            return (score & CONST_AVAILABLE) != 0;
+            return constAvailableApplied;
         }
 
     private:
@@ -1251,13 +1251,10 @@ private:
         ScoreMappingTable* mappingTable                                 = nullptr;
 #endif
         LinearScan*  linearScan      = nullptr;
-        int          score           = 0;
         Interval*    currentInterval = nullptr;
         RefPosition* refPosition     = nullptr;
 
-        RegisterType regType         = RegisterType::TYP_UNKNOWN;
-        LsraLocation currentLocation = MinLocation;
-        RefPosition* nextRefPos      = nullptr;
+        RegisterType regType = RegisterType::TYP_UNKNOWN;
 
         regMaskTP candidates;
         regMaskTP preferences     = RBM_NONE;
@@ -1271,7 +1268,8 @@ private:
         RefPosition* lastRefPosition;
         regMaskTP    callerCalleePrefs = RBM_NONE;
         LsraLocation lastLocation;
-        RegRecord*   prevRegRec = nullptr;
+
+        regMaskTP foundRegBit;
 
         regMaskTP prevRegBit = RBM_NONE;
 
@@ -1279,7 +1277,6 @@ private:
         regMaskTP freeCandidates;
         regMaskTP matchingConstants;
         regMaskTP unassignedSet;
-        regMaskTP foundRegBit;
 
         // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
         // as they all require similar computation.
@@ -1287,10 +1284,11 @@ private:
         regMaskTP preferenceSet;
         regMaskTP coversRelatedSet;
         regMaskTP coversFullSet;
-        bool      coversSetsCalculated = false;
-        bool      found                = false;
-        bool      skipAllocation       = false;
-        regNumber foundReg             = REG_NA;
+        bool      coversSetsCalculated  = false;
+        bool      found                 = false;
+        bool      skipAllocation        = false;
+        bool      coversFullApplied     = false;
+        bool      constAvailableApplied = false;
 
         // If the selected register is already assigned to the current internal
         FORCEINLINE bool isAlreadyAssigned()
@@ -1866,7 +1864,11 @@ private:
 
     int BuildSimple(GenTree* tree);
     int BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
-    int BuildDelayFreeUses(GenTree* node, GenTree* rmwNode = nullptr, regMaskTP candidates = RBM_NONE);
+    void AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
+    int BuildDelayFreeUses(GenTree*      node,
+                           GenTree*      rmwNode        = nullptr,
+                           regMaskTP     candidates     = RBM_NONE,
+                           RefPosition** useRefPosition = nullptr);
     int BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates = RBM_NONE);
     int BuildAddrUses(GenTree* addr, regMaskTP candidates = RBM_NONE);
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
@@ -2301,9 +2303,9 @@ public:
 
     // Used by RefTypeDef/Use positions of a multi-reg call node.
     // Indicates the position of the register that this ref position refers to.
-    // The max bits needed is based on max value of MAX_RET_REG_COUNT value
+    // The max bits needed is based on max value of MAX_MULTIREG_COUNT value
     // across all targets and that happened to be 4 on Arm.  Hence index value
-    // would be 0..MAX_RET_REG_COUNT-1.
+    // would be 0..MAX_MULTIREG_COUNT-1.
     unsigned char multiRegIdx : 2;
 
     // Last Use - this may be true for multiple RefPositions in the same Interval

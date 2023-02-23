@@ -8,6 +8,7 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = ProducedBy.NativeAot)]
 	// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
 	//   - so the main validation is done by the ExpectedWarning attributes.
 	[SkipKeptItemsValidation]
@@ -215,7 +216,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()")]
-		// Linker produces extraneous warnings
+		// ILLink produces extraneous warnings
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicFields) + "(String)",
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer)]
@@ -362,7 +363,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		// Analyzer gets this right, but linker doesn't consider backwards branches.
+		// Analyzer gets this right, but ILLink doesn't consider backwards branches.
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()",
 			ProducedBy = ProducedBy.Analyzer)]
@@ -379,7 +380,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			prev.RequiresPublicMethods (); // this produces no warning, even though "prev" will have the value from GetWithPublicFields!
 		}
 
-		// Analyzer gets this right, but linker doesn't consider backwards branches.
+		// Analyzer gets this right, but ILLink doesn't consider backwards branches.
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()",
 			ProducedBy = ProducedBy.Analyzer)]

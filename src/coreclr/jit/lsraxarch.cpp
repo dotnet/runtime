@@ -228,15 +228,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildOperandUses(tree->gtGetOp1());
             break;
 
-        case GT_JTRUE:
-        {
-            srcCount = 0;
-            assert(dstCount == 0);
-            GenTree* cmp = tree->gtGetOp1();
-            assert(!cmp->IsValue());
-        }
-        break;
-
         case GT_JCC:
             srcCount = 0;
             assert(dstCount == 0);
@@ -254,12 +245,10 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildSelect(tree->AsConditional());
             break;
 
-#ifdef TARGET_X86
-        case GT_SELECT_HI:
+        case GT_SELECTCC:
             assert(dstCount == 1);
             srcCount = BuildSelect(tree->AsOp());
             break;
-#endif
 
         case GT_JMP:
             srcCount = 0;
@@ -308,11 +297,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
             BuildDef(tree);
-            break;
-
-        case GT_BT:
-            srcCount = BuildBinaryUses(tree->AsOp());
-            assert(dstCount == 0);
             break;
 
         case GT_RETURNTRAP:
@@ -428,7 +412,11 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_GT:
         case GT_TEST_EQ:
         case GT_TEST_NE:
+        case GT_BITTEST_EQ:
+        case GT_BITTEST_NE:
         case GT_CMP:
+        case GT_TEST:
+        case GT_BT:
             srcCount = BuildCmp(tree);
             break;
 
@@ -749,7 +737,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
     assert(tree->OperIsBinary());
 #endif
 
-    if (tree->OperIsCompare() || tree->OperIs(GT_CMP) || tree->OperIs(GT_BT))
+    if (tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_BT))
     {
         return false;
     }
@@ -910,21 +898,11 @@ int LinearScan::BuildSelect(GenTreeOp* select)
 {
     int srcCount = 0;
 
-    GenCondition cc = GenCondition::NE;
     if (select->OperIs(GT_SELECT))
     {
         GenTree* cond = select->AsConditional()->gtCond;
-        if (cond->isContained())
-        {
-            assert(cond->OperIsCompare());
-            srcCount += BuildCmpOperands(cond);
-            cc = GenCondition::FromRelop(cond);
-        }
-        else
-        {
-            BuildUse(cond);
-            srcCount++;
-        }
+        BuildUse(cond);
+        srcCount++;
     }
 
     GenTree* trueVal  = select->gtOp1;
@@ -1022,28 +1000,32 @@ int LinearScan::BuildSelect(GenTreeOp* select)
     // multiple memory accesses, but we could contain the operand in the 'mov'
     // instruction with some more care taken for marking things delay reg freed
     // correctly).
-    switch (cc.GetCode())
+    if (select->OperIs(GT_SELECTCC))
     {
-        case GenCondition::FEQ:
-        case GenCondition::FLT:
-        case GenCondition::FLE:
-            // Normally these require an 'AND' conditional and cmovs with
-            // both the true and false values as sources. However, after
-            // swapping these into an 'OR' conditional the cmovs require
-            // only the original falseVal, so we need only to mark that as
-            // delay-reg freed to allow codegen to resolve this.
-            assert(uncontainedFalseRP != nullptr);
-            setDelayFree(uncontainedFalseRP);
-            break;
-        case GenCondition::FNEU:
-        case GenCondition::FGEU:
-        case GenCondition::FGTU:
-            // These require an 'OR' conditional and only access 'trueVal'.
-            assert(uncontainedTrueRP != nullptr);
-            setDelayFree(uncontainedTrueRP);
-            break;
-        default:
-            break;
+        GenCondition cc = select->AsOpCC()->gtCondition;
+        switch (cc.GetCode())
+        {
+            case GenCondition::FEQ:
+            case GenCondition::FLT:
+            case GenCondition::FLE:
+                // Normally these require an 'AND' conditional and cmovs with
+                // both the true and false values as sources. However, after
+                // swapping these into an 'OR' conditional the cmovs require
+                // only the original falseVal, so we need only to mark that as
+                // delay-reg freed to allow codegen to resolve this.
+                assert(uncontainedFalseRP != nullptr);
+                setDelayFree(uncontainedFalseRP);
+                break;
+            case GenCondition::FNEU:
+            case GenCondition::FGEU:
+            case GenCondition::FGTU:
+                // These require an 'OR' conditional and only access 'trueVal'.
+                assert(uncontainedTrueRP != nullptr);
+                setDelayFree(uncontainedTrueRP);
+                break;
+            default:
+                break;
+        }
     }
 
     BuildDef(select);
@@ -2071,7 +2053,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
 
     int srcCount = 0;
-    int dstCount = intrinsicTree->IsValue() ? 1 : 0;
+    int dstCount;
+
+    if (intrinsicTree->IsValue())
+    {
+        if (HWIntrinsicInfo::IsMultiReg(intrinsicId))
+        {
+            dstCount = HWIntrinsicInfo::GetMultiRegCount(intrinsicId);
+        }
+        else
+        {
+            dstCount = 1;
+        }
+    }
+    else
+    {
+        dstCount = 0;
+    }
 
     regMaskTP dstCandidates = RBM_NONE;
 
@@ -2259,6 +2257,45 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 #endif // TARGET_X86
+
+            case NI_X86Base_DivRem:
+            case NI_X86Base_X64_DivRem:
+            {
+                assert(numArgs == 3);
+                assert(dstCount == 2);
+                assert(isRMW);
+
+                // DIV implicitly put op1(lower) to EAX and op2(upper) to EDX
+                srcCount += BuildOperandUses(op1, RBM_EAX);
+                srcCount += BuildOperandUses(op2, RBM_EDX);
+
+                if (!op3->isContained())
+                {
+                    // For non-contained nodes, we want to make sure we delay free the register for
+                    // op3 with respect to both op1 and op2. In other words, op3 shouldn't get same
+                    // register that is assigned to either of op1 and op2.
+
+                    RefPosition* op3RefPosition;
+                    srcCount += BuildDelayFreeUses(op3, op1, RBM_NONE, &op3RefPosition);
+                    if ((op3RefPosition != nullptr) && !op3RefPosition->delayRegFree)
+                    {
+                        // If op3 was not marked as delay-free for op1, mark it as delay-free
+                        // if needed for op2.
+                        AddDelayFreeUses(op3RefPosition, op2);
+                    }
+                }
+                else
+                {
+                    srcCount += BuildOperandUses(op3);
+                }
+
+                // result put in EAX and EDX
+                BuildDef(intrinsicTree, RBM_EAX, 0);
+                BuildDef(intrinsicTree, RBM_EDX, 1);
+
+                buildUses = false;
+                break;
+            }
 
             case NI_BMI2_MultiplyNoFlags:
             case NI_BMI2_X64_MultiplyNoFlags:
@@ -2561,7 +2598,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        assert(dstCount == 0);
+        // Currently dstCount = 2 is only used for DivRem, which has special constriants and handled above
+        assert((dstCount == 0) ||
+               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))));
     }
 
     *pDstCount = dstCount;

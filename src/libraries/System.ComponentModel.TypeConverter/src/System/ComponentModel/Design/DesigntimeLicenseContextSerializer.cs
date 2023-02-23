@@ -62,9 +62,10 @@ namespace System.ComponentModel.Design
 
         private sealed class StreamWrapper : Stream
         {
-            private Stream _stream;
+            private readonly Stream _stream;
             private bool _readFirstByte;
             internal byte _firstByte;
+
             public StreamWrapper(Stream stream)
             {
                 _stream = stream;

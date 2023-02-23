@@ -10,6 +10,8 @@ using DAMT = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = ProducedBy.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = ProducedBy.Trimmer)]
 	[ExpectedNoWarnings]
 	[KeptPrivateImplementationDetails ("ThrowSwitchExpressionException")]
 	[KeptAttributeAttribute (typeof (UnconditionalSuppressMessageAttribute))]
@@ -282,7 +284,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				// At runtime this returns null and thus should actually throw (calling GetFields on null)
-				// Linker should not produce warnings but should also not mark anything
+				// Trimming should not produce warnings but should also not mark anything
 				Nullable.GetUnderlyingType (typeof (GetUnderlyingTypeOnNonNullableKnownType)).GetFields ();
 			}
 		}

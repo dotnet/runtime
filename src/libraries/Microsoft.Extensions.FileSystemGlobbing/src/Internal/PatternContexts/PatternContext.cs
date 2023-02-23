@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
 {
     public abstract class PatternContext<TFrame> : IPatternContext where TFrame : struct
     {
-        private Stack<TFrame> _stack = new();
+        private readonly Stack<TFrame> _stack = new();
         protected TFrame Frame;
 
         public virtual void Declare(Action<IPathSegment, bool> declare) { }

@@ -902,6 +902,10 @@ protected:
 
     void genCompareFloat(GenTree* treeNode);
     void genCompareInt(GenTree* treeNode);
+#ifdef TARGET_XARCH
+    bool genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
+#endif
 
 #ifdef FEATURE_SIMD
 #ifdef TARGET_ARM64
@@ -1077,7 +1081,6 @@ protected:
 
 #ifdef TARGET_XARCH
     void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
-    void genCodeForBT(GenTreeOp* bt);
 #endif // TARGET_XARCH
 
     void genCodeForCast(GenTreeOp* tree);
@@ -1192,7 +1195,6 @@ protected:
     void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
-    void genCodeForJumpTrue(GenTreeOp* jtrue);
 #if defined(TARGET_LOONGARCH64)
     // TODO: refactor for LA.
     void genCodeForJumpCompare(GenTreeOp* tree);

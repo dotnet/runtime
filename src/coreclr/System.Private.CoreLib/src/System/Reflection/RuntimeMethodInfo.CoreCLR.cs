@@ -16,17 +16,17 @@ namespace System.Reflection
     internal sealed partial class RuntimeMethodInfo : MethodInfo, IRuntimeMethodInfo
     {
         #region Private Data Members
-        private IntPtr m_handle;
-        private RuntimeTypeCache m_reflectedTypeCache;
+        private readonly IntPtr m_handle;
+        private readonly RuntimeTypeCache m_reflectedTypeCache;
         private string? m_name;
         private string? m_toString;
         private ParameterInfo[]? m_parameters;
         private ParameterInfo? m_returnParameter;
-        private BindingFlags m_bindingFlags;
-        private MethodAttributes m_methodAttributes;
+        private readonly BindingFlags m_bindingFlags;
+        private readonly MethodAttributes m_methodAttributes;
         private Signature? m_signature;
-        private RuntimeType m_declaringType;
-        private object? m_keepalive;
+        private readonly RuntimeType m_declaringType;
+        private readonly object? m_keepalive;
         private MethodInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags

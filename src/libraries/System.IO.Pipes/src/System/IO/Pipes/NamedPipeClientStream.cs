@@ -119,10 +119,7 @@ namespace System.IO.Pipes
         {
             CheckConnectOperationsClient();
 
-            if (timeout < 0 && timeout != Timeout.Infinite)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_InvalidTimeout);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeout, Timeout.Infinite);
 
             ConnectInternal(timeout, CancellationToken.None, Environment.TickCount);
         }
@@ -183,10 +180,7 @@ namespace System.IO.Pipes
         {
             CheckConnectOperationsClient();
 
-            if (timeout < 0 && timeout != Timeout.Infinite)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_InvalidTimeout);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeout, Timeout.Infinite);
 
             if (cancellationToken.IsCancellationRequested)
             {

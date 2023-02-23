@@ -351,6 +351,7 @@ static LLVMTypeRef void_func_t;
 
 static MonoLLVMModule *init_jit_module (void);
 
+static LLVMTypeRef primitive_type_to_llvm_type (MonoTypeEnum type);
 static void emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil_code);
 static void emit_default_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder);
 static LLVMValueRef emit_dbg_subprogram (EmitContext *ctx, MonoCompile *cfg, LLVMValueRef method, const char *name);
@@ -461,7 +462,8 @@ key_from_id_and_tag (int id, llvm_ovr_tag_t ovr_tag)
 }
 
 static llvm_ovr_tag_t
-ovr_tag_from_mono_vector_class (MonoClass *klass) {
+ovr_tag_from_mono_vector_class (MonoClass *klass)
+{
 	int size = mono_class_value_size (klass, NULL);
 	llvm_ovr_tag_t ret = 0;
 	switch (size) {
@@ -648,49 +650,10 @@ get_vtype_size_align (MonoType *t)
 static LLVMTypeRef
 simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 {
-	const char *klass_name = m_class_get_name (klass);
-	if (!strcmp (klass_name, "Vector2")) {
-		return LLVMVectorType (LLVMFloatType (), 4);
-	} else if (!strcmp (klass_name, "Vector3")) {
-		return LLVMVectorType (LLVMFloatType (), 4);
-	} else if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
-		return LLVMVectorType (LLVMFloatType (), 4);
-	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
-		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
-		int size = mono_class_value_size (klass, NULL);
-		switch (etype->type) {
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-			return LLVMVectorType (LLVMInt8Type (), size);
-		case MONO_TYPE_I2:
-		case MONO_TYPE_U2:
-			return LLVMVectorType (LLVMInt16Type (), size / 2);
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-			return LLVMVectorType (LLVMInt32Type (), size / 4);
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			return LLVMVectorType (LLVMInt64Type (), size / 8);
-		case MONO_TYPE_I:
-		case MONO_TYPE_U:
-#if TARGET_SIZEOF_VOID_P == 8
-			return LLVMVectorType (LLVMInt64Type (), size / 8);
-#else
-			return LLVMVectorType (LLVMInt32Type (), size / 4);
-#endif
-		case MONO_TYPE_R4:
-			return LLVMVectorType (LLVMFloatType (), size / 4);
-		case MONO_TYPE_R8:
-			return LLVMVectorType (LLVMDoubleType (), size / 8);
-		default:
-			g_assert_not_reached ();
-			return NULL;
-		}
-	} else {
-		printf ("%s\n", klass_name);
-		NOT_IMPLEMENTED;
-		return NULL;
-	}
+	guint32 nelems;
+	MonoTypeEnum type = mini_get_simd_type_info (klass, &nelems);
+
+	return LLVMVectorType (primitive_type_to_llvm_type (type), nelems);
 }
 
 static LLVMTypeRef
@@ -712,34 +675,8 @@ simd_valuetuple_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 static inline G_GNUC_UNUSED LLVMTypeRef
 type_to_sse_type (int type)
 {
-	switch (type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-		return LLVMVectorType (LLVMInt8Type (), 16);
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I2:
-		return LLVMVectorType (LLVMInt16Type (), 8);
-	case MONO_TYPE_U4:
-	case MONO_TYPE_I4:
-		return LLVMVectorType (LLVMInt32Type (), 4);
-	case MONO_TYPE_U8:
-	case MONO_TYPE_I8:
-		return LLVMVectorType (LLVMInt64Type (), 2);
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#if TARGET_SIZEOF_VOID_P == 8
-		return LLVMVectorType (LLVMInt64Type (), 2);
-#else
-		return LLVMVectorType (LLVMInt32Type (), 4);
-#endif
-	case MONO_TYPE_R8:
-		return LLVMVectorType (LLVMDoubleType (), 2);
-	case MONO_TYPE_R4:
-		return LLVMVectorType (LLVMFloatType (), 4);
-	default:
-		g_assert_not_reached ();
-		return NULL;
-	}
+	int size = mini_primitive_type_size ((MonoTypeEnum)type);
+	return LLVMVectorType (primitive_type_to_llvm_type ((MonoTypeEnum)type), 16 / size);
 }
 
 static LLVMTypeRef
@@ -7844,6 +7781,81 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMConstAllOnes (type_to_llvm_type (ctx, m_class_get_byval_arg (ins->klass)));
 			break;
 		}
+		case OP_XCONST: {
+			int ecount;
+			MonoTypeEnum etype = mini_get_simd_type_info (ins->klass, (guint32*)&ecount);
+
+			LLVMTypeRef llvm_type = primitive_type_to_llvm_type (etype);
+			LLVMValueRef vals [64];
+
+			switch (etype) {
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1: {
+				guint8* v = (guint8*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstInt (llvm_type, v[i], FALSE);
+				}
+				break;
+			}
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2: {
+				guint16* v = (guint16*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstInt (llvm_type, v[i], FALSE);
+				}
+				break;
+			}
+#if TARGET_SIZEOF_VOID_P == 4
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4: {
+				guint32* v = (guint32*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstInt (llvm_type, v[i], FALSE);
+				}
+				break;
+			}
+#if TARGET_SIZEOF_VOID_P == 8
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+#endif
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8: {
+				guint64* v = (guint64*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstInt (llvm_type, v[i], FALSE);
+				}
+				break;
+			}
+			case MONO_TYPE_R4: {
+				float* v = (float*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstReal (llvm_type, v[i]);
+				}
+				break;
+			}
+			case MONO_TYPE_R8: {
+				double* v = (double*)ins->inst_p0;
+
+				for (int i = 0; i < ecount; ++i) {
+					vals [i] = LLVMConstReal (llvm_type, v[i]);
+				}
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+			}
+
+			values [ins->dreg] = LLVMConstVector (vals, ecount);
+			break;
+		}
 		case OP_LOADX_MEMBASE: {
 			LLVMTypeRef t = type_to_llvm_type (ctx, m_class_get_byval_arg (ins->klass));
 			LLVMValueRef src;
@@ -11807,9 +11819,6 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	EmitContext *ctx;
 	char *method_name;
 	gboolean is_linkonce = FALSE;
-
-	if (cfg->skip)
-		return;
 
 	/* The code below might acquire the loader lock, so use it for global locking */
 	mono_loader_lock ();

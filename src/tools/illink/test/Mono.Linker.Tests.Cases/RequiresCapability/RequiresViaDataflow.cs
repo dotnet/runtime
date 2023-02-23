@@ -15,7 +15,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[ExpectedNoWarnings]
 	class RequiresViaDataflow
 	{
-		// Base/Derived and Implementation/Interface differs between linker and analyzer https://github.com/dotnet/linker/issues/2533
+		// Base/Derived and Implementation/Interface differs between ILLink and analyzer https://github.com/dotnet/linker/issues/2533
 		[ExpectedWarning ("IL2026", "--DynamicallyAccessedTypeWithRequires.MethodWithRequires--")]
 		[ExpectedWarning ("IL2026", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL2026", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--")]
@@ -67,7 +67,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--")]
-		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL3002", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 		[ExpectedWarning ("IL3050", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 		[DynamicDependency ("RequiresInDynamicDependency")]

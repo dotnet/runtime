@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
 	[TestCaseRequirements (TestRunCharacteristics.TargetingNetFramework, "This test is specific to .NET Framework")]
 	// For mono though, we have to specify the assembly (Mono.Linker.Tests.Cases.Expectations) because at the time of processing
-	// that assembly is not yet loaded into the closure in the linker, so it won't find the attribute type.
+	// that assembly is not yet loaded into the closure in illink, so it won't find the attribute type.
 	[SetupLinkAttributesFile ("SuppressWarningsUsingTargetViaXml.mono.xml")]
 	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) }, new[] { "System.Core.dll" })]
 

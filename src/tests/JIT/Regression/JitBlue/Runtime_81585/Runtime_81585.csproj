@@ -7,7 +7,4 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
-  <ItemGroup>
-    <CLRTestEnvironmentVariable Include="DOTNET_JitStress" Value="1" />
-  </ItemGroup>
 </Project>

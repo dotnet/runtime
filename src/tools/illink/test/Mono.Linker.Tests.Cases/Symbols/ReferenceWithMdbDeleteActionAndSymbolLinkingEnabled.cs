@@ -19,7 +19,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
 		}
 
 		/// <summary>
-		/// By not using this method we will cause the linker to delete the reference
+		/// By not using this method we will cause the trimmer to delete the reference
 		/// </summary>
 		static void UnusedCodePath ()
 		{
