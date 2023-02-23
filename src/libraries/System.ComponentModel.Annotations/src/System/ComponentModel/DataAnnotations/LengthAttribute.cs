@@ -67,7 +67,7 @@ namespace System.ComponentModel.DataAnnotations
                 throw new InvalidCastException(SR.Format(SR.LengthAttribute_InvalidValueType, value.GetType()));
             }
 
-            return MinimumLength <= length && length <= MaximumLength;
+            return (uint)(length - MinimumLength) <= (uint)(MaximumLength - MinimumLength);
         }
 
         /// <summary>
