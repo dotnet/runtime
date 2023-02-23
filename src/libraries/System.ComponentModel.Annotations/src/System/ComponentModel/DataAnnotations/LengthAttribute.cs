@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -7,30 +7,28 @@ using System.Globalization;
 namespace System.ComponentModel.DataAnnotations
 {
     /// <summary>
-    ///     Specifies the minimum length of collection/string data allowed in a property.
+    ///     Specifies the minimum and maximum length of collection/string data allowed in a property.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter,
-        AllowMultiple = false)]
-    public class MinLengthAttribute : ValidationAttribute
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
+    public class LengthAttribute : ValidationAttribute
     {
-        /// <summary>
-        ///     Initializes a new instance of the <see cref="MinLengthAttribute" /> class.
-        /// </summary>
-        /// <param name="length">
-        ///     The minimum allowable length of collection/string data.
-        ///     Value must be greater than or equal to zero.
-        /// </param>
         [RequiresUnreferencedCode(CountPropertyHelper.RequiresUnreferencedCodeMessage)]
-        public MinLengthAttribute(int length)
-            : base(SR.MinLengthAttribute_ValidationError)
+        public LengthAttribute(int minimumLength, int maximumLength)
+            : base(SR.LengthAttribute_ValidationError)
         {
-            Length = length;
+            MinimumLength = minimumLength;
+            MaximumLength = maximumLength;
         }
 
         /// <summary>
         ///     Gets the minimum allowable length of the collection/string data.
         /// </summary>
-        public int Length { get; }
+        public int MinimumLength { get; }
+
+        /// <summary>
+        ///     Gets the maximum allowable length of the collection/string data.
+        /// </summary>
+        public int MaximumLength { get; }
 
         /// <summary>
         ///     Determines whether a specified object is valid. (Overrides <see cref="ValidationAttribute.IsValid(object)" />)
@@ -41,10 +39,12 @@ namespace System.ComponentModel.DataAnnotations
         /// </remarks>
         /// <param name="value">The object to validate.</param>
         /// <returns>
-        ///     <c>true</c> if the value is null or greater than or equal to the specified minimum length, otherwise
+        ///     <c>true</c> if the value is null or its length is between the specified minimum length and maximum length, otherwise
         ///     <c>false</c>
         /// </returns>
-        /// <exception cref="InvalidOperationException">Length is less than zero.</exception>
+        /// <exception cref="InvalidOperationException">
+        ///     <see cref="MinimumLength"/> is less than zero or <see cref="MaximumLength"/> is less than <see cref="MinimumLength"/>.
+        /// </exception>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor is marked with RequiresUnreferencedCode.")]
         public override bool IsValid(object? value)
         {
@@ -53,7 +53,7 @@ namespace System.ComponentModel.DataAnnotations
 
             int length;
             // Automatically pass if value is null. RequiredAttribute should be used to assert a value is not null.
-            if (value == null)
+            if (value is null)
             {
                 return true;
             }
@@ -67,7 +67,7 @@ namespace System.ComponentModel.DataAnnotations
                 throw new InvalidCastException(SR.Format(SR.LengthAttribute_InvalidValueType, value.GetType()));
             }
 
-            return length >= Length;
+            return (uint)(length - MinimumLength) <= (uint)(MaximumLength - MinimumLength);
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <returns>A localized string to describe the minimum acceptable length.</returns>
         public override string FormatErrorMessage(string name) =>
             // An error occurred, so we know the value is less than the minimum
-            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, MinimumLength, MaximumLength);
 
         /// <summary>
         ///     Checks that Length has a legal value.
@@ -85,9 +85,14 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="InvalidOperationException">Length is less than zero.</exception>
         private void EnsureLegalLengths()
         {
-            if (Length < 0)
+            if (MinimumLength < 0)
             {
-                throw new InvalidOperationException(SR.MinLengthAttribute_InvalidMinLength);
+                throw new InvalidOperationException(SR.LengthAttribute_InvalidMinLength);
+            }
+
+            if (MaximumLength < MinimumLength)
+            {
+                throw new InvalidOperationException(SR.LengthAttribute_InvalidMaxLength);
             }
         }
     }
