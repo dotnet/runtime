@@ -631,7 +631,7 @@ export function generate_wasm_body (
                 // opcode
                 builder.i32_const(opcode);
                 builder.callImport("cast");
-                // bailout if cast operation failed
+                // if cast operation succeeded, skip the bailout
                 builder.appendU8(WasmOpcode.br_if);
                 builder.appendULeb(0);
                 append_bailout(builder, ip, BailoutReason.CastFailed);
@@ -2733,8 +2733,22 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
             append_stloc_tail(builder, valueOffset, WasmOpcode.i32_store);
             return true;
         }
+        case MintOpcode.MINT_STELEM_REF: {
+            builder.block();
+            // array
+            append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
+            // index
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+            // value
+            append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+            builder.callImport("stelem_ref");
+            builder.appendU8(WasmOpcode.br_if);
+            builder.appendLeb(0);
+            append_bailout(builder, ip, BailoutReason.ArrayStoreFailed);
+            builder.endBlock();
+            return true;
+        }
         case MintOpcode.MINT_LDELEM_REF:
-        case MintOpcode.MINT_STELEM_REF:
             elementSize = 4;
             elementGetter = WasmOpcode.i32_load;
             isPointer = true;
