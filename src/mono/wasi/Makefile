@@ -10,6 +10,7 @@ endif
 
 DOTNET=$(TOP)/dotnet.sh
 
+WASI_SDK_PATH?=$(TOP)/src/mono/wasi/wasi-sdk
 CONFIG?=Release
 BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
