@@ -15,7 +15,7 @@
     <!-- For most of these, that just involves excluding the projects when the architecture is mismatched -->
     <!-- For Vector512, we only have a very small pool of machines with acceleration support, so they are always outerloop -->
 
-    <MergedWrapperProjectReference Include="*/**/*.csproj" Exclude="**/*_ro.csproj;**/*.RefOnly.csproj" />
+    <MergedWrapperProjectReference Include="*/**/*.csproj" Exclude="**/*_ro.csproj" />
 
     <MergedWrapperProjectReference Remove="Arm/**/*.csproj" Condition="'$(_IncludeArm64HWIntrinsicTests)' != 'true'" />
     <MergedWrapperProjectReference Remove="General/Vector64/**/*.csproj" Condition="'$(_IncludeArm64HWIntrinsicTests)' != 'true'" />

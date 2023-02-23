@@ -195,7 +195,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				var args = LinkerTestBase.GetAttributeArguments (attribute);
 				if (args.TryGetValue ("ProducedBy", out var producedBy)) {
 					// Skip if this warning is not expected to be produced by any of the analyzers that we are currently testing.
-					return GetProducedBy (producedBy).HasFlag (ProducedBy.Analyzer);
+					return GetProducedBy (producedBy).HasFlag (Tool.Analyzer);
 				}
 
 				return true;
@@ -203,19 +203,19 @@ namespace ILLink.RoslynAnalyzer.Tests
 				return false;
 			}
 
-			static ProducedBy GetProducedBy (ExpressionSyntax expression)
+			static Tool GetProducedBy (ExpressionSyntax expression)
 			{
-				var producedBy = (ProducedBy) 0x0;
+				var producedBy = (Tool) 0x0;
 				switch (expression) {
 				case BinaryExpressionSyntax binaryExpressionSyntax:
-					if (!Enum.TryParse<ProducedBy> ((binaryExpressionSyntax.Left as MemberAccessExpressionSyntax)!.Name.Identifier.ValueText, out var besProducedBy))
+					if (!Enum.TryParse<Tool> ((binaryExpressionSyntax.Left as MemberAccessExpressionSyntax)!.Name.Identifier.ValueText, out var besProducedBy))
 						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
 					producedBy |= besProducedBy;
 					producedBy |= GetProducedBy (binaryExpressionSyntax.Right);
 					break;
 
 				case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
-					if (!Enum.TryParse<ProducedBy> (memberAccessExpressionSyntax.Name.Identifier.ValueText, out var maeProducedBy))
+					if (!Enum.TryParse<Tool> (memberAccessExpressionSyntax.Name.Identifier.ValueText, out var maeProducedBy))
 						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
 					producedBy |= maeProducedBy;
 					break;

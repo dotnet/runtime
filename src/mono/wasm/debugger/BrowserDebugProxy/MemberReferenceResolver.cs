@@ -23,12 +23,12 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal sealed class MemberReferenceResolver
     {
         private static int evaluationResultObjectId;
-        private SessionId sessionId;
-        private int scopeId;
-        private MonoProxy proxy;
-        private ExecutionContext context;
-        private PerScopeCache scopeCache;
-        private ILogger logger;
+        private readonly SessionId sessionId;
+        private readonly int scopeId;
+        private readonly MonoProxy proxy;
+        private readonly ExecutionContext context;
+        private readonly PerScopeCache scopeCache;
+        private readonly ILogger logger;
         private bool localsFetched;
         private int linqTypeId;
 

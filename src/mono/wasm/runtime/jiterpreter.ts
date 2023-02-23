@@ -114,10 +114,10 @@ export let countLimitedPrintCounter = 10;
 export const abortCounts : { [key: string] : number } = {};
 export const traceInfo : { [key: string] : TraceInfo } = {};
 
-export const // offsetOfStack = 12,
-    offsetOfImethod = 4,
-    offsetOfDataItems = 20,
+export const
     sizeOfDataItem = 4,
+    sizeOfObjectHeader = 8,
+
     // HACK: Typically we generate ~12 bytes of extra gunk after the function body so we are
     //  subtracting 20 from the maximum size to make sure we don't produce too much
     // Also subtract some more size since the wasm we generate for one opcode could be big
@@ -173,6 +173,7 @@ export const enum BailoutReason {
     ConditionalBackwardBranch,
     ComplexBranch,
     ArrayLoadFailed,
+    ArrayStoreFailed,
     StringOperationFailed,
     DivideByZero,
     Overflow,
@@ -199,6 +200,7 @@ export const BailoutReasonNames = [
     "ConditionalBackwardBranch",
     "ComplexBranch",
     "ArrayLoadFailed",
+    "ArrayStoreFailed",
     "StringOperationFailed",
     "DivideByZero",
     "Overflow",
@@ -244,9 +246,6 @@ function getTraceImports () {
         importDef("array_address", getRawCwrap("mono_jiterp_array_get_element_address_with_size_ref")),
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
-        importDef("strlen", getRawCwrap("mono_jiterp_strlen_ref")),
-        importDef("getchr", getRawCwrap("mono_jiterp_getchr_ref")),
-        importDef("getspan", getRawCwrap("mono_jiterp_getitem_span")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
         importDef("cast", getRawCwrap("mono_jiterp_cast_ref")),
         importDef("try_unbox", getRawCwrap("mono_jiterp_try_unbox_ref")),
@@ -269,6 +268,7 @@ function getTraceImports () {
         importDef("transfer", getRawCwrap("mono_jiterp_trace_transfer")),
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
         importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
+        importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -558,6 +558,13 @@ function initialize_builder (builder: WasmBuilder) {
             "trace": WasmValtype.i32,
             "frame": WasmValtype.i32,
             "locals": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "stelem_ref", {
+            "o": WasmValtype.i32,
+            "aindex": WasmValtype.i32,
+            "ref": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
 }
@@ -993,7 +1000,6 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                         continue;
 
                     // not worth implementing / too difficult
-                    case "intrins_ordinal_ignore_case_ascii":
                     case "intrins_marvin_block":
                     case "intrins_ascii_chars_to_uppercase":
                     case "newarr":

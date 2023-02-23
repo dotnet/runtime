@@ -185,8 +185,6 @@ GTNODE(SUB_HI           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(LSH_HI           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(RSH_LO           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
-// Variant of SELECT that reuses flags computed by a previous SELECT.
-GTNODE(SELECT_HI        , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 #endif // !defined(TARGET_64BIT)
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -234,16 +232,19 @@ GTNODE(CNEG_LT          , GenTreeOp          ,0,GTK_UNOP|DBK_NOTHIR)  // Conditi
 GTNODE(CMP              , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 // Generate a test instruction; sets the CPU flags according to (a & b) and does not produce a value.
 GTNODE(TEST             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+#ifdef TARGET_XARCH
+// The XARCH BT instruction. Like CMP, this sets the condition flags (CF to be precise) and does not produce a value.
+GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR))
+#endif
 // Makes a comparison and jump if the condition specified.  Does not set flags.
 GTNODE(JCMP             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and branch if the condition specified by GenTreeCC::gtCondition is true.
 GTNODE(JCC              , GenTreeCC          ,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and produces 1 if the condition specified by GenTreeCC::gtCondition is true and 0 otherwise.
 GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF|DBK_NOTHIR)
-#ifdef TARGET_XARCH
-// The XARCH BT instruction. Like CMP, this sets the condition flags (CF to be precise) and does not produce a value.
-GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR))
-#endif
+// Variant of SELECT that reuses flags computed by a previous node with the specified condition.
+GTNODE(SELECTCC         , GenTreeCC          ,0,GTK_BINOP|DBK_NOTHIR)
+
 
 //-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:

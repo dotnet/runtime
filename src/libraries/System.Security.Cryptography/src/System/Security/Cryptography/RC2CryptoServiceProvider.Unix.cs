@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
     {
         private readonly RC2 _impl;
 
-        private static KeySizes[] s_legalKeySizes =
+        private static readonly KeySizes[] s_legalKeySizes =
         {
             new KeySizes(40, 128, 8)  // csp implementation only goes up to 128
         };
