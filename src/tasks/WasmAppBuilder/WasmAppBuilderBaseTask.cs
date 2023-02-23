@@ -68,7 +68,7 @@ public abstract class WasmAppBuilderBaseTask : Task
 
     protected virtual bool ValidateArguments() => true;
 
-    protected void ProcessSatelliteAssemblies(Action<(string fullPath, string culture)> fn)
+    protected void ProcessSatelliteAssemblies(Action<(string fullPath, string culture)> addSatelliteAssemblyFunc)
     {
         foreach (var assembly in SatelliteAssemblies)
         {
@@ -81,7 +81,7 @@ public abstract class WasmAppBuilderBaseTask : Task
             }
 
             // FIXME: validate the culture?
-            fn((fullPath, culture));
+            addSatelliteAssemblyFunc((fullPath, culture));
         }
     }
 

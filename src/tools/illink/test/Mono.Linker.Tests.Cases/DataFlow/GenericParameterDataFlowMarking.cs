@@ -21,14 +21,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			[Kept]
 			interface IUse {
-				[Kept (By = ProducedBy.Trimmer)]
+				[Kept (By = Tool.Trimmer)]
 				void Use ();
 			}
 
 			[Kept]
-			[KeptInterfaceAttribute (typeof (IUse), By = ProducedBy.Trimmer)]
+			[KeptInterfaceAttribute (typeof (IUse), By = Tool.Trimmer)]
 			class RequiresMethods<
-				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = ProducedBy.Trimmer)]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> : IUse
 			{
 				[Kept]
@@ -36,7 +36,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			[KeptInterfaceAttribute (typeof (IUse), By = ProducedBy.Trimmer)]
+			[KeptInterfaceAttribute (typeof (IUse), By = Tool.Trimmer)]
 			class RequiresNothing<T> : IUse
 			{
 				[Kept]
@@ -44,9 +44,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			[KeptInterfaceAttribute (typeof (IUse), By = ProducedBy.Trimmer)]
+			[KeptInterfaceAttribute (typeof (IUse), By = Tool.Trimmer)]
 			class RequiresFields<
-				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = ProducedBy.Trimmer)]
+				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> : IUse
 			{
 				[Kept]
@@ -91,19 +91,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				static void GenericMethod<T> (T value) where T : IUse { value.Use (); }
 
 				[Kept]
-				[KeptInterfaceAttribute (typeof (IUse), By = ProducedBy.Trimmer)]
+				[KeptInterfaceAttribute (typeof (IUse), By = Tool.Trimmer)]
 				class TargetTypeForNothing : IUse
 				{
 					public int PublicField;
 					public static void PublicMethod () { }
 					static void PrivateMethod () { }
 
-					[Kept(By = ProducedBy.Trimmer)]
+					[Kept(By = Tool.Trimmer)]
 					public void Use () { }
 				}
 
 				[Kept]
-				[KeptInterfaceAttribute (typeof (IUse), By = ProducedBy.Trimmer)]
+				[KeptInterfaceAttribute (typeof (IUse), By = Tool.Trimmer)]
 				class TargetType : IUse
 				{
 					public int PublicField;
@@ -248,7 +248,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				{
 					// NativeAOT will not preserve any information about the type or field
 					// the access to the field will be optimized as just a write to a memory location.
-					[Kept (By = ProducedBy.Trimmer)]
+					[Kept (By = Tool.Trimmer)]
 					public static int Field;
 				}
 
@@ -285,7 +285,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				[Kept]
-				[KeptBaseTypeAttribute (typeof (Base<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = ProducedBy.Trimmer)]
+				[KeptBaseTypeAttribute (typeof (Base<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = Tool.Trimmer)]
 				class DerivedWithTarget
 					: Base<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>
 				{ }
@@ -315,7 +315,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				[Kept]
-				[KeptBaseTypeAttribute (typeof(IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = ProducedBy.Trimmer)]
+				[KeptBaseTypeAttribute (typeof(IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = Tool.Trimmer)]
 				class DerivedWithTarget
 					: IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>
 				{ }

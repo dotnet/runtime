@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   testBuildArgs: ''
   helixQueues: ''
+  liveLibrariesBuildConfig: ''
 
 steps:
 # Can't run arm/arm64 tests on x64 build machines
@@ -22,6 +23,7 @@ steps:
       testBuildArgs: ${{ parameters.testBuildArgs }}
       nativeAotTest: true
       helixQueues: ${{ parameters.helixQueues }}
+      liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
 
   # Publishing tooling doesn't support different configs between runtime and libs, so only run tests in Release config
   - ${{ if eq(parameters.buildConfig, 'release') }}:

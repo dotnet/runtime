@@ -1585,7 +1585,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			// https://github.com/dotnet/linker/issues/2819
-			[ExpectedWarning ("IL2072", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2072", ProducedBy = Tool.Trimmer)]
 			static void TestIsInstOf (object o)
 			{
 				if (o is Target t) {
