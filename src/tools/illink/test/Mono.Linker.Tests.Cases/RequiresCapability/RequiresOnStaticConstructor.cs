@@ -14,6 +14,7 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = ProducedBy.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	class RequiresOnStaticConstructor
@@ -143,7 +144,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public static int AnnotatedMethod () => 42;
 		}
 
-		// Linker sees the call to AnnotatedMethod in the static .ctor, but analyzer doesn't see the static .ctor at all
+		// ILLink sees the call to AnnotatedMethod in the static .ctor, but analyzer doesn't see the static .ctor at all
 		// since it's fully compiler generated, instead it sees the call on the field initialization itself.
 		[LogContains ("IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresOnStaticConstructor.TypeIsBeforeFieldInit..cctor():" +
 			" Using member 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresOnStaticConstructor.TypeIsBeforeFieldInit.AnnotatedMethod()'" +

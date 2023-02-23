@@ -173,6 +173,7 @@ export const enum BailoutReason {
     ConditionalBackwardBranch,
     ComplexBranch,
     ArrayLoadFailed,
+    ArrayStoreFailed,
     StringOperationFailed,
     DivideByZero,
     Overflow,
@@ -199,6 +200,7 @@ export const BailoutReasonNames = [
     "ConditionalBackwardBranch",
     "ComplexBranch",
     "ArrayLoadFailed",
+    "ArrayStoreFailed",
     "StringOperationFailed",
     "DivideByZero",
     "Overflow",
@@ -266,6 +268,7 @@ function getTraceImports () {
         importDef("transfer", getRawCwrap("mono_jiterp_trace_transfer")),
         importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
         importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
+        importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -555,6 +558,13 @@ function initialize_builder (builder: WasmBuilder) {
             "trace": WasmValtype.i32,
             "frame": WasmValtype.i32,
             "locals": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "stelem_ref", {
+            "o": WasmValtype.i32,
+            "aindex": WasmValtype.i32,
+            "ref": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
 }

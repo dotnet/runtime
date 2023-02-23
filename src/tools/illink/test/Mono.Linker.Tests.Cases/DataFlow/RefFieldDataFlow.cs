@@ -11,6 +11,7 @@ using DAMT = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = ProducedBy.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	class RefFieldDataFlow
@@ -176,7 +177,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2069", "RefFieldWithMethods.T", "param")]
 		[ExpectedWarning ("IL2069", "RefFieldWithMethods.T", "paramWithFields")]
 		[ExpectedWarning ("IL2077", "paramWithMethodsAndFields", "RefFieldWithMethods.T")]
-		// Linker doesn't recognize ldind.ref
+		// ILLink doesn't recognize ldind.ref
 		// https://github.com/dotnet/linker/issues/2943
 		// IL2064's are bugs - shouldn't be unknown values
 		[ExpectedWarning ("IL2064", ProducedBy = ProducedBy.Trimmer)]
@@ -377,7 +378,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RefPropWithFields withFields = null,
 			RefPropWithMethodsAndFields withMethodsAndFields = null)
 		{
-			// All cause IL2064 -- linker doesn't recognize ldind.ref
+			// All cause IL2064 -- ILLink doesn't recognize ldind.ref
 			target.T = unannotated.T; // Warn
 			target.T = withMethods.T; // Okay
 			target.T = withFields.T; // Warn

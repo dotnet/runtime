@@ -5909,52 +5909,40 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 // ContainCheckSelect: determine whether the sources of a select should be contained.
 //
 // Arguments:
-//    select - the GT_SELECT or GT_SELECT_HI node.
+//    select - the GT_SELECT or GT_SELECTCC node.
 //
 void Lowering::ContainCheckSelect(GenTreeOp* select)
 {
-#ifdef TARGET_64BIT
-    assert(select->OperIs(GT_SELECT));
-#else
-    assert(select->OperIs(GT_SELECT, GT_SELECT_HI));
-#endif
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
-    // Disallow containing compares if the flags may be used by follow-up
-    // nodes, in which case those nodes expect zero/non-zero in the flags.
-    if (select->OperIs(GT_SELECT) && ((select->gtFlags & GTF_SET_FLAGS) == 0))
+    if (select->OperIs(GT_SELECTCC))
     {
-        GenTree* cond = select->AsConditional()->gtCond;
+        GenCondition cc = select->AsOpCC()->gtCondition;
 
-        if (cond->OperIsCompare() && IsSafeToContainMem(select, cond))
+        // op1 and op2 are emitted as two separate instructions due to the
+        // conditional nature of cmov, so both operands can usually be
+        // contained memory operands. The exception is for compares
+        // requiring two cmovs, in which case we do not want to incur the
+        // memory access/address calculation twice.
+        //
+        // See the comment in Codegen::GenConditionDesc::map for why these
+        // comparisons are special and end up requiring the two cmovs.
+        //
+        switch (cc.GetCode())
         {
-            MakeSrcContained(select, cond);
-
-            // op1 and op2 are emitted as two separate instructions due to the
-            // conditional nature of cmov, so both operands can usually be
-            // contained memory operands. The exception is for compares
-            // requiring two cmovs, in which case we do not want to incur the
-            // memory access/address calculation twice.
-            //
-            // See the comment in Codegen::GenConditionDesc::map for why these
-            // comparisons are special and end up requiring the two cmovs.
-            //
-            GenCondition cc = GenCondition::FromRelop(cond);
-            switch (cc.GetCode())
-            {
-                case GenCondition::FEQ:
-                case GenCondition::FLT:
-                case GenCondition::FLE:
-                case GenCondition::FNEU:
-                case GenCondition::FGEU:
-                case GenCondition::FGTU:
-                    // Skip containment checking below.
-                    // TODO-CQ: We could allow one of the operands to be a
-                    // contained memory operand, but it requires updating LSRA
-                    // build to take it into account.
-                    return;
-                default:
-                    break;
-            }
+            case GenCondition::FEQ:
+            case GenCondition::FLT:
+            case GenCondition::FLE:
+            case GenCondition::FNEU:
+            case GenCondition::FGEU:
+            case GenCondition::FGTU:
+                // Skip containment checking below.
+                // TODO-CQ: We could allow one of the operands to be a
+                // contained memory operand, but it requires updating LSRA
+                // build to take it into account.
+                return;
+            default:
+                break;
         }
     }
 

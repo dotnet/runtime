@@ -7,6 +7,7 @@ using BindingFlags = System.Reflection.BindingFlags;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = ProducedBy.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targetted at AOT scenarios")]
@@ -433,7 +434,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = ProducedBy.Trimmer)]
 			static void TestUnknownMethodButNoTypeArguments (MethodInfo mi)
 			{
-				// Thechnically linker could figure this out, but it's not worth the complexity - such call will always fail at runtime.
+				// Technically trimming could figure this out, but it's not worth the complexity - such call will always fail at runtime.
 				mi.MakeGenericMethod (Type.EmptyTypes);
 			}
 
@@ -557,7 +558,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					.MakeGenericMethod (types);
 			}
 
-			// https://github.com/dotnet/linker/issues/2158 - analyzer doesn't work the same as linker, it simply doesn't handle refs
+			// https://github.com/dotnet/linker/issues/2158 - analyzer doesn't work the same as ILLink, it simply doesn't handle refs
 			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod), ProducedBy = ProducedBy.Trimmer)]
 			static void TestWithArrayUnknownIndexSetByRef (int indexToSet)
 			{

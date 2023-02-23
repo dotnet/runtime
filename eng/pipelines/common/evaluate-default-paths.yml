@@ -23,6 +23,7 @@ parameters:
         src/mono/sample/wasm/*
         src/mono/wasi/*
         src/mono/wasm/*
+        src/mono/mono/mini/interp/jiterpreter*
         src/tasks/WasmAppBuilder/*
         src/tasks/WasmBuildTasks/*
         src/tasks/WorkloadBuildTasks/*
