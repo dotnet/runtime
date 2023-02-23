@@ -545,7 +545,7 @@ namespace System.Collections.Generic
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
-            Count == 0 ? ((IEnumerable<KeyValuePair<TKey, TValue>>)Array.Empty<KeyValuePair<TKey, TValue>>()).GetEnumerator() :
+            Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<KeyValuePair<TKey, TValue>>() :
             GetEnumerator();
 
         IDictionaryEnumerator IDictionary.GetEnumerator() => new Enumerator(this, Enumerator.DictEntry);
@@ -1082,7 +1082,7 @@ namespace System.Collections.Generic
             }
 
             public IEnumerator<TKey> GetEnumerator() =>
-                Count == 0 ? ((IEnumerable<TKey>)Array.Empty<TKey>()).GetEnumerator() :
+                Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<TKey>() :
                 new SortedListKeyEnumerator(_dict);
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -1196,7 +1196,7 @@ namespace System.Collections.Generic
             }
 
             public IEnumerator<TValue> GetEnumerator() =>
-                Count == 0 ? ((IEnumerable<TValue>)Array.Empty<TValue>()).GetEnumerator() :
+                Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<TValue>() :
                 new SortedListValueEnumerator(_dict);
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

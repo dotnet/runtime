@@ -286,7 +286,7 @@ namespace System.Collections.Generic
         public Enumerator GetEnumerator() => new Enumerator(this);
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
-            Count == 0 ? ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator() :
+            Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<T>() :
             GetEnumerator();
 
         public bool Remove(T value)

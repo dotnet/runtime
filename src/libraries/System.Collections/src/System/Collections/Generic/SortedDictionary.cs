@@ -250,7 +250,7 @@ namespace System.Collections.Generic
         public Enumerator GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
-            Count == 0 ? ((IEnumerable<KeyValuePair<TKey, TValue>>)Array.Empty<KeyValuePair<TKey, TValue>>()).GetEnumerator() :
+            Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<KeyValuePair<TKey, TValue>>() :
             GetEnumerator();
 
         public bool Remove(TKey key)
@@ -534,7 +534,7 @@ namespace System.Collections.Generic
             public Enumerator GetEnumerator() => new Enumerator(_dictionary);
 
             IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() =>
-                Count == 0 ? ((IEnumerable<TKey>)Array.Empty<TKey>()).GetEnumerator() :
+                Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<TKey>() :
                 GetEnumerator();
 
             IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<TKey>)this).GetEnumerator();
@@ -695,7 +695,7 @@ namespace System.Collections.Generic
             public Enumerator GetEnumerator() => new Enumerator(_dictionary);
 
             IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() =>
-                Count == 0 ? ((IEnumerable<TValue>) Array.Empty<TValue>()).GetEnumerator() :
+                Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<TValue>() :
                 GetEnumerator();
 
             IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<TValue>)this).GetEnumerator();

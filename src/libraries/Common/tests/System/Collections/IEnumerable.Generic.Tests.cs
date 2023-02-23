@@ -96,6 +96,9 @@ namespace System.Collections.Tests
         /// </summary>
         protected virtual bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException;
 
+        /// <summary>Whether the enumerator returned from GetEnumerator is a singleton instance when the collection is empty.</summary>
+        protected virtual bool Enumerator_Empty_UsesSingletonInstance => false;
+
         /// <summary>
         /// Specifies whether this IEnumerable follows some sort of ordering pattern.
         /// </summary>
@@ -312,6 +315,30 @@ namespace System.Collections.Tests
         #endregion
 
         #region GetEnumerator()
+
+        [Fact]
+        public void IEnumerable_NonGeneric_GetEnumerator_EmptyCollection_UsesSingleton()
+        {
+            IEnumerable enumerable = GenericIEnumerableFactory(0);
+
+            IEnumerator enumerator1 = enumerable.GetEnumerator();
+            try
+            {
+                IEnumerator enumerator2 = enumerable.GetEnumerator();
+                try
+                {
+                    Assert.Equal(Enumerator_Empty_UsesSingletonInstance, ReferenceEquals(enumerator1, enumerator2));
+                }
+                finally
+                {
+                    if (enumerator2 is IDisposable d2) d2.Dispose();
+                }
+            }
+            finally
+            {
+                if (enumerator1 is IDisposable d1) d1.Dispose();
+            }
+        }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]

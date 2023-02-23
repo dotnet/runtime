@@ -156,7 +156,7 @@ namespace System.Collections.Generic
 
         /// <internalonly/>
         IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
-            Count == 0 ? ((IEnumerable<T>)Array.Empty<T>()).GetEnumerator() :
+            Count == 0 ? EnumerableHelpers.GetEmptyEnumerator<T>() :
             GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
