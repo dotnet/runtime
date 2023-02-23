@@ -60,6 +60,8 @@
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM Exception Handling feature.
       - $(WasmEnableSIMD)                   - Enable support for the WASM SIMD feature.
+      - $(WasmIncludeFullIcuData)           - Loads full ICU data (icudt.dat). Defaults to false. Only applicable when InvariantGlobalization=false. 
+      - $(WasmIcuDataFileName)              - Name/path of ICU globalization file loaded to app. Only when InvariantGloblization=false and WasmIncludeFullIcuData=false.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -319,27 +321,36 @@
 
   <Target Name="_GetWasiGenerateAppBundleDependencies">
     <PropertyGroup>
-      <WasmIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>
-
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
     </PropertyGroup>
 
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
-
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
-
       <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*" />
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
+      <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
     </ItemGroup>
   </Target>
 
   <Target Name="_WasiGenerateAppBundle"
-          Inputs="@(_WasmAssembliesInternal);$(WasmIcuDataFileName);@(WasmNativeAsset)"
+          Inputs="@(_WasmAssembliesInternal);@(WasmNativeAsset)"
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
-          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasiGenerateAppBundleDependencies;_WasiDefaultGenerateAppBundle;_GenerateRunWasmtimeScript" />
+          DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasiGenerateAppBundleDependencies;_WasiDefaultGenerateAppBundle;_GenerateRunWasmtimeScript">
+    <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->' %(Filename)')."/>
+    <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." />
+  </Target>
+
 
   <Target Name="_WasiDefaultGenerateAppBundle">
 
@@ -353,7 +364,7 @@
       DefaultHostConfig="$(DefaultWasmHostConfig)"
       InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
-      IcuDataFileName="$(WasmIcuDataFileName)"
+      IcuDataFileNames="$(WasmIcuDataFileNames)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
