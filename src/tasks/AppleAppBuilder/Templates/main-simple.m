@@ -5,6 +5,7 @@
 #if !USE_NATIVE_AOT
 #import "runtime.h"
 #else
+#import <os/log.h>
 #import "util.h"
 extern int __managed__Main(int argc, char* argv[]);
 #endif
@@ -61,6 +62,8 @@ void (*clickHandlerPtr)(void);
         int managed_argc = get_managed_args (&managed_argv);
         int ret_val = __managed__Main (managed_argc, managed_argv);
         free_managed_args (&managed_argv, managed_argc);
+        os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", ret_val);
+        exit (ret_val);
 #endif
     });
 }

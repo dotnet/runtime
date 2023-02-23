@@ -28,9 +28,6 @@ static char *bundle_path;
 
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
 
-// XHarness is looking for this tag in app's output to determine the exit code
-#define EXIT_CODE_TAG "DOTNET.APP_EXIT_CODE"
-
 const char *
 get_bundle_path (void)
 {

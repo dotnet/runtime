@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <IntermediateOutputPath>$(MSBuildThisFileDirectory)/obj/</IntermediateOutputPath>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
     <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iossimulator</TargetOS>
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
@@ -30,25 +30,24 @@
     <EnableAppSandbox Condition="'$(EnableAppSandbox)' == ''">false</EnableAppSandbox>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)../../../coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.targets" />
+  <Import Project="$(CoreClrProjectRoot)nativeaot\BuildIntegration\Microsoft.NETCore.Native.targets" />
   <UsingTask TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
   <!-- FIXME: Once we set up builing appropriate runtime package for iOS-like platforms the following properties should be removed -->
-  <PropertyGroup>
-      <NativeAotFrameworkLibsDir>$(RepoDir)/artifacts/bin/runtime/net8.0-$(TargetOS)-$(Configuration)-$(TargetArchitecture)/</NativeAotFrameworkLibsDir>
-      <NativeAotRuntimeLibsDir>$(RepoDir)/artifacts/bin/coreclr/$(TargetOS).$(TargetArchitecture).$(Configuration)/</NativeAotRuntimeLibsDir>
-      <IlcHostArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</IlcHostArchitecture>
-      <IlcPath>$(RepoDir)/artifacts/bin/coreclr/osx.$(IlcHostArchitecture).$(Configuration)/ilc/</IlcPath>
-      <IlcToolsPath>$(IlcPath)</IlcToolsPath>
-      <IlcSdkPath>$(NativeAotRuntimeLibsDir)/aotsdk/</IlcSdkPath>
-      <IlcFrameworkPath>$(NativeAotFrameworkLibsDir)</IlcFrameworkPath>
-      <IlcFrameworkNativePath>$(NativeAotFrameworkLibsDir)</IlcFrameworkNativePath>
-  </PropertyGroup>
+  <Target Name="ConfigureIlcPathsForiOSCrossCompilation">
+      <PropertyGroup>
+        <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</IlcPath>
+        <IlcToolsPath>$(IlcPath)</IlcToolsPath>
+        <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
+        <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
+        <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
+    </PropertyGroup>
+  </Target>
 
   <Target Name="BuildAppBundle"
     AfterTargets="Build"
-    DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile">
+    DependsOnTargets="ConfigureIlcPathsForiOSCrossCompilation;SetupProperties;ComputeIlcCompileInputs;IlcCompile">
 
     <PropertyGroup>
       <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
