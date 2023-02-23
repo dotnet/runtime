@@ -33,7 +33,6 @@ target_link_libraries(dotnet
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
-    stdc++
 )
 
 set_target_properties(dotnet PROPERTIES
