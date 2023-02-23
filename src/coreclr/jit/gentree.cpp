@@ -1400,7 +1400,8 @@ void NewCallArg::ValidateTypes()
 //
 bool CallArg::IsArgAddedLate() const
 {
-    switch (m_wellKnownArg)
+    // static_cast to "enum class" for old gcc support
+    switch (static_cast<WellKnownArg>(m_wellKnownArg))
     {
         case WellKnownArg::WrapperDelegateCell:
         case WellKnownArg::VirtualStubCell:
