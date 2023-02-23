@@ -14478,6 +14478,7 @@ namespace System.Threading
         public PeriodicTimer(System.TimeSpan period) { }
         public void Dispose() { }
         ~PeriodicTimer() { }
+        public System.TimeSpan Period { get { throw null; } set { } }
         public System.Threading.Tasks.ValueTask<bool> WaitForNextTickAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public static partial class Timeout
