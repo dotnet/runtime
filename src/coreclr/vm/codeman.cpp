@@ -1656,7 +1656,10 @@ void EEJitManager::SetCpuInfo()
 #define PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE 34
 #endif
 #ifndef PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
-# define PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE 43
+#define PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE 43
+#endif
+#ifndef PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE 45
 #endif
 
     // PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE (34)
@@ -1669,6 +1672,12 @@ void EEJitManager::SetCpuInfo()
     if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
     {
         CPUCompileFlags.Set(InstructionSet_Dp);
+    }
+
+    // PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE (45)
+    if (IsProcessorFeaturePresent(PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE))
+    {
+        CPUCompileFlags.Set(InstructionSet_Rcpc);
     }
 
 #endif // HOST_64BIT
