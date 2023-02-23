@@ -326,11 +326,7 @@ namespace System.IO.Compression
 
         private void EnsureNotDisposed()
         {
-            if (_stream == null)
-                ThrowStreamClosedException();
-
-            static void ThrowStreamClosedException() =>
-                throw new ObjectDisposedException(nameof(DeflateStream), SR.ObjectDisposed_StreamClosed);
+            ObjectDisposedException.ThrowIf(_stream is null, this);
         }
 
         private void EnsureDecompressionMode()
