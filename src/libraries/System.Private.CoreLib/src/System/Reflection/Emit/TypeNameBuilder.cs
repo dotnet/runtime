@@ -15,13 +15,13 @@ namespace System.Reflection.Emit
 {
     internal sealed class TypeNameBuilder
     {
-        private StringBuilder _str = new StringBuilder();
+        private readonly StringBuilder _str = new StringBuilder();
         private int _instNesting;
         private bool _firstInstArg;
         private bool _nestedName;
         private bool _hasAssemblySpec;
         private bool _useAngleBracketsForGenerics;
-        private List<int> _stack = new List<int>();
+        private readonly List<int> _stack = new List<int>();
         private int _stackIdx;
 
         private TypeNameBuilder()

@@ -22,6 +22,7 @@ public abstract class WasmAppBuilderBaseTask : Task
     [Required]
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
+    // files like dotnet.wasm, icudt.dat etc
     [NotNull]
     [Required]
     public ITaskItem[] NativeAssets { get; set; } = Array.Empty<ITaskItem>();
@@ -64,6 +65,25 @@ public abstract class WasmAppBuilderBaseTask : Task
     }
 
     protected abstract bool ExecuteInternal();
+
+    protected virtual bool ValidateArguments() => true;
+
+    protected void ProcessSatelliteAssemblies(Action<(string fullPath, string culture)> fn)
+    {
+        foreach (var assembly in SatelliteAssemblies)
+        {
+            string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
+            string fullPath = assembly.GetMetadata("Identity");
+            if (string.IsNullOrEmpty(culture))
+            {
+                Log.LogWarning(null, "WASM0002", "", "", 0, 0, 0, 0, $"Missing CultureName metadata for satellite assembly {fullPath}");
+                continue;
+            }
+
+            // FIXME: validate the culture?
+            fn((fullPath, culture));
+        }
+    }
 
     protected virtual void UpdateRuntimeConfigJson()
     {

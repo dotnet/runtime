@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.TypeLoading.Ecma
@@ -63,14 +62,8 @@ namespace System.Reflection.TypeLoading.Ecma
         protected sealed override FieldAttributes ComputeAttributes() => FieldDefinition.Attributes;
         protected sealed override Type ComputeFieldType() => FieldDefinition.DecodeSignature(_module, TypeContext);
 
-        public sealed override Type[] GetOptionalCustomModifiers() => GetCustomModifiers(isRequired: false);
-        public sealed override Type[] GetRequiredCustomModifiers() => GetCustomModifiers(isRequired: true);
-
-        private Type[] GetCustomModifiers(bool isRequired)
-        {
-            RoType type = FieldDefinition.DecodeSignature(new EcmaModifiedTypeProvider(_module), TypeContext)!;
-            return type.ExtractCustomModifiers(isRequired);
-        }
+        public sealed override Type[] GetOptionalCustomModifiers() => ModifiedType.GetOptionalCustomModifiers();
+        public sealed override Type[] GetRequiredCustomModifiers() => ModifiedType.GetRequiredCustomModifiers();
 
         protected sealed override object? ComputeRawConstantValue() => FieldDefinition.GetDefaultValue().ToRawObject(Reader);
 

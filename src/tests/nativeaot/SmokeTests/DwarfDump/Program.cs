@@ -50,8 +50,8 @@ public class Program
         });
 
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
-        const int MinWarnings = 18400;
-        const int MaxWarnings = 48600;
+        const int MinWarnings = 1100;
+        const int MaxWarnings = 1500;
         int count = 0;
         string line;
         while ((line = proc.StandardOutput.ReadLine()) != null)
