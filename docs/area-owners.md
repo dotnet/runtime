@@ -5,7 +5,7 @@ If you need to tag folks on an issue or PR, you will generally want to tag the o
 ## Subsciption and Notifications
 
 The tables bellow are generated and for informational purposes only. If you would like to be included or removed from area-specific issue/PR notifications submit PR with update to data source files. There are two ways how to do that
-* Manually update `mentionees` sections in both [`fabricbot.json`](fabricbot.json) and [`.github/fabricbot.json`](../.github/fabricbot.json) files 
+* Manually update `mentionees` sections in both [`fabricbot.json`](fabricbot.json) and [`.github/fabricbot.json`](../.github/fabricbot.json) files
 * Follow steps described in [automation](infra/automation.md) when you are adding or removing an area or doing other large changes and would like to regenerate all files
 
 ## Areas
