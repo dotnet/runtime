@@ -128,7 +128,7 @@ namespace System
         internal static partial uint NetUserDel([MarshalAs(UnmanagedType.LPWStr)] string servername, [MarshalAs(UnmanagedType.LPWStr)] string username);
 
 #if NET7_0_OR_GREATER
-        [NativeMarshalling(typeof(USER_INFO_1Marshaller))]
+        [NativeMarshalling(typeof(USER_INFO_1.Marshaller))]
 #endif
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct USER_INFO_1
@@ -143,8 +143,8 @@ namespace System
             public string usri1_script_path;
 
 #if NET7_0_OR_GREATER
-            [CustomMarshaller(typeof(USER_INFO_1), MarshalMode.Default, typeof(USER_INFO_1Marshaller))]
-            public static class USER_INFO_1Marshaller
+            [CustomMarshaller(typeof(USER_INFO_1), MarshalMode.Default, typeof(Marshaller))]
+            public static class Marshaller
             {
                 public static USER_INFO_1Native ConvertToUnmanaged(USER_INFO_1 managed) => new(managed);
                 public static USER_INFO_1 ConvertToManaged(USER_INFO_1Native native) => native.ToManaged();
