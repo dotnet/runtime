@@ -12,6 +12,7 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest]
         flavor: [Debug, Release]
+      fail-fast: false
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.os }}, ${{ matrix.flavor }})
     steps:
