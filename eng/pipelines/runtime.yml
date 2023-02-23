@@ -511,6 +511,13 @@ extends:
           scenarios:
             - normal
 
+      - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+            - wasi_wasm_win
+          alwaysRun: ${{ variables.isRollingBuild }}
+
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
       # Build the whole product using Mono and run libraries tests
