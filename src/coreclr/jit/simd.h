@@ -169,17 +169,17 @@ TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
 template <>
 inline float EvaluateUnaryScalarSpecialized<float>(genTreeOps oper, float arg0)
 {
-    uint32_t arg0Bits   = *reinterpret_cast<uint32_t*>(&arg0);
+    uint32_t arg0Bits   = BitOperations::SingleToUInt32Bits(arg0);
     uint32_t resultBits = EvaluateUnaryScalarSpecialized<uint32_t>(oper, arg0Bits);
-    return *reinterpret_cast<float*>(&resultBits);
+    return BitOperations::UInt32BitsToSingle(resultBits);
 }
 
 template <>
 inline double EvaluateUnaryScalarSpecialized<double>(genTreeOps oper, double arg0)
 {
-    uint64_t arg0Bits   = *reinterpret_cast<uint64_t*>(&arg0);
+    uint64_t arg0Bits   = BitOperations::DoubleToUInt64Bits(arg0);
     uint64_t resultBits = EvaluateUnaryScalarSpecialized<uint64_t>(oper, arg0Bits);
-    return *reinterpret_cast<double*>(&resultBits);
+    return BitOperations::UInt64BitsToDouble(resultBits);
 }
 
 template <typename TBase>
@@ -397,21 +397,21 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
 template <>
 inline float EvaluateBinaryScalarSpecialized<float>(genTreeOps oper, float arg0, float arg1)
 {
-    uint32_t arg0Bits = *reinterpret_cast<uint32_t*>(&arg0);
-    uint32_t arg1Bits = *reinterpret_cast<uint32_t*>(&arg1);
+    uint32_t arg0Bits = BitOperations::SingleToUInt32Bits(arg0);
+    uint32_t arg1Bits = BitOperations::SingleToUInt32Bits(arg1);
 
     uint32_t resultBits = EvaluateBinaryScalarSpecialized<uint32_t>(oper, arg0Bits, arg1Bits);
-    return *reinterpret_cast<float*>(&resultBits);
+    return BitOperations::UInt32BitsToSingle(resultBits);
 }
 
 template <>
 inline double EvaluateBinaryScalarSpecialized<double>(genTreeOps oper, double arg0, double arg1)
 {
-    uint64_t arg0Bits = *reinterpret_cast<uint64_t*>(&arg0);
-    uint64_t arg1Bits = *reinterpret_cast<uint64_t*>(&arg1);
+    uint64_t arg0Bits = BitOperations::DoubleToUInt64Bits(arg0);
+    uint64_t arg1Bits = BitOperations::DoubleToUInt64Bits(arg1);
 
     uint64_t resultBits = EvaluateBinaryScalarSpecialized<uint64_t>(oper, arg0Bits, arg1Bits);
-    return *reinterpret_cast<double*>(&resultBits);
+    return BitOperations::UInt64BitsToDouble(resultBits);
 }
 
 template <typename TBase>

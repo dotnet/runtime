@@ -2646,6 +2646,22 @@ uint32_t BitOperations::BitScanReverse(uint64_t value)
 }
 
 //------------------------------------------------------------------------
+// BitOperations::DoubleToUInt64Bits: Gets the underlying bits for a double-precision floating-point value.
+//
+// Arguments:
+//    value - The number to convert
+//
+// Return Value:
+//    The underlying bits for value.
+//
+uint64_t BitOperations::DoubleToUInt64Bits(double value)
+{
+    uint64_t result;
+    memcpy(&result, &value, sizeof(double));
+    return result;
+}
+
+//------------------------------------------------------------------------
 // BitOperations::LeadingZeroCount: Count the number of leading zero bits in a mask.
 //
 // Arguments:
@@ -2933,6 +2949,22 @@ uint64_t BitOperations::RotateRight(uint64_t value, uint32_t offset)
 }
 
 //------------------------------------------------------------------------
+// BitOperations::SingleToUInt32Bits: Gets the underlying bits for a single-precision floating-point value.
+//
+// Arguments:
+//    value - The number to convert
+//
+// Return Value:
+//    The underlying bits for value.
+//
+uint32_t BitOperations::SingleToUInt32Bits(float value)
+{
+    uint32_t result;
+    memcpy(&result, &value, sizeof(float));
+    return result;
+}
+
+//------------------------------------------------------------------------
 // BitOperations::TrailingZeroCount: Count the number of trailing zero bits in an integer value.
 //
 // Arguments:
@@ -2978,6 +3010,38 @@ uint32_t BitOperations::TrailingZeroCount(uint64_t value)
     int32_t result = __builtin_ctzll(value);
     return static_cast<uint32_t>(result);
 #endif
+}
+
+//------------------------------------------------------------------------
+// BitOperations::UInt32BitsToSingle: Gets a single-precision floating-point from its underlying bit value.
+//
+// Arguments:
+//    value - The underlying bit value.
+//
+// Return Value:
+//    The single-precision floating-point from value.
+//
+float BitOperations::UInt32BitsToSingle(uint32_t value)
+{
+    float result;
+    memcpy(&result, &value, sizeof(uint32_t));
+    return result;
+}
+
+//------------------------------------------------------------------------
+// BitOperations::UInt64BitsToDouble: Gets a double-precision floating-point from its underlying bit value.
+//
+// Arguments:
+//    value - The underlying bit value.
+//
+// Return Value:
+//    The double-precision floating-point from value.
+//
+double BitOperations::UInt64BitsToDouble(uint64_t value)
+{
+    double result;
+    memcpy(&result, &value, sizeof(uint64_t));
+    return result;
 }
 
 namespace MagicDivide
