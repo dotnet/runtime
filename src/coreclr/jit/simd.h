@@ -34,10 +34,9 @@ enum SIMDLevel
     // Floating-point instructions are VEX-128 encoded.
     SIMD_AVX2_Supported = 3,
 
-    // AVX512F - Hardware has AVX, AVX2 and AVX512F instruction set.
-    // Vector<T> length is 512-bit and SIMD instructions are EVEX encoded.
+    // Vector512 - Hardware has AVX, AVX2 and AVX512F instruction set.
     // Floating-point instructions are EVEX encoded.
-    SIMD_AVX512F_Supported = 4
+    SIMD_Vector512_Supported = 4
 #endif
 };
 

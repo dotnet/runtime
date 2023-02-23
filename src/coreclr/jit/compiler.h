@@ -7627,7 +7627,8 @@ public:
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
         assert(type != TYP_STRUCT);
-        return (type == TYP_SIMD32) || (type == TYP_SIMD64);
+        assert((type < TYP_SIMD32) || (type == TYP_SIMD32) || (type == TYP_SIMD64));
+        return type >= TYP_SIMD32;
     }
 #elif defined(TARGET_ARM64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
@@ -8324,13 +8325,13 @@ private:
     SIMDLevel getSIMDSupportLevel()
     {
 #if defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+        if (compOpportunisticallyDependsOn(InstructionSet_Vector256))
         {
-            return SIMD_AVX512F_Supported;
-        }
+            if (compOpportunisticallyDependsOn(InstructionSet_Vector512))
+            {
+                return SIMD_Vector512_Supported;
+            }
 
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-        {
             return SIMD_AVX2_Supported;
         }
 
@@ -8845,12 +8846,12 @@ private:
     unsigned int maxSIMDStructBytes()
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
-            return ZMM_REGSIZE_BYTES;
-        }
-        else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-        {
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+            {
+                return ZMM_REGSIZE_BYTES;
+            }
             return YMM_REGSIZE_BYTES;
         }
         else
@@ -9102,9 +9103,7 @@ private:
     bool IsBaselineVector512IsaSupportedDebugOnly() const
     {
 #ifdef TARGET_AMD64
-        return (compIsaSupportedDebugOnly(InstructionSet_AVX512F) &&
-                compIsaSupportedDebugOnly(InstructionSet_AVX512BW) &&
-                compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
+        return (compIsaSupportedDebugOnly(InstructionSet_Vector512));
 #else
         return false;
 #endif
@@ -9120,8 +9119,7 @@ private:
     bool IsBaselineVector512IsaSupported() const
     {
 #ifdef TARGET_AMD64
-        return (compExactlyDependsOn(InstructionSet_AVX512F) && compExactlyDependsOn(InstructionSet_AVX512BW) &&
-                compExactlyDependsOn(InstructionSet_AVX512DQ));
+        return (compExactlyDependsOn(InstructionSet_Vector512));
 #else
         return false;
 #endif

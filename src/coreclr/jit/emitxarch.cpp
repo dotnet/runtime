@@ -986,7 +986,6 @@ emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr at
 
     code |= DEFAULT_BYTE_EVEX_PREFIX;
 
-    // TODO-XArch-AVX512: Add EA_64BYTE once ZMM is supported
     if (attr == EA_32BYTE)
     {
         // Set L bit to 1 in case of instructions that operate on 256-bits.

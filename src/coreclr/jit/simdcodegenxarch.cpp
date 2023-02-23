@@ -410,7 +410,7 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
     assert(node->gtIntrinsicName == NI_SIMD_UpperSave);
 
     GenTree* op1 = node->gtGetOp1();
-    assert(op1->IsLocal() && ((op1->TypeGet() == TYP_SIMD32) || (op1->TypeGet() == TYP_SIMD64)));
+    assert(op1->IsLocal() && op1->TypeIs(TYP_SIMD32, TYP_SIMD64));
 
     regNumber tgtReg = node->GetRegNum();
     regNumber op1Reg = genConsumeReg(op1);
@@ -467,7 +467,7 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
     assert(node->gtIntrinsicName == NI_SIMD_UpperRestore);
 
     GenTree* op1 = node->gtGetOp1();
-    assert(op1->IsLocal() && ((op1->TypeGet() == TYP_SIMD32) || (op1->TypeGet() == TYP_SIMD64)));
+    assert(op1->IsLocal() && op1->TypeIs(TYP_SIMD32, TYP_SIMD64));
 
     regNumber srcReg    = node->GetRegNum();
     regNumber lclVarReg = genConsumeReg(op1);

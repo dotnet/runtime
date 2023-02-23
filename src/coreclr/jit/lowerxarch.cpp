@@ -1912,7 +1912,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
     var_types      simdBaseType    = node->GetSimdBaseType();
     unsigned       simdSize        = node->GetSimdSize();
-    simd32_t       simd32Val       = {};
     simd64_t       simd64Val       = {};
 
     if ((simdSize == 8) && (simdType == TYP_DOUBLE))
@@ -1939,11 +1938,11 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     // TODO-XArch-AVX512: Keep only one path once GenTreeVecCon supports gtSimd64Val.
     if (simdSize != 64)
     {
-        isConstant = GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val);
+        isConstant = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd32_t>(node, simd64Val.v256[0]);
     }
     else
     {
-        isConstant = GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd64Val);
+        isConstant = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd64_t>(node, simd64Val);
     }
     bool   isCreateScalar = (intrinsicId == NI_Vector128_CreateScalar) || (intrinsicId == NI_Vector256_CreateScalar);
     size_t argCnt         = node->GetOperandCount();
@@ -1968,7 +1967,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         {
             GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType);
 
-            vecCon->gtSimd32Val = simd32Val;
+            vecCon->gtSimd32Val = simd64Val.v256[0];
             BlockRange().InsertBefore(node, vecCon);
 
             LIR::Use use;

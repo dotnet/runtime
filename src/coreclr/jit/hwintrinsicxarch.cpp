@@ -510,13 +510,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
 
-    if (((isa == InstructionSet_Vector256) && !compExactlyDependsOn(InstructionSet_AVX)) ||
-        (((isa == InstructionSet_Vector512) && !IsBaselineVector512IsaSupported())))
-    {
-        // We don't want to deal with TYP_SIMD32 or TYP_SIMD64 if the compiler doesn't otherwise support the type.
-        return nullptr;
-    }
-
     var_types simdBaseType = TYP_UNKNOWN;
     if (simdSize != 0)
     {

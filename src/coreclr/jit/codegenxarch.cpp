@@ -506,19 +506,34 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             {
                 bool isSupported;
 
-                if (attr == EA_32BYTE)
+                switch (attr)
                 {
-                    isSupported = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX);
+                    case EA_32BYTE:
+                    {
+                        isSupported = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX);
+                        break;
+                    }
+
+                    case EA_64BYTE:
+                    {
+                        isSupported = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F);
+                        break;
+                    }
+
+                    case EA_8BYTE:
+                    case EA_16BYTE:
+                    {
+                        assert((attr == EA_8BYTE) || (attr == EA_16BYTE));
+                        isSupported = true;
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
                 }
-                else if (attr == EA_64BYTE)
-                {
-                    isSupported = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F);
-                }
-                else
-                {
-                    assert((attr == EA_8BYTE) || (attr == EA_16BYTE));
-                    isSupported = true;
-                }
+
                 if (isSupported)
                 {
 #if defined(FEATURE_SIMD)

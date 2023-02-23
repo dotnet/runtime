@@ -83,9 +83,8 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
         assert((size == 12) || (size == 16));
         return 16;
     }
-    else if (size <= 32)
+    else if (size == 32)
     {
-        assert(size == 32);
         return 32;
     }
     else
