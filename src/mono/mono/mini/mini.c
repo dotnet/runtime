@@ -4481,3 +4481,56 @@ mini_get_cpu_features (MonoCompile* cfg)
 	// apply parameters passed via -mattr
 	return (features | mono_cpu_features_enabled) & ~mono_cpu_features_disabled;
 }
+
+int
+mini_primitive_type_size (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return 1;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return 2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+		return 4;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		return 8;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return TARGET_SIZEOF_VOID_P == 8 ? 8 : 4;
+	default:
+		g_assert_not_reached ();
+		return 0;
+	}
+}
+
+/*
+ * mini_get_simd_type_info:
+ *
+ *   Return the element type of a SIMD type. Set NELEMS to the number of elements.
+ */
+MonoTypeEnum
+mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
+{
+	*nelems = 0;
+
+	const char *klass_name = m_class_get_name (klass);
+	if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
+		*nelems = 4;
+		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
+		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
+		int size = mono_class_value_size (klass, NULL);
+		*nelems = size / mini_primitive_type_size (etype->type);
+		return etype->type;
+	} else {
+		printf ("%s\n", klass_name);
+		NOT_IMPLEMENTED;
+		return MONO_TYPE_VOID;
+	}
+}

@@ -22,7 +22,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         internal List<string> UrlSymbolServerList { get; private set; }
         internal string CachePathSymbolServer { get; private set; }
-        private HashSet<SessionId> sessions = new HashSet<SessionId>();
+        private readonly HashSet<SessionId> sessions = new HashSet<SessionId>();
         private static readonly string[] s_executionContextIndependentCDPCommandNames = { "DotnetDebugger.setDebuggerProperty", "DotnetDebugger.runTests" };
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
 

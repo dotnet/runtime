@@ -135,9 +135,6 @@
   <data name="net_rangetype" xml:space="preserve">
     <value>A different range specifier has already been added to this request.</value>
   </data>
-  <data name="net_toosmall" xml:space="preserve">
-    <value>The specified value must be greater than 0.</value>
-  </data>
   <data name="net_wrongversion" xml:space="preserve">
     <value>Only HTTP/1.0 and HTTP/1.1 version requests are currently supported.</value>
   </data>

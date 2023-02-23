@@ -59,9 +59,6 @@
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
       <Value>$(LinkerTestDir)</Value>
     </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetArchitecture">
-      <Value>$(TargetArchitecture)</Value>
-    </RuntimeHostConfigurationOption>
   </ItemGroup>
 
 </Project>

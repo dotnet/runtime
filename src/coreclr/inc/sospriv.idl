@@ -42,11 +42,13 @@ typedef int mdToken;
 typedef unsigned int size_t;
 typedef int ModuleMapType;
 typedef int VCSHeapType;
+typedef int LoaderHeapKind;
 cpp_quote("#endif")
 
 
 cpp_quote("typedef enum { TYPEDEFTOMETHODTABLE, TYPEREFTOMETHODTABLE } ModuleMapType;")
-cpp_quote("typedef enum {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap} VCSHeapType;")
+cpp_quote("typedef enum {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap, VtableHeap} VCSHeapType;")
+cpp_quote("typedef enum {LoaderHeapKindNormal = 0, LoaderHeapKindExplicitControl = 1} LoaderHeapKind;")
 
 typedef void (*MODULEMAPTRAVERSE)(UINT index, CLRDATA_ADDRESS methodTable,LPVOID token);
 typedef void (*VISITHEAP)(CLRDATA_ADDRESS blockData,size_t blockSize,BOOL blockIsCurrentBlock);
@@ -458,4 +460,17 @@ interface ISOSDacInterface11 : IUnknown
 interface ISOSDacInterface12 : IUnknown
 {
     HRESULT GetGlobalAllocationContext(CLRDATA_ADDRESS* allocPtr, CLRDATA_ADDRESS* allocLimit);
+}
+
+[
+    object,
+    local,
+    uuid(3176a8ed-597b-4f54-a71f-83695c6a8c5d)
+]
+interface ISOSDacInterface13 : IUnknown
+{
+    HRESULT TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);
+    HRESULT GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, CLRDATA_ADDRESS *pLoaderAllocator);
+    HRESULT GetLoaderAllocatorHeapNames(int count, const char **ppNames, int *pNeeded);
+    HRESULT GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocator, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded);
 }
