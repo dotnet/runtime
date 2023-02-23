@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -31,7 +32,7 @@ namespace Mono.Linker.Dataflow
 		public override bool Equals (object? obj)
 			=> obj is InterproceduralState state && Equals (state);
 
-		public override int GetHashCode () => base.GetHashCode ();
+		public override int GetHashCode () => HashUtils.Combine (MethodBodies.GetHashCode (), HoistedLocals.GetHashCode ());
 
 		public InterproceduralState Clone ()
 			=> new (MethodBodies.Clone (), HoistedLocals.Clone (), lattice);

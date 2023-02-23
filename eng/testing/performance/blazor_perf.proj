@@ -42,12 +42,12 @@
   <ItemGroup>
     <HelixWorkItem Include="SOD - Minimum Blazor Template - Publish">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <!-- Specifying both linker dump msbuild properties in case linker version is not updated -->
+      <!-- Specifying both illink dump msbuild properties in case illink version is not updated -->
       <Command>cd $(BlazorMinDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Minimum Blazor Template - Publish - AOT">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <!-- Specifying both linker dump msbuild properties in case linker version is not updated -->
+      <!-- Specifying both illink dump msbuild properties in case illink version is not updated -->
       <Command>cd $(BlazorMinAOTDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
       <Timeout>00:30</Timeout>
     </HelixWorkItem>
@@ -64,13 +64,13 @@
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Pizza App - Publish">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <!-- Specifying both linker dump msbuild properties in case linker version is not updated -->
+      <!-- Specifying both illink dump msbuild properties in case illink version is not updated -->
       <Command>cd $(BlazorPizzaDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
       <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Pizza App - Publish - AOT">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <!-- Specifying both linker dump msbuild properties in case linker version is not updated -->
+      <!-- Specifying both illink dump msbuild properties in case illink version is not updated -->
       <Command>cd $(BlazorPizzaAOTDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
       <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
       <Timeout>1:00</Timeout>

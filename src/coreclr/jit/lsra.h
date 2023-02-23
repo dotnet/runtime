@@ -1864,7 +1864,11 @@ private:
 
     int BuildSimple(GenTree* tree);
     int BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
-    int BuildDelayFreeUses(GenTree* node, GenTree* rmwNode = nullptr, regMaskTP candidates = RBM_NONE);
+    void AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
+    int BuildDelayFreeUses(GenTree*      node,
+                           GenTree*      rmwNode        = nullptr,
+                           regMaskTP     candidates     = RBM_NONE,
+                           RefPosition** useRefPosition = nullptr);
     int BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates = RBM_NONE);
     int BuildAddrUses(GenTree* addr, regMaskTP candidates = RBM_NONE);
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
@@ -2299,9 +2303,9 @@ public:
 
     // Used by RefTypeDef/Use positions of a multi-reg call node.
     // Indicates the position of the register that this ref position refers to.
-    // The max bits needed is based on max value of MAX_RET_REG_COUNT value
+    // The max bits needed is based on max value of MAX_MULTIREG_COUNT value
     // across all targets and that happened to be 4 on Arm.  Hence index value
-    // would be 0..MAX_RET_REG_COUNT-1.
+    // would be 0..MAX_MULTIREG_COUNT-1.
     unsigned char multiRegIdx : 2;
 
     // Last Use - this may be true for multiple RefPositions in the same Interval

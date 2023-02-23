@@ -13,5 +13,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 		{
 			ArgumentNullException.ThrowIfNull (reason);
 		}
+
+		public Tool IgnoredBy { get; set; } = Tool.TrimmerAnalyzerAndNativeAot;
 	}
 }

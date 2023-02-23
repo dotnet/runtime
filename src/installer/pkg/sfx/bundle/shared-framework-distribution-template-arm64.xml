@@ -6,6 +6,7 @@
     <conclusion file="conclusion.html" mime-type="text/html" />
     <volume-check>
         <allowed-os-versions>
+            <!-- keep in sync with SetOSTargetMinVersions in the root Directory.Build.props -->
             <os-version min="11.0" />
         </allowed-os-versions>
     </volume-check>

@@ -29,9 +29,6 @@ parameters:
   testResultsFormat: ''
   extraStepsTemplate: ''
   extraStepsParameters: {}
-  enableRichCodeNavigation: false
-  richCodeNavigationLanguage: 'csharp'
-  richCodeNavigationEnvironment: 'production'
   isManualCodeQLBuild: false
 
 jobs:
@@ -56,9 +53,6 @@ jobs:
 
     workspace:
       clean: all
-    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
-    richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
-    richCodeNavigationEnvironment: ${{ parameters.richCodeNavigationEnvironment }}
 
     ${{ if and(ne(parameters.dependOnEvaluatePaths, true),ne(parameters.dependsOn,'')) }}:
       dependsOn: ${{ parameters.dependsOn }}
@@ -105,12 +99,6 @@ jobs:
         ${{ if in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
           value: /p:BuildDarwinFrameworks=true
         ${{ if notin(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
-          value: ''
-
-      - name: _richCodeNavigationParam
-        ${{ if eq(parameters.enableRichCodeNavigation, true) }}:
-          value: /p:EnableRichCodeNavigation=true
-        ${{ if ne(parameters.enableRichCodeNavigation, true) }}:
           value: ''
 
       - name: _sclEnableCommand
@@ -162,7 +150,7 @@ jobs:
             runtimeOS: linux
             name: ${{ parameters.platform }}
 
-    - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'maccatalyst') }}:
+    - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies
 
@@ -184,7 +172,7 @@ jobs:
         - task: CodeQL3000Init@0
           displayName: Initialize CodeQL (manually-injected)
 
-      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
+      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
         displayName: Build product
         ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
           continueOnError: ${{ parameters.shouldContinueOnError }}

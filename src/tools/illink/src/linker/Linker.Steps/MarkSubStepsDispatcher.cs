@@ -11,7 +11,7 @@ namespace Mono.Linker.Steps
 {
 	//
 	// Dispatcher for SubSteps which only need to run on marked assemblies.
-	// This simplifies the implementation of linker custom steps, in the same
+	// This simplifies the implementation of ILLink custom steps, in the same
 	// way that SubStepsDispatcher does, but it implements IMarkHandler
 	// and registers a callback that gets invoked during MarkStep when an
 	// assembly gets marked.
