@@ -11,9 +11,6 @@
 
     <!-- windows.winmd is not part of the framework -->
     <IgnoredReference Include="Windows" />
-
-    <!-- intentional dangling ref in System.Configuration.ConfigurationManager and System.DirectoryServices -->
-    <IgnoredReference Include="System.Security.Permissions" />
   </ItemGroup>
 
   <!-- Include NETStandard assemblies when considering runtime assets for conflict resolution
