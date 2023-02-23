@@ -245,12 +245,10 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildSelect(tree->AsConditional());
             break;
 
-#ifdef TARGET_X86
-        case GT_SELECT_HI:
+        case GT_SELECTCC:
             assert(dstCount == 1);
             srcCount = BuildSelect(tree->AsOp());
             break;
-#endif
 
         case GT_JMP:
             srcCount = 0;
@@ -900,21 +898,11 @@ int LinearScan::BuildSelect(GenTreeOp* select)
 {
     int srcCount = 0;
 
-    GenCondition cc = GenCondition::NE;
     if (select->OperIs(GT_SELECT))
     {
         GenTree* cond = select->AsConditional()->gtCond;
-        if (cond->isContained())
-        {
-            assert(cond->OperIsCompare());
-            srcCount += BuildCmpOperands(cond);
-            cc = GenCondition::FromRelop(cond);
-        }
-        else
-        {
-            BuildUse(cond);
-            srcCount++;
-        }
+        BuildUse(cond);
+        srcCount++;
     }
 
     GenTree* trueVal  = select->gtOp1;
@@ -1012,28 +1000,32 @@ int LinearScan::BuildSelect(GenTreeOp* select)
     // multiple memory accesses, but we could contain the operand in the 'mov'
     // instruction with some more care taken for marking things delay reg freed
     // correctly).
-    switch (cc.GetCode())
+    if (select->OperIs(GT_SELECTCC))
     {
-        case GenCondition::FEQ:
-        case GenCondition::FLT:
-        case GenCondition::FLE:
-            // Normally these require an 'AND' conditional and cmovs with
-            // both the true and false values as sources. However, after
-            // swapping these into an 'OR' conditional the cmovs require
-            // only the original falseVal, so we need only to mark that as
-            // delay-reg freed to allow codegen to resolve this.
-            assert(uncontainedFalseRP != nullptr);
-            setDelayFree(uncontainedFalseRP);
-            break;
-        case GenCondition::FNEU:
-        case GenCondition::FGEU:
-        case GenCondition::FGTU:
-            // These require an 'OR' conditional and only access 'trueVal'.
-            assert(uncontainedTrueRP != nullptr);
-            setDelayFree(uncontainedTrueRP);
-            break;
-        default:
-            break;
+        GenCondition cc = select->AsOpCC()->gtCondition;
+        switch (cc.GetCode())
+        {
+            case GenCondition::FEQ:
+            case GenCondition::FLT:
+            case GenCondition::FLE:
+                // Normally these require an 'AND' conditional and cmovs with
+                // both the true and false values as sources. However, after
+                // swapping these into an 'OR' conditional the cmovs require
+                // only the original falseVal, so we need only to mark that as
+                // delay-reg freed to allow codegen to resolve this.
+                assert(uncontainedFalseRP != nullptr);
+                setDelayFree(uncontainedFalseRP);
+                break;
+            case GenCondition::FNEU:
+            case GenCondition::FGEU:
+            case GenCondition::FGTU:
+                // These require an 'OR' conditional and only access 'trueVal'.
+                assert(uncontainedTrueRP != nullptr);
+                setDelayFree(uncontainedTrueRP);
+                break;
+            default:
+                break;
+        }
     }
 
     BuildDef(select);

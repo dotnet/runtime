@@ -159,6 +159,11 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
         return true;
     }
 
+    if (node->OperConsumesFlags())
+    {
+        return false;
+    }
+
     m_scratchSideEffects.Clear();
     m_scratchSideEffects.AddNode(comp, node);
 
@@ -192,6 +197,21 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive) const
 bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const
 {
     assert((node != nullptr) && (endExclusive != nullptr));
+
+    if (ignoreNode == nullptr)
+    {
+        return IsInvariantInRange(node, endExclusive);
+    }
+
+    if ((node->gtNext == endExclusive) || ((node->gtNext == ignoreNode) && (node->gtNext->gtNext == endExclusive)))
+    {
+        return true;
+    }
+
+    if (node->OperConsumesFlags())
+    {
+        return false;
+    }
 
     m_scratchSideEffects.Clear();
     m_scratchSideEffects.AddNode(comp, node);
@@ -396,11 +416,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_SELECT:
             return LowerSelect(node->AsConditional());
 
-#ifdef TARGET_X86
-        case GT_SELECT_HI:
+        case GT_SELECTCC:
             ContainCheckSelect(node->AsOp());
             break;
-#endif
 
         case GT_JMP:
             LowerJmpMethod(node);
@@ -1179,7 +1197,7 @@ bool Lowering::TryLowerSwitchToBitTest(
     GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
     GenTree*  bitTest      = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
     bitTest->gtFlags |= GTF_SET_FLAGS;
-    GenTreeCC* jcc = new (comp, GT_JCC) GenTreeCC(GT_JCC, bbSwitchCondition);
+    GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, bbSwitchCondition);
 
     LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
 
@@ -3289,20 +3307,8 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     assert(relop->gtNext == jtrue);
     assert(jtrue->gtNext == nullptr);
 
-    GenCondition cond       = GenCondition::FromRelop(relop);
-    bool         optimizing = comp->opts.OptimizationEnabled();
-#ifdef TARGET_XARCH
-    // Optimize FP x != x to only check parity flag. This is a common way of
-    // checking NaN and avoids two branches that we would otherwise emit.
-    if (optimizing && (cond.GetCode() == GenCondition::FNEU) && relopOp1->OperIsLocal() &&
-        GenTree::Compare(relopOp1, relopOp2) && IsInvariantInRange(relopOp1, relop) &&
-        IsInvariantInRange(relopOp2, relop))
-    {
-        cond = GenCondition(GenCondition::P);
-    }
-#endif
-
 #if defined(TARGET_LOONGARCH64)
+    GenCondition cond = GenCondition::FromRelop(relop);
     // for LA64's integer compare and condition-branch instructions,
     // it's very similar to the IL instructions.
     if (!varTypeIsFloating(relopOp1->TypeGet()))
@@ -3336,48 +3342,10 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         relop->gtFlags |= GTF_SET_FLAGS;
         assert(relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
     }
-
 #else
-
-    // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS.
-    if (optimizing && relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0) &&
-        relopOp1->SupportsSettingZeroFlag() && IsInvariantInRange(relopOp1, relop))
-    {
-        relopOp1->gtFlags |= GTF_SET_FLAGS;
-        relopOp1->SetUnusedValue();
-
-        BlockRange().Remove(relopOp1);
-        BlockRange().InsertBefore(jtrue, relopOp1);
-        BlockRange().Remove(relop);
-        BlockRange().Remove(relopOp2);
-    }
-    else
-    {
-        relop->gtType = TYP_VOID;
-        relop->gtFlags |= GTF_SET_FLAGS;
-
-        if (relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
-        {
-            relop->SetOper(GT_CMP);
-
-            if (cond.PreferSwap())
-            {
-                std::swap(relop->gtOp1, relop->gtOp2);
-                cond = GenCondition::Swap(cond);
-            }
-        }
-#ifdef TARGET_XARCH
-        else if (relop->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE))
-        {
-            relop->SetOper(GT_BT);
-        }
-#endif
-        else
-        {
-            assert(relop->OperIs(GT_TEST_EQ, GT_TEST_NE));
-            relop->SetOper(GT_TEST);
-        }
-    }
+    GenCondition cond;
+    bool         lowered = TryLowerConditionToFlagsNode(jtrue, relop, &cond);
+    assert(lowered); // Should succeed since relop is right before jtrue
 #endif // TARGET_LOONGARCH64
 
     jtrue->SetOperRaw(GT_JCC);
@@ -3428,8 +3396,136 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
         }
     }
 
+#ifdef TARGET_XARCH
+    // Do not transform GT_SELECT with GTF_SET_FLAGS into GT_SELECTCC; this
+    // node is used by decomposition on x86.
+    // TODO-CQ: If we allowed multiple nodes to consume the same CPU flags then
+    // we could do this on x86. We currently disable if-conversion for TYP_LONG
+    // on 32-bit architectures because of this.
+    GenCondition selectCond;
+    if (((select->gtFlags & GTF_SET_FLAGS) == 0) && TryLowerConditionToFlagsNode(select, cond, &selectCond))
+    {
+        select->SetOperRaw(GT_SELECTCC);
+        GenTreeOpCC* newSelect = select->AsOpCC();
+        newSelect->gtCondition = selectCond;
+        ContainCheckSelect(newSelect);
+        return newSelect->gtNext;
+    }
+#endif
+
     ContainCheckSelect(select);
     return select->gtNext;
+}
+
+//----------------------------------------------------------------------------------------------
+// TryLowerCompareToFlagsNode: Given a node 'parent' that is able to consume
+// conditions from CPU flags, try to transform 'condition' into a node that
+// produces CPU flags, and reorder it to happen right before 'parent'.
+//
+// Arguments:
+//     parent - The parent node that can consume from CPU flags.
+//     relop  - The relop that can be transformed into something that produces CPU flags.
+//     cond   - The condition that makes the compare true.
+//
+// Return Value:
+//     True if relop was transformed and is now right before 'parent'; otherwise false.
+//
+bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* cond)
+{
+    if (condition->OperIsCompare())
+    {
+        if (!IsInvariantInRange(condition, parent))
+        {
+            return false;
+        }
+
+        GenTreeOp* relop = condition->AsOp();
+
+        *cond           = GenCondition::FromRelop(relop);
+        bool optimizing = comp->opts.OptimizationEnabled();
+
+        GenTree* relopOp1 = relop->gtGetOp1();
+        GenTree* relopOp2 = relop->gtGetOp2();
+
+#ifdef TARGET_XARCH
+        // Optimize FP x != x to only check parity flag. This is a common way of
+        // checking NaN and avoids two branches that we would otherwise emit.
+        if (optimizing && (cond->GetCode() == GenCondition::FNEU) && relopOp1->OperIsLocal() &&
+            GenTree::Compare(relopOp1, relopOp2) && IsInvariantInRange(relopOp1, relop) &&
+            IsInvariantInRange(relopOp2, relop))
+        {
+            *cond = GenCondition(GenCondition::P);
+        }
+#endif
+
+        // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS.
+        if (optimizing && relop->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0) &&
+            relopOp1->SupportsSettingZeroFlag() && IsInvariantInRange(relopOp1, parent))
+        {
+            relopOp1->gtFlags |= GTF_SET_FLAGS;
+            relopOp1->SetUnusedValue();
+
+            BlockRange().Remove(relopOp1);
+            BlockRange().InsertBefore(parent, relopOp1);
+            BlockRange().Remove(relop);
+            BlockRange().Remove(relopOp2);
+        }
+        else
+        {
+            relop->gtType = TYP_VOID;
+            relop->gtFlags |= GTF_SET_FLAGS;
+
+            if (relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
+            {
+                relop->SetOper(GT_CMP);
+
+                if (cond->PreferSwap())
+                {
+                    std::swap(relop->gtOp1, relop->gtOp2);
+                    *cond = GenCondition::Swap(*cond);
+                }
+            }
+#ifdef TARGET_XARCH
+            else if (relop->OperIs(GT_BITTEST_EQ, GT_BITTEST_NE))
+            {
+                relop->SetOper(GT_BT);
+            }
+#endif
+            else
+            {
+                assert(relop->OperIs(GT_TEST_EQ, GT_TEST_NE));
+                relop->SetOper(GT_TEST);
+            }
+
+            if (relop->gtNext != parent)
+            {
+                BlockRange().Remove(relop);
+                BlockRange().InsertBefore(parent, relop);
+            }
+        }
+
+        return true;
+    }
+
+    // TODO-Cleanup: Avoid creating these SETCC nodes in the first place.
+    if (condition->OperIs(GT_SETCC))
+    {
+        assert((condition->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
+        GenTree* flagsProducer = condition->gtPrev;
+        if (!IsInvariantInRange(flagsProducer, parent, condition))
+        {
+            return false;
+        }
+
+        *cond = condition->AsCC()->gtCondition;
+
+        BlockRange().Remove(condition);
+        BlockRange().Remove(flagsProducer);
+        BlockRange().InsertBefore(parent, flagsProducer);
+        return true;
+    }
+
+    return false;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -3511,7 +3607,7 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
 
             if (BlockRange().TryGetUse(relop, &use))
             {
-                cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
+                cc = comp->gtNewCC(GT_SETCC, TYP_INT, condition);
                 BlockRange().InsertAfter(node, cc);
                 use.ReplaceWith(cc);
             }
