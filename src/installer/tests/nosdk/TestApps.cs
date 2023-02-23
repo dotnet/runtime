@@ -109,20 +109,14 @@ namespace AppHost.Bundle.Tests
                 fileSpecs.Add(new FileSpec(file, Path.GetRelativePath(srcDir, file)));
             }
 
-            // If this is a self-contained app, add the runtimepack assets to the bundle
+            // If this is a self-contained app, add the runtime assemblies to the bundle
             if (selfContained)
             {
-                var runtimePackAssets = s_provider.RuntimePackPath;
-                var assets = Directory.GetFiles(runtimePackAssets, searchPattern: "*.dll", searchOption: SearchOption.AllDirectories);
-                foreach (var asset in assets)
+                var runtimeAssemblies = GetRuntimeAssemblies();
+                foreach (var asset in runtimeAssemblies)
                 {
-                    fileSpecs.Add(new FileSpec(asset, Path.GetRelativePath(runtimePackAssets, asset)));
+                    fileSpecs.Add(new FileSpec(asset, Path.GetFileName(asset)));
                 }
-                var asmName = "System.Private.CoreLib.dll";
-                var spcPath = Path.Combine(
-                    s_provider.CoreClrPath,
-                    asmName);
-                fileSpecs.Add(new FileSpec(spcPath, asmName));
             }
 
             return bundler.GenerateBundle(fileSpecs);
@@ -135,11 +129,7 @@ namespace AppHost.Bundle.Tests
             {
                 if (_refAssemblies.IsDefault)
                 {
-                    var refDirPath = Path.Combine(
-                        s_provider.BaseArtifactsFolder,
-                        "bin", "microsoft.netcore.app.ref", "ref/",
-                        s_provider.Tfm);
-                    var references = Directory.GetFiles(refDirPath, "*.dll")
+                    var references = Directory.GetFiles(s_provider.RefPackPath, "*.dll")
                         .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
                         .ToImmutableArray();
                     ImmutableInterlocked.InterlockedInitialize(
@@ -148,6 +138,20 @@ namespace AppHost.Bundle.Tests
                 }
                 return _refAssemblies;
             }
+        }
+
+        private static IEnumerable<string> GetRuntimeAssemblies()
+        {
+            var runtimePackDir = new DotNetCli(s_provider.BuiltDotnet).GreatestVersionSharedFxPath;
+            return Directory.GetFiles(runtimePackDir, "*.dll")
+                .Where(f =>
+                {
+                    using (var fs = File.OpenRead(f))
+                    using (var peReader = new PEReader(fs))
+                    {
+                        return peReader.HasMetadata && peReader.GetMetadataReader().IsAssembly;
+                    }
+                });
         }
 
         private static void WriteAppToDirectory(string tempDir, bool selfContained)
@@ -205,7 +209,7 @@ namespace AppHost.Bundle.Tests
             }
 
             HostWriter.CreateAppHost(
-                GetAppHostPath(AppName, selfContained),
+                GetAppHostPath(selfContained),
                 Path.Combine(tempDir, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AppName)),
                 $"{AppName}.dll",
                 windowsGraphicalUserInterface: false,
@@ -216,12 +220,10 @@ namespace AppHost.Bundle.Tests
         }
 
         private static string GetAppHostPath(
-            string appName,
             bool selfContained)
         {
-            return selfContained
-                ? Path.Combine(s_provider.CoreClrPath, "corehost", RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("singlefilehost"))
-                : Path.Combine(s_provider.HostArtifacts, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("apphost"));
+            string hostName = selfContained ? "singlefilehost" : "apphost";
+            return Path.Combine(s_provider.HostArtifacts, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(hostName));
         }
 
         private static void WriteBasicRuntimeConfig(
@@ -264,19 +266,7 @@ namespace AppHost.Bundle.Tests
 
         private static void WriteBasicSelfContainedDepsJson(string outputPath)
         {
-            var runtimePackDir = s_provider.RuntimePackPath;
-            var runtimeFiles = Directory.GetFiles(runtimePackDir, "*.dll")
-                .Append(
-                    //System.Private.CoreLib is built and stored separately
-                    Path.Combine(s_provider.CoreClrPath, "System.Private.CoreLib.dll"))
-                .Where(f =>
-                {
-                    using (var fs = File.OpenRead(f))
-                    using (var peReader = new PEReader(fs))
-                    {
-                        return peReader.HasMetadata && peReader.GetMetadataReader().IsAssembly;
-                    }
-                })
+            var runtimeFiles = GetRuntimeAssemblies()
                 .Select(f =>
                 {
                     var fileVersion = FileVersionInfo.GetVersionInfo(f).FileVersion;

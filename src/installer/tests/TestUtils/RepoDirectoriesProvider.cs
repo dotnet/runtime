@@ -12,8 +12,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static readonly RepoDirectoriesProvider Default = new RepoDirectoriesProvider();
 
         public string Tfm { get; }
-        public string RuntimePackPath { get; }
-        public string CoreClrPath { get; }
+        public string RefPackPath { get; }
         public string BuildRID { get; }
         public string BuildArchitecture { get; }
         public string TargetRID { get; }
@@ -50,8 +49,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     StringComparer.OrdinalIgnoreCase);
 
             Tfm = GetTestContextVariable("MNA_TFM");
-            RuntimePackPath = GetTestContextVariable("RUNTIME_PACK_PATH");
-            CoreClrPath = GetTestContextVariable("CORECLR_ARTIFACTS_PATH");
+            RefPackPath = GetTestContextVariable("REF_PACK_PATH");
             TargetRID = GetTestContextVariable("TEST_TARGETRID");
             BuildRID = GetTestContextVariable("BUILDRID");
             BuildArchitecture = GetTestContextVariable("BUILD_ARCHITECTURE");

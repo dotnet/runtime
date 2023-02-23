@@ -16,10 +16,6 @@
     <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --blame-hang-timeout 5m --blame-hang-dump-type full</TestRunnerAdditionalArguments>
     <UseVSTestRunner>true</UseVSTestRunner>
     <RunAnalyzers>false</RunAnalyzers>
-    <TestRuntimeVersion>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</TestRuntimeVersion>
-    <TestHostPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(TestRuntimeVersion)'))</TestHostPath>
-    <RuntimePackPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(TestRuntimeVersion)'))</RuntimePackPath>
-    <CoreClrPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOs).$(TargetArchitecture).$(Configuration)'))</CoreClrPath>
   </PropertyGroup>
 
 </Project>

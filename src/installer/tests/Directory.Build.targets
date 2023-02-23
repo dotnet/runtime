@@ -75,8 +75,7 @@
       <TestContextVariable Include="NUGET_PACKAGES=$(TestRestorePackagesPath)" />
       <TestContextVariable Include="TEST_ARTIFACTS=$(SystemPathTestsOutputDir)" />
       <TestContextVariable Include="TEST_TARGETRID=$(TestTargetRid)" />
-      <TestContextVariable Include="RUNTIME_PACK_PATH=$(RuntimePackPath)" />
-      <TestContextVariable Include="CORECLR_ARTIFACTS_PATH=$(CoreClrPath)" />
+      <TestContextVariable Include="REF_PACK_PATH=$(MicrosoftNetCoreAppRefPackRefDir)" />
       <TestContextVariable Include="BUILDRID=$(OutputRid)" />
       <TestContextVariable Include="BUILD_ARCHITECTURE=$(TargetArchitecture)" />
       <TestContextVariable Include="BUILD_CONFIGURATION=$(Configuration)" />
