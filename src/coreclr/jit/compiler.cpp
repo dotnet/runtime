@@ -2298,6 +2298,16 @@ void Compiler::compSetProcessor()
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
             instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
+#ifdef TARGET_AMD64
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
+            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
+#endif // TARGET_AMD64
         }
         else
         {

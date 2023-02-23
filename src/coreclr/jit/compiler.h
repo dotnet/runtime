@@ -8325,7 +8325,7 @@ private:
     SIMDLevel getSIMDSupportLevel()
     {
 #if defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_Vector256))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
             if (compOpportunisticallyDependsOn(InstructionSet_Vector512))
             {
