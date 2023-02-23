@@ -297,7 +297,7 @@ namespace System
         {
             if (action is null)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.action);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
             }
 
             if (length <= 0)
