@@ -6,12 +6,12 @@
 #include <errno.h>
 #include <signal.h>
 
-#ifdef _WIN32
+#ifdef TARGET_WINDOWS
 
 #include <windows.h>
 #include <string>
 
-#else // !_WIN32
+#else // !TARGET_WINDOWS
 
 #include <chrono>
 #include <sys/wait.h>
@@ -19,11 +19,15 @@
 #include <unistd.h>
 #include <vector>
 
-#endif // _WIN32
+#endif // TARGET_WINDOWS
 
 int run_timed_process(const long, const int, const char *[]);
 
+#ifdef TARGET_X86
+int __cdecl main(const int argc, const char *argv[])
+#else
 int main(const int argc, const char *argv[])
+#endif
 {
     if (argc < 3)
     {
@@ -40,7 +44,7 @@ int main(const int argc, const char *argv[])
 
 int run_timed_process(const long timeout_ms, const int proc_argc, const char *proc_argv[])
 {
-#ifdef _WIN32
+#ifdef TARGET_WINDOWS
     std::string cmdline(proc_argv[0]);
 
     for (int i = 1; i < proc_argc; i++)
@@ -72,7 +76,8 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
     CloseHandle(proc_info.hThread);
     return exit_code;
 
-#else
+#else // !TARGET_WINDOWS
+
     // TODO: Describe what the 'ms_factor' is, and why it's being used here.
     const int ms_factor = 40;
     const int check_interval = 1000 / ms_factor;
@@ -128,7 +133,7 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
     printf("Child process took too long. Timed out... Exiting...\n");
     kill(child_pid, SIGKILL);
 
-#endif
+#endif // TARGET_WINDOWS
     return ETIMEDOUT;
 }
 
