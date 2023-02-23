@@ -8,7 +8,7 @@
   <PropertyGroup>
     <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == ''">true</IsBrowserWasmProject>
 
-    <!-- some tests require full ICU data, force it -->
+    <!-- some tests require full ICU data, force it for all the tests -->
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
 
     <!-- set this when provisioning emsdk on CI -->
@@ -188,6 +188,7 @@
       <_WasmPropertyNames Include="EmccCompileOptimizationFlag" />
       <_WasmPropertyNames Include="EmccLinkOptimizationFlag" />
       <_WasmPropertyNames Include="WasmIncludeFullIcuData" />
+      <_WasmPropertyNames Include="WasmIcuDataFileName" />
     </ItemGroup>
   </Target>
 

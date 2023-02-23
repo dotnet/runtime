@@ -130,7 +130,7 @@ namespace DebuggerTests
                 Directory.Delete(TempPath, recursive: true);
         }
 
-        public DebuggerTestBase(ITestOutputHelper testOutput, string driver = "debugger-driver.html", string locale = "en-US")
+        public DebuggerTestBase(ITestOutputHelper testOutput, string driver = "debugger-driver.html", string locale)
         {
             _env = new TestEnvironment(testOutput);
             _testOutput = testOutput;

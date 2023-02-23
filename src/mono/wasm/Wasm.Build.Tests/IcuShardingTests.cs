@@ -18,7 +18,7 @@ public class IcuShardingTests : BuildTestBase
         : base(output, buildContext) { }
 
     // custom file contains only locales "cy-GB", "is-IS", "bs-BA", "lb-LU" and fallback locale: "en-US":
-    private static string customIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
+    private static string s_customIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
     public record SundayNames {
         public static string French = "dimanche";
         public static string Spanish = "domingo";
@@ -26,7 +26,7 @@ public class IcuShardingTests : BuildTestBase
         public static string Japanese = "日曜日";
         public static string Slovak = "nedeľa";
     }
-    private static string customIcuTestedLocales = $@"new Locale[] {{
+    private static readonly string s_customIcuTestedLocales = $@"new Locale[] {{
         new Locale(""cy-GB"",  ""Dydd Sul""), new Locale(""is-IS"",  ""sunnudagur""), new Locale(""bs-BA"",  ""nedjelja""), new Locale(""lb-LU"",  ""Sonndeg""),
         new Locale(""fr-FR""), new Locale(""hr-HR""), new Locale(""ko-KR"")
     }}";
@@ -42,15 +42,15 @@ public class IcuShardingTests : BuildTestBase
         new Locale(""en-AU""), new Locale(""fr-FR"", ""{SundayNames.French}""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""),
         new Locale(""ja-JP"", ""{fallbackSundayName}""), new Locale(""ko-KR"", ""{fallbackSundayName}""), new Locale(""zh-CN"", ""{fallbackSundayName}"")
     }}";
-    private static string fullIcuTestedLocales = $@"new Locale[] {{
+    private static readonly string s_fullIcuTestedLocales = $@"new Locale[] {{
         new Locale(""en-GB""), new Locale(""sk-SK"", ""{SundayNames.Slovak}""), new Locale(""zh-CN"", ""{SundayNames.Chinese}"")
     }}";
 
     public static IEnumerable<object?[]> IcuExpectedAndMissingCustomShardTestData(bool aot, RunHost host)
         => ConfigWithAOTData(aot)
             .Multiply(
-                new object[] { customIcuPath, customIcuTestedLocales, false },
-                new object[] { customIcuPath, customIcuTestedLocales, true })
+                new object[] { s_customIcuPath, s_customIcuTestedLocales, false },
+                new object[] { s_customIcuPath, s_customIcuTestedLocales, true })
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
@@ -73,7 +73,7 @@ public class IcuShardingTests : BuildTestBase
                 new object[] { "fr-FR", GetEfigsTestedLocales(SundayNames.French)},
                 new object[] { "ja-JP", GetCjkTestedLocales(SundayNames.Japanese) },
                 new object[] { "sk-SK", GetNocjkTestedLocales(SundayNames.Slovak) })
-            .WithRunHosts(BuildTestBase.hostsForOSLocaleSensitiveTests)
+            .WithRunHosts(BuildTestBase.s_hostsForOSLocaleSensitiveTests)
             .UnwrapItemsAsArrays();
 
     public static IEnumerable<object?[]> FullIcuWithInvariantTestData(bool aot, RunHost host)
@@ -83,7 +83,7 @@ public class IcuShardingTests : BuildTestBase
                 new object[] { true, true, "Array.Empty<Locale>()" },
                 new object[] { true, false, "Array.Empty<Locale>()" },
                 new object[] { false, false, GetEfigsTestedLocales() },
-                new object[] { false, true,  fullIcuTestedLocales})
+                new object[] { false, true,  s_fullIcuTestedLocales})
             .WithRunHosts(host)
             .UnwrapItemsAsArrays();
 
@@ -218,9 +218,9 @@ public class IcuShardingTests : BuildTestBase
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName };
-        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{customIcuPath}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
+        buildArgs = ExpandBuildArgs(buildArgs, extraProperties: $"<WasmIcuDataFileName>{s_customIcuPath}</WasmIcuDataFileName><WasmIncludeFullIcuData>{fullIcu}</WasmIncludeFullIcuData>");
 
-        string testedLocales = fullIcu ? fullIcuTestedLocales : customIcuTestedLocales;
+        string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
         string programText = GetProgramText(testedLocales);
         (_, string output) = BuildProject(buildArgs,
                         id: id,
@@ -228,7 +228,7 @@ public class IcuShardingTests : BuildTestBase
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                             DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                             GlobalizationMode: fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.PredefinedIcu,
-                            PredefinedIcudt: fullIcu ? "" : customIcuPath));
+                            PredefinedIcudt: fullIcu ? "" : s_customIcuPath));
         if (fullIcu)
             Assert.Contains("$(WasmIcuDataFileName) has no effect when $(WasmIncludeFullIcuData) is set to true.", output);
 

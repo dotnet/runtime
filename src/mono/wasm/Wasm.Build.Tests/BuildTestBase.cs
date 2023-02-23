@@ -30,6 +30,7 @@ namespace Wasm.Build.Tests
     {
         public const string DefaultTargetFramework = "net8.0";
         public const string DefaultTargetFrameworkForBlazor = "net8.0";
+        private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -39,13 +40,13 @@ namespace Wasm.Build.Tests
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
 
-        private static bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         // changing Windows's language programistically is complicated and Node is using OS's language to determine
         // what is client's preferred locale and then to load corresponding ICU => skip automatic icu testing with Node
         // on Linux sharding does not work because we rely on LANG env var to check locale and emcc is overwriting it
-        protected static RunHost hostsForOSLocaleSensitiveTests = RunHost.Chrome;
+        protected static RunHost s_hostsForOSLocaleSensitiveTests = RunHost.Chrome;
         // FIXME: use an envvar to override this
-        protected static int s_defaultPerTestTimeoutMs = isWindows ? 30*60*1000 : 15*60*1000;
+        protected static int s_defaultPerTestTimeoutMs = s_isWindows ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
@@ -145,7 +146,7 @@ namespace Wasm.Build.Tests
                                            string? extraXHarnessMonoArgs = null,
                                            string? extraXHarnessArgs = null,
                                            string jsRelativePath = "test-main.js",
-                                           string environmentLocale = "en-US")
+                                           string environmentLocale = DefaultEnvironmentLocale)
         {
             buildDir ??= _projectDir;
             envVars ??= new();
@@ -170,7 +171,7 @@ namespace Wasm.Build.Tests
             // Use wasm-console.log to get the xharness output for non-browser cases
             string testCommand = hostRunner.GetTestCommand();
             XHarnessArgsOptions options = new XHarnessArgsOptions(jsRelativePath, environmentLocale, host);
-            string xharnessArgs = isWindows ? hostRunner.GetXharnessArgsWindowsOS(options) : hostRunner.GetXharnessArgsOtherOS(options);
+            string xharnessArgs = s_isWindows ? hostRunner.GetXharnessArgsWindowsOS(options) : hostRunner.GetXharnessArgsOtherOS(options);
             bool useWasmConsoleOutput = hostRunner.UseWasmConsoleOutput();
 
             extraXHarnessArgs += " " + xharnessArgs;
@@ -341,7 +342,7 @@ namespace Wasm.Build.Tests
             if (buildArgs.AOT)
             {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
-                extraProperties += $"\n<EmccVerbose>{isWindows}</EmccVerbose>\n";
+                extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>\n";
             }
 
             if (UseWebcil) {
@@ -1152,7 +1153,7 @@ namespace Wasm.Build.Tests
         {
             RunHost.V8 => new V8HostRunner(),
             RunHost.NodeJS => new NodeJSHostRunner(),
-            _ => new OtherHostRunner(),
+            _ => new BrowserHostRunner(),
         };
     }
 

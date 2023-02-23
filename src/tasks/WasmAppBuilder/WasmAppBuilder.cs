@@ -311,7 +311,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         if (!InvariantGlobalization)
         {
             bool loadRemote = RemoteSources?.Length > 0;
-            foreach (var idfn in IcuDataFileNames!)
+            foreach (var idfn in IcuDataFileNames)
             {
                 if (!File.Exists(idfn))
                 {
