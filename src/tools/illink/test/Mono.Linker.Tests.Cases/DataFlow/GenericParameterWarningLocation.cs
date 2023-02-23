@@ -1527,7 +1527,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					: IBase<RequiresMethods<RequiresNothing<TUnknown>>>
 				{ }
 
-				[ExpectedWarning ("IL2091", "TUnknown", "RequiresFields", nameof (DynamicallyAccessedMemberTypes.PublicFields), ProducedBy = ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL2091", "TUnknown", "RequiresFields", nameof (DynamicallyAccessedMemberTypes.PublicFields))]
 				class DerivedWithFields<TUnknown>
 					: IBase<RequiresMethods<RequiresNothing<RequiresFields<TUnknown>>>>
 				{
@@ -1536,17 +1536,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					}
 				}
 
-				[ExpectedWarning ("IL2026", "--RUCMethod--", ProducedBy = ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL2026", "--RUCMethod--")]
 				class DerivedWithRUC
 					: IBase<RequiresMethods<RequiresNothing<RequiresMethods<TypeWithRUCMethod>>>>
 				{ }
 
 				public static void Test ()
 				{
-					Type a;
-					a = typeof (DerivedWithNothing<TestType>);
-					a = typeof (DerivedWithFields<TestType>);
-					a = typeof (DerivedWithRUC);
+					// We have to instantiate the types otherwise trimmer will remove interfaces
+					// since they're not needed.
+					object a = new DerivedWithNothing<TestType> ();
+					a = new DerivedWithFields<TestType> ();
+					a = new DerivedWithRUC ();
+
+					// We also have to reference the interface type to "keep" it
+					var t = typeof (IBase<TestType>);
 				}
 			}
 
