@@ -10605,7 +10605,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto EVAL_APPEND;
 
             case CEE_INITOBJ:
-
+            {
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Class);
@@ -10613,6 +10613,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 lclTyp = JITtype2varType(info.compCompHnd->asCorInfoType(resolvedToken.hClass));
+
+                ClassLayout* layout = nullptr;
+
+                if (lclTyp == TYP_STRUCT)
+                {
+                    layout = typGetObjLayout(resolvedToken.hClass);
+                    lclTyp = layout->GetType();
+                }
+
                 if (lclTyp != TYP_STRUCT)
                 {
                     op2 = gtNewZeroConNode(genActualType(lclTyp));
@@ -10620,10 +10629,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 op1 = impPopStack().val;
-                op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1);
+                op1 = gtNewStructVal(layout, op1);
                 op2 = gtNewIconNode(0);
                 op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
                 goto SPILL_APPEND;
+            }
 
             case CEE_INITBLK:
 
