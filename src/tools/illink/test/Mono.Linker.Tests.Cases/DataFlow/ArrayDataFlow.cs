@@ -564,7 +564,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresAll))]
-			// https://github.com/dotnet/linker/issues/2746 (Linker produces incomplete set of IL2072 warnings)
+			// https://github.com/dotnet/linker/issues/2746 (ILLink produces incomplete set of IL2072 warnings)
 			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll),
 				ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL2072", nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll),
@@ -577,7 +577,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				arr[0].RequiresAll ();
 			}
 
-			// Linker only incidentally matches the analyzer behavior here.
+			// ILLink only incidentally matches the analyzer behavior here.
 			// https://github.com/dotnet/linker/issues/2737
 			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll))]
 			static void TestNullCoalescingAssignmentToEmptyComplex ()
