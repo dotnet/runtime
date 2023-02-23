@@ -239,6 +239,17 @@ namespace System.Collections.Tests
             }
         }
 
+        [Fact]
+        public void Stack_Generic_TrimExcess_DoesNotInvalidateEnumeration()
+        {
+            Stack<T> stack = GenericStackFactory(10);
+            stack.EnsureCapacity(100);
+
+            IEnumerator<T> enumerator = stack.GetEnumerator();
+            stack.TrimExcess();
+            enumerator.MoveNext();
+        }
+
         #endregion
 
         [Theory]
