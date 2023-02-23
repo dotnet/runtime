@@ -85,7 +85,7 @@ public class EmitWasmBundleObjectFile : Microsoft.Build.Utilities.Task, ICancela
             if (BuildEngine is IBuildEngine9 be9)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
 
-            Parallel.For(0, remainingObjectFilesToBundle.Length, new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism, CancellationToken = BuildTaskCancelled.Token }, i =>
+            Parallel.For(0, remainingObjectFilesToBundle.Length, new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism, CancellationToken = BuildTaskCancelled.Token }, (i, state) =>
             {
                 var objectFile = remainingObjectFilesToBundle[i];
 
@@ -100,7 +100,8 @@ public class EmitWasmBundleObjectFile : Microsoft.Build.Utilities.Task, ICancela
                     Log.LogMessage(MessageImportance.High, "{0}/{1} Bundling {2}...", count, remainingObjectFilesToBundle.Length, Path.GetFileName(contentSourceFile.ItemSpec));
                 }
 
-                EmitObjectFile(contentSourceFile, outputFile);
+                if (!EmitObjectFile(contentSourceFile, outputFile))
+                    state.Stop();
             });
         }
 
@@ -109,23 +110,55 @@ public class EmitWasmBundleObjectFile : Microsoft.Build.Utilities.Task, ICancela
         return !Log.HasLoggedErrors;
     }
 
-    private void EmitObjectFile(ITaskItem fileToBundle, string destinationObjectFile)
+    private bool EmitObjectFile(ITaskItem fileToBundle, string destinationObjectFile)
     {
         Log.LogMessage(MessageImportance.Low, "Bundling {0} as {1}", fileToBundle.ItemSpec, destinationObjectFile);
 
         if (Path.GetDirectoryName(destinationObjectFile) is string destDir && !string.IsNullOrEmpty(destDir))
             Directory.CreateDirectory(destDir);
 
+        object syncObj = new();
+        StringBuilder outputBuilder = new();
         var clangProcess = Process.Start(new ProcessStartInfo
         {
             FileName = ClangExecutable,
             Arguments = $"-xc -o \"{destinationObjectFile}\" -c -",
             RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
             UseShellExecute = false,
         })!;
 
-        BundleFileToCSource(destinationObjectFile, fileToBundle, clangProcess.StandardInput.BaseStream);
-        clangProcess.WaitForExit();
+        clangProcess.ErrorDataReceived += (sender, e) =>
+        {
+            lock (syncObj)
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                    outputBuilder.AppendLine(e.Data);
+            }
+        };
+        clangProcess.OutputDataReceived += (sender, e) =>
+        {
+            lock (syncObj)
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                    outputBuilder.AppendLine(e.Data);
+            }
+        };
+        clangProcess.BeginOutputReadLine();
+        clangProcess.BeginErrorReadLine();
+
+        try
+        {
+            BundleFileToCSource(destinationObjectFile, fileToBundle, clangProcess.StandardInput.BaseStream);
+            clangProcess.WaitForExit();
+            return true;
+        }
+        catch (IOException ioex)
+        {
+            Log.LogError($"Failed to compile because {ioex.Message}{Environment.NewLine}Output: {outputBuilder}");
+            return false;
+        }
     }
 
     private static string GetBundleFileApiSource(ICollection<IGrouping<string, ITaskItem>> bundledFilesByObjectFileName)
