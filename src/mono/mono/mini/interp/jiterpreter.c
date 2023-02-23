@@ -8,15 +8,18 @@
 #endif
 #include "config.h"
 
+void jiterp_preserve_module (void);
+
+// NOTE: All code in this file needs to be guarded with HOST_BROWSER, since
+//  we don't run non-wasm tests for changes to this file!
+
+#if HOST_BROWSER
+
 #if 0
 #define jiterp_assert(b) g_assert(b)
 #else
 #define jiterp_assert(b)
 #endif
-
-void jiterp_preserve_module (void);
-
-#if HOST_BROWSER
 
 #include <emscripten.h>
 
@@ -1226,6 +1229,26 @@ mono_jiterp_math_tan (double value)
 }
 
 EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_stelem_ref (
+	MonoArray *o, gint32 aindex, MonoObject *ref
+) {
+	if (!o)
+		return 0;
+	if (aindex >= mono_array_length_internal (o))
+		return 0;
+
+	if (ref) {
+		// FIXME push/pop LMF
+		gboolean isinst = mono_jiterp_isinst (ref, m_class_get_element_class (mono_object_class (o)));
+		if (!isinst)
+			return 0;
+	}
+
+	mono_array_setref_fast ((MonoArray *) o, aindex, ref);
+	return 1;
+}
+
+EMSCRIPTEN_KEEPALIVE int
 mono_jiterp_trace_transfer (
 	int displacement, JiterpreterThunk trace, void *frame, void *pLocals
 ) {
@@ -1248,7 +1271,7 @@ mono_jiterp_trace_transfer (
 
 // HACK: fix C4206
 EMSCRIPTEN_KEEPALIVE
-#endif
+#endif // HOST_BROWSER
 
 void jiterp_preserve_module () {
 }
