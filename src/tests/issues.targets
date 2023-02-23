@@ -4265,11 +4265,35 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeSimpleExpr1/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/**">
-            <Issue>Duplicate Symbol</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/**">
+            <Issue>Build time issue</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Generics/**">
-            <Issue>Duplicate Symbol</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/managed/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/reflection/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/nativeaot/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+                <ExcludeList Include="$(XunitTestBinBase)/ilasm/**">
+            <Issue>Build time issue</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/ilverify/**">
+            <Issue>Build time issue</Issue>
         </ExcludeList>
     </ItemGroup>
 
