@@ -9,20 +9,10 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
-    internal class CodeSnippets
+    internal partial class CodeSnippets : ISnippetProvider
     {
-        private GeneratorKind Generator { get; }
-
-        public CodeSnippets(GeneratorKind generator)
-        {
-            this.Generator = generator;
-        }
-
-        public enum GeneratorKind
-        {
-            ComInterfaceGenerator,
-            VTableIndexStubGenerator
-        }
+        private readonly GeneratorKind _generator;
+        GeneratorKind ISnippetProvider.Generator => _generator;
 
         private string VirtualMethodIndex(
             int index,
@@ -33,36 +23,25 @@ namespace ComInterfaceGenerator.Unit.Tests
             bool? SetLastError = null,
             ExceptionMarshalling? ExceptionMarshalling = null,
             Type? ExceptionMarshallingType = null)
-                => Generator switch
-                {
-                    GeneratorKind.ComInterfaceGenerator => "",
-                    GeneratorKind.VTableIndexStubGenerator =>
-                        "[global::System.Runtime.InteropServices.Marshalling.VirtualMethodIndexAttribute("
-                        + index.ToString()
-                        + (ImplicitThisParameter.HasValue ? $", ImplicitThisParameter = {ImplicitThisParameter.Value.ToString().ToLower()}" : "")
-                        + (Direction is not null ? $", Direction = {typeof(MarshalDirection).FullName}.{Direction.Value}" : "")
-                        + (StringMarshalling is not null ? $", StringMarshalling = {typeof(StringMarshalling).FullName}.{StringMarshalling!.Value}" : "")
-                        + (StringMarshallingCustomType is not null ? $", StringMarshallingCustomType = {StringMarshallingCustomType!.FullName}" : "")
-                        + (SetLastError is not null ? $", SetLastError = {SetLastError.Value.ToString().ToLower()}" : "")
-                        + (ExceptionMarshalling is not null ? $", ExceptionMarshalling = {typeof(ExceptionMarshalling).FullName}.{ExceptionMarshalling.Value}" : "")
-                        + (ExceptionMarshallingType is not null ? $", ExceptionMarshallingCustomType = {ExceptionMarshallingType!.FullName}" : "")
-                        + ")]",
-                    _ => throw new NotImplementedException()
-                };
+            => ((ISnippetProvider)this).VirtualMethodIndex(
+                index,
+                ImplicitThisParameter,
+                Direction,
+                StringMarshalling,
+                StringMarshallingCustomType,
+                SetLastError,
+                ExceptionMarshalling,
+                ExceptionMarshallingType);
 
-        private string UnmanagedObjectUnwrapper(Type t) => Generator switch
-        {
-            GeneratorKind.VTableIndexStubGenerator => $"[global::System.Runtime.InteropServices.Marshalling.UnmanagedObjectUnwrapperAttribute<{t.FullName!.Replace('+', '.')}>]",
-            GeneratorKind.ComInterfaceGenerator => "",
-            _ => throw new NotImplementedException(),
-        };
+        private string UnmanagedObjectUnwrapper(Type t) => ((ISnippetProvider)this).UnmanagedObjectUnwrapper(t);
 
-        private string GeneratedComInterface => Generator switch
+        private string GeneratedComInterface => ((ISnippetProvider)this).GeneratedComInterface;
+
+        public CodeSnippets(GeneratorKind generator)
         {
-            GeneratorKind.VTableIndexStubGenerator => "",
-            GeneratorKind.ComInterfaceGenerator => $"[global::System.Runtime.InteropServices.Marshalling.GeneratedComInterfaceAttribute]",
-            _ => throw new NotImplementedException(),
-        };
+            this._generator = generator;
+        }
+
         private string UnmanagedCallConv(Type[]? CallConvs = null)
         {
             var arguments = CallConvs?.Length is 0 or null ? "" : "(CallConvs = new[] {" + string.Join(", ", CallConvs!.Select(t => $"typeof({t.FullName})")) + "})";
@@ -275,9 +254,12 @@ sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider, INativeAPI.Native
 
         public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider<ManagedToUnmanaged>
         {
+            public ManagedToUnmanaged(GeneratorKind generator) => Generator = generator;
             public static MarshalDirection Direction => MarshalDirection.ManagedToUnmanaged;
 
             public static bool ImplicitThisParameter => true;
+
+            public GeneratorKind Generator { get; }
 
             public static string NativeInterfaceUsage() => CodeSnippets.NativeInterfaceUsage();
         }
@@ -287,6 +269,10 @@ sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider, INativeAPI.Native
 
             public static bool ImplicitThisParameter => false;
 
+            public GeneratorKind Generator { get; }
+
+            public ManagedToUnmanagedNoImplicitThis(GeneratorKind generator) => Generator = generator;
+
             public static string NativeInterfaceUsage() => CodeSnippets.NativeInterfaceUsage();
         }
         public class UnmanagedToManaged : IVirtualMethodIndexSignatureProvider<UnmanagedToManaged>
@@ -294,6 +280,10 @@ sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider, INativeAPI.Native
             public static MarshalDirection Direction => MarshalDirection.UnmanagedToManaged;
 
             public static bool ImplicitThisParameter => true;
+
+            public GeneratorKind Generator { get; }
+
+            public UnmanagedToManaged(GeneratorKind generator) => Generator = generator;
 
             // Unmanaged-to-managed-only stubs don't provide implementations for the interface, so we don't want to try to use the generated nested interface
             // since it won't have managed implementations for the methods
@@ -304,6 +294,11 @@ sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider, INativeAPI.Native
             public static MarshalDirection Direction => MarshalDirection.Bidirectional;
 
             public static bool ImplicitThisParameter => true;
+
+            public GeneratorKind Generator { get; }
+
+            public Bidirectional(GeneratorKind generator) => Generator = generator;
+
             public static string NativeInterfaceUsage() => CodeSnippets.NativeInterfaceUsage();
         }
     }
