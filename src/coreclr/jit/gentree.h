@@ -1686,7 +1686,16 @@ public:
 
     bool OperIsConditionalJump() const
     {
-        return (gtOper == GT_JTRUE) || (gtOper == GT_JCMP) || (gtOper == GT_JCC);
+        return OperIs(GT_JTRUE, GT_JCMP, GT_JCC);
+    }
+
+    bool OperConsumesFlags() const
+    {
+#if !defined(TARGET_64BIT)
+        if (OperIs(GT_ADD_HI, GT_SUB_HI))
+            return true;
+#endif
+        return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
     }
 
 #ifdef DEBUG
@@ -4188,6 +4197,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_STRESS_TAILCALL         = 0x04000000, // the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
     GTF_CALL_M_EXPANDED_EARLY          = 0x08000000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x10000000, // this call has late devirtualzation info
+    GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x20000000, // ldvirtftn on an interface type
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4645,7 +4655,7 @@ struct NewCallArg
     // The class handle if SignatureType == TYP_STRUCT.
     CORINFO_CLASS_HANDLE SignatureClsHnd = NO_CLASS_HANDLE;
     // The type of well known arg
-    WellKnownArg WellKnownArg = WellKnownArg::None;
+    WellKnownArg WellKnownArg = ::WellKnownArg::None;
 
     NewCallArg WellKnown(::WellKnownArg type) const
     {
@@ -8521,12 +8531,11 @@ public:
 };
 
 // Represents a GT_JCC or GT_SETCC node.
-
 struct GenTreeCC final : public GenTree
 {
     GenCondition gtCondition;
 
-    GenTreeCC(genTreeOps oper, GenCondition condition, var_types type = TYP_VOID)
+    GenTreeCC(genTreeOps oper, var_types type, GenCondition condition)
         : GenTree(oper, type DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
     {
         assert(OperIs(GT_JCC, GT_SETCC));
@@ -8534,6 +8543,24 @@ struct GenTreeCC final : public GenTree
 
 #if DEBUGGABLE_GENTREE
     GenTreeCC() : GenTree()
+    {
+    }
+#endif // DEBUGGABLE_GENTREE
+};
+
+// Represents a node with two operands and a condition.
+struct GenTreeOpCC final : public GenTreeOp
+{
+    GenCondition gtCondition;
+
+    GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree* op1 = nullptr, GenTree* op2 = nullptr)
+        : GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
+    {
+        assert(OperIs(GT_SELECTCC));
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeOpCC() : GenTreeOp()
     {
     }
 #endif // DEBUGGABLE_GENTREE
