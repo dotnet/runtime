@@ -969,9 +969,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new[] { new RangeAttribute(1.1, 1.1) { MinimumIsExclusive = true } };
             yield return new[] { new RangeAttribute(1.1, 1.1) { MaximumIsExclusive = true } };
             yield return new[] { new RangeAttribute(1.1, 1.1) { MinimumIsExclusive = true, MaximumIsExclusive = true } };
-            yield return new[] { new RangeAttribute(typeof(double), "0.0", "0.0") { MinimumIsExclusive = true } };
-            yield return new[] { new RangeAttribute(typeof(double), "0.0", "0.0") { MaximumIsExclusive = true } };
-            yield return new[] { new RangeAttribute(typeof(double), "0.0", "0.0") { MinimumIsExclusive = true, MaximumIsExclusive = true } };
+            yield return new[] { new RangeAttribute(typeof(double), "0.0", "0.0") { MinimumIsExclusive = true, ParseLimitsInInvariantCulture = true } };
+            yield return new[] { new RangeAttribute(typeof(double), "0.0", "0.0") { MaximumIsExclusive = true, ParseLimitsInInvariantCulture = true } };
+            yield return new[] { new RangeAttribute(typeof(double), "0.0", "0.0") { MinimumIsExclusive = true, MaximumIsExclusive = true, ParseLimitsInInvariantCulture = true, } };
         }
 
         [Theory]
