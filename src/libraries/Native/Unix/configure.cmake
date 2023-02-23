@@ -72,6 +72,12 @@ if(C_SUPPORTS_WUNGUARDED_AVAILABILITY)
   set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wunguarded-availability")
 endif()
 
+# Enable building on platforms where strict-prototypes is enabled by default.
+check_c_compiler_flag(-Wno-strict-prototypes COMPILER_SUPPORTS_W_NO_STRICT_PROTOTYPES)
+if(COMPILER_SUPPORTS_W_NO_STRICT_PROTOTYPES)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-strict-prototypes")
+endif()
+
 # in_pktinfo: Find whether this struct exists
 check_include_files(
     "sys/socket.h;linux/in.h"
