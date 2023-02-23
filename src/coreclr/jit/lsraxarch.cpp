@@ -2859,8 +2859,8 @@ int LinearScan::BuildMul(GenTree* tree)
 }
 
 //------------------------------------------------------------------------------
-// SetContainsAVXFlags: Set ContainsAVX flag when it is floating type, set
-// Contains256bitAVX flag when SIMD vector size is 32 bytes
+// SetContainsAVXFlags: Set ContainsAVX flag when it is floating type,
+// set SetContains256bitOrMoreAVX flag when SIMD vector size is 32 or 64 bytes.
 //
 // Arguments:
 //    isFloatingPointType   - true if it is floating point type
@@ -2874,7 +2874,14 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
         compiler->GetEmitter()->SetContainsAVX(true);
         if (sizeOfSIMDVector == 32)
         {
-            compiler->GetEmitter()->SetContains256bitAVX(true);
+            compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
+        }
+    }
+    if (compiler->canUseEvexEncoding())
+    {
+        if (compiler->compExactlyDependsOn(InstructionSet_AVX512F) && (sizeOfSIMDVector == 64))
+        {
+            compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
         }
     }
 }

@@ -290,6 +290,7 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_SIMD12:
         case TYP_SIMD16:
         case TYP_SIMD32:
+        case TYP_SIMD64:
 #endif
 #ifdef TARGET_64BIT
         case TYP_LONG:
@@ -424,6 +425,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_SIMD12:
         case TYP_SIMD16:
         case TYP_SIMD32:
+        case TYP_SIMD64:
             this->vlType = VLT_REG_FP;
 
             // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,

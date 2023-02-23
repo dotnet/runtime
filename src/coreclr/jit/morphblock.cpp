@@ -597,6 +597,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
             case TYP_SIMD12:
             case TYP_SIMD16:
             case TYP_SIMD32:
+            case TYP_SIMD64:
 #endif // FEATURE_SIMD
                 assert(initPattern == 0);
                 src = m_comp->gtNewZeroConNode(fieldType);

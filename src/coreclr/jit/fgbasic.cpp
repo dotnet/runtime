@@ -1196,6 +1196,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_X86Base_X64_BitScanForward:
                             case NI_X86Base_BitScanReverse:
                             case NI_X86Base_X64_BitScanReverse:
+                            case NI_Vector512_Create:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
                             {

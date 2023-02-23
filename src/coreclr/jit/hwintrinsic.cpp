@@ -159,6 +159,38 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
                 assert(!"Didn't find a class handle for simdType");
         }
     }
+    else if (simdType == TYP_SIMD64)
+    {
+        switch (simdBaseJitType)
+        {
+            case CORINFO_TYPE_FLOAT:
+                return m_simdHandleCache->Vector512FloatHandle;
+            case CORINFO_TYPE_DOUBLE:
+                return m_simdHandleCache->Vector512DoubleHandle;
+            case CORINFO_TYPE_INT:
+                return m_simdHandleCache->Vector512IntHandle;
+            case CORINFO_TYPE_USHORT:
+                return m_simdHandleCache->Vector512UShortHandle;
+            case CORINFO_TYPE_UBYTE:
+                return m_simdHandleCache->Vector512UByteHandle;
+            case CORINFO_TYPE_SHORT:
+                return m_simdHandleCache->Vector512ShortHandle;
+            case CORINFO_TYPE_BYTE:
+                return m_simdHandleCache->Vector512ByteHandle;
+            case CORINFO_TYPE_LONG:
+                return m_simdHandleCache->Vector512LongHandle;
+            case CORINFO_TYPE_UINT:
+                return m_simdHandleCache->Vector512UIntHandle;
+            case CORINFO_TYPE_ULONG:
+                return m_simdHandleCache->Vector512ULongHandle;
+            case CORINFO_TYPE_NATIVEINT:
+                return m_simdHandleCache->Vector512NIntHandle;
+            case CORINFO_TYPE_NATIVEUINT:
+                return m_simdHandleCache->Vector512NUIntHandle;
+            default:
+                assert(!"Didn't find a class handle for simdType");
+        }
+    }
 #endif // TARGET_XARCH
 #ifdef TARGET_ARM64
     else if (simdType == TYP_SIMD8)
@@ -311,6 +343,10 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         {
             isa = InstructionSet_AVX2;
         }
+        else if (strcmp(className, "Vector512") == 0)
+        {
+            isa = InstructionSet_AVX512F;
+        }
     }
 #endif
 
@@ -390,6 +426,14 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             {
                 return NI_Illegal;
             }
+        }
+    }
+    else if (isa == InstructionSet_Vector512)
+    {
+        if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+        {
+            // TODO-XArch-AVX512: Add checks for CD, DQ, BW
+            return NI_Illegal;
         }
     }
 #elif defined(TARGET_ARM64)
@@ -1116,6 +1160,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_SSE41_ConvertToVector128Int64:
                     case NI_AVX2_BroadcastScalarToVector128:
                     case NI_AVX2_BroadcastScalarToVector256:
+                    case NI_AVX512F_BroadcastScalarToVector512:
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:

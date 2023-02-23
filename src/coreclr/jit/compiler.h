@@ -7627,7 +7627,7 @@ public:
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
         assert(type != TYP_STRUCT);
-        return (type == TYP_SIMD32);
+        return (type == TYP_SIMD32) || (type == TYP_SIMD64);
     }
 #elif defined(TARGET_ARM64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
@@ -8324,6 +8324,11 @@ private:
     SIMDLevel getSIMDSupportLevel()
     {
 #if defined(TARGET_XARCH)
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+        {
+            return SIMD_AVX512F_Supported;
+        }
+
         if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
             return SIMD_AVX2_Supported;
@@ -8441,12 +8446,26 @@ private:
         CORINFO_CLASS_HANDLE Vector256ULongHandle;
         CORINFO_CLASS_HANDLE Vector256NIntHandle;
         CORINFO_CLASS_HANDLE Vector256NUIntHandle;
+
+        CORINFO_CLASS_HANDLE Vector512FloatHandle;
+        CORINFO_CLASS_HANDLE Vector512DoubleHandle;
+        CORINFO_CLASS_HANDLE Vector512IntHandle;
+        CORINFO_CLASS_HANDLE Vector512UShortHandle;
+        CORINFO_CLASS_HANDLE Vector512UByteHandle;
+        CORINFO_CLASS_HANDLE Vector512ShortHandle;
+        CORINFO_CLASS_HANDLE Vector512ByteHandle;
+        CORINFO_CLASS_HANDLE Vector512LongHandle;
+        CORINFO_CLASS_HANDLE Vector512UIntHandle;
+        CORINFO_CLASS_HANDLE Vector512ULongHandle;
+        CORINFO_CLASS_HANDLE Vector512NIntHandle;
+        CORINFO_CLASS_HANDLE Vector512NUIntHandle;
 #endif // defined(TARGET_XARCH)
 #endif // FEATURE_HW_INTRINSICS
 
         CORINFO_CLASS_HANDLE CanonicalSimd8Handle;
         CORINFO_CLASS_HANDLE CanonicalSimd16Handle;
         CORINFO_CLASS_HANDLE CanonicalSimd32Handle;
+        CORINFO_CLASS_HANDLE CanonicalSimd64Handle;
 
         SIMDHandlesCache()
         {
@@ -8512,6 +8531,7 @@ private:
                 }
 
                 case TYP_SIMD32:
+                case TYP_SIMD64:
                     break;
 
                 default:
@@ -8617,6 +8637,8 @@ private:
                 return m_simdHandleCache->CanonicalSimd16Handle;
             case TYP_SIMD32:
                 return m_simdHandleCache->CanonicalSimd32Handle;
+            case TYP_SIMD64:
+                return m_simdHandleCache->CanonicalSimd64Handle;
             default:
                 unreached();
         }
@@ -8751,7 +8773,11 @@ private:
     var_types getSIMDVectorType()
     {
 #if defined(TARGET_XARCH)
-        if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
+        if (getSIMDSupportLevel() == SIMD_AVX512F_Supported)
+        {
+            return TYP_SIMD64;
+        }
+        else if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
             return TYP_SIMD32;
         }
@@ -8792,7 +8818,8 @@ private:
     unsigned getSIMDVectorRegisterByteLength()
     {
 #if defined(TARGET_XARCH)
-        if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
+        // TODO-XArch-AVX512 : Return ZMM_REGSIZE_BYTES once Vector<T> supports AVX512.
+        if (getSIMDSupportLevel() >= SIMD_AVX2_Supported)
         {
             return YMM_REGSIZE_BYTES;
         }
@@ -8821,7 +8848,11 @@ private:
     unsigned int maxSIMDStructBytes()
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+        {
+            return ZMM_REGSIZE_BYTES;
+        }
+        else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
             return YMM_REGSIZE_BYTES;
         }
@@ -8863,6 +8894,10 @@ public:
         {
             simdType = TYP_SIMD32;
         }
+        else if (size == 64)
+        {
+            simdType = TYP_SIMD64;
+        }
         else
         {
             noway_assert(!"Unexpected size for SIMD type");
@@ -8898,7 +8933,7 @@ public:
             // otherwise cause the highest level of instruction set support to be reported to crossgen2.
             // and this api is only ever used as an optimization or assert, so no reporting should
             // ever happen.
-            return YMM_REGSIZE_BYTES;
+            return ZMM_REGSIZE_BYTES;
         }
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         unsigned vectorRegSize = maxSIMDStructBytes();
