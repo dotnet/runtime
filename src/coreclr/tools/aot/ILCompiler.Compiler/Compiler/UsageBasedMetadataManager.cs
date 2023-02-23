@@ -15,6 +15,7 @@ using ILCompiler.Metadata;
 using ILLink.Shared;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -905,6 +906,9 @@ namespace ILCompiler
                 // but that's OK since the node factory will only add actually one node.
                 methodILDefinition = FlowAnnotations.ILProvider.GetMethodIL(userMethod);
             }
+
+            if (methodILDefinition is ILStubMethodIL)
+                return;
 
             // Data-flow (reflection scanning) for compiler-generated methods will happen as part of the
             // data-flow scan of the user-defined method which uses this compiler-generated method.

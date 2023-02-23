@@ -3,9 +3,10 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Generics
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	class MethodWithParameterWhichHasGenericParametersAndOverrideUsesADifferentNameForGenericParameter
 	{
-		public static void Main (string[] args)
+		public static void Main ()
 		{
 			Derived<int, int> tmp = new Derived<int, int> ();
 			tmp.Method<int> (null);

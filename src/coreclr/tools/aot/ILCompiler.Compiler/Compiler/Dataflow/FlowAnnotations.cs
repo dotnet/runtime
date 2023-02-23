@@ -330,6 +330,11 @@ namespace ILLink.Shared.TrimAnalysis
                 return (DynamicallyAccessedMemberTypes)blobReader.ReadUInt32();
             }
 
+            private static DynamicallyAccessedMemberTypes GetMemberTypesForConstraints(GenericParameterDesc genericParameter)
+                => genericParameter.HasDefaultConstructorConstraint ?
+                    DynamicallyAccessedMemberTypes.PublicParameterlessConstructor :
+                    DynamicallyAccessedMemberTypes.None;
+
             protected override bool CompareKeyToValue(TypeDesc key, TypeAnnotations value) => key == value.Type;
             protected override bool CompareValueToValue(TypeAnnotations value1, TypeAnnotations value2) => value1.Type == value2.Type;
             protected override int GetKeyHashCode(TypeDesc key) => key.GetHashCode();
@@ -478,6 +483,7 @@ namespace ILLink.Shared.TrimAnalysis
                     {
                         GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
                         var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, genericParameterDef.GetCustomAttributes());
+                        annotation |= GetMemberTypesForConstraints(genericParameter);
                         if (annotation != DynamicallyAccessedMemberTypes.None)
                         {
                             genericParameterAnnotations ??= new DynamicallyAccessedMemberTypes[method.Instantiation.Length];
@@ -639,6 +645,7 @@ namespace ILLink.Shared.TrimAnalysis
                         genericParameter = (attrs?[genericParameterIndex] as EcmaGenericParameter) ?? genericParameter;
                         GenericParameter genericParameterDef = reader.GetGenericParameter(genericParameter.Handle);
                         var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, genericParameterDef.GetCustomAttributes());
+                        annotation |= GetMemberTypesForConstraints(genericParameter);
                         if (annotation != DynamicallyAccessedMemberTypes.None)
                         {
                             typeGenericParameterAnnotations ??= new DynamicallyAccessedMemberTypes[ecmaType.Instantiation.Length];
