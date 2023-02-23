@@ -101,6 +101,7 @@ get_pe_debug_info_full (MonoImage *image, guint8 *out_guid, gint32 *out_age, gin
 			CodeviewDebugDirectory dir;
 			data  = (guint8 *) (image->raw_data + debug_dir.pointer);
 			dir.signature = read32(data);
+
 			if (dir.signature == 0x53445352) {
 				memcpy (out_guid, data + 4, 16);
 				*out_age = read32(data + 20);
