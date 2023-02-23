@@ -3658,12 +3658,12 @@ inline bool Compiler::IsGcSafePoint(GenTreeCall* call)
 // Note that we want to have two special FIELD_HANDLES that will both
 // be considered non-Data Offset handles
 //
-// The special values that we use are FLD_GLOBAL_DS and FLD_GLOBAL_FS
+// The special values that we use are FLD_GLOBAL_DS, FLD_GLOBAL_FS or FLD_GLOBAL_GS.
 //
 
 inline bool jitStaticFldIsGlobAddr(CORINFO_FIELD_HANDLE fldHnd)
 {
-    return (fldHnd == FLD_GLOBAL_DS || fldHnd == FLD_GLOBAL_FS);
+    return (fldHnd == FLD_GLOBAL_DS || fldHnd == FLD_GLOBAL_FS || fldHnd == FLD_GLOBAL_GS);
 }
 
 /*
