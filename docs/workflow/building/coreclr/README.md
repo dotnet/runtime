@@ -68,10 +68,6 @@ If you want to use Visual Studio's _MSBuild_ to drive the native build on Window
 
 We recommend using _Ninja_ for building the project on Windows since it more efficiently uses the build machine's resources for the native runtime build in comparison to Visual Studio's _MSBuild_.
 
-### Extra Flags
-
-To pass extra compiler/linker flags to the coreclr build, set the environment variables `EXTRA_CFLAGS`, `EXTRA_CXXFLAGS` and `EXTRA_LDFLAGS` as needed. Don't set `CFLAGS`/`CXXFLAGS`/`LDFLAGS` directly as that might lead to configure-time tests failing.
-
 ### Build Results Layout
 
 Once the build has concluded, it will have produced its output artifacts in the following structure:
