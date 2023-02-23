@@ -450,7 +450,8 @@ void MDInfo::Error(const char* szError, HRESULT hr)
         if (GetErrorInfo(0, &pIErr) == S_OK &&
             pIErr->GetDescription(&bstrDesc) == S_OK)
         {
-            printf("%ls ", bstrDesc);
+            MAKE_UTF8PTR_FROMWIDE(bstrDescUtf8, bstrDesc);
+            printf("%s ", bstrDescUtf8);
             SysFreeString(bstrDesc);
         }
 #endif

@@ -480,8 +480,8 @@ namespace System.Threading.Channels.Tests
 
             var cts = new CancellationTokenSource();
 
-            Task write1 = c.Writer.WriteAsync(43, cts.Token).AsTask();
-            Assert.Equal(TaskStatus.WaitingForActivation, write1.Status);
+            ValueTask write1 = c.Writer.WriteAsync(43, cts.Token);
+            Assert.False(write1.IsCompleted);
 
             cts.Cancel();
 
@@ -490,7 +490,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(42, await c.Reader.ReadAsync());
             Assert.Equal(44, await c.Reader.ReadAsync());
 
-            await AssertCanceled(write1, cts.Token);
+            await AssertExtensions.CanceledAsync(cts.Token, async () => await write1);
             await write2;
         }
 

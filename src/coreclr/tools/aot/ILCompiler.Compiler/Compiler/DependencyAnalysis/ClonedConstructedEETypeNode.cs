@@ -17,8 +17,8 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode NodeForLinkage(NodeFactory factory) => this;
 
         //
-        // A cloned type must be named differently than the type it is a clone of so the linker
-        // will have an unambiguous symbol to resolve
+        // A cloned type must be named differently than the original type, so the linker
+        // will have an unambiguous symbol to resolve.
         //
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

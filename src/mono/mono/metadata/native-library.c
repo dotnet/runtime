@@ -706,6 +706,16 @@ netcore_resolve_with_load (MonoAssemblyLoadContext *alc, const char *scope, Mono
 	if (mono_runtime_get_no_exec ())
 		return NULL;
 
+	/* default ALC LoadUnmanagedDll always returns null */
+	/* NOTE: This is more than an optimization.  It allows us to avoid triggering creation of
+	 * the managed object for the Default ALC while we're looking up icalls for Monitor.  The
+	 * AssemblyLoadContext base constructor uses a lock on the allContexts variable which leads
+	 * to recursive static constructor invocation which may show unexpected side effects ---
+	 * such as a null AssemblyLoadContext.Default --- early in the runtime.
+	 */
+	if (mono_alc_is_default (alc))
+		return NULL;
+
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle scope_handle;

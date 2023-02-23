@@ -10,7 +10,6 @@
 
 #include "slist.h"
 #include "gcrhinterface.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "shash.h"
 

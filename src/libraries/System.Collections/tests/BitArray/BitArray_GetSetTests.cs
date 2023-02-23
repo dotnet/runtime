@@ -552,5 +552,40 @@ namespace System.Collections.Tests
                 Assert.Equal((byte)((1 << remainder) - 1), data[fullBytes]);
             }
         }
+
+        [Theory]
+        [MemberData(nameof(HasAllSet_TestData))]
+        public static void HasAllSet(bool[] bits, bool expectedResult)
+        {
+            var bitArray = new BitArray(bits);
+            Assert.Equal(expectedResult, bitArray.HasAllSet());
+        }
+
+        [Theory]
+        [MemberData(nameof(HasAnySet_TestData))]
+        public static void HasAnySet(bool[] bits, bool expectedResult)
+        {
+            var bitArray = new BitArray(bits);
+            Assert.Equal(expectedResult, bitArray.HasAnySet());
+        }
+
+        public static IEnumerable<object[]> HasAllSet_TestData() => HasAnySet_TestData().Select(parameters => new object[] { ((bool[])parameters[0]).Select(bit => !bit).ToArray(), !(bool)parameters[1] });
+
+        public static IEnumerable<object[]> HasAnySet_TestData()
+        {
+            yield return new object[] { Array.Empty<bool>(), false };
+
+            foreach (int size in new[] { 1, BitsPerInt32 - 1, BitsPerInt32, BitsPerInt32 + 1, BitsPerInt32 * 2 - 1 })
+            {
+                yield return new object[] { new bool[size], false };
+
+                for (int i = 0; i < size; i++)
+                {
+                    bool[] bits = new bool[size];
+                    bits[i] = true;
+                    yield return new object[] { bits, true };
+                }
+            }
+        }
     }
 }

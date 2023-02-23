@@ -15,7 +15,7 @@ namespace System.Net.Security
         private SafeGssNameHandle? _targetName;
         private SafeGssContextHandle _context;
         private bool _isNtlmUsed;
-        private SafeFreeNegoCredentials? _credential;
+        private readonly SafeFreeNegoCredentials? _credential;
 
         public SafeGssCredHandle AcceptorCredential
         {

@@ -602,7 +602,7 @@ namespace ILCompiler
 
                         // Shared instance methods on generic valuetypes have a hidden parameter with the generic context.
                         // We add it to the signature so that we can refer to it from IL.
-                        parameters[0] = Context.GetWellKnownType(WellKnownType.IntPtr);
+                        parameters[0] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
                         for (int i = 0; i < _methodRepresented.Signature.Length; i++)
                             parameters[i + 1] = _methodRepresented.Signature[i];
 

@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
 
 
 
+.namespace starg_i
+{
 .class public _starg {
 .field public static int32 FOO
 .field public static int32 BAR
@@ -33,11 +36,14 @@
 
 
 .method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-	ldsflda		int32 _starg::FOO
-	ldsflda		int32 _starg::BAR
-	call	int32 _starg::args(native int,native int)
+	ldsflda		int32 starg_i._starg::FOO
+	ldsflda		int32 starg_i._starg::BAR
+	call	int32 starg_i._starg::args(native int,native int)
 	brfalse		FAIL
 
 	ldc.i4 100
@@ -48,3 +54,4 @@ FAIL:
 }
 }
 .assembly starg_i{}
+}

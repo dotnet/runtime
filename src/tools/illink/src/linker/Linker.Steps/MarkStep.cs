@@ -575,7 +575,7 @@ namespace Mono.Linker.Steps
 
 		/// <summary>
 		/// Handles marking of interface implementations, and the marking of methods that implement interfaces
-		/// once the linker knows whether a type is instantiated or relevant to variant casting,
+		/// once ILLink knows whether a type is instantiated or relevant to variant casting,
 		/// and after interfaces and interface methods have been marked.
 		/// </summary>
 		void ProcessMarkedTypesWithInterfaces ()
@@ -671,7 +671,7 @@ namespace Mono.Linker.Steps
 
 				foreach (var iface in type.Interfaces) {
 					if (Annotations.IsMarked (iface.InterfaceType)) {
-						// We only need to mark the type definition because the linker will ensure that all marked implemented interfaces and used method implementations
+						// We only need to mark the type definition because ILLink will ensure that all marked implemented interfaces and used method implementations
 						// will be marked on this type as well.
 						MarkType (type, new DependencyInfo (DependencyKind.DynamicInterfaceCastableImplementation, iface.InterfaceType), new MessageOrigin (Context.TryResolve (iface.InterfaceType)));
 
@@ -1610,7 +1610,7 @@ namespace Mono.Linker.Steps
 				Debug.Assert (reason.Kind == DependencyKind.FieldAccess || reason.Kind == DependencyKind.Ldtoken);
 				// Blame the field reference (without actually marking) on the original reason.
 				Tracer.AddDirectDependency (reference, reason, marked: false);
-				MarkType (reference.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, reference), new MessageOrigin (Context.TryResolve (reference)));
+				MarkType (reference.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, reference));
 
 				// Blame the field definition that we will resolve on the field reference.
 				reason = new DependencyInfo (DependencyKind.FieldOnGenericInstance, reference);
@@ -2103,7 +2103,7 @@ namespace Mono.Linker.Steps
 
 				if (property.Name == "TargetTypeName") {
 					string targetTypeName = (string) property.Argument.Value;
-					TypeName typeName = TypeParser.ParseTypeName (targetTypeName);
+					TypeName? typeName = TypeParser.ParseTypeName (targetTypeName);
 					if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
 						AssemblyDefinition? assembly = Context.TryResolve (assemblyQualifiedTypeName.AssemblyName.Name);
 						return assembly == null ? null : Context.TryResolve (assembly, targetTypeName);
@@ -2172,7 +2172,11 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		static readonly Regex DebuggerDisplayAttributeValueRegex = new Regex ("{[^{}]+}", RegexOptions.Compiled);
+		[GeneratedRegex ("{[^{}]+}")]
+		private static partial Regex DebuggerDisplayAttributeValueRegex ();
+
+		[GeneratedRegex (@".+,\s*nq")]
+		private static partial Regex ContainsNqSuffixRegex ();
 
 		void MarkTypeWithDebuggerDisplayAttribute (TypeDefinition type, CustomAttribute attribute)
 		{
@@ -2186,13 +2190,13 @@ namespace Mono.Linker.Steps
 				if (string.IsNullOrEmpty (displayString))
 					return;
 
-				foreach (Match match in DebuggerDisplayAttributeValueRegex.Matches (displayString)) {
+				foreach (Match match in DebuggerDisplayAttributeValueRegex ().Matches (displayString)) {
 					// Remove '{' and '}'
 					string realMatch = match.Value.Substring (1, match.Value.Length - 2);
 
 					// Remove ",nq" suffix if present
 					// (it asks the expression evaluator to remove the quotes when displaying the final value)
-					if (Regex.IsMatch (realMatch, @".+,\s*nq")) {
+					if (ContainsNqSuffixRegex ().IsMatch (realMatch)) {
 						realMatch = realMatch.Substring (0, realMatch.LastIndexOf (','));
 					}
 
@@ -2553,7 +2557,7 @@ namespace Mono.Linker.Steps
 						continue;
 
 					//
-					// Instead of trying to guess where to find the interface declaration linker walks
+					// Instead of trying to guess where to find the interface declaration ILLink walks
 					// the list of implemented interfaces and resolve the declaration from there
 					//
 					var tdef = Context.Resolve (iface_type);
@@ -3200,11 +3204,15 @@ namespace Mono.Linker.Steps
 			}
 
 			if (method.HasOverrides) {
+				var assembly = Context.Resolve (method.DeclaringType.Scope);
+				// If this method is in a Copy or CopyUsed assembly, .overrides won't get swept and we need to keep all of them
+				bool markAllOverrides = assembly != null && Annotations.GetAction (assembly) is AssemblyAction.Copy or AssemblyAction.CopyUsed;
 				foreach (MethodReference @base in method.Overrides) {
 					// Method implementing a static interface method will have an override to it - note instance methods usually don't unless they're explicit.
 					// Calling the implementation method directly has no impact on the interface, and as such it should not mark the interface or its method.
 					// Only if the interface method is referenced, then all the methods which implemented must be kept, but not the other way round.
-					if (Context.Resolve (@base) is MethodDefinition baseDefinition
+					if (!markAllOverrides &&
+						Context.Resolve (@base) is MethodDefinition baseDefinition
 						&& new OverrideInformation.OverridePair (baseDefinition, method).IsStaticInterfaceMethodPair ())
 						continue;
 					MarkMethod (@base, new DependencyInfo (DependencyKind.MethodImplOverride, method), ScopeStack.CurrentScope.Origin);

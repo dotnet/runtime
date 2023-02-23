@@ -375,7 +375,7 @@ namespace Internal.IL.Stubs
             callsiteSetupCodeStream.Emit(ILOpcode.calli, emitter.NewToken(nativeSig));
         }
 
-        private MethodIL EmitIL()
+        private PInvokeILStubMethodIL EmitIL()
         {
             if (_targetMethod.HasCustomAttribute("System.Runtime.InteropServices", "LCIDConversionAttribute"))
                 throw new NotSupportedException();

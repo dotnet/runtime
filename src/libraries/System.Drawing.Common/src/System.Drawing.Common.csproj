@@ -4,6 +4,7 @@
     <DefineConstants>$(DefineConstants);DRAWING_NAMESPACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WarningsNotAsErrors>CS0618</WarningsNotAsErrors>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <IsPackable>true</IsPackable>
     <AddXamarinPlaceholderFilesToPackage>true</AddXamarinPlaceholderFilesToPackage>

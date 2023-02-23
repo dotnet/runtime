@@ -18,14 +18,14 @@ namespace ILCompiler.Dataflow
         public MultiValue Source { init; get; }
         public MultiValue Target { init; get; }
         public MessageOrigin Origin { init; get; }
-        internal Origin MemberWithRequirements { init; get; }
+        internal string Reason { init; get; }
 
-        internal TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, Origin memberWithRequirements)
+        internal TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, string reason)
         {
             Source = source.Clone();
             Target = target.Clone();
             Origin = origin;
-            MemberWithRequirements = memberWithRequirements;
+            Reason = reason;
         }
 
         public TrimAnalysisAssignmentPattern Merge(ValueSetLattice<SingleValue> lattice, TrimAnalysisAssignmentPattern other)
@@ -36,7 +36,7 @@ namespace ILCompiler.Dataflow
                 lattice.Meet(Source, other.Source),
                 lattice.Meet(Target, other.Target),
                 Origin,
-                MemberWithRequirements);
+                Reason);
         }
 
         public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker, Logger logger)
@@ -65,7 +65,7 @@ namespace ILCompiler.Dataflow
                     if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
                         throw new NotImplementedException();
 
-                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, MemberWithRequirements);
+                    var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(reflectionMarker, diagnosticContext, Reason);
                     requireDynamicallyAccessedMembersAction.Invoke(sourceValue, targetWithDynamicallyAccessedMembers);
                 }
             }

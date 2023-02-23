@@ -9,8 +9,6 @@
         _InitializeCommonProperties;
         _BeforeWasmBuildApp;
         _WasmResolveReferences;
-        _WasmAotCompileApp;
-        _WasmStripAOTAssemblies;
         _WasmBuildNativeCore;
         _WasmGenerateAppBundle;
         _AfterWasmBuildApp

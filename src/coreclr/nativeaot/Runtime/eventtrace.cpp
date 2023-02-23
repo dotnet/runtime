@@ -19,7 +19,6 @@
 #include "regdisplay.h"
 #include "stackframeiterator.h"
 #include "thread.h"
-#include "rwlock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 //#include "PalRedhawk.h"

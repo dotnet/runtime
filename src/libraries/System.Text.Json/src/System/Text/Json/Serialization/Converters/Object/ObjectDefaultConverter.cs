@@ -107,7 +107,7 @@ namespace System.Text.Json.Serialization.Converters
                     ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
                     Debug.Assert(!IsValueType);
-                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, options, ref state, out object? objectResult);
+                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, polymorphicConverter.TypeToConvert, options, ref state, out object? objectResult);
                     value = (T)objectResult!;
                     state.ExitPolymorphicConverter(success);
                     return success;
@@ -275,6 +275,7 @@ namespace System.Text.Json.Serialization.Converters
             ref WriteStack state)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
+            jsonTypeInfo.ValidateCanBeUsedForPropertyMetadataSerialization();
 
             object obj = value; // box once
 

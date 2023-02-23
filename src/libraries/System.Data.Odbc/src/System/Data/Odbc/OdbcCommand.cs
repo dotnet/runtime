@@ -844,7 +844,7 @@ namespace System.Data.Odbc
         public override object? ExecuteScalar()
         {
             object? value = null;
-            using (IDataReader reader = ExecuteReaderObject(0, ADP.ExecuteScalar, false))
+            using (OdbcDataReader reader = ExecuteReaderObject(0, ADP.ExecuteScalar, false))
             {
                 if (reader.Read() && (0 < reader.FieldCount))
                 {

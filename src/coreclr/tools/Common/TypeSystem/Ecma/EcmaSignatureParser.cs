@@ -82,7 +82,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
+        private DefType GetWellKnownType(WellKnownType wellKnownType)
         {
             return _tsc.GetWellKnownType(wellKnownType);
         }

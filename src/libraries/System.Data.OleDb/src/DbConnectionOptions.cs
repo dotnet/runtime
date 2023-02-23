@@ -5,32 +5,18 @@ using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.Versioning;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace System.Data.Common
 {
-    internal class DbConnectionOptions
+    internal partial class DbConnectionOptions
     {
         // instances of this class are intended to be immutable, i.e readonly
         // used by pooling classes so it is much easier to verify correctness
         // when not worried about the class being modified during execution
 
 #if DEBUG
-        /*private const string ConnectionStringPatternV1 =
-             "[\\s;]*"
-            +"(?<key>([^=\\s]|\\s+[^=\\s]|\\s+==|==)+)"
-            +   "\\s*=(?!=)\\s*"
-            +"(?<value>("
-            +   "(" + "\"" + "([^\"]|\"\")*" + "\"" + ")"
-            +   "|"
-            +   "(" + "'" + "([^']|'')*" + "'" + ")"
-            +   "|"
-            +   "(" + "(?![\"'])" + "([^\\s;]|\\s+[^\\s;])*" + "(?<![\"'])" + ")"
-            + "))"
-            + "[\\s;]*"
-        ;*/
         private const string ConnectionStringPattern =                  // may not contain embedded null except trailing last value
             "([\\s;]*"                                                  // leading whitespace and extra semicolons
             + "(?![\\s;])"                                              // key does not start with space or semicolon
@@ -69,15 +55,39 @@ namespace System.Data.Common
             + "[\\s;]*[\u0000\\s]*"                                     // trailing whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
         ;
 
-        private static readonly Regex ConnectionStringRegex = new Regex(ConnectionStringPattern, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
-        private static readonly Regex ConnectionStringRegexOdbc = new Regex(ConnectionStringPatternOdbc, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
-#endif
-        private static readonly Regex ConnectionStringValidKeyRegex = new Regex("^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$", RegexOptions.Compiled); // key not allowed to start with semi-colon or space or contain non-visible characters or end with space
 
+        private static readonly Regex ConnectionStringRegex = CreateConnectionStringRegex();
+        private static readonly Regex ConnectionStringRegexOdbc = CreateConnectionStringRegexOdbc();
+
+#if NET7_0_OR_GREATER
+        [GeneratedRegex(ConnectionStringPattern, RegexOptions.ExplicitCapture)]
+        private static partial Regex CreateConnectionStringRegex();
+
+        [GeneratedRegex(ConnectionStringPatternOdbc, RegexOptions.ExplicitCapture)]
+        private static partial Regex CreateConnectionStringRegexOdbc();
+#else
+        private static Regex CreateConnectionStringRegex() => new Regex(ConnectionStringPattern, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        private static Regex CreateConnectionStringRegexOdbc() => new Regex(ConnectionStringPatternOdbc, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+#endif
+#endif
         internal const string DataDirectory = "|datadirectory|";
 
-        private static readonly Regex ConnectionStringQuoteValueRegex = new Regex("^[^\"'=;\\s\\p{Cc}]*$", RegexOptions.Compiled); // generally do not quote the value if it matches the pattern
-        private static readonly Regex ConnectionStringQuoteOdbcValueRegex = new Regex("^\\{([^\\}\u0000]|\\}\\})*\\}$", RegexOptions.ExplicitCapture | RegexOptions.Compiled); // do not quote odbc value if it matches this pattern
+        private static readonly Regex ConnectionStringValidKeyRegex = CreateConnectionStringValidKeyRegex(); // key not allowed to start with semi-colon or space or contain non-visible characters or end with space
+        private static readonly Regex ConnectionStringQuoteValueRegex = CreateConnectionStringQuoteValueRegex(); // generally do not quote the value if it matches the pattern
+        private static readonly Regex ConnectionStringQuoteOdbcValueRegex = CreateConnectionStringQuoteOdbcValueRegex(); // do not quote odbc value if it matches this pattern
+
+#if NET7_0_OR_GREATER
+        [GeneratedRegex("^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$")]
+        private static partial Regex CreateConnectionStringValidKeyRegex();
+        [GeneratedRegex("^[^\"'=;\\s\\p{Cc}]*$")]
+        private static partial Regex CreateConnectionStringQuoteValueRegex();
+        [GeneratedRegex("^\\{([^\\}\u0000]|\\}\\})*\\}$", RegexOptions.ExplicitCapture)]
+        private static partial Regex CreateConnectionStringQuoteOdbcValueRegex();
+#else
+        private static Regex CreateConnectionStringValidKeyRegex() => new Regex("^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$", RegexOptions.Compiled);
+        private static Regex CreateConnectionStringQuoteValueRegex() => new Regex("^[^\"'=;\\s\\p{Cc}]*$", RegexOptions.Compiled);
+        private static Regex CreateConnectionStringQuoteOdbcValueRegex() => new Regex("^\\{([^\\}\u0000]|\\}\\})*\\}$", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+#endif
 
         // connection string common keywords
         private static class KEY

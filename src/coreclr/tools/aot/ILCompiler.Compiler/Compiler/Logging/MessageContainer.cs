@@ -28,8 +28,8 @@ namespace ILCompiler.Logging
 #endif
     {
         /// <summary>
-        /// Optional data with a filename, line and column that triggered the
-        /// linker to output an error (or warning) message.
+        /// Optional data with a filename, line and column that triggered
+        /// to output an error (or warning) message.
         /// </summary>
         public MessageOrigin? Origin { get; }
 
@@ -41,7 +41,7 @@ namespace ILCompiler.Logging
         public string SubCategory { get; }
 
         /// <summary>
-        /// Code identifier for errors and warnings reported by the IL linker.
+        /// Code identifier for errors and warnings.
         /// </summary>
         public int? Code { get; }
 
@@ -171,7 +171,7 @@ namespace ILCompiler.Logging
                 _ => null,
             };
 
-            ModuleDesc declaringAssembly = (declaringType as MetadataType)?.Module;
+            ModuleDesc declaringAssembly = (declaringType as MetadataType)?.Module ?? (origin.MemberDefinition as ModuleDesc);
             Debug.Assert(declaringAssembly != null);
             if (declaringAssembly == null)
                 return false;

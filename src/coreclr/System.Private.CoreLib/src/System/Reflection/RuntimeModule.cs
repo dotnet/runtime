@@ -337,11 +337,11 @@ namespace System.Reflection
 #pragma warning disable CA1823, 169
         // If you add any data members, you need to update the native declaration ReflectModuleBaseObject.
         private RuntimeType m_runtimeType;
-        private RuntimeAssembly m_runtimeAssembly;
-        private IntPtr m_pRefClass;
-        private IntPtr m_pData;
-        private IntPtr m_pGlobals;
-        private IntPtr m_pFields;
+        private readonly RuntimeAssembly m_runtimeAssembly;
+        private readonly IntPtr m_pRefClass;
+        private readonly IntPtr m_pData;
+        private readonly IntPtr m_pGlobals;
+        private readonly IntPtr m_pFields;
 #pragma warning restore CA1823, 169
         #endregion
 

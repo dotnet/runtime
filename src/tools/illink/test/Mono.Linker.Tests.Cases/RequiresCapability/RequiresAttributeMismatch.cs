@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[ExpectedNoWarnings]
 	class RequiresAttributeMismatch
 	{
-		// Base/Derived and Implementation/Interface differs between linker and analyzer https://github.com/dotnet/linker/issues/2533
+		// Base/Derived and Implementation/Interface differs between ILLink and analyzer https://github.com/dotnet/linker/issues/2533
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
@@ -315,7 +315,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("Message")]
 			[RequiresAssemblyFiles ("Message")]
 			[RequiresDynamicCode ("Message")]
-			// Linker member string format includes namespace of explicit interface method.
+			// ILLink member string format includes namespace of explicit interface method.
 			[ExpectedWarning ("IL2046", "ExplicitImplementationClassWithRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL3003", "ExplicitImplementationClassWithRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL3051", "ExplicitImplementationClassWithRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.NativeAot)]
@@ -398,7 +398,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class ExplicitImplementationClassWithoutRequires : IBaseWithRequires
 		{
-			// Linker member string format includes namespace of explicit interface method.
+			// ILLink member string format includes namespace of explicit interface method.
 			[ExpectedWarning ("IL2046", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL3003", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.Method()", ProducedBy = ProducedBy.NativeAot)]
 			[ExpectedWarning ("IL3051", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.Method()", ProducedBy = ProducedBy.NativeAot)]
@@ -540,13 +540,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			class ImplIRequiresMismatching : IRequires
 			{
 				[ExpectedWarning ("IL2046", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod")]
-				[ExpectedWarning ("IL3003", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL3051", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3003", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL3051", "ImplIRequiresMismatching.VirtualMethod", "IRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 				public static void VirtualMethod () { }
 
 				[ExpectedWarning ("IL2046", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod")]
-				[ExpectedWarning ("IL3003", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL3051", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3003", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL3051", "ImplIRequiresMismatching.AbstractMethod", "IRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 				public static void AbstractMethod () { }
 			}
 			class ImplINoRequiresMatching : INoRequires
@@ -559,16 +559,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			class ImplINoRequiresMismatching : INoRequires
 			{
 				[ExpectedWarning ("IL2046", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod")]
-				[ExpectedWarning ("IL3003", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL3051", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3003", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL3051", "ImplINoRequiresMismatching.VirtualMethod", "INoRequires.VirtualMethod", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 				[RequiresUnreferencedCode ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.VirtualMethod--")]
 				[RequiresAssemblyFiles ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.VirtualMethod--")]
 				[RequiresDynamicCode ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.VirtualMethod--")]
 				public static void VirtualMethod () { }
 
 				[ExpectedWarning ("IL2046", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod")]
-				[ExpectedWarning ("IL3003", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer)]
-				[ExpectedWarning ("IL3051", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer)]
+				[ExpectedWarning ("IL3003", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+				[ExpectedWarning ("IL3051", "ImplINoRequiresMismatching.AbstractMethod", "INoRequires.AbstractMethod", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
 				[RequiresUnreferencedCode ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.AbstractMethod--")]
 				[RequiresAssemblyFiles ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.AbstractMethod--")]
 				[RequiresDynamicCode ("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.AbstractMethod--")]

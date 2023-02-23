@@ -190,23 +190,23 @@ namespace Mono.Linker.Steps
 		{
 			StringBuilder sb = new StringBuilder ();
 			sb.Append (meth.ReturnType.FullName);
-			sb.Append (" ");
+			sb.Append (' ');
 			sb.Append (meth.Name);
 			if (includeGenericParameters && meth.HasGenericParameters) {
-				sb.Append ("`");
+				sb.Append ('`');
 				sb.Append (meth.GenericParameters.Count);
 			}
 
-			sb.Append ("(");
+			sb.Append ('(');
 			if (meth.HasMetadataParameters ()) {
 				int i = 0;
 				foreach (var p in meth.GetMetadataParameters ()) {
 					if (i++ > 0)
-						sb.Append (",");
+						sb.Append (',');
 					sb.Append (p.ParameterType.FullName);
 				}
 			}
-			sb.Append (")");
+			sb.Append (')');
 			return sb.ToString ();
 		}
 
@@ -263,7 +263,7 @@ namespace Mono.Linker.Steps
 
 				if (accessors.Length > 0) {
 					for (int i = 0; i < accessors.Length; ++i)
-						accessors[i] = accessors[i].ToLower ();
+						accessors[i] = accessors[i].ToLowerInvariant ();
 
 					return accessors;
 				}

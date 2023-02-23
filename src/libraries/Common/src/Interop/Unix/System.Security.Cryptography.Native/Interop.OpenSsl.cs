@@ -52,7 +52,7 @@ internal static partial class Interop
             return bindingHandle;
         }
 
-        private static int s_cacheSize = GetCacheSize();
+        private static readonly int s_cacheSize = GetCacheSize();
 
         private static volatile int s_disableTlsResume = -1;
 
@@ -306,7 +306,8 @@ internal static partial class Interop
                     if (!Interop.Ssl.Capabilities.Tls13Supported ||
                        string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ||
                        sslAuthenticationOptions.CertificateContext != null ||
-                        sslAuthenticationOptions.CertSelectionDelegate != null)
+                       sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
+                       sslAuthenticationOptions.CertSelectionDelegate != null)
                     {
                         cacheSslContext = false;
                     }
@@ -681,6 +682,11 @@ internal static partial class Interop
             *outp = null;
             *outlen = 0;
             IntPtr sslData = Ssl.SslGetData(ssl);
+
+            if (sslData == IntPtr.Zero)
+            {
+                return Ssl.SSL_TLSEXT_ERR_ALERT_FATAL;
+            }
 
             // reset application data to avoid dangling pointer.
             Ssl.SslSetData(ssl, IntPtr.Zero);
