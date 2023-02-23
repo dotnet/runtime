@@ -335,7 +335,7 @@ void load_icu_data (void)
 	unsigned char *buffer;
 	long filelen;
 	char filename[256];
-	sprintf(filename, "%s/%s", ".", "icudt.dat");
+	sprintf(filename, "./icudt.dat");
 
 	fileptr = fopen(filename, "rb");
 	if (fileptr == 0) {
