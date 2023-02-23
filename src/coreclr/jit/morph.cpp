@@ -9014,11 +9014,13 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         case GT_EQ:
         case GT_NE:
         {
-            GenTree* optimizedTree = gtFoldTypeCompare(tree);
-
-            if (optimizedTree != tree)
+            if (opts.OptimizationEnabled())
             {
-                return fgMorphTree(optimizedTree);
+                GenTree* optimizedTree = gtFoldTypeCompare(tree);
+                if (optimizedTree != tree)
+                {
+                    return fgMorphTree(optimizedTree);
+                }
             }
 
             // Pattern-matching optimization:
