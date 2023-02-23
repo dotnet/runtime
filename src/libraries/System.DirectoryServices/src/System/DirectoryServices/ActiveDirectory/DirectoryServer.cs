@@ -626,7 +626,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal unsafe void SyncReplicaAllHelper(IntPtr handle, SyncReplicaFromAllServersCallback syncAllCallback, string partition, SyncFromAllServersOptions option, SyncUpdateCallback? callback, SafeLibraryHandle libHandle)
         {
-            void* errorInfo = null;
+            void* pErrors = null;
 
             if (!Partitions.Contains(partition))
                 throw new ArgumentException(SR.ServerNotAReplica, nameof(partition));
@@ -643,16 +643,16 @@ namespace System.DirectoryServices.ActiveDirectory
             fixed (char* partitionPtr = partition)
             {
                 IntPtr syncAllFunctionPointer = Marshal.GetFunctionPointerForDelegate(syncAllCallback);
-                result = dsReplicaSyncAllW(handle, partitionPtr, (int)option | DS_REPSYNCALL_ID_SERVERS_BY_DN, syncAllFunctionPointer, (IntPtr)0, &errorInfo);
+                result = dsReplicaSyncAllW(handle, partitionPtr, (int)option | DS_REPSYNCALL_ID_SERVERS_BY_DN, syncAllFunctionPointer, (IntPtr)0, &pErrors);
                 GC.KeepAlive(syncAllCallback);
             }
 
             try
             {
                 // error happens during the synchronization
-                if (errorInfo is not null)
+                if (pErrors is not null)
                 {
-                    SyncFromAllServersOperationException? e = ExceptionHelper.CreateSyncAllException((IntPtr)errorInfo, false);
+                    SyncFromAllServersOperationException? e = ExceptionHelper.CreateSyncAllException((IntPtr)pErrors, false);
                     if (e == null)
                         return;
                     else
@@ -668,8 +668,8 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 // release the memory
-                if (errorInfo is not null)
-                    global::Interop.Kernel32.LocalFree(errorInfo);
+                if (pErrors is not null)
+                    global::Interop.Kernel32.LocalFree(pErrors);
             }
         }
 
