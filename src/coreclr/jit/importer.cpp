@@ -6401,8 +6401,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     int  prefixFlags = 0;
     bool explicitTailCall, constraintCall, readonlyCall;
 
-    typeInfo tiRetVal;
-
     unsigned numArgs = info.compArgsCount;
 
     /* Now process all the opcodes in the block */
@@ -6422,17 +6420,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         impSpillSpecialSideEff();
     }
 
+    CORINFO_RESOLVED_TOKEN constrainedResolvedToken = {};
+
     while (codeAddr < codeEndp)
     {
 #ifdef FEATURE_READYTORUN
         bool usingReadyToRunHelper = false;
 #endif
         CORINFO_RESOLVED_TOKEN resolvedToken;
-        CORINFO_RESOLVED_TOKEN constrainedResolvedToken = {};
         CORINFO_CALL_INFO      callInfo;
         CORINFO_FIELD_INFO     fieldInfo;
 
-        tiRetVal = typeInfo(); // Default type info
+        typeInfo tiRetVal = typeInfo(); // Default type info
 
         //---------------------------------------------------------------------
 
