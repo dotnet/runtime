@@ -48,6 +48,9 @@ export const
     // When eliminating a null check, replace it with a runtime 'not null' assertion
     //  that will print a diagnostic message if the value is actually null
     nullCheckValidation = false,
+    // If we encounter an enter opcode that looks like a loop body and it was already
+    //  jitted, we should abort the current trace since it's not worth continuing
+    abortAtJittedLoopBodies = true,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code
@@ -111,10 +114,10 @@ export let countLimitedPrintCounter = 10;
 export const abortCounts : { [key: string] : number } = {};
 export const traceInfo : { [key: string] : TraceInfo } = {};
 
-export const // offsetOfStack = 12,
-    offsetOfImethod = 4,
-    offsetOfDataItems = 20,
+export const
     sizeOfDataItem = 4,
+    sizeOfObjectHeader = 8,
+
     // HACK: Typically we generate ~12 bytes of extra gunk after the function body so we are
     //  subtracting 20 from the maximum size to make sure we don't produce too much
     // Also subtract some more size since the wasm we generate for one opcode could be big
@@ -170,6 +173,7 @@ export const enum BailoutReason {
     ConditionalBackwardBranch,
     ComplexBranch,
     ArrayLoadFailed,
+    ArrayStoreFailed,
     StringOperationFailed,
     DivideByZero,
     Overflow,
@@ -196,6 +200,7 @@ export const BailoutReasonNames = [
     "ConditionalBackwardBranch",
     "ComplexBranch",
     "ArrayLoadFailed",
+    "ArrayStoreFailed",
     "StringOperationFailed",
     "DivideByZero",
     "Overflow",
@@ -216,13 +221,18 @@ export let traceImports : Array<[string, string, Function]> | undefined;
 
 export let _wrap_trace_function: Function;
 
-export const mathOps1 = [
+const mathOps1 = [
     "acos",
     "cos",
     "sin",
     "asin",
     "tan",
     "atan"
+];
+
+const mathOps2 = [
+    "rem",
+    "atan2",
 ];
 
 function getTraceImports () {
@@ -236,9 +246,6 @@ function getTraceImports () {
         importDef("array_address", getRawCwrap("mono_jiterp_array_get_element_address_with_size_ref")),
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
-        importDef("strlen", getRawCwrap("mono_jiterp_strlen_ref")),
-        importDef("getchr", getRawCwrap("mono_jiterp_getchr_ref")),
-        importDef("getspan", getRawCwrap("mono_jiterp_getitem_span")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
         importDef("cast", getRawCwrap("mono_jiterp_cast_ref")),
         importDef("try_unbox", getRawCwrap("mono_jiterp_try_unbox_ref")),
@@ -246,20 +253,22 @@ function getTraceImports () {
         importDef("localloc", getRawCwrap("mono_jiterp_localloc")),
         ["ckovr_i4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_i4")],
         ["ckovr_u4", "overflow_check_i4", getRawCwrap("mono_jiterp_overflow_check_u4")],
-        ["rem", "mathop_dd_d", getRawCwrap("mono_jiterp_fmod")],
-        ["atan2", "mathop_dd_d", getRawCwrap("mono_jiterp_atan2")],
-        ["newobj_i", "newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")],
-        ["ld_del_ptr", "ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")],
-        ["ldtsflda", "ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")],
-        ["conv", "conv", getRawCwrap("mono_jiterp_conv")],
-        ["relop_fp", "relop_fp", getRawCwrap("mono_jiterp_relop_fp")],
-        ["safepoint", "safepoint", getRawCwrap("mono_jiterp_auto_safepoint")],
-        ["hashcode", "hashcode", getRawCwrap("mono_jiterp_get_hashcode")],
-        ["try_hash", "try_hash", getRawCwrap("mono_jiterp_try_get_hashcode")],
-        ["hascsize", "hascsize", getRawCwrap("mono_jiterp_object_has_component_size")],
-        ["hasflag", "hasflag", getRawCwrap("mono_jiterp_enum_hasflag")],
-        ["array_rank", "array_rank", getRawCwrap("mono_jiterp_get_array_rank")],
-        ["stfld_o", "stfld_o", getRawCwrap("mono_jiterp_set_object_field")],
+        importDef("newobj_i", getRawCwrap("mono_jiterp_try_newobj_inlined")),
+        importDef("ld_del_ptr", getRawCwrap("mono_jiterp_ld_delegate_method_ptr")),
+        importDef("ldtsflda", getRawCwrap("mono_jiterp_ldtsflda")),
+        importDef("conv", getRawCwrap("mono_jiterp_conv")),
+        importDef("relop_fp", getRawCwrap("mono_jiterp_relop_fp")),
+        importDef("safepoint", getRawCwrap("mono_jiterp_do_safepoint")),
+        importDef("hashcode", getRawCwrap("mono_jiterp_get_hashcode")),
+        importDef("try_hash", getRawCwrap("mono_jiterp_try_get_hashcode")),
+        importDef("hascsize", getRawCwrap("mono_jiterp_object_has_component_size")),
+        importDef("hasflag", getRawCwrap("mono_jiterp_enum_hasflag")),
+        importDef("array_rank", getRawCwrap("mono_jiterp_get_array_rank")),
+        importDef("stfld_o", getRawCwrap("mono_jiterp_set_object_field")),
+        importDef("transfer", getRawCwrap("mono_jiterp_trace_transfer")),
+        importDef("cmpxchg_i32", getRawCwrap("mono_jiterp_cas_i32")),
+        importDef("cmpxchg_i64", getRawCwrap("mono_jiterp_cas_i64")),
+        importDef("stelem_ref", getRawCwrap("mono_jiterp_stelem_ref")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -268,11 +277,16 @@ function getTraceImports () {
     }
 
     if (nullCheckValidation)
-        traceImports.push(["notnull", "notnull", assert_not_null]);
+        traceImports.push(importDef("notnull", assert_not_null));
 
     for (let i = 0; i < mathOps1.length; i++) {
         const mop = mathOps1[i];
-        traceImports.push([mop, "mathop_d_d", (<any>Math)[mop]]);
+        traceImports.push([mop, "mathop_d_d", getRawCwrap("mono_jiterp_math_" + mop)]);
+    }
+
+    for (let i = 0; i < mathOps2.length; i++) {
+        const mop = mathOps2[i];
+        traceImports.push([mop, "mathop_dd_d", getRawCwrap("mono_jiterp_math_" + mop)]);
     }
 
     return traceImports;
@@ -522,6 +536,36 @@ function initialize_builder (builder: WasmBuilder) {
             "ptr": WasmValtype.i32,
             "traceIp": WasmValtype.i32,
         }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "cmpxchg_i32", {
+            "dest": WasmValtype.i32,
+            "newVal": WasmValtype.i32,
+            "expected": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "cmpxchg_i64", {
+            "dest": WasmValtype.i32,
+            "newVal": WasmValtype.i32,
+            "expected": WasmValtype.i32,
+            "oldVal": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "transfer", {
+            "displacement": WasmValtype.i32,
+            "trace": WasmValtype.i32,
+            "frame": WasmValtype.i32,
+            "locals": WasmValtype.i32,
+        }, WasmValtype.i32, true
+    );
+    builder.defineType(
+        "stelem_ref", {
+            "o": WasmValtype.i32,
+            "aindex": WasmValtype.i32,
+            "ref": WasmValtype.i32,
+        }, WasmValtype.i32, true
     );
 }
 
@@ -956,7 +1000,6 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                         continue;
 
                     // not worth implementing / too difficult
-                    case "intrins_ordinal_ignore_case_ascii":
                     case "intrins_marvin_block":
                     case "intrins_ascii_chars_to_uppercase":
                     case "newarr":

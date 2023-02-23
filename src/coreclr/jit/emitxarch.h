@@ -130,8 +130,8 @@ static bool IsJmpInstruction(instruction ins);
 bool AreUpper32BitsZero(regNumber reg);
 bool AreUpper32BitsSignExtended(regNumber reg);
 
-bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);
-bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* tree);
+bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
+bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
 
 bool hasRexPrefix(code_t code)
 {

@@ -1,28 +1,22 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != '' and '$(NETCoreSdkPortableRuntimeIdentifier)' != ''">
     <!-- Define the name of the runtime specific compiler package to import -->
-    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('win'))">win</OSIdentifier>
-    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</OSIdentifier>
-    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('freebsd'))">freebsd</OSIdentifier>
-    <OSIdentifier Condition="$(RuntimeIdentifier.StartsWith('linux-musl')) OR $(RuntimeIdentifier.StartsWith('alpine'))">linux-musl</OSIdentifier>
-    <OSIdentifier Condition="'$(OSIdentifier)' == ''">linux</OSIdentifier>
+    <_targetOS>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.IndexOf('-'))))</_targetOS>
+    <_indexOfPeriod>$(_targetOS.IndexOf('.'))</_indexOfPeriod>
+    <_targetOS Condition="'$(_indexOfPeriod)' &gt; -1">$(_targetOS.SubString(0, $(_indexOfPeriod)))</_targetOS>
+    <_targetOS Condition="$(_targetOS.StartsWith('win'))">win</_targetOS>
 
-    <!-- Determine TargetArchitecture from RuntimeIdentifier -->
-    <RidWithHyphen>$(RuntimeIdentifier)-</RidWithHyphen>
-    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-x86-'))">x86</TargetArchitecture>
-    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-x64-'))">x64</TargetArchitecture>
-    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-arm-'))">arm</TargetArchitecture>
-    <TargetArchitecture Condition="$(RidWithHyphen.Contains('-arm64-'))">arm64</TargetArchitecture>
-    <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">unknown</TargetArchitecture>
+    <!-- Determine _targetArchitecture from RuntimeIdentifier -->
+    <_targetArchitecture>$(RuntimeIdentifier.SubString($([MSBuild]::Add($(RuntimeIdentifier.LastIndexOf('-')), 1))))</_targetArchitecture>
 
-    <RuntimeIlcPackageName>runtime.$(OSIdentifier)-$(TargetArchitecture).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
+    <RuntimeIlcPackageName>runtime.$(_targetOS)-$(_targetArchitecture).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
 
     <!-- Default to host that matches OS architecture on Windows. It allows compilation using msbuild.exe that is x86 by default -->
     <IlcHostArch Condition="'$(OS)' == 'Windows_NT' and '$(IlcHostArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</IlcHostArch>
     <!-- Default to host that matches SDK architecture on non-Windows -->
     <IlcHostArch Condition="'$(IlcHostArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</IlcHostArch>
-    <IlcHostPackageName>runtime.$(OSIdentifier)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
+    <IlcHostPackageName>runtime.$(_targetOS)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
 
     <IlcCalledViaPackage>true</IlcCalledViaPackage>
   </PropertyGroup>

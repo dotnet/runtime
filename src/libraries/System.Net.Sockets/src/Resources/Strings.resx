@@ -249,9 +249,6 @@
   <data name="net_io_invalidendcall" xml:space="preserve">
     <value>{0} can only be called once for each asynchronous operation.</value>
   </data>
-  <data name="net_value_cannot_be_negative" xml:space="preserve">
-    <value>The specified value cannot be negative.</value>
-  </data>
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper_Named" xml:space="preserve">
     <value>Argument '{2}' must be between {0} and {1}.</value>
   </data>

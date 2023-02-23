@@ -4,6 +4,12 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
+    <!--
+      RS1036: A project containing analyzers or source generators should specify the property '<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>'
+      The only analyzer defined here is a mock analyzer meant to act similarly to our source generator. It is not shipping and is only used in unit tests.
+      We don't want to enable the rest of the "good behaving analyzer" API rules on our tests as it is test code and not shipping code.
+      -->
+    <NoWarn>$(NoWarn);RS1036</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
