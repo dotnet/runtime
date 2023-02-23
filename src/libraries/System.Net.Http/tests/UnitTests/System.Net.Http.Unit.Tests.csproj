@@ -54,8 +54,6 @@
              Link="Common\System\Net\Http\HPackEncoder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanEncoder.cs"
              Link="Common\System\Net\Http\HuffmanEncoder.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs"
