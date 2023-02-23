@@ -15,11 +15,16 @@
 
     <RuntimeIlcPackageName>runtime.$(_targetOS)-$(_targetArchitecture).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
 
+    <IlcHostOS>linux</IlcHostOS>
+    <IlcHostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</IlcHostOS>
+    <IlcHostOS Condition="$([MSBuild]::IsOSPlatform('FREEBSD'))">freebsd</IlcHostOS>
+    <IlcHostOS Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">windows</IlcHostOS>
+
     <!-- Default to host that matches OS architecture on Windows. It allows compilation using msbuild.exe that is x86 by default -->
     <IlcHostArch Condition="'$(OS)' == 'Windows_NT' and '$(IlcHostArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</IlcHostArch>
     <!-- Default to host that matches SDK architecture on non-Windows -->
     <IlcHostArch Condition="'$(IlcHostArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</IlcHostArch>
-    <IlcHostPackageName>runtime.$(_targetOSPkg)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
+    <IlcHostPackageName>runtime.$(IlcHostOS)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
 
     <IlcCalledViaPackage>true</IlcCalledViaPackage>
   </PropertyGroup>
