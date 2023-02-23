@@ -3181,7 +3181,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
         // Annotate helper so later on if helper result is unconsumed we know it is not sound
         // to optimize the call into a null check.
         //
-        call->gtCallMoreFlags = GTF_CALL_M_LDVIRTFTN_INTERFACE;
+        call->gtCallMoreFlags |= GTF_CALL_M_LDVIRTFTN_INTERFACE;
     }
 
     return call;
