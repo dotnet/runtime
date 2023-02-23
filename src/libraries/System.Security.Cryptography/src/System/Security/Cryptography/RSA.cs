@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   The maximum output of an RSA operation, in bytes.
+        ///   The maximum number of bytes an RSA operation can produce.
         /// </summary>
         /// <remarks>
         ///   The maximum output size is defined by the RSA modulus, or key size. The key size, in bytes, is the maximum
