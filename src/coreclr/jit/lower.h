@@ -86,7 +86,7 @@ private:
     void ContainCheckRet(GenTreeUnOp* ret);
 #ifdef TARGET_ARM64
     GenTree* TryLowerAndToCCMP(GenTree* tree);
-    insCflags FalsifyingFlags(GenCondition cond);
+    insCflags TruthifyingFlags(GenCondition cond);
     void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
 #endif

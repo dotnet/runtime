@@ -2324,7 +2324,7 @@ GenTree* Lowering::TryLowerAndToCCMP(GenTree* tree)
     ccmp->gtCondition = cond1;
     // If the first comparison fails, set the condition flags to something that
     // makes the second one fail.
-    ccmp->gtFlagsVal = FalsifyingFlags(cond2);
+    ccmp->gtFlagsVal = TruthifyingFlags(GenCondition::Reverse(cond2));
     ContainCheckConditionalCompare(ccmp);
 
     tree->SetOper(GT_SETCC);
@@ -2334,38 +2334,38 @@ GenTree* Lowering::TryLowerAndToCCMP(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// FalsifyingFlags: Get a flags immediate that falsifies a specified condition.
+// TruthifyingFlags: Get a flags immediate that will make a specified condition true.
 //
 // Arguments:
-//    condition - the condition to falsify.
+//    condition - the condition.
 //
 // Returns:
-//    A flags immediate that makes the specified condition false.
+//    A flags immediate that, if those flags were set, would cause the specified condition to be true.
 //
-insCflags Lowering::FalsifyingFlags(GenCondition condition)
+insCflags Lowering::TruthifyingFlags(GenCondition condition)
 {
     switch (condition.GetCode())
     {
         case GenCondition::EQ:
-            return INS_FLAGS_NONE;
+            return INS_FLAGS_Z;
         case GenCondition::NE:
-            return INS_FLAGS_Z;
+            return INS_FLAGS_NONE;
         case GenCondition::SGE:
-            return INS_FLAGS_N;
-        case GenCondition::SGT:
             return INS_FLAGS_Z;
+        case GenCondition::SGT:
+            return INS_FLAGS_NONE;
         case GenCondition::SLT:
-            return INS_FLAGS_N;
+            return INS_FLAGS_NC;
         case GenCondition::SLE:
-            return INS_FLAGS_NONE;
+            return INS_FLAGS_NZC;
         case GenCondition::UGE:
-            return INS_FLAGS_NONE;
+            return INS_FLAGS_C;
         case GenCondition::UGT:
-            return INS_FLAGS_NONE;
+            return INS_FLAGS_C;
         case GenCondition::ULT:
-            return INS_FLAGS_C;
+            return INS_FLAGS_NONE;
         case GenCondition::ULE:
-            return INS_FLAGS_C;
+            return INS_FLAGS_Z;
         default:
             NO_WAY("unexpected condition type");
             return INS_FLAGS_NONE;
