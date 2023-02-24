@@ -5219,14 +5219,10 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 // Unlike regular patchpoints, partial compilation patchpoints
 // must always transitio.
 //
-void JIT_PartialCompilationPatchpoint(int ilOffset)
+HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 {
     // BEGIN_PRESERVE_LAST_ERROR;
     DWORD dwLastError = ::GetLastError();
-
-    // This method will not return normally
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
 
     // Patchpoint identity is the helper return address
     PCODE ip = (PCODE)_ReturnAddress();
@@ -5245,66 +5241,75 @@ void JIT_PartialCompilationPatchpoint(int ilOffset)
     // See if we have an OSR method for this patchpoint.
     bool isNewMethod = false;
     DWORD backoffs = 0;
-    while (ppInfo->m_osrMethodCode == NULL)
+
+    // Set up frame so we can enable preemptive GC.
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
     {
-        // Invalid patchpoints are fatal, for partial compilation patchpoints
-        //
-        if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
+        GCX_PREEMP();
+
+        while (ppInfo->m_osrMethodCode == NULL)
         {
-            LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_PartialCompilationPatchpoint: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
-                    ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+            // Invalid patchpoints are fatal, for partial compilation patchpoints
+            //
+            if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
+            {
+                LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_PartialCompilationPatchpoint: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                        ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+            }
+
+            // Make sure no other thread is trying to create the OSR method.
+            //
+            LONG oldFlags = ppInfo->m_flags;
+            if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
+            {
+                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+                __SwitchToThread(0, backoffs++);
+                continue;
+            }
+
+            // Make sure we win the race to create the OSR method
+            //
+            LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
+            BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
+
+            if (!triggerTransition)
+            {
+                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+                __SwitchToThread(0, backoffs++);
+                continue;
+            }
+
+            // Invoke the helper to build the OSR method
+            //
+            // TODO: may not want to optimize this part of the method, if it's truly partial compilation
+            // and can't possibly rejoin into the main flow.
+            //
+            // (but consider: throw path in method with try/catch, OSR method will contain more than just the throw?)
+            //
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_PartialCompilationPatchpoint: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
+            PCODE newMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
+
+            // If that failed, mark the patchpoint as invalid.
+            // This is fatal, for partial compilation patchpoints
+            //
+            if (newMethodCode == NULL)
+            {
+                STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) OSR method creation failed,"
+                    " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
+                InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
+                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+                break;
+            }
+
+            // We've successfully created the osr method; make it available.
+            _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+            ppInfo->m_osrMethodCode = newMethodCode;
+            isNewMethod = true;
         }
-
-        // Make sure no other thread is trying to create the OSR method.
-        //
-        LONG oldFlags = ppInfo->m_flags;
-        if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
-        {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
-            __SwitchToThread(0, backoffs++);
-            continue;
-        }
-
-        // Make sure we win the race to create the OSR method
-        //
-        LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
-        BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
-
-        if (!triggerTransition)
-        {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
-            __SwitchToThread(0, backoffs++);
-            continue;
-        }
-
-        // Invoke the helper to build the OSR method
-        //
-        // TODO: may not want to optimize this part of the method, if it's truly partial compilation
-        // and can't possibly rejoin into the main flow.
-        //
-        // (but consider: throw path in method with try/catch, OSR method will contain more than just the throw?)
-        //
-        LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_PartialCompilationPatchpoint: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
-        PCODE newMethodCode = HCCALL3(JIT_Patchpoint_Framed, pMD, codeInfo, ilOffset);
-
-        // If that failed, mark the patchpoint as invalid.
-        // This is fatal, for partial compilation patchpoints
-        //
-        if (newMethodCode == NULL)
-        {
-            STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) OSR method creation failed,"
-                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
-            InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-            break;
-        }
-
-        // We've successfully created the osr method; make it available.
-        _ASSERTE(ppInfo->m_osrMethodCode == NULL);
-        ppInfo->m_osrMethodCode = newMethodCode;
-        isNewMethod = true;
     }
+
+    HELPER_METHOD_FRAME_END();
 
     // If we get here, we have code to transition to...
     PCODE osrMethodCode = ppInfo->m_osrMethodCode;
@@ -5382,6 +5387,7 @@ void JIT_PartialCompilationPatchpoint(int ilOffset)
     // Transition!
     RtlRestoreContext(&frameContext, NULL);
 }
+HCIMPLEND
 
 #else
 
@@ -5394,7 +5400,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     UNREACHABLE();
 }
 
-void JIT_PartialCompilationPatchpoint(int* counter, int ilOffset)
+HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -5402,6 +5408,7 @@ void JIT_PartialCompilationPatchpoint(int* counter, int ilOffset)
 
     UNREACHABLE();
 }
+HCIMPLEND
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
