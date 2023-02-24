@@ -197,8 +197,8 @@
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>
-      <PInvokeTableFile>$(ArtifactsObjDir)wasi/pinvoke-table.h</PInvokeTableFile>
-      <InterpToNativeTableFile>$(ArtifactsObjDir)wasi/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
+      <PInvokeTableFile>$(WasiObjDir)\pinvoke-table.h</PInvokeTableFile>
+      <InterpToNativeTableFile>$(WasiObjDir)\wasm_m2n_invoke.g.h</InterpToNativeTableFile>
       <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
 
       <CMakeConfigurationWasiFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationWasiFlags>
