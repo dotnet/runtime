@@ -2686,14 +2686,7 @@ set_interface_map_data_method_object (MonoMethod *method, MonoClass *iclass, int
 
 	MonoMethod* foundMethod = m_class_get_vtable (klass) [i + ioffset];
 
-	if (!foundMethod) {
-		/* abstract classes might have null vtable entries if an interface method
-		 * is not implemented by the class.
-		 */
-		g_assert (mono_class_is_abstract (klass));
-		MONO_HANDLE_ARRAY_SETREF (targets, i, NULL_HANDLE);
-		goto leave;
-	}
+	g_assert (foundMethod);
 
 	if (mono_class_has_dim_conflicts (klass) && mono_class_is_interface (foundMethod->klass)) {
 		GSList* conflicts = mono_class_get_dim_conflicts (klass);
