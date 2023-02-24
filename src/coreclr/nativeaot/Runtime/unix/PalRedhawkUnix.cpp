@@ -55,8 +55,7 @@
 #endif
 
 #ifdef TARGET_APPLE
-#include <sys/proc_info.h>
-#include <libproc.h>
+#include <minipal/getexepath.h>
 #include <mach-o/getsect.h>
 #endif
 
@@ -503,18 +502,13 @@ static const struct section_64 *thunks_data_section;
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
 #ifdef TARGET_APPLE
-    char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
-    int ret;
     int f;
+    char *exepath;
 
-    // NOTE: We ignore hTemplateModule, it is alwyas the current module
-    ret = proc_pidpath(getpid(), pathbuf, sizeof(pathbuf));
-    if (ret <= 0)
-    {
-        return UInt32_FALSE;
-    }
-
-    f = open(pathbuf, O_RDONLY);
+    // NOTE: We ignore hTemplateModule, it is always the current module
+    exepath = minipal_getexepath();
+    f = open(exepath, O_RDONLY);
+    free(exepath);
     if (f < 0)
     {
         return UInt32_FALSE;
