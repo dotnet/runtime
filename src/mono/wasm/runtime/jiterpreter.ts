@@ -46,8 +46,9 @@ export const
     // Very expensive!!!!
     trapTraceErrors = false,
     // When eliminating a null check, replace it with a runtime 'not null' assertion
-    //  that will print a diagnostic message if the value is actually null
-    nullCheckValidation = false,
+    //  that will print a diagnostic message if the value is actually null or if
+    //  the value does not match the value on the native interpreter stack in memory
+    nullCheckValidation = true,
     // If we encounter an enter opcode that looks like a loop body and it was already
     //  jitted, we should abort the current trace since it's not worth continuing
     abortAtJittedLoopBodies = true,
@@ -77,8 +78,7 @@ export const disabledOpcodes : Array<MintOpcode> = [
 export const instrumentedMethodNames : Array<string> = [
     // "System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>& System.Collections.Generic.Dictionary`2<System.Type, System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>>:FindValue (System.Type)"
     // "InternalInsertNode"
-    // "GetValueTypeHashCode",
-    // "GetHashCode"
+    "ResolveMethodArguments"
 ];
 
 export class InstrumentedTraceState {
@@ -536,7 +536,9 @@ function initialize_builder (builder: WasmBuilder) {
     builder.defineType(
         "notnull", {
             "ptr": WasmValtype.i32,
+            "expected": WasmValtype.i32,
             "traceIp": WasmValtype.i32,
+            "ip": WasmValtype.i32,
         }, WasmValtype.void, true
     );
     builder.defineType(
@@ -572,12 +574,12 @@ function initialize_builder (builder: WasmBuilder) {
 }
 
 function assert_not_null (
-    value: number, traceIp: MintOpcodePtr
+    value: number, expectedValue: number, traceIp: MintOpcodePtr, ip: MintOpcodePtr
 ) {
-    if (value)
+    if (value && (value === expectedValue))
         return;
     const info = traceInfo[<any>traceIp];
-    throw new Error(`expected non-null value in trace ${info.name} but found null`);
+    throw new Error(`expected non-null value ${expectedValue} but found ${value} in trace ${info.name} @ 0x${(<any>ip).toString(16)}`);
 }
 
 // returns function id
@@ -610,6 +612,11 @@ function generate_wasm (
     // FIXME: Something about ValueType hashing causes null check optimization to break,
     //  but I haven't been able to figure out a workaround other than this
     if (builder.allowNullCheckOptimization && (methodName.indexOf("HashCode") >= 0))
+        builder.allowNullCheckOptimization = false;
+    // HACK: If we aren't starting at the beginning of the method, we don't know which
+    //  locals may have already had their address taken, so the null check optimization
+    //  is potentially invalid since there could be addresses on the stack
+    if (traceOffset > 0)
         builder.allowNullCheckOptimization = false;
 
     if (useDebugCount) {

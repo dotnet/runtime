@@ -1180,7 +1180,9 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
 
         if (nullCheckValidation) {
             builder.local("cknull_ptr");
+            append_ldloc(builder, localOffset, WasmOpcode.i32_load);
             builder.i32_const(builder.base);
+            builder.i32_const(ip);
             builder.callImport("notnull");
         }
         return;
@@ -1201,6 +1203,7 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
         builder.allowNullCheckOptimization
     ) {
         knownNotNull.add(localOffset);
+        // FIXME: This breaks the ldelema1 implementation somehow
         cknullOffset = localOffset;
     }
 }
