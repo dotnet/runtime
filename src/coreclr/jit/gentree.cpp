@@ -7280,7 +7280,7 @@ GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
-#endif // TARGET_XARCH
+#endif                   // TARGET_XARCH
         {
             allBitsSet                                 = gtNewVconNode(type);
             allBitsSet->AsVecCon()->gtSimd32Val.i64[0] = -1;
@@ -7326,7 +7326,7 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
-#endif // TARGET_XARCH
+#endif                   // TARGET_XARCH
         {
             zero                          = gtNewVconNode(type);
             zero->AsVecCon()->gtSimd32Val = {};
@@ -7369,7 +7369,7 @@ GenTree* Compiler::gtNewOneConNode(var_types type, var_types simdBaseType /* = T
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
-#endif // TARGET_XARCH
+#endif                   // TARGET_XARCH
         {
             GenTreeVecCon* vecCon = gtNewVconNode(type);
 
