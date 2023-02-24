@@ -557,6 +557,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Condition="'$(TargetOS)' == 'browser' and '$(RunSmokeTestsWithAOT)' == 'true'"
+                      Include="@(SmokeTestProject)"
+                      AdditionalProperties="RunAOTCompilation=true" />
+
     <ProjectReference Condition="'$(RunSmokeTestsOnly)' == 'true'"
                       Include="@(SmokeTestProject)" />
     <ProjectReference Condition="'$(RunHighAOTResourceRequiringTestsOnly)' == 'true'"

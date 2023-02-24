@@ -435,18 +435,10 @@ extends:
           nameSuffix: _EAT
           runAOT: false
           shouldRunSmokeOnly: false
+          extraBuildArgs: /p:RunSmokeTestsWithAOT=true
           alwaysRun: ${{ variables.isRollingBuild }}
 
-      # AOT Library tests
-      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          nameSuffix: _AOT
-          runAOT: true
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
-
+      # AOT - only run for windows. For linux, it gets run with EAT
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
           platforms:
