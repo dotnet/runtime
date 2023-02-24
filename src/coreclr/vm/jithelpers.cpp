@@ -4844,9 +4844,8 @@ HCIMPLEND
 // Returns NULL if osr method can't be created.
 static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
 {
+    STANDARD_VM_CONTRACT;
     PCODE osrVariant = NULL;
-
-    GCX_PREEMP();
 
     // Fetch the patchpoint info for the current method
     EEJitManager* jitMgr = ExecutionManager::GetEEJitManager();
@@ -4895,6 +4894,7 @@ HCIMPL3(PCODE, JIT_Patchpoint_Framed, MethodDesc* pMD, EECodeInfo& codeInfo, int
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
+    GCX_PREEMP();
     result = JitPatchpointWorker(pMD, codeInfo, ilOffset);
 
     HELPER_METHOD_FRAME_END();
