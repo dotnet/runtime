@@ -9609,14 +9609,6 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 {
                     vnStore->AddToEmbeddedHandleMap(cns->IconValue(), cns->gtCompileTimeHandle);
                 }
-                else if ((handleFlags == GTF_ICON_STATIC_HDL) && (cns->gtFieldSeq != nullptr) &&
-                         (cns->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
-                {
-                    assert(cns->IconValue() == cns->gtFieldSeq->GetOffset());
-
-                    // For now we're interested only in SimpleStaticKnownAddress
-                    vnStore->AddToFieldAddressToFieldSeqMap(cns->gtVNPair.GetLiberal(), cns->gtFieldSeq);
-                }
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
             {
@@ -9625,6 +9617,14 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             else
             {
                 tree->gtVNPair.SetBoth(vnStore->VNForIntCon(int(tree->AsIntConCommon()->IconValue())));
+            }
+
+            if (tree->IsCnsIntOrI() && (tree->AsIntCon()->gtFieldSeq != nullptr) &&
+                (tree->AsIntCon()->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+            {
+                // For now we're interested only in SimpleStaticKnownAddress
+                vnStore->AddToFieldAddressToFieldSeqMap(tree->AsIntCon()->gtVNPair.GetLiberal(),
+                                                        tree->AsIntCon()->gtFieldSeq);
             }
             break;
 
@@ -9947,17 +9947,14 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
 
     // Base address is expected to be static field's address
     ValueNum treeVN = tree->gtVNPair.GetLiberal();
-    if (tree->gtVNPair.BothEqual() && vnStore->IsVNHandle(treeVN) &&
-        (vnStore->GetHandleFlags(treeVN) == GTF_ICON_STATIC_HDL))
+    if (tree->gtVNPair.BothEqual() && vnStore->IsVNConstant(treeVN))
     {
         FieldSeq* fldSeq = vnStore->GetFieldSeqFromAddress(treeVN);
         if (fldSeq != nullptr)
         {
             assert(fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
-            assert(fldSeq->GetOffset() == vnStore->CoercedConstantValue<ssize_t>(treeVN));
-
             *pFseq      = fldSeq;
-            *byteOffset = val;
+            *byteOffset = vnStore->CoercedConstantValue<ssize_t>(treeVN) - fldSeq->GetOffset() + val;
             return true;
         }
     }

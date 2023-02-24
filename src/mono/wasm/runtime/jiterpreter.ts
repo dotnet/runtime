@@ -46,8 +46,14 @@ export const
     // Very expensive!!!!
     trapTraceErrors = false,
     // When eliminating a null check, replace it with a runtime 'not null' assertion
-    //  that will print a diagnostic message if the value is actually null
+    //  that will print a diagnostic message if the value is actually null or if
+    //  the value does not match the value on the native interpreter stack in memory
     nullCheckValidation = false,
+    // Cache null-checked pointers in cknull_ptr between instructions. Incredibly fragile
+    //  for some reason I have not been able to identify
+    nullCheckCaching = true,
+    // Print diagnostic information to the console when performing null check optimizations
+    traceNullCheckOptimizations = false,
     // If we encounter an enter opcode that looks like a loop body and it was already
     //  jitted, we should abort the current trace since it's not worth continuing
     abortAtJittedLoopBodies = true,
@@ -75,8 +81,6 @@ export const disabledOpcodes : Array<MintOpcode> = [
 // Having any items in this list will add some overhead to the jitting of *all* traces
 // These names can be substrings and instrumentation will happen if the substring is found in the full name
 export const instrumentedMethodNames : Array<string> = [
-    // "System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>& System.Collections.Generic.Dictionary`2<System.Type, System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>>:FindValue (System.Type)"
-    // "InternalInsertNode"
 ];
 
 export class InstrumentedTraceState {
@@ -242,8 +246,6 @@ function getTraceImports () {
     traceImports = [
         importDef("bailout", getRawCwrap("mono_jiterp_trace_bailout")),
         importDef("copy_pointer", getRawCwrap("mono_wasm_copy_managed_pointer")),
-        importDef("array_length", getRawCwrap("mono_wasm_array_length_ref")),
-        importDef("array_address", getRawCwrap("mono_jiterp_array_get_element_address_with_size_ref")),
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
@@ -357,18 +359,6 @@ function initialize_builder (builder: WasmBuilder) {
             "src": WasmValtype.i32,
             "klass": WasmValtype.i32,
         }, WasmValtype.void, true
-    );
-    builder.defineType(
-        "array_length", {
-            "ppArray": WasmValtype.i32
-        }, WasmValtype.i32, true
-    );
-    builder.defineType(
-        "array_address", {
-            "ppArray": WasmValtype.i32,
-            "elementSize": WasmValtype.i32,
-            "index": WasmValtype.i32
-        }, WasmValtype.i32, true
     );
     builder.defineType(
         "entry", {
@@ -534,7 +524,9 @@ function initialize_builder (builder: WasmBuilder) {
     builder.defineType(
         "notnull", {
             "ptr": WasmValtype.i32,
+            "expected": WasmValtype.i32,
             "traceIp": WasmValtype.i32,
+            "ip": WasmValtype.i32,
         }, WasmValtype.void, true
     );
     builder.defineType(
@@ -570,12 +562,12 @@ function initialize_builder (builder: WasmBuilder) {
 }
 
 function assert_not_null (
-    value: number, traceIp: MintOpcodePtr
+    value: number, expectedValue: number, traceIp: MintOpcodePtr, ip: MintOpcodePtr
 ) {
-    if (value)
+    if (value && (value === expectedValue))
         return;
     const info = traceInfo[<any>traceIp];
-    throw new Error(`expected non-null value in trace ${info.name} but found null`);
+    throw new Error(`expected non-null value ${expectedValue} but found ${value} in trace ${info.name} @ 0x${(<any>ip).toString(16)}`);
 }
 
 // returns function id
@@ -604,6 +596,15 @@ function generate_wasm (
     const traceOffset = <any>ip - <any>startOfBody;
     const endOfBody = <any>startOfBody + <any>sizeOfBody;
     const traceName = `${methodName}:${(traceOffset).toString(16)}`;
+
+    // HACK: If we aren't starting at the beginning of the method, we don't know which
+    //  locals may have already had their address taken, so the null check optimization
+    //  is potentially invalid since there could be addresses on the stack
+    // FIXME: The interpreter maintains information on which locals have had their address
+    //  taken, so if we flow that information through it will allow us to make this optimization
+    //  robust in all scenarios and remove this hack
+    if (traceOffset > 0)
+        builder.allowNullCheckOptimization = false;
 
     if (useDebugCount) {
         if (cwraps.mono_jiterp_debug_count() === 0) {
@@ -775,7 +776,7 @@ function generate_wasm (
     } catch (exc: any) {
         threw = true;
         rejected = false;
-        console.error(`MONO_WASM: ${traceName} code generation failed: ${exc} ${exc.stack}`);
+        console.error(`MONO_WASM: ${methodFullName || traceName} code generation failed: ${exc} ${exc.stack}`);
         recordFailure();
         return 0;
     } finally {
@@ -793,7 +794,7 @@ function generate_wasm (
                     console.log(builder.traceBuf[i]);
             }
 
-            console.log(`// MONO_WASM: ${traceName} generated, blob follows //`);
+            console.log(`// MONO_WASM: ${methodFullName || methodName}:${traceOffset.toString(16)} generated, blob follows //`);
             let s = "", j = 0;
             try {
                 // We may have thrown an uncaught exception while inside a block,
