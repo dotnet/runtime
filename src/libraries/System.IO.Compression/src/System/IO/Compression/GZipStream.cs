@@ -242,15 +242,7 @@ namespace System.IO.Compression
 
         private void CheckDeflateStream()
         {
-            if (_deflateStream == null)
-            {
-                ThrowStreamClosedException();
-            }
-        }
-
-        private static void ThrowStreamClosedException()
-        {
-            throw new ObjectDisposedException(nameof(GZipStream), SR.ObjectDisposed_StreamClosed);
+            ObjectDisposedException.ThrowIf(_deflateStream is null, this);
         }
     }
 }

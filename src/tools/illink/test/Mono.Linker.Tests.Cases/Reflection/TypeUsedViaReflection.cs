@@ -329,8 +329,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		// Small difference in formatting between analyzer/linker
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", ProducedBy = Tool.Analyzer)]
 		static void TestTypeOverloadWith5ParametersWithIgnoreCase ()
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+OverloadWith5ParametersWithIgnoreCase";
@@ -381,8 +381,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		// Small difference in formatting between analyzer/linker
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName,Assembly>, Func<Assembly,String,Boolean,Type>, Boolean, Boolean)'", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2096", "'System.Type.GetType(String, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)'", ProducedBy = Tool.Analyzer)]
 		static void TestUnkownIgnoreCase5Params (int num)
 		{
 			const string reflectionTypeKeptString = "mono.linker.tests.cases.reflection.TypeUsedViaReflection+CaseUnknown2, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";

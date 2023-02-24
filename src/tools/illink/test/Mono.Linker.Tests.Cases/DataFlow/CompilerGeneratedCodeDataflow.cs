@@ -39,9 +39,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// Trimmer tracks all assignments of hoisted locals, so this produces warnings.
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresPublicFields), CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicFields), nameof (DataFlowTypeExtensions.RequiresPublicMethods), CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static IEnumerable<int> NoFlowAcrossYieldReturn ()
 			{
 				Type t = GetWithPublicMethods ();
@@ -228,9 +228,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// Trimmer tracks all assignments of hoisted locals, so this produces warnings.
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (DataFlowTypeExtensions.RequiresPublicFields), CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2072", nameof (GetWithPublicFields), nameof (DataFlowTypeExtensions.RequiresPublicMethods), CompilerGeneratedCode = true,
-				ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static async void NoFlowAcrossAwait ()
 			{
 				Type t = GetWithPublicMethods ();
@@ -447,7 +447,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				void LocalFunction () => tParameter.RequiresPublicMethods ();
 			}
 
-			[ExpectedWarning ("IL2072", "tParameter", nameof (GetWithPublicFields), ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2072", "tParameter", nameof (GetWithPublicFields), ProducedBy = Tool.Analyzer)]
 			public static void ReadCapturedParameterAfterWriteMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type tParameter = null)
 			{
 				tParameter = GetWithPublicFields ();
@@ -576,7 +576,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				lambda ();
 			}
 
-			[ExpectedWarning ("IL2072", "tParameter", nameof (GetWithPublicFields), ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2072", "tParameter", nameof (GetWithPublicFields), ProducedBy = Tool.Analyzer)]
 			public static void ReadCapturedParameterAfterWriteMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type tParameter = null)
 			{
 				tParameter = GetWithPublicFields ();

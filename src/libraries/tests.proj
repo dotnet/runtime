@@ -592,6 +592,13 @@
                                      ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
                       BuildInParallel="false" />
 
+    <ProjectReference Include="$(RepoRoot)\src\mono\wasi\Wasi.Build.Tests\*.Tests.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(TargetOS)' == 'wasi' and
+                                    (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
+                                     ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
+                      BuildInParallel="false" />
+
     <ProjectReference Include="$(RepoRoot)\src\mono\wasm\debugger\Wasm.Debugger.Tests\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TargetOS)' == 'browser' and
