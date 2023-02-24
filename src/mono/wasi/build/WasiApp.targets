@@ -363,8 +363,8 @@
   <Target Name="_GenerateRunWasmtimeScript">
     <PropertyGroup>
       <WasmRunWasmtimeScriptPath Condition="'$(WasmRunWasmtimeScriptPath)' == ''">$(WasmAppDir)run-wasmtime.sh</WasmRunWasmtimeScriptPath>
-      <_ScriptContent Condition="'$(WasmSingleFileBundle)' == 'true'">wasmtime run $([System.IO.Path]::GetFileNameWithoutExtension($(WasmMainAssemblyFileName))).wasm $*</_ScriptContent>
-      <_ScriptContent Condition="'$(WasmSingleFileBundle)' != 'true'">wasmtime run --dir . dotnet.wasm $([System.IO.Path]::GetFileNameWithoutExtension($(WasmMainAssemblyFileName))) $*</_ScriptContent>
+      <_ScriptContent Condition="'$(WasmSingleFileBundle)' == 'true'">wasmtime run $([System.IO.Path]::GetFileNameWithoutExtension($(WasmMainAssemblyFileName))).wasm $(InvariantGlobalization) $*</_ScriptContent>
+      <_ScriptContent Condition="'$(WasmSingleFileBundle)' != 'true'">wasmtime run --dir . dotnet.wasm $([System.IO.Path]::GetFileNameWithoutExtension($(WasmMainAssemblyFileName))) $(InvariantGlobalization) $*</_ScriptContent>
     </PropertyGroup>
 
     <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunWasmtimeScriptPath)." />

@@ -365,12 +365,20 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 }
 
 void
-mono_wasm_load_runtime (const char *unused, int debug_level)
+mono_wasm_load_runtime (const char *is_invariant, int debug_level)
 {
 	const char *interp_opts = "";
 
 #ifndef INVARIANT_GLOBALIZATION
-	load_icu_data();
+	int value = strcmp(is_invariant, "true");
+	if (value == 0)
+	{
+		monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true", 1);
+	}
+	else
+	{
+		load_icu_data();
+	}
 #else
 	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true", 1);
 #endif
@@ -704,7 +712,7 @@ mono_wasm_string_array_new (int size)
 #ifdef _WASI_DEFAULT_MAIN
 /*
  * with wasmtime, this is run as:
- *  $ wasmtime run--dir . dotnet.wasm MainAssembly [args]
+ *  $ wasmtime--dir . dotnet.wasm MainAssembly [args]
  *
  *
  * arg0: dotnet.wasm
@@ -717,8 +725,18 @@ int main(int argc, char * argv[]) {
 		return 1;
 	}
 
+	const char *is_invariant = argv[3];
 	mono_set_assemblies_path("managed");
-	mono_wasm_load_runtime("", 0);
+	
+	int value = strcmp(is_invariant, "true");
+	if (value == 0)
+	{
+		mono_wasm_load_runtime("true", 0);
+	}
+	else
+	{
+		mono_wasm_load_runtime("", 0);
+	}
 
 	const char *assembly_name = argv[1];
 	MonoAssembly* assembly = mono_wasm_assembly_load (assembly_name);
