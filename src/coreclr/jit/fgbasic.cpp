@@ -584,6 +584,10 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
             unreached();
             break;
     }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    fgFixFinallyTargetFlags(block, oldTarget, newTarget);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -4778,6 +4782,10 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         curr->bbJumpDest = newBlock;
         fgAddRefPred(newBlock, curr);
     }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    fgFixFinallyTargetFlags(curr, succ, newBlock);
+#endif
 
     // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
     // branch 50% of the time.
