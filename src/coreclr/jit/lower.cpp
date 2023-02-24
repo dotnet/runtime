@@ -234,6 +234,49 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree*
     return true;
 }
 
+bool Lowering::IsRangeInvariantInRange(GenTree* rangeStart, GenTree* rangeEnd, GenTree* endExclusive) const
+{
+    assert((rangeStart != nullptr) && (rangeEnd != nullptr));
+
+    if (rangeEnd->gtNext == endExclusive)
+    {
+        return true;
+    }
+
+    if (rangeStart->OperConsumesFlags())
+    {
+        return false;
+    }
+
+    m_scratchSideEffects.Clear();
+    GenTree* cur = rangeStart;
+    while (true)
+    {
+        m_scratchSideEffects.AddNode(comp, cur);
+
+        if (cur == rangeEnd)
+        {
+            break;
+        }
+
+        cur = cur->gtNext;
+        assert((cur != nullptr) && "Expected rangeStart to precede rangeEnd");
+    }
+
+    for (GenTree* cur = rangeEnd->gtNext; cur != endExclusive; cur = cur->gtNext)
+    {
+        assert((cur != nullptr) && "Expected first node to precede end node");
+
+        const bool strict = true;
+        if (m_scratchSideEffects.InterferesWith(comp, cur, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 //------------------------------------------------------------------------
 // IsSafeToContainMem: Checks for conflicts between childNode and parentNode,
 // and returns 'true' iff memory operand childNode can be contained in parentNode.
@@ -2993,15 +3036,6 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
     ssize_t        op2Value = op2->IconValue();
 
-#ifdef TARGET_ARM64
-    // Do not optimise further if op1 has a contained chain.
-    if (op1->OperIs(GT_AND) &&
-        (op1->isContainedCompareChainSegment(op1->gtGetOp1()) || op1->isContainedCompareChainSegment(op1->gtGetOp2())))
-    {
-        return cmp;
-    }
-#endif
-
 #ifdef TARGET_XARCH
     var_types op1Type = op1->TypeGet();
     if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && FitsIn(op1Type, op2Value))
@@ -3407,7 +3441,6 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
         }
     }
 
-#ifdef TARGET_XARCH
     // Do not transform GT_SELECT with GTF_SET_FLAGS into GT_SELECTCC; this
     // node is used by decomposition on x86.
     // TODO-CQ: If we allowed multiple nodes to consume the same CPU flags then
@@ -3422,7 +3455,6 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
         ContainCheckSelect(newSelect);
         return newSelect->gtNext;
     }
-#endif
 
     ContainCheckSelect(select);
     return select->gtNext;
@@ -3518,21 +3550,29 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
         return true;
     }
 
-    // TODO-Cleanup: Avoid creating these SETCC nodes in the first place.
     if (condition->OperIs(GT_SETCC))
     {
         assert((condition->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
         GenTree* flagsProducer = condition->gtPrev;
-        if (!IsInvariantInRange(flagsProducer, parent, condition))
+#ifdef TARGET_ARM64
+        // CCMP is a flag producing node that also consumes flags, so find the
+        // "root" of the flags producers and move the entire range.
+        while (flagsProducer->OperIs(GT_CCMP))
+        {
+            assert((flagsProducer->gtPrev != nullptr) && ((flagsProducer->gtPrev->gtFlags & GTF_SET_FLAGS) != 0));
+            flagsProducer = flagsProducer->gtPrev;
+        }
+#endif
+        if (!IsRangeInvariantInRange(flagsProducer, condition->gtPrev, parent))
         {
             return false;
         }
 
         *cond = condition->AsCC()->gtCondition;
 
+        LIR::Range range = BlockRange().Remove(flagsProducer, condition->gtPrev);
+        BlockRange().InsertBefore(parent, std::move(range));
         BlockRange().Remove(condition);
-        BlockRange().Remove(flagsProducer);
-        BlockRange().InsertBefore(parent, flagsProducer);
         return true;
     }
 

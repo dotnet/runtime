@@ -243,7 +243,14 @@ GTNODE(JCC              , GenTreeCC          ,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and produces 1 if the condition specified by GenTreeCC::gtCondition is true and 0 otherwise.
 GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF|DBK_NOTHIR)
 // Variant of SELECT that reuses flags computed by a previous node with the specified condition.
-GTNODE(SELECTCC         , GenTreeCC          ,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECTCC         , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
+#ifdef TARGET_ARM64
+// The arm64 ccmp instruction. If the specified condition is true, compares two
+// operands and sets the condition flags according to the result. Otherwise
+// sets the condition flags such that they make a specified (assuming to be
+// upcoming) condition false.
+GTNODE(CCMP             , GenTreeCCMP        ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+#endif
 
 
 //-----------------------------------------------------------------------------

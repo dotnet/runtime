@@ -313,6 +313,9 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeLclFld)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeCC)           <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeOpCC)         <= TREE_NODE_SZ_SMALL);
+#ifdef TARGET_ARM64
+    static_assert_no_msg(sizeof(GenTreeCCMP)         <= TREE_NODE_SZ_SMALL);
+#endif
     static_assert_no_msg(sizeof(GenTreeCast)         <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeBox)          <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeField)        <= TREE_NODE_SZ_LARGE); // *** large node
@@ -11307,6 +11310,49 @@ void Compiler::gtDispLclVarStructType(unsigned lclNum)
     }
 }
 
+#if defined(DEBUG) && defined(TARGET_ARM64)
+static const char* InsCflagsToString(insCflags flags)
+{
+    switch (flags)
+    {
+        case INS_FLAGS_NONE:
+            return "0";
+        case INS_FLAGS_V:
+            return "v";
+        case INS_FLAGS_C:
+            return "c";
+        case INS_FLAGS_CV:
+            return "cv";
+        case INS_FLAGS_Z:
+            return "z";
+        case INS_FLAGS_ZV:
+            return "zv";
+        case INS_FLAGS_ZC:
+            return "zc";
+        case INS_FLAGS_ZCV:
+            return "zcv";
+        case INS_FLAGS_N:
+            return "n";
+        case INS_FLAGS_NV:
+            return "nv";
+        case INS_FLAGS_NC:
+            return "nc";
+        case INS_FLAGS_NCV:
+            return "ncv";
+        case INS_FLAGS_NZ:
+            return "nz";
+        case INS_FLAGS_NZV:
+            return "nzv";
+        case INS_FLAGS_NZC:
+            return "nzc";
+        case INS_FLAGS_NZCV:
+            return "nzcv";
+        default:
+            return "?";
+    }
+}
+#endif
+
 //------------------------------------------------------------------------
 // gtDispSsaName: Display the SSA use/def for a given local.
 //
@@ -12149,6 +12195,13 @@ void Compiler::gtDispTree(GenTree*     tree,
         {
             printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
         }
+#ifdef TARGET_ARM64
+        else if (tree->OperIs(GT_CCMP))
+        {
+            printf(" cond=%s flags=%s", tree->AsCCMP()->gtCondition.Name(),
+                   InsCflagsToString(tree->AsCCMP()->gtFlagsVal));
+        }
+#endif
 
         gtDispCommonEndLine(tree);
 
@@ -18824,7 +18877,13 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 #endif
 #elif defined(TARGET_ARM64)
-    if (OperIs(GT_AND, GT_ADD, GT_SUB))
+    if (OperIs(GT_AND))
+    {
+        return true;
+    }
+
+    // We do not support setting zero flag for madd/msub.
+    if (OperIs(GT_ADD, GT_SUB) && (!gtGetOp2()->OperIs(GT_MUL) || !gtGetOp2()->isContained()))
     {
         return true;
     }
