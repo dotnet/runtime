@@ -48,7 +48,7 @@ export const
     // When eliminating a null check, replace it with a runtime 'not null' assertion
     //  that will print a diagnostic message if the value is actually null or if
     //  the value does not match the value on the native interpreter stack in memory
-    nullCheckValidation = true,
+    nullCheckValidation = false,
     // If we encounter an enter opcode that looks like a loop body and it was already
     //  jitted, we should abort the current trace since it's not worth continuing
     abortAtJittedLoopBodies = true,
@@ -78,7 +78,8 @@ export const disabledOpcodes : Array<MintOpcode> = [
 export const instrumentedMethodNames : Array<string> = [
     // "System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>& System.Collections.Generic.Dictionary`2<System.Type, System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>>:FindValue (System.Type)"
     // "InternalInsertNode"
-    "ResolveMethodArguments"
+    // "ResolveMethodArguments"
+    // "HashCode"
 ];
 
 export class InstrumentedTraceState {
@@ -609,13 +610,12 @@ function generate_wasm (
     const endOfBody = <any>startOfBody + <any>sizeOfBody;
     const traceName = `${methodName}:${(traceOffset).toString(16)}`;
 
-    // FIXME: Something about ValueType hashing causes null check optimization to break,
-    //  but I haven't been able to figure out a workaround other than this
-    if (builder.allowNullCheckOptimization && (methodName.indexOf("HashCode") >= 0))
-        builder.allowNullCheckOptimization = false;
     // HACK: If we aren't starting at the beginning of the method, we don't know which
     //  locals may have already had their address taken, so the null check optimization
     //  is potentially invalid since there could be addresses on the stack
+    // FIXME: The interpreter maintains information on which locals have had their address
+    //  taken, so if we flow that information through it will allow us to make this optimization
+    //  robust in all scenarios and remove this hack
     if (traceOffset > 0)
         builder.allowNullCheckOptimization = false;
 
