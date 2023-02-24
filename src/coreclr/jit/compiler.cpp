@@ -2454,6 +2454,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitUnrollLoopMaxIterationCount = DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT;
 #endif
 
+    if (opts.compJitAlignLoopAdaptive && fgHaveSufficientProfileWeights())
+    {
+        JITDUMP("Disable adaptive loop alignment known hot methods")
+        opts.compJitAlignLoopAdaptive = false;
+    }
+
 #ifdef TARGET_XARCH
     if (opts.compJitAlignLoopAdaptive)
     {
