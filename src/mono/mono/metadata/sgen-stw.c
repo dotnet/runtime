@@ -28,6 +28,7 @@
 #include "utils/mono-threads.h"
 #include "utils/mono-threads-debug.h"
 #ifdef HOST_BROWSER
+#include <emscripten.h>
 #include <mono/utils/mono-threads-wasm.h>
 #endif
 
@@ -490,6 +491,9 @@ mono_restart_world (MonoThreadInfoFlags flags)
 }
 
 #ifdef HOST_BROWSER
+
+EMSCRIPTEN_KEEPALIVE void mono_wasm_gc_lock(void);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_gc_unlock(void);
 
 /* Allow the main thread to take the GC lock from JS */
 EMSCRIPTEN_KEEPALIVE
