@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace SerializerTrimmingTest
 {
     /// <summary>
-    /// Tests that the serializer's warm up routine for (de)serializing IList is linker-safe.
+    /// Tests that the serializer's warm up routine for (de)serializing IList is trimming-safe.
     /// </summary>
     internal class Program
     {

@@ -137,6 +137,7 @@ private:
     GenTree* LowerCompare(GenTree* cmp);
     GenTree* LowerJTrue(GenTreeOp* jtrue);
     GenTree* LowerSelect(GenTreeConditional* cond);
+    bool TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* cond);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);
@@ -306,6 +307,7 @@ private:
     void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
+    GenTree* TryLowerAndNegativeOne(GenTreeOp* node);
     GenTree* LowerBinaryArithmetic(GenTreeOp* binOp);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);

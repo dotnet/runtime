@@ -312,6 +312,7 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeLclVar)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeLclFld)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeCC)           <= TREE_NODE_SZ_SMALL);
+    static_assert_no_msg(sizeof(GenTreeOpCC)         <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeCast)         <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeBox)          <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeField)        <= TREE_NODE_SZ_LARGE); // *** large node
@@ -975,12 +976,12 @@ bool GenTree::IsMultiRegNode() const
         return AsMultiRegOp()->GetRegCount() > 1;
     }
 #endif
+#endif // FEATURE_MULTIREG_RET
 
     if (OperIs(GT_COPY, GT_RELOAD))
     {
         return true;
     }
-#endif // FEATURE_MULTIREG_RET
 
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
@@ -1026,12 +1027,12 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
         return AsMultiRegOp()->GetRegCount();
     }
 #endif
+#endif // FEATURE_MULTIREG_RET
 
     if (OperIs(GT_COPY, GT_RELOAD))
     {
         return AsCopyOrReload()->GetRegCount();
     }
-#endif // FEATURE_MULTIREG_RET
 
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
@@ -6086,9 +6087,6 @@ unsigned GenTree::GetScaleIndexShf()
 
 unsigned GenTree::GetScaledIndex()
 {
-    // with (!opts.OptEnabled(CLFLG_CONSTANTFOLD) we can have
-    //   CNS_INT * CNS_INT
-    //
     if (AsOp()->gtOp1->IsCnsIntOrI())
     {
         return 0;
@@ -6941,6 +6939,18 @@ GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, 
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, op2);
 
+    return node;
+}
+
+GenTreeCC* Compiler::gtNewCC(genTreeOps oper, var_types type, GenCondition cond)
+{
+    GenTreeCC* node = new (this, oper) GenTreeCC(oper, type, cond);
+    return node;
+}
+
+GenTreeOpCC* Compiler::gtNewOperCC(genTreeOps oper, var_types type, GenCondition cond, GenTree* op1, GenTree* op2)
+{
+    GenTreeOpCC* node = new (this, oper) GenTreeOpCC(oper, type, cond, op1, op2);
     return node;
 }
 
@@ -11697,7 +11707,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                             fieldVarDsc->PrintVarReg();
                         }
 
-                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->AsLclVar()->IsLastUse(index))
+                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone &&
+                            tree->AsLclVarCommon()->IsLastUse(index))
                         {
                             printf(" (last use)");
                         }
@@ -12134,6 +12145,10 @@ void Compiler::gtDispTree(GenTree*     tree,
                     printTreeID(tree);
                     break;
             }
+        }
+        else if (tree->OperIs(GT_SELECTCC))
+        {
+            printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
         }
 
         gtDispCommonEndLine(tree);
@@ -12854,6 +12869,14 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         return tree;
     }
 
+    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
+    // To be fixed in https://github.com/dotnet/runtime/pull/77465
+    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+    if (!tier0opts)
+    {
+        return tree;
+    }
+
     if (!(kind & GTK_SMPOP))
     {
         if (tree->OperIsConditional())
@@ -12887,9 +12910,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
             return gtFoldExprConst(tree);
         }
     }
-    else if ((kind & GTK_BINOP) && op1 && tree->AsOp()->gtOp2 &&
-             // Don't take out conditionals for debugging
-             (opts.OptimizationEnabled() || !tree->OperIsCompare()))
+    else if ((kind & GTK_BINOP) && op1 && tree->AsOp()->gtOp2)
     {
         GenTree* op2 = tree->AsOp()->gtOp2;
 
@@ -14553,7 +14574,10 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2IfPresent();
 
-    if (!opts.OptEnabled(CLFLG_CONSTANTFOLD))
+    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
+    // To be fixed in https://github.com/dotnet/runtime/pull/77465
+    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+    if (!tier0opts)
     {
         return tree;
     }

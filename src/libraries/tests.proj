@@ -541,6 +541,7 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Private.Xml.Linq\tests\Schema\System.Xml.Schema.Extensions.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Json\tests\System.Runtime.Serialization.Json.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Globalization\tests\System.Globalization.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
@@ -587,6 +588,13 @@
     <ProjectReference Include="$(RepoRoot)\src\mono\wasm\Wasm.Build.Tests\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TargetOS)' == 'browser' and
+                                    (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
+                                     ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
+                      BuildInParallel="false" />
+
+    <ProjectReference Include="$(RepoRoot)\src\mono\wasi\Wasi.Build.Tests\*.Tests.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(TargetOS)' == 'wasi' and
                                     (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
                                      ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
                       BuildInParallel="false" />
