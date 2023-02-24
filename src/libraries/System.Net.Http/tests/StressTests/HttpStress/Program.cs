@@ -28,7 +28,6 @@ namespace HttpStress
 
         public static async Task<int> Main(string[] args)
         {
-            Console.WriteLine($"Arguments ({args.Length}): {String.Join(" ", args.Select(arg => $"|{arg}|({arg.Length})"))}");
             if (!TryParseCli(args, out Configuration? config))
             {
                 return (int)ExitCode.CliError;
