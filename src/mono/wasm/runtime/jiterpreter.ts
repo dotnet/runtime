@@ -51,7 +51,7 @@ export const
     nullCheckValidation = false,
     // Cache null-checked pointers in cknull_ptr between instructions. Incredibly fragile
     //  for some reason I have not been able to identify
-    nullCheckCaching = false,
+    nullCheckCaching = true,
     // Print diagnostic information to the console when performing null check optimizations
     traceNullCheckOptimizations = false,
     // If we encounter an enter opcode that looks like a loop body and it was already

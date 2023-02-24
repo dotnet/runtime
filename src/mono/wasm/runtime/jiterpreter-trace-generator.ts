@@ -1542,10 +1542,6 @@ function emit_fieldop (
 
         case MintOpcode.MINT_LDFLDA_UNSAFE:
         case MintOpcode.MINT_LDFLDA:
-            // HACK: The field address being loaded could be a field located in a struct living
-            //  on the stack so for safety reasons we temporarily disable null check optimization
-            //  for the rest of the method
-            // builder.allowNullCheckOptimization = false;
             builder.local("pLocals");
             // cknull_ptr isn't always initialized here
             append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
@@ -2879,11 +2875,8 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
     }
 
     if (isPointer) {
-        // HACK: We can't mark this address as transient, because copy_pointer makes
-        //  the address of this local visible to the GC, and the GC is able to move
-        //  the object which changes the value of the local
         // Copy pointer from array element (stelem_ref is separate above)
-        append_ldloca(builder, valueOffset, 4, false);
+        append_ldloca(builder, valueOffset, 4, true);
         append_getelema1(builder, ip, objectOffset, indexOffset, elementSize);
         builder.callImport("copy_pointer");
     } else if (isLoad) {
@@ -2917,8 +2910,6 @@ function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: Bailou
 }
 
 function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {
-    eraseInferredState();
-
     // Check whether a safepoint is required
     builder.ptr_const(cwraps.mono_jiterp_get_polling_required_address());
     builder.appendU8(WasmOpcode.i32_load);
