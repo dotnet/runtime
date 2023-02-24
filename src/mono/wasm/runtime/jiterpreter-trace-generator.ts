@@ -1165,7 +1165,7 @@ function append_local_null_check (builder: WasmBuilder, localOffset: number, ip:
 
 // Loads the specified i32 value and then bails out if it is null, leaving it in the cknull_ptr local.
 function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr, leaveOnStack: boolean) {
-    if (knownNotNull.has(localOffset)) {
+    if (builder.allowNullCheckOptimization && knownNotNull.has(localOffset)) {
         counters.nullChecksEliminated++;
         if (cknullOffset === localOffset) {
             // console.log(`cknull_ptr already contains ${localOffset}`);
@@ -1180,7 +1180,9 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
 
         if (nullCheckValidation) {
             builder.local("cknull_ptr");
+            append_ldloc(builder, localOffset, WasmOpcode.i32_load);
             builder.i32_const(builder.base);
+            builder.i32_const(ip);
             builder.callImport("notnull");
         }
         return;
@@ -1196,8 +1198,12 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
     if (leaveOnStack)
         builder.local("cknull_ptr");
 
-    if (!addressTakenLocals.has(localOffset) && builder.options.eliminateNullChecks) {
+    if (
+        !addressTakenLocals.has(localOffset) &&
+        builder.allowNullCheckOptimization
+    ) {
         knownNotNull.add(localOffset);
+        // FIXME: This breaks the ldelema1 implementation somehow
         cknullOffset = localOffset;
     }
 }
