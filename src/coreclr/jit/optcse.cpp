@@ -2655,8 +2655,8 @@ public:
                 //
                 int spillSimdRegInProlog = 1;
 
-                // If we have a SIMD32 that is live across a call we have even higher spill costs
-                //
+// If we have a SIMD32 that is live across a call we have even higher spill costs
+//
 #if defined(TARGET_XARCH)
                 if (candidate->Expr()->TypeIs(TYP_SIMD32))
                 {
