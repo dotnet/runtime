@@ -2655,6 +2655,7 @@ public:
                 //
                 int spillSimdRegInProlog = 1;
 
+#if defined(TARGET_XARCH)
                 // If we have a SIMD32 that is live across a call we have even higher spill costs
                 //
                 if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
@@ -2669,6 +2670,7 @@ public:
                     //
                     cse_use_cost += 2;
                 }
+#endif // TARGET_XARCH
 
                 extra_yes_cost = (BB_UNITY_WEIGHT_UNSIGNED * spillSimdRegInProlog) * 3;
             }

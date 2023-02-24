@@ -83,7 +83,7 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 static GenTreeVecCon* CreateConstVector(Compiler* comp, var_types simdType, WCHAR* cns)
 {
 #ifdef TARGET_XARCH
-    if ((simdType >= TYP_SIMD32))
+    if (simdType >= TYP_SIMD32)
     {
         assert((simdType == TYP_SIMD32) || (simdType == TYP_SIMD64));
         // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.

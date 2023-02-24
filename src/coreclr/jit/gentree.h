@@ -6551,13 +6551,14 @@ struct GenTreeVecCon : public GenTree
                 return (gtSimd16Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd16Val.u64[1] == 0xFFFFFFFFFFFFFFFF);
             }
 
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
             case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
             {
                 return (gtSimd32Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[1] == 0xFFFFFFFFFFFFFFFF) &&
                        (gtSimd32Val.u64[2] == 0xFFFFFFFFFFFFFFFF) && (gtSimd32Val.u64[3] == 0xFFFFFFFFFFFFFFFF);
             }
-
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:
@@ -6597,6 +6598,7 @@ struct GenTreeVecCon : public GenTree
                        (left->gtSimd16Val.u64[1] == right->gtSimd16Val.u64[1]);
             }
 
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
             case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
             {
@@ -6605,7 +6607,7 @@ struct GenTreeVecCon : public GenTree
                        (left->gtSimd32Val.u64[2] == right->gtSimd32Val.u64[2]) &&
                        (left->gtSimd32Val.u64[3] == right->gtSimd32Val.u64[3]);
             }
-
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:
@@ -6636,13 +6638,14 @@ struct GenTreeVecCon : public GenTree
                 return (gtSimd16Val.u64[0] == 0x0000000000000000) && (gtSimd16Val.u64[1] == 0x0000000000000000);
             }
 
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
             case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
             {
                 return (gtSimd32Val.u64[0] == 0x0000000000000000) && (gtSimd32Val.u64[1] == 0x0000000000000000) &&
                        (gtSimd32Val.u64[2] == 0x0000000000000000) && (gtSimd32Val.u64[3] == 0x0000000000000000);
             }
-
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
             default:

@@ -10774,11 +10774,18 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     assert(!optValnumCSE_phase);
 
-    // TODO-XArch-AVX512: Enable for simd64 once GenTreeVecCon supports gtSimd64Val.
-    if (opts.OptimizationDisabled() || (node->TypeGet() == TYP_SIMD64))
+    if (opts.OptimizationDisabled())
     {
         return node;
     }
+
+#if defined(TARGET_XARCH)
+    // TODO-XArch-AVX512: Enable for simd64 once GenTreeVecCon supports gtSimd64Val.
+    if (node->TypeGet() == TYP_SIMD64)
+    {
+        return node;
+    }
+#endif // TARGET_XARCH
 
     simd32_t simd32Val = {};
 
