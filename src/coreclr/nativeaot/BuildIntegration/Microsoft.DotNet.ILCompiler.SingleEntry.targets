@@ -2,7 +2,10 @@
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' != '' and '$(NETCoreSdkPortableRuntimeIdentifier)' != ''">
     <!-- Define the name of the runtime specific compiler package to import -->
-    <_targetOS>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.IndexOf('-'))))</_targetOS>
+    <_targetOSPkg>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_targetOSPkg>
+    <_indexOfHyphen>$(_targetOSPkg.IndexOf('-'))</_indexOfHyphen>
+    <_targetOS Condition="'$(_indexOfHyphen)' &gt; -1">$(_targetOSPkg.SubString(0, $(_indexOfHyphen)))</_targetOS>
+    <_targetOS Condition="'$(_indexOfHyphen)' == -1">$(_targetOSPkg)</_targetOS>
     <_indexOfPeriod>$(_targetOS.IndexOf('.'))</_indexOfPeriod>
     <_targetOS Condition="'$(_indexOfPeriod)' &gt; -1">$(_targetOS.SubString(0, $(_indexOfPeriod)))</_targetOS>
     <_targetOS Condition="$(_targetOS.StartsWith('win'))">win</_targetOS>
@@ -16,7 +19,7 @@
     <IlcHostArch Condition="'$(OS)' == 'Windows_NT' and '$(IlcHostArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</IlcHostArch>
     <!-- Default to host that matches SDK architecture on non-Windows -->
     <IlcHostArch Condition="'$(IlcHostArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</IlcHostArch>
-    <IlcHostPackageName>runtime.$(_targetOS)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
+    <IlcHostPackageName>runtime.$(_targetOSPkg)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
 
     <IlcCalledViaPackage>true</IlcCalledViaPackage>
   </PropertyGroup>
