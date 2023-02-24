@@ -1873,6 +1873,7 @@ namespace System.Security.Cryptography
         public virtual byte[] ExportRSAPublicKey() { throw null; }
         public string ExportRSAPublicKeyPem() { throw null; }
         public override void FromXmlString(string xmlString) { }
+        public int GetMaxOutputSize() { throw null; }
         protected virtual byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected virtual byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public override void ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
