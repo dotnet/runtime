@@ -42,7 +42,7 @@
     -->
     <MicrosoftCodeAnalysisCSharpVersion>4.6.0-1.23073.4</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisVersion>4.6.0-1.23073.4</MicrosoftCodeAnalysisVersion>
-    <MicrosoftNetCompilersToolsetVersion>4.6.0-debug5</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.6.0-debug6</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
