@@ -81,13 +81,6 @@ export const disabledOpcodes : Array<MintOpcode> = [
 // Having any items in this list will add some overhead to the jitting of *all* traces
 // These names can be substrings and instrumentation will happen if the substring is found in the full name
 export const instrumentedMethodNames : Array<string> = [
-    // "System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>& System.Collections.Generic.Dictionary`2<System.Type, System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>>:FindValue (System.Type)"
-    // "InternalInsertNode"
-    // "ResolveMethodArguments"
-    // "HashCode"
-    // "GetParameterName"
-    // "MoveNext"
-    // "MakeSeparatorListAny"
 ];
 
 export class InstrumentedTraceState {

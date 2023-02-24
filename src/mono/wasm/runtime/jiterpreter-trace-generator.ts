@@ -1231,7 +1231,6 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
         notNullSince.set(localOffset, <any>ip);
         if (traceNullCheckOptimizations)
             console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr := locals[${localOffset}] (fresh load, fresh null check)`);
-        // FIXME: This breaks the ldelema1 implementation somehow
         cknullOffset = localOffset;
     }
 }
@@ -2008,7 +2007,6 @@ function emit_binop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode
                 // rhs was -1 since the previous br_if didn't execute. Now check lhs.
                 builder.local(lhsVar);
                 // G_MININT32
-                // FIXME: Make sure the leb encoder can actually handle this
                 builder.i32_const(-2147483647-1);
                 builder.appendU8(WasmOpcode.i32_ne);
                 builder.appendU8(WasmOpcode.br_if);
@@ -2644,8 +2642,6 @@ function emit_indirectop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintO
     }
 
     append_ldloc_cknull(builder, addressVarIndex, ip, false);
-
-    // FIXME: ldind_offset/stind_offset
 
     if (isLoad) {
         // pre-load pLocals for the store operation
