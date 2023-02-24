@@ -68,11 +68,17 @@ jobs:
       - name: timeoutPerTestInMinutes
         value: 60
       - name: timeoutPerTestCollectionInMinutes
-        value: 280
+        value: 180
     jobParameters:
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          parameters:
+            testGroup: innerloop
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_RunimeTests
+      nameSuffix: AllSubsets_Mono_RuntimeTests
       buildArgs: -s mono+libs -c $(_BuildConfig) /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:BuildDarwinFrameworks=true
-      timeoutInMinutes: 500
+      timeoutInMinutes: 240
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+      extraStepsParameters:
+        testSubsetArgs: -tree:./src/tests/JIT

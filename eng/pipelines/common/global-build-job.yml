@@ -123,6 +123,10 @@ jobs:
         - name: _monoAotCrossCompileArg
           value: 'cross'
 
+      - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+        - name: runtimeFlavorArgs
+          value: '-mono'
+
       - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
         - template: ${{ variableTemplate.template }}
           parameters:
