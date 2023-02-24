@@ -2659,11 +2659,6 @@ function append_getelema1 (
     builder: WasmBuilder, ip: MintOpcodePtr,
     objectOffset: number, indexOffset: number, elementSize: number
 ) {
-    // FIXME
-    append_bailout(builder, ip, BailoutReason.ArrayLoadFailed);
-    return;
-    /*
-
     builder.block();
 
     // load index for check
@@ -2690,15 +2685,14 @@ function append_getelema1 (
 
     // We did a null check and bounds check so we can now compute the actual address
     builder.local("cknull_ptr");
-    builder.appendU8(WasmOpcode.i32_load);
-    builder.appendMemarg(getMemberOffset(JiterpMember.ArrayData), 2);
+    builder.i32_const(getMemberOffset(JiterpMember.ArrayData));
+    builder.appendU8(WasmOpcode.i32_add);
 
     builder.local("math_lhs32");
     builder.i32_const(elementSize);
     builder.appendU8(WasmOpcode.i32_mul);
     builder.appendU8(WasmOpcode.i32_add);
     // append_getelema1 leaves the address on the stack
-    */
 }
 
 function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
