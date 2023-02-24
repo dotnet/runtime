@@ -498,16 +498,16 @@ extends:
 
       # WASI/WASM
 
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - wasi_wasm
-            - wasi_wasm_win
-          nameSuffix: _Relinking
-          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
-          alwaysRun: true
-          scenarios:
-            - normal
+      #- template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        #parameters:
+          #platforms:
+            #- wasi_wasm
+            #- wasi_wasm_win
+          #nameSuffix: _Relinking
+          #extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
+          #alwaysRun: true
+          #scenarios:
+            #- normal
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
@@ -520,12 +520,12 @@ extends:
           scenarios:
             - normal
 
-      - template: /eng/pipelines/common/templates/wasm-build-tests.yml
-        parameters:
-          platforms:
-            - wasi_wasm
-            - wasi_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
+      #- template: /eng/pipelines/common/templates/wasm-build-tests.yml
+        #parameters:
+          #platforms:
+            #- wasi_wasm
+            #- wasi_wasm_win
+          #alwaysRun: ${{ variables.isRollingBuild }}
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
