@@ -2,24 +2,19 @@
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' != '' and '$(NETCoreSdkPortableRuntimeIdentifier)' != ''">
     <!-- Define the name of the runtime specific compiler package to import -->
-    <_targetOSPkg>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_targetOSPkg>
-    <_indexOfHyphen>$(_targetOSPkg.IndexOf('-'))</_indexOfHyphen>
-    <_targetOS Condition="'$(_indexOfHyphen)' &gt; -1">$(_targetOSPkg.SubString(0, $(_indexOfHyphen)))</_targetOS>
-    <_targetOS Condition="'$(_indexOfHyphen)' == -1">$(_targetOSPkg)</_targetOS>
+    <_targetOS>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.IndexOf('-'))))</_targetOS>
     <_indexOfPeriod>$(_targetOS.IndexOf('.'))</_indexOfPeriod>
     <_targetOS Condition="'$(_indexOfPeriod)' &gt; -1">$(_targetOS.SubString(0, $(_indexOfPeriod)))</_targetOS>
     <_targetOS Condition="$(_targetOS.StartsWith('win'))">win</_targetOS>
 
+    <!-- Determine _hostArchitecture from NETCoreSdkPortableRuntimeIdentifier -->
+    <_hostArchitecture>$(NETCoreSdkPortableRuntimeIdentifier.SubString($([MSBuild]::Add($(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-')), 1))))</_hostArchitecture>
+
     <!-- Determine _targetArchitecture from RuntimeIdentifier -->
     <_targetArchitecture>$(RuntimeIdentifier.SubString($([MSBuild]::Add($(RuntimeIdentifier.LastIndexOf('-')), 1))))</_targetArchitecture>
 
-    <RuntimeIlcPackageName>runtime.$(_targetOS)-$(_targetArchitecture).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
-
-    <!-- Default to host that matches OS architecture on Windows. It allows compilation using msbuild.exe that is x86 by default -->
-    <IlcHostArch Condition="'$(OS)' == 'Windows_NT' and '$(IlcHostArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</IlcHostArch>
-    <!-- Default to host that matches SDK architecture on non-Windows -->
-    <IlcHostArch Condition="'$(IlcHostArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</IlcHostArch>
-    <IlcHostPackageName>runtime.$(_targetOSPkg)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
+    <RuntimeIlcPackageName>runtime.$(RuntimeIdentifier).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
+    <IlcHostPackageName>runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
 
     <IlcCalledViaPackage>true</IlcCalledViaPackage>
   </PropertyGroup>
