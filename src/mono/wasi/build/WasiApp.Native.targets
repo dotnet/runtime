@@ -361,8 +361,7 @@
       BundleName="assemblies"
       BundleFile="$(_WasmIntermediateOutputPath)wasi_bundled_assemblies.o"
       RegistrationCallbackFunctionName="mono_wasm_add_assembly"
-      >
-    </EmitWasmBundleFiles>
+      />
 
     <ItemGroup>
       <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)wasi_bundled_assemblies.o" />
