@@ -2,9 +2,11 @@
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' != '' and '$(NETCoreSdkPortableRuntimeIdentifier)' != ''">
     <!-- Define the name of the runtime specific compiler package to import -->
-    <_targetOS>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.IndexOf('-'))))</_targetOS>
-    <_indexOfPeriod>$(_targetOS.IndexOf('.'))</_indexOfPeriod>
-    <_targetOS Condition="'$(_indexOfPeriod)' &gt; -1">$(_targetOS.SubString(0, $(_indexOfPeriod)))</_targetOS>
+    <_useTPI Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'unix'">true</_useTPI>
+    <_targetOS Condition="'$(_useTPI)' == 'true'">$(TargetPlatformIdentifier.ToLowerInvariant())</_targetOS>
+    <_targetOS Condition="'$(_useTPI)' != 'true'">$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.IndexOf('-'))))</_targetOS>
+    <_indexOfPeriod Condition="'$(_useTPI)' != 'true'">$(_targetOS.IndexOf('.'))</_indexOfPeriod>
+    <_targetOS Condition="'$(_useTPI)' != 'true' and '$(_indexOfPeriod)' &gt; -1">$(_targetOS.SubString(0, $(_indexOfPeriod)))</_targetOS>
     <_targetOS Condition="$(_targetOS.StartsWith('win'))">win</_targetOS>
 
     <!-- Determine _hostArchitecture from NETCoreSdkPortableRuntimeIdentifier -->
