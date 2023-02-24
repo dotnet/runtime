@@ -127,7 +127,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Throws<FormatException>(() => TaskToAsyncResult.End<int>(ar));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task WithFromAsync_IAsyncResult_Roundtrips()
         {
             var tcs = new TaskCompletionSource();
