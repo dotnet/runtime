@@ -94,6 +94,11 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
+        public abstract bool IsEmpty
+        {
+            get;
+        }
+
         public virtual IEnumerable<GenericLookupResult> FixedEntries => Entries;
 
         public TypeSystemEntity OwningMethodOrType => _owningMethodOrType;
@@ -195,33 +200,31 @@ namespace ILCompiler.DependencyAnalysis
     public class PrecomputedDictionaryLayoutNode : DictionaryLayoutNode
     {
         private readonly GenericLookupResult[] _layout;
+        private readonly GenericLookupResult[] _discardedSlots;
 
         public override bool HasFixedSlots => true;
 
-        public PrecomputedDictionaryLayoutNode(TypeSystemEntity owningMethodOrType, IEnumerable<GenericLookupResult> layout)
+        public override bool IsEmpty => _layout.Length == 0;
+
+        public PrecomputedDictionaryLayoutNode(TypeSystemEntity owningMethodOrType, GenericLookupResult[] layout, GenericLookupResult[] discardedSlots)
             : base(owningMethodOrType)
         {
-            ArrayBuilder<GenericLookupResult> l = default(ArrayBuilder<GenericLookupResult>);
-            foreach (var entry in layout)
-                l.Add(entry);
-
-            _layout = l.ToArray();
+            _layout = layout;
+            _discardedSlots = discardedSlots;
         }
 
         public override void EnsureEntry(GenericLookupResult entry)
         {
-            int index = Array.IndexOf(_layout, entry);
-
-            if (index == -1)
-            {
-                // Using EnsureEntry to add a slot to a PrecomputedDictionaryLayoutNode is not supported
-                throw new NotSupportedException();
-            }
+            throw new NotSupportedException();
         }
 
         public override int GetSlotForEntry(GenericLookupResult entry)
         {
             int index = Array.IndexOf(_layout, entry);
+
+            // If this is a slot we should discard, respond with slot 0. This should not be dereferenced.
+            if (index < 0 && Array.IndexOf(_discardedSlots, entry) >= 0)
+                index = 0;
 
             // This entry wasn't precomputed. If this is an optimized build with scanner, it might suggest
             // the scanner didn't see the need for this. There is a discrepancy between scanning and compiling.
@@ -307,6 +310,17 @@ namespace ILCompiler.DependencyAnalysis
                     ComputeLayout();
 
                 return _layout;
+            }
+        }
+
+        public override bool IsEmpty
+        {
+            get
+            {
+                if (_layout == null)
+                    ComputeLayout();
+
+                return _layout.Length == 0;
             }
         }
     }
