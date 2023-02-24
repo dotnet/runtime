@@ -378,6 +378,15 @@ namespace Internal.IL
                     }
                     return;
                 }
+
+                if (IsExpandedUnsafeIntrinsic(method))
+                {
+                    // Size optimization. If we're in shared code, call to an Unsafe intrinsic would bring generic
+                    // lookup for the generic dictionary. We would not be able to get rid of it later.
+                    // To add insult to injury, the dictionary would be empty most of the time.
+                    // RyuJIT recognizes these intrinsically and it's not going to ask for the generic dictionary.
+                    return;
+                }
             }
 
             TypeDesc exactType = method.OwningType;
@@ -1393,6 +1402,36 @@ namespace Internal.IL
                 {
                     return (owningType.Name == "EETypePtr" && owningType.Namespace == "System")
                         || (owningType.Name == "MethodTable" && owningType.Namespace == "Internal.Runtime");
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsExpandedUnsafeIntrinsic(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.OwningType is MetadataType mdType
+                && mdType.Name == "Unsafe" && mdType.Namespace == "System.Runtime.CompilerServices")
+            {
+                // Unsafe intrinsics RyuJIT expands intrinsically
+                switch (method.Name)
+                {
+                    case "Add":
+                    case "AddByteOffset":
+                    case "AreSame":
+                    case "As":
+                    case "AsPointer":
+                    case "AsRef":
+                    case "ByteOffset":
+                    case "IsAddressGreaterThan":
+                    case "IsAddressLessThan":
+                    case "IsNullRef":
+                    case "NullRef":
+                    case "SizeOf":
+                    case "SkipInit":
+                    case "Subtract":
+                    case "SubtractByteOffset":
+                        return true;
                 }
             }
 
