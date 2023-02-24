@@ -62,7 +62,6 @@ char* SystemNative_GetDefaultTimeZone(void)
 }
 #endif
 
-
 const char* SystemNative_GetTimeZoneData(const char* name, int* length)
 {
     assert(name != NULL);
