@@ -12,26 +12,27 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundledAppWithSubDirs
+    public class BundledAppWithSubDirs : IClassFixture<BundledAppWithSubDirs.SharedTestState>
     {
+        private readonly SharedTestState sharedState;
+
+        public BundledAppWithSubDirs(SharedTestState fixture)
+        {
+            sharedState = fixture;
+        }
+
         private void RunTheApp(string path, bool selfContained)
         {
             var cmd = Command.Create(path)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut();
+                .EnableTracingAndCaptureOutputs();
             if (!selfContained)
             {
-                cmd = cmd
-                    .EnvironmentVariable("DOTNET_ROOT", RepoDirectoriesProvider.Default.BuiltDotnet)
-                    .EnvironmentVariable("DOTNET_ROOT(x86)", RepoDirectoriesProvider.Default.BuiltDotnet)
-                    .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0");
+                cmd = cmd.DotNetRoot(RepoDirectoriesProvider.Default.BuiltDotnet);
             }
+
             cmd.Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
+                .Should().Pass()
+                .And.HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
         [InlineData(BundleOptions.None)]
@@ -40,9 +41,9 @@ namespace AppHost.Bundle.Tests
         [Theory]
         public void Bundled_Framework_dependent_App_Run_Succeeds(BundleOptions options)
         {
-            using var app = new AppWithSubDirs();
+            var app = sharedState.FrameworkDependentApp;
 
-            var singleFile = app.BundleFxDependent(options);
+            var singleFile = app.Bundle(options);
 
             // Run the bundled app (extract files)
             RunTheApp(singleFile, selfContained: false);
@@ -57,8 +58,8 @@ namespace AppHost.Bundle.Tests
         [Theory]
         public void Bundled_Self_Contained_NoCompression_App_Run_Succeeds(BundleOptions options)
         {
-            using var app = new AppWithSubDirs();
-            var singleFile = app.BundleSelfContained(options);
+            var app = sharedState.SelfContainedApp;
+            var singleFile = app.Bundle(options);
 
             // Run the bundled app (extract files)
             RunTheApp(singleFile, selfContained: true);
@@ -73,8 +74,8 @@ namespace AppHost.Bundle.Tests
         [Theory]
         public void Bundled_Self_Contained_Targeting50_App_Run_Succeeds(BundleOptions options)
         {
-            using var app = new AppWithSubDirs();
-            var singleFile = app.BundleSelfContained(options, new Version(5, 0));
+            var app = sharedState.SelfContainedApp;
+            var singleFile = app.Bundle(options, new Version(5, 0));
 
             // Run the bundled app (extract files)
             RunTheApp(singleFile, selfContained: true);
@@ -87,8 +88,8 @@ namespace AppHost.Bundle.Tests
         [Theory]
         public void Bundled_Framework_dependent_Targeting50_App_Run_Succeeds(BundleOptions options)
         {
-            using var app = new AppWithSubDirs();
-            var singleFile = app.BundleFxDependent(options, new Version(5, 0));
+            var app = sharedState.FrameworkDependentApp;
+            var singleFile = app.Bundle(options, new Version(5, 0));
 
             // Run the bundled app (extract files)
             RunTheApp(singleFile, selfContained: false);
@@ -100,11 +101,28 @@ namespace AppHost.Bundle.Tests
         [Fact]
         public void Bundled_Self_Contained_Targeting50_WithCompression_Throws()
         {
-            using var app = new AppWithSubDirs();
             // compression must be off when targeting 5.0
             var options = BundleOptions.EnableCompression;
-            Assert.Throws<ArgumentException>(() => app.BundleFxDependent(options, new Version(5, 0)));
-            Assert.Throws<ArgumentException>(() => app.BundleSelfContained(options, new Version(5, 0)));
+            Assert.Throws<ArgumentException>(() => sharedState.FrameworkDependentApp.Bundle(options, new Version(5, 0)));
+            Assert.Throws<ArgumentException>(() => sharedState.SelfContainedApp.Bundle(options, new Version(5, 0)));
+        }
+
+        public class SharedTestState : IDisposable
+        {
+            internal AppWithSubDirs FrameworkDependentApp { get; }
+            internal AppWithSubDirs SelfContainedApp { get; }
+
+            public SharedTestState()
+            {
+                FrameworkDependentApp = AppWithSubDirs.CreateFrameworkDependent();
+                SelfContainedApp = AppWithSubDirs.CreateSelfContained();
+            }
+
+            public void Dispose()
+            {
+                FrameworkDependentApp.Dispose();
+                SelfContainedApp.Dispose();
+            }
         }
     }
 }

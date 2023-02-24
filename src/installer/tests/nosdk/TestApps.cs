@@ -13,6 +13,7 @@ using System.Text.Json.Nodes;
 using BundleTests.Helpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.Extensions.DependencyModel;
 using Microsoft.NET.HostModel.AppHost;
@@ -28,51 +29,40 @@ namespace AppHost.Bundle.Tests
 
         private static RepoDirectoriesProvider s_provider => RepoDirectoriesProvider.Default;
 
-        public AppWithSubDirs()
+        private readonly bool selfContained;
+        private readonly string compiledAppDirectory;
+
+        private AppWithSubDirs(bool selfContained)
             : base(GetNewTestArtifactPath(AppName))
-        { }
-
-        public string BundleFxDependent(BundleOptions options, Version? bundleVersion = null)
         {
-            // First write out the app to a temp directory
-            var tempDir = Directory.CreateDirectory(Path.Combine(Location, "temp"));
-            WriteAppToDirectory(tempDir.FullName, selfContained: false);
+            this.selfContained = selfContained;
 
-            // Now bundle it
-            string singleFile = BundleApp(
-                options,
-                RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AppName),
-                tempDir.FullName,
-                Location,
-                selfContained: false,
-                bundleVersion);
-
-            if (options != BundleOptions.BundleAllContent)
-            {
-                CopySentenceSubDir(Location);
-            }
-
-            return singleFile;
+            // Compile and write out the app to a sub-directory
+            compiledAppDirectory = Path.Combine(Location, "compiled");
+            Directory.CreateDirectory(compiledAppDirectory);
+            WriteAppToDirectory(compiledAppDirectory, selfContained);
         }
 
-        public string BundleSelfContained(BundleOptions options, Version? bundleVersion = null)
-        {
-            // First write out the app to a temp directory
-            var tempDir = Directory.CreateDirectory(Path.Combine(Location, "temp"));
-            WriteAppToDirectory(tempDir.FullName, selfContained: true);
+        public static AppWithSubDirs CreateFrameworkDependent()
+            => new AppWithSubDirs(selfContained: false);
 
-            // Now bundle it
+        public static AppWithSubDirs CreateSelfContained()
+            => new AppWithSubDirs(selfContained: true);
+
+        public string Bundle(BundleOptions options, Version? bundleVersion = null)
+        {
+            string bundleDirectory = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(Location, "bundle"));
             string singleFile = BundleApp(
                 options,
                 RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AppName),
-                tempDir.FullName,
-                Location,
-                selfContained: true,
+                compiledAppDirectory,
+                bundleDirectory,
+                selfContained,
                 bundleVersion);
 
             if (options != BundleOptions.BundleAllContent)
             {
-                CopySentenceSubDir(Location);
+                CopySentenceSubDir(bundleDirectory);
             }
 
             return singleFile;
@@ -156,10 +146,7 @@ namespace AppHost.Bundle.Tests
 
         private static void WriteAppToDirectory(string tempDir, bool selfContained)
         {
-            var srcPath = Path.Combine(
-                s_provider.TestAssetsFolder,
-                "TestProjects/AppWithSubDirs/Program.cs");
-
+            var srcPath = Path.Combine(s_provider.TestAssetsFolder, "TestProjects", AppName, "Program.cs");
             var comp = CSharpCompilation.Create(
                 assemblyName: AppName,
                 syntaxTrees: new[] { CSharpSyntaxTree.ParseText(File.ReadAllText(srcPath)) },
