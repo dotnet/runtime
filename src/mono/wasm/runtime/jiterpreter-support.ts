@@ -949,6 +949,7 @@ export const enum JiterpMember {
     Rmethod = 6,
     SpanLength = 7,
     SpanData = 8,
+    ArrayLength = 9,
 }
 
 const memberOffsets : { [index: number] : number } = {};

@@ -245,8 +245,6 @@ function getTraceImports () {
     traceImports = [
         importDef("bailout", getRawCwrap("mono_jiterp_trace_bailout")),
         importDef("copy_pointer", getRawCwrap("mono_wasm_copy_managed_pointer")),
-        importDef("array_length", getRawCwrap("mono_wasm_array_length_ref")),
-        importDef("array_address", getRawCwrap("mono_jiterp_array_get_element_address_with_size_ref")),
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
@@ -360,18 +358,6 @@ function initialize_builder (builder: WasmBuilder) {
             "src": WasmValtype.i32,
             "klass": WasmValtype.i32,
         }, WasmValtype.void, true
-    );
-    builder.defineType(
-        "array_length", {
-            "ppArray": WasmValtype.i32
-        }, WasmValtype.i32, true
-    );
-    builder.defineType(
-        "array_address", {
-            "ppArray": WasmValtype.i32,
-            "elementSize": WasmValtype.i32,
-            "index": WasmValtype.i32
-        }, WasmValtype.i32, true
     );
     builder.defineType(
         "entry", {

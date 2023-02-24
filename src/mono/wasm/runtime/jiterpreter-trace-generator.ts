@@ -2683,28 +2683,38 @@ function append_getelema1 (
 ) {
     builder.block();
 
-    // Preload the address of our temp local - we will be tee-ing the
-    //  element address to it because wasm has no 'dup' instruction
-    builder.local("temp_ptr");
-
-    // (array, size, index) -> void*
-    append_ldloca(builder, objectOffset, 0);
-    builder.i32_const(elementSize);
+    // load index for check
     append_ldloc(builder, indexOffset, WasmOpcode.i32_load);
-    builder.callImport("array_address");
-    builder.local("temp_ptr", WasmOpcode.tee_local);
-
-    // If the operation failed it will return 0, so we bail out to the interpreter
-    //  so it can perform error handling (there are multiple reasons for a failure)
+    // stash it since we need it 3 times
+    builder.local("math_lhs32", WasmOpcode.tee_local);
+    // array null check
+    append_ldloc_cknull(builder, objectOffset, ip, true);
+    // load array length
+    builder.appendU8(WasmOpcode.i32_load);
+    builder.appendMemarg(getMemberOffset(JiterpMember.ArrayLength), 2);
+    // check index < array.length
+    builder.appendU8(WasmOpcode.i32_lt_u);
+    // check index >= 0
+    builder.local("math_lhs32");
+    builder.i32_const(0);
+    builder.appendU8(WasmOpcode.i32_ge_s);
+    builder.appendU8(WasmOpcode.i32_and);
+    // bailout unless (index >= 0) && (index < array.length)
     builder.appendU8(WasmOpcode.br_if);
-    builder.appendULeb(0);
+    builder.appendLeb(0);
     append_bailout(builder, ip, BailoutReason.ArrayLoadFailed);
-
     builder.endBlock();
 
-    // The operation succeeded and the null check consumed the element address,
-    //  so load the element address back from our temp local
-    builder.local("temp_ptr");
+    // We did a null check and bounds check so we can now compute the actual address
+    builder.local("cknull_ptr");
+    builder.appendU8(WasmOpcode.i32_load);
+    builder.appendMemarg(getMemberOffset(JiterpMember.ArrayData), 2);
+
+    builder.local("math_lhs32");
+    builder.i32_const(elementSize);
+    builder.appendU8(WasmOpcode.i32_mul);
+    builder.appendU8(WasmOpcode.i32_add);
+    // append_getelema1 leaves the address on the stack
 }
 
 function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
@@ -2722,13 +2732,16 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
         isPointer = false;
 
     switch (opcode) {
-        case MintOpcode.MINT_LDLEN:
-            append_local_null_check(builder, objectOffset, ip);
+        case MintOpcode.MINT_LDLEN: {
             builder.local("pLocals");
-            append_ldloca(builder, objectOffset, 0);
-            builder.callImport("array_length");
+            // array null check
+            append_ldloc_cknull(builder, objectOffset, ip, true);
+            // load array length
+            builder.appendU8(WasmOpcode.i32_load);
+            builder.appendMemarg(getMemberOffset(JiterpMember.ArrayLength), 2);
             append_stloc_tail(builder, valueOffset, WasmOpcode.i32_store);
             return true;
+        }
         case MintOpcode.MINT_LDELEMA1: {
             // Pre-load destination for the element address at the end
             builder.local("pLocals");
