@@ -78,7 +78,7 @@ namespace Wasm.Build.Tests
                             new BuildProjectOptions(
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                                HasIcudt: invariantGlobalization == null || invariantGlobalization.Value == false));
+                                GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : null));
 
             if (invariantGlobalization == true)
             {
