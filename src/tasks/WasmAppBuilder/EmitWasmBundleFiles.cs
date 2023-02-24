@@ -118,7 +118,6 @@ public class EmitWasmBundleFiles : Microsoft.Build.Utilities.Task, ICancelableTa
         return !Log.HasLoggedErrors;
     }
 
-
     public void Cancel()
     {
         BuildTaskCancelled.Cancel();
