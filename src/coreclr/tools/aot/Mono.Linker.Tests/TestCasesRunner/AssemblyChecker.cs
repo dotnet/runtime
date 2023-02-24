@@ -1195,7 +1195,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
-				return keptBy is null ? true : ((ProducedBy) keptBy).HasFlag (ProducedBy.NativeAot);
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.NativeAot);
 			});
 		}
 
@@ -1210,9 +1210,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (!ca.AttributeType.Resolve ().DerivesFrom (nameof (KeptAttribute))) {
 					return false;
 				}
-
+				
 				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
-				return keptBy is null ? true : ((ProducedBy) keptBy).HasFlag (ProducedBy.NativeAot);
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.NativeAot);
 			});
 		}
 

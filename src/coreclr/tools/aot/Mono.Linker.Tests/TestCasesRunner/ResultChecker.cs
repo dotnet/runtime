@@ -168,7 +168,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private static bool IsProducedByNativeAOT (CustomAttribute attr)
 		{
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
-			return producedBy is null ? true : ((ProducedBy) producedBy).HasFlag (ProducedBy.NativeAot);
+			return producedBy is null ? true : ((Tool) producedBy).HasFlag (Tool.NativeAot);
 		}
 
 		private static IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)

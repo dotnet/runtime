@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private static bool IsIgnoredByNativeAOT (CustomAttribute attr)
 		{
 			var ignoredBy = attr.GetPropertyValue ("IgnoredBy");
-			return ignoredBy is null ? true : ((ProducedBy) ignoredBy).HasFlag (ProducedBy.NativeAot);
+			return ignoredBy is null ? true : ((Tool) ignoredBy).HasFlag (Tool.NativeAot);
 		}
 
 		public virtual bool IsIgnored ([NotNullWhen(true)] out string? reason)
