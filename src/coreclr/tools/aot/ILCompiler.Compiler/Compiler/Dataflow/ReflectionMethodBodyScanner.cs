@@ -33,7 +33,7 @@ namespace ILCompiler.Dataflow
         public static bool RequiresReflectionMethodBodyScannerForCallSite(FlowAnnotations flowAnnotations, MethodDesc method)
         {
             return Intrinsics.GetIntrinsicIdForMethod(method) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
-                flowAnnotations.RequiresDataflowAnalysis(method) ||
+                flowAnnotations.RequiresDataflowAnalysisDueToSignature(method) ||
                 GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, method) ||
                 method.DoesMethodRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
                 method.DoesMethodRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
@@ -43,12 +43,12 @@ namespace ILCompiler.Dataflow
         public static bool RequiresReflectionMethodBodyScannerForMethodBody(FlowAnnotations flowAnnotations, MethodDesc methodDefinition)
         {
             return Intrinsics.GetIntrinsicIdForMethod(methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
-                flowAnnotations.RequiresDataflowAnalysis(methodDefinition);
+                flowAnnotations.RequiresDataflowAnalysisDueToSignature(methodDefinition);
         }
 
         public static bool RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations flowAnnotations, FieldDesc field)
         {
-            return flowAnnotations.RequiresDataflowAnalysis(field) ||
+            return flowAnnotations.RequiresDataflowAnalysisDueToSignature(field) ||
                 GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, field) ||
                 field.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
                 field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
@@ -259,9 +259,10 @@ namespace ILCompiler.Dataflow
             var callingMethodDefinition = callingMethodBody.OwningMethod;
             Debug.Assert(callingMethodDefinition == diagnosticContext.Origin.MemberDefinition);
 
-            bool requiresDataFlowAnalysis = reflectionMarker.Annotations.RequiresDataflowAnalysis(calledMethod);
             var annotatedMethodReturnValue = reflectionMarker.Annotations.GetMethodReturnValue(calledMethod);
-            Debug.Assert(requiresDataFlowAnalysis || annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
+            Debug.Assert(
+                RequiresReflectionMethodBodyScannerForCallSite(reflectionMarker.Annotations, calledMethod) ||
+                annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
 
             MultiValue? maybeMethodReturnValue = null;
 

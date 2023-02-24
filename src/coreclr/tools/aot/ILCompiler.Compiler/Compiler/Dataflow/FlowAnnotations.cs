@@ -41,13 +41,18 @@ namespace ILLink.Shared.TrimAnalysis
             CompilerGeneratedState = compilerGeneratedState;
         }
 
-        public bool RequiresDataflowAnalysis(MethodDesc method)
+        /// <summary>
+        /// Determines if the method has any annotations on its parameters or return values.
+        /// </summary>
+        public bool RequiresDataflowAnalysisDueToSignature(MethodDesc method)
         {
             try
             {
                 method = method.GetTypicalMethodDefinition();
                 TypeAnnotations typeAnnotations = GetAnnotations(method.OwningType);
-                return typeAnnotations.HasGenericParameterAnnotation() || typeAnnotations.TryGetAnnotation(method, out _);
+                // This will return true even if the method has annotations on generic parameters,
+                // but the callers don't rely on that - it's just easier to leave it this way (and it makes very little difference)
+                return typeAnnotations.TryGetAnnotation(method, out _);
             }
             catch (TypeSystemException)
             {
@@ -68,37 +73,16 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        public bool RequiresDataflowAnalysis(FieldDesc field)
+        /// <summary>
+        /// Determines if the field has any annotations on itself (not looking at owning type).
+        /// </summary>
+        public bool RequiresDataflowAnalysisDueToSignature(FieldDesc field)
         {
             try
             {
                 field = field.GetTypicalFieldDefinition();
                 TypeAnnotations typeAnnotations = GetAnnotations(field.OwningType);
-                return typeAnnotations.HasGenericParameterAnnotation() || typeAnnotations.TryGetAnnotation(field, out _);
-            }
-            catch (TypeSystemException)
-            {
-                return false;
-            }
-        }
-
-        public bool RequiresGenericArgumentDataFlowAnalysis(GenericParameterDesc genericParameter)
-        {
-            try
-            {
-                return GetGenericParameterAnnotation(genericParameter) != DynamicallyAccessedMemberTypes.None;
-            }
-            catch (TypeSystemException)
-            {
-                return false;
-            }
-        }
-
-        public bool HasAnyAnnotations(TypeDesc type)
-        {
-            try
-            {
-                return !GetAnnotations(type.GetTypeDefinition()).IsDefault;
+                return typeAnnotations.TryGetAnnotation(field, out _);
             }
             catch (TypeSystemException)
             {
@@ -966,7 +950,7 @@ namespace ILLink.Shared.TrimAnalysis
         }
 
         internal partial bool MethodRequiresDataFlowAnalysis(MethodProxy method)
-            => RequiresDataflowAnalysis(method.Method);
+            => RequiresDataflowAnalysisDueToSignature(method.Method);
 
 #pragma warning disable CA1822 // Other partial implementations are not in the ilc project
         internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
