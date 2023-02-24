@@ -511,7 +511,6 @@ register_thread (MonoThreadInfo *info)
 	mono_native_tls_set_value (thread_info_key, info);
 
 	mono_thread_info_get_stack_bounds (&staddr, &stsize);
-	g_assert (staddr);
 	g_assert (stsize);
 	info->stack_start_limit = staddr;
 	info->stack_end = staddr + stsize;
