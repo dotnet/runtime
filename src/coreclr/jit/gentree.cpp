@@ -6087,9 +6087,6 @@ unsigned GenTree::GetScaleIndexShf()
 
 unsigned GenTree::GetScaledIndex()
 {
-    // with (!opts.OptEnabled(CLFLG_CONSTANTFOLD) we can have
-    //   CNS_INT * CNS_INT
-    //
     if (AsOp()->gtOp1->IsCnsIntOrI())
     {
         return 0;
@@ -12871,6 +12868,14 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         return tree;
     }
 
+    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
+    // To be fixed in https://github.com/dotnet/runtime/pull/77465
+    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+    if (!tier0opts)
+    {
+        return tree;
+    }
+
     if (!(kind & GTK_SMPOP))
     {
         if (tree->OperIsConditional())
@@ -12904,9 +12909,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
             return gtFoldExprConst(tree);
         }
     }
-    else if ((kind & GTK_BINOP) && op1 && tree->AsOp()->gtOp2 &&
-             // Don't take out conditionals for debugging
-             (opts.OptimizationEnabled() || !tree->OperIsCompare()))
+    else if ((kind & GTK_BINOP) && op1 && tree->AsOp()->gtOp2)
     {
         GenTree* op2 = tree->AsOp()->gtOp2;
 
@@ -14570,7 +14573,10 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2IfPresent();
 
-    if (!opts.OptEnabled(CLFLG_CONSTANTFOLD))
+    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
+    // To be fixed in https://github.com/dotnet/runtime/pull/77465
+    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+    if (!tier0opts)
     {
         return tree;
     }
