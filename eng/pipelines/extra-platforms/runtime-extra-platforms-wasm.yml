@@ -184,7 +184,7 @@ jobs:
         - wasi_wasm
         - wasi_wasm_win
       nameSuffix: '_Smoke'
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:MonoEnableAssertMessages=true
+      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
       shouldRunSmokeOnly: true
       # ignore test failures for runtime-extra-platforms, but not when this
       # is run as part of a wasm specific pipeline like runtime-wasm
@@ -257,7 +257,7 @@ jobs:
       platforms:
         - wasi_wasm
         - wasi_wasm_win
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:MonoEnableAssertMessages=true
+      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
       # always run for wasm only pipelines
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
