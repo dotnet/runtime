@@ -22,7 +22,6 @@
     <Compile Include="System\Net\Quic\**\*.cs" Exclude="System\Net\Quic\*.Unsupported.cs"/>
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />

@@ -11,6 +11,8 @@ add_executable(
     %ProjectName%
     %MainSource%
     ${APP_RESOURCES}
+    util.h
+    util.m
 )
 
 if(NOT %UseNativeAOTRuntime%)
@@ -73,5 +75,12 @@ target_link_libraries(
     "-lz"
     "-lc++"
     "-liconv"
-%NativeLibrariesToLink%
+    %NativeLibrariesToLink%
 )
+
+if(%UseNativeAOTRuntime%)
+target_link_libraries(
+    %ProjectName%
+    "-Wl,-u,_NativeAOT_StaticInitialization"
+)
+endif()

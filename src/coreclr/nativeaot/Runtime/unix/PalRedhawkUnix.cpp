@@ -678,7 +678,9 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
 {
     // Write the message using lowest-level OS API available. This is used to print the stack overflow
     // message, so there is not much that can be done here.
-    write(STDERR_FILENO, message, strlen(message));
+    // write() has __attribute__((warn_unused_result)) in glibc, for which gcc 11+ issue `-Wunused-result` even with `(void)write(..)`,
+    // so we use additional NOT(!) operator to force unused-result suppression.
+    (void)!write(STDERR_FILENO, message, strlen(message));
 }
 
 static int W32toUnixAccessControl(uint32_t flProtect)

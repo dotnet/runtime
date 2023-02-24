@@ -11,8 +11,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = ProducedBy.NativeAot)]
-	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = ProducedBy.Trimmer)]
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
 	[SetupCompileArgument ("/optimize+")]
 	[ExpectedNoWarnings]
 	public class MemberTypes
@@ -69,11 +69,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2111", nameof (MulticastDelegate) + ".MulticastDelegate")]
 		[ExpectedWarning ("IL2111", nameof (MulticastDelegate) + ".MulticastDelegate")]
 		[ExpectedWarning ("IL2111", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = Tool.Trimmer)]
 		public static void Main ()
 		{
 			RequirePublicParameterlessConstructor (typeof (PublicParameterlessConstructorType));

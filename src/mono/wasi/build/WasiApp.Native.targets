@@ -280,6 +280,9 @@
           Exclude="@(_MonoRuntimeComponentDontLink->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)%(Identity)')" />
       <_WasmNativeFileForLinking Condition="'$(_WasmEHLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLib)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
+
+      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++.a" />
+      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++abi.a" />
     </ItemGroup>
   </Target>
 
