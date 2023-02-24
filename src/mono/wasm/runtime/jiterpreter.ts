@@ -49,6 +49,8 @@ export const
     //  that will print a diagnostic message if the value is actually null or if
     //  the value does not match the value on the native interpreter stack in memory
     nullCheckValidation = false,
+    // Print diagnostic information to the console when performing null check optimizations
+    traceNullCheckOptimizations = false,
     // If we encounter an enter opcode that looks like a loop body and it was already
     //  jitted, we should abort the current trace since it's not worth continuing
     abortAtJittedLoopBodies = true,
@@ -80,6 +82,8 @@ export const instrumentedMethodNames : Array<string> = [
     // "InternalInsertNode"
     // "ResolveMethodArguments"
     // "HashCode"
+    // "GetParameterName"
+    // "MoveNext"
 ];
 
 export class InstrumentedTraceState {
@@ -793,7 +797,7 @@ function generate_wasm (
                     console.log(builder.traceBuf[i]);
             }
 
-            console.log(`// MONO_WASM: ${methodFullName || traceName} generated, blob follows //`);
+            console.log(`// MONO_WASM: ${methodFullName || methodName}:${traceOffset.toString(16)} generated, blob follows //`);
             let s = "", j = 0;
             try {
                 // We may have thrown an uncaught exception while inside a block,

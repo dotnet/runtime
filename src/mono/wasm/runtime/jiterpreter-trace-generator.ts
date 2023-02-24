@@ -26,7 +26,7 @@ import {
     trace, traceOnError, traceOnRuntimeError,
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
-    abortAtJittedLoopBodies,
+    abortAtJittedLoopBodies, traceNullCheckOptimizations,
 
     mostRecentOptions,
 
@@ -126,6 +126,7 @@ export function generate_wasm_body (
     let result = 0;
     const traceIp = ip;
 
+    addressTakenLocals.clear();
     eraseInferredState();
 
     // Skip over the enter opcode
@@ -160,14 +161,8 @@ export function generate_wasm_body (
 
         const opname = info[0];
         const _ip = ip;
-        let isDeadOpcode = false;
-        /* This doesn't work for some reason
-        const endOfOpcode = ip + <any>(info[1] * 2);
-        if (endOfOpcode > endOfBody) {
-            record_abort(ip, traceName, "end-of-body");
-            break;
-        }
-        */
+        let isDeadOpcode = false,
+            skipDregInvalidation = false;
 
         // We wrap all instructions in a 'branch block' that is used
         //  when performing a branch and will be skipped over if the
@@ -250,6 +245,10 @@ export function generate_wasm_body (
                 } else {
                     append_ldloc_cknull(builder, src, ip, false);
                 }
+                // We will have bailed out if the object was null
+                if (builder.allowNullCheckOptimization)
+                    knownNotNull.add(dest);
+                skipDregInvalidation = true;
                 break;
             }
 
@@ -447,8 +446,7 @@ export function generate_wasm_body (
                 } else {
                     // span = (MonoSpanOfVoid)locals[2]
                     append_ldloca(builder, getArgU16(ip, 2), 0);
-                    builder.local("cknull_ptr", WasmOpcode.tee_local);
-                    cknullOffset = -1;
+                    builder.local("temp_ptr", WasmOpcode.tee_local);
                 }
 
                 // length = span->length
@@ -472,7 +470,7 @@ export function generate_wasm_body (
                 builder.local("pLocals");
 
                 // src = span->_reference + (index * element_size);
-                builder.local("cknull_ptr");
+                builder.local("temp_ptr");
                 builder.appendU8(WasmOpcode.i32_load);
                 builder.appendMemarg(getMemberOffset(JiterpMember.SpanData), 2);
 
@@ -1014,10 +1012,21 @@ export function generate_wasm_body (
         }
 
         if (ip) {
+            if (!skipDregInvalidation && builder.allowNullCheckOptimization) {
+                // Invalidate cached values for all the instruction's destination registers.
+                // This should have already happened, but it's possible there are opcodes where
+                //  our invalidation is incorrect so it's best to do this for safety reasons
+                const firstDreg = <any>ip + 2;
+                for (let r = 0; r < info[2]; r++) {
+                    const dreg = getU16(firstDreg + (r * 2));
+                    invalidate_local(dreg);
+                }
+            }
+
             if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId) {
                 let stmtText = `${(<any>ip).toString(16)} ${opname} `;
                 const firstDreg = <any>ip + 2;
-                const firstSreg = firstDreg + (info[3] * 2);
+                const firstSreg = firstDreg + (info[2] * 2);
                 // print sregs
                 for (let r = 0; r < info[3]; r++) {
                     if (r !== 0)
@@ -1084,7 +1093,6 @@ let cknullOffset = -1;
 function eraseInferredState () {
     cknullOffset = -1;
     knownNotNull.clear();
-    addressTakenLocals.clear();
 }
 
 function invalidate_local (offset: number) {
@@ -1172,16 +1180,22 @@ function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: numb
 
 // Loads the specified i32 value and then bails out if it is null, leaving it in the cknull_ptr local.
 function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr, leaveOnStack: boolean) {
-    if (builder.allowNullCheckOptimization && knownNotNull.has(localOffset)) {
+    const optimize = builder.allowNullCheckOptimization &&
+        !addressTakenLocals.has(localOffset) && knownNotNull.has(localOffset);
+
+    if (optimize) {
         counters.nullChecksEliminated++;
         if (cknullOffset === localOffset) {
-            // console.log(`cknull_ptr already contains ${localOffset}`);
+            if (traceNullCheckOptimizations)
+                console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr === locals[${localOffset}]`);
             if (leaveOnStack)
                 builder.local("cknull_ptr");
         } else {
             // console.log(`skipping null check for ${localOffset}`);
             append_ldloc(builder, localOffset, WasmOpcode.i32_load);
             builder.local("cknull_ptr", leaveOnStack ? WasmOpcode.tee_local : WasmOpcode.set_local);
+            if (traceNullCheckOptimizations)
+                console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr := locals[${localOffset}] (fresh load, already null checked)`);
             cknullOffset = localOffset;
         }
 
@@ -1210,6 +1224,8 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
         builder.allowNullCheckOptimization
     ) {
         knownNotNull.add(localOffset);
+        if (traceNullCheckOptimizations)
+            console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr := locals[${localOffset}] (fresh load, fresh null check)`);
         // FIXME: This breaks the ldelema1 implementation somehow
         cknullOffset = localOffset;
     }
@@ -1386,7 +1402,8 @@ function emit_fieldop (
         localOffset = getArgU16(ip, isLoad ? 1 : 2);
 
     // Check this before potentially emitting a cknull
-    const notNull = !addressTakenLocals.has(objectOffset) &&
+    const notNull = builder.allowNullCheckOptimization &&
+        !addressTakenLocals.has(objectOffset) &&
         knownNotNull.has(objectOffset);
 
     if (
@@ -2895,6 +2912,8 @@ function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: Bailou
 }
 
 function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {
+    eraseInferredState();
+
     // Check whether a safepoint is required
     builder.ptr_const(cwraps.mono_jiterp_get_polling_required_address());
     builder.appendU8(WasmOpcode.i32_load);
