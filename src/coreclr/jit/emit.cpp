@@ -7892,6 +7892,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
+#if defined(FEATURE_SIMD)
 //------------------------------------------------------------------------
 // emitSimd8Const: Create a simd8 data section constant.
 //
@@ -7908,7 +7909,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
     // to constant data, not a real static field.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(FEATURE_SIMD)
     unsigned cnsSize  = 8;
     unsigned cnsAlign = cnsSize;
 
@@ -7921,9 +7921,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD8);
     return emitComp->eeFindJitDataOffs(cnum);
-#else
-    unreached();
-#endif // !FEATURE_SIMD
 }
 
 CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
@@ -7933,7 +7930,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
     // to constant data, not a real static field.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(FEATURE_SIMD)
     unsigned cnsSize  = 16;
     unsigned cnsAlign = cnsSize;
 
@@ -7946,11 +7942,9 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD16);
     return emitComp->eeFindJitDataOffs(cnum);
-#else
-    unreached();
-#endif // !FEATURE_SIMD
 }
 
+#if defined(TARGET_XARCH)
 CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
 {
     // Access to inline data is 'abstracted' by a special type of static member
@@ -7958,23 +7952,19 @@ CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
     // to constant data, not a real static field.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(FEATURE_SIMD)
     unsigned cnsSize  = 32;
     unsigned cnsAlign = cnsSize;
 
-#ifdef TARGET_XARCH
     if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
     {
         cnsAlign = dataSection::MIN_DATA_ALIGN;
     }
-#endif // TARGET_XARCH
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD32);
     return emitComp->eeFindJitDataOffs(cnum);
-#else
-    unreached();
-#endif // !FEATURE_SIMD
 }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
 
 /*****************************************************************************
  *

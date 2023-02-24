@@ -70,8 +70,13 @@ inline bool varTypeIsSIMD(T vt)
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
+#endif // TARGET_XARCH
+        {
             return true;
+        }
+
         default:
             return false;
     }

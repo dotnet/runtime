@@ -2058,9 +2058,13 @@ private:
 #endif // TARGET_AMD64
 
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
+#if defined(FEATURE_SIMD)
     CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue);
     CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue);
+#if defined(TARGET_XARCH)
     CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
