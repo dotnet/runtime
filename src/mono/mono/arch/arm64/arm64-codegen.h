@@ -462,6 +462,14 @@ arm_encode_imm7 (int imm, int size)
 /* Load 128 bit */
 #define arm_ldrfpq(p, qt, xn, simm) arm_format_ldrfp_imm ((p), 0x0, 0x3, (qt), (xn), (simm), 16)
 
+/* LDR (literal, SIMD&FP) PC-relative*/
+/* Load single */
+#define arm_neon_ldrs_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b00 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
+/* Load double */
+#define arm_neon_ldrd_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b01 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
+/* Load 128 bit */
+#define arm_neon_ldrq_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b10 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
+
 /* Arithmetic (immediate) */
 static G_GNUC_UNUSED inline guint32
 arm_encode_arith_imm (int imm, guint32 *shift)

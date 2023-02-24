@@ -3506,6 +3506,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XMOVE:
 			arm_movw (code, dreg, sreg1);
 			break;
+		case OP_XCONST: {
+			if (cfg->compile_aot && cfg->code_exec_only) {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128_GOT, ins->inst_p0);
+				arm_ldrx_lit (code, ARMREG_IP0, 0);
+				arm_ldrfpq (code, ins->dreg, ARMREG_IP0, 0);
+			} else {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128, ins->inst_p0);
+				arm_neon_ldrq_lit (code, ins->dreg, 0);
+			}
+			break;
+		}
 
 			/* BRANCH */
 		case OP_BR:
@@ -5371,6 +5382,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				size += 32;
 				exc_throw_found [i] = TRUE;
 			}
+		} else if (ji->type == MONO_PATCH_INFO_X128) {
+			size += 16 + 15; /* sizeof (Vector128<T>) + alignment */
 		}
 	}
 
@@ -5409,6 +5422,40 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		ji->relocation = MONO_R_ARM64_BL;
 		arm_bl (code, 0);
 		cfg->thunk_area += THUNK_SIZE;
+		set_code_cursor (cfg, code);
+	}
+
+	/* Handle relocations with RIP relative addressing */
+	for (ji = cfg->patch_info; ji; ji = ji->next) {
+		gboolean remove = FALSE;
+
+		if (ji->type == MONO_PATCH_INFO_X128) {
+			guint8 *pos, *patch_pos;
+			guint32 target_pos;
+
+			code = (guint8*)ALIGN_TO (code, 16);
+			pos = cfg->native_code + ji->ip.i;
+			patch_pos = pos + 3;
+			target_pos = GPTRDIFF_TO_UINT32 (code - pos - 4);
+			memcpy (code, ji->data.target, 16);
+			code += 16;
+
+			*(guint32*)(patch_pos) = target_pos;
+
+			remove = TRUE;
+		}
+
+		if (remove) {
+			if (ji == cfg->patch_info)
+				cfg->patch_info = ji->next;
+			else {
+				MonoJumpInfo *tmp;
+
+				for (tmp = cfg->patch_info; tmp->next != ji; tmp = tmp->next)
+					;
+				tmp->next = ji->next;
+			}
+		}
 		set_code_cursor (cfg, code);
 	}
 

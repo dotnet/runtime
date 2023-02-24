@@ -1807,6 +1807,7 @@ static guint16 vector64_vector128_t_methods [] = {
 	SN_get_AllBitsSet,
 	SN_get_Count,
 	SN_get_IsSupported,
+	SN_get_One,
 	SN_get_Zero,
 	SN_op_Addition,
 	SN_op_BitwiseAnd,
@@ -1860,8 +1861,16 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		break;
 	}
 
+#if defined(TARGET_AMD64) || defined(TARGET_WASM)
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
+#endif
+
+// FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
+#ifdef TARGET_ARM64
+	if (!COMPILE_LLVM (cfg) && id != SN_get_One && id != SN_get_Zero)
+		return NULL;
+#endif
 
 	switch (id) {
 	case SN_get_Count: {
@@ -1876,6 +1885,80 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 	case SN_get_AllBitsSet: {
 		return emit_xones (cfg, klass);
+	}
+	case SN_get_One: {
+		if (size != 16)
+			return NULL;
+		switch (etype->type) {
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1: {
+			guint8 value[16];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1;
+			}
+
+			return emit_xconst_v128 (cfg, klass, value);
+		}
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2: {
+			guint16 value[8];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1;
+			}
+
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+#if TARGET_SIZEOF_VOID_P == 4
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+#endif
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4: {
+			guint32 value[4];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1;
+			}
+
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+#if TARGET_SIZEOF_VOID_P == 8
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+#endif
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8: {
+			guint64 value[2];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1;
+			}
+
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+		case MONO_TYPE_R4: {
+			float value[4];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1.0f;
+			}
+
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+		case MONO_TYPE_R8: {
+			double value[2];
+
+			for (int i = 0; i < len; ++i) {
+				value [i] = 1.0;
+			}
+
+			return emit_xconst_v128 (cfg, klass, (guint8*)value);
+		}
+		default:
+			g_assert_not_reached ();
+		}
 	}
 	case SN_op_Addition:
 	case SN_op_BitwiseAnd:
