@@ -976,12 +976,12 @@ bool GenTree::IsMultiRegNode() const
         return AsMultiRegOp()->GetRegCount() > 1;
     }
 #endif
+#endif // FEATURE_MULTIREG_RET
 
     if (OperIs(GT_COPY, GT_RELOAD))
     {
         return true;
     }
-#endif // FEATURE_MULTIREG_RET
 
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
@@ -1027,12 +1027,12 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
         return AsMultiRegOp()->GetRegCount();
     }
 #endif
+#endif // FEATURE_MULTIREG_RET
 
     if (OperIs(GT_COPY, GT_RELOAD))
     {
         return AsCopyOrReload()->GetRegCount();
     }
-#endif // FEATURE_MULTIREG_RET
 
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
@@ -11707,7 +11707,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                             fieldVarDsc->PrintVarReg();
                         }
 
-                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->AsLclVar()->IsLastUse(index))
+                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone &&
+                            tree->AsLclVarCommon()->IsLastUse(index))
                         {
                             printf(" (last use)");
                         }
