@@ -812,7 +812,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var config = configurationBuilder.Build();
 
-            var options = config.Get<ComplexOptions>()!;
+            var options = config.Get<ComplexOptions>(o => o.ErrorOnUnknownConfiguration = true)!;
 
             Assert.Equal(2, options.ISetNoSetter.Count);
             Assert.Equal("Yo1", options.ISetNoSetter.ElementAt(0));
@@ -937,8 +937,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.Items["existing-item2"]);
             Assert.Equal(3, options.Items["item3"]);
             Assert.Equal(4, options.Items["item4"]);
-
-
         }
 
         [Fact]
@@ -956,6 +954,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             var options = config.Get<ConfigWithInstantiatedIReadOnlyDictionary>()!;
 
+            // Readonly dictionary with instantiated value cannot be mutated by the configuration
             Assert.Equal(3, options.Dictionary.Count);
 
             // does not overwrite original
@@ -1027,6 +1026,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ComplexOptions>()!;
 
             var resultingDictionary = options.InstantiatedReadOnlyDictionaryWithWithSomeValues;
+
             Assert.Equal(4, resultingDictionary.Count);
             Assert.Equal(1, resultingDictionary["existing-item1"]);
             Assert.Equal(2, resultingDictionary["existing-item2"]);

@@ -495,15 +495,6 @@ namespace System.IO.Tests
             }
         }
 
-        protected async Task AssertCanceledAsync(CancellationToken cancellationToken, Func<Task> testCode)
-        {
-            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(testCode);
-            if (cancellationToken.CanBeCanceled)
-            {
-                Assert.Equal(cancellationToken, oce.CancellationToken);
-            }
-        }
-
         protected async Task ValidatePrecanceledOperations_ThrowsCancellationException(Stream stream)
         {
             var cts = new CancellationTokenSource();
@@ -511,14 +502,14 @@ namespace System.IO.Tests
 
             if (stream.CanRead)
             {
-                await AssertCanceledAsync(cts.Token, () => stream.ReadAsync(new byte[1], 0, 1, cts.Token));
-                await AssertCanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+                await AssertExtensions.CanceledAsync(cts.Token, stream.ReadAsync(new byte[1], 0, 1, cts.Token));
+                await AssertExtensions.CanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
             }
 
             if (stream.CanWrite)
             {
-                await AssertCanceledAsync(cts.Token, () => stream.WriteAsync(new byte[1], 0, 1, cts.Token));
-                await AssertCanceledAsync(cts.Token, async () => { await stream.WriteAsync(new ReadOnlyMemory<byte>(new byte[1]), cts.Token); });
+                await AssertExtensions.CanceledAsync(cts.Token, stream.WriteAsync(new byte[1], 0, 1, cts.Token));
+                await AssertExtensions.CanceledAsync(cts.Token, async () => { await stream.WriteAsync(new ReadOnlyMemory<byte>(new byte[1]), cts.Token); });
             }
 
             Exception e = await Record.ExceptionAsync(() => stream.FlushAsync(cts.Token));
@@ -540,7 +531,7 @@ namespace System.IO.Tests
             Task<int> t = stream.ReadAsync(new byte[1], 0, 1, cts.Token);
 
             cts.CancelAfter(cancellationDelay);
-            await AssertCanceledAsync(cts.Token, () => t);
+            await AssertExtensions.CanceledAsync(cts.Token, t);
         }
 
         protected async Task ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(Stream stream, int cancellationDelay)
@@ -555,7 +546,7 @@ namespace System.IO.Tests
             Task<int> t = stream.ReadAsync(new byte[1], cts.Token).AsTask();
 
             cts.CancelAfter(cancellationDelay);
-            await AssertCanceledAsync(cts.Token, () => t);
+            await AssertExtensions.CanceledAsync(cts.Token, t);
         }
 
         protected async Task WhenAllOrAnyFailed(Task task1, Task task2)
@@ -2584,18 +2575,18 @@ namespace System.IO.Tests
 
                 cts = new CancellationTokenSource();
                 cts.Cancel();
-                await AssertCanceledAsync(cts.Token, () => readable.ReadAsync(new byte[1], 0, 1, cts.Token));
-                await AssertCanceledAsync(cts.Token, async () => { await readable.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+                await AssertExtensions.CanceledAsync(cts.Token, readable.ReadAsync(new byte[1], 0, 1, cts.Token));
+                await AssertExtensions.CanceledAsync(cts.Token, async () => { await readable.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
 
                 cts = new CancellationTokenSource();
                 Task<int> t = readable.ReadAsync(new byte[1], 0, 1, cts.Token);
                 cts.Cancel();
-                await AssertCanceledAsync(cts.Token, () => t);
+                await AssertExtensions.CanceledAsync(cts.Token, t);
 
                 cts = new CancellationTokenSource();
                 ValueTask<int> vt = readable.ReadAsync(new Memory<byte>(new byte[1]), cts.Token);
                 cts.Cancel();
-                await AssertCanceledAsync(cts.Token, async () => await vt);
+                await AssertExtensions.CanceledAsync(cts.Token, vt.AsTask());
 
                 byte[] buffer = new byte[1];
                 vt = readable.ReadAsync(new Memory<byte>(buffer));

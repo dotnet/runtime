@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
+    <UseIntellisensePackageDocXmlFile>false</UseIntellisensePackageDocXmlFile>
     <PackageDescription>Provides classes that can read and write the CBOR data format.
 
 Commonly Used Types:

@@ -88,6 +88,10 @@ export type MonoConfig = {
      */
     maxParallelDownloads?: number,
     /**
+     * We are making up to 2 more delayed attempts to download same asset. Default true.
+     */
+    enableDownloadRetry?: boolean,
+    /**
      * Name of the assembly with main entrypoint
      */
     mainAssemblyName?: string,
@@ -134,12 +138,6 @@ export type RunArguments = {
     environmentVariables?: { [name: string]: string },
     runtimeOptions?: string[],
     diagnosticTracing?: boolean,
-}
-
-export type MonoConfigError = {
-    isError: true,
-    message: string,
-    error: any
 }
 
 export interface ResourceRequest {
@@ -214,6 +212,7 @@ export type RuntimeHelpers = {
 
     loaded_files: string[];
     maxParallelDownloads: number;
+    enableDownloadRetry: boolean;
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
     enablePerfMeasure: boolean;
@@ -259,7 +258,7 @@ export type DotnetModuleConfig = {
 
 export type DotnetModuleConfigImports = {
     require?: (name: string) => any;
-    fetch?: (url: string) => Promise<Response>;
+    fetch?: (url: string, options: any | undefined) => Promise<Response>;
     fs?: {
         promises?: {
             readFile?: (path: string) => Promise<string | Buffer>,

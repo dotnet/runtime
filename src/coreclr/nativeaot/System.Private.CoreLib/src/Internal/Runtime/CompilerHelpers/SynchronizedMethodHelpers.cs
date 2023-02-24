@@ -79,7 +79,7 @@ namespace Internal.Runtime.CompilerHelpers
             lockTaken = false;
         }
 
-        private static object GetStaticLockObject(IntPtr pEEType)
+        private static Type GetStaticLockObject(IntPtr pEEType)
         {
             return Type.GetTypeFromEETypePtr(new EETypePtr(pEEType));
         }

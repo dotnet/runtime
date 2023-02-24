@@ -7,7 +7,7 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial record ArrayValue
+	internal partial record ArrayValue
 	{
 		public readonly Dictionary<int, MultiValue> IndexValues;
 

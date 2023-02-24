@@ -113,7 +113,7 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.HasCriticalFinalizerFlag;
             }
 
-            if (type.Context.Target.IsOSX && IsTrackedReferenceWithFinalizer(type))
+            if (type.Context.Target.IsOSXLike && IsTrackedReferenceWithFinalizer(type))
             {
                 flagsEx |= (ushort)EETypeFlagsEx.IsTrackedReferenceWithFinalizerFlag;
             }

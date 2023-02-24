@@ -38,7 +38,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 #endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     if (compHndBBtabCount == 0)
     {
@@ -293,7 +293,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 #endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     bool enableRemoveEmptyTry = true;
 
@@ -630,7 +630,7 @@ PhaseStatus Compiler::fgCloneFinally()
 #endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     bool enableCloning = true;
 
@@ -1643,7 +1643,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
 #endif // FEATURE_EH_FUNCLETS
 
     // We need to update the bbPreds lists.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     if (compHndBBtabCount == 0)
     {
@@ -2007,7 +2007,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
     // This transformation requires block pred lists to be built
     // so that flow can be safely updated.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     struct ThrowHelper
     {
@@ -2144,15 +2144,15 @@ PhaseStatus Compiler::fgTailMergeThrows()
     {
         BasicBlock* const nonCanonicalBlock = iter->GetKey();
         BasicBlock* const canonicalBlock    = iter->GetValue();
-        flowList*         nextPredEdge      = nullptr;
+        FlowEdge*         nextPredEdge      = nullptr;
         bool              updated           = false;
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
-        for (flowList* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
+        for (FlowEdge* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
         {
-            BasicBlock* const predBlock = predEdge->getBlock();
-            nextPredEdge                = predEdge->flNext;
+            BasicBlock* const predBlock = predEdge->getSourceBlock();
+            nextPredEdge                = predEdge->getNextPredEdge();
 
             switch (predBlock->bbJumpKind)
             {
@@ -2247,7 +2247,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                                   BasicBlock* nonCanonicalBlock,
                                                   BasicBlock* canonicalBlock,
-                                                  flowList*   predEdge)
+                                                  FlowEdge*   predEdge)
 {
     assert(predBlock->bbNext == nonCanonicalBlock);
 
@@ -2290,7 +2290,7 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
 void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
                                              BasicBlock* nonCanonicalBlock,
                                              BasicBlock* canonicalBlock,
-                                             flowList*   predEdge)
+                                             FlowEdge*   predEdge)
 {
     assert(predBlock->bbJumpDest == nonCanonicalBlock);
 

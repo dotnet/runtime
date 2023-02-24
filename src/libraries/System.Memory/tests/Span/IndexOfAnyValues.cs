@@ -198,6 +198,7 @@ namespace System.SpanTests
 
         [Theory]
         [MemberData(nameof(Values_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80875", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void IndexOfAnyValues_GetValues(string needle, byte[] byteNeedle)
         {
             char[] charValuesActual = s_getValuesCharMethod(IndexOfAnyValues.Create(needle));

@@ -341,6 +341,7 @@ private:
     template <typename T>
     static bool IsIntZero(T v);
 
+public:
     // Given an constant value number return its value.
     int GetConstantInt32(ValueNum argVN);
     INT64 GetConstantInt64(ValueNum argVN);
@@ -354,6 +355,7 @@ private:
     simd32_t GetConstantSimd32(ValueNum argVN);
 #endif // FEATURE_SIMD
 
+private:
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
     // Assumes that "vnf" is a operator of the appropriate arity (unary for the first, binary for the second).
     // Assume that "CanEvalForConstantArgs(vnf)" is true.
@@ -463,6 +465,21 @@ public:
         m_embeddedToCompileTimeHandleMap.AddOrUpdate(embeddedHandle, compileTimeHandle);
     }
 
+    void AddToFieldAddressToFieldSeqMap(ValueNum fldAddr, FieldSeq* fldSeq)
+    {
+        m_fieldAddressToFieldSeqMap.AddOrUpdate(fldAddr, fldSeq);
+    }
+
+    FieldSeq* GetFieldSeqFromAddress(ValueNum fldAddr)
+    {
+        FieldSeq* fldSeq;
+        if (m_fieldAddressToFieldSeqMap.TryGetValue(fldAddr, &fldSeq))
+        {
+            return fldSeq;
+        }
+        return nullptr;
+    }
+
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {
@@ -503,7 +520,14 @@ public:
     // It returns NoVN for a "typ" that has no one value, such as TYP_REF.
     ValueNum VNOneForType(var_types typ);
 
+    // Returns the value number for AllBitsSet of the given "typ".
+    // It has an unreached() for a "typ" that has no all bits set value, such as TYP_VOID.
+    ValueNum VNAllBitsForType(var_types typ);
+
 #ifdef FEATURE_SIMD
+    // Returns the value number for one of the given "simdType" and "simdBaseType".
+    ValueNum VNOneForSimdType(var_types simdType, var_types simdBaseType);
+
     // A helper function for constructing VNF_SimdType VNs.
     ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
 #endif // FEATURE_SIMD
@@ -1108,8 +1132,22 @@ public:
                             EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));
     }
 
-    ValueNum EvalHWIntrinsicFunUnary(
-        var_types type, NamedIntrinsic ni, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN);
+    ValueNum EvalHWIntrinsicFunUnary(var_types      type,
+                                     var_types      baseType,
+                                     NamedIntrinsic ni,
+                                     VNFunc         func,
+                                     ValueNum       arg0VN,
+                                     bool           encodeResultType,
+                                     ValueNum       resultTypeVN);
+
+    ValueNum EvalHWIntrinsicFunBinary(var_types      type,
+                                      var_types      baseType,
+                                      NamedIntrinsic ni,
+                                      VNFunc         func,
+                                      ValueNum       arg0VN,
+                                      ValueNum       arg1VN,
+                                      bool           encodeResultType,
+                                      ValueNum       resultTypeVN);
 
     // Returns "true" iff "vn" represents a function application.
     bool IsVNFunc(ValueNum vn);
@@ -1422,6 +1460,9 @@ private:
 
     typedef SmallHashTable<ssize_t, ssize_t> EmbeddedToCompileTimeHandleMap;
     EmbeddedToCompileTimeHandleMap m_embeddedToCompileTimeHandleMap;
+
+    typedef SmallHashTable<ValueNum, FieldSeq*> FieldAddressToFieldSeqMap;
+    FieldAddressToFieldSeqMap m_fieldAddressToFieldSeqMap;
 
     struct LargePrimitiveKeyFuncsFloat : public JitLargePrimitiveKeyFuncs<float>
     {

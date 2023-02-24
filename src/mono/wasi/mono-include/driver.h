@@ -8,7 +8,7 @@
 void mono_wasm_load_runtime (const char *unused, int debug_level);
 int mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size);
 MonoAssembly* mono_wasm_assembly_load(const char *name);
-MonoMethod* mono_wasm_assembly_get_entry_point (MonoAssembly *assembly);
+MonoMethod* mono_wasi_assembly_get_entry_point (MonoAssembly *assembly);
 MonoClass* mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name);
 MonoMethod* mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments);
 MonoObject* mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc);

@@ -15,7 +15,7 @@ namespace System.IO.Strategies
         private readonly FileAccess _access; // What file was opened for.
 
         protected long _filePosition;
-        private long _appendStart; // When appending, prevent overwriting file.
+        private readonly long _appendStart; // When appending, prevent overwriting file.
 
         internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access)
         {

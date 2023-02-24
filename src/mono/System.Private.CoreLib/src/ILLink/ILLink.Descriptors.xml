@@ -610,6 +610,8 @@
 		<type fullname="Mono.ValueTuple`3" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`4" preserve="fields"/>
 		<type fullname="Mono.ValueTuple`5" preserve="fields"/>
+		<type fullname="Mono.ValueTuple`6" preserve="fields"/>
+		<type fullname="Mono.ValueTuple`7" preserve="fields"/>
 		<!-- aot-compiler.c -->
 		<type fullname="Mono.I8Enum" preserve="fields"/>
 		<type fullname="Mono.UI8Enum" preserve="fields"/>

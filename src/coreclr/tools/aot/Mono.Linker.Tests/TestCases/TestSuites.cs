@@ -9,7 +9,6 @@ namespace Mono.Linker.Tests.TestCases
 {
 	public class All
 	{
-
 		[Theory]
 		[MemberData(nameof(TestDatabase.DataFlow), MemberType = typeof(TestDatabase))]
 		public void DataFlow(string t)
@@ -43,6 +42,13 @@ namespace Mono.Linker.Tests.TestCases
 		public void RequiresCapability(string t)
 		{
 			Run(t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.Warnings), MemberType = typeof (TestDatabase))]
+		public void Warnings (string t)
+		{
+			Run (t);
 		}
 
 		protected virtual void Run(string testName)

@@ -5,7 +5,7 @@
 ## Usage:
 ## ./build-local.sh [StressConfiguration] [LibrariesConfiguration]
 
-version=7.0
+version=8.0
 repo_root=$(git rev-parse --show-toplevel)
 daily_dotnet_root=./.dotnet-daily
 

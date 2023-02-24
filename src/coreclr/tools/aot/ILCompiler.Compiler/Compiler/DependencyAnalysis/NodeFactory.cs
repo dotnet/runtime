@@ -378,6 +378,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
             });
 
+            _dataflowAnalyzedTypeDefinitions = new NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode>((TypeDesc type) =>
+            {
+                return new DataflowAnalyzedTypeDefinitionNode(type);
+            });
+
             _dynamicDependencyAttributesOnEntities = new NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode>((TypeSystemEntity entity) =>
             {
                 return new DynamicDependencyAttributesOnEntityNode(entity);
@@ -460,6 +465,11 @@ namespace ILCompiler.DependencyAnalysis
             _modulesWithMetadata = new NodeCache<ModuleDesc, ModuleMetadataNode>(module =>
             {
                 return new ModuleMetadataNode(module);
+            });
+
+            _inlineableStringResources = new NodeCache<EcmaModule, InlineableStringsResourceNode>(module =>
+            {
+                return new InlineableStringsResourceNode(module);
             });
 
             _customAttributesWithMetadata = new NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode>(ca =>
@@ -702,6 +712,13 @@ namespace ILCompiler.DependencyAnalysis
         public DataflowAnalyzedMethodNode DataflowAnalyzedMethod(MethodIL methodIL)
         {
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
+        }
+
+        private NodeCache<TypeDesc, DataflowAnalyzedTypeDefinitionNode> _dataflowAnalyzedTypeDefinitions;
+
+        public DataflowAnalyzedTypeDefinitionNode DataflowAnalyzedTypeDefinition(TypeDesc type)
+        {
+            return _dataflowAnalyzedTypeDefinitions.GetOrAdd(type);
         }
 
         private NodeCache<TypeSystemEntity, DynamicDependencyAttributesOnEntityNode> _dynamicDependencyAttributesOnEntities;
@@ -1137,6 +1154,12 @@ namespace ILCompiler.DependencyAnalysis
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _modulesWithMetadata.GetOrAdd(module);
+        }
+
+        private NodeCache<EcmaModule, InlineableStringsResourceNode> _inlineableStringResources;
+        internal InlineableStringsResourceNode InlineableStringResource(EcmaModule module)
+        {
+            return _inlineableStringResources.GetOrAdd(module);
         }
 
         private NodeCache<ReflectableCustomAttribute, CustomAttributeMetadataNode> _customAttributesWithMetadata;

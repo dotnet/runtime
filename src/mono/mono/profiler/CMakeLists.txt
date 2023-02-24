@@ -10,10 +10,11 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/../sgen)
 
 if(NOT DISABLE_LIBS)
-  if(HOST_ANDROID OR HOST_IOS OR HOST_TVOS)
-    # Build the logging profiler only for mobile platforms
+  if(HOST_ANDROID OR HOST_IOS OR HOST_TVOS OR HOST_S390X)
+    # Build the logging profiler only for certain platforms
     add_library(mono-profiler-log SHARED helper.c log.c log-args.c ${ZLIB_SOURCES})
-    target_link_libraries(mono-profiler-log monosgen-shared eglib_objects monoapi)
+    target_compile_definitions(mono-profiler-log PRIVATE -DMONO_DLL_EXPORT)
+    target_link_libraries(mono-profiler-log monosgen-shared monoapi eglib_objects)
     if(HOST_ANDROID)
       target_link_libraries(mono-profiler-log log)
     endif()

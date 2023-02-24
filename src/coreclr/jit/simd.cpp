@@ -284,6 +284,20 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
             size            = getSIMDVectorRegisterByteLength();
             JITDUMP("  Known type SIMD Vector<nuint>\n");
         }
+        else if (typeHnd == m_simdHandleCache->SIMDQuaternionHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_FLOAT;
+            size            = 4 * genTypeSize(TYP_FLOAT);
+            assert(size == roundUp(info.compCompHnd->getClassSize(typeHnd), TARGET_POINTER_SIZE));
+            JITDUMP("  Known type Quaternion\n");
+        }
+        else if (typeHnd == m_simdHandleCache->SIMDPlaneHandle)
+        {
+            simdBaseJitType = CORINFO_TYPE_FLOAT;
+            size            = 4 * genTypeSize(TYP_FLOAT);
+            assert(size == roundUp(info.compCompHnd->getClassSize(typeHnd), TARGET_POINTER_SIZE));
+            JITDUMP("  Known type Plane\n");
+        }
 
         // slow path search
         if (simdBaseJitType == CORINFO_TYPE_UNDEF)
@@ -381,6 +395,24 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                 m_simdHandleCache->SIMDVectorHandle = typeHnd;
                 size                                = getSIMDVectorRegisterByteLength();
                 JITDUMP(" Found type Vector\n");
+            }
+            else if (strcmp(className, "Quaternion") == 0)
+            {
+                m_simdHandleCache->SIMDQuaternionHandle = typeHnd;
+
+                simdBaseJitType = CORINFO_TYPE_FLOAT;
+                size            = 4 * genTypeSize(TYP_FLOAT);
+                assert(size == roundUp(info.compCompHnd->getClassSize(typeHnd), TARGET_POINTER_SIZE));
+                JITDUMP(" Found Quaternion\n");
+            }
+            else if (strcmp(className, "Plane") == 0)
+            {
+                m_simdHandleCache->SIMDPlaneHandle = typeHnd;
+
+                simdBaseJitType = CORINFO_TYPE_FLOAT;
+                size            = 4 * genTypeSize(TYP_FLOAT);
+                assert(size == roundUp(info.compCompHnd->getClassSize(typeHnd), TARGET_POINTER_SIZE));
+                JITDUMP(" Found Plane\n");
             }
         }
     }

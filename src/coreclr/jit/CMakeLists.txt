@@ -296,6 +296,7 @@ set( JIT_HEADERS
   emitpub.h
   error.h
   gentree.h
+  gentreeopsdef.h
   gtlist.h
   gtstructs.h
   hashbv.h

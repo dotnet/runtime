@@ -10,6 +10,7 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Sample
 {
@@ -41,6 +42,8 @@ namespace Sample
         {
             public override int InitialSamples => 3;
             public override string Name => "LegacyExportInt";
+            // because of the aggressive trimming of methods reachable via JS legacy bind_static_method
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "Sample.ImportsExportsHelper", Test.AssemblyName)]
             public override void RunStep()
             {
                 ImportsExportsHelper.RunLegacyExportInt(10000);
@@ -61,6 +64,9 @@ namespace Sample
         {
             public override int InitialSamples => 3;
             public override string Name => "LegacyExportString";
+
+            // because of the aggressive trimming of methods reachable via JS legacy bind_static_method
+            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "Sample.ImportsExportsHelper", Test.AssemblyName)]
             public override void RunStep()
             {
                 ImportsExportsHelper.RunLegacyExportString(10000);

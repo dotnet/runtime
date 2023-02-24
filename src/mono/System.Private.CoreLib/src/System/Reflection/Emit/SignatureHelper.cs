@@ -372,7 +372,7 @@ namespace System.Reflection.Emit
 
         public byte[] GetSignature()
         {
-            TypeBuilder.ResolveUserTypes(arguments);
+            RuntimeTypeBuilder.ResolveUserTypes(arguments);
 
             return type switch
             {

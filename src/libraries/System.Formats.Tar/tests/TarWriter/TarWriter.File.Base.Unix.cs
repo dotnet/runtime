@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 using Xunit;
 
@@ -20,7 +21,7 @@ namespace System.Formats.Tar.Tests
 
             if (entry is PosixTarEntry posix)
             {
-                string gname = Interop.Sys.GetGroupName(status.Gid);
+                Assert.True(Interop.Sys.TryGetGroupName(status.Gid, out string gname));
                 string uname = Interop.Sys.GetUserNameFromPasswd(status.Uid);
 
                 Assert.Equal(gname, posix.GroupName);
@@ -50,6 +51,50 @@ namespace System.Formats.Tar.Tests
                     VerifyGnuTimestamps(gnu);
                 }
             }
+        }
+
+        protected int CreateGroup(string groupName)
+        {
+            Execute("groupadd", groupName);
+            return GetGroupId(groupName);
+        }
+
+        protected int GetGroupId(string groupName)
+        {
+            string standardOutput = Execute("getent", $"group {groupName}");
+            string[] values = standardOutput.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return int.Parse(values[^1]);
+        }
+        
+        protected void SetGroupAsOwnerOfFile(string groupName, string filePath) =>
+            Execute("chgrp", $"{groupName} {filePath}");
+
+
+        protected void DeleteGroup(string groupName) =>
+            Execute("groupdel", groupName);
+
+        private string Execute(string command, string arguments)
+        {
+            using Process p = new Process();
+
+            p.StartInfo.UseShellExecute = false;
+            p.StartInfo.FileName = command;
+            p.StartInfo.Arguments = arguments;
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.RedirectStandardError = true;
+
+            p.Start();
+            p.WaitForExit();
+
+            string standardOutput = p.StandardOutput.ReadToEnd();
+            string standardError = p.StandardError.ReadToEnd();
+            
+            if (p.ExitCode != 0)
+            {
+                throw new IOException($"Error '{p.ExitCode}' when executing '{command} {arguments}'. Message: {standardError}");
+            }
+
+            return standardOutput;
         }
     }
 }
