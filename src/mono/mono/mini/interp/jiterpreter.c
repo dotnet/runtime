@@ -302,19 +302,6 @@ mono_jiterp_cast_ref (
 	return 0;
 }
 
-EMSCRIPTEN_KEEPALIVE void*
-mono_jiterp_array_get_element_address_with_size_ref (MonoArray **array, int size, int index)
-{
-	// HACK: This does not need to be volatile because we know array is visible to
-	//  the GC and this is called from interp traces in gc unsafe mode
-	MonoArray* _array = *array;
-	if (!_array)
-		return NULL;
-	if (index >= mono_array_length_internal(_array))
-		return NULL;
-	return mono_array_addr_with_size_fast (_array, size, index);
-}
-
 EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_localloc (gpointer *destination, gint32 len, InterpFrame *frame)
 {
@@ -484,6 +471,7 @@ mono_jiterp_relop_fp (double lhs, double rhs, int opcode) {
 #define JITERP_MEMBER_RMETHOD 6
 #define JITERP_MEMBER_SPAN_LENGTH 7
 #define JITERP_MEMBER_SPAN_DATA 8
+#define JITERP_MEMBER_ARRAY_LENGTH 9
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -493,6 +481,8 @@ mono_jiterp_get_member_offset (int member) {
 			return MONO_STRUCT_OFFSET (MonoVTable, initialized);
 		case JITERP_MEMBER_ARRAY_DATA:
 			return MONO_STRUCT_OFFSET (MonoArray, vector);
+		case JITERP_MEMBER_ARRAY_LENGTH:
+			return MONO_STRUCT_OFFSET (MonoArray, max_length);
 		case JITERP_MEMBER_STRING_LENGTH:
 			return MONO_STRUCT_OFFSET (MonoString, length);
 		case JITERP_MEMBER_STRING_DATA:

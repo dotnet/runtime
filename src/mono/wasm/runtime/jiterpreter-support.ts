@@ -35,6 +35,7 @@ export class WasmBuilder {
     stackSize!: number;
     inSection!: boolean;
     inFunction!: boolean;
+    allowNullCheckOptimization!: boolean;
     locals = new Map<string, [WasmValtype, number]>();
 
     permanentFunctionTypeCount = 0;
@@ -90,6 +91,8 @@ export class WasmBuilder {
         this.constantSlots.length = this.options.useConstants ? constantSlotCount : 0;
         for (let i = 0; i < this.constantSlots.length; i++)
             this.constantSlots[i] = 0;
+
+        this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
 
     push () {
@@ -946,6 +949,7 @@ export const enum JiterpMember {
     Rmethod = 6,
     SpanLength = 7,
     SpanData = 8,
+    ArrayLength = 9,
 }
 
 const memberOffsets : { [index: number] : number } = {};

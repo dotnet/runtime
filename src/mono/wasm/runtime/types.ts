@@ -140,12 +140,6 @@ export type RunArguments = {
     diagnosticTracing?: boolean,
 }
 
-export type MonoConfigError = {
-    isError: true,
-    message: string,
-    error: any
-}
-
 export interface ResourceRequest {
     name: string, // the name of the asset, including extension.
     behavior: AssetBehaviours, // determines how the asset will be handled once loaded

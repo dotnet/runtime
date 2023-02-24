@@ -13,6 +13,9 @@ namespace System.Collections.Tests
     public abstract class SortedList_Generic_Tests<TKey, TValue> : IDictionary_Generic_Tests<TKey, TValue>
     {
         #region IDictionary<TKey, TValue> Helper Methods
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
 
         protected override IDictionary<TKey, TValue> GenericIDictionaryFactory()
         {

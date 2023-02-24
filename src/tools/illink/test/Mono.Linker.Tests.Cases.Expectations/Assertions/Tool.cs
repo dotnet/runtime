@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	/// when testing analyzers which do not produce them.
 	/// </summary>
 	[Flags]
-	public enum ProducedBy
+	public enum Tool
 	{
 		Trimmer = 1,
 		Analyzer = 2,
