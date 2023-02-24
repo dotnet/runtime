@@ -27,6 +27,7 @@ import {
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
     abortAtJittedLoopBodies, traceNullCheckOptimizations,
+    nullCheckCaching,
 
     mostRecentOptions,
 
@@ -246,10 +247,10 @@ export function generate_wasm_body (
                     append_ldloc_cknull(builder, src, ip, false);
                 }
                 // We will have bailed out if the object was null
-                if (builder.allowNullCheckOptimization && !knownNotNull.has(dest)) {
+                if (builder.allowNullCheckOptimization) {
                     if (traceNullCheckOptimizations)
                         console.log(`(0x${(<any>ip).toString(16)}) locals[${dest}] passed cknull`);
-                    knownNotNull.add(dest);
+                    notNullSince.set(dest, <any>ip);
                 }
                 skipDregInvalidation = true;
                 break;
@@ -449,7 +450,8 @@ export function generate_wasm_body (
                 } else {
                     // span = (MonoSpanOfVoid)locals[2]
                     append_ldloca(builder, getArgU16(ip, 2), 0);
-                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    builder.local("cknull_ptr", WasmOpcode.tee_local);
+                    cknullOffset = -1;
                 }
 
                 // length = span->length
@@ -473,7 +475,7 @@ export function generate_wasm_body (
                 builder.local("pLocals");
 
                 // src = span->_reference + (index * element_size);
-                builder.local("temp_ptr");
+                builder.local("cknull_ptr");
                 builder.appendU8(WasmOpcode.i32_load);
                 builder.appendMemarg(getMemberOffset(JiterpMember.SpanData), 2);
 
@@ -1090,18 +1092,18 @@ export function generate_wasm_body (
 }
 
 const addressTakenLocals : Set<number> = new Set();
-const knownNotNull : Set<number> = new Set();
+const notNullSince : Map<number, number> = new Map();
 let cknullOffset = -1;
 
 function eraseInferredState () {
     cknullOffset = -1;
-    knownNotNull.clear();
+    notNullSince.clear();
 }
 
 function invalidate_local (offset: number) {
     if (cknullOffset === offset)
         cknullOffset = -1;
-    knownNotNull.delete(offset);
+    notNullSince.delete(offset);
 }
 
 function invalidate_local_range (start: number, bytes: number) {
@@ -1184,13 +1186,14 @@ function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: numb
 // Loads the specified i32 value and then bails out if it is null, leaving it in the cknull_ptr local.
 function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr, leaveOnStack: boolean) {
     const optimize = builder.allowNullCheckOptimization &&
-        !addressTakenLocals.has(localOffset) && knownNotNull.has(localOffset);
+        !addressTakenLocals.has(localOffset) &&
+        notNullSince.has(localOffset);
 
     if (optimize) {
         counters.nullChecksEliminated++;
-        if (cknullOffset === localOffset) {
+        if (nullCheckCaching && (cknullOffset === localOffset)) {
             if (traceNullCheckOptimizations)
-                console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr == locals[${localOffset}]`);
+                console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr == locals[${localOffset}], not null since 0x${notNullSince.get(localOffset)!.toString(16)}`);
             if (leaveOnStack)
                 builder.local("cknull_ptr");
         } else {
@@ -1198,7 +1201,7 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
             append_ldloc(builder, localOffset, WasmOpcode.i32_load);
             builder.local("cknull_ptr", leaveOnStack ? WasmOpcode.tee_local : WasmOpcode.set_local);
             if (traceNullCheckOptimizations)
-                console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr := locals[${localOffset}] (fresh load, already null checked)`);
+                console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr := locals[${localOffset}] (fresh load, already null checked at 0x${notNullSince.get(localOffset)!.toString(16)})`);
             cknullOffset = localOffset;
         }
 
@@ -1226,7 +1229,7 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
         !addressTakenLocals.has(localOffset) &&
         builder.allowNullCheckOptimization
     ) {
-        knownNotNull.add(localOffset);
+        notNullSince.set(localOffset, <any>ip);
         if (traceNullCheckOptimizations)
             console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr := locals[${localOffset}] (fresh load, fresh null check)`);
         // FIXME: This breaks the ldelema1 implementation somehow
@@ -1407,7 +1410,7 @@ function emit_fieldop (
     // Check this before potentially emitting a cknull
     const notNull = builder.allowNullCheckOptimization &&
         !addressTakenLocals.has(objectOffset) &&
-        knownNotNull.has(objectOffset);
+        notNullSince.has(objectOffset);
 
     if (
         (opcode !== MintOpcode.MINT_LDFLDA_UNSAFE) &&
