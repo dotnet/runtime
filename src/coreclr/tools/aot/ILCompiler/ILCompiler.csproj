@@ -10,7 +10,7 @@
   <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
-    <NativeAotSupported Condition="'$(RuntimeIdentifier)' != 'win-x64' and '$(RuntimeIdentifier)' != 'linux-x64'">false</NativeAotSupported>
+    <NativeAotSupported Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'linux'">false</NativeAotSupported>
     <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
     <PublishReadyToRun Condition="'$(NativeAotSupported)' != 'true'">true</PublishReadyToRun>
     <PublishSingleFile Condition="'$(NativeAotSupported)' != 'true'">true</PublishSingleFile>
