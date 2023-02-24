@@ -613,6 +613,7 @@ mono_jiterp_cas_i64 (volatile int64_t *addr, int64_t *newVal, int64_t *expected,
 #define TRACE_IGNORE -1
 #define TRACE_CONTINUE 0
 #define TRACE_ABORT 1
+#define TRACE_CONDITIONAL_ABORT 2
 
 /*
  * This function provides an approximate answer for "will this instruction cause the jiterpreter
@@ -703,7 +704,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 			// Detect backwards branches
 			if (ins->info.target_bb->il_offset <= ins->il_offset) {
 				if (*inside_branch_block)
-					return TRACE_CONTINUE;
+					return TRACE_CONDITIONAL_ABORT;
 				else
 					return mono_opt_jiterpreter_backward_branches_enabled ? TRACE_CONTINUE : TRACE_ABORT;
 			}
@@ -714,7 +715,7 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_MONO_RETHROW:
 		case MINT_THROW:
 			if (*inside_branch_block)
-				return TRACE_CONTINUE;
+				return TRACE_CONDITIONAL_ABORT;
 
 			return TRACE_ABORT;
 
@@ -755,13 +756,13 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 			(opcode <= MINT_CALLI_NAT_FAST)
 			// (opcode <= MINT_JIT_CALL2)
 		)
-			return *inside_branch_block ? TRACE_CONTINUE : TRACE_ABORT;
+			return *inside_branch_block ? TRACE_CONDITIONAL_ABORT : TRACE_ABORT;
 		else if (
 			// returns
 			(opcode >= MINT_RET) &&
 			(opcode <= MINT_RET_U2)
 		)
-			return *inside_branch_block ? TRACE_CONTINUE : TRACE_ABORT;
+			return *inside_branch_block ? TRACE_CONDITIONAL_ABORT : TRACE_ABORT;
 		else if (
 			(opcode >= MINT_LDC_I4_M1) &&
 			(opcode <= MINT_LDC_R8)
@@ -834,6 +835,10 @@ should_generate_trace_here (InterpBasicBlock *bb) {
 				case TRACE_ABORT:
 					jiterpreter_abort_counts[ins->opcode]++;
 					return current_trace_length >= mono_opt_jiterpreter_minimum_trace_length;
+				case TRACE_CONDITIONAL_ABORT:
+					// FIXME: Stop traces that contain these early on, as long as we are relatively certain
+					//  that these instructions will be hit (i.e. they are not unlikely branches)
+					break;
 				case TRACE_IGNORE:
 					break;
 				default:
@@ -925,6 +930,9 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 	if (!mono_opt_jiterpreter_traces_enabled)
 		return;
 
+	// Start with a high instruction counter so the distance check will pass
+	int instruction_count = mono_opt_jiterpreter_minimum_distance_between_traces;
+
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		// Enter trace at top of functions
 		gboolean is_backwards_branch = FALSE,
@@ -941,7 +949,16 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 		//  multiple times and waste some work. At present this is unavoidable because
 		//  control flow means we can end up with two traces covering different subsets
 		//  of the same method in order to handle loops and resuming
-		gboolean should_generate = enabled && should_generate_trace_here(bb);
+		gboolean should_generate = enabled &&
+		// Only insert a trace if the heuristic says this location will likely produce a long
+		//  enough one to be worth it
+			should_generate_trace_here(bb) &&
+		// And don't insert another trace if we inserted one too recently, unless this
+		//  is a backwards branch target
+			(
+				(instruction_count >= mono_opt_jiterpreter_minimum_distance_between_traces) ||
+				is_backwards_branch
+			);
 
 		if (mono_opt_jiterpreter_call_resume_enabled && bb->contains_call_instruction)
 			enter_at_next = TRUE;
@@ -957,12 +974,25 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 			InterpInst *ins = mono_jiterp_insert_ins (td, NULL, MINT_TIER_PREPARE_JITERPRETER);
 			memcpy(ins->data, &trace_index, sizeof (trace_index));
 
+			// Clear the instruction counter
+			instruction_count = 0;
+
 			// Note that we only clear enter_at_next here, after generating a trace.
 			// This means that the flag will stay set intentionally if we keep failing
 			//  to generate traces, perhaps due to a string of small basic blocks
 			//  or multiple call instructions.
 			enter_at_next = bb->contains_call_instruction;
+		} else if (is_backwards_branch && enabled && !should_generate) {
+			// We failed to start a trace at a backwards branch target, but that might just mean
+			//  that the loop body starts with one or two unsupported opcodes, so it may be
+			//  worthwhile to try again later
+			enter_at_next = TRUE;
 		}
+
+		// Increase the instruction counter. If we inserted an entry point at the top of this bb,
+		//  the new instruction counter will be the number of instructions in the block, so if
+		//  it's big enough we'll be able to insert another entry point right away.
+		instruction_count += bb->in_count;
 	}
 }
 
