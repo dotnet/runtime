@@ -355,7 +355,7 @@
       </WasmBundleAssembliesWithHashes>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->
-    <EmitWasmBundleFiles 
+    <EmitWasmBundleFiles
       FilesToBundle="@(WasmBundleAssembliesWithHashes)" 
       ClangExecutable="$(WasiClang)"
       BundleName="assemblies"
