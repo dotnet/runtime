@@ -234,6 +234,23 @@ bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree*
     return true;
 }
 
+//------------------------------------------------------------------------
+// IsRangeInvariantInRange: Check if a range of nodes are invariant in the
+// specified range.
+//
+// Arguments:
+//    rangeStart   - The first node.
+//    rangeEnd     - The last node.
+//    endExclusive - The exclusive end of the range to check invariance for.
+//
+// Returns:
+//    True if the range can be evaluated at any point between its current location
+//    and 'endExclusive' without giving a different result; otherwise false.
+//
+// Remarks:
+//    Note that the range is treated as a unit and no pairwise interference
+//    checks between nodes in the range are performed.
+//
 bool Lowering::IsRangeInvariantInRange(GenTree* rangeStart, GenTree* rangeEnd, GenTree* endExclusive) const
 {
     assert((rangeStart != nullptr) && (rangeEnd != nullptr));
