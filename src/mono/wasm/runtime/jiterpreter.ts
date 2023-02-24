@@ -49,6 +49,11 @@ export const
     //  that will print a diagnostic message if the value is actually null or if
     //  the value does not match the value on the native interpreter stack in memory
     nullCheckValidation = false,
+    // Cache null-checked pointers in cknull_ptr between instructions. Incredibly fragile
+    //  for some reason I have not been able to identify
+    nullCheckCaching = true,
+    // Print diagnostic information to the console when performing null check optimizations
+    traceNullCheckOptimizations = false,
     // If we encounter an enter opcode that looks like a loop body and it was already
     //  jitted, we should abort the current trace since it's not worth continuing
     abortAtJittedLoopBodies = true,
@@ -76,10 +81,6 @@ export const disabledOpcodes : Array<MintOpcode> = [
 // Having any items in this list will add some overhead to the jitting of *all* traces
 // These names can be substrings and instrumentation will happen if the substring is found in the full name
 export const instrumentedMethodNames : Array<string> = [
-    // "System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>& System.Collections.Generic.Dictionary`2<System.Type, System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>>:FindValue (System.Type)"
-    // "InternalInsertNode"
-    // "ResolveMethodArguments"
-    // "HashCode"
 ];
 
 export class InstrumentedTraceState {
@@ -245,8 +246,6 @@ function getTraceImports () {
     traceImports = [
         importDef("bailout", getRawCwrap("mono_jiterp_trace_bailout")),
         importDef("copy_pointer", getRawCwrap("mono_wasm_copy_managed_pointer")),
-        importDef("array_length", getRawCwrap("mono_wasm_array_length_ref")),
-        importDef("array_address", getRawCwrap("mono_jiterp_array_get_element_address_with_size_ref")),
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
@@ -360,18 +359,6 @@ function initialize_builder (builder: WasmBuilder) {
             "src": WasmValtype.i32,
             "klass": WasmValtype.i32,
         }, WasmValtype.void, true
-    );
-    builder.defineType(
-        "array_length", {
-            "ppArray": WasmValtype.i32
-        }, WasmValtype.i32, true
-    );
-    builder.defineType(
-        "array_address", {
-            "ppArray": WasmValtype.i32,
-            "elementSize": WasmValtype.i32,
-            "index": WasmValtype.i32
-        }, WasmValtype.i32, true
     );
     builder.defineType(
         "entry", {
@@ -807,7 +794,7 @@ function generate_wasm (
                     console.log(builder.traceBuf[i]);
             }
 
-            console.log(`// MONO_WASM: ${methodFullName || traceName} generated, blob follows //`);
+            console.log(`// MONO_WASM: ${methodFullName || methodName}:${traceOffset.toString(16)} generated, blob follows //`);
             let s = "", j = 0;
             try {
                 // We may have thrown an uncaught exception while inside a block,
