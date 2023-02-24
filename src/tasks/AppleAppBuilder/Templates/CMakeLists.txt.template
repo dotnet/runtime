@@ -68,6 +68,7 @@ endif()
 
 target_link_libraries(
     %ProjectName%
+    PRIVATE
     "-framework Foundation"
     "-framework Security"
     "-framework UIKit"
