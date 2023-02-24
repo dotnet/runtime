@@ -25,7 +25,8 @@ import {
     trace, traceOnError, traceOnRuntimeError,
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
-    abortAtJittedLoopBodies,
+    abortAtJittedLoopBodies, traceNullCheckOptimizations,
+    nullCheckCaching,
 
     mostRecentOptions,
 
@@ -125,6 +126,7 @@ export function generate_wasm_body (
     let result = 0;
     const traceIp = ip;
 
+    addressTakenLocals.clear();
     eraseInferredState();
 
     // Skip over the enter opcode
@@ -159,14 +161,8 @@ export function generate_wasm_body (
 
         const opname = info[0];
         const _ip = ip;
-        let isDeadOpcode = false;
-        /* This doesn't work for some reason
-        const endOfOpcode = ip + <any>(info[1] * 2);
-        if (endOfOpcode > endOfBody) {
-            record_abort(ip, traceName, "end-of-body");
-            break;
-        }
-        */
+        let isDeadOpcode = false,
+            skipDregInvalidation = false;
 
         // We wrap all instructions in a 'branch block' that is used
         //  when performing a branch and will be skipped over if the
@@ -236,12 +232,28 @@ export function generate_wasm_body (
                     ip = abort;
                 break;
 
-            case MintOpcode.MINT_CKNULL:
-                // if (locals[ip[2]]) locals[ip[1]] = locals[ip[2]]
-                builder.local("pLocals");
-                append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+            case MintOpcode.MINT_CKNULL: {
+                // if (locals[ip[2]]) locals[ip[1]] = locals[ip[2]] else throw
+                const src = getArgU16(ip, 2),
+                    dest = getArgU16(ip, 1);
+                // locals[n] = cknull(locals[n]) is a common pattern, and we don't
+                //  need to do the write for it since it can't change the value
+                if (src !== dest) {
+                    builder.local("pLocals");
+                    append_ldloc_cknull(builder, src, ip, true);
+                    append_stloc_tail(builder, dest, WasmOpcode.i32_store);
+                } else {
+                    append_ldloc_cknull(builder, src, ip, false);
+                }
+                // We will have bailed out if the object was null
+                if (builder.allowNullCheckOptimization) {
+                    if (traceNullCheckOptimizations)
+                        console.log(`(0x${(<any>ip).toString(16)}) locals[${dest}] passed cknull`);
+                    notNullSince.set(dest, <any>ip);
+                }
+                skipDregInvalidation = true;
                 break;
+            }
 
             case MintOpcode.MINT_TIER_ENTER_METHOD:
             case MintOpcode.MINT_TIER_PATCHPOINT: {
@@ -1004,8 +1016,39 @@ export function generate_wasm_body (
         }
 
         if (ip) {
-            if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId)
-                builder.traceBuf.push(`${(<any>ip).toString(16)} ${opname}`);
+            if (!skipDregInvalidation && builder.allowNullCheckOptimization) {
+                // Invalidate cached values for all the instruction's destination registers.
+                // This should have already happened, but it's possible there are opcodes where
+                //  our invalidation is incorrect so it's best to do this for safety reasons
+                const firstDreg = <any>ip + 2;
+                for (let r = 0; r < info[2]; r++) {
+                    const dreg = getU16(firstDreg + (r * 2));
+                    invalidate_local(dreg);
+                }
+            }
+
+            if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId) {
+                let stmtText = `${(<any>ip).toString(16)} ${opname} `;
+                const firstDreg = <any>ip + 2;
+                const firstSreg = firstDreg + (info[2] * 2);
+                // print sregs
+                for (let r = 0; r < info[3]; r++) {
+                    if (r !== 0)
+                        stmtText += ", ";
+                    stmtText += getU16(firstSreg + (r * 2));
+                }
+
+                // print dregs
+                if (info[2] > 0)
+                    stmtText += " -> ";
+                for (let r = 0; r < info[2]; r++) {
+                    if (r !== 0)
+                        stmtText += ", ";
+                    stmtText += getU16(firstDreg + (r * 2));
+                }
+
+                builder.traceBuf.push(stmtText);
+            }
 
             if (!isDeadOpcode)
                 result++;
@@ -1048,19 +1091,18 @@ export function generate_wasm_body (
 }
 
 const addressTakenLocals : Set<number> = new Set();
-const knownNotNull : Set<number> = new Set();
+const notNullSince : Map<number, number> = new Map();
 let cknullOffset = -1;
 
 function eraseInferredState () {
     cknullOffset = -1;
-    knownNotNull.clear();
-    addressTakenLocals.clear();
+    notNullSince.clear();
 }
 
 function invalidate_local (offset: number) {
     if (cknullOffset === offset)
         cknullOffset = -1;
-    knownNotNull.delete(offset);
+    notNullSince.delete(offset);
 }
 
 function invalidate_local_range (start: number, bytes: number) {
@@ -1140,41 +1182,25 @@ function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: numb
     append_memmove_dest_src(builder, count);
 }
 
-// Loads the specified i32 value and bails out if it is null. Does not leave it on the stack.
-function append_local_null_check (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr) {
-    if (knownNotNull.has(localOffset)) {
-        if (nullCheckValidation) {
-            append_ldloc(builder, localOffset, WasmOpcode.i32_load);
-            builder.i32_const(builder.base);
-            builder.callImport("notnull");
-        }
-        // console.log(`skipping null check for ${localOffset}`);
-        counters.nullChecksEliminated++;
-        return;
-    }
-
-    builder.block();
-    append_ldloc(builder, localOffset, WasmOpcode.i32_load);
-    builder.appendU8(WasmOpcode.br_if);
-    builder.appendULeb(0);
-    append_bailout(builder, ip, BailoutReason.NullCheck);
-    builder.endBlock();
-    if (!addressTakenLocals.has(localOffset) && builder.options.eliminateNullChecks)
-        knownNotNull.add(localOffset);
-}
-
 // Loads the specified i32 value and then bails out if it is null, leaving it in the cknull_ptr local.
 function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr, leaveOnStack: boolean) {
-    if (builder.allowNullCheckOptimization && knownNotNull.has(localOffset)) {
+    const optimize = builder.allowNullCheckOptimization &&
+        !addressTakenLocals.has(localOffset) &&
+        notNullSince.has(localOffset);
+
+    if (optimize) {
         counters.nullChecksEliminated++;
-        if (cknullOffset === localOffset) {
-            // console.log(`cknull_ptr already contains ${localOffset}`);
+        if (nullCheckCaching && (cknullOffset === localOffset)) {
+            if (traceNullCheckOptimizations)
+                console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr == locals[${localOffset}], not null since 0x${notNullSince.get(localOffset)!.toString(16)}`);
             if (leaveOnStack)
                 builder.local("cknull_ptr");
         } else {
             // console.log(`skipping null check for ${localOffset}`);
             append_ldloc(builder, localOffset, WasmOpcode.i32_load);
             builder.local("cknull_ptr", leaveOnStack ? WasmOpcode.tee_local : WasmOpcode.set_local);
+            if (traceNullCheckOptimizations)
+                console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr := locals[${localOffset}] (fresh load, already null checked at 0x${notNullSince.get(localOffset)!.toString(16)})`);
             cknullOffset = localOffset;
         }
 
@@ -1202,8 +1228,9 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
         !addressTakenLocals.has(localOffset) &&
         builder.allowNullCheckOptimization
     ) {
-        knownNotNull.add(localOffset);
-        // FIXME: This breaks the ldelema1 implementation somehow
+        notNullSince.set(localOffset, <any>ip);
+        if (traceNullCheckOptimizations)
+            console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr := locals[${localOffset}] (fresh load, fresh null check)`);
         cknullOffset = localOffset;
     }
 }
@@ -1379,8 +1406,9 @@ function emit_fieldop (
         localOffset = getArgU16(ip, isLoad ? 1 : 2);
 
     // Check this before potentially emitting a cknull
-    const notNull = !addressTakenLocals.has(objectOffset) &&
-        knownNotNull.has(objectOffset);
+    const notNull = builder.allowNullCheckOptimization &&
+        !addressTakenLocals.has(objectOffset) &&
+        notNullSince.has(objectOffset);
 
     if (
         (opcode !== MintOpcode.MINT_LDFLDA_UNSAFE) &&
@@ -1462,13 +1490,16 @@ function emit_fieldop (
                 append_bailout(builder, ip, BailoutReason.NullCheck);
                 builder.endBlock();
             } else {
+                builder.appendU8(WasmOpcode.drop);
                 counters.nullChecksEliminated++;
 
                 if (nullCheckValidation) {
+                    builder.local("cknull_ptr");
+                    append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     builder.i32_const(builder.base);
+                    builder.i32_const(ip);
                     builder.callImport("notnull");
-                } else
-                    builder.appendU8(WasmOpcode.drop);
+                }
             }
             return true;
         }
@@ -1976,7 +2007,6 @@ function emit_binop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode
                 // rhs was -1 since the previous br_if didn't execute. Now check lhs.
                 builder.local(lhsVar);
                 // G_MININT32
-                // FIXME: Make sure the leb encoder can actually handle this
                 builder.i32_const(-2147483647-1);
                 builder.appendU8(WasmOpcode.i32_ne);
                 builder.appendU8(WasmOpcode.br_if);
@@ -2613,8 +2643,6 @@ function emit_indirectop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintO
 
     append_ldloc_cknull(builder, addressVarIndex, ip, false);
 
-    // FIXME: ldind_offset/stind_offset
-
     if (isLoad) {
         // pre-load pLocals for the store operation
         builder.local("pLocals");
@@ -2683,28 +2711,38 @@ function append_getelema1 (
 ) {
     builder.block();
 
-    // Preload the address of our temp local - we will be tee-ing the
-    //  element address to it because wasm has no 'dup' instruction
-    builder.local("temp_ptr");
-
-    // (array, size, index) -> void*
-    append_ldloca(builder, objectOffset, 0);
-    builder.i32_const(elementSize);
+    // load index for check
     append_ldloc(builder, indexOffset, WasmOpcode.i32_load);
-    builder.callImport("array_address");
-    builder.local("temp_ptr", WasmOpcode.tee_local);
-
-    // If the operation failed it will return 0, so we bail out to the interpreter
-    //  so it can perform error handling (there are multiple reasons for a failure)
+    // stash it since we need it 3 times
+    builder.local("math_lhs32", WasmOpcode.tee_local);
+    // array null check
+    append_ldloc_cknull(builder, objectOffset, ip, true);
+    // load array length
+    builder.appendU8(WasmOpcode.i32_load);
+    builder.appendMemarg(getMemberOffset(JiterpMember.ArrayLength), 2);
+    // check index < array.length
+    builder.appendU8(WasmOpcode.i32_lt_u);
+    // check index >= 0
+    builder.local("math_lhs32");
+    builder.i32_const(0);
+    builder.appendU8(WasmOpcode.i32_ge_s);
+    builder.appendU8(WasmOpcode.i32_and);
+    // bailout unless (index >= 0) && (index < array.length)
     builder.appendU8(WasmOpcode.br_if);
-    builder.appendULeb(0);
+    builder.appendLeb(0);
     append_bailout(builder, ip, BailoutReason.ArrayLoadFailed);
-
     builder.endBlock();
 
-    // The operation succeeded and the null check consumed the element address,
-    //  so load the element address back from our temp local
-    builder.local("temp_ptr");
+    // We did a null check and bounds check so we can now compute the actual address
+    builder.local("cknull_ptr");
+    builder.i32_const(getMemberOffset(JiterpMember.ArrayData));
+    builder.appendU8(WasmOpcode.i32_add);
+
+    builder.local("math_lhs32");
+    builder.i32_const(elementSize);
+    builder.appendU8(WasmOpcode.i32_mul);
+    builder.appendU8(WasmOpcode.i32_add);
+    // append_getelema1 leaves the address on the stack
 }
 
 function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
@@ -2722,13 +2760,16 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
         isPointer = false;
 
     switch (opcode) {
-        case MintOpcode.MINT_LDLEN:
-            append_local_null_check(builder, objectOffset, ip);
+        case MintOpcode.MINT_LDLEN: {
             builder.local("pLocals");
-            append_ldloca(builder, objectOffset, 0);
-            builder.callImport("array_length");
+            // array null check
+            append_ldloc_cknull(builder, objectOffset, ip, true);
+            // load array length
+            builder.appendU8(WasmOpcode.i32_load);
+            builder.appendMemarg(getMemberOffset(JiterpMember.ArrayLength), 2);
             append_stloc_tail(builder, valueOffset, WasmOpcode.i32_store);
             return true;
+        }
         case MintOpcode.MINT_LDELEMA1: {
             // Pre-load destination for the element address at the end
             builder.local("pLocals");
@@ -2829,12 +2870,9 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
     }
 
     if (isPointer) {
-        // Copy pointer to/from array element
-        if (isLoad)
-            append_ldloca(builder, valueOffset, 4, true);
+        // Copy pointer from array element (stelem_ref is separate above)
+        append_ldloca(builder, valueOffset, 4, true);
         append_getelema1(builder, ip, objectOffset, indexOffset, elementSize);
-        if (!isLoad)
-            append_ldloca(builder, valueOffset, 4, true);
         builder.callImport("copy_pointer");
     } else if (isLoad) {
         // Pre-load destination for the value at the end
