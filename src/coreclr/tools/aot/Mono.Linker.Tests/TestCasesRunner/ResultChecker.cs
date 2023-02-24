@@ -405,7 +405,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				var actualOriginToken = new AssemblyQualifiedToken (origin.Value.MemberDefinition);
 				var expectedOriginToken = new AssemblyQualifiedToken (expectedOriginMember);
-				if (actualOriginToken.Equals(expectedOriginToken))
+				if (actualOriginToken.Equals (expectedOriginToken))
 					return true;
 
 				var actualMember = origin.Value.MemberDefinition;

@@ -175,8 +175,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (typeDef.IsDelegate) {
 					// AOT's handling of delegates is very different from the IL/metadata picture
 					// So to simplify this, we're going to automatically "mark" all of the delegate's methods
-					foreach (MethodDesc m in typeDef.GetMethods()) {
-						if (ShouldIncludeEntityByDisplayName(m)) {
+					foreach (MethodDesc m in typeDef.GetMethods ()) {
+						if (ShouldIncludeEntityByDisplayName (m)) {
 							AddMember (m);
 						}
 					}
@@ -1210,7 +1210,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (!ca.AttributeType.Resolve ().DerivesFrom (nameof (KeptAttribute))) {
 					return false;
 				}
-				
+
 				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
 				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.NativeAot);
 			});
