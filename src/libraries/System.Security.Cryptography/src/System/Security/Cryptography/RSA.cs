@@ -60,8 +60,11 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   The maximum number of bytes an RSA operation can produce.
+        ///   Gets the maximum number of bytes an RSA operation can produce.
         /// </summary>
+        /// <returns>
+        ///  The maximum number of bytes an RSA operation can produce.
+        /// </returns>
         /// <remarks>
         ///   The maximum output size is defined by the RSA modulus, or key size. The key size, in bytes, is the maximum
         ///   output size. If the key size is not an even number of bytes, then it is rounded up to the nearest number of
@@ -77,7 +80,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);
             }
 
-            // KeySize is in bits. Add 7 to round up to nearest byte, then divide by 8.
+            // KeySize is in bits. Add 7 before dividing by 8 to get ceil() instead of floor().
             // There is no reality in which we will have a 2 GB RSA key. However, since KeySize is virtual,
             // perform an unsigned shift so that we end up with the right value if the addition overflows.
             return (KeySize + 7) >>> 3;
