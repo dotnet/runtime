@@ -7963,7 +7963,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		char *ppdb_path;
 		GArray *pdb_checksum_hash_type = g_array_new (FALSE, TRUE, sizeof (char*));
 		GArray *pdb_checksum = g_array_new (FALSE, TRUE, sizeof (guint8*));
-		gboolean has_debug_info = get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
+		gboolean has_debug_info = mono_get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
 		if (!has_debug_info || ppdb_size > 0)
 		{
 			buffer_add_byte (buf, 0);
