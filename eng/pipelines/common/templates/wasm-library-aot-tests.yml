@@ -20,12 +20,18 @@ jobs:
 - ${{ if containsValue(parameters.platforms, 'browser_wasm') }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
+      variables:
+        - name: runAOTVar
+          ${{ if eq(parameters.runAOT, true) }}:
+            value: /p:RunAOTCompilation=true
+          ${{ if ne(parameters.runAOT, true) }}:
+            value: ''
       platforms:
         - browser_wasm
       nameSuffix: ${{ parameters.nameSuffix }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
+      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} $(runAOTVar) ${{ parameters.extraBuildArgs }}
       extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArgs }}
       alwaysRun: ${{ parameters.alwaysRun }}
       shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
@@ -37,12 +43,18 @@ jobs:
 - ${{ if containsValue(parameters.platforms, 'browser_wasm_win') }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
+      variables:
+        - name: runAOTVar
+          ${{ if eq(parameters.runAOT, true) }}:
+            value: /p:RunAOTCompilation=true
+          ${{ if ne(parameters.runAOT, true) }}:
+            value: ''
       platforms:
         - browser_wasm_win
       nameSuffix: ${{ parameters.nameSuffix }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
+      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} $(runAOTVar) ${{ parameters.extraBuildArgs }}
       extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArgs }}
       alwaysRun: ${{ parameters.alwaysRun }}
       shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}

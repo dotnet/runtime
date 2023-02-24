@@ -423,7 +423,10 @@ extends:
         parameters:
           platforms:
             - browser_wasm_win
+          nameSuffix: _And_SmokeAOT
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:RunSmokeTestsWithAOT=true /p:BuildAOTTestsOnHelix=true
+          extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true
           scenarios:
             - WasmTestOnBrowser
 
@@ -436,16 +439,6 @@ extends:
           runAOT: false
           shouldRunSmokeOnly: false
           extraBuildArgs: /p:RunSmokeTestsWithAOT=true
-          alwaysRun: ${{ variables.isRollingBuild }}
-
-      # AOT - only run for windows. For linux, it gets run with EAT
-      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm_win
-          nameSuffix: _SmokeAOT
-          runAOT: true
-          shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
 
       # Wasm.Build.Tests
