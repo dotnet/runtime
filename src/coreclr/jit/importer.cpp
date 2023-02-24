@@ -3116,58 +3116,75 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_CALL_INFO*      pCallInfo)
 {
-    if ((pCallInfo->methodFlags & CORINFO_FLG_EnC) && !(pCallInfo->classFlags & CORINFO_FLG_INTERFACE))
+    const bool isInterface = (pCallInfo->classFlags & CORINFO_FLG_INTERFACE) == CORINFO_FLG_INTERFACE;
+
+    if ((pCallInfo->methodFlags & CORINFO_FLG_EnC) && !isInterface)
     {
         NO_WAY("Virtual call to a function added via EnC is not supported");
     }
+
+    GenTreeCall* call = nullptr;
 
     // NativeAOT generic virtual method
     if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         GenTree* runtimeMethodHandle =
             impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
-        return gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
+        call = gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
     }
 
 #ifdef FEATURE_READYTORUN
-    if (opts.IsReadyToRun())
+    else if (opts.IsReadyToRun())
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
         {
-            GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr);
-
+            call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr);
             call->setEntryPoint(pCallInfo->codePointerLookup.constLookup);
-
-            return call;
         }
-
         // We need a runtime lookup. NativeAOT has a ReadyToRun helper for that too.
-        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        else if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             GenTree* ctxTree = getRuntimeContextTree(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind);
 
-            return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
+            call = impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
                                              &pCallInfo->codePointerLookup.lookupKind, ctxTree);
         }
     }
 #endif
 
-    // Get the exact descriptor for the static callsite
-    GenTree* exactTypeDesc = impParentClassTokenToHandle(pResolvedToken);
-    if (exactTypeDesc == nullptr)
-    { // compDonotInline()
-        return nullptr;
+    if (call == nullptr)
+    {
+        // Get the exact descriptor for the static callsite
+        GenTree* exactTypeDesc = impParentClassTokenToHandle(pResolvedToken);
+        if (exactTypeDesc == nullptr)
+        {
+            assert(compIsForInlining());
+            return nullptr;
+        }
+
+        GenTree* exactMethodDesc = impTokenToHandle(pResolvedToken);
+        if (exactMethodDesc == nullptr)
+        {
+            assert(compIsForInlining());
+            return nullptr;
+        }
+
+        // Call helper function.  This gets the target address of the final destination callsite.
+        //
+        call = gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
     }
 
-    GenTree* exactMethodDesc = impTokenToHandle(pResolvedToken);
-    if (exactMethodDesc == nullptr)
-    { // compDonotInline()
-        return nullptr;
+    assert(call != nullptr);
+
+    if (isInterface)
+    {
+        // Annotate helper so later on if helper result is unconsumed we know it is not sound
+        // to optimize the call into a null check.
+        //
+        call->gtCallMoreFlags |= GTF_CALL_M_LDVIRTFTN_INTERFACE;
     }
 
-    // Call helper function.  This gets the target address of the final destination callsite.
-
-    return gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
+    return call;
 }
 
 //------------------------------------------------------------------------
@@ -5698,7 +5715,6 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
             if (isExact && !isCastClass)
             {
                 JITDUMP("Cast will fail, optimizing to return null\n");
-                GenTree* result = gtNewIconNode(0, TYP_REF);
 
                 // If the cast was fed by a box, we can remove that too.
                 if (op1->IsBoxedValue())
@@ -5707,7 +5723,11 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
                     gtTryRemoveBoxUpstreamEffects(op1);
                 }
 
-                return result;
+                if (gtTreeHasSideEffects(op1, GTF_SIDE_EFFECT))
+                {
+                    impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+                }
+                return gtNewNull();
             }
             else if (isExact)
             {
@@ -5934,8 +5954,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
 
     GenTree* op2Var = op2;
-    if (isCastClass && !partialExpand)
+    if (isCastClass && !partialExpand && (exactCls == NO_CLASS_HANDLE))
     {
+        // if exactCls is not null we won't have to clone op2 (it will be used only for the fallback)
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
     }
@@ -6397,8 +6418,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     int  prefixFlags = 0;
     bool explicitTailCall, constraintCall, readonlyCall;
 
-    typeInfo tiRetVal;
-
     unsigned numArgs = info.compArgsCount;
 
     /* Now process all the opcodes in the block */
@@ -6418,17 +6437,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         impSpillSpecialSideEff();
     }
 
+    CORINFO_RESOLVED_TOKEN constrainedResolvedToken = {};
+
     while (codeAddr < codeEndp)
     {
 #ifdef FEATURE_READYTORUN
         bool usingReadyToRunHelper = false;
 #endif
         CORINFO_RESOLVED_TOKEN resolvedToken;
-        CORINFO_RESOLVED_TOKEN constrainedResolvedToken = {};
         CORINFO_CALL_INFO      callInfo;
         CORINFO_FIELD_INFO     fieldInfo;
 
-        tiRetVal = typeInfo(); // Default type info
+        typeInfo tiRetVal = typeInfo(); // Default type info
 
         //---------------------------------------------------------------------
 
@@ -10585,7 +10605,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto EVAL_APPEND;
 
             case CEE_INITOBJ:
-
+            {
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Class);
@@ -10593,6 +10613,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 lclTyp = JITtype2varType(info.compCompHnd->asCorInfoType(resolvedToken.hClass));
+
+                ClassLayout* layout = nullptr;
+
+                if (lclTyp == TYP_STRUCT)
+                {
+                    layout = typGetObjLayout(resolvedToken.hClass);
+                    lclTyp = layout->GetType();
+                }
+
                 if (lclTyp != TYP_STRUCT)
                 {
                     op2 = gtNewZeroConNode(genActualType(lclTyp));
@@ -10600,10 +10629,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 op1 = impPopStack().val;
-                op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1);
+                op1 = gtNewStructVal(layout, op1);
                 op2 = gtNewIconNode(0);
                 op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
                 goto SPILL_APPEND;
+            }
 
             case CEE_INITBLK:
 
@@ -11009,15 +11039,18 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return"));
     impAssignTempGen(tmpNum, op, hClass, CHECK_SPILL_ALL);
-    GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
 
-    // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
-    ret->gtFlags |= GTF_DONT_CSE;
-
-    assert(IsMultiRegReturnedType(hClass, callConv) || op->IsMultiRegNode());
+    LclVarDsc* varDsc = lvaGetDesc(tmpNum);
 
     // Set "lvIsMultiRegRet" to block promotion under "!lvaEnregMultiRegVars".
-    lvaTable[tmpNum].lvIsMultiRegRet = true;
+    varDsc->lvIsMultiRegRet = true;
+
+    GenTreeLclVar* ret = gtNewLclvNode(tmpNum, varDsc->lvType);
+
+    // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
+    ret->SetDoNotCSE();
+
+    assert(IsMultiRegReturnedType(hClass, callConv) || op->IsMultiRegNode());
 
     return ret;
 }

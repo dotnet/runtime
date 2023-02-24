@@ -648,6 +648,10 @@
       Microsoft.NETCore.Native.targets expect IlcHostArch to be set but it doesn't have to -->
     <DisableUnsupportedError>true</DisableUnsupportedError>
 
+    <!-- The default TrimMode in the SDK is full. But trimming most of the tests would just make them fail,
+         so the default for the test tree is partial. -->
+    <TrimMode Condition="'$(EnableAggressiveTrimming)' != 'true'">partial</TrimMode>
+
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
@@ -665,6 +669,9 @@
 
     <!-- xunit calls MakeGenericType to check if something is IEquatable -->
     <IlcArg Condition="'$(EagerlyValidateTypeConstruction)' != 'false'" Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
+
+    <!-- Bump the generic cycle tolerance. There's at least one test with a cycle that is reachable at runtime to depth 6 -->
+    <IlcArg Include="--maxgenericcycle:7" />
   </ItemGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />

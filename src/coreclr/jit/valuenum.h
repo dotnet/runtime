@@ -341,6 +341,7 @@ private:
     template <typename T>
     static bool IsIntZero(T v);
 
+public:
     // Given an constant value number return its value.
     int GetConstantInt32(ValueNum argVN);
     INT64 GetConstantInt64(ValueNum argVN);
@@ -348,15 +349,13 @@ private:
     float GetConstantSingle(ValueNum argVN);
 
 #if defined(FEATURE_SIMD)
-public:
     simd8_t GetConstantSimd8(ValueNum argVN);
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
     simd32_t GetConstantSimd32(ValueNum argVN);
-
-private:
 #endif // FEATURE_SIMD
 
+private:
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
     // Assumes that "vnf" is a operator of the appropriate arity (unary for the first, binary for the second).
     // Assume that "CanEvalForConstantArgs(vnf)" is true.
@@ -521,7 +520,14 @@ public:
     // It returns NoVN for a "typ" that has no one value, such as TYP_REF.
     ValueNum VNOneForType(var_types typ);
 
+    // Returns the value number for AllBitsSet of the given "typ".
+    // It has an unreached() for a "typ" that has no all bits set value, such as TYP_VOID.
+    ValueNum VNAllBitsForType(var_types typ);
+
 #ifdef FEATURE_SIMD
+    // Returns the value number for one of the given "simdType" and "simdBaseType".
+    ValueNum VNOneForSimdType(var_types simdType, var_types simdBaseType);
+
     // A helper function for constructing VNF_SimdType VNs.
     ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
 #endif // FEATURE_SIMD

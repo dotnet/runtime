@@ -32,11 +32,11 @@ namespace System.Runtime.Serialization
         private static readonly object s_codeUserDataActualTypeKey = new object();
         private static readonly object s_surrogateDataKey = typeof(ISerializationSurrogateProvider2);
 
-        private DataContractSet _dataContractSet;
-        private CodeCompileUnit _codeCompileUnit;
-        private ImportOptions? _options;
-        private Dictionary<string, string> _namespaces;
-        private Dictionary<string, string?> _clrNamespaces;
+        private readonly DataContractSet _dataContractSet;
+        private readonly CodeCompileUnit _codeCompileUnit;
+        private readonly ImportOptions? _options;
+        private readonly Dictionary<string, string> _namespaces;
+        private readonly Dictionary<string, string?> _clrNamespaces;
 
         internal CodeExporter(DataContractSet dataContractSet, ImportOptions? options, CodeCompileUnit codeCompileUnit)
         {
@@ -758,10 +758,11 @@ namespace System.Runtime.Serialization
         private static string GetNameForAttribute(string name)
         {
             string decodedName = XmlConvert.DecodeName(name);
-            if (string.CompareOrdinal(name, decodedName) == 0)
+            if (name == decodedName)
                 return name;
+
             string reencodedName = SchemaImportHelper.EncodeLocalName(decodedName);
-            return (string.CompareOrdinal(name, reencodedName) == 0) ? decodedName : name;
+            return name == reencodedName ? decodedName : name;
         }
 
         private void AddSerializableAttribute(bool generateSerializable, CodeTypeDeclaration type, ContractCodeDomInfo contractCodeDomInfo)
@@ -1807,7 +1808,7 @@ namespace System.Runtime.Serialization
                 setObjectData.Right = new CodeArgumentReferenceExpression(ImportGlobals.SerializationInfoFieldName);
                 baseConstructor.Statements.Add(setObjectData);
                 // Special-cased check for vb here since CodeGeneratorOptions does not provide information indicating that VB cannot initialize event member
-                if (EnableDataBinding && SupportsDeclareEvents && string.CompareOrdinal(FileExtension, "vb") != 0)
+                if (EnableDataBinding && SupportsDeclareEvents && FileExtension != "vb")
                 {
                     baseConstructor.Statements.Add(new CodeAssignStatement(new CodePropertyReferenceExpression(ThisReference, PropertyChangedEvent.Name), NullReference));
                 }

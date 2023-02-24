@@ -47,16 +47,22 @@
   </PropertyGroup>
 
   <PropertyGroup Label="SetOSTargetMinVersions">
-    <!-- Minimum Apple target OS versions, keep in sync with src/native/libs/build-native.sh -->
+    <!--
+      Minimum target OS versions, keep in sync with:
+        - eng/native/configurecompiler.cmake
+        - eng/native/build-commons.sh
+        - src/native/libs/build-native.sh
+        - src/coreclr/tools/aot/ILCompiler.Compiler/Compiler/DependencyAnalysis/ObjectWriter.cs
+        - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-x64.xml
+        - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-arm64.xml
+     -->
+    <AndroidApiLevelMin>21</AndroidApiLevelMin>
     <iOSVersionMin>11.0</iOSVersionMin>
     <tvOSVersionMin>11.0</tvOSVersionMin>
     <watchOSVersionMin>2.0</watchOSVersionMin>
     <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
     <macOSVersionMin>10.15</macOSVersionMin>
     <macOSVersionMin Condition="('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst') and '$(TargetArchitecture)' == 'arm64'">11.0</macOSVersionMin>
-
-    <!-- Minimum version of the Android API level we target, keep in sync with eng/native/build-commons.sh -->
-    <AndroidApiLevelMin>21</AndroidApiLevelMin>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -109,6 +115,19 @@
     <TargetFrameworkForNETCoreTasks>$(NetCoreAppToolCurrent)</TargetFrameworkForNETCoreTasks>
   </PropertyGroup>
 
+  <PropertyGroup Label="CalculateConfiguration">
+    <!-- The RuntimeConfiguration property allows to pass in/specify a configuration that applies to both CoreCLR and Mono. -->
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(Configuration)</RuntimeConfiguration>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == '' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release')">$(Configuration)</RuntimeConfiguration>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">Debug</RuntimeConfiguration>
+    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(RuntimeConfiguration)</CoreCLRConfiguration>
+    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' != 'checked'">$(RuntimeConfiguration)</MonoConfiguration>
+    <!-- There's no checked configuration on Mono. -->
+    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
+    <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
+    <HostConfiguration Condition="'$(HostConfiguration)' == ''">$(Configuration)</HostConfiguration>
+  </PropertyGroup>
+
   <PropertyGroup>
     <LibrariesProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'libraries'))</LibrariesProjectRoot>
     <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'coreclr'))</CoreClrProjectRoot>
@@ -150,19 +169,6 @@
     <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>
 
     <WasmtimeDir>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
-  </PropertyGroup>
-
-  <PropertyGroup Label="CalculateConfiguration">
-    <!-- The RuntimeConfiguration property allows to pass in/specify a configuration that applies to both CoreCLR and Mono. -->
-    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">$(Configuration)</RuntimeConfiguration>
-    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == '' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release')">$(Configuration)</RuntimeConfiguration>
-    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">Debug</RuntimeConfiguration>
-    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(RuntimeConfiguration)</CoreCLRConfiguration>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' != 'checked'">$(RuntimeConfiguration)</MonoConfiguration>
-    <!-- There's no checked configuration on Mono. -->
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
-    <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
-    <HostConfiguration Condition="'$(HostConfiguration)' == ''">$(Configuration)</HostConfiguration>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateOS">

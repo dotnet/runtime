@@ -1250,6 +1250,11 @@ namespace ILCompiler.DependencyAnalysis
                     sys = "darwin16";
                     abi = "macho";
                     break;
+                case TargetOS.MacCatalyst:
+                    vendor = "apple";
+                    sys = target.Architecture == TargetArchitecture.X64 ? "ios13.5" :"ios14.2";
+                    abi = "macabi";
+                    break;
                 case TargetOS.iOS:
                     vendor = "apple";
                     sys = "ios11.0";
@@ -1258,6 +1263,16 @@ namespace ILCompiler.DependencyAnalysis
                 case TargetOS.iOSSimulator:
                     vendor = "apple";
                     sys = "ios11.0";
+                    abi = "simulator";
+                    break;
+                case TargetOS.tvOS:
+                    vendor = "apple";
+                    sys = "tvos11.0";
+                    abi = "macho";
+                    break;
+                case TargetOS.tvOSSimulator:
+                    vendor = "apple";
+                    sys = "tvos11.0";
                     abi = "simulator";
                     break;
                 case TargetOS.WebAssembly:

@@ -9,7 +9,6 @@ namespace Mono.Linker.Tests.TestCases
 {
 	public class All
 	{
-
 		[Theory]
 		[MemberData(nameof(TestDatabase.DataFlow), MemberType = typeof(TestDatabase))]
 		public void DataFlow(string t)

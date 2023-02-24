@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Temporarily disable under GCStress due to failure. Tracking: https://github.com/dotnet/runtime/issues/78620 -->
+    <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'x86'">true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TestCallingConventions.cs" />

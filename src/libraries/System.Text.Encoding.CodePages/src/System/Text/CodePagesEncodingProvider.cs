@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Text
@@ -187,6 +189,19 @@ namespace System.Text
                     break;
             }
             return result;
+        }
+
+        /// <summary>Gets a reference to the array's data suitable for pinning.</summary>
+        /// <remarks>The resulting pointer is guaranteed to be non-null.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe ref T GetNonNullPinnableReference<T>(T[] array) where T : struct
+        {
+            return ref
+#if NET5_0_OR_GREATER
+                MemoryMarshal.GetArrayDataReference(array);
+#else
+                array.Length != 0 ? ref array[0] : ref Unsafe.AsRef<T>((void*)1);
+#endif
         }
     }
 }

@@ -6,8 +6,8 @@
 
 .method private hidebysig static int32  Main() cil managed
 {
-  .locals init (valuetype [System.Runtime]System.RuntimeTypeHandle)
   .entrypoint
+  .locals init (valuetype [System.Runtime]System.RuntimeTypeHandle)
 
   ldtoken string[]
   stloc.0
@@ -59,6 +59,39 @@ UIntArrayModifiedUIntArrayOK:
   ret
 MyStructPtrModifiedMyStructPtrOK:
 
+  ldtoken method int32 *()
+  stloc.0
+  ldloca 0
+  ldtoken method int32 modopt(MyModifier) *()
+
+  call instance bool valuetype [System.Runtime]System.RuntimeTypeHandle::Equals(valuetype [System.Runtime]System.RuntimeTypeHandle)
+  brtrue ModifiersNotPartOfFunctionPointerIdentityOK
+  ldc.i4.6
+  ret
+ModifiersNotPartOfFunctionPointerIdentityOK:
+
+  ldtoken method unmanaged cdecl int32 *()
+  stloc.0
+  ldloca 0
+  ldtoken method unmanaged stdcall int32 *()
+
+  call instance bool valuetype [System.Runtime]System.RuntimeTypeHandle::Equals(valuetype [System.Runtime]System.RuntimeTypeHandle)
+  brtrue CallKindNotPartOfFunctionPointerIdentityOK
+  ldc.i4.7
+  ret
+CallKindNotPartOfFunctionPointerIdentityOK:
+
+  ldtoken method unmanaged cdecl int32 *()
+  stloc.0
+  ldloca 0
+  ldtoken method int32 *()
+  call instance bool valuetype [System.Runtime]System.RuntimeTypeHandle::Equals(valuetype [System.Runtime]System.RuntimeTypeHandle)
+  // Managed vs. unmanaged part of identity
+  brfalse ManagedVsUnmanagedIsPartOfFunctionPointerIdentityOK
+  ldc.i4.8
+  ret
+
+ManagedVsUnmanagedIsPartOfFunctionPointerIdentityOK:
   ldc.i4 100
   ret
 }

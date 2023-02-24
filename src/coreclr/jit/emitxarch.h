@@ -127,11 +127,13 @@ bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumbe
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
 
+#ifdef TARGET_64BIT
 bool AreUpper32BitsZero(regNumber reg);
 bool AreUpper32BitsSignExtended(regNumber reg);
+#endif // TARGET_64BIT
 
-bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);
-bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* tree);
+bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
+bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
 
 bool hasRexPrefix(code_t code)
 {

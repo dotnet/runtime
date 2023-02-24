@@ -13,8 +13,8 @@ namespace System.Reflection
     {
         #region Private Data Members
         // aggressive caching
-        private IntPtr m_fieldHandle;
-        private FieldAttributes m_fieldAttributes;
+        private readonly IntPtr m_fieldHandle;
+        private readonly FieldAttributes m_fieldAttributes;
         // lazy caching
         private string? m_name;
         private RuntimeType? m_fieldType;
@@ -252,19 +252,23 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.NoInlining)]
         private RuntimeType InitializeFieldType()
         {
-            return m_fieldType = new Signature(this, m_declaringType).FieldType;
+            return m_fieldType = GetSignature().FieldType;
         }
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return new Signature(this, m_declaringType).GetCustomModifiers(1, true);
+            return GetSignature().GetCustomModifiers(1, true);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return new Signature(this, m_declaringType).GetCustomModifiers(1, false);
+            return GetSignature().GetCustomModifiers(1, false);
         }
 
+        internal Signature GetSignature() => new Signature(this, m_declaringType);
+
+        public override Type GetModifiedFieldType() =>
+            ModifiedType.Create(FieldType, GetSignature());
         #endregion
     }
 }

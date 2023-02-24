@@ -41,7 +41,7 @@ namespace System.Runtime.Serialization
         private int _attributeCount;
         private int _attributeIndex;
 
-        private Hashtable _cache = new Hashtable();
+        private readonly Hashtable _cache = new Hashtable();
         private XmlNodeReader? _xmlNodeReader;
         private Queue<IDataNode>? _deserializedDataNodes;
 

@@ -9,12 +9,12 @@ using Microsoft.Build.Utilities;
 namespace ILLink.Tasks
 {
 	/// <summary>
-	/// Combines multiple linker xml files into a single xml file.
+	/// Combines multiple ILLink xml files into a single xml file.
 	/// </summary>
 	public class CombineLinkerXmlFiles : Task
 	{
 		/// <summary>
-		/// The individual linker xml files that will be combined into one.
+		/// The individual ILLink xml files that will be combined into one.
 		/// </summary>
 		[Required]
 		public ITaskItem[] LinkerXmlFiles { get; set; }

@@ -476,6 +476,7 @@ bool emitter::IsFlagsAlwaysModified(instrDesc* id)
     return true;
 }
 
+#ifdef TARGET_64BIT
 //------------------------------------------------------------------------
 // AreUpper32BitsZero: check if some previously emitted
 //     instruction set the upper 32 bits of reg to zero.
@@ -594,12 +595,10 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                 return false;
             }
 
-#ifdef TARGET_AMD64
             if (id->idIns() == INS_movsxd)
             {
                 return false;
             }
-#endif
 
             // movzx always zeroes the upper 32 bits.
             if (id->idIns() == INS_movzx)
@@ -655,16 +654,15 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
         return true;
     }
 
-#ifdef TARGET_AMD64
     // movsxd is always an 8 byte operation. W-bit is set.
     if (id->idIns() == INS_movsxd)
     {
         return true;
     }
-#endif
 
     return false;
 }
+#endif // TARGET_64BIT
 
 //------------------------------------------------------------------------
 // AreFlagsSetToZeroCmp: Checks if the previous instruction set the SZ, and optionally OC, flags to
@@ -673,7 +671,7 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 // Arguments:
 //    reg     - register of interest
 //    opSize  - size of register
-//    treeOps - type of tree node operation
+//    cond    - the condition being checked
 //
 // Return Value:
 //    true if the previous instruction set the flags for reg
@@ -681,7 +679,7 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 //
 // Notes:
 //    Currently only looks back one instruction.
-bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps)
+bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond)
 {
     assert(reg != REG_NA);
 
@@ -739,7 +737,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         return id->idOpSize() == opSize;
     }
 
-    if ((treeOps == GT_EQ) || (treeOps == GT_NE))
+    if ((cond.GetCode() == GenCondition::NE) || (cond.GetCode() == GenCondition::EQ))
     {
         if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
         {
@@ -755,9 +753,9 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
 //                              node qualifies for a jg/jle to jns/js optimization
 //
 // Arguments:
-//    reg     - register of interest
-//    opSize  - size of register
-//    relop   - relational tree node
+//    reg    - register of interest
+//    opSize - size of register
+//    cond   - the condition being checked
 //
 // Return Value:
 //    true if the tree node qualifies for the jg/jle to jns/js optimization
@@ -765,7 +763,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
 //
 // Notes:
 //    Currently only looks back one instruction.
-bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* relop)
+bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond)
 {
     assert(reg != REG_NA);
 
@@ -811,9 +809,9 @@ bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree*
         return false;
     }
 
-    // If we have a GT_GE/GT_LT which generates an jge/jl, and the previous instruction
+    // If we have a GE/LT which generates an jge/jl, and the previous instruction
     // sets the SF, we can omit a test instruction and check for jns/js.
-    if ((relop->OperGet() == GT_GE || relop->OperGet() == GT_LT) && !GenCondition::FromRelop(relop).IsUnsigned())
+    if ((cond.GetCode() == GenCondition::SGE) || (cond.GetCode() == GenCondition::SLT))
     {
         if (DoesWriteSignFlag(lastIns) && IsFlagsAlwaysModified(id))
         {

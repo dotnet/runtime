@@ -164,7 +164,7 @@ namespace System.Text.Json.Nodes
         private sealed class DebugView
         {
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            private JsonObject _node;
+            private readonly JsonObject _node;
 
             public DebugView(JsonObject node)
             {

@@ -8,5 +8,11 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	[AttributeUsage (AttributeTargets.All, Inherited = false)]
 	public class KeptAttribute : BaseExpectedLinkedBehaviorAttribute
 	{
+		/// <summary>
+		/// By default the target should be kept by all platforms
+		/// This property can override that by setting only the platforms
+		/// which are expected to keep the target.
+		/// </summary>
+		public Tool By { get; set; } = Tool.TrimmerAnalyzerAndNativeAot;
 	}
 }

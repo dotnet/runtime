@@ -761,6 +761,18 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 {
     *flags = 0;
 
+// Older version of SDK would return false for these intrinsics
+// but make sure we pass the right values to the APIs
+#ifndef PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE 34
+#endif
+#ifndef PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE 43
+#endif
+#ifndef PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE 45
+#endif
+
     // FP and SIMD support are enabled by default
     *flags |= ARM64IntrinsicConstants_AdvSimd;
 
@@ -779,6 +791,16 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         *flags |= ARM64IntrinsicConstants_Atomics;
+    }
+
+    if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
+    {
+        *flags |= ARM64IntrinsicConstants_Dp;
+    }
+
+    if (IsProcessorFeaturePresent(PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE))
+    {
+        *flags |= ARM64IntrinsicConstants_Rcpc;
     }
 }
 

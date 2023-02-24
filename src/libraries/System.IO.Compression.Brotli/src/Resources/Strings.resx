@@ -126,9 +126,6 @@
   <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
     <value>Enum value was out of legal range.</value>
   </data>
-  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
-    <value>Cannot access a closed stream.</value>
-  </data>
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
   </data>

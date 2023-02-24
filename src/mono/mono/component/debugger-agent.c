@@ -7954,6 +7954,42 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_int (buf, image->raw_data_len);
         break;
 	}
+	case MDBGPROT_CMD_ASSEMBLY_GET_DEBUG_INFORMATION: {
+		guint8 pe_guid [16];
+		gint32 pe_age;
+		gint32 pe_timestamp;
+		guint8 *ppdb_data = NULL;
+		int ppdb_size = 0, ppdb_compressed_size = 0;
+		char *ppdb_path;
+		GArray *pdb_checksum_hash_type = g_array_new (FALSE, TRUE, sizeof (char*));
+		GArray *pdb_checksum = g_array_new (FALSE, TRUE, sizeof (guint8*));
+		gboolean has_debug_info = get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
+		if (!has_debug_info || ppdb_size > 0)
+		{
+			buffer_add_byte (buf, 0);
+			g_array_free (pdb_checksum_hash_type, TRUE);
+			g_array_free (pdb_checksum, TRUE);
+			return ERR_NONE;
+		}
+		buffer_add_byte (buf, 1);
+		buffer_add_int (buf, pe_age);
+		buffer_add_byte_array (buf, pe_guid, 16);
+		buffer_add_string (buf, ppdb_path);
+		buffer_add_int (buf, pdb_checksum_hash_type->len);
+		for (int i = 0 ; i < pdb_checksum_hash_type->len; ++i) {
+			char* checksum_hash_type =  g_array_index (pdb_checksum_hash_type, char*, i);
+			buffer_add_string (buf, checksum_hash_type);
+			if (!strcmp (checksum_hash_type, "SHA256"))
+				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 32);
+			else if (!strcmp (checksum_hash_type, "SHA384"))
+				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 48);
+			else if (!strcmp (checksum_hash_type, "SHA512"))
+				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 64);
+		}
+		g_array_free (pdb_checksum_hash_type, TRUE);
+		g_array_free (pdb_checksum, TRUE);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
