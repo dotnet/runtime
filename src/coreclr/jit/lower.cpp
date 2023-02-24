@@ -366,7 +366,18 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
+        {
+            if (comp->opts.OptimizationEnabled() && node->OperIs(GT_AND))
+            {
+                GenTree* replacementNode = TryLowerAndNegativeOne(node->AsOp());
+                if (replacementNode != nullptr)
+                {
+                    return replacementNode->gtNext;
+                }
+            }
+
             return LowerBinaryArithmetic(node->AsOp());
+        }
 
         case GT_MUL:
         case GT_MULHI:
@@ -7782,6 +7793,51 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
             store->ChangeType(type);
         }
     }
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerAndNegativeOne:
+//    If safe, lowers a tree AND(X, CNS(-1)) to X.
+//
+// Arguments:
+//    node - GT_AND node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+GenTree* Lowering::TryLowerAndNegativeOne(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_AND));
+
+    if (!varTypeIsIntegral(node))
+        return nullptr;
+
+    if (node->gtSetFlags())
+        return nullptr;
+
+    if (node->isContained())
+        return nullptr;
+
+    GenTree* op2 = node->gtGetOp2();
+
+    if (!op2->IsIntegralConst(-1))
+        return nullptr;
+
+#ifndef TARGET_64BIT
+    assert(op2->TypeIs(TYP_INT));
+#endif // !TARGET_64BIT
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(node, &use))
+        return nullptr;
+
+    GenTree* op1 = node->gtGetOp1();
+
+    use.ReplaceWith(op1);
+
+    BlockRange().Remove(op2);
+    BlockRange().Remove(node);
+
+    return op1;
 }
 
 #if defined(FEATURE_HW_INTRINSICS)

@@ -50,8 +50,8 @@ public class Program
         });
 
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
-        const int MinWarnings = 1100;
-        const int MaxWarnings = 1500;
+        const int MinWarnings = 17000;
+        const int MaxWarnings = 18500;
         int count = 0;
         string line;
         while ((line = proc.StandardOutput.ReadLine()) != null)
@@ -63,7 +63,7 @@ public class Program
         }
         proc.WaitForExit();
         Console.WriteLine($"Found {count} warnings and errors");
-        if (count is not >= MinWarnings and <= MaxWarnings)
+        if (count is not (>= MinWarnings and <= MaxWarnings))
         {
             Console.WriteLine($"Found {count} warnings and errors, expected between {MinWarnings} and {MaxWarnings}");
             Console.WriteLine("This is likely a result of debug info changes. To see the new output, run the following command:");
