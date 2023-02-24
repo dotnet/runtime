@@ -6,4 +6,4 @@ using Xunit;
 
 [assembly: CollectionBehavior(DisableTestParallelization = true, MaxParallelThreads = 1)]
 
-[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Configuration.ConfigurationManager is not supported on Browser")]
+[assembly: SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "System.Configuration.ConfigurationManager is not supported on Browser/Wasi")]

@@ -3,4 +3,4 @@
 
 using Xunit;
 
-[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.IO.Pipes is not supported on Browser")]
+[assembly: SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "System.IO.Pipes is not supported on Browser/Wasi")]

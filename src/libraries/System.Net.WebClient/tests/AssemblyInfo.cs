@@ -3,4 +3,4 @@
 
 using Xunit;
 
-[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Net.WebClient is not recommended for new development and not supported on Browser")] 
+[assembly: SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "System.Net.WebClient is not recommended for new development and not supported on Browser/Wasi")]

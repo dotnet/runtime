@@ -4,5 +4,4 @@
 using System;
 using Xunit;
 
-[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.Net.Requests is not supported on Browser.")]
-[assembly: SkipOnPlatform(TestPlatforms.Wasi, "System.Net.Requests is not supported on Browser.")]
+[assembly: SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "System.Net.Requests is not supported on Browser/Wasi.")]
