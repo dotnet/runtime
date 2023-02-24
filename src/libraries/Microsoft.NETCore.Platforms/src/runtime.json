@@ -1994,6 +1994,12 @@
         "unix-mips64"
       ]
     },
+    "linux-riscv64": {
+      "#import": [
+        "linux",
+        "unix-riscv64"
+      ]
+    },
     "linux-musl": {
       "#import": [
         "linux"
@@ -4078,6 +4084,11 @@
       ]
     },
     "unix-x86": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-riscv64": {
       "#import": [
         "unix"
       ]

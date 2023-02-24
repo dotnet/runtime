@@ -5697,6 +5697,14 @@
     "any",
     "base"
   ],
+  "linux-riscv64": [
+    "linux-riscv64",
+    "linux",
+    "unix-riscv64",
+    "unix",
+    "any",
+    "base"
+  ],
   "linux-musl": [
     "linux-musl",
     "linux",
@@ -10525,6 +10533,12 @@
   ],
   "unix-x86": [
     "unix-x86",
+    "unix",
+    "any",
+    "base"
+  ],
+  "unix-riscv64": [
+    "unix-riscv64",
     "unix",
     "any",
     "base"

@@ -22,7 +22,7 @@ namespace BrowserDebugProxy
         private GetMembersResult _combinedResult;
         private bool propertiesExpanded;
         private bool fieldsExpanded;
-        private string className;
+        private readonly string className;
         private JArray fields;
 
         public DotnetObjectId Id { get; init; }

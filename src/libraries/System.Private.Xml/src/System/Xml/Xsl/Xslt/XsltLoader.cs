@@ -953,7 +953,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             char[] DefaultValues = DecimalFormatDecl.Default.Characters;
-            char[] characters = new char[NumCharAttrs];
+            Span<char> characters = stackalloc char[NumCharAttrs];
             Debug.Assert(NumCharAttrs == DefaultValues.Length);
 
             for (int idx = 0; idx < NumCharAttrs; idx++)

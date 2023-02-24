@@ -11,6 +11,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
 	[SetupCompileArgument ("/optimize+")]
 	[ExpectedNoWarnings]
 	public class MemberTypes
@@ -67,11 +69,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2111", nameof (MulticastDelegate) + ".MulticastDelegate")]
 		[ExpectedWarning ("IL2111", nameof (MulticastDelegate) + ".MulticastDelegate")]
 		[ExpectedWarning ("IL2111", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = Tool.Trimmer)]
 		public static void Main ()
 		{
 			RequirePublicParameterlessConstructor (typeof (PublicParameterlessConstructorType));
@@ -134,7 +136,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private PublicParameterlessConstructorType (int i, int j) { }
 
 			// Not implied by the DynamicallyAccessedMemberTypes logic, but
-			// explicit cctors would be kept by the linker.
+			// explicit cctors would be kept by ILLink.
 			// [Kept]
 			// static PublicParameterlessConstructorType () { }
 
@@ -207,7 +209,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private PublicConstructorsType (int i, int j) { }
 
 			// Not implied by the DynamicallyAccessedMemberTypes logic, but
-			// explicit cctors would be kept by the linker.
+			// explicit cctors would be kept by ILLink.
 			// [Kept]
 			// static PublicConstructorsType () { }
 
