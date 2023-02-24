@@ -77,6 +77,8 @@ export const disabledOpcodes : Array<MintOpcode> = [
 export const instrumentedMethodNames : Array<string> = [
     // "System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>& System.Collections.Generic.Dictionary`2<System.Type, System.Collections.Generic.Stack`1<System.Reflection.Emit.LocalBuilder>>:FindValue (System.Type)"
     // "InternalInsertNode"
+    // "GetValueTypeHashCode",
+    // "GetHashCode"
 ];
 
 export class InstrumentedTraceState {
@@ -605,6 +607,11 @@ function generate_wasm (
     const endOfBody = <any>startOfBody + <any>sizeOfBody;
     const traceName = `${methodName}:${(traceOffset).toString(16)}`;
 
+    // FIXME: Something about ValueType hashing causes null check optimization to break,
+    //  but I haven't been able to figure out a workaround other than this
+    if (builder.allowNullCheckOptimization && (methodName.indexOf("HashCode") >= 0))
+        builder.allowNullCheckOptimization = false;
+
     if (useDebugCount) {
         if (cwraps.mono_jiterp_debug_count() === 0) {
             if (countLimitedPrintCounter-- >= 0)
@@ -775,7 +782,7 @@ function generate_wasm (
     } catch (exc: any) {
         threw = true;
         rejected = false;
-        console.error(`MONO_WASM: ${traceName} code generation failed: ${exc} ${exc.stack}`);
+        console.error(`MONO_WASM: ${methodFullName || traceName} code generation failed: ${exc} ${exc.stack}`);
         recordFailure();
         return 0;
     } finally {
@@ -793,7 +800,7 @@ function generate_wasm (
                     console.log(builder.traceBuf[i]);
             }
 
-            console.log(`// MONO_WASM: ${traceName} generated, blob follows //`);
+            console.log(`// MONO_WASM: ${methodFullName || traceName} generated, blob follows //`);
             let s = "", j = 0;
             try {
                 // We may have thrown an uncaught exception while inside a block,
