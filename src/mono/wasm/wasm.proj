@@ -104,8 +104,8 @@
       </WasmBundleTimezonesWithHashes>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->
-    <EmitWasmBundleFiles 
-      FilesToBundle="@(WasmBundleTimezonesWithHashes)" 
+    <EmitWasmBundleFiles
+      FilesToBundle="@(WasmBundleTimezonesWithHashes)"
       BundleName="timezones"
       BundleFile="$(WasmObjDir)\wasm-bundled-timezones.c"
       RegistrationCallbackFunctionName="mono_wasm_add_bundled_file"
