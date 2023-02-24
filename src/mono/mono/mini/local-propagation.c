@@ -318,18 +318,33 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 	/* FIXME: Add long/float */
 	switch (ins->opcode) {
 	case OP_MOVE:
+	case OP_LMOVE:
+	case OP_FMOVE:
+	case OP_VMOVE:
+	case OP_RMOVE:
 	case OP_XMOVE:
 		if (ins->dreg == ins->sreg1) {
 			NULLIFY_INS (ins);
+		}
+		break;
+	case OP_IMIN:
+	case OP_IMAX:
+	case OP_MIN:
+	case OP_MAX:
+		if (ins->sreg1 == ins->sreg2) {
+			ins->opcode = OP_MOVE;
 		}
 		break;
 	case OP_ADD_IMM:
 	case OP_IADD_IMM:
 	case OP_SUB_IMM:
 	case OP_ISUB_IMM:
+	case OP_XOR_IMM:
+	case OP_IXOR_IMM:
 #if SIZEOF_REGISTER == 8
 	case OP_LADD_IMM:
 	case OP_LSUB_IMM:
+	case OP_LXOR_IMM:
 #endif
 		if (ins->inst_imm == 0) {
 			ins->opcode = OP_MOVE;
@@ -408,6 +423,37 @@ mono_strength_reduction_ins (MonoCompile *cfg, MonoInst *ins, const char **spec)
 			MONO_EMIT_NEW_BIALU (cfg, is_long ? OP_LSUB : OP_ISUB, ins->dreg, ins->dreg, compensator_reg);
 
 			allocated_vregs = TRUE;
+		}
+		break;
+	case OP_IAND_IMM:
+	case OP_AND_IMM:
+#if SIZEOF_REGISTER == 8
+	case OP_LAND_IMM:
+#endif
+		if (ins->inst_imm == 0) {
+			ins->opcode = (ins->opcode == OP_LAND_IMM) ? OP_I8CONST : OP_ICONST;
+			ins->inst_c0 = 0;
+			ins->sreg1 = -1;
+		} else if ((ins->opcode == OP_AND_IMM || ins->opcode == OP_IAND_IMM) && ins->inst_imm == 0xffffffff) {
+			ins->opcode = OP_MOVE;
+		} else if (ins->opcode == OP_LAND_IMM && ins->inst_imm == 0xffffffffffffffff) {
+			ins->opcode = OP_MOVE;
+		}
+	case OP_IOR_IMM:
+	case OP_OR_IMM:
+#if SIZEOF_REGISTER == 8
+	case OP_LOR_IMM:
+#endif
+		if (ins->inst_imm == 0) {
+			ins->opcode = ins->opcode = OP_MOVE;
+		} else if ((ins->opcode == OP_OR_IMM || ins->opcode == OP_IOR_IMM) && ins->inst_imm == 0xffffffff) {
+			ins->opcode = OP_ICONST;
+			ins->inst_c0 = 0xffffffff;
+			ins->sreg1 = -1;
+		} else if (ins->opcode == OP_LOR_IMM && ins->inst_imm == 0xffffffffffffffff) {
+			ins->opcode = OP_I8CONST;
+			ins->inst_c0 = 0xffffffffffffffff;
+			ins->sreg1 = -1;
 		}
 		break;
 	}
