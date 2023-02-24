@@ -19,7 +19,6 @@ parameters:
   variables: {}
   pool: ''
   dependsOn: []
-  testSubsetArgs: ''
   #arcade-specific parameters
   condition: always()
   continueOnError: false

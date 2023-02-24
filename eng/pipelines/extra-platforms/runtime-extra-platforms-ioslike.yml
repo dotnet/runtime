@@ -76,5 +76,3 @@ jobs:
       timeoutInMinutes: 500
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-      extraStepsParameters:
-        testSubsetArgs: -tree:./src/tests/JIT
