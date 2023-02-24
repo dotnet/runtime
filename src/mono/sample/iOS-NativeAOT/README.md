@@ -1,6 +1,6 @@
 # NativeAOT iOS sample app
 
-## Description 
+## Description
 
 This sample application is intended to be used by developers who work on enabling NativeAOT on iOS-like platforms and can serve as PoC for verifying support for the following systems:
 - ios
@@ -16,7 +16,7 @@ The sample shares the source code with the Mono sample specified at: `../iOS/Pro
 The application is **_currently_** relying on the following:
 1. Internal dependencies - locally building the internals is required as runtime and tools nuget packages are still not being produced
 2. Invariant globalization - `System.Globalization.Native` is currently not being built as part of NativeAOT framework for iOS-like platforms
-3. No publish targets - the SDK and MSBuild integration is still not complete 
+3. No publish targets - the SDK and MSBuild integration is still not complete
 
 ## How to build and test
 
@@ -64,7 +64,7 @@ export DevTeamProvisioning=A1B2C3D4E5; make hello-app TARGET_OS=ios DEPLOY_AND_R
 ```
 Assuming `A1B2C3D4E5` is a valid team ID.
 
-#### Oneliner
+#### One-liner
 
 On a clean dotnet/runtime checkout, from this directory, run:
 
