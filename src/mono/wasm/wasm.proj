@@ -94,25 +94,25 @@
       <_WasmTimezonesInternal Include="$(_WasmTimezonesPath)\**\*.*" WasmRole="Timezone"/>
     </ItemGroup>
     <GetFileHash Files="@(_WasmTimezonesInternal)">
-      <Output TaskParameter="Items" ItemName="WasmBundleTimezonesWithHashes" />
+      <Output TaskParameter="Items" ItemName="_WasmBundleTimezonesWithHashes" />
     </GetFileHash>
     <ItemGroup>
-      <WasmBundleTimezonesWithHashes Update="@(WasmBundleTimezonesWithHashes)">
-        <DestinationFile>$(WasmObjDir)\wasm-bundled-$([System.String]::Copy(%(WasmBundleTimezonesWithHashes.FileHash))).c</DestinationFile>
-        <ObjectFile>$(WasmObjDir)\wasm-bundled-$([System.String]::Copy(%(WasmBundleTimezonesWithHashes.FileHash))).o</ObjectFile>
-        <RegisteredName>$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
-      </WasmBundleTimezonesWithHashes>
+      <_WasmBundleTimezonesWithHashes Update="@(_WasmBundleTimezonesWithHashes)">
+        <DestinationFile>$(WasmObjDir)\wasm-bundled-$([System.String]::Copy(%(_WasmBundleTimezonesWithHashes.FileHash))).c</DestinationFile>
+        <ObjectFile>$(WasmObjDir)\wasm-bundled-$([System.String]::Copy(%(_WasmBundleTimezonesWithHashes.FileHash))).o</ObjectFile>
+        <RegisteredName>$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
+      </_WasmBundleTimezonesWithHashes>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->
     <EmitWasmBundleFiles
-      FilesToBundle="@(WasmBundleTimezonesWithHashes)"
+      FilesToBundle="@(_WasmBundleTimezonesWithHashes)"
       BundleName="timezones"
       BundleFile="$(WasmObjDir)\wasm-bundled-timezones.c"
       RegistrationCallbackFunctionName="mono_wasm_add_bundled_file"
       >
     </EmitWasmBundleFiles>
     <ItemGroup>
-      <WasmBundleTimezonesSources Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(WasmBundleTimezonesWithHashes.DestinationFile)).Replace('\','/'))" />
+      <WasmBundleTimezonesSources Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(_WasmBundleTimezonesWithHashes.DestinationFile)).Replace('\','/'))" />
       <WasmBundleTimezonesSources Include="$([MSBuild]::MakeRelative($(WasmObjDir), $(_WasmTimezonesBundleSourceFile)).Replace('\','/'))" />
     </ItemGroup>
     <WriteLinesToFile File="$(_WasmTimezonesSourcesRsp)"
@@ -126,7 +126,7 @@
           IgnoreStandardErrorWarningFormat="true">
     </RunWithEmSdkEnv>
     <ItemGroup>
-      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(WasmBundleTimezonesWithHashes.ObjectFile)).Replace('\','/'))" />
+      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(_WasmBundleTimezonesWithHashes.ObjectFile)).Replace('\','/'))" />
       <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasmObjDir), $(_WasmTimezonesBundleObjectFile)).Replace('\','/'))" />
     </ItemGroup>
     <WriteLinesToFile File="$(_WasmTimezonesArchiveRsp)"
@@ -146,14 +146,14 @@
 
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
-      <WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
-      <WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.c" />
-      <WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
-      <WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleSourceFile)" />
-      <WasmBundleTimezonesToDelete Remove="%(WasmBundleTimezonesWithHashes.DestinationFile)" />
-      <WasmBundleTimezonesToDelete Remove="%(WasmBundleTimezonesWithHashes.ObjectFile)" />
+      <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
+      <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.c" />
+      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
+      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleSourceFile)" />
+      <_WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.DestinationFile)" />
+      <_WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.ObjectFile)" />
     </ItemGroup>
-    <Delete Files="@(WasmBundleTimezonesToDelete)" />
+    <Delete Files="@(_WasmBundleTimezonesToDelete)" />
   </Target>
 
   <Target Name="GenerateEmccPropsAndRspFiles">

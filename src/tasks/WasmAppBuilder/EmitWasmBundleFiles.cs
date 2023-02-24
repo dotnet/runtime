@@ -39,6 +39,9 @@ public class EmitWasmBundleFiles : Microsoft.Build.Utilities.Task, ICancelableTa
             Log.LogError($"Cannot find {nameof(ClangExecutable)}={ClangExecutable}");
             return false;
         }
+        // It would be ideal that this Task would always produce object files.
+        // We do it with clang by streaming code directly to clang input stream.
+        // For emcc it's not possible, so we need to write the code to disk first and then compile it in MSBuild.
         Action<string, Action<Stream>> emitter = string.IsNullOrEmpty(ClangExecutable) ? WriteSource : Compile;
 
         // The DestinationFile (output filename) already includes a content hash. Grouping by this filename therefore
@@ -79,7 +82,7 @@ public class EmitWasmBundleFiles : Microsoft.Build.Utilities.Task, ICancelableTa
                         registeredName = Path.GetFileName(inputFile);
                     }
                     var count = Interlocked.Increment(ref verboseCount);
-                    Log.LogMessage(MessageImportance.High, "{0}/{1} Bundling {2} ...", count, remainingDestinationFilesToBundle.Length, registeredName);
+                    Log.LogMessage(MessageImportance.Low, "{0}/{1} Bundling {2} ...", count, remainingDestinationFilesToBundle.Length, registeredName);
                 }
 
                 Log.LogMessage(MessageImportance.Low, "Bundling {0} as {1}", inputFile, outputFile);
@@ -108,11 +111,11 @@ public class EmitWasmBundleFiles : Microsoft.Build.Utilities.Task, ICancelableTa
             return (registeredName, symbolName);
         }).ToList();
 
-        Log.LogMessage(MessageImportance.High, "Bundling {2} objects into mono_wasm_register_bundle_{0} as {1}", BundleName, BundleFile, files.Count);
+        Log.LogMessage(MessageImportance.High, "Bundling {2} objects into mono_wasm_register_{0}_bundle as {1}", BundleName, BundleFile, files.Count);
         emitter(BundleFile, (inputStream) =>
         {
             using var outputUtf8Writer = new StreamWriter(inputStream, Utf8NoBom);
-            GenerateRegisterBundledObjects("mono_wasm_register_bundle_" + BundleName, RegistrationCallbackFunctionName, files, outputUtf8Writer);
+            GenerateRegisterBundledObjects($"mono_wasm_register_{BundleName}_bundle", RegistrationCallbackFunctionName, files, outputUtf8Writer);
         });
 
         return !Log.HasLoggedErrors;

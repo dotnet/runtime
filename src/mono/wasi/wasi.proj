@@ -77,17 +77,17 @@
       <_WasmTimezonesInternal Include="$(_WasmTimezonesPath)\**\*.*" WasmRole="Timezone"/>
     </ItemGroup>
     <GetFileHash Files="@(_WasmTimezonesInternal)">
-      <Output TaskParameter="Items" ItemName="WasmBundleTimezonesWithHashes" />
+      <Output TaskParameter="Items" ItemName="_WasmBundleTimezonesWithHashes" />
     </GetFileHash>
     <ItemGroup>
-      <WasmBundleTimezonesWithHashes Update="@(WasmBundleTimezonesWithHashes)">
-        <DestinationFile>$(WasiObjDir)\wasm-bundled-$([System.String]::Copy(%(WasmBundleTimezonesWithHashes.FileHash))).o</DestinationFile>
-        <RegisteredName>$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
-      </WasmBundleTimezonesWithHashes>
+      <_WasmBundleTimezonesWithHashes Update="@(_WasmBundleTimezonesWithHashes)">
+        <DestinationFile>$(WasiObjDir)\wasm-bundled-$([System.String]::Copy(%(_WasmBundleTimezonesWithHashes.FileHash))).o</DestinationFile>
+        <RegisteredName>$([MSBuild]::MakeRelative($(_WasmTimezonesPath), %(_WasmBundleTimezonesWithHashes.Identity)).Replace('\','/'))</RegisteredName>
+      </_WasmBundleTimezonesWithHashes>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->
     <EmitWasmBundleFiles 
-      FilesToBundle="@(WasmBundleTimezonesWithHashes)" 
+      FilesToBundle="@(_WasmBundleTimezonesWithHashes)" 
       ClangExecutable="$(WasiClang)"
       BundleName="timezones"
       BundleFile="$(_WasmTimezonesBundleObjectFile)"
@@ -95,7 +95,7 @@
       >
     </EmitWasmBundleFiles>
     <ItemGroup>
-      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), %(WasmBundleTimezonesWithHashes.DestinationFile)).Replace('\','/'))" />
+      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), %(_WasmBundleTimezonesWithHashes.DestinationFile)).Replace('\','/'))" />
       <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), $(_WasmTimezonesBundleObjectFile)).Replace('\','/'))" />
     </ItemGroup>
     <WriteLinesToFile File="$(_WasmTimezonesArchiveRsp)"
@@ -110,11 +110,11 @@
 
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
-      <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
-      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
-      <_WasmBundleTimezonesToDelete Remove="%(WasmBundleTimezonesWithHashes.DestinationFile)" />
+      <__WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
+      <__WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
+      <__WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.DestinationFile)" />
     </ItemGroup>
-    <Delete Files="@(_WasmBundleTimezonesToDelete)" />
+    <Delete Files="@(__WasmBundleTimezonesToDelete)" />
   </Target>
 
   <Target Name="GenerateWasiPropsAndRspFiles">

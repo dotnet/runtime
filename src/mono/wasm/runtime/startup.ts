@@ -490,7 +490,7 @@ async function _apply_configuration_from_args() {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
         if (tz) mono_wasm_setenv("TZ", tz);
     } catch {
-        // no action
+        console.info("MONO_WASM: failed to detect timezone, will fallback to UTC");
     }
 
     // create /usr/share folder which is SpecialFolder.CommonApplicationData
