@@ -8000,7 +8000,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		MonoPPDBFile* ppdb = handle->ppdb;
 		if (ppdb) {
 			image = mono_ppdb_get_image (ppdb);
-			buffer_add_byte (buf, 1);
+			buffer_add_byte (buf, image->raw_data_len > 0);
 		} else {
 			buffer_add_byte (buf, 0);
 		}
