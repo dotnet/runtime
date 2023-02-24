@@ -109,7 +109,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 		// NativeAOT currently doesn't track suppressions such that it could detect duplicates
 		[LogContains ("Element 'Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers." + nameof (MultipleSuppressions) + "()'" +
-			" has more than one unconditional suppression.", ProducedBy = ProducedBy.Trimmer)]
+			" has more than one unconditional suppression.", ProducedBy = Tool.Trimmer)]
 		[UnconditionalSuppressMessage ("Test", "IL2026")]
 		public static void MultipleSuppressions ()
 		{

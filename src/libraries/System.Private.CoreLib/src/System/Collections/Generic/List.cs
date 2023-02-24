@@ -439,7 +439,6 @@ namespace System.Collections.Generic
             if (_items.Length < capacity)
             {
                 Grow(capacity);
-                _version++;
             }
 
             return _items.Length;
