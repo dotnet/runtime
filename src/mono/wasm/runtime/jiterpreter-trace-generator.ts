@@ -246,8 +246,11 @@ export function generate_wasm_body (
                     append_ldloc_cknull(builder, src, ip, false);
                 }
                 // We will have bailed out if the object was null
-                if (builder.allowNullCheckOptimization)
+                if (builder.allowNullCheckOptimization && !knownNotNull.has(dest)) {
+                    if (traceNullCheckOptimizations)
+                        console.log(`(0x${(<any>ip).toString(16)}) locals[${dest}] passed cknull`);
                     knownNotNull.add(dest);
+                }
                 skipDregInvalidation = true;
                 break;
             }
@@ -1187,7 +1190,7 @@ function append_ldloc_cknull (builder: WasmBuilder, localOffset: number, ip: Min
         counters.nullChecksEliminated++;
         if (cknullOffset === localOffset) {
             if (traceNullCheckOptimizations)
-                console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr === locals[${localOffset}]`);
+                console.log(`(0x${(<any>ip).toString(16)}) cknull_ptr == locals[${localOffset}]`);
             if (leaveOnStack)
                 builder.local("cknull_ptr");
         } else {
@@ -1429,10 +1432,6 @@ function emit_fieldop (
             getter = WasmOpcode.i32_load16_u;
             break;
         case MintOpcode.MINT_LDFLD_O:
-            // default, but mark the target local as address-taken because
-            //  it contains an object reference and the GC can modify it at any (to us) time
-            addressTakenLocals.add(localOffset);
-            break;
         case MintOpcode.MINT_STFLD_I4:
         case MintOpcode.MINT_LDFLD_I4:
             // default
@@ -1490,13 +1489,16 @@ function emit_fieldop (
                 append_bailout(builder, ip, BailoutReason.NullCheck);
                 builder.endBlock();
             } else {
+                builder.appendU8(WasmOpcode.drop);
                 counters.nullChecksEliminated++;
 
                 if (nullCheckValidation) {
+                    builder.local("cknull_ptr");
+                    append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     builder.i32_const(builder.base);
+                    builder.i32_const(ip);
                     builder.callImport("notnull");
-                } else
-                    builder.appendU8(WasmOpcode.drop);
+                }
             }
             return true;
         }
