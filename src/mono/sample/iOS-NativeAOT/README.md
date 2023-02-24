@@ -1,6 +1,8 @@
 # NativeAOT iOS sample app
 
-This sample application should be used as PoC for verifying that NativeAOT can be used for targeting iOS-like platforms:
+## Description 
+
+This sample application is intended to be used by developers who work on enabling NativeAOT on iOS-like platforms and can serve as PoC for verifying support for the following systems:
 - ios
 - iossimulator
 - tvos
@@ -9,7 +11,14 @@ This sample application should be used as PoC for verifying that NativeAOT can b
 
 The sample shares the source code with the Mono sample specified at: `../iOS/Program.cs` and in general should have the same behavior as MonoAOT.
 
-## How to build
+## Limitations
+
+The application is **_currently_** relying on the following:
+1. Internal dependencies - locally building the internals is required as runtime and tools nuget packages are still not being produced
+2. Invariant globalization - `System.Globalization.Native` is currently not being built as part of NativeAOT framework for iOS-like platforms
+3. No publish targets - the SDK and MSBuild integration is still not complete 
+
+## How to build and test
 
 ### Building for the first time
 
@@ -39,16 +48,31 @@ make hello-app
 
 ### Deploy and run
 
+#### Simulator
+
 To test the application on a simulator include the following in your make command `DEPLOY_AND_RUN=true` e.g.,:
 ``` bash
 make hello-app DEPLOY_AND_RUN=true
 ```
 
+#### Device
+
 To test the application on a device, a provisioning profile needs to be specified.
 This can be achieved by defining `DevTeamProvisioning` environment variable with a valid team ID (see [developer.apple.com/account/#/membership](https://developer.apple.com/account/#/membership), scroll down to `Team ID`) for example:
 ``` bash
-export DevTeamProvisioning=H1A2B3C4D5; make hello-app TARGET_OS=ios DEPLOY_AND_RUN=true
+export DevTeamProvisioning=A1B2C3D4E5; make hello-app TARGET_OS=ios DEPLOY_AND_RUN=true
 ```
+Assuming `A1B2C3D4E5` is a valid team ID.
+
+#### Oneliner
+
+On a clean dotnet/runtime checkout, from this directory, run:
+
+``` bash
+export DevTeamProvisioning=A1B2C3D4E5; make world BUILD_CONFIG=Release TARGET_OS=ios DEPLOY_AND_RUN=true
+```
+
+This command will build everything necessary to run and deploy the application on an iOS device.
 
 ### Custom builds
 
