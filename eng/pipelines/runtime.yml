@@ -432,7 +432,7 @@ extends:
         parameters:
           platforms:
             - browser_wasm
-          nameSuffix: _EAT
+          nameSuffix: _EAT_SmokeAOT
           runAOT: false
           shouldRunSmokeOnly: false
           extraBuildArgs: /p:RunSmokeTestsWithAOT=true
@@ -443,7 +443,7 @@ extends:
         parameters:
           platforms:
             - browser_wasm_win
-          nameSuffix: _AOT
+          nameSuffix: _SmokeAOT
           runAOT: true
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
