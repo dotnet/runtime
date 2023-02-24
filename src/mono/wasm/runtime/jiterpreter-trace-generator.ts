@@ -237,12 +237,21 @@ export function generate_wasm_body (
                     ip = abort;
                 break;
 
-            case MintOpcode.MINT_CKNULL:
-                // if (locals[ip[2]]) locals[ip[1]] = locals[ip[2]]
-                builder.local("pLocals");
-                append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+            case MintOpcode.MINT_CKNULL: {
+                // if (locals[ip[2]]) locals[ip[1]] = locals[ip[2]] else throw
+                const src = getArgU16(ip, 2),
+                    dest = getArgU16(ip, 1);
+                // locals[n] = cknull(locals[n]) is a common pattern, and we don't
+                //  need to do the write for it since it can't change the value
+                if (src !== dest) {
+                    builder.local("pLocals");
+                    append_ldloc_cknull(builder, src, ip, true);
+                    append_stloc_tail(builder, dest, WasmOpcode.i32_store);
+                } else {
+                    append_ldloc_cknull(builder, src, ip, false);
+                }
                 break;
+            }
 
             case MintOpcode.MINT_TIER_ENTER_METHOD:
             case MintOpcode.MINT_TIER_PATCHPOINT: {
@@ -1005,8 +1014,28 @@ export function generate_wasm_body (
         }
 
         if (ip) {
-            if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId)
-                builder.traceBuf.push(`${(<any>ip).toString(16)} ${opname}`);
+            if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId) {
+                let stmtText = `${(<any>ip).toString(16)} ${opname} `;
+                const firstDreg = <any>ip + 2;
+                const firstSreg = firstDreg + (info[3] * 2);
+                // print sregs
+                for (let r = 0; r < info[3]; r++) {
+                    if (r !== 0)
+                        stmtText += ", ";
+                    stmtText += getU16(firstSreg + (r * 2));
+                }
+
+                // print dregs
+                if (info[2] > 0)
+                    stmtText += " -> ";
+                for (let r = 0; r < info[2]; r++) {
+                    if (r !== 0)
+                        stmtText += ", ";
+                    stmtText += getU16(firstDreg + (r * 2));
+                }
+
+                builder.traceBuf.push(stmtText);
+            }
 
             if (!isDeadOpcode)
                 result++;
@@ -1383,6 +1412,10 @@ function emit_fieldop (
             getter = WasmOpcode.i32_load16_u;
             break;
         case MintOpcode.MINT_LDFLD_O:
+            // default, but mark the target local as address-taken because
+            //  it contains an object reference and the GC can modify it at any (to us) time
+            addressTakenLocals.add(localOffset);
+            break;
         case MintOpcode.MINT_STFLD_I4:
         case MintOpcode.MINT_LDFLD_I4:
             // default
@@ -1487,6 +1520,10 @@ function emit_fieldop (
 
         case MintOpcode.MINT_LDFLDA_UNSAFE:
         case MintOpcode.MINT_LDFLDA:
+            // HACK: The field address being loaded could be a field located in a struct living
+            //  on the stack so for safety reasons we temporarily disable null check optimization
+            //  for the rest of the method
+            // builder.allowNullCheckOptimization = false;
             builder.local("pLocals");
             // cknull_ptr isn't always initialized here
             append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
@@ -2820,12 +2857,12 @@ function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpco
     }
 
     if (isPointer) {
-        // Copy pointer to/from array element
-        if (isLoad)
-            append_ldloca(builder, valueOffset, 4, true);
+        // HACK: We can't mark this address as transient, because copy_pointer makes
+        //  the address of this local visible to the GC, and the GC is able to move
+        //  the object which changes the value of the local
+        // Copy pointer from array element (stelem_ref is separate above)
+        append_ldloca(builder, valueOffset, 4, false);
         append_getelema1(builder, ip, objectOffset, indexOffset, elementSize);
-        if (!isLoad)
-            append_ldloca(builder, valueOffset, 4, true);
         builder.callImport("copy_pointer");
     } else if (isLoad) {
         // Pre-load destination for the value at the end
