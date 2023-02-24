@@ -469,6 +469,7 @@ arm_encode_imm7 (int imm, int size)
 #define arm_neon_ldrd_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b01 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
 /* Load 128 bit */
 #define arm_neon_ldrq_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b10 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
+#define arm_neon_ldrq_lit_fixup(p, target) *((guint32*)p) = (*((guint32*)p) & 0xff00001f) | (arm_get_disp19 ((p), (target)) << 5)
 
 /* Arithmetic (immediate) */
 static G_GNUC_UNUSED inline guint32

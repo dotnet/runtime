@@ -5430,17 +5430,13 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 		gboolean remove = FALSE;
 
 		if (ji->type == MONO_PATCH_INFO_X128) {
-			guint8 *pos, *patch_pos;
-			guint32 target_pos;
+			guint8 *pos;
 
 			code = (guint8*)ALIGN_TO (code, 16);
 			pos = cfg->native_code + ji->ip.i;
-			patch_pos = pos + 3;
-			target_pos = GPTRDIFF_TO_UINT32 (code - pos - 4);
+			arm_neon_ldrq_lit_fixup (pos, code);
 			memcpy (code, ji->data.target, 16);
 			code += 16;
-
-			*(guint32*)(patch_pos) = target_pos;
 
 			remove = TRUE;
 		}
