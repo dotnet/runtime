@@ -9,10 +9,10 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
-    internal partial class CodeSnippets : ISnippetProvider
+    internal partial class CodeSnippets : IComInterfaceAttributeProvider
     {
         private readonly GeneratorKind _generator;
-        GeneratorKind ISnippetProvider.Generator => _generator;
+        GeneratorKind IComInterfaceAttributeProvider.Generator => _generator;
 
         private string VirtualMethodIndex(
             int index,
@@ -23,7 +23,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             bool? SetLastError = null,
             ExceptionMarshalling? ExceptionMarshalling = null,
             Type? ExceptionMarshallingType = null)
-            => ((ISnippetProvider)this).VirtualMethodIndex(
+            => ((IComInterfaceAttributeProvider)this).VirtualMethodIndex(
                 index,
                 ImplicitThisParameter,
                 Direction,
@@ -33,9 +33,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                 ExceptionMarshalling,
                 ExceptionMarshallingType);
 
-        private string UnmanagedObjectUnwrapper(Type t) => ((ISnippetProvider)this).UnmanagedObjectUnwrapper(t);
+        private string UnmanagedObjectUnwrapper(Type t) => ((IComInterfaceAttributeProvider)this).UnmanagedObjectUnwrapper(t);
 
-        private string GeneratedComInterface => ((ISnippetProvider)this).GeneratedComInterface;
+        private string GeneratedComInterface => ((IComInterfaceAttributeProvider)this).GeneratedComInterface;
 
         public CodeSnippets(GeneratorKind generator)
         {
@@ -70,187 +70,174 @@ sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider, INativeAPI.Native
 }
 ";
 
-        public string SpecifiedMethodIndexNoExplicitParameters => $$"""
+        public string SpecifiedMethodIndexNoExplicitParameters => $@"
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
-            using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
+{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
+{GeneratedComInterface}
+partial interface INativeAPI : IUnmanagedInterfaceType
+{{
+    {VirtualMethodIndex(0)}
+    void Method();
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
-            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
-            partial interface INativeAPI : IUnmanagedInterfaceType
-            {
-                {{VirtualMethodIndex(0)}}
-                void Method();
-            }
-            """ + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+        public string SpecifiedMethodIndexNoExplicitParametersNoImplicitThis => $@"
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
-        public string SpecifiedMethodIndexNoExplicitParametersNoImplicitThis => $$"""
+{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
+{GeneratedComInterface}
+partial interface INativeAPI : IUnmanagedInterfaceType
+{{
+    {VirtualMethodIndex(0, ImplicitThisParameter: false)}
+    void Method();
 
-            using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
-            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
-            partial interface INativeAPI : IUnmanagedInterfaceType
-            {
-                {{VirtualMethodIndex(0, ImplicitThisParameter: false)}}
-                void Method();
+        public string SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions => $@"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
-            }
-            """ + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
+{GeneratedComInterface}
+partial interface INativeAPI : IUnmanagedInterfaceType
+{{
 
-        public string SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions => $$"""
+    {UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl) })}
+    {VirtualMethodIndex(0)}
+    void Method();
+    {UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })}
+    {VirtualMethodIndex(1)}
+    void Method1();
 
-            using System.Runtime.CompilerServices;
-            using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
+    [SuppressGCTransition]
+    {UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })}
+    {VirtualMethodIndex(2)}
+    void Method2();
 
-            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
-            partial interface INativeAPI : IUnmanagedInterfaceType
-            {
+    [SuppressGCTransition]
+    {UnmanagedCallConv()}
+    {VirtualMethodIndex(3)}
+    void Method3();
 
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl) })}}
-                {{VirtualMethodIndex(0)}}
-                void Method();
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })}}
-                {{VirtualMethodIndex(1)}}
-                void Method1();
+    [SuppressGCTransition]
+    {VirtualMethodIndex(4)}
+    void Method4();
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
-                [SuppressGCTransition]
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })}}
-                {{VirtualMethodIndex(2)}}
-                void Method2();
+        public string BasicParametersAndModifiers(string typeName, string preDeclaration = "") => $@"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{preDeclaration}
 
-                [SuppressGCTransition]
-                {{UnmanagedCallConv()}}
-                {{VirtualMethodIndex(3)}}
-                void Method3();
+[assembly:DisableRuntimeMarshalling]
 
-                [SuppressGCTransition]
-                {{VirtualMethodIndex(4)}}
-                void Method4();
-            }
-            """ + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
+{GeneratedComInterface}
+partial interface INativeAPI : IUnmanagedInterfaceType
+{{
+    {VirtualMethodIndex(0)}
+    {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
-        public string BasicParametersAndModifiers(string typeName, string preDeclaration = "") => $$"""
-            using System.Runtime.CompilerServices;
-            using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
-            {{preDeclaration}}
+        public string BasicParametersAndModifiersManagedToUnmanaged(string typeName, string preDeclaration = "") => $@"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{preDeclaration}
 
-            [assembly:DisableRuntimeMarshalling]
+[assembly:DisableRuntimeMarshalling]
 
-            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
-            partial interface INativeAPI : IUnmanagedInterfaceType
-            {
-                {{VirtualMethodIndex(0)}}
-                {{typeName}} Method({{typeName}} value, in {{typeName}} inValue, ref {{typeName}} refValue, out {{typeName}} outValue);
-            }
-            """ + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
-
-        public string BasicParametersAndModifiersManagedToUnmanaged(string typeName, string preDeclaration = "") => $$"""
-            using System.Runtime.CompilerServices;
-            using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
-            {{preDeclaration}}
-
-            [assembly:DisableRuntimeMarshalling]
-
-            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
-            partial interface INativeAPI : IUnmanagedInterfaceType
-            {
-                {{VirtualMethodIndex(0, Direction: MarshalDirection.ManagedToUnmanaged)}}
-                {{typeName}} Method({{typeName}} value, in {{typeName}} inValue, ref {{typeName}} refValue, out {{typeName}} outValue);
-            }
-            """ + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
+{GeneratedComInterface}
+partial interface INativeAPI : IUnmanagedInterfaceType
+{{
+    {VirtualMethodIndex(0, Direction: MarshalDirection.ManagedToUnmanaged)}
+    {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
         public string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).FullName!);
-        public string BasicParametersAndModifiersNoRef(string typeName, string preDeclaration = "") => $$"""
-            using System.Runtime.CompilerServices;
-            using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
-            {{preDeclaration}}
+        public string BasicParametersAndModifiersNoRef(string typeName, string preDeclaration = "") => $@"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{preDeclaration}
 
-            [assembly:DisableRuntimeMarshalling]
+[assembly:DisableRuntimeMarshalling]
 
-            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
-            partial interface INativeAPI : IUnmanagedInterfaceType
-            {
-                {{VirtualMethodIndex(0)}}
-                {{typeName}} Method({{typeName}} value, in {{typeName}} inValue, out {{typeName}} outValue);
-            }
-            """ + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
+{GeneratedComInterface}
+partial interface INativeAPI : IUnmanagedInterfaceType
+{{
+    {VirtualMethodIndex(0)}
+    {typeName} Method({typeName} value, in {typeName} inValue, out {typeName} outValue);
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
-        public string BasicParametersAndModifiersNoImplicitThis(string typeName) => $$"""
-            using System.Runtime.CompilerServices;
-            using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
+        public string BasicParametersAndModifiersNoImplicitThis(string typeName) => $@"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
-            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
-            partial interface INativeAPI : IUnmanagedInterfaceType
-            {
-                {{VirtualMethodIndex(0, ImplicitThisParameter: false)}}
-                {{typeName}} Method({{typeName}} value, in {{typeName}} inValue, ref {{typeName}} refValue, out {{typeName}} outValue);
-            }
-            """ + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
+{GeneratedComInterface}
+partial interface INativeAPI : IUnmanagedInterfaceType
+{{
+    {VirtualMethodIndex(0, ImplicitThisParameter: false)}
+    {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public string BasicParametersAndModifiersNoImplicitThis<T>() => BasicParametersAndModifiersNoImplicitThis(typeof(T).FullName!);
         public string MarshalUsingCollectionCountInfoParametersAndModifiers<T>() => MarshalUsingCollectionCountInfoParametersAndModifiers(typeof(T).ToString());
-        public string MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType) => $$"""
-            using System.Runtime.CompilerServices;
-            using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
-            [assembly:DisableRuntimeMarshalling]
+        public string MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType) => $@"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+[assembly:DisableRuntimeMarshalling]
 
-            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
-            partial interface INativeAPI : IUnmanagedInterfaceType
-            {
-                {{VirtualMethodIndex(0)}}
-                [return:MarshalUsing(ConstantElementCount=10)]
-                {{collectionType}} Method(
-                    {{collectionType}} p,
-                    in {{collectionType}} pIn,
-                    int pRefSize,
-                    [MarshalUsing(CountElementName = "pRefSize")] ref {{collectionType}} pRef,
-                    [MarshalUsing(CountElementName = "pOutSize")] out {{collectionType}} pOut,
-                    out int pOutSize);
-            }
-            """ + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
+{GeneratedComInterface}
+partial interface INativeAPI : IUnmanagedInterfaceType
+{{
+    {VirtualMethodIndex(0)}
+    [return:MarshalUsing(ConstantElementCount=10)]
+    {collectionType} Method(
+        {collectionType} p,
+        in {collectionType} pIn,
+        int pRefSize,
+        [MarshalUsing(CountElementName = ""pRefSize"")] ref {collectionType} pRef,
+        [MarshalUsing(CountElementName = ""pOutSize"")] out {collectionType} pOut,
+        out int pOutSize);
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
-        public string BasicReturnTypeComExceptionHandling(string typeName, string preDeclaration = "") => $$"""
-            using System.Runtime.CompilerServices;
-            using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
-            {{preDeclaration}}
+        public string BasicReturnTypeComExceptionHandling(string typeName, string preDeclaration = "") => $@"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{preDeclaration}
 
-            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
-            partial interface INativeAPI : IUnmanagedInterfaceType
-            {
-                {{VirtualMethodIndex(0, ExceptionMarshalling : ExceptionMarshalling.Com)}}
-                {{typeName}} Method();
-            }
-            """ + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
+{GeneratedComInterface}
+partial interface INativeAPI : IUnmanagedInterfaceType
+{{
+    {VirtualMethodIndex(0, ExceptionMarshalling : ExceptionMarshalling.Com)}
+    {typeName} Method();
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
-        public string BasicReturnTypeCustomExceptionHandling(string typeName, string customExceptionType, string preDeclaration = "") => $$"""
-            using System.Runtime.CompilerServices;
-            using System.Runtime.InteropServices;
-            using System.Runtime.InteropServices.Marshalling;
-            {{preDeclaration}}
+        public string BasicReturnTypeCustomExceptionHandling(string typeName, string customExceptionType, string preDeclaration = "") => $@"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{preDeclaration}
 
-            {{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}}
-            {{GeneratedComInterface}}
-            partial interface INativeAPI : IUnmanagedInterfaceType
-            {
-                {{VirtualMethodIndex(0, ExceptionMarshallingType : Type.GetType(customExceptionType))}}
-                {{typeName}} Method();
-            }
-            """ + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
+{UnmanagedObjectUnwrapper(typeof(UnmanagedObjectUnwrapper.TestUnwrapper))}
+{GeneratedComInterface}
+partial interface INativeAPI : IUnmanagedInterfaceType
+{{
+    {VirtualMethodIndex(0, ExceptionMarshallingType : Type.GetType(customExceptionType))}
+    {typeName} Method();
+}}" + NativeInterfaceUsage() + INativeAPI_IUnmanagedInterfaceTypeImpl;
 
         public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider<ManagedToUnmanaged>
         {

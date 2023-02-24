@@ -7,7 +7,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
-    internal interface ISnippetProvider
+    internal interface IComInterfaceAttributeProvider
     {
         public GeneratorKind Generator { get; }
 

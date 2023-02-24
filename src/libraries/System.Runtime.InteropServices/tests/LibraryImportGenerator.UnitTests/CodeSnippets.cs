@@ -656,7 +656,6 @@ partial class Test
 
         public static string MarshalAsArrayParameterWithNestedMarshalInfo<T>(UnmanagedType nestedMarshalType, string preDeclaration = "") => MarshalAsArrayParameterWithNestedMarshalInfo(typeof(T).ToString(), nestedMarshalType, preDeclaration);
 
-
         /// <summary>
         /// Declaration with parameters with MarshalAs.
         /// </summary>

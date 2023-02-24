@@ -8,18 +8,5 @@ namespace System.Runtime.InteropServices.Marshalling
     [AttributeUsage(AttributeTargets.Interface)]
     public class GeneratedComInterfaceAttribute : Attribute
     {
-        public GeneratedComInterfaceAttribute() { }
-
-        public GeneratedComInterfaceAttribute(Type comWrappersType, bool generateManagedObjectWrapper, bool generateComObjectWrapper)
-            => (ComWrappersType, GenerateManagedObjectWrapper, GenerateComObjectWrapper)
-             = (comWrappersType, generateManagedObjectWrapper, generateComObjectWrapper);
-
-        public Type? ComWrappersType { get; } = null;
-
-        public bool GenerateManagedObjectWrapper { get; } = true;
-
-        public bool GenerateComObjectWrapper { get; } = true;
-
-        public bool ExportInterfaceDefinition { get; }
     }
 }
