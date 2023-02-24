@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -1138,29 +1139,6 @@ function append_memmove_local_local (builder: WasmBuilder, destLocalOffset: numb
     append_ldloca(builder, destLocalOffset, count, true);
     append_ldloca(builder, sourceLocalOffset, 0);
     append_memmove_dest_src(builder, count);
-}
-
-// Loads the specified i32 value and bails out if it is null. Does not leave it on the stack.
-function append_local_null_check (builder: WasmBuilder, localOffset: number, ip: MintOpcodePtr) {
-    if (knownNotNull.has(localOffset)) {
-        if (nullCheckValidation) {
-            append_ldloc(builder, localOffset, WasmOpcode.i32_load);
-            builder.i32_const(builder.base);
-            builder.callImport("notnull");
-        }
-        // console.log(`skipping null check for ${localOffset}`);
-        counters.nullChecksEliminated++;
-        return;
-    }
-
-    builder.block();
-    append_ldloc(builder, localOffset, WasmOpcode.i32_load);
-    builder.appendU8(WasmOpcode.br_if);
-    builder.appendULeb(0);
-    append_bailout(builder, ip, BailoutReason.NullCheck);
-    builder.endBlock();
-    if (!addressTakenLocals.has(localOffset) && builder.options.eliminateNullChecks)
-        knownNotNull.add(localOffset);
 }
 
 // Loads the specified i32 value and then bails out if it is null, leaving it in the cknull_ptr local.
@@ -2681,6 +2659,11 @@ function append_getelema1 (
     builder: WasmBuilder, ip: MintOpcodePtr,
     objectOffset: number, indexOffset: number, elementSize: number
 ) {
+    // FIXME
+    append_bailout(builder, ip, BailoutReason.ArrayLoadFailed);
+    return;
+    /*
+
     builder.block();
 
     // load index for check
@@ -2715,6 +2698,7 @@ function append_getelema1 (
     builder.appendU8(WasmOpcode.i32_mul);
     builder.appendU8(WasmOpcode.i32_add);
     // append_getelema1 leaves the address on the stack
+    */
 }
 
 function emit_arrayop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
