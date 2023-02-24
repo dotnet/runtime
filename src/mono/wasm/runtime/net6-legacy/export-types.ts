@@ -250,6 +250,15 @@ export type MONOType = {
      * @deprecated Please use getHeapF64
      */
     getF64: (offset: MemOffset) => number;
+    /**
+     * @deprecated Please use WasmRootBuffer
+     */
+    mono_wasm_gc_lock: () => void;
+    /**
+     * @deprecated Please use WasmRootBuffer
+     */
+    mono_wasm_gc_unlock: () => void;
+
 };
 
 export { MonoArray, MonoObject, MonoString };

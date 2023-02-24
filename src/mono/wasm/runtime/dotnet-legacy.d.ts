@@ -3,7 +3,7 @@
 //!
 //! This is generated file, see src/mono/wasm/runtime/rollup.config.js
 
-//! This is not considered public API with backward compatibility guarantees. 
+//! This is not considered public API with backward compatibility guarantees.
 
 declare interface ManagedPointer {
     __brandManagedPointer: "ManagedPointer";
@@ -302,6 +302,14 @@ type MONOType = {
      * @deprecated Please use getHeapF64
      */
     getF64: (offset: MemOffset) => number;
+    /**
+     * @deprecated Please use WasmRootBuffer
+     */
+    mono_wasm_gc_lock: () => void;
+    /**
+     * @deprecated Please use WasmRootBuffer
+     */
+    mono_wasm_gc_unlock: () => void;
 };
 
 export { BINDINGType, MONOType, MonoArray, MonoObject, MonoString };

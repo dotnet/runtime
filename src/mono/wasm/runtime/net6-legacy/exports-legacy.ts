@@ -17,6 +17,7 @@ import { mono_bind_static_method, mono_call_assembly_entry_point } from "./metho
 import { mono_wasm_load_runtime } from "../startup";
 import { BINDINGType, MONOType } from "./export-types";
 import { mono_wasm_load_data_archive } from "../assets";
+import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "../gc-lock";
 
 export function export_mono_api(): MONOType {
     return {
@@ -67,6 +68,10 @@ export function export_mono_api(): MONOType {
         getU32,
         getF32,
         getF64,
+
+        // for Blazor threading GC hack,
+        mono_wasm_gc_lock,
+        mono_wasm_gc_unlock,
     };
 }
 
