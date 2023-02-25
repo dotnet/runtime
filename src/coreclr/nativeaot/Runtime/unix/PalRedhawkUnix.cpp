@@ -503,12 +503,15 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDL
 {
 #ifdef TARGET_APPLE
     int f;
-    char *exepath;
+    Dl_info info;
 
-    // NOTE: We ignore hTemplateModule, it is always the current module
-    exepath = minipal_getexepath();
-    f = open(exepath, O_RDONLY);
-    free(exepath);
+    int st = dladdr((const void*)hTemplateModule, &info);
+    if (st == 0)
+    {
+        return UInt32_FALSE;
+    }
+
+    f = open(info.dli_fname, O_RDONLY);
     if (f < 0)
     {
         return UInt32_FALSE;
@@ -519,8 +522,9 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDL
     // executable and determine the size from them.
     if (thunks_section == NULL)
     {
-        thunks_section = getsectbyname("__THUNKS", "__thunks");
-        thunks_data_section = getsectbyname("__THUNKS_DATA", "__thunks");
+        const struct mach_header_64 *hdr = (const struct mach_header_64 *)hTemplateModule;
+        thunks_section = getsectbynamefromheader_64(hdr, "__THUNKS", "__thunks");
+        thunks_data_section = getsectbynamefromheader_64(hdr, "__THUNKS_DATA", "__thunks");
     }
 
     *newThunksOut = mmap(
