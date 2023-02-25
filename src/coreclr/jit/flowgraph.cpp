@@ -66,11 +66,14 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
         return result;
     }
 
-    for (BasicBlock* const block : Blocks())
+    BasicBlock* prevBb = nullptr;
+    for (BasicBlock* block : Blocks())
     {
+    TRAVERSE_BLOCK_AGAIN:
+        Statement* prevStmt = nullptr;
         for (Statement* const stmt : block->Statements())
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (!tree->IsCall() || !tree->AsCall()->IsExpRuntimeLookup())
                 {
@@ -79,6 +82,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 assert(tree->IsHelperCall());
 
                 GenTreeCall* call = tree->AsCall();
+                call->ClearExpRuntimeLookup();
                 assert(call->gtArgs.CountArgs() == 2);
 
                 GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
@@ -112,14 +116,143 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 if (runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK)
                 {
-                    // dynamic expansion
+                    // TODO: impelement dynamic expansion
+                    continue;
                 }
-                else
+
+                assert(runtimeLookup.indirections != 0);
+                assert(runtimeLookup.testForNull);
+
+                unsigned rtLookupLclNum            = lvaGrabTemp(true DEBUGARG("runtime lookup"));
+                lvaGetDesc(rtLookupLclNum)->lvType = TYP_I_IMPL;
+                GenTreeLclVar* rtLookupLcl         = gtNewLclvNode(rtLookupLclNum, call->TypeGet());
+
+                if (prevBb == nullptr)
                 {
-                    // normal expansion
+                    // We're going to emit a BB in front of fgFirstBB
+                    fgEnsureFirstBBisScratch();
+                    prevBb = fgFirstBB;
                 }
+
+                if (prevBb == block)
+                {
+                    // Unlikely event: current block is a scratch block
+                    continue;
+                }
+
+                if (prevStmt == nullptr)
+                {
+                    prevStmt = fgNewStmtFromTree(gtNewNothingNode());
+                    fgInsertStmtAtBeg(block, prevStmt);
+                }
+
+                if (!ctxTree->OperIs(GT_LCL_VAR))
+                {
+                    fgMakeMultiUse(&ctxTree);
+                }
+
+                GenTree* slotPtrTree = ctxTree;
+                GenTree* indOffTree  = nullptr;
+                for (WORD i = 0; i < runtimeLookup.indirections; i++)
+                {
+                    if ((i == 1 && runtimeLookup.indirectFirstOffset) || (i == 2 && runtimeLookup.indirectSecondOffset))
+                    {
+                        indOffTree = fgMakeMultiUse(&slotPtrTree);
+                    }
+
+                    // The last indirection could be subject to a size check (dynamic dictionary expansion)
+                    bool isLastIndirectionWithSizeCheck =
+                        ((i == runtimeLookup.indirections - 1) && (runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK));
+
+                    if (i != 0)
+                    {
+                        slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
+                        slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
+                        if (!isLastIndirectionWithSizeCheck)
+                        {
+                            slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
+                        }
+                    }
+
+                    if ((i == 1 && runtimeLookup.indirectFirstOffset) || (i == 2 && runtimeLookup.indirectSecondOffset))
+                    {
+                        slotPtrTree = gtNewOperNode(GT_ADD, TYP_I_IMPL, indOffTree, slotPtrTree);
+                    }
+
+                    if (runtimeLookup.offsets[i] != 0)
+                    {
+                        slotPtrTree = gtNewOperNode(GT_ADD, TYP_I_IMPL, slotPtrTree,
+                                                    gtNewIconNode(runtimeLookup.offsets[i], TYP_I_IMPL));
+                    }
+                }
+
+                prevBb = block;
+                block  = fgSplitBlockAfterStatement(prevBb, prevStmt);
+
+                BasicBlock* nullcheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
+                nullcheckBb->bbFlags |= (BBF_INTERNAL | BBF_HAS_JMP);
+
+                GenTree* handleForNullCheck = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
+                handleForNullCheck->gtFlags |= GTF_IND_NONFAULTING;
+
+                GenTree* nullcheckOp = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
+                nullcheckOp->gtFlags |= (GTF_RELOP_JMP_USED);
+                gtSetEvalOrder(nullcheckOp);
+                Statement* nullcheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp));
+                gtSetStmtInfo(nullcheckStmt);
+                fgSetStmtSeq(nullcheckStmt);
+                fgInsertStmtAtEnd(nullcheckBb, nullcheckStmt);
+
+                BasicBlock* fastPathBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
+                fastPathBb->bbFlags |= (BBF_INTERNAL);
+                GenTree*   asgTree = gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(handleForNullCheck));
+                Statement* asgStmt = fgNewStmtFromTree(asgTree);
+                fgInsertStmtAtBeg(fastPathBb, asgStmt);
+                gtSetStmtInfo(asgStmt);
+                fgSetStmtSeq(asgStmt);
+
+                BasicBlock* fallbackBb = fgNewBBafter(BBJ_ALWAYS, nullcheckBb, true);
+                fallbackBb->bbFlags |= (BBF_INTERNAL);
+                GenTree*   asgTree2 = gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(call));
+                Statement* asgStmt2 = fgNewStmtFromTree(asgTree2);
+                fgInsertStmtAtBeg(fallbackBb, asgStmt2);
+                gtSetStmtInfo(asgStmt2);
+                fgSetStmtSeq(asgStmt2);
+
+                // Replace ExpRuntimeLookup call with a local
+                call->ReplaceWith(gtNewLclvNode(rtLookupLclNum, call->TypeGet()), this);
+                gtUpdateTreeAncestorsSideEffects(call);
+                gtSetStmtInfo(stmt);
+                fgSetStmtSeq(stmt);
+
+                // Connect all new blocks together
+                fgAddRefPred(nullcheckBb, prevBb);
+                fgAddRefPred(fallbackBb, nullcheckBb);
+                fgAddRefPred(fastPathBb, nullcheckBb);
+                fgRemoveRefPred(block, prevBb);
+                fgAddRefPred(block, fastPathBb);
+                fgAddRefPred(block, fallbackBb);
+                nullcheckBb->bbJumpDest = fastPathBb;
+                fallbackBb->bbJumpDest  = block;
+                fastPathBb->bbJumpDest  = block;
+
+                // Re-distribute weights
+                nullcheckBb->inheritWeight(prevBb);
+                fallbackBb->inheritWeightPercentage(nullcheckBb, 20); // TODO: Consider making it cold (0%)
+                fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
+                block->inheritWeight(prevBb);
+
+                assert(BasicBlock::sameEHRegion(prevBb, block));
+                assert(BasicBlock::sameEHRegion(prevBb, nullcheckBb));
+                assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
+
+                // prevBb = helperCallBb;
+                result = PhaseStatus::MODIFIED_EVERYTHING;
+                goto TRAVERSE_BLOCK_AGAIN;
             }
+            prevStmt = stmt;
         }
+        prevBb = block;
     }
     return result;
 }

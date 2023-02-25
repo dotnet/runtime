@@ -5530,6 +5530,11 @@ struct GenTreeCall final : public GenTree
         gtCallMoreFlags |= GTF_CALL_M_EXP_RUNTIME_LOOKUP;
     }
 
+    void ClearExpRuntimeLookup()
+    {
+        gtCallMoreFlags &= ~GTF_CALL_M_EXP_RUNTIME_LOOKUP;
+    }
+
     bool IsExpRuntimeLookup() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
