@@ -495,6 +495,22 @@ namespace System.Diagnostics
                         startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
                     }
 
+                    if (startInfo.WindowStyle != ProcessWindowStyle.Normal)
+                    {
+                        if (startInfo.CreateNoWindow)
+                        {
+                            throw new ArgumentException(SR.CantSetWindowStyleWithCreateNoWindow);
+                        }
+
+                        startupInfo.wShowWindow = startInfo.WindowStyle switch
+                        {
+                            ProcessWindowStyle.Minimized => (short)Interop.Shell32.SW_SHOWMINIMIZED,
+                            ProcessWindowStyle.Maximized => (short)Interop.Shell32.SW_SHOWMAXIMIZED,
+                            _ => (short)Interop.Shell32.SW_HIDE,
+                        };
+                        startupInfo.dwFlags |= Interop.Advapi32.StartupInfoOptions.STARTF_USESHOWWINDOW;
+                    }
+
                     // set up the creation flags parameter
                     int creationFlags = 0;
                     if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
