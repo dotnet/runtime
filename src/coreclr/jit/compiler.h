@@ -4794,7 +4794,7 @@ public:
 
     GenTree* fgInitThisClass();
 
-    GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper);
+    GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, uint32_t typeIndex = 0);
 
     GenTreeCall* fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls);
 

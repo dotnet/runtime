@@ -1767,7 +1767,7 @@ HCIMPLEND
 //     possible.
 
 #include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID)
+HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID, UINT32 staticBlockIndex)
 {
     FCALL_CONTRACT;
 

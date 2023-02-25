@@ -14315,7 +14315,8 @@ GenTree* Compiler::impThreadLocalFieldAccess(CORINFO_RESOLVED_TOKEN& token,
 
     FieldSeq* innerFldSeq = GetFieldSeqStore()->Create(token.hField, fieldOffset, FieldSeq::FieldKind::SharedStatic);
     GenTree*  slowPathForThreadStaticBlockNull =
-        fgGetStaticsCCtorHelper(token.hClass, CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR); // TODO: fix this
+        fgGetStaticsCCtorHelper(token.hClass, CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
+                                threadLocalInfo.threadStaticBlockIndex); // TODO: fix this
     slowPathForThreadStaticBlockNull =
         gtNewOperNode(GT_ADD, slowPathForThreadStaticBlockNull->TypeGet(), slowPathForThreadStaticBlockNull,
                       gtNewIconNode(pFieldInfo->offset, innerFldSeq));

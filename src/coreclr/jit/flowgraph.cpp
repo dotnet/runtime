@@ -694,7 +694,7 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
     return false;
 }
 
-GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
+GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, uint32_t typeIndex)
 {
     bool         bNeedClassID = true;
     GenTreeFlags callFlags    = GTF_EMPTY;
@@ -783,7 +783,14 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             opClassIDArg = gtNewIconNode(clsID, TYP_INT);
         }
 
-        result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
+        if (typeIndex == -1)
+        {
+            result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
+        }
+        else
+        {
+            result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg, gtNewIconNode(typeIndex, TYP_I_IMPL));
+        }
     }
     else
     {
