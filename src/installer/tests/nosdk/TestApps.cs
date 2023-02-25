@@ -8,18 +8,14 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using BundleTests.Helpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.CoreSetup.Test;
-using Microsoft.Extensions.DependencyModel;
 using Microsoft.NET.HostModel.AppHost;
 using Microsoft.NET.HostModel.Bundle;
 using Xunit;
-using static Microsoft.DotNet.CoreSetup.Test.NetCoreAppBuilder;
 
 namespace AppHost.Bundle.Tests
 {
@@ -30,7 +26,7 @@ namespace AppHost.Bundle.Tests
         private static RepoDirectoriesProvider s_provider => RepoDirectoriesProvider.Default;
 
         private readonly bool selfContained;
-        private readonly string compiledAppDirectory;
+        private readonly TestApp compiledApp;
 
         private AppWithSubDirs(bool selfContained)
             : base(GetNewTestArtifactPath(AppName))
@@ -38,9 +34,9 @@ namespace AppHost.Bundle.Tests
             this.selfContained = selfContained;
 
             // Compile and write out the app to a sub-directory
-            compiledAppDirectory = Path.Combine(Location, "compiled");
-            Directory.CreateDirectory(compiledAppDirectory);
-            WriteAppToDirectory(compiledAppDirectory, selfContained);
+            compiledApp = new TestApp(Path.Combine(Location, "compiled"), AppName);
+            Directory.CreateDirectory(compiledApp.Location);
+            WriteAppToDirectory(compiledApp.Location, selfContained);
         }
 
         public static AppWithSubDirs CreateFrameworkDependent()
@@ -55,7 +51,7 @@ namespace AppHost.Bundle.Tests
             string singleFile = BundleApp(
                 options,
                 RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AppName),
-                compiledAppDirectory,
+                compiledApp.Location,
                 bundleDirectory,
                 selfContained,
                 bundleVersion);
@@ -144,66 +140,66 @@ namespace AppHost.Bundle.Tests
                 });
         }
 
-        private static void WriteAppToDirectory(string tempDir, bool selfContained)
+        private void WriteAppToDirectory(string outputDirectory, bool selfContained)
         {
+            // Compile the app assembly
             var srcPath = Path.Combine(s_provider.TestAssetsFolder, "TestProjects", AppName, "Program.cs");
             var comp = CSharpCompilation.Create(
                 assemblyName: AppName,
                 syntaxTrees: new[] { CSharpSyntaxTree.ParseText(File.ReadAllText(srcPath)) },
                 references: RefAssemblies);
-            var emitResult = comp.Emit(Path.Combine(tempDir, $"{AppName}.dll"));
+            var emitResult = comp.Emit(compiledApp.AppDll);
             Assert.True(emitResult.Success);
 
-            if (!selfContained)
-            {
-                WriteBasicRuntimeConfig(
-                    Path.Combine(tempDir, $"{AppName}.runtimeconfig.json"),
-                    s_provider.Tfm,
-                    s_provider.MicrosoftNETCoreAppVersion,
-                    selfContained);
+            var shortVersion = s_provider.Tfm[3..]; // trim "net" from beginning
+            var builder = NetCoreAppBuilder.ForNETCoreApp(AppName, s_provider.TargetRID, shortVersion);
 
-                DependencyContext dependencyContext = new DependencyContext(
-                    new Microsoft.Extensions.DependencyModel.TargetInfo($".NETCoreApp,Version=v{s_provider.Tfm[3..]}", null, null, true),
-                    Microsoft.Extensions.DependencyModel.CompilationOptions.Default,
-                    Enumerable.Empty<CompilationLibrary>(),
-                    new[]
-                    {
-                        new RuntimeLibrary(
-                            RuntimeLibraryType.project.ToString(),
-                            AppName,
-                            "1.0.0",
-                            string.Empty,
-                            new []
+            // Update the .runtimeconfig.json
+            builder.WithRuntimeConfig(c =>
+            {
+                c.WithTfm(s_provider.Tfm);
+                c = selfContained
+                    ? c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, s_provider.MicrosoftNETCoreAppVersion)
+                    : c.WithFramework(Constants.MicrosoftNETCoreApp, s_provider.MicrosoftNETCoreAppVersion);
+            });
+
+            // Add runtime libraries and assets for generating the .deps.json.
+            // All assets are configured to not be on disk as this app is just for bundling purposes.
+            // We can grab the runtime assets from their original location and avoid copying everything
+            builder.WithProject(AppName, "1.0.0", p => p
+                .WithAssemblyGroup(string.Empty, g => g
+                    .WithAsset(Path.GetFileName(compiledApp.AppDll), f => f.NotOnDisk())));
+            if (selfContained)
+            {
+                builder = builder
+                    .WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{s_provider.TargetRID}", s_provider.MicrosoftNETCoreAppVersion, l => l
+                        .WithAssemblyGroup(string.Empty, g =>
+                        {
+                            foreach (var file in GetRuntimeAssemblies())
                             {
-                                new RuntimeAssetGroup(null, $"{AppName}.dll")
-                            },
-                            Array.Empty<RuntimeAssetGroup>(),
-                            Enumerable.Empty<ResourceAssembly>(),
-                            Enumerable.Empty<Dependency>(),
-                            false)
-                    },
-                    Enumerable.Empty<RuntimeFallbacks>());
-
-                DependencyContextWriter writer = new DependencyContextWriter();
-                using (FileStream stream = new FileStream(Path.Combine(tempDir, $"{AppName}.deps.json"), FileMode.Create))
-                {
-                    writer.Write(dependencyContext, stream);
-                };
-            }
-            else
-            {
-                WriteBasicSelfContainedDepsJson(Path.Combine(tempDir, $"{AppName}.deps.json"));
+                                var fileVersion = FileVersionInfo.GetVersionInfo(file).FileVersion;
+                                var asmVersion = AssemblyName.GetAssemblyName(file).Version!.ToString();
+                                g.WithAsset(
+                                    Path.GetFileName(file),
+                                    f => f.WithVersion(asmVersion, fileVersion!).NotOnDisk());
+                            }
+                        }));
             }
 
+            // Write out the app
+            builder.Build(compiledApp);
+
+            // Create the apphost for the app
             HostWriter.CreateAppHost(
                 GetAppHostPath(selfContained),
-                Path.Combine(tempDir, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AppName)),
+                Path.Combine(outputDirectory, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(AppName)),
                 $"{AppName}.dll",
                 windowsGraphicalUserInterface: false,
                 assemblyToCopyResourcesFrom: null,
                 enableMacOSCodeSign: true);
 
-            CopySentenceSubDir(tempDir);
+            // Copy over extra content files
+            CopySentenceSubDir(outputDirectory);
         }
 
         private static string GetAppHostPath(
@@ -211,100 +207,6 @@ namespace AppHost.Bundle.Tests
         {
             string hostName = selfContained ? "singlefilehost" : "apphost";
             return Path.Combine(s_provider.HostArtifacts, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform(hostName));
-        }
-
-        private static void WriteBasicRuntimeConfig(
-            string outputPath,
-            string tfm,
-            string version,
-            bool selfContained)
-        {
-            var frameworkText = @$"
-            {{
-                ""name"": ""Microsoft.NETCore.App"",
-                ""version"": ""{version}""
-            }}";
-            string text;
-            if (selfContained)
-            {
-                text = @$"
-{{
-    ""runtimeOptions"": {{
-        ""tfm"": ""{tfm}"",
-        ""includedFrameworks"": [
-{frameworkText}
-    ]
-    }}
-}}";
-            }
-            else
-            {
-                text = @$"
-{{
-    ""runtimeOptions"": {{
-        ""tfm"": ""{tfm}"",
-        ""framework"":
-{frameworkText}
-    }}
-}}";
-            }
-            File.WriteAllText(outputPath, text);
-        }
-
-        private static void WriteBasicSelfContainedDepsJson(string outputPath)
-        {
-            var runtimeFiles = GetRuntimeAssemblies()
-                .Select(f =>
-                {
-                    var fileVersion = FileVersionInfo.GetVersionInfo(f).FileVersion;
-                    var asmVersion = AssemblyName.GetAssemblyName(f).Version!.ToString();
-                    return KeyValuePair.Create(Path.GetFileName(f), (JsonNode?)new JsonObject(new KeyValuePair<string, JsonNode?>[] {
-                        new("assemblyVersion", asmVersion),
-                        new("fileVersion", fileVersion)
-                    }));
-                });
-            var version = s_provider.MicrosoftNETCoreAppVersion;
-            var shortVersion = s_provider.Tfm[3..]; // trim "net" from beginning
-            var targetRid = s_provider.TargetRID;
-            var value = new JsonObject(new KeyValuePair<string, JsonNode?>[]
-            {
-                new("runtimeTarget", new JsonObject(new KeyValuePair<string, JsonNode?>[] {
-                    new("name", JsonValue.Create($".NETCoreApp,Version=v{shortVersion}/{targetRid}")),
-                    new("signature", JsonValue.Create(""))
-                })),
-                new("compilationOptions", new JsonObject()),
-                new("targets", new JsonObject(new KeyValuePair<string, JsonNode?>[] {
-                    new($".NETCoreApp,Version=v{shortVersion}", new JsonObject()),
-                    new($".NETCoreApp,Version=v{shortVersion}/{targetRid}", new JsonObject(new KeyValuePair<string, JsonNode?>[] {
-                        new("AppWithSubDirs/1.0.0", new JsonObject(new KeyValuePair<string, JsonNode?>[] {
-                            new("dependencies", new JsonObject(new KeyValuePair<string, JsonNode?>[] {
-                                new($"runtimepack.Microsoft.NETCore.App.Runtime.{targetRid}", version)
-                            })),
-                            new("runtime", new JsonObject(new KeyValuePair<string, JsonNode?>[] {
-                                new("AppWithSubDirs.dll", new JsonObject())
-                            }))
-                        })),
-                        new($"runtimepack.Microsoft.NETCore.App.Runtime.{targetRid}/{version}", new JsonObject(new KeyValuePair<string, JsonNode?>[] {
-                            new("runtime", new JsonObject(runtimeFiles))
-                        }))
-                    }))
-                })),
-                new("libraries", new JsonObject(new KeyValuePair<string, JsonNode?>[] {
-                    new("AppWithSubDirs/1.0.0", new JsonObject(new KeyValuePair<string, JsonNode?>[] {
-                        new("type", "project"),
-                        new("serviceable", false),
-                        new("sha512", "")
-                    })),
-                    new($"runtimepack.Microsoft.NETCore.App.Runtime.{targetRid}/{version}", new JsonObject(new KeyValuePair<string, JsonNode?>[] {
-                        new("type", "runtimepack"),
-                        new("serviceable", false),
-                        new("sha512", "")
-                    }))
-                }))
-            });
-
-            var text = value.ToJsonString(new JsonSerializerOptions() { WriteIndented = true });
-            File.WriteAllText(outputPath, text);
         }
 
         // Specific to the AppWithSubDirs app

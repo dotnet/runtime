@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     FileUtils.EnsureFileDirectoryExists(absolutePath);
                     File.Copy(SourcePath, absolutePath);
                 }
-                else if (FileOnDiskPath == null || FileOnDiskPath.Length >= 0)
+                else if (FileOnDiskPath == null || FileOnDiskPath.Length > 0)
                 {
                     FileUtils.CreateEmptyFile(absolutePath);
                 }
@@ -188,7 +188,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public enum RuntimeLibraryType
         {
             project,
-            package
+            package,
+            runtimepack
         }
 
         public class RuntimeLibraryBuilder
@@ -287,13 +288,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             };
         }
 
-        public static NetCoreAppBuilder ForNETCoreApp(string name, string runtime)
+        public static NetCoreAppBuilder ForNETCoreApp(string name, string runtime, string version = "3.0")
         {
             return new NetCoreAppBuilder()
             {
                 _sourceApp = null,
                 Name = name,
-                Framework = ".NETCoreApp,Version=v3.0",
+                Framework = $".NETCoreApp,Version=v{version}",
                 Runtime = runtime
             };
         }
@@ -330,6 +331,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public NetCoreAppBuilder WithPackage(string name, string version, Action<RuntimeLibraryBuilder> customizer = null)
         {
             return WithRuntimeLibrary(RuntimeLibraryType.package, name, version, customizer);
+        }
+
+        public NetCoreAppBuilder WithRuntimePack(string name, string version, Action<RuntimeLibraryBuilder> customizer = null)
+        {
+            return WithRuntimeLibrary(RuntimeLibraryType.runtimepack, $"runtimepack.{name}", version, customizer);
         }
 
         public NetCoreAppBuilder WithRuntimeFallbacks(string runtime, params string[] fallbacks)
