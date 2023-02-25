@@ -19,7 +19,7 @@
            01 2A 9C E3 )                                     
   
 }
-.assembly legacy library 'test1'
+.assembly legacy library 'test1_102754'
 {
 
 

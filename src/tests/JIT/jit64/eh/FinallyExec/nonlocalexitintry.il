@@ -10,7 +10,7 @@
 }
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly test {}
+.assembly 'nonlocalexitintry' {}
 
 
 .method public static int32 Main()

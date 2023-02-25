@@ -15,7 +15,7 @@
 {
   .ver 0:0:0:0
 }
-.assembly 'test'
+.assembly 'test_543645'
 {
   .ver 0:0:0:0
 }

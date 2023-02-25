@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib {}
-.assembly test {}
+.assembly 'throwinfinallyintryfilter2' {}
 .assembly extern eh_common {}
 
 

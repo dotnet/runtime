@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly test {}
+.assembly 'test_286991' {}
 
 .method public static int32 Main()
 {

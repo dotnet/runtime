@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 
-.assembly 'test' {}
+.assembly 'test_404708' {}
 
 .namespace Test
 {

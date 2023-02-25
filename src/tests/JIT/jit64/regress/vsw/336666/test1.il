@@ -20,7 +20,7 @@
   .ver 2:0:3600:0
 }
 
-.assembly foo {}
+.assembly 'test1_336666' {}
 
 
 // We inline the call chain foo()->Throw(). This causes the DFS reader

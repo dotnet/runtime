@@ -9,7 +9,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern common {}
-.assembly test {}
+.assembly 'test_552940' {}
 
 
 

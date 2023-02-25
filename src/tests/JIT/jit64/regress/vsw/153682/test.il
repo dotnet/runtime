@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly legacy library test {}
+.assembly legacy library 'test_153682' {}
 
 .class auto ansi sealed public save extends [mscorlib]System.Object
 {

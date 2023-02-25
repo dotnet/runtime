@@ -6,7 +6,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 2:0:0:0
 }
-.assembly ILGEN_0xf64b7da3
+.assembly '127931'
 {
   .ver 0:0:0:0
 }
