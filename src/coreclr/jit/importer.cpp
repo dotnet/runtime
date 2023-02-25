@@ -1878,8 +1878,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     // Call the helper
     // - Setup argNode with the pointer to the signature returned by the lookup
+    assert(pRuntimeLookup->signature != nullptr);
     GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-
     GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
 
     // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
@@ -1888,7 +1888,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     helperCall->SetExpRuntimeLookup();
     if (!GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))
     {
-        GetSignatureToLookupInfoMap()->Set(pRuntimeLookup->signature, pLookup);
+        GetSignatureToLookupInfoMap()->Set(pRuntimeLookup->signature, *pRuntimeLookup);
     }
     return helperCall;
 }

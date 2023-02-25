@@ -4900,7 +4900,7 @@ public:
         return m_nodeToLoopMemoryBlockMap;
     }
 
-    typedef JitHashTable<void*, JitPtrKeyFuncs<void>, CORINFO_LOOKUP*> SignatureToLookupInfoMap;
+    typedef JitHashTable<void*, JitPtrKeyFuncs<void>, CORINFO_RUNTIME_LOOKUP> SignatureToLookupInfoMap;
     SignatureToLookupInfoMap* m_signatureToLookupInfoMap;
     SignatureToLookupInfoMap* GetSignatureToLookupInfoMap()
     {

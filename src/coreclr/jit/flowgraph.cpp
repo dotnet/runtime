@@ -78,23 +78,45 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
                 assert(tree->IsHelperCall());
 
-                GenTreeCall*   call      = tree->AsCall();
-                GenTree*       ctx       = call->gtArgs.GetArgByIndex(0)->GetNode();
-                GenTreeIntCon* signature = call->gtArgs.GetArgByIndex(1)->GetNode()->AsIntCon();
+                GenTreeCall* call = tree->AsCall();
+                assert(call->gtArgs.CountArgs() == 2);
 
-                CORINFO_LOOKUP* pLookup = nullptr;
-                bool            found = GetSignatureToLookupInfoMap()->Lookup((void*)signature->IconValue(), &pLookup);
-                assert(found);
-                const CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
-                assert(pRuntimeLookup->indirections != 0);
+                GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
+                GenTree* sigTree = call->gtArgs.GetArgByIndex(1)->GetNode();
 
-                if (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+                void* signature = nullptr;
+                if (sigTree->IsCnsIntOrI())
+                {
+                    signature = (void*)sigTree->AsIntCon()->IconValue();
+                }
+                else
+                {
+                    if (vnStore->IsVNConstant(sigTree->gtVNPair.GetLiberal()))
+                    {
+                        signature = (void*)vnStore->CoercedConstantValue<ssize_t>(sigTree->gtVNPair.GetLiberal());
+                    }
+                    else
+                    {
+                        assert(!"can't restore signature argument value");
+                        continue;
+                    }
+                }
+
+                assert(signature != nullptr);
+
+                CORINFO_RUNTIME_LOOKUP runtimeLookup = {};
+                if (!GetSignatureToLookupInfoMap()->Lookup(signature, &runtimeLookup))
+                {
+                    continue;
+                }
+
+                if (runtimeLookup.sizeOffset != CORINFO_NO_SIZE_CHECK)
                 {
                     // dynamic expansion
                 }
                 else
                 {
-                    // no dynamic expansion
+                    // normal expansion
                 }
             }
         }
