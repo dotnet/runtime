@@ -55,13 +55,13 @@
     <Error Condition="'$(PublishAot)' == 'true' and '$(PublishSingleFile)' == 'true'" Text="PublishAot and PublishSingleFile cannot be specified at the same time." />
 
     <!-- Fail with descriptive error message for common unsupported cases. -->
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' == 'Windows_NT' and !$(RuntimeIdentifier.StartsWith('win'))"
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' == 'Windows_NT' and '$(_targetOS)' != 'win'"
       Text="Cross-OS native compilation is not supported." />
 
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and $(RuntimeIdentifier.StartsWith('win'))"
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and '$(_targetOS)' == 'win'"
       Text="Cross-OS native compilation is not supported." />
 
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !($(RuntimeIdentifier.EndsWith('x64')) or $(RuntimeIdentifier.EndsWith('arm64')))"
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(_targetArchitecture)' != 'x64' and '$(_targetArchitecture)' != 'arm64'"
       Text="Native compilation does not support targeting $(RuntimeIdentifier) yet." />
 
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and !('$(_hostArchitecture)' == 'x64' or '$(_hostArchitecture)' == 'arm64')"
