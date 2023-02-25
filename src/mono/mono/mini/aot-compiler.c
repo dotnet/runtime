@@ -5207,8 +5207,11 @@ add_native_to_managed_wrappers (MonoAotCompile *acfg)
 
 				sig = mono_method_signature_internal (e->ctor);
 
-				g_assert (sig->param_count == 1);
-				g_assert (sig->params [0]->type == MONO_TYPE_CLASS && !strcmp (m_class_get_name (mono_class_from_mono_type_internal (sig->params [0])), "Type"));
+				if (sig->param_count != 1 || !(sig->params [0]->type == MONO_TYPE_CLASS && !strcmp (m_class_get_name (mono_class_from_mono_type_internal (sig->params [0])), "Type"))) {
+					g_warning ("AOT restriction: The attribute [MonoPInvokeCallback] used on method '%s' must take a System.Type argument. See https://docs.microsoft.com/xamarin/ios/internals/limitations#reverse-callbacks",
+						mono_method_full_name (method, TRUE));
+					exit (1);
+				}
 
 				/*
 				 * Decode the cattr manually since we can't create objects
