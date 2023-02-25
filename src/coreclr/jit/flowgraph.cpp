@@ -78,19 +78,24 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
                 assert(tree->IsHelperCall());
 
-                if (ISMETHOD("Test"))
-                {
-                    gtDispTree(tree);
-                    printf("");
-                }
+                GenTreeCall*   call      = tree->AsCall();
+                GenTree*       ctx       = call->gtArgs.GetArgByIndex(0)->GetNode();
+                GenTreeIntCon* signature = call->gtArgs.GetArgByIndex(1)->GetNode()->AsIntCon();
 
-                // TODO: expand runtime lookups into:
-                //
-                // isNull ? helperCall : IND(fastpath)
-                //
-                // or (for dynamic expansion):
-                //
-                // isNull ? helperCall : (sizeCheck ? IND(fastPath) : helperCall)
+                CORINFO_LOOKUP* pLookup = nullptr;
+                bool            found = GetSignatureToLookupInfoMap()->Lookup((void*)signature->IconValue(), &pLookup);
+                assert(found);
+                const CORINFO_RUNTIME_LOOKUP* pRuntimeLookup = &pLookup->runtimeLookup;
+                assert(pRuntimeLookup->indirections != 0);
+
+                if (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+                {
+                    // dynamic expansion
+                }
+                else
+                {
+                    // no dynamic expansion
+                }
             }
         }
     }

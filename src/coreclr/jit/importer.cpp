@@ -1886,6 +1886,10 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
     setMethodHasExpRuntimeLookup();
     helperCall->SetExpRuntimeLookup();
+    if (!GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))
+    {
+        GetSignatureToLookupInfoMap()->Set(pRuntimeLookup->signature, pLookup);
+    }
     return helperCall;
 }
 
