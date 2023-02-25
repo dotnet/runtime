@@ -2011,6 +2011,7 @@ private:
         DWORD NumInstanceGCPointerFields;   // does not include inherited pointer fields
         DWORD NumGCPointerSeries;
         DWORD NumInstanceFieldBytes;
+        DWORD NumValueArrayElements;
 
         bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;

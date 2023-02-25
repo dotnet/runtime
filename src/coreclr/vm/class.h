@@ -1384,6 +1384,16 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD)VMFLAG_HAS_FIELDS_WHICH_MUST_BE_INITED;
     }
+    BOOL HasValueArrayFlagSet()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_VMFlags & VMFLAG_VALUE_ARRAY);
+    }
+    void SetValueArrayFlag()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= (DWORD)VMFLAG_VALUE_ARRAY;
+    }
     void SetCannotBeBlittedByObjectCloner()
     {
         /* no op */
@@ -1723,7 +1733,7 @@ public:
         VMFLAG_BESTFITMAPPING                  = 0x00004000, // BestFitMappingAttribute.Value
         VMFLAG_THROWONUNMAPPABLECHAR           = 0x00008000, // BestFitMappingAttribute.ThrowOnUnmappableChar
 
-        // unused                              = 0x00010000,
+        VMFLAG_VALUE_ARRAY                     = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
         VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
         VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,

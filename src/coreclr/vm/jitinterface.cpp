@@ -3552,6 +3552,10 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
         }
         if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverlaidField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
+
+        if (pClass->HasValueArrayFlagSet())
+            ret |= CORINFO_FLG_DONT_DIG_FIELDS;
+
         if (VMClsHnd.IsCanonicalSubtype())
             ret |= CORINFO_FLG_SHAREDINST;
 

@@ -1694,6 +1694,25 @@ MethodTableBuilder::BuildMethodTableThrowing(
         &pByValueClassCache, bmtMFDescs, bmtFP,
         &totalDeclaredFieldSize);
 
+    // TODO: VS detect valArr 
+    //if (!bmtGenericsInfo->fContainsGenericVariables &&
+    //    g_pValueArrayClass != NULL &&
+    //    g_pValueArrayClass->GetCl() == GetCl() &&
+    //    g_pValueArrayClass->GetModule() == bmtInternal->pType->GetModule())
+    //{
+    //    TypeHandle lengthMarker = bmtGenericsInfo->GetInstantiation()[1];
+    //    if (lengthMarker.IsArray())
+    //    {
+    //        DWORD rank = lengthMarker.GetRank();
+    //        if (rank > 1)
+    //        {
+    //            bmtFP->NumValueArrayElements = rank;
+    //            // there is no scenario when tearing a value array into pieces is desirable.
+    //            GetHalfBakedClass()->SetValueArrayFlag();
+    //        }
+    //    }
+    //}
+
     // Place regular static fields
     PlaceRegularStaticFields();
 
@@ -1712,6 +1731,11 @@ MethodTableBuilder::BuildMethodTableThrowing(
         bmtFP->NumInstanceGCPointerFields = 0;
 
         _ASSERTE(HasLayout());
+
+        if (bmtFP->NumValueArrayElements)
+        {
+            GetLayoutInfo()->m_cbManagedSize *= bmtFP->NumValueArrayElements;
+        }
 
         bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
 
@@ -8318,6 +8342,16 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
         }
 
+        if (bmtFP->NumValueArrayElements > 0)
+        {
+            dwNumInstanceFieldBytes *= bmtFP->NumValueArrayElements;
+
+            if (pFieldDescList[0].IsByValue())
+            {
+                dwNumGCPointerSeries *= bmtFP->NumValueArrayElements;
+            }
+        }
+
         bmtFP->NumInstanceFieldBytes = dwNumInstanceFieldBytes;
 
         bmtFP->NumGCPointerSeries = dwNumGCPointerSeries;
@@ -11494,12 +11528,19 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
 
         }
 
+        DWORD repeat = 1;
+        if (bmtFP->NumValueArrayElements > 0)
+        {
+            _ASSERTE(bmtEnumFields->dwNumInstanceFields == 1);
+            repeat = bmtFP->NumValueArrayElements;
+        }
+
         // Build the pointer series map for this pointers in this instance
         pSeries = ((CGCDesc*)pMT)->GetLowestSeries();
         if (bmtFP->NumInstanceGCPointerFields)
         {
             // See gcdesc.h for an explanation of why we adjust by subtracting BaseSize
-            pSeries->SetSeriesSize( (size_t) (bmtFP->NumInstanceGCPointerFields * TARGET_POINTER_SIZE) - (size_t) pMT->GetBaseSize());
+            pSeries->SetSeriesSize((size_t)(bmtFP->NumInstanceGCPointerFields * repeat * TARGET_POINTER_SIZE) - (size_t)pMT->GetBaseSize());
             pSeries->SetSeriesOffset(bmtFP->GCPointerFieldStart + OBJECT_SIZE);
             pSeries++;
         }
@@ -11509,44 +11550,51 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
         {
             if (pFieldDescList[i].IsByValue())
             {
-                MethodTable *pByValueMT = pByValueClassCache[i];
+                MethodTable* pByValueMT = pByValueClassCache[i];
 
                 if (pByValueMT->ContainsPointers())
                 {
                     // Offset of the by value class in the class we are building, does NOT include Object
                     DWORD       dwCurrentOffset = pFieldDescList[i].GetOffset_NoLogging();
+                    DWORD       dwElementSize = pByValueMT->GetBaseSize() - OBJECT_BASESIZE;
 
-                    // The by value class may have more than one pointer series
-                    CGCDescSeries * pByValueSeries = CGCDesc::GetCGCDescFromMT(pByValueMT)->GetLowestSeries();
-                    SIZE_T dwNumByValueSeries = CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
-
-                    for (SIZE_T j = 0; j < dwNumByValueSeries; j++)
+                    for (DWORD r = 0; r < repeat; r++)
                     {
-                        size_t cbSeriesSize;
-                        size_t cbSeriesOffset;
+                        // The by value class may have more than one pointer series
+                        CGCDescSeries* pByValueSeries = CGCDesc::GetCGCDescFromMT(pByValueMT)->GetLowestSeries();
+                        SIZE_T dwNumByValueSeries = CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
 
-                        _ASSERTE(pSeries <= CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries());
+                        for (SIZE_T j = 0; j < dwNumByValueSeries; j++)
+                        {
+                            size_t cbSeriesSize;
+                            size_t cbSeriesOffset;
 
-                        cbSeriesSize = pByValueSeries->GetSeriesSize();
+                            _ASSERTE(pSeries <= CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries());
 
-                        // Add back the base size of the by value class, since it's being transplanted to this class
-                        cbSeriesSize += pByValueMT->GetBaseSize();
+                            cbSeriesSize = pByValueSeries->GetSeriesSize();
 
-                        // Subtract the base size of the class we're building
-                        cbSeriesSize -= pMT->GetBaseSize();
+                            // Add back the base size of the by value class, since it's being transplanted to this class
+                            cbSeriesSize += pByValueMT->GetBaseSize();
 
-                        // Set current series we're building
-                        pSeries->SetSeriesSize(cbSeriesSize);
+                            // Subtract the base size of the class we're building
+                            cbSeriesSize -= pMT->GetBaseSize();
 
-                        // Get offset into the value class of the first pointer field (includes a +Object)
-                        cbSeriesOffset = pByValueSeries->GetSeriesOffset();
+                            // Set current series we're building
+                            pSeries->SetSeriesSize(cbSeriesSize);
 
-                        // Add it to the offset of the by value class in our class
-                        cbSeriesOffset += dwCurrentOffset;
+                            // Get offset into the value class of the first pointer field (includes a +Object)
+                            cbSeriesOffset = pByValueSeries->GetSeriesOffset();
 
-                        pSeries->SetSeriesOffset(cbSeriesOffset); // Offset of field
-                        pSeries++;
-                        pByValueSeries++;
+                            // Add element N offset
+                            cbSeriesOffset += r * dwElementSize;
+
+                            // Add it to the offset of the by value class in our class
+                            cbSeriesOffset += dwCurrentOffset;
+
+                            pSeries->SetSeriesOffset(cbSeriesOffset); // Offset of field
+                            pSeries++;
+                            pByValueSeries++;
+                        }
                     }
                 }
             }

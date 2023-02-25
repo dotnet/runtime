@@ -14,20 +14,35 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(type.ContainsGCPointers);
 
-            GCPointerMapBuilder builder = new GCPointerMapBuilder(type.InstanceByteCount.AsInt, type.Context.Target.PointerSize);
-            FromInstanceLayoutHelper(ref builder, type);
+            int pointerSize = type.Context.Target.PointerSize;
+            GCPointerMapBuilder builder = new GCPointerMapBuilder(type.InstanceByteCount.AsInt, pointerSize);
+            FromInstanceLayoutHelper(ref builder, type, pointerSize);
 
             return builder.ToGCMap();
         }
 
-        private static void FromInstanceLayoutHelper(ref GCPointerMapBuilder builder, DefType type)
+        private static void FromInstanceLayoutHelper(ref GCPointerMapBuilder builder, DefType type, int pointerSize)
         {
             if (!type.IsValueType && type.HasBaseType)
             {
                 DefType baseType = type.BaseType;
                 GCPointerMapBuilder baseLayoutBuilder = builder.GetInnerBuilder(0, baseType.InstanceByteCount.AsInt);
-                FromInstanceLayoutHelper(ref baseLayoutBuilder, baseType);
+                FromInstanceLayoutHelper(ref baseLayoutBuilder, baseType, pointerSize);
             }
+
+            int repeat = 1;
+
+            //TODO: VS compute repeat
+            //if (type is InstantiatedType it)
+            //{
+            //    if (it.Name == "ValueArray`2" && it.Namespace == "System")
+            //    {
+            //        if (it.Instantiation[1] is ArrayType arr)
+            //        {
+            //            repeat = arr.Rank;
+            //        }
+            //    }
+            //}
 
             foreach (FieldDesc field in type.GetFields())
             {
@@ -37,16 +52,23 @@ namespace Internal.TypeSystem
                 TypeDesc fieldType = field.FieldType;
                 if (fieldType.IsGCPointer)
                 {
-                    builder.MarkGCPointer(field.Offset.AsInt);
+                    for (int i = 0; i < repeat; i++)
+                    {
+                        builder.MarkGCPointer(field.Offset.AsInt + pointerSize * i);
+                    }
                 }
                 else if (fieldType.IsValueType)
                 {
                     var fieldDefType = (DefType)fieldType;
                     if (fieldDefType.ContainsGCPointers)
                     {
-                        GCPointerMapBuilder innerBuilder =
-                            builder.GetInnerBuilder(field.Offset.AsInt, fieldDefType.InstanceByteCount.AsInt);
-                        FromInstanceLayoutHelper(ref innerBuilder, fieldDefType);
+                        for (int i = 0; i < repeat; i++)
+                        {
+                            int fieldSize = fieldDefType.InstanceByteCount.AsInt;
+                            GCPointerMapBuilder innerBuilder =
+                                builder.GetInnerBuilder(field.Offset.AsInt + fieldSize * i, fieldSize);
+                            FromInstanceLayoutHelper(ref innerBuilder, fieldDefType, pointerSize);
+                        }
                     }
                 }
             }
@@ -76,9 +98,10 @@ namespace Internal.TypeSystem
                     var fieldDefType = (DefType)fieldType;
                     if (fieldDefType.ContainsGCPointers)
                     {
+                        int pointerSize = type.Context.Target.PointerSize;
                         GCPointerMapBuilder innerBuilder =
                             builder.GetInnerBuilder(field.Offset.AsInt, fieldDefType.InstanceByteCount.AsInt);
-                        FromInstanceLayoutHelper(ref innerBuilder, fieldDefType);
+                        FromInstanceLayoutHelper(ref innerBuilder, fieldDefType, pointerSize);
                     }
                 }
             }
@@ -109,9 +132,10 @@ namespace Internal.TypeSystem
                     var fieldDefType = (DefType)fieldType;
                     if (fieldDefType.ContainsGCPointers)
                     {
+                        int pointerSize = type.Context.Target.PointerSize;
                         GCPointerMapBuilder innerBuilder =
                             builder.GetInnerBuilder(field.Offset.AsInt, fieldDefType.InstanceByteCount.AsInt);
-                        FromInstanceLayoutHelper(ref innerBuilder, fieldDefType);
+                        FromInstanceLayoutHelper(ref innerBuilder, fieldDefType, pointerSize);
                     }
                 }
             }
