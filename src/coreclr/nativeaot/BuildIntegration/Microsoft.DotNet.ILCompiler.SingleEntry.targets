@@ -3,14 +3,17 @@
   <PropertyGroup Condition="'$(RuntimeIdentifier)' != '' and '$(NETCoreSdkPortableRuntimeIdentifier)' != ''">
     <!-- Define the name of the runtime specific compiler package to import -->
     <_useTPI Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'unix'">true</_useTPI>
-    <_targetOS Condition="'$(_useTPI)' == 'true'">$(TargetPlatformIdentifier.ToLowerInvariant())</_targetOS>
+    <_targetOS Condition="'$(_useTPI)' == 'true'">$(TargetPlatformIdentifier.ToLowerInvariant)</_targetOS>
     <_targetOS Condition="'$(_useTPI)' != 'true'">$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.IndexOf('-'))))</_targetOS>
     <_indexOfPeriod Condition="'$(_useTPI)' != 'true'">$(_targetOS.IndexOf('.'))</_indexOfPeriod>
     <_targetOS Condition="'$(_useTPI)' != 'true' and '$(_indexOfPeriod)' &gt; -1">$(_targetOS.SubString(0, $(_indexOfPeriod)))</_targetOS>
     <_targetOS Condition="$(_targetOS.StartsWith('win'))">win</_targetOS>
 
-    <!-- Determine _hostArchitecture from NETCoreSdkPortableRuntimeIdentifier -->
-    <_hostArchitecture>$(NETCoreSdkPortableRuntimeIdentifier.SubString($([MSBuild]::Add($(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-')), 1))))</_hostArchitecture>
+    <!-- On non-Windows, determine _hostArchitecture from NETCoreSdkPortableRuntimeIdentifier -->
+    <_hostArchitecture Condition="'$(_targetOS)' != 'win'">$(NETCoreSdkPortableRuntimeIdentifier.SubString($([MSBuild]::Add($(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-')), 1))))</_hostArchitecture>
+
+    <!-- On Windows, default to host that matches OS architecture on Windows. It allows compilation using msbuild.exe that is x86 by default -->
+    <_hostArchitecture Condition="'$(_targetOS)' == 'win'">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostArchitecture>
 
     <!-- Determine _targetArchitecture from RuntimeIdentifier -->
     <_targetArchitecture>$(RuntimeIdentifier.SubString($([MSBuild]::Add($(RuntimeIdentifier.LastIndexOf('-')), 1))))</_targetArchitecture>
