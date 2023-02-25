@@ -1760,6 +1760,14 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 HCIMPLEND
 
 
+#ifdef _MSC_VER
+__declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) void** t_threadStaticBlocks;
+#else
+EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
+EXTERN_C __thread void** t_threadStaticBlocks;
+#endif
+
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE and
 //     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR. Even though we always check
 //     if the class constructor has been run, we have a separate helper ID for the "no ctor"
@@ -1790,7 +1798,22 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
     _ASSERTE(!pMT->HasGenericsStaticsInfo());
 
     ENDFORBIDGC();
-    return HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
+    void* staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
+
+    if (t_threadStaticBlocks == nullptr)
+    {
+        HANDLE currentThread = GetCurrentThread();
+        DWORD threadID = GetThreadId(currentThread);
+        printf("Initializing t_threadStaticBlocks for Thread# %d\n", threadID);
+        t_threadStaticBlocks = (void **) new (nothrow) PTR_BYTE[100 * sizeof(void *)];
+    }
+    //_ASSERTE(staticBlockIndex != 0);
+    void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
+    //_ASSERTE(currentEntry == nullptr);
+    t_threadStaticBlocks[staticBlockIndex] = staticBlock;
+    t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
+
+    return staticBlock;
 }
 HCIMPLEND
 #include <optdefault.h>
