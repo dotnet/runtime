@@ -374,6 +374,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 {
                     return nextNode;
                 }
+                assert(nextNode == nullptr);
             }
 
             return LowerBinaryArithmetic(node->AsOp());
@@ -7827,14 +7828,19 @@ bool Lowering::TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode)
     assert(op2->TypeIs(TYP_INT));
 #endif // !TARGET_64BIT
 
-    LIR::Use use;
-    if (!BlockRange().TryGetUse(node, &use))
-        return false;
-
     GenTree* op1 = node->gtGetOp1();
 
+    LIR::Use use;
+    if (BlockRange().TryGetUse(node, &use))
+    {
+        use.ReplaceWith(op1);
+    }
+    else
+    {
+        op1->SetUnusedValue();
+    }
+
     *nextNode = node->gtNext;
-    use.ReplaceWith(op1);
 
     BlockRange().Remove(op2);
     BlockRange().Remove(node);
