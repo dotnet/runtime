@@ -59,7 +59,7 @@ public:
     void DiagWalkBGCSurvivors(void* gcContext);
     void StompWriteBarrier(WriteBarrierParameters* args);
 
-    void EnableFinalization(bool foundFinalizers);
+    void EnableFinalization(bool gcHasWorkForFinalizerThread);
     void HandleFatalError(unsigned int exitCode);
     bool EagerFinalized(Object* obj);
     MethodTable* GetFreeObjectMethodTable();

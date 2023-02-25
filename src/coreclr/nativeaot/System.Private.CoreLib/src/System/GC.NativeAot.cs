@@ -68,6 +68,14 @@ namespace System
         HardLimitInvalid = 2,
     }
 
+    internal enum EnableNoGCRegionCallbackStatus
+    {
+        Success,
+        NotStarted,
+        InsufficientBudget,
+        AlreadyRegistered,
+    }
+
     public static partial class GC
     {
         public static int GetGeneration(object obj)
@@ -289,6 +297,69 @@ namespace System
         public static bool TryStartNoGCRegion(long totalSize)
         {
             return StartNoGCRegionWorker(totalSize, false, 0, false);
+        }
+
+        private unsafe struct NoGCRegionCallbackFinalizerWorkItem
+        {
+            // FinalizerWorkItem
+            public NoGCRegionCallbackFinalizerWorkItem* next;
+            public delegate* unmanaged<NoGCRegionCallbackFinalizerWorkItem*, void> callback;
+
+            public bool scheduled;
+            public bool abandoned;
+
+            public GCHandle action;
+        }
+
+        public static unsafe void RegisterNoGCRegionCallback(long totalSize, Action callback)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(totalSize);
+            ArgumentNullException.ThrowIfNull(callback);
+
+            NoGCRegionCallbackFinalizerWorkItem* pWorkItem = null;
+            try
+            {
+                pWorkItem = (NoGCRegionCallbackFinalizerWorkItem*)NativeMemory.AllocZeroed((nuint)sizeof(NoGCRegionCallbackFinalizerWorkItem));
+                pWorkItem->action = GCHandle.Alloc(callback);
+                pWorkItem->callback = &Callback;
+
+                EnableNoGCRegionCallbackStatus status = (EnableNoGCRegionCallbackStatus)RuntimeImports.RhEnableNoGCRegionCallback(pWorkItem, totalSize);
+                if (status != EnableNoGCRegionCallbackStatus.Success)
+                {
+                    switch (status)
+                    {
+                        case EnableNoGCRegionCallbackStatus.NotStarted:
+                            throw new InvalidOperationException(SR.Format(SR.InvalidOperationException_NoGCRegionNotInProgress));
+                        case EnableNoGCRegionCallbackStatus.InsufficientBudget:
+                            throw new InvalidOperationException(SR.Format(SR.InvalidOperationException_NoGCRegionAllocationExceeded));
+                        case EnableNoGCRegionCallbackStatus.AlreadyRegistered:
+                            throw new InvalidOperationException(SR.InvalidOperationException_NoGCRegionCallbackAlreadyRegistered);
+                    }
+                    Debug.Assert(false);
+                }
+                pWorkItem = null; // Ownership transferred
+            }
+            finally
+            {
+                if (pWorkItem != null)
+                    Free(pWorkItem);
+            }
+
+            [UnmanagedCallersOnly]
+            static void Callback(NoGCRegionCallbackFinalizerWorkItem* pWorkItem)
+            {
+                Debug.Assert(pWorkItem->scheduled);
+                if (!pWorkItem->abandoned)
+                    ((Action)(pWorkItem->action.Target!))();
+                Free(pWorkItem);
+            }
+
+            static void Free(NoGCRegionCallbackFinalizerWorkItem* pWorkItem)
+            {
+                if (pWorkItem->action.IsAllocated)
+                    pWorkItem->action.Free();
+                NativeMemory.Free(pWorkItem);
+            }
         }
 
         /// <summary>
@@ -576,7 +647,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void Callback(void* configurationContext, void* name, void* publicKey, RuntimeImports.GCConfigurationType type, long data)
+        private static unsafe void ConfigCallback(void* configurationContext, void* name, void* publicKey, RuntimeImports.GCConfigurationType type, long data)
         {
             // If the public key is null, it means that the corresponding configuration isn't publicly available
             // and therefore, we shouldn't add it to the configuration dictionary to return to the user.
@@ -624,7 +695,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            RuntimeImports.RhEnumerateConfigurationValues(Unsafe.AsPointer(ref context), &Callback);
+            RuntimeImports.RhEnumerateConfigurationValues(Unsafe.AsPointer(ref context), &ConfigCallback);
             return context.Configurations!;
         }
 

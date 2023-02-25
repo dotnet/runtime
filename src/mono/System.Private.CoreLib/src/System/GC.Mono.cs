@@ -327,5 +327,10 @@ namespace System
         {
             throw new PlatformNotSupportedException();
         }
+
+        public static void RegisterNoGCRegionCallback(long totalSize, Action callback)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }
