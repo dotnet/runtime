@@ -1625,6 +1625,8 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->dwModuleID = pModule->GetModuleID();
     ModuleData->dwModuleIndex = pModule->GetModuleIndex().m_dwIndex;
     ModuleData->dwTransientFlags = pModule->m_dwTransientFlags;
+    ModuleData->LoaderAllocator = HOST_CDADDR(pModule->m_loaderAllocator);
+    ModuleData->ThunkHeap = HOST_CDADDR(pModule->m_pThunkHeap);
 
     EX_TRY
     {
@@ -3551,6 +3553,121 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
     return hr;
 }
 
+HRESULT ClrDataAccess::GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, CLRDATA_ADDRESS *pLoaderAllocator)
+{
+    if (pLoaderAllocator == nullptr)
+        return E_INVALIDARG;
+
+    if (domainAddress == 0)
+    {
+        *pLoaderAllocator = 0;
+        return S_FALSE;
+    }
+
+    SOSDacEnter();
+
+    PTR_BaseDomain pDomain = PTR_BaseDomain(TO_TADDR(domainAddress));
+    *pLoaderAllocator = pDomain != nullptr ? HOST_CDADDR(pDomain->GetLoaderAllocator()) : 0;
+
+    SOSDacLeave();
+    return hr;
+}
+
+// The ordering of these entries must match the order enumerated in GetLoaderAllocatorHeaps.
+// This array isn't fixed, we can reorder/add/remove entries as long as the corresponding
+// code in GetLoaderAllocatorHeaps is updated to match.
+static const char *LoaderAllocatorLoaderHeapNames[] = 
+{
+    "LowFrequencyHeap",
+    "HighFrequencyHeap",
+    "StubHeap",
+    "ExecutableHeap",
+    "FixupPrecodeHeap",
+    "NewStubPrecodeHeap",
+    "IndcellHeap",
+    "LookupHeap",
+    "ResolveHeap",
+    "DispatchHeap",
+    "CacheEntryHeap",
+    "VtableHeap",
+};
+
+
+HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAddress, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded)
+{
+    if (loaderAllocatorAddress == 0)
+        return E_INVALIDARG;
+
+    SOSDacEnter();
+
+    const int loaderHeapCount = ARRAY_SIZE(LoaderAllocatorLoaderHeapNames);
+    PTR_LoaderAllocator pLoaderAllocator = PTR_LoaderAllocator(TO_TADDR(loaderAllocatorAddress));
+
+    if (pNeeded)
+        *pNeeded = loaderHeapCount;
+
+    if (pLoaderHeaps)
+    {
+        if (count < loaderHeapCount)
+        {
+            hr = E_INVALIDARG;
+        }
+        else
+        {
+            // Must match order of LoaderAllocatorLoaderHeapNames
+            int i = 0;
+            pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
+            pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
+            pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
+            pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetExecutableHeap());
+            pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetFixupPrecodeHeap());
+            pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetNewStubPrecodeHeap());
+            
+            VirtualCallStubManager *pVcsMgr = pLoaderAllocator->GetVirtualCallStubManager();
+            if (pVcsMgr == nullptr)
+            {
+                for (; i < min(count, loaderHeapCount); i++)
+                    pLoaderHeaps[i] = 0;
+            }
+            else
+            {
+                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->indcell_heap);
+                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->lookup_heap);
+                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->resolve_heap);
+                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->dispatch_heap);
+                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->cache_entry_heap);
+                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->vtable_heap);
+            }
+            
+            // All of the above are "LoaderHeap" and not the ExplicitControl version.
+            for (int j = 0; j < i; j++)
+                pKinds[j] = LoaderHeapKindNormal;
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetLoaderAllocatorHeapNames(int count, const char **ppNames, int *pNeeded)
+{
+    SOSDacEnter();
+    
+    const int loaderHeapCount = ARRAY_SIZE(LoaderAllocatorLoaderHeapNames);
+    if (pNeeded)
+        *pNeeded = loaderHeapCount;
+
+    if (ppNames)
+        for (int i = 0; i < min(count, loaderHeapCount); i++)
+            ppNames[i] = LoaderAllocatorLoaderHeapNames[i];
+
+    if (count < loaderHeapCount)
+        hr = S_FALSE;
+
+    SOSDacLeave();
+    return hr;
+}
 
 HRESULT
 ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData *pSyncBlockData)

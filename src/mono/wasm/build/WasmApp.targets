@@ -69,6 +69,8 @@
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM Exception Handling feature.
       - $(WasmEnableSIMD)                   - Enable support for the WASM SIMD feature.
       - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to .webcil
+      - $(WasmIncludeFullIcuData)           - Loads full ICU data (icudt.dat). Defaults to false. Only applicable when InvariantGlobalization=false. 
+      - $(WasmIcuDataFileName)              - Name/path of ICU globalization file loaded to app. Only when InvariantGloblization=false and WasmIncludeFullIcuData=false.
       - $(WasmAllowUndefinedSymbols)        - Controls whether undefined symbols are allowed or not,
                                               if true, appends 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=0' as arguments for wasm-ld,
                                               if false (default), removes 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=1'.
@@ -316,12 +318,12 @@
 
   <Target Name="_GetWasmGenerateAppBundleDependencies">
     <PropertyGroup>
-      <WasmIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true'">icudt.dat</WasmIcuDataFileName>
-
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.worker.js'">true</_HasDotnetJsWorker>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'">true</_HasDotnetJsSymbols>
       <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -333,20 +335,27 @@
                        Condition="'$(WasmEmitSymbolMap)' == 'true' and
                                   '$(_HasDotnetJsSymbols)' != 'true' and
                                   Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols')" />
-
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
-
       <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*" />
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
+      <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
     </ItemGroup>
   </Target>
 
   <Target Name="_WasmGenerateAppBundle"
-          Inputs="@(_WasmAssembliesInternal);$(WasmMainJSPath);$(WasmIcuDataFileName);@(WasmNativeAsset)"
+          Inputs="@(_WasmAssembliesInternal);$(WasmMainJSPath);@(WasmNativeAsset)"
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
           DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
+    <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->' %(Filename)')."/>
+    <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." />
 
     <PropertyGroup>
       <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</_WasmAppIncludeThreadsWorker>
@@ -367,7 +376,7 @@
       InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
-      IcuDataFileName="$(WasmIcuDataFileName)"
+      IcuDataFileNames="@(WasmIcuDataFileNames)"
       RemoteSources="@(WasmRemoteSources)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       ExtraConfig="@(WasmExtraConfig)"

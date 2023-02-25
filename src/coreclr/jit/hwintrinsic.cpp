@@ -126,7 +126,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, Co
                 assert(!"Didn't find a class handle for simdType");
         }
     }
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
     else if (simdType == TYP_SIMD32)
     {
         switch (simdBaseJitType)

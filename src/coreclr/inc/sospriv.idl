@@ -470,4 +470,7 @@ interface ISOSDacInterface12 : IUnknown
 interface ISOSDacInterface13 : IUnknown
 {
     HRESULT TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);
+    HRESULT GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, CLRDATA_ADDRESS *pLoaderAllocator);
+    HRESULT GetLoaderAllocatorHeapNames(int count, const char **ppNames, int *pNeeded);
+    HRESULT GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocator, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded);
 }

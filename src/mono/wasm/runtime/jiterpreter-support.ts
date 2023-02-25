@@ -35,6 +35,7 @@ export class WasmBuilder {
     stackSize!: number;
     inSection!: boolean;
     inFunction!: boolean;
+    allowNullCheckOptimization!: boolean;
     locals = new Map<string, [WasmValtype, number]>();
 
     permanentFunctionTypeCount = 0;
@@ -90,6 +91,8 @@ export class WasmBuilder {
         this.constantSlots.length = this.options.useConstants ? constantSlotCount : 0;
         for (let i = 0; i < this.constantSlots.length; i++)
             this.constantSlots[i] = 0;
+
+        this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
 
     push () {
@@ -934,6 +937,29 @@ export function recordFailure () : void {
             enableJitCall: false
         });
     }
+}
+
+export const enum JiterpMember {
+    VtableInitialized = 0,
+    ArrayData = 1,
+    StringLength = 2,
+    StringData = 3,
+    Imethod = 4,
+    DataItems = 5,
+    Rmethod = 6,
+    SpanLength = 7,
+    SpanData = 8,
+    ArrayLength = 9,
+}
+
+const memberOffsets : { [index: number] : number } = {};
+
+export function getMemberOffset (member: JiterpMember) {
+    const cached = memberOffsets[member];
+    if (cached === undefined)
+        return memberOffsets[member] = cwraps.mono_jiterp_get_member_offset(<any>member);
+    else
+        return cached;
 }
 
 export function getRawCwrap (name: string): Function {

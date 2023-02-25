@@ -215,8 +215,6 @@
              Link="CommonTest\System\Security\Cryptography\CryptoUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AesCcmTests.cs" />

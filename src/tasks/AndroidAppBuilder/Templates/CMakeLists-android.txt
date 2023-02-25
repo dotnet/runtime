@@ -23,6 +23,7 @@ include_directories("%MonoInclude%")
 
 target_link_libraries(
     monodroid
+    PRIVATE
     %NativeLibrariesToLink%
     libz.so
     log

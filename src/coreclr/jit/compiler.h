@@ -2414,6 +2414,9 @@ public:
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
 
+    GenTreeCC* gtNewCC(genTreeOps oper, var_types type, GenCondition cond);
+    GenTreeOpCC* gtNewOperCC(genTreeOps oper, var_types type, GenCondition cond, GenTree* op1, GenTree* op2);
+
     GenTreeColon* gtNewColonNode(var_types type, GenTree* elseNode, GenTree* thenNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
@@ -7635,7 +7638,7 @@ public:
         return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
     }
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
-#error("Unknown target architecture for FEATURE_SIMD")
+#error("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE")
 #endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
@@ -8508,8 +8511,10 @@ private:
                     return NO_CLASS_HANDLE;
                 }
 
+#if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                     break;
+#endif // TARGET_XARCH
 
                 default:
                     unreached();
@@ -8612,8 +8617,10 @@ private:
                 return m_simdHandleCache->SIMDVector3Handle;
             case TYP_SIMD16:
                 return m_simdHandleCache->CanonicalSimd16Handle;
+#if defined(TARGET_XARCH)
             case TYP_SIMD32:
                 return m_simdHandleCache->CanonicalSimd32Handle;
+#endif // TARGET_XARCH
             default:
                 unreached();
         }
@@ -8856,10 +8863,12 @@ public:
         {
             simdType = TYP_SIMD16;
         }
+#if defined(TARGET_XARCH)
         else if (size == 32)
         {
             simdType = TYP_SIMD32;
         }
+#endif // TARGET_XARCH
         else
         {
             noway_assert(!"Unexpected size for SIMD type");

@@ -36,9 +36,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		static ref Type ReturnAnnotatedTypeWithRequirements ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type t) => ref _annotatedField;
 
-		// Correct behavior in the linker, but needs to be added in analyzer
+		// Correct behavior in the trimming tools, but needs to be added in analyzer
 		// Bug link: https://github.com/dotnet/linker/issues/2158
-		[ExpectedWarning ("IL2026", "Message for --TestType.Requires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL2026", "Message for --TestType.Requires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		static void AssignToAnnotatedTypeReference ()
 		{
 			ref Type typeShouldHaveAllMethods = ref ReturnAnnotatedTypeReferenceAsAnnotated ();
@@ -48,7 +48,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// Same as above for IL analysis, but this looks different to the Roslyn analyzer.
 		// https://github.com/dotnet/linker/issues/2158
-		[ExpectedWarning ("IL2026", "Message for --TestType.Requires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL2026", "Message for --TestType.Requires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		static void AssignDirectlyToAnnotatedTypeReference ()
 		{
 			ReturnAnnotatedTypeReferenceAsAnnotated () = typeof (TestTypeWithRequires);
@@ -56,7 +56,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		// https://github.com/dotnet/linker/issues/2158
-		[ExpectedWarning ("IL2073", nameof (GetWithPublicFields), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL2073", nameof (GetWithPublicFields), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		static void AssignToCapturedAnnotatedTypeReference ()
 		{
 			// In this testcase, the Roslyn analyzer sees an assignment to a flow-capture reference.
@@ -64,7 +64,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[ExpectedWarning ("IL2072", nameof (GetWithPublicMethods), nameof (ReturnAnnotatedTypeWithRequirements))]
-		[ExpectedWarning ("IL2073", nameof (ReturnAnnotatedTypeWithRequirements), nameof (GetWithPublicFields), ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL2073", nameof (ReturnAnnotatedTypeWithRequirements), nameof (GetWithPublicFields), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		static void AssignToAnnotatedTypeReferenceWithRequirements ()
 		{
 			ReturnAnnotatedTypeWithRequirements (GetWithPublicMethods ()) = GetWithPublicFields ();
