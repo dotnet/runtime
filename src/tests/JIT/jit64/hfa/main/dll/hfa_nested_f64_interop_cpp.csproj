@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <OutputType>Library</OutputType>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <GenerateRunScript>false</GenerateRunScript>
