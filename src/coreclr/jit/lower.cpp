@@ -7809,6 +7809,7 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 bool Lowering::TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode)
 {
     assert(node->OperIs(GT_AND));
+    assert(nextNode != nullptr);
 
     if (!varTypeIsIntegral(node))
         return false;
