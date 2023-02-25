@@ -252,9 +252,6 @@
   <data name="TypeInfoImmutable" xml:space="preserve">
     <value>This JsonTypeInfo instance is marked read-only or has already been used in serialization or deserialization.</value>
   </data>
-  <data name="PropertyInfoImmutable" xml:space="preserve">
-    <value>This JsonTypeInfo instance is marked read-only or has already been used in serialization or deserialization.</value>
-  </data>
   <data name="MaxDepthMustBePositive" xml:space="preserve">
     <value>Max depth must be positive.</value>
   </data>
@@ -525,7 +522,7 @@
     <value>The collection type '{0}' is abstract, an interface, or is read only, and could not be instantiated and populated.</value>
   </data>
   <data name="ConstructorContainsNullParameterNames" xml:space="preserve">
-    <value>The deserialization constructor for type '{0}' contains parameters with null names. This might happen because the parameter names have been trimmed by the linker. Consider using the source generated serializer instead.</value>
+    <value>The deserialization constructor for type '{0}' contains parameters with null names. This might happen because the parameter names have been trimmed by ILLink. Consider using the source generated serializer instead.</value>
   </data>
   <data name="DefaultIgnoreConditionAlreadySpecified" xml:space="preserve">
     <value>'IgnoreNullValues' and 'DefaultIgnoreCondition' cannot both be set to non-default values.</value>

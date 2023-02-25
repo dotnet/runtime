@@ -1,11 +1,11 @@
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:7.0-bullseye-slim
 FROM $SDK_BASE_IMAGE
 
 # Build latest msquic locally
 WORKDIR /msquic
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
+    apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev libnuma-dev && \
     gem install fpm
 RUN git clone --recursive https://github.com/dotnet/msquic
 RUN cd msquic/src/msquic && \

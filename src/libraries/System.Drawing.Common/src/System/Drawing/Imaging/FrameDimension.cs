@@ -12,7 +12,7 @@ namespace System.Drawing.Imaging
         private static readonly FrameDimension s_resolution = new FrameDimension(new Guid("{84236f7b-3bd3-428f-8dab-4ea1439ca315}"));
         private static readonly FrameDimension s_page = new FrameDimension(new Guid("{7462dc86-6180-4c7e-8e3f-ee7333a7a483}"));
 
-        private Guid _guid;
+        private readonly Guid _guid;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='FrameDimension'/> class with the specified GUID.

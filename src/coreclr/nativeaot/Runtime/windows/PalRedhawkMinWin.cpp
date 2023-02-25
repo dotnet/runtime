@@ -446,6 +446,18 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
     RtlRestoreContext(pCtx, NULL);
 }
 
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext)
+{
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    CONTEXT ctx;
+
+    RtlCaptureContext(&ctx);
+
+    pContext->SegCs = ctx.SegCs;
+    pContext->SegSs = ctx.SegSs;
+#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
+}
+
 static PalHijackCallback g_pHijackCallback;
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
@@ -612,6 +624,11 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCal
     return PalStartBackgroundWork(callback, pCallbackContext, TRUE);
 }
 
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+{
+    return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
+}
+
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor)
 {
     return !!EventEnabled(regHandle, eventDescriptor);
@@ -744,6 +761,18 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 {
     *flags = 0;
 
+// Older version of SDK would return false for these intrinsics
+// but make sure we pass the right values to the APIs
+#ifndef PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE 34
+#endif
+#ifndef PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE 43
+#endif
+#ifndef PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE 45
+#endif
+
     // FP and SIMD support are enabled by default
     *flags |= ARM64IntrinsicConstants_AdvSimd;
 
@@ -762,6 +791,16 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     if (IsProcessorFeaturePresent(PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE))
     {
         *flags |= ARM64IntrinsicConstants_Atomics;
+    }
+
+    if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
+    {
+        *flags |= ARM64IntrinsicConstants_Dp;
+    }
+
+    if (IsProcessorFeaturePresent(PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE))
+    {
+        *flags |= ARM64IntrinsicConstants_Rcpc;
     }
 }
 

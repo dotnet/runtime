@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Logging.Console
 #else
         private static bool IsAndroidOrAppleMobile => false;
 #endif
-        private IDisposable? _optionsReloadToken;
+        private readonly IDisposable? _optionsReloadToken;
 
         public SimpleConsoleFormatter(IOptionsMonitor<SimpleConsoleFormatterOptions> options)
             : base(ConsoleFormatterNames.Simple)

@@ -9,8 +9,6 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#define INVARIANT_GLOBALIZATION 1
-
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/class.h>
@@ -67,6 +65,8 @@ char *mono_method_get_full_name (MonoMethod *method);
 extern const char* dotnet_wasi_getbundledfile(const char* name, int* out_length);
 extern void dotnet_wasi_registerbundledassemblies();
 extern const char* dotnet_wasi_getentrypointassemblyname();
+int32_t mono_wasi_load_icu_data(const void* pData);
+void load_icu_data (void);
 
 int mono_wasm_enable_gc = 1;
 
@@ -329,7 +329,33 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 	}
 }
 
-void mono_wasm_link_icu_shim (void);
+void load_icu_data (void)
+{
+	FILE *fileptr;
+	unsigned char *buffer;
+	long filelen;
+	char filename[256];
+	sprintf(filename, "./icudt.dat");
+
+	fileptr = fopen(filename, "rb");
+	if (fileptr == 0) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
+
+	fseek(fileptr, 0, SEEK_END);
+	filelen = ftell(fileptr);
+	rewind(fileptr);
+
+	buffer = (unsigned char *)malloc(filelen * sizeof(char));
+	if(!fread(buffer, filelen, 1, fileptr)) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
+	fclose(fileptr);
+
+	assert(mono_wasi_load_icu_data(buffer));
+}
 
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -344,7 +370,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	const char *interp_opts = "";
 
 #ifndef INVARIANT_GLOBALIZATION
-	mono_wasm_link_icu_shim ();
+	load_icu_data();
 #else
 	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true", 1);
 #endif
@@ -676,21 +702,28 @@ mono_wasm_string_array_new (int size)
 }
 
 #ifdef _WASI_DEFAULT_MAIN
+/*
+ * with wasmtime, this is run as:
+ *  $ wasmtime run--dir . dotnet.wasm MainAssembly [args]
+ *
+ *
+ * arg0: dotnet.wasm
+ * arg1: MainAssembly
+ * arg2-..: args
+ */
 int main(int argc, char * argv[]) {
-	printf("TODOWASI: default main for non-relinked, non-aot apps, TODO\n");
 	if (argc < 2) {
 		printf("Error: First argument must be the name of the main assembly\n");
 		return 1;
 	}
-	// Assume the runtime pack has been copied into the output directory as 'runtime'
-	// Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
-	// AJ: not needed right now as we are bundling all the assemblies in the .wasm
-	mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
+
+	mono_set_assemblies_path("managed");
 	mono_wasm_load_runtime("", 0);
 
-	MonoAssembly* assembly = mono_wasm_assembly_load (argv[1]);
+	const char *assembly_name = argv[1];
+	MonoAssembly* assembly = mono_wasm_assembly_load (assembly_name);
 	if (!assembly) {
-		printf("wasi: mono_wasm_assembly_load returned NULL!\n");
+		printf("Could not load assembly %s\n", assembly_name);
 		return 1;
 	}
 	MonoMethod* entry_method = mono_wasi_assembly_get_entry_point (assembly);
@@ -701,11 +734,12 @@ int main(int argc, char * argv[]) {
 
 	MonoObject* out_exc;
 	MonoObject* out_res;
-	int ret = mono_runtime_run_main(entry_method, argc, argv, &out_exc);
+	// Managed app will see: arg0: MainAssembly, arg1-.. [args]
+	int ret = mono_runtime_run_main(entry_method, argc - 1, &argv[1], &out_exc);
 	if (out_exc) {
 		mono_print_unhandled_exception(out_exc);
 		exit(1);
 	}
-	return ret;
+	return ret < 0 ? -ret : ret;
 }
 #endif

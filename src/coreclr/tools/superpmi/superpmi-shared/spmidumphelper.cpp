@@ -246,8 +246,6 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(OSR);
     AddFlag(ALT_JIT);
 
-    AddFlagNumeric(FEATURE_SIMD, 17);
-
     AddFlag(MAKEFINALCODE);
     AddFlag(READYTORUN);
     AddFlag(PROF_ENTERLEAVE);
@@ -262,7 +260,7 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(BBINSTR);
     AddFlag(BBOPT);
     AddFlag(FRAMED);
-
+    AddFlag(BBINSTR_IF_LOOPS);
     AddFlag(PUBLISH_SECRET_PARAM);
 
     AddFlag(SAMPLING_JIT_BACKGROUND);

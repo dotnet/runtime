@@ -3183,5 +3183,33 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.AsRef(in vector._upper) = value;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> UnpackLow(Vector128<byte> left, Vector128<byte> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.UnpackLow(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.Arm64.ZipLow(left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> UnpackHigh(Vector128<byte> left, Vector128<byte> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.UnpackHigh(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.Arm64.ZipHigh(left, right);
+        }
     }
 }

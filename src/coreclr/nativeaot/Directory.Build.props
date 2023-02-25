@@ -60,11 +60,19 @@
   </PropertyGroup>
   <PropertyGroup>
     <FeatureObjCMarshal>false</FeatureObjCMarshal>
-    <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true'">true</FeatureObjCMarshal>
+    <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true'or '$(TargetstvOS)' == 'true'">true</FeatureObjCMarshal>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">FEATURE_OBJCMARSHAL;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup>
+    <FeaturePerfTracing>false</FeaturePerfTracing>
+    <FeaturePerfTracing Condition="'$(TargetsWindows)' == 'true'">true</FeaturePerfTracing>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">FEATURE_PERFTRACING;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
 
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'x64'">

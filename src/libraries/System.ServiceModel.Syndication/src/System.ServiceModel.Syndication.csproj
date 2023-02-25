@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes related to service model syndication.</PackageDescription>
