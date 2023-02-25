@@ -5389,8 +5389,8 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 
     // This method doesn't return normally so we have to manually restore things.
     HELPER_METHOD_FRAME_END();
-    ::SetLastError(dwLastError);
     ENDFORBIDGC();
+    ::SetLastError(dwLastError);
 
     // Transition!
     RtlRestoreContext(&frameContext, NULL);
